@@ -1,3 +1,6 @@
+---
+applyTo: '**'
+---
 Instrução e Apresentação do Projeto – Sistema para Escritório de Advocacia (SaaS White Label)
 
 Este projeto tem como objetivo o desenvolvimento de um sistema moderno, escalável e white label para escritórios de advocacia. A proposta é criar uma plataforma centralizada que organize e facilite a gestão de clientes, processos, diligências, documentos e informações internas, oferecendo acesso controlado para diferentes perfis de usuários: advogados, equipe administrativa, financeiro, secretariado e clientes.
