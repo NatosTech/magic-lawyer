@@ -1,8 +1,8 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Next.js + HeroUI",
-  description: "Make beautiful websites regardless of your design experience.",
+  name: "Magic Lawyer",
+  description: "Sistema para advogados - Controle seu escritório com facilidade.",
   navItems: [
     {
       label: "Home",
@@ -61,8 +61,8 @@ export const siteConfig = {
   ],
   links: {
     github: "https://github.com/nonattodev",
-    twitter: "https://twitter.com/hero_ui",
-    discord: "https://discord.gg/9b6yyZKmH4",
-    sponsor: "https://patreon.com/jrgarciadev",
+    twitter: "https://github.com/nonattodev",
+    discord: "https://github.com/nonattodev",
+    sponsor: "https://github.com/nonattodev",
   },
 };
