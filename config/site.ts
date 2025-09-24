@@ -5,15 +5,15 @@ export const siteConfig = {
   description: "Sistema para advogados - Controle seu escritório com facilidade.",
   navItems: [
     {
-      label: "Home",
+      label: "Página Inicial",
       href: "/",
     },
     {
-      label: "Docs",
+      label: "Documentação",
       href: "/docs",
     },
     {
-      label: "Pricing",
+      label: "Nossos Preços",
       href: "/pricing",
     },
     {
@@ -21,13 +21,13 @@ export const siteConfig = {
       href: "/blog",
     },
     {
-      label: "About",
+      label: "Sobre Nós",
       href: "/about",
     },
   ],
   navMenuItems: [
     {
-      label: "Profile",
+      label: "Perfil",
       href: "/profile",
     },
     {
@@ -35,23 +35,23 @@ export const siteConfig = {
       href: "/dashboard",
     },
     {
-      label: "Projects",
+      label: "Projetos",
       href: "/projects",
     },
     {
-      label: "Team",
+      label: "Equipe",
       href: "/team",
     },
     {
-      label: "Calendar",
+      label: "Calendário",
       href: "/calendar",
     },
     {
-      label: "Settings",
+      label: "Configurações",
       href: "/settings",
     },
     {
-      label: "Help & Feedback",
+      label: "Ajuda & Feedback",
       href: "/help-feedback",
     },
     {
