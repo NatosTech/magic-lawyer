@@ -160,3 +160,30 @@ docker compose down -v
 - Adicione um arquivo .dockerignore para acelerar o build.
 - Não comite arquivos .env. Prefira variáveis de ambiente ou env_file local.
 - Em produção use um serviço gerenciado de Postgres ou um volume com backup.
+
+## Autenticação com Auth.js (NextAuth v5)
+
+Este projeto utiliza Auth.js (NextAuth) v5 com App Router.
+
+- Rota de auth: `app/api/auth/[...nextauth]/route.ts`
+- Config central: `auth.ts`
+- Página de login: `/login`
+
+Variáveis necessárias:
+
+```
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=<valor-seguro>
+```
+
+No dev, gere um segredo com:
+
+```
+node -e "console.log(crypto.randomUUID())"
+```
+
+Após configurar `.env`, suba o app:
+
+```
+npm run dev
+```
