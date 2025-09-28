@@ -8,6 +8,9 @@ CREATE TYPE "public"."TenantStatus" AS ENUM ('ACTIVE', 'SUSPENDED', 'CANCELLED')
 CREATE TYPE "public"."TipoPessoa" AS ENUM ('FISICA', 'JURIDICA');
 
 -- CreateEnum
+CREATE TYPE "public"."TipoEndereco" AS ENUM ('MATRIZ', 'FILIAL', 'ESCRITORIO');
+
+-- CreateEnum
 CREATE TYPE "public"."ProcessoStatus" AS ENUM ('RASCUNHO', 'EM_ANDAMENTO', 'SUSPENSO', 'ENCERRADO', 'ARQUIVADO');
 
 -- CreateEnum
@@ -94,10 +97,40 @@ CREATE TABLE "public"."Tenant" (
     "domain" TEXT,
     "timezone" TEXT NOT NULL DEFAULT 'America/Sao_Paulo',
     "status" "public"."TenantStatus" NOT NULL DEFAULT 'ACTIVE',
+    "tipoPessoa" "public"."TipoPessoa" NOT NULL DEFAULT 'JURIDICA',
+    "documento" TEXT,
+    "razaoSocial" TEXT,
+    "nomeFantasia" TEXT,
+    "inscricaoEstadual" TEXT,
+    "inscricaoMunicipal" TEXT,
+    "email" TEXT,
+    "telefone" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Tenant_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."TenantEndereco" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "apelido" TEXT NOT NULL,
+    "tipo" "public"."TipoEndereco" NOT NULL DEFAULT 'ESCRITORIO',
+    "principal" BOOLEAN NOT NULL DEFAULT false,
+    "logradouro" TEXT NOT NULL,
+    "numero" TEXT,
+    "complemento" TEXT,
+    "bairro" TEXT,
+    "cidade" TEXT NOT NULL,
+    "estado" TEXT NOT NULL,
+    "cep" TEXT,
+    "pais" TEXT NOT NULL DEFAULT 'Brasil',
+    "telefone" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TenantEndereco_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -566,6 +599,15 @@ CREATE UNIQUE INDEX "Tenant_domain_key" ON "public"."Tenant"("domain");
 CREATE INDEX "Tenant_status_idx" ON "public"."Tenant"("status");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Tenant_documento_key" ON "public"."Tenant"("documento");
+
+-- CreateIndex
+CREATE INDEX "TenantEndereco_tenantId_principal_idx" ON "public"."TenantEndereco"("tenantId", "principal");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TenantEndereco_tenantId_apelido_key" ON "public"."TenantEndereco"("tenantId", "apelido");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "TenantBranding_tenantId_key" ON "public"."TenantBranding"("tenantId");
 
 -- CreateIndex
@@ -702,6 +744,9 @@ ALTER TABLE "public"."TipoContrato" ADD CONSTRAINT "TipoContrato_tenantId_fkey" 
 
 -- AddForeignKey
 ALTER TABLE "public"."CategoriaTarefa" ADD CONSTRAINT "CategoriaTarefa_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."TenantEndereco" ADD CONSTRAINT "TenantEndereco_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."TenantBranding" ADD CONSTRAINT "TenantBranding_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
