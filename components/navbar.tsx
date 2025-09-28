@@ -1,106 +1,162 @@
-import { Navbar as HeroUINavbar, NavbarContent, NavbarMenu, NavbarMenuToggle, NavbarBrand, NavbarItem, NavbarMenuItem } from "@heroui/navbar";
+"use client";
+
+import {
+  Navbar as HeroUINavbar,
+  NavbarContent,
+  NavbarMenu,
+  NavbarMenuToggle,
+  NavbarBrand,
+  NavbarMenuItem,
+} from "@heroui/navbar";
 import { Button } from "@heroui/button";
-import { Kbd } from "@heroui/kbd";
+import { Chip } from "@heroui/chip";
 import { Link } from "@heroui/link";
-import { Input } from "@heroui/input";
 import { link as linkStyles } from "@heroui/theme";
-import NextLink from "next/link";
 import clsx from "clsx";
+import NextLink from "next/link";
+import { usePathname } from "next/navigation";
 
 import { siteConfig } from "@/config/site";
 import { SignInOut } from "@/components/signinout";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { TwitterIcon, GithubIcon, DiscordIcon, HeartFilledIcon, SearchIcon, Logo } from "@/components/icons";
+import { GithubIcon, Logo } from "@/components/icons";
 
 export const Navbar = () => {
-  const searchInput = (
-    <Input
-      aria-label="Search"
-      classNames={{
-        inputWrapper: "bg-default-100",
-        input: "text-sm",
-      }}
-      endContent={
-        <Kbd className="hidden lg:inline-block" keys={["command"]}>
-          K
-        </Kbd>
-      }
-      labelPlacement="outside"
-      placeholder="Search..."
-      startContent={<SearchIcon className="text-base text-default-400 pointer-events-none flex-shrink-0" />}
-      type="search"
-    />
-  );
+  const pathname = usePathname();
+
+  const renderNavLink = (label: string, href: string) => {
+    const isActive = pathname === href;
+
+    return (
+      <NextLink
+        key={label}
+        className={clsx(
+          linkStyles({ color: "foreground" }),
+          "relative rounded-full px-4 py-2 text-sm font-medium transition-colors",
+          isActive
+            ? "bg-primary/15 text-primary"
+            : "text-default-500 hover:text-primary",
+        )}
+        href={href}
+      >
+        {label}
+      </NextLink>
+    );
+  };
 
   return (
-    <HeroUINavbar maxWidth="xl" position="sticky">
-      <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
-        <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-1" href="/">
-            <Logo />
-            <p className="font-bold text-inherit">ACME</p>
+    <HeroUINavbar
+      className="top-4 z-50 mx-auto rounded-full border border-white/10 bg-background/70 px-3 py-2 backdrop-blur-2xl shadow-[0_15px_45px_-25px_rgba(59,130,246,0.8)]"
+      isBordered={false}
+      maxWidth="xl"
+      position="sticky"
+    >
+      <NavbarContent className="max-w-fit" justify="start">
+        <NavbarBrand className="max-w-fit">
+          <NextLink className="flex items-center gap-3" href="/">
+            <span className="rounded-2xl bg-primary/15 p-2 text-primary">
+              <Logo className="h-6 w-6" />
+            </span>
+            <span className="flex flex-col leading-tight">
+              <span className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+                Magic Lawyer
+              </span>
+              <span className="text-xs text-default-400">
+                SaaS jurídico white label
+              </span>
+            </span>
           </NextLink>
         </NavbarBrand>
-        <ul className="hidden lg:flex gap-4 justify-start ml-2">
-          {siteConfig.navItems.map((item) => (
-            <NavbarItem key={item.href}>
-              <NextLink className={clsx(linkStyles({ color: "foreground" }), "data-[active=true]:text-primary data-[active=true]:font-medium")} color="foreground" href={item.href}>
-                {item.label}
-              </NextLink>
-            </NavbarItem>
-          ))}
-        </ul>
       </NavbarContent>
 
-      <NavbarContent className="hidden sm:flex basis-1/5 sm:basis-full" justify="end">
-        <NavbarItem className="hidden sm:flex gap-2">
-          <Link isExternal aria-label="Twitter" href={siteConfig.links.twitter}>
-            <TwitterIcon className="text-default-500" />
-          </Link>
-          <Link isExternal aria-label="Discord" href={siteConfig.links.discord}>
-            <DiscordIcon className="text-default-500" />
-          </Link>
-          <Link isExternal aria-label="Github" href={siteConfig.links.github}>
-            <GithubIcon className="text-default-500" />
-          </Link>
-          <ThemeSwitch />
-        </NavbarItem>
-        <NavbarItem className="hidden lg:flex">{searchInput}</NavbarItem>
-        <NavbarItem className="hidden md:flex">
-          <Button
-            isExternal
-            as={Link}
-            className="text-sm font-normal text-default-600 bg-default-100"
-            href={siteConfig.links.sponsor}
-            startContent={<HeartFilledIcon className="text-danger" />}
-            variant="flat"
-          >
-            Sponsor
-          </Button>
-        </NavbarItem>
-        <NavbarItem>
+      <NavbarContent
+        className="hidden items-center gap-2 lg:flex"
+        justify="center"
+      >
+        {siteConfig.navItems.map((item) =>
+          renderNavLink(item.label, item.href),
+        )}
+      </NavbarContent>
+
+      <NavbarContent
+        className="hidden items-center gap-3 sm:flex"
+        justify="end"
+      >
+        <Chip
+          className="hidden text-xs uppercase tracking-wide text-primary-200 xl:flex"
+          color="primary"
+          variant="flat"
+        >
+          Novas automações 2025.3
+        </Chip>
+        <ThemeSwitch />
+        <Button
+          as={NextLink}
+          className="border-white/20 text-sm text-white hover:border-primary/60 hover:text-primary"
+          href="/about"
+          radius="full"
+          variant="bordered"
+        >
+          Falar com vendas
+        </Button>
+        <div className="hidden sm:flex">
           <SignInOut />
-        </NavbarItem>
+        </div>
+        <NavbarMenuToggle aria-label="Abrir menu" className="lg:hidden" />
       </NavbarContent>
 
-      <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
+      <NavbarContent
+        className="flex items-center gap-2 sm:hidden"
+        justify="end"
+      >
         <Link isExternal aria-label="Github" href={siteConfig.links.github}>
           <GithubIcon className="text-default-500" />
         </Link>
         <ThemeSwitch />
-        <NavbarMenuToggle />
+        <NavbarMenuToggle aria-label="Abrir menu" />
       </NavbarContent>
 
-      <NavbarMenu>
-        {searchInput}
-        <div className="mx-4 mt-2 flex flex-col gap-2">
-          {siteConfig.navMenuItems.map((item, index) => (
-            <NavbarMenuItem key={`${item}-${index}`}>
-              <Link color={index === 2 ? "primary" : index === siteConfig.navMenuItems.length - 1 ? "danger" : "foreground"} href="#" size="lg">
+      <NavbarMenu className="backdrop-blur-xl">
+        <div className="mx-2 mt-4 flex flex-col gap-4">
+          {siteConfig.navItems.map((item) => (
+            <NavbarMenuItem key={item.href}>
+              <NextLink
+                className="text-base font-medium text-default-500"
+                href={item.href}
+              >
                 {item.label}
-              </Link>
+              </NextLink>
             </NavbarMenuItem>
           ))}
+        </div>
+        <div className="mx-2 mt-6 flex flex-col gap-3 border-t border-white/10 pt-4">
+          {siteConfig.navMenuItems.map((item) => (
+            <NavbarMenuItem key={item.href}>
+              <NextLink className="text-sm text-default-500" href={item.href}>
+                {item.label}
+              </NextLink>
+            </NavbarMenuItem>
+          ))}
+          <NavbarMenuItem className="pt-2">
+            <SignInOut />
+          </NavbarMenuItem>
+          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-background/70 px-4 py-3">
+            <div className="flex flex-col text-xs text-default-400">
+              <span>Precisa ver uma demonstração?</span>
+              <span className="font-semibold text-white">
+                Fale com nossa equipe
+              </span>
+            </div>
+            <Button
+              as={NextLink}
+              color="primary"
+              href="/about"
+              radius="full"
+              size="sm"
+            >
+              Agendar demo
+            </Button>
+          </div>
         </div>
       </NavbarMenu>
     </HeroUINavbar>

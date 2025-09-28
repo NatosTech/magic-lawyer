@@ -14,7 +14,10 @@ export type AdvogadoHabilitado = {
  * - Considera apenas procurações: ativa = true, (revogadaEm IS NULL) e (validaAte IS NULL OR validaAte >= now())
  * - Scopa por tenantId sempre.
  */
-export async function getAdvogadosHabilitadosDoProcesso(processoId: string, tenantId: string): Promise<AdvogadoHabilitado[]> {
+export async function getAdvogadosHabilitadosDoProcesso(
+  processoId: string,
+  tenantId: string,
+): Promise<AdvogadoHabilitado[]> {
   const agora = new Date();
 
   // Busca procurações válidas vinculadas ao processo
@@ -59,15 +62,20 @@ export async function getAdvogadosHabilitadosDoProcesso(processoId: string, tena
   });
 
   const lista: AdvogadoHabilitado[] = [];
+
   for (const v of vinculacoes) {
     for (const oa of v.procuracao.outorgados) {
       const a = oa.advogado;
+
       lista.push({
         id: a.id,
         usuarioId: a.usuarioId,
         oabNumero: a.oabNumero ?? null,
         oabUf: a.oabUf ?? null,
-        nome: a.usuario?.firstName || a.usuario?.lastName ? `${a.usuario?.firstName ?? ""} ${a.usuario?.lastName ?? ""}`.trim() : null,
+        nome:
+          a.usuario?.firstName || a.usuario?.lastName
+            ? `${a.usuario?.firstName ?? ""} ${a.usuario?.lastName ?? ""}`.trim()
+            : null,
         email: a.usuario?.email ?? null,
       });
     }
@@ -78,15 +86,21 @@ export async function getAdvogadosHabilitadosDoProcesso(processoId: string, tena
   const dedup = lista.filter((x) => {
     if (seen.has(x.id)) return false;
     seen.add(x.id);
+
     return true;
   });
+
   return dedup;
 }
 
 /**
  * Verifica se um advogado específico está habilitado em um processo via procuração válida.
  */
-export async function advogadoTemHabilitacaoNoProcesso(processoId: string, advogadoId: string, tenantId: string): Promise<boolean> {
+export async function advogadoTemHabilitacaoNoProcesso(
+  processoId: string,
+  advogadoId: string,
+  tenantId: string,
+): Promise<boolean> {
   const agora = new Date();
   const prismaAny = prisma as any;
   const count = await prismaAny.procuracaoProcesso.count({
@@ -107,5 +121,6 @@ export async function advogadoTemHabilitacaoNoProcesso(processoId: string, advog
       },
     },
   });
+
   return count > 0;
 }

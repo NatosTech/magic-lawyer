@@ -1,24 +1,40 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@heroui/button";
-import { getSession } from "@/app/lib/auth";
+import { signOut, useSession } from "next-auth/react";
 
-export async function SignInOut() {
-  const session = await getSession();
+export function SignInOut() {
+  const { data: session, status } = useSession();
+
+  if (status === "loading") {
+    return (
+      <Button isLoading size="sm" variant="light">
+        Carregando
+      </Button>
+    );
+  }
+
   if (!session?.user) {
     return (
-      <Button as={Link} href="/login" color="primary" variant="flat">
+      <Button as={Link} color="primary" href="/login" variant="flat">
         Entrar
       </Button>
     );
   }
+
+  const displayName = session.user.name || session.user.email;
+
+  const handleSignOut = () => {
+    void signOut({ callbackUrl: "/login" });
+  };
+
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm">{session.user.name || session.user.email}</span>
-      <form action="/api/auth/signout" method="post">
-        <Button type="submit" variant="ghost" size="sm">
-          Sair
-        </Button>
-      </form>
+      <span className="text-sm text-default-500">{displayName}</span>
+      <Button size="sm" variant="ghost" onPress={handleSignOut}>
+        Sair
+      </Button>
     </div>
   );
 }

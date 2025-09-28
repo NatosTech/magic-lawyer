@@ -2,60 +2,49 @@ export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "Magic Lawyer",
-  description: "Sistema para advogados - Controle seu escritório com facilidade.",
+  description:
+    "Sistema para advogados - Controle seu escritório com facilidade.",
   navItems: [
     {
-      label: "Página Inicial",
+      label: "Início",
       href: "/",
     },
     {
-      label: "Documentação",
+      label: "Recursos",
       href: "/docs",
     },
     {
-      label: "Nossos Preços",
-      href: "/pricing",
+      label: "Planos",
+      href: "/precos",
     },
     {
       label: "Blog",
       href: "/blog",
     },
     {
-      label: "Sobre Nós",
+      label: "Contato",
       href: "/about",
     },
   ],
   navMenuItems: [
     {
-      label: "Perfil",
-      href: "/profile",
+      label: "Entrar",
+      href: "/login",
     },
     {
-      label: "Dashboard",
-      href: "/dashboard",
+      label: "Portal do Cliente",
+      href: "/login?view=cliente",
     },
     {
-      label: "Projetos",
-      href: "/projects",
+      label: "Suporte",
+      href: "/help",
     },
     {
-      label: "Equipe",
-      href: "/team",
+      label: "Termos & Políticas",
+      href: "/docs",
     },
     {
-      label: "Calendário",
-      href: "/calendar",
-    },
-    {
-      label: "Configurações",
-      href: "/settings",
-    },
-    {
-      label: "Ajuda & Feedback",
-      href: "/help-feedback",
-    },
-    {
-      label: "Logout",
+      label: "Sair",
       href: "/logout",
     },
   ],
