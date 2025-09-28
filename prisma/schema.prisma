@@ -90,6 +90,25 @@ enum PaymentStatus {
   ESTORNADO
 }
 
+enum DocumentoOrigem {
+  CLIENTE
+  ESCRITORIO
+  SISTEMA
+}
+
+enum ProcuracaoEmitidaPor {
+  ESCRITORIO
+  ADVOGADO
+}
+
+enum ProcuracaoStatus {
+  RASCUNHO
+  PENDENTE_ASSINATURA
+  VIGENTE
+  REVOGADA
+  EXPIRADA
+}
+
 model AreaProcesso {
   id        String   @id @default(cuid())
   tenantId  String?
@@ -181,6 +200,10 @@ model Tenant {
   pagamentos     Pagamento[]
   auditLogs      AuditLog[]
   advogadoClientes AdvogadoCliente[]
+  processoDocumentos ProcessoDocumento[]
+  procuracoes    Procuracao[]
+  procuracaoProcessos ProcuracaoProcesso[]
+  procuracaoAdvogados ProcuracaoAdvogado[]
 
   @@index([status])
 }
@@ -226,6 +249,9 @@ model Usuario {
   auditLogs           AuditLog[]
   contratosResponsavel Contrato[]           @relation("ContratoResponsavel")
   contratosCriados    Contrato[]            @relation("ContratoCriador")
+  processoDocumentosCriados ProcessoDocumento[] @relation("ProcessoDocumentoCriador")
+  cliente             Cliente?               @relation("UsuarioCliente")
+  procuracoesCriadas  Procuracao[]          @relation("ProcuracaoCriador")
 
   @@unique([email, tenantId])
   @@index([role])
@@ -248,6 +274,7 @@ model Advogado {
   clientes       AdvogadoCliente[]
   processos      Processo[]            @relation("ProcessoAdvogadoResponsavel")
   contratos      Contrato[]            @relation("ContratoAdvogado")
+  procuracoes    ProcuracaoAdvogado[]
 }
 
 model Cliente {
@@ -267,6 +294,7 @@ model Cliente {
   responsavelTelefone String?
   endereco           Json?
   observacoes        String?
+  usuarioId          String?            @unique
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   processos          Processo[]
@@ -274,6 +302,8 @@ model Cliente {
   documentos         Documento[]        @relation("DocumentoCliente")
   advogadoClientes   AdvogadoCliente[]
   tarefas            Tarefa[]           @relation("TarefaCliente")
+  usuario            Usuario?           @relation("UsuarioCliente", fields: [usuarioId], references: [id], onDelete: SetNull)
+  procuracoes        Procuracao[]
 
   @@index([nome])
   @@index([documento])
@@ -367,12 +397,77 @@ model Processo {
   movimentacoes   MovimentacaoProcesso[]
   tarefas         Tarefa[]
   documentos      Documento[]            @relation("DocumentoProcesso")
+  documentosVinculados ProcessoDocumento[]
   contratos       Contrato[]
+  procuracoesVinculadas ProcuracaoProcesso[]
 
   @@unique([tenantId, numero])
   @@index([status])
   @@index([clienteId])
   @@index([areaId])
+}
+
+// Procuração é emitida pelo Escritório ou por um Advogado e é assinada pelo Cliente.
+// Uma Procuração pode habilitar 1..N Advogados a atuarem em 1..N Processos.
+// O acesso do advogado aos autos do processo é derivado do vínculo via Procuração.
+model Procuracao {
+  id           String   @id @default(cuid())
+  tenantId     String
+  clienteId    String
+  numero       String?
+  arquivoUrl   String?
+  observacoes  String?
+  emitidaEm    DateTime?
+  validaAte    DateTime?
+  revogadaEm   DateTime?
+  ativa        Boolean  @default(true) // LEGADO: prefira usar 'status'
+  status       ProcuracaoStatus @default(RASCUNHO)
+  assinadaPeloClienteEm DateTime?
+  emitidaPor   ProcuracaoEmitidaPor @default(ESCRITORIO)
+  createdById  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cliente      Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  createdBy    Usuario? @relation("ProcuracaoCriador", fields: [createdById], references: [id], onDelete: SetNull)
+  outorgados   ProcuracaoAdvogado[]
+  processos    ProcuracaoProcesso[]
+
+  @@index([tenantId, clienteId])
+  @@index([tenantId, ativa])
+}
+
+model ProcuracaoProcesso {
+  id            String     @id @default(cuid())
+  tenantId      String
+  procuracaoId  String
+  processoId    String
+  createdAt     DateTime   @default(now())
+
+  tenant        Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  procuracao    Procuracao @relation(fields: [procuracaoId], references: [id], onDelete: Cascade)
+  processo      Processo   @relation(fields: [processoId], references: [id], onDelete: Cascade)
+
+  @@unique([procuracaoId, processoId])
+  @@index([tenantId, processoId])
+  @@index([tenantId, procuracaoId])
+}
+
+model ProcuracaoAdvogado {
+  id            String     @id @default(cuid())
+  tenantId      String
+  procuracaoId  String
+  advogadoId    String
+  createdAt     DateTime   @default(now())
+
+  tenant        Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  procuracao    Procuracao @relation(fields: [procuracaoId], references: [id], onDelete: Cascade)
+  advogado      Advogado   @relation(fields: [advogadoId], references: [id], onDelete: Cascade)
+
+  @@unique([procuracaoId, advogadoId])
+  @@index([tenantId, advogadoId])
+  @@index([tenantId, procuracaoId])
 }
 
 model MovimentacaoProcesso {
@@ -406,12 +501,16 @@ model Documento {
   url            String
   tamanhoBytes   Int?
   contentType    String?
+  // LEGADO: vínculo direto 1:N com processo. Mantido por compatibilidade, prefira a tabela pivot ProcessoDocumento
   processoId     String?
   clienteId      String?
   contratoId     String?
   movimentacaoId String?
   uploadedById   String?
   metadados      Json?
+  origem         DocumentoOrigem        @default(ESCRITORIO)
+  visivelParaCliente Boolean            @default(false)
+  visivelParaEquipe  Boolean            @default(true)
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
 
@@ -421,9 +520,31 @@ model Documento {
   contrato     Contrato?             @relation("ContratoDocumentos", fields: [contratoId], references: [id], onDelete: SetNull)
   movimentacao MovimentacaoProcesso? @relation("MovimentacaoDocumentos", fields: [movimentacaoId], references: [id], onDelete: SetNull)
   uploadedBy   Usuario?              @relation("DocumentoUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  processosVinculados ProcessoDocumento[]
 
   @@index([processoId])
   @@index([clienteId])
+  @@index([tenantId, createdAt])
+}
+
+model ProcessoDocumento {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  processoId   String
+  documentoId  String
+  tag          String?
+  nota         String?
+  createdById  String?
+  visivelParaCliente Boolean?
+  createdAt    DateTime @default(now())
+
+  processo     Processo @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  documento    Documento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  createdBy    Usuario? @relation("ProcessoDocumentoCriador", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([processoId, documentoId])
+  @@index([tenantId, processoId])
 }
 
 model Contrato {

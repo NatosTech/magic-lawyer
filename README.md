@@ -187,3 +187,18 @@ Após configurar `.env`, suba o app:
 ```
 npm run dev
 ```
+
+## Documentos pessoais e por processo
+
+O sistema permite que um cliente tenha documentos pessoais (ex: RG, CPF, comprovantes gerais) acessíveis em todos os seus processos e, ao mesmo tempo, que um mesmo documento seja vinculado a múltiplos processos específicos.
+
+- Documentos pessoais: `Documento` com `clienteId` (sem processo). Ficam visíveis em todos os processos do cliente.
+- Documentos por processo (legado): `Documento.processoId`.
+- Documentos em múltiplos processos (novo): pivot `ProcessoDocumento` que relaciona `documentoId` e `processoId` (M:N), com `tenantId` e metadados opcionais (`tag`, `nota`).
+
+Consulta unificada:
+- Use o helper `getDocumentosDoProcesso(processoId)` em `app/lib/documents.ts` para obter: documentos diretos do processo (legado e M:N) + documentos pessoais do cliente, sem duplicação.
+
+Modelos principais:
+- `Documento`: metadados do arquivo e relacionamentos com cliente/processo/movimentação/contrato.
+- `ProcessoDocumento`: nova tabela pivot para vincular um documento a vários processos.
