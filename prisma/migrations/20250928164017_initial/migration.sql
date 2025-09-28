@@ -1,9 +1,3 @@
-/*
-  Warnings:
-
-  - You are about to drop the `User` table. If the table is not empty, all the data it contains will be lost.
-
-*/
 -- CreateEnum
 CREATE TYPE "public"."UserRole" AS ENUM ('SUPER_ADMIN', 'ADMIN', 'ADVOGADO', 'SECRETARIA', 'FINANCEIRO', 'CLIENTE');
 
@@ -37,8 +31,14 @@ CREATE TYPE "public"."InvoiceStatus" AS ENUM ('RASCUNHO', 'ABERTA', 'PAGA', 'VEN
 -- CreateEnum
 CREATE TYPE "public"."PaymentStatus" AS ENUM ('PENDENTE', 'PROCESSANDO', 'PAGO', 'FALHOU', 'ESTORNADO');
 
--- DropTable
-DROP TABLE "public"."User";
+-- CreateEnum
+CREATE TYPE "public"."DocumentoOrigem" AS ENUM ('CLIENTE', 'ESCRITORIO', 'SISTEMA');
+
+-- CreateEnum
+CREATE TYPE "public"."ProcuracaoEmitidaPor" AS ENUM ('ESCRITORIO', 'ADVOGADO');
+
+-- CreateEnum
+CREATE TYPE "public"."ProcuracaoStatus" AS ENUM ('RASCUNHO', 'PENDENTE_ASSINATURA', 'VIGENTE', 'REVOGADA', 'EXPIRADA');
 
 -- CreateTable
 CREATE TABLE "public"."AreaProcesso" (
@@ -173,6 +173,7 @@ CREATE TABLE "public"."Cliente" (
     "responsavelTelefone" TEXT,
     "endereco" JSONB,
     "observacoes" TEXT,
+    "usuarioId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -253,6 +254,50 @@ CREATE TABLE "public"."Processo" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."Procuracao" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "clienteId" TEXT NOT NULL,
+    "numero" TEXT,
+    "arquivoUrl" TEXT,
+    "observacoes" TEXT,
+    "emitidaEm" TIMESTAMP(3),
+    "validaAte" TIMESTAMP(3),
+    "revogadaEm" TIMESTAMP(3),
+    "ativa" BOOLEAN NOT NULL DEFAULT true,
+    "status" "public"."ProcuracaoStatus" NOT NULL DEFAULT 'RASCUNHO',
+    "assinadaPeloClienteEm" TIMESTAMP(3),
+    "emitidaPor" "public"."ProcuracaoEmitidaPor" NOT NULL DEFAULT 'ESCRITORIO',
+    "createdById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Procuracao_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."ProcuracaoProcesso" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "procuracaoId" TEXT NOT NULL,
+    "processoId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ProcuracaoProcesso_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."ProcuracaoAdvogado" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "procuracaoId" TEXT NOT NULL,
+    "advogadoId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ProcuracaoAdvogado_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."MovimentacaoProcesso" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -285,10 +330,28 @@ CREATE TABLE "public"."Documento" (
     "movimentacaoId" TEXT,
     "uploadedById" TEXT,
     "metadados" JSONB,
+    "origem" "public"."DocumentoOrigem" NOT NULL DEFAULT 'ESCRITORIO',
+    "visivelParaCliente" BOOLEAN NOT NULL DEFAULT false,
+    "visivelParaEquipe" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Documento_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."ProcessoDocumento" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "processoId" TEXT NOT NULL,
+    "documentoId" TEXT NOT NULL,
+    "tag" TEXT,
+    "nota" TEXT,
+    "createdById" TEXT,
+    "visivelParaCliente" BOOLEAN,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ProcessoDocumento_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -515,6 +578,9 @@ CREATE UNIQUE INDEX "Usuario_email_tenantId_key" ON "public"."Usuario"("email", 
 CREATE UNIQUE INDEX "Advogado_usuarioId_key" ON "public"."Advogado"("usuarioId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Cliente_usuarioId_key" ON "public"."Cliente"("usuarioId");
+
+-- CreateIndex
 CREATE INDEX "Cliente_nome_idx" ON "public"."Cliente"("nome");
 
 -- CreateIndex
@@ -545,6 +611,30 @@ CREATE INDEX "Processo_areaId_idx" ON "public"."Processo"("areaId");
 CREATE UNIQUE INDEX "Processo_tenantId_numero_key" ON "public"."Processo"("tenantId", "numero");
 
 -- CreateIndex
+CREATE INDEX "Procuracao_tenantId_clienteId_idx" ON "public"."Procuracao"("tenantId", "clienteId");
+
+-- CreateIndex
+CREATE INDEX "Procuracao_tenantId_ativa_idx" ON "public"."Procuracao"("tenantId", "ativa");
+
+-- CreateIndex
+CREATE INDEX "ProcuracaoProcesso_tenantId_processoId_idx" ON "public"."ProcuracaoProcesso"("tenantId", "processoId");
+
+-- CreateIndex
+CREATE INDEX "ProcuracaoProcesso_tenantId_procuracaoId_idx" ON "public"."ProcuracaoProcesso"("tenantId", "procuracaoId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProcuracaoProcesso_procuracaoId_processoId_key" ON "public"."ProcuracaoProcesso"("procuracaoId", "processoId");
+
+-- CreateIndex
+CREATE INDEX "ProcuracaoAdvogado_tenantId_advogadoId_idx" ON "public"."ProcuracaoAdvogado"("tenantId", "advogadoId");
+
+-- CreateIndex
+CREATE INDEX "ProcuracaoAdvogado_tenantId_procuracaoId_idx" ON "public"."ProcuracaoAdvogado"("tenantId", "procuracaoId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProcuracaoAdvogado_procuracaoId_advogadoId_key" ON "public"."ProcuracaoAdvogado"("procuracaoId", "advogadoId");
+
+-- CreateIndex
 CREATE INDEX "MovimentacaoProcesso_processoId_idx" ON "public"."MovimentacaoProcesso"("processoId");
 
 -- CreateIndex
@@ -555,6 +645,15 @@ CREATE INDEX "Documento_processoId_idx" ON "public"."Documento"("processoId");
 
 -- CreateIndex
 CREATE INDEX "Documento_clienteId_idx" ON "public"."Documento"("clienteId");
+
+-- CreateIndex
+CREATE INDEX "Documento_tenantId_createdAt_idx" ON "public"."Documento"("tenantId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "ProcessoDocumento_tenantId_processoId_idx" ON "public"."ProcessoDocumento"("tenantId", "processoId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProcessoDocumento_processoId_documentoId_key" ON "public"."ProcessoDocumento"("processoId", "documentoId");
 
 -- CreateIndex
 CREATE INDEX "Contrato_clienteId_idx" ON "public"."Contrato"("clienteId");
@@ -620,6 +719,9 @@ ALTER TABLE "public"."Advogado" ADD CONSTRAINT "Advogado_usuarioId_fkey" FOREIGN
 ALTER TABLE "public"."Cliente" ADD CONSTRAINT "Cliente_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."Cliente" ADD CONSTRAINT "Cliente_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "public"."Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."AdvogadoCliente" ADD CONSTRAINT "AdvogadoCliente_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -656,6 +758,33 @@ ALTER TABLE "public"."Processo" ADD CONSTRAINT "Processo_tribunalId_fkey" FOREIG
 ALTER TABLE "public"."Processo" ADD CONSTRAINT "Processo_areaId_fkey" FOREIGN KEY ("areaId") REFERENCES "public"."AreaProcesso"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."Procuracao" ADD CONSTRAINT "Procuracao_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Procuracao" ADD CONSTRAINT "Procuracao_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "public"."Cliente"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Procuracao" ADD CONSTRAINT "Procuracao_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "public"."Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ProcuracaoProcesso" ADD CONSTRAINT "ProcuracaoProcesso_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ProcuracaoProcesso" ADD CONSTRAINT "ProcuracaoProcesso_procuracaoId_fkey" FOREIGN KEY ("procuracaoId") REFERENCES "public"."Procuracao"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ProcuracaoProcesso" ADD CONSTRAINT "ProcuracaoProcesso_processoId_fkey" FOREIGN KEY ("processoId") REFERENCES "public"."Processo"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ProcuracaoAdvogado" ADD CONSTRAINT "ProcuracaoAdvogado_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ProcuracaoAdvogado" ADD CONSTRAINT "ProcuracaoAdvogado_procuracaoId_fkey" FOREIGN KEY ("procuracaoId") REFERENCES "public"."Procuracao"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ProcuracaoAdvogado" ADD CONSTRAINT "ProcuracaoAdvogado_advogadoId_fkey" FOREIGN KEY ("advogadoId") REFERENCES "public"."Advogado"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."MovimentacaoProcesso" ADD CONSTRAINT "MovimentacaoProcesso_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -681,6 +810,18 @@ ALTER TABLE "public"."Documento" ADD CONSTRAINT "Documento_movimentacaoId_fkey" 
 
 -- AddForeignKey
 ALTER TABLE "public"."Documento" ADD CONSTRAINT "Documento_uploadedById_fkey" FOREIGN KEY ("uploadedById") REFERENCES "public"."Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ProcessoDocumento" ADD CONSTRAINT "ProcessoDocumento_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ProcessoDocumento" ADD CONSTRAINT "ProcessoDocumento_processoId_fkey" FOREIGN KEY ("processoId") REFERENCES "public"."Processo"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ProcessoDocumento" ADD CONSTRAINT "ProcessoDocumento_documentoId_fkey" FOREIGN KEY ("documentoId") REFERENCES "public"."Documento"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ProcessoDocumento" ADD CONSTRAINT "ProcessoDocumento_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "public"."Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Contrato" ADD CONSTRAINT "Contrato_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;

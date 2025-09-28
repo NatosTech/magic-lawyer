@@ -45,6 +45,25 @@ Estratégia de Crescimento
 	•	nunca criar lógicas fixas por cliente,
 	•	manter integração flexível com provedores de e-mail, storage e pagamentos.
 
+## Prisma & Banco de Dados
+
+- Toda a configuração do Prisma agora vive em `prisma.config.ts`. Esse arquivo aponta para `./prisma/schema.prisma` e registra o comando de seed, eliminando a necessidade do bloco `prisma` no `package.json`.
+- A entidade `Tenant` ganhou uma relação `TenantEndereco`, permitindo cadastrar múltiplas sedes/filiais com tipagem (`TipoEndereco`) em vez de um JSON genérico.
+- As seeds criam automaticamente a banca "Sandra Advocacia" com três endereços (São Paulo, Rio e Recife), três advogados (Sandra, Ricardo e Fernanda) e três clientes (Marcos, Ana e Inova Tech) distribuídos em processos e procurações diferentes.
+- Para sincronizar o schema com o banco local utilize:
+
+```bash
+npx prisma migrate dev
+```
+
+- Após aplicar migrações, popular os dados de exemplo (incluindo o tenant "Sandra Advocacia") com:
+
+```bash
+npx prisma db seed
+```
+
+- Como o `prisma.config.ts` controla o carregamento, garanta que as variáveis de ambiente (`DATABASE_URL`, etc.) estejam ativas no shell antes de executar os comandos (ex.: `export $(grep -v "^#" .env | xargs)` em bash/zsh).
+
 ## Containerização com Docker
 
 Este projeto suporta build e execução via Docker e Docker Compose.
