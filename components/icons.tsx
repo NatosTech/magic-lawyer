@@ -201,3 +201,25 @@ export const SearchIcon = (props: IconSvgProps) => (
     />
   </svg>
 );
+
+export const BellIcon = ({
+  size = 24,
+  width,
+  height,
+  ...props
+}: IconSvgProps) => (
+  <svg
+    aria-hidden="true"
+    focusable="false"
+    height={size || height}
+    role="presentation"
+    viewBox="0 0 24 24"
+    width={size || width}
+    {...props}
+  >
+    <path
+      d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2ZM18 16v-4.5A6 6 0 0 0 7.67 7.11 1.93 1.93 0 0 1 8 6a2 2 0 0 1 4 0v.09a6 6 0 0 1 5 5.91V16l1.3 1.3a.86.86 0 0 1-.61 1.47H6.31a.86.86 0 0 1-.61-1.47Z"
+      fill="currentColor"
+    />
+  </svg>
+);

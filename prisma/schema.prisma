@@ -73,6 +73,37 @@ enum TarefaPrioridade {
   CRITICA
 }
 
+enum NotificacaoTipo {
+  SISTEMA
+  PRAZO
+  DOCUMENTO
+  MENSAGEM
+  FINANCEIRO
+  OUTRO
+}
+
+enum NotificacaoPrioridade {
+  BAIXA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+enum NotificacaoStatus {
+  NAO_LIDA
+  LIDA
+  ARQUIVADA
+}
+
+enum NotificacaoCanal {
+  IN_APP
+  EMAIL
+  SMS
+  WHATSAPP
+  TELEGRAM
+  PUSH
+}
+
 enum SubscriptionStatus {
   TRIAL
   ATIVA
@@ -219,6 +250,8 @@ model Tenant {
   procuracaoProcessos ProcuracaoProcesso[]
   procuracaoAdvogados ProcuracaoAdvogado[]
   enderecos           TenantEndereco[]
+  notificacoes        Notificacao[]
+  notificacoesUsuarios NotificacaoUsuario[]
 
   @@index([status])
   @@unique([documento])
@@ -292,6 +325,8 @@ model Usuario {
   processoDocumentosCriados ProcessoDocumento[]    @relation("ProcessoDocumentoCriador")
   cliente                   Cliente?               @relation("UsuarioCliente")
   procuracoesCriadas        Procuracao[]           @relation("ProcuracaoCriador")
+  notificacoesCriadas       Notificacao[]          @relation("NotificacaoCriador")
+  notificacoesRecebidas     NotificacaoUsuario[]
 
   @@unique([email, tenantId])
   @@index([role])
@@ -399,6 +434,54 @@ model Tribunal {
   juizes    Juiz[]
 
   @@unique([nome, uf])
+}
+
+model Notificacao {
+  id              String                 @id @default(cuid())
+  tenantId        String
+  titulo          String
+  mensagem        String
+  tipo            NotificacaoTipo        @default(SISTEMA)
+  prioridade      NotificacaoPrioridade  @default(MEDIA)
+  canais          NotificacaoCanal[]     @default([IN_APP])
+  dados           Json?
+  referenciaTipo  String?
+  referenciaId    String?
+  agendarPara     DateTime?
+  expiracaoEm     DateTime?
+  createdAt       DateTime               @default(now())
+  createdById     String?
+  updatedAt       DateTime               @updatedAt
+
+  tenant          Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy       Usuario?               @relation("NotificacaoCriador", fields: [createdById], references: [id], onDelete: SetNull)
+  destinos        NotificacaoUsuario[]
+
+  @@index([tenantId, tipo])
+  @@index([tenantId, prioridade])
+  @@index([tenantId, agendarPara])
+}
+
+model NotificacaoUsuario {
+  id             String             @id @default(cuid())
+  notificacaoId  String
+  tenantId       String
+  usuarioId      String
+  canal          NotificacaoCanal   @default(IN_APP)
+  status         NotificacaoStatus  @default(NAO_LIDA)
+  entregueEm     DateTime?
+  lidoEm         DateTime?
+  reabertoEm     DateTime?
+  metadata       Json?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  notificacao    Notificacao        @relation(fields: [notificacaoId], references: [id], onDelete: Cascade)
+  tenant         Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario        Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([notificacaoId, usuarioId, canal])
+  @@index([tenantId, usuarioId, status])
 }
 
 model Processo {
