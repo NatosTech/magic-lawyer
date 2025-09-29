@@ -26,6 +26,21 @@ CREATE TYPE "public"."TarefaStatus" AS ENUM ('PENDENTE', 'EM_ANDAMENTO', 'CONCLU
 CREATE TYPE "public"."TarefaPrioridade" AS ENUM ('BAIXA', 'MEDIA', 'ALTA', 'CRITICA');
 
 -- CreateEnum
+CREATE TYPE "public"."NotificacaoTipo" AS ENUM ('SISTEMA', 'PRAZO', 'DOCUMENTO', 'MENSAGEM', 'FINANCEIRO', 'OUTRO');
+
+-- CreateEnum
+CREATE TYPE "public"."NotificacaoPrioridade" AS ENUM ('BAIXA', 'MEDIA', 'ALTA', 'CRITICA');
+
+-- CreateEnum
+CREATE TYPE "public"."NotificacaoStatus" AS ENUM ('NAO_LIDA', 'LIDA', 'ARQUIVADA');
+
+-- CreateEnum
+CREATE TYPE "public"."NotificacaoCanal" AS ENUM ('IN_APP', 'EMAIL', 'SMS', 'WHATSAPP', 'TELEGRAM', 'PUSH');
+
+-- CreateEnum
+CREATE TYPE "public"."TenantPermission" AS ENUM ('CONFIGURACOES_ESCRITORIO', 'EQUIPE_GERENCIAR', 'FINANCEIRO_GERENCIAR');
+
+-- CreateEnum
 CREATE TYPE "public"."SubscriptionStatus" AS ENUM ('TRIAL', 'ATIVA', 'INADIMPLENTE', 'CANCELADA');
 
 -- CreateEnum
@@ -253,6 +268,56 @@ CREATE TABLE "public"."Tribunal" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Tribunal_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."Notificacao" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "titulo" TEXT NOT NULL,
+    "mensagem" TEXT NOT NULL,
+    "tipo" "public"."NotificacaoTipo" NOT NULL DEFAULT 'SISTEMA',
+    "prioridade" "public"."NotificacaoPrioridade" NOT NULL DEFAULT 'MEDIA',
+    "canais" "public"."NotificacaoCanal"[] DEFAULT ARRAY['IN_APP']::"public"."NotificacaoCanal"[],
+    "dados" JSONB,
+    "referenciaTipo" TEXT,
+    "referenciaId" TEXT,
+    "agendarPara" TIMESTAMP(3),
+    "expiracaoEm" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdById" TEXT,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Notificacao_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."NotificacaoUsuario" (
+    "id" TEXT NOT NULL,
+    "notificacaoId" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "usuarioId" TEXT NOT NULL,
+    "canal" "public"."NotificacaoCanal" NOT NULL DEFAULT 'IN_APP',
+    "status" "public"."NotificacaoStatus" NOT NULL DEFAULT 'NAO_LIDA',
+    "entregueEm" TIMESTAMP(3),
+    "lidoEm" TIMESTAMP(3),
+    "reabertoEm" TIMESTAMP(3),
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "NotificacaoUsuario_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."UsuarioPermissao" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "usuarioId" TEXT NOT NULL,
+    "permissao" "public"."TenantPermission" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "UsuarioPermissao_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -641,6 +706,27 @@ CREATE INDEX "Juiz_nome_idx" ON "public"."Juiz"("nome");
 CREATE UNIQUE INDEX "Tribunal_nome_uf_key" ON "public"."Tribunal"("nome", "uf");
 
 -- CreateIndex
+CREATE INDEX "Notificacao_tenantId_tipo_idx" ON "public"."Notificacao"("tenantId", "tipo");
+
+-- CreateIndex
+CREATE INDEX "Notificacao_tenantId_prioridade_idx" ON "public"."Notificacao"("tenantId", "prioridade");
+
+-- CreateIndex
+CREATE INDEX "Notificacao_tenantId_agendarPara_idx" ON "public"."Notificacao"("tenantId", "agendarPara");
+
+-- CreateIndex
+CREATE INDEX "NotificacaoUsuario_tenantId_usuarioId_status_idx" ON "public"."NotificacaoUsuario"("tenantId", "usuarioId", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "NotificacaoUsuario_notificacaoId_usuarioId_canal_key" ON "public"."NotificacaoUsuario"("notificacaoId", "usuarioId", "canal");
+
+-- CreateIndex
+CREATE INDEX "UsuarioPermissao_tenantId_permissao_idx" ON "public"."UsuarioPermissao"("tenantId", "permissao");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UsuarioPermissao_tenantId_usuarioId_permissao_key" ON "public"."UsuarioPermissao"("tenantId", "usuarioId", "permissao");
+
+-- CreateIndex
 CREATE INDEX "Processo_status_idx" ON "public"."Processo"("status");
 
 -- CreateIndex
@@ -783,6 +869,27 @@ ALTER TABLE "public"."Juiz" ADD CONSTRAINT "Juiz_tribunalId_fkey" FOREIGN KEY ("
 
 -- AddForeignKey
 ALTER TABLE "public"."Tribunal" ADD CONSTRAINT "Tribunal_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Notificacao" ADD CONSTRAINT "Notificacao_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Notificacao" ADD CONSTRAINT "Notificacao_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "public"."Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."NotificacaoUsuario" ADD CONSTRAINT "NotificacaoUsuario_notificacaoId_fkey" FOREIGN KEY ("notificacaoId") REFERENCES "public"."Notificacao"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."NotificacaoUsuario" ADD CONSTRAINT "NotificacaoUsuario_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."NotificacaoUsuario" ADD CONSTRAINT "NotificacaoUsuario_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "public"."Usuario"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."UsuarioPermissao" ADD CONSTRAINT "UsuarioPermissao_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."UsuarioPermissao" ADD CONSTRAINT "UsuarioPermissao_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "public"."Usuario"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Processo" ADD CONSTRAINT "Processo_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;

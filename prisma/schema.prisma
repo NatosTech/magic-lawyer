@@ -104,6 +104,12 @@ enum NotificacaoCanal {
   PUSH
 }
 
+enum TenantPermission {
+  CONFIGURACOES_ESCRITORIO
+  EQUIPE_GERENCIAR
+  FINANCEIRO_GERENCIAR
+}
+
 enum SubscriptionStatus {
   TRIAL
   ATIVA
@@ -252,6 +258,7 @@ model Tenant {
   enderecos           TenantEndereco[]
   notificacoes        Notificacao[]
   notificacoesUsuarios NotificacaoUsuario[]
+  usuarioPermissoes   UsuarioPermissao[]
 
   @@index([status])
   @@unique([documento])
@@ -327,6 +334,7 @@ model Usuario {
   procuracoesCriadas        Procuracao[]           @relation("ProcuracaoCriador")
   notificacoesCriadas       Notificacao[]          @relation("NotificacaoCriador")
   notificacoesRecebidas     NotificacaoUsuario[]
+  permissoes                UsuarioPermissao[]
 
   @@unique([email, tenantId])
   @@index([role])
@@ -482,6 +490,20 @@ model NotificacaoUsuario {
 
   @@unique([notificacaoId, usuarioId, canal])
   @@index([tenantId, usuarioId, status])
+}
+
+model UsuarioPermissao {
+  id        String            @id @default(cuid())
+  tenantId  String
+  usuarioId String
+  permissao TenantPermission
+  createdAt DateTime          @default(now())
+
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario   Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, usuarioId, permissao])
+  @@index([tenantId, permissao])
 }
 
 model Processo {

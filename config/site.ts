@@ -1,9 +1,10 @@
+import { TENANT_PERMISSIONS } from "@/types";
+
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "Magic Lawyer",
-  description:
-    "Sistema para advogados - Controle seu escritório com facilidade.",
+  description: "Sistema para advogados - Controle seu escritório com facilidade.",
   navItemsPublic: [
     { label: "Início", href: "/" },
     { label: "Recursos", href: "/docs" },
@@ -26,8 +27,16 @@ export const siteConfig = {
   ],
   navMenuItemsAuthenticated: [
     { label: "Meu Perfil", href: "/usuario/perfil/editar" },
-    { label: "Equipe & Permissões", href: "/equipe" },
-    { label: "Configurações do Escritório", href: "/configuracoes" },
+    {
+      label: "Equipe & Permissões",
+      href: "/equipe",
+      requiresPermission: TENANT_PERMISSIONS.manageTeam,
+    },
+    {
+      label: "Configurações do Escritório",
+      href: "/configuracoes",
+      requiresPermission: TENANT_PERMISSIONS.manageOfficeSettings,
+    },
     { label: "Suporte", href: "/help" },
   ],
   links: {

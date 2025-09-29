@@ -38,10 +38,7 @@ export const authOptions: NextAuthOptions = {
         };
 
         if (!credentials?.email || !credentials?.password) {
-          console.warn(
-            "[auth] Credenciais incompletas para login",
-            attemptContext,
-          );
+          console.warn("[auth] Credenciais incompletas para login", attemptContext);
 
           return null;
         }
@@ -75,61 +72,71 @@ export const authOptions: NextAuthOptions = {
                   branding: true,
                 },
               },
-            },
+              permissoes: {
+                select: {
+                  permissao: true,
+                },
+              },
+            } as any,
           });
 
           if (!user || !user.passwordHash) {
-            console.warn(
-              "[auth] Usuário não encontrado ou sem senha cadastrada",
-              attemptContext,
-            );
+            console.warn("[auth] Usuário não encontrado ou sem senha cadastrada", attemptContext);
 
             return null;
           }
 
-          const valid = await bcrypt.compare(
-            credentials.password,
-            user.passwordHash,
-          );
+          const valid = await bcrypt.compare(credentials.password, user.passwordHash);
 
           if (!valid) {
-            console.warn(
-              "[auth] Senha inválida para o usuário",
-              attemptContext,
-            );
+            console.warn("[auth] Senha inválida para o usuário", attemptContext);
 
             return null;
           }
 
-          if (user.tenant?.status !== "ACTIVE") {
+          const tenantData = (user as any)?.tenant as
+            | (typeof user & {
+                branding?: { logoUrl?: string | null } | null;
+                status?: string;
+                slug?: string | null;
+                nomeFantasia?: string | null;
+                razaoSocial?: string | null;
+                name?: string | null;
+              })
+            | undefined;
+          const permissionsRaw = ((user as any)?.permissoes ?? []) as Array<{
+            permissao: string;
+          }>;
+
+          if (tenantData?.status !== "ACTIVE") {
             console.warn("[auth] Tenant com acesso bloqueado", {
               ...attemptContext,
-              tenantStatus: user.tenant?.status,
+              tenantStatus: tenantData?.status,
             });
 
             return null;
           }
 
-          const tenantName =
-            user.tenant?.nomeFantasia ??
-            user.tenant?.razaoSocial ??
-            user.tenant?.name ??
-            user.tenant?.slug ??
-            undefined;
+          const tenantName = tenantData?.nomeFantasia ?? tenantData?.razaoSocial ?? tenantData?.name ?? tenantData?.slug ?? undefined;
+
+          const permissions = permissionsRaw.map((permission) => permission.permissao);
 
           const resultUser = {
             id: user.id,
             email: user.email,
-            name:
-              [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-              undefined,
+            name: [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined,
             image: user.avatarUrl || undefined,
             tenantId: user.tenantId,
             role: user.role,
-            tenantSlug: user.tenant?.slug || undefined,
+            tenantSlug: tenantData?.slug || undefined,
             tenantName,
-            tenantLogoUrl: user.tenant?.branding?.logoUrl || undefined,
-          } as unknown as User & { tenantId: string; role: string };
+            tenantLogoUrl: tenantData?.branding?.logoUrl || undefined,
+            permissions,
+          } as unknown as User & {
+            tenantId: string;
+            role: string;
+            permissions: string[];
+          };
 
           console.info("[auth] Login autorizado", {
             ...attemptContext,
@@ -140,10 +147,7 @@ export const authOptions: NextAuthOptions = {
 
           return resultUser as any;
         } catch (error) {
-          const safeError =
-            error instanceof Error
-              ? { message: error.message, stack: error.stack }
-              : error;
+          const safeError = error instanceof Error ? { message: error.message, stack: error.stack } : error;
 
           console.error("[auth] Erro inesperado durante autenticação", {
             ...attemptContext,
@@ -179,32 +183,20 @@ export const authOptions: NextAuthOptions = {
         (token as any).tenantSlug = (user as any).tenantSlug;
         (token as any).tenantName = (user as any).tenantName;
         (token as any).tenantLogoUrl = (user as any).tenantLogoUrl;
+        (token as any).permissions = (user as any).permissions ?? [];
       }
 
       return token;
     },
-    async session({
-      session,
-      token,
-    }: {
-      session: Session;
-      token: JWT;
-    }): Promise<Session> {
+    async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
       if (session.user) {
         (session.user as any).id = (token as any).id as string | undefined;
-        (session.user as any).tenantId = (token as any).tenantId as
-          | string
-          | undefined;
+        (session.user as any).tenantId = (token as any).tenantId as string | undefined;
         (session.user as any).role = (token as any).role as string | undefined;
-        (session.user as any).tenantSlug = (token as any).tenantSlug as
-          | string
-          | undefined;
-        (session.user as any).tenantName = (token as any).tenantName as
-          | string
-          | undefined;
-        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as
-          | string
-          | undefined;
+        (session.user as any).tenantSlug = (token as any).tenantSlug as string | undefined;
+        (session.user as any).tenantName = (token as any).tenantName as string | undefined;
+        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as string | undefined;
+        (session.user as any).permissions = (token as any).permissions as string[] | undefined;
       }
 
       return session;

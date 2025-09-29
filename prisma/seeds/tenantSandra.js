@@ -21,6 +21,24 @@ async function ensureUsuario(prisma, tenantId, email, data) {
   });
 }
 
+async function ensurePermission(prisma, tenantId, usuarioId, permissao) {
+  return prisma.usuarioPermissao.upsert({
+    where: {
+      tenantId_usuarioId_permissao: {
+        tenantId,
+        usuarioId,
+        permissao,
+      },
+    },
+    update: {},
+    create: {
+      tenantId,
+      usuarioId,
+      permissao,
+    },
+  });
+}
+
 module.exports = async function seedTenantSandra(prisma, Prisma) {
   const [adminPasswordHash, clientePasswordHash, advogadoPasswordHash] = await Promise.all([bcrypt.hash("Sandra@123", 10), bcrypt.hash("Cliente@123", 10), bcrypt.hash("Advogado@123", 10)]);
 
@@ -152,6 +170,12 @@ module.exports = async function seedTenantSandra(prisma, Prisma) {
     role: "ADMIN",
     active: true,
   });
+
+  await Promise.all([
+    ensurePermission(prisma, tenant.id, adminUser.id, "CONFIGURACOES_ESCRITORIO"),
+    ensurePermission(prisma, tenant.id, adminUser.id, "EQUIPE_GERENCIAR"),
+    ensurePermission(prisma, tenant.id, adminUser.id, "FINANCEIRO_GERENCIAR"),
+  ]);
 
   const advogadoSandra = await prisma.advogado.upsert({
     where: { usuarioId: adminUser.id },
