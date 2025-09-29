@@ -2,10 +2,15 @@ import * as React from "react";
 
 import { IconSvgProps } from "@/types";
 
-export const Logo: React.FC<IconSvgProps> = ({
+type LogoProps = IconSvgProps & {
+  animated?: boolean;
+};
+
+export const Logo: React.FC<LogoProps> = ({
   size = 36,
   width,
   height,
+  animated = false,
   ...props
 }) => (
   <svg
@@ -21,6 +26,17 @@ export const Logo: React.FC<IconSvgProps> = ({
       fill="currentColor"
       fillRule="evenodd"
     />
+    {animated ? (
+      <path
+        className="magic-logo__glow"
+        d="M17.6482 10.1305L15.8785 7.02583L7.02979 22.5499H10.5278L17.6482 10.1305ZM19.8798 14.0457L18.11 17.1983L19.394 19.4511H16.8453L15.1056 22.5499H24.7272L19.8798 14.0457Z"
+        fill="none"
+        stroke="white"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.4}
+      />
+    ) : null}
   </svg>
 );
 

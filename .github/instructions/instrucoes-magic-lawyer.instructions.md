@@ -11,6 +11,7 @@ Stack e Tecnologia
 	•	HeroUI + Tailwind: interface moderna e responsiva.
 	•	Templates pagos premium (quando fizer sentido) para acelerar desenvolvimento sem abrir mão da personalização.
 	•	White label nativo: suporte a logotipos, cores, textos e domínios customizados por escritório.
+  •	SWR como primeira opção para leitura client-side: evitamos `useEffect` para sincronizar dados remotos, preferindo hooks declarativos com cache multi-tenant.
 
 Estrutura Multi-Tenant
 
@@ -211,6 +212,7 @@ Este projeto é multi-tenant, white label e lida com dados sensíveis (LGPD). Pa
 - Evitar N+1 com `include/select` bem definidos. Monitorar queries lentas.
 - Offload de tarefas pesadas para filas (parse de PDFs, OCR, notificações).
 - Cache leve por tenant (quando aplicável) com invalidação explícita.
+- Em componentes client-side, priorize SWR ou server actions; evite `useEffect` para buscar dados e manipular estados assíncronos manualmente.
 
 ### Docker/Infra
 - Em Compose, serviços se comunicam via rede interna: `DATABASE_URL` deve usar a porta interna 5432 do Postgres.

@@ -1,3 +1,50 @@
 @import "tailwindcss";
 
-@config "../tailwind.config.js"
+@config "../tailwind.config.js";
+
+.magic-logo__glow {
+    stroke-dasharray: 120;
+    stroke-dashoffset: 120;
+    animation: magic-logo-sweep 3.6s cubic-bezier(0.76, 0, 0.24, 1) infinite;
+    opacity: 0;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.55));
+}
+
+@keyframes magic-logo-sweep {
+    0% {
+        stroke-dashoffset: 120;
+        opacity: 0;
+    }
+
+    25% {
+        stroke-dashoffset: 90;
+        opacity: 0.6;
+    }
+
+    45% {
+        stroke-dashoffset: 40;
+        opacity: 1;
+    }
+
+    70% {
+        stroke-dashoffset: -20;
+        opacity: 0.75;
+    }
+
+    85% {
+        stroke-dashoffset: -70;
+        opacity: 0.3;
+    }
+
+    100% {
+        stroke-dashoffset: -120;
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .magic-logo__glow {
+        animation: none;
+        opacity: 0;
+    }
+}

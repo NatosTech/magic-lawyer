@@ -2,51 +2,32 @@ export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "Magic Lawyer",
-  description:
-    "Sistema para advogados - Controle seu escritório com facilidade.",
-  navItems: [
-    {
-      label: "Início",
-      href: "/",
-    },
-    {
-      label: "Recursos",
-      href: "/docs",
-    },
-    {
-      label: "Planos",
-      href: "/precos",
-    },
-    {
-      label: "Blog",
-      href: "/blog",
-    },
-    {
-      label: "Contato",
-      href: "/about",
-    },
+  description: "Sistema para advogados - Controle seu escritório com facilidade.",
+  navItemsPublic: [
+    { label: "Início", href: "/" },
+    { label: "Recursos", href: "/docs" },
+    { label: "Planos", href: "/precos" },
+    { label: "Blog", href: "/blog" },
+    { label: "Contato", href: "/about" },
   ],
-  navMenuItems: [
-    {
-      label: "Entrar",
-      href: "/login",
-    },
-    {
-      label: "Portal do Cliente",
-      href: "/login?view=cliente",
-    },
-    {
-      label: "Suporte",
-      href: "/help",
-    },
-    {
-      label: "Termos & Políticas",
-      href: "/docs",
-    },
-    {
-      label: "Sair",
-      href: "/logout",
-    },
+  navItemsAuthenticated: [
+    { label: "Painel", href: "/dashboard" },
+    { label: "Processos", href: "/processos" },
+    { label: "Documentos", href: "/documentos" },
+    { label: "Financeiro", href: "/financeiro" },
+    { label: "Relatórios", href: "/relatorios" },
+  ],
+  navMenuItemsPublic: [
+    { label: "Entrar", href: "/login" },
+    { label: "Portal do Cliente", href: "/login?view=cliente" },
+    { label: "Suporte", href: "/help" },
+    { label: "Termos & Políticas", href: "/docs" },
+  ],
+  navMenuItemsAuthenticated: [
+    { label: "Meu Perfil", href: "/usuario/perfil/editar" },
+    { label: "Equipe & Permissões", href: "/equipe" },
+    { label: "Configurações do Escritório", href: "/configuracoes" },
+    { label: "Suporte", href: "/help" },
   ],
   links: {
     github: "https://github.com/nonattodev",

@@ -8,6 +8,7 @@ Stack e Tecnologia
 	•	HeroUI + Tailwind: interface moderna e responsiva.
 	•	Templates pagos premium (quando fizer sentido) para acelerar desenvolvimento sem abrir mão da personalização.
 	•	White label nativo: suporte a logotipos, cores, textos e domínios customizados por escritório.
+  •	SWR para dados client-side: preferimos hooks de busca declarativos e cacheados em vez de `useEffect` imperativo para sincronizar estados com APIs.
 
 Estrutura Multi-Tenant
 
@@ -44,6 +45,12 @@ Estratégia de Crescimento
 	•	sempre trabalhar com tenant_id,
 	•	nunca criar lógicas fixas por cliente,
 	•	manter integração flexível com provedores de e-mail, storage e pagamentos.
+
+## Diretrizes para dados client-side
+
+- Preferimos **SWR** (`swr` package) para toda leitura mutável em componentes client-side. Ele oferece cache automático por tenant, revalidação inteligente e evita duplicar requisições.
+- Evitamos ao máximo o uso de `useEffect` para sincronizar dados externos; a abordagem declarativa do SWR reduz efeitos colaterais e torna o fluxo multi-tenant mais previsível.
+- Quando houver necessidade de estados derivados, priorize hooks compostos sobre efeitos imperativos ou listeners globais.
 
 ## Prisma & Banco de Dados
 

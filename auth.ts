@@ -70,7 +70,11 @@ export const authOptions: NextAuthOptions = {
               active: true,
             },
             include: {
-              tenant: true,
+              tenant: {
+                include: {
+                  branding: true,
+                },
+              },
             },
           });
 
@@ -106,6 +110,13 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
+          const tenantName =
+            user.tenant?.nomeFantasia ??
+            user.tenant?.razaoSocial ??
+            user.tenant?.name ??
+            user.tenant?.slug ??
+            undefined;
+
           const resultUser = {
             id: user.id,
             email: user.email,
@@ -115,6 +126,9 @@ export const authOptions: NextAuthOptions = {
             image: user.avatarUrl || undefined,
             tenantId: user.tenantId,
             role: user.role,
+            tenantSlug: user.tenant?.slug || undefined,
+            tenantName,
+            tenantLogoUrl: user.tenant?.branding?.logoUrl || undefined,
           } as unknown as User & { tenantId: string; role: string };
 
           console.info("[auth] Login autorizado", {
@@ -147,13 +161,24 @@ export const authOptions: NextAuthOptions = {
       user,
     }: {
       token: JWT;
-      user?: (User & { tenantId?: string; role?: string }) | null;
+      user?:
+        | (User & {
+            tenantId?: string;
+            role?: string;
+            tenantSlug?: string;
+            tenantName?: string;
+            tenantLogoUrl?: string;
+          })
+        | null;
     }): Promise<JWT> {
       // No login
       if (user) {
         (token as any).id = user.id;
         (token as any).tenantId = (user as any).tenantId;
         (token as any).role = (user as any).role;
+        (token as any).tenantSlug = (user as any).tenantSlug;
+        (token as any).tenantName = (user as any).tenantName;
+        (token as any).tenantLogoUrl = (user as any).tenantLogoUrl;
       }
 
       return token;
@@ -171,6 +196,15 @@ export const authOptions: NextAuthOptions = {
           | string
           | undefined;
         (session.user as any).role = (token as any).role as string | undefined;
+        (session.user as any).tenantSlug = (token as any).tenantSlug as
+          | string
+          | undefined;
+        (session.user as any).tenantName = (token as any).tenantName as
+          | string
+          | undefined;
+        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as
+          | string
+          | undefined;
       }
 
       return session;
