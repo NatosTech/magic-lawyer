@@ -44,7 +44,9 @@ async function ensureSession() {
   };
 }
 
-export async function getNotifications(options: GetNotificationsOptions = {}): Promise<NotificationsResponse> {
+export async function getNotifications(
+  options: GetNotificationsOptions = {},
+): Promise<NotificationsResponse> {
   const { tenantId, userId } = await ensureSession();
 
   const take = Math.min(options.limit ?? 50, 100);
@@ -86,7 +88,10 @@ export async function getNotifications(options: GetNotificationsOptions = {}): P
   };
 }
 
-export async function setNotificationStatus(id: string, status: NotificationStatus): Promise<void> {
+export async function setNotificationStatus(
+  id: string,
+  status: NotificationStatus,
+): Promise<void> {
   const { tenantId, userId } = await ensureSession();
 
   if (!id) {
@@ -105,7 +110,12 @@ export async function setNotificationStatus(id: string, status: NotificationStat
     },
     data: {
       status,
-      lidoEm: status === "LIDA" ? new Date() : status === "NAO_LIDA" ? null : undefined,
+      lidoEm:
+        status === "LIDA"
+          ? new Date()
+          : status === "NAO_LIDA"
+            ? null
+            : undefined,
       reabertoEm: status === "NAO_LIDA" ? new Date() : undefined,
       updatedAt: new Date(),
     },

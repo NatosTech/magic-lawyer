@@ -3,7 +3,14 @@
 import { useCallback, useMemo } from "react";
 import useSWR from "swr";
 
-import { getNotifications, setNotificationStatus, markAllNotificationsAsRead, clearAllNotifications, type NotificationStatus, type NotificationsResponse } from "@/app/actions/notifications";
+import {
+  getNotifications,
+  setNotificationStatus,
+  markAllNotificationsAsRead,
+  clearAllNotifications,
+  type NotificationStatus,
+  type NotificationsResponse,
+} from "@/app/actions/notifications";
 
 export type NotificationItem = {
   id: string;
@@ -30,14 +37,18 @@ type UseNotificationsOptions = {
 export function useNotifications(options: UseNotificationsOptions = {}) {
   const { limit, refreshInterval = 60000 } = options;
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<NotificationsResponse>(
-    ["notifications", limit ?? null],
-    async ([, take]) => getNotifications(typeof take === "number" ? { limit: take } : undefined),
-    {
-      revalidateOnFocus: true,
-      refreshInterval,
-    }
-  );
+  const { data, error, isLoading, isValidating, mutate } =
+    useSWR<NotificationsResponse>(
+      ["notifications", limit ?? null],
+      async ([, take]) =>
+        getNotifications(
+          typeof take === "number" ? { limit: take } : undefined,
+        ),
+      {
+        revalidateOnFocus: true,
+        refreshInterval,
+      },
+    );
 
   const notifications = useMemo<NotificationItem[]>(
     () =>
@@ -57,7 +68,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
         referenciaId: item.referenciaId ?? null,
         dados: item.dados,
       })) ?? [],
-    [data?.notifications]
+    [data?.notifications],
   );
 
   const unreadCount = data?.unreadCount ?? 0;
@@ -67,7 +78,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
       await setNotificationStatus(id, status);
       await mutate();
     },
-    [mutate]
+    [mutate],
   );
 
   const markAllAsRead = useCallback(async () => {
