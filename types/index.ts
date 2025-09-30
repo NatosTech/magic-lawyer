@@ -10,4 +10,5 @@ export const TENANT_PERMISSIONS = {
   manageFinance: "FINANCEIRO_GERENCIAR",
 } as const;
 
-export type TenantPermission = (typeof TENANT_PERMISSIONS)[keyof typeof TENANT_PERMISSIONS];
+export type TenantPermission =
+  (typeof TENANT_PERMISSIONS)[keyof typeof TENANT_PERMISSIONS];

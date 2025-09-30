@@ -4,7 +4,8 @@ export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "Magic Lawyer",
-  description: "Sistema para advogados - Controle seu escritório com facilidade.",
+  description:
+    "Sistema para advogados - Controle seu escritório com facilidade.",
   navItemsPublic: [
     { label: "Início", href: "/" },
     { label: "Recursos", href: "/docs" },

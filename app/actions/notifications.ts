@@ -1,56 +1,58 @@
 "use server";
 
+import { getServerSession } from "next-auth";
+
 import { prisma } from "@/app/lib/prisma";
-import { getSession } from "@/app/lib/auth";
+import { authOptions } from "@/auth";
 
-const DEFAULT_LIMIT = 50;
-const ALLOWED_STATUSES = ["NAO_LIDA", "LIDA", "ARQUIVADA"] as const;
+export type NotificationStatus = "NAO_LIDA" | "LIDA" | "ARQUIVADA";
 
-type NotificationStatus = (typeof ALLOWED_STATUSES)[number];
-
-type NotificationRecord = {
-  id: string;
-  status: NotificationStatus;
-  canal: string | null;
-  entregueEm: Date | null;
-  lidoEm: Date | null;
-  createdAt: Date;
-  notificacaoId: string;
-  titulo: string;
-  mensagem: string | null;
-  tipo: string;
-  prioridade: string;
-  referenciaTipo: string | null;
-  referenciaId: string | null;
-  dados: unknown;
+type GetNotificationsOptions = {
+  limit?: number;
 };
 
-function ensureDelegate() {
-  const delegate = prisma.notificacaoUsuario;
+export type NotificationsResponse = {
+  notifications: Array<{
+    id: string;
+    notificacaoId: string;
+    titulo: string;
+    mensagem: string;
+    tipo: string;
+    prioridade: string;
+    status: NotificationStatus;
+    canal: string;
+    createdAt: string;
+    entregueEm?: string | null;
+    lidoEm?: string | null;
+    referenciaTipo?: string | null;
+    referenciaId?: string | null;
+    dados?: unknown;
+  }>;
+  unreadCount: number;
+};
 
-  if (!delegate) {
-    throw new Error(
-      "Modelo de notificações indisponível. Rode `prisma generate` e reinicie o servidor.",
-    );
-  }
-
-  return delegate;
-}
-
-export default async function fetchNotifications(limit = DEFAULT_LIMIT) {
-  const session = await getSession();
+async function ensureSession() {
+  const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.tenantId) {
-    throw new Error("Usuário não autenticado.");
+    throw new Error("Não autenticado");
   }
 
-  const take = Math.min(limit, 100);
-  const delegate = ensureDelegate();
+  return {
+    userId: session.user.id,
+    tenantId: session.user.tenantId,
+  };
+}
 
-  const notifications = await delegate.findMany({
+export async function getNotifications(options: GetNotificationsOptions = {}): Promise<NotificationsResponse> {
+  const { tenantId, userId } = await ensureSession();
+
+  const take = Math.min(options.limit ?? 50, 100);
+
+  const notifications = await prisma.notificacaoUsuario.findMany({
     where: {
-      tenantId: session.user.tenantId,
-      usuarioId: session.user.id,
+      tenantId,
+      usuarioId: userId,
     },
     orderBy: [{ createdAt: "desc" }],
     take,
@@ -59,87 +61,91 @@ export default async function fetchNotifications(limit = DEFAULT_LIMIT) {
     },
   });
 
-  const mapped: NotificationRecord[] = notifications.map((item) => ({
-    id: item.id,
-    status: item.status as NotificationStatus,
-    canal: item.canal,
-    entregueEm: item.entregueEm,
-    lidoEm: item.lidoEm,
-    createdAt: item.createdAt,
-    notificacaoId: item.notificacaoId,
-    titulo: item.notificacao.titulo,
-    mensagem: item.notificacao.mensagem,
-    tipo: item.notificacao.tipo,
-    prioridade: item.notificacao.prioridade,
-    referenciaTipo: item.notificacao.referenciaTipo,
-    referenciaId: item.notificacao.referenciaId,
-    dados: item.notificacao.dados,
-  }));
+  const unreadCount = notifications.reduce((count, item) => {
+    return item.status === "NAO_LIDA" ? count + 1 : count;
+  }, 0);
 
-  const unreadCount = mapped.filter(
-    (item) => item.status === "NAO_LIDA",
-  ).length;
-
-  return { notifications: mapped, unreadCount };
+  return {
+    notifications: notifications.map((item) => ({
+      id: item.id,
+      notificacaoId: item.notificacaoId,
+      titulo: item.notificacao.titulo,
+      mensagem: item.notificacao.mensagem,
+      tipo: item.notificacao.tipo,
+      prioridade: item.notificacao.prioridade,
+      status: item.status as NotificationStatus,
+      canal: item.canal,
+      createdAt: item.createdAt.toISOString(),
+      entregueEm: item.entregueEm?.toISOString() ?? null,
+      lidoEm: item.lidoEm?.toISOString() ?? null,
+      referenciaTipo: item.notificacao.referenciaTipo,
+      referenciaId: item.notificacao.referenciaId,
+      dados: item.notificacao.dados,
+    })),
+    unreadCount,
+  };
 }
 
-export async function changeNotificationStatus(
-  notificationId: string,
-  status: NotificationStatus,
-) {
-  if (!ALLOWED_STATUSES.includes(status)) {
-    throw new Error("Status inválido para atualização de notificação.");
+export async function setNotificationStatus(id: string, status: NotificationStatus): Promise<void> {
+  const { tenantId, userId } = await ensureSession();
+
+  if (!id) {
+    throw new Error("Notificação inválida");
   }
 
-  const session = await getSession();
-
-  if (!session?.user?.id || !session.user.tenantId) {
-    throw new Error("Usuário não autenticado.");
+  if (!["NAO_LIDA", "LIDA", "ARQUIVADA"].includes(status)) {
+    throw new Error("Status inválido");
   }
 
-  const delegate = ensureDelegate();
-
-  const result = await delegate.updateMany({
+  const result = await prisma.notificacaoUsuario.updateMany({
     where: {
-      id: notificationId,
-      tenantId: session.user.tenantId,
-      usuarioId: session.user.id,
+      id,
+      tenantId,
+      usuarioId: userId,
     },
     data: {
       status,
-      lidoEm:
-        status === "LIDA"
-          ? new Date()
-          : status === "NAO_LIDA"
-            ? null
-            : undefined,
+      lidoEm: status === "LIDA" ? new Date() : status === "NAO_LIDA" ? null : undefined,
       reabertoEm: status === "NAO_LIDA" ? new Date() : undefined,
       updatedAt: new Date(),
     },
   });
 
   if (result.count === 0) {
-    throw new Error("Notificação não encontrada ou fora do escopo do usuário.");
+    throw new Error("Notificação não encontrada");
   }
-
-  return { success: true };
 }
 
-export async function clearNotifications() {
-  const session = await getSession();
+export async function markNotificationAsRead(id: string): Promise<void> {
+  await setNotificationStatus(id, "LIDA");
+}
 
-  if (!session?.user?.id || !session.user.tenantId) {
-    throw new Error("Usuário não autenticado.");
-  }
+export async function markAllNotificationsAsRead(): Promise<void> {
+  const { tenantId, userId } = await ensureSession();
 
-  const delegate = ensureDelegate();
-
-  await delegate.deleteMany({
+  await prisma.notificacaoUsuario.updateMany({
     where: {
-      tenantId: session.user.tenantId,
-      usuarioId: session.user.id,
+      tenantId,
+      usuarioId: userId,
+      status: {
+        in: ["NAO_LIDA", "ARQUIVADA"],
+      },
+    },
+    data: {
+      status: "LIDA",
+      lidoEm: new Date(),
+      updatedAt: new Date(),
     },
   });
+}
 
-  return { success: true };
+export async function clearAllNotifications(): Promise<void> {
+  const { tenantId, userId } = await ensureSession();
+
+  await prisma.notificacaoUsuario.deleteMany({
+    where: {
+      tenantId,
+      usuarioId: userId,
+    },
+  });
 }

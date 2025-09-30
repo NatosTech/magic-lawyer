@@ -1,8 +1,9 @@
 "use client";
 
+import { useCallback, useMemo } from "react";
 import useSWR from "swr";
 
-export type NotificationStatus = "NAO_LIDA" | "LIDA" | "ARQUIVADA";
+import { getNotifications, setNotificationStatus, markAllNotificationsAsRead, clearAllNotifications, type NotificationStatus, type NotificationsResponse } from "@/app/actions/notifications";
 
 export type NotificationItem = {
   id: string;
@@ -21,87 +22,63 @@ export type NotificationItem = {
   dados?: unknown;
 };
 
-type NotificationsResponse = {
-  notifications: Array<
-    Omit<NotificationItem, "criadoEm"> & {
-      createdAt: string;
-    }
-  >;
-  unreadCount: number;
+type UseNotificationsOptions = {
+  refreshInterval?: number;
+  limit?: number;
 };
 
-const fetcher = async (url: string): Promise<NotificationsResponse> => {
-  const response = await fetch(url, {
-    credentials: "include",
-  });
+export function useNotifications(options: UseNotificationsOptions = {}) {
+  const { limit, refreshInterval = 60000 } = options;
 
-  if (!response.ok) {
-    const message = await response.text();
-
-    throw new Error(message || "Não foi possível carregar as notificações.");
-  }
-
-  return response.json();
-};
-
-export function useNotifications() {
-  const { data, error, isLoading, mutate, isValidating } =
-    useSWR<NotificationsResponse>("/api/notifications", fetcher, {
+  const { data, error, isLoading, isValidating, mutate } = useSWR<NotificationsResponse>(
+    ["notifications", limit ?? null],
+    async ([, take]) => getNotifications(typeof take === "number" ? { limit: take } : undefined),
+    {
       revalidateOnFocus: true,
-      refreshInterval: 60000,
-    });
+      refreshInterval,
+    }
+  );
 
-  const notifications: NotificationItem[] =
-    data?.notifications.map((item) => ({
-      id: item.id,
-      notificacaoId: item.notificacaoId,
-      titulo: item.titulo,
-      mensagem: item.mensagem,
-      tipo: item.tipo,
-      prioridade: item.prioridade,
-      status: item.status as NotificationStatus,
-      canal: item.canal,
-      criadoEm: item.createdAt,
-      entregueEm: item.entregueEm ?? undefined,
-      lidoEm: item.lidoEm ?? undefined,
-      referenciaTipo: item.referenciaTipo ?? undefined,
-      referenciaId: item.referenciaId ?? undefined,
-      dados: item.dados,
-    })) ?? [];
+  const notifications = useMemo<NotificationItem[]>(
+    () =>
+      data?.notifications.map((item) => ({
+        id: item.id,
+        notificacaoId: item.notificacaoId,
+        titulo: item.titulo,
+        mensagem: item.mensagem,
+        tipo: item.tipo,
+        prioridade: item.prioridade,
+        status: item.status,
+        canal: item.canal,
+        criadoEm: item.createdAt,
+        entregueEm: item.entregueEm ?? null,
+        lidoEm: item.lidoEm ?? null,
+        referenciaTipo: item.referenciaTipo ?? null,
+        referenciaId: item.referenciaId ?? null,
+        dados: item.dados,
+      })) ?? [],
+    [data?.notifications]
+  );
 
   const unreadCount = data?.unreadCount ?? 0;
 
-  const markAs = async (id: string, status: NotificationStatus) => {
-    const response = await fetch(`/api/notifications/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ status }),
-    });
+  const markAs = useCallback(
+    async (id: string, status: NotificationStatus) => {
+      await setNotificationStatus(id, status);
+      await mutate();
+    },
+    [mutate]
+  );
 
-    if (!response.ok) {
-      const message = await response.text();
-
-      throw new Error(message || "Falha ao atualizar notificação.");
-    }
-
+  const markAllAsRead = useCallback(async () => {
+    await markAllNotificationsAsRead();
     await mutate();
-  };
+  }, [mutate]);
 
-  const clearAll = async () => {
-    const response = await fetch("/api/notifications", {
-      method: "DELETE",
-    });
-
-    if (!response.ok) {
-      const message = await response.text();
-
-      throw new Error(message || "Falha ao limpar notificações.");
-    }
-
+  const clearAll = useCallback(async () => {
+    await clearAllNotifications();
     await mutate();
-  };
+  }, [mutate]);
 
   return {
     notifications,
@@ -109,8 +86,11 @@ export function useNotifications() {
     isLoading,
     isValidating,
     error,
-    markAs,
-    clearAll,
     mutate,
+    markAs,
+    markAllAsRead,
+    clearAll,
   };
 }
+
+export type { NotificationStatus };
