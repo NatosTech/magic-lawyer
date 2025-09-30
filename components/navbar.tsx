@@ -1,24 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  Navbar as HeroUINavbar,
-  NavbarContent,
-  NavbarMenu,
-  NavbarMenuToggle,
-  NavbarBrand,
-  NavbarMenuItem,
-} from "@heroui/navbar";
+import { Navbar as HeroUINavbar, NavbarContent, NavbarMenu, NavbarMenuToggle, NavbarBrand, NavbarMenuItem } from "@heroui/navbar";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Link } from "@heroui/link";
 import { link as linkStyles } from "@heroui/theme";
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/dropdown";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { User } from "@heroui/user";
 import clsx from "clsx";
 import NextLink from "next/link";
@@ -51,9 +39,7 @@ const breadcrumbLabelMap: Record<string, string> = {
 const toTitleCase = (value: string) =>
   value
     .split(" ")
-    .map((part) =>
-      part.length > 0 ? part[0].toUpperCase() + part.slice(1) : part,
-    )
+    .map((part) => (part.length > 0 ? part[0].toUpperCase() + part.slice(1) : part))
     .join(" ");
 
 export const Navbar = () => {
@@ -64,41 +50,23 @@ export const Navbar = () => {
   const tenantLogoUrl = session?.user?.tenantLogoUrl || undefined;
   const tenantName = session?.user?.tenantName || "Magic Lawyer";
   const hasTenantBranding = Boolean(session?.user?.tenantName || tenantLogoUrl);
-  const brandSubtitle = hasTenantBranding
-    ? "Portal do escritório"
-    : "SaaS jurídico white label";
-  const brandTitleClasses = clsx(
-    "text-sm font-semibold text-primary",
-    hasTenantBranding ? "tracking-tight" : "uppercase tracking-[0.3em]",
-  );
-  const userDisplayName =
-    session?.user?.name || session?.user?.email || "Usuário";
+  const brandSubtitle = hasTenantBranding ? "Portal do escritório" : "SaaS jurídico white label";
+  const brandTitleClasses = clsx("text-sm font-semibold text-primary", hasTenantBranding ? "tracking-tight" : "uppercase tracking-[0.3em]");
+  const userDisplayName = session?.user?.name || session?.user?.email || "Usuário";
   const userEmail = session?.user?.email || "Conta Magic Lawyer";
   const userAvatar = session?.user?.image || undefined;
   const userRole = (session?.user as any)?.role as string | undefined;
-  const userPermissions =
-    ((session?.user as any)?.permissions as string[] | undefined) ?? [];
+  const userPermissions = ((session?.user as any)?.permissions as string[] | undefined) ?? [];
   const isSuperAdmin = userRole === "SUPER_ADMIN";
-  const hasPermission = (permission?: string) =>
-    !permission || isSuperAdmin || userPermissions.includes(permission);
+  const hasPermission = (permission?: string) => !permission || isSuperAdmin || userPermissions.includes(permission);
 
   const appVersion = packageInfo.version ?? "0.0.0";
 
-  const navItems = isAuthenticated
-    ? siteConfig.navItemsAuthenticated
-    : siteConfig.navItemsPublic;
-  const menuItems = session?.user
-    ? siteConfig.navMenuItemsAuthenticated
-    : siteConfig.navMenuItemsPublic;
-  const filteredMenuItems = menuItems.filter((item: any) =>
-    hasPermission(item.requiresPermission),
-  );
-  const primaryCta = session?.user
-    ? { label: "Abrir chamado", href: "/help" }
-    : { label: "Falar com vendas", href: "/about" };
-  const canManageTenantSettings = hasPermission(
-    TENANT_PERMISSIONS.manageOfficeSettings,
-  );
+  const navItems = isAuthenticated ? siteConfig.navItemsAuthenticated : siteConfig.navItemsPublic;
+  const menuItems = session?.user ? siteConfig.navMenuItemsAuthenticated : siteConfig.navMenuItemsPublic;
+  const filteredMenuItems = menuItems.filter((item: any) => hasPermission(item.requiresPermission));
+  const primaryCta = session?.user ? { label: "Abrir chamado", href: "/help" } : { label: "Falar com vendas", href: "/about" };
+  const canManageTenantSettings = hasPermission(TENANT_PERMISSIONS.manageOfficeSettings);
 
   const renderNavLink = (label: string, href: string) => {
     const isActive = pathname === href;
@@ -109,9 +77,7 @@ export const Navbar = () => {
         className={clsx(
           linkStyles({ color: "foreground" }),
           "relative rounded-full px-4 py-2 text-sm font-medium transition-colors",
-          isActive
-            ? "bg-primary/15 text-primary"
-            : "text-default-500 hover:text-primary",
+          isActive ? "bg-primary/15 text-primary" : "text-default-500 hover:text-primary"
         )}
         href={href}
       >
@@ -145,9 +111,7 @@ export const Navbar = () => {
     const items = segments.map((segment, index) => {
       const href = `/${segments.slice(0, index + 1).join("/")}`;
       const normalized = segment.replace(/-/g, " ");
-      const label = breadcrumbLabelMap[segment]
-        ? breadcrumbLabelMap[segment]
-        : toTitleCase(normalized);
+      const label = breadcrumbLabelMap[segment] ? breadcrumbLabelMap[segment] : toTitleCase(normalized);
 
       return {
         href,
@@ -174,12 +138,7 @@ export const Navbar = () => {
             return (
               <NextLink
                 key={item.href}
-                className={clsx(
-                  "rounded-full px-3 py-1.5 text-sm transition",
-                  isActive
-                    ? "bg-primary/25 text-primary"
-                    : "text-default-500 hover:text-primary",
-                )}
+                className={clsx("rounded-full px-3 py-1.5 text-sm transition", isActive ? "bg-primary/25 text-primary" : "text-default-500 hover:text-primary")}
                 href={item.href}
               >
                 {item.label}
@@ -203,15 +162,7 @@ export const Navbar = () => {
             <NextLink className="flex items-center gap-3" href="/">
               {tenantLogoUrl ? (
                 <span className="flex h-12 w-24 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-2">
-                  <Image
-                    priority
-                    unoptimized
-                    alt={`Logo ${tenantName}`}
-                    className="max-h-full w-full object-contain"
-                    height={48}
-                    src={tenantLogoUrl}
-                    width={96}
-                  />
+                  <Image priority unoptimized alt={`Logo ${tenantName}`} className="max-h-full w-full object-contain" height={48} src={tenantLogoUrl} width={96} />
                 </span>
               ) : (
                 <span className="rounded-2xl bg-primary/15 p-2 text-primary">
@@ -220,43 +171,26 @@ export const Navbar = () => {
               )}
               <span className="flex flex-col leading-tight">
                 <span className={brandTitleClasses}>{tenantName}</span>
-                <span className="text-xs text-default-400">
-                  {brandSubtitle}
-                </span>
-                <span className="text-[10px] uppercase tracking-wide text-default-600">
-                  versão {appVersion}
-                </span>
+                <span className="text-xs text-default-400">{brandSubtitle}</span>
+                <span className="text-[10px] uppercase tracking-wide text-default-600">versão {appVersion}</span>
               </span>
             </NextLink>
           </NavbarBrand>
         </NavbarContent>
 
         {isAuthenticated ? (
-          <NavbarContent
-            className="hidden flex-1 items-center md:flex"
-            justify="start"
-          >
-            <nav
-              aria-label="Breadcrumb"
-              className="flex flex-wrap items-center gap-1 text-xs text-default-500"
-            >
+          <NavbarContent className="hidden flex-1 items-center md:flex" justify="start">
+            <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 text-xs text-default-500">
               {breadcrumbItems.map((item, index) => {
                 const isLast = index === breadcrumbItems.length - 1;
 
                 return (
                   <span key={item.href} className="flex items-center gap-1">
-                    {index > 0 ? (
-                      <span className="text-default-600">/</span>
-                    ) : null}
+                    {index > 0 ? <span className="text-default-600">/</span> : null}
                     {isLast ? (
-                      <span className="font-medium text-default-200">
-                        {item.label}
-                      </span>
+                      <span className="font-medium text-default-200">{item.label}</span>
                     ) : (
-                      <NextLink
-                        className="transition hover:text-primary"
-                        href={item.href}
-                      >
+                      <NextLink className="transition hover:text-primary" href={item.href}>
                         {item.label}
                       </NextLink>
                     )}
@@ -266,34 +200,18 @@ export const Navbar = () => {
             </nav>
           </NavbarContent>
         ) : (
-          <NavbarContent
-            className="hidden items-center gap-2 lg:flex"
-            justify="center"
-          >
+          <NavbarContent className="hidden items-center gap-2 lg:flex" justify="center">
             {navItems.map((item) => renderNavLink(item.label, item.href))}
           </NavbarContent>
         )}
 
-        <NavbarContent
-          className="hidden items-center gap-3 sm:flex"
-          justify="end"
-        >
-          <Chip
-            className="hidden text-xs uppercase tracking-wide text-primary-200 xl:flex"
-            color="primary"
-            variant="flat"
-          >
+        <NavbarContent className="hidden items-center gap-3 sm:flex" justify="end">
+          <Chip className="hidden text-xs uppercase tracking-wide text-primary-200 xl:flex" color="primary" variant="flat">
             Novas automações 2025.3
           </Chip>
           {session?.user ? <NotificationCenter /> : null}
           <ThemeSwitch />
-          <Button
-            as={NextLink}
-            className="border-white/20 text-sm text-white hover:border-primary/60 hover:text-primary"
-            href={primaryCta.href}
-            radius="full"
-            variant="bordered"
-          >
+          <Button as={NextLink} className="border-white/20 text-sm text-white hover:border-primary/60 hover:text-primary" href={primaryCta.href} radius="full" variant="bordered">
             {primaryCta.label}
           </Button>
           {session?.user ? (
@@ -310,31 +228,16 @@ export const Navbar = () => {
                   name={userDisplayName}
                 />
               </DropdownTrigger>
-              <DropdownMenu
-                aria-label="Menu do usuário"
-                className="min-w-[220px]"
-                onAction={(key) => handleUserAction(String(key))}
-              >
-                <DropdownItem
-                  key="profile"
-                  description="Gerenciar informações pessoais"
-                >
+              <DropdownMenu aria-label="Menu do usuário" className="min-w-[220px]" onAction={(key) => handleUserAction(String(key))}>
+                <DropdownItem key="profile" description="Gerenciar informações pessoais">
                   Meu perfil
                 </DropdownItem>
                 {canManageTenantSettings ? (
-                  <DropdownItem
-                    key="tenant-settings"
-                    description="Branding, domínios e integrações do escritório"
-                  >
+                  <DropdownItem key="tenant-settings" description="Branding, domínios e integrações do escritório">
                     Configurações do escritório
                   </DropdownItem>
                 ) : null}
-                <DropdownItem
-                  key="logout"
-                  className="text-danger"
-                  color="danger"
-                  description="Encerrar sessão com segurança"
-                >
+                <DropdownItem key="logout" className="text-danger" color="danger" description="Encerrar sessão com segurança">
                   Sair
                 </DropdownItem>
               </DropdownMenu>
@@ -347,10 +250,7 @@ export const Navbar = () => {
           <NavbarMenuToggle aria-label="Abrir menu" className="lg:hidden" />
         </NavbarContent>
 
-        <NavbarContent
-          className="flex items-center gap-2 sm:hidden"
-          justify="end"
-        >
+        <NavbarContent className="flex items-center gap-2 sm:hidden" justify="end">
           <Link isExternal aria-label="Github" href={siteConfig.links.github}>
             <GithubIcon className="text-default-500" />
           </Link>
@@ -362,10 +262,7 @@ export const Navbar = () => {
           <div className="mx-2 mt-4 flex flex-col gap-4">
             {navItems.map((item) => (
               <NavbarMenuItem key={item.href}>
-                <NextLink
-                  className="text-base font-medium text-default-500"
-                  href={item.href}
-                >
+                <NextLink className="text-base font-medium text-default-500" href={item.href}>
                   {item.label}
                 </NextLink>
               </NavbarMenuItem>
@@ -385,17 +282,9 @@ export const Navbar = () => {
             <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-background/70 px-4 py-3">
               <div className="flex flex-col text-xs text-default-400">
                 <span>Precisa ver uma demonstração?</span>
-                <span className="font-semibold text-white">
-                  Fale com nossa equipe
-                </span>
+                <span className="font-semibold text-white">Fale com nossa equipe</span>
               </div>
-              <Button
-                as={NextLink}
-                color="primary"
-                href="/about"
-                radius="full"
-                size="sm"
-              >
+              <Button as={NextLink} color="primary" href="/about" radius="full" size="sm">
                 Agendar demo
               </Button>
             </div>
