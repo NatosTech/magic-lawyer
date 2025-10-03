@@ -53,6 +53,15 @@ const ChartIcon = ({ size = 18 }: IconProps) => (
   </svg>
 );
 
+const CalendarIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <rect height="18" rx="2" ry="2" width="18" x="3" y="4" />
+    <line x1="16" x2="16" y1="2" y2="6" />
+    <line x1="8" x2="8" y1="2" y2="6" />
+    <line x1="3" x2="21" y1="10" y2="10" />
+  </svg>
+);
+
 const PeopleIcon = ({ size = 18 }: IconProps) => (
   <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -88,6 +97,7 @@ const navIconMap: Record<string, JSX.Element> = {
   Painel: <DashboardIcon />,
   Processos: <FolderIcon />,
   Documentos: <FileIcon />,
+  Agenda: <CalendarIcon />,
   Financeiro: <WalletIcon />,
   Relatórios: <ChartIcon />,
   Equipe: <PeopleIcon />,

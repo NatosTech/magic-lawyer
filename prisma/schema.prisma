@@ -152,6 +152,39 @@ enum ProcuracaoStatus {
   EXPIRADA
 }
 
+enum EventoTipo {
+  AUDIENCIA
+  REUNIAO
+  CONSULTA
+  PRAZO
+  LEMBRETE
+  OUTRO
+}
+
+enum EventoStatus {
+  AGENDADO
+  CONFIRMADO
+  CANCELADO
+  REALIZADO
+  ADIADO
+}
+
+enum EventoRecorrencia {
+  NENHUMA
+  DIARIA
+  SEMANAL
+  MENSAL
+  ANUAL
+}
+
+enum DocumentoAssinaturaStatus {
+  PENDENTE
+  ASSINADO
+  REJEITADO
+  EXPIRADO
+  CANCELADO
+}
+
 model AreaProcesso {
   id        String   @id @default(cuid())
   tenantId  String?
@@ -259,6 +292,8 @@ model Tenant {
   notificacoes        Notificacao[]
   notificacoesUsuarios NotificacaoUsuario[]
   usuarioPermissoes   UsuarioPermissao[]
+  eventos             Evento[]
+  documentoAssinaturas DocumentoAssinatura[]
 
   @@index([status])
   @@unique([documento])
@@ -335,6 +370,8 @@ model Usuario {
   notificacoesCriadas       Notificacao[]          @relation("NotificacaoCriador")
   notificacoesRecebidas     NotificacaoUsuario[]
   permissoes                UsuarioPermissao[]
+  eventosCriados            Evento[]
+  documentoAssinaturasCriadas DocumentoAssinatura[]
 
   @@unique([email, tenantId])
   @@index([role])
@@ -358,6 +395,8 @@ model Advogado {
   processos      Processo[]           @relation("ProcessoAdvogadoResponsavel")
   contratos      Contrato[]           @relation("ContratoAdvogado")
   procuracoes    ProcuracaoAdvogado[]
+  eventos        Evento[]
+  documentoAssinaturas DocumentoAssinatura[]
 }
 
 model Cliente {
@@ -387,6 +426,8 @@ model Cliente {
   tarefas             Tarefa[]          @relation("TarefaCliente")
   usuario             Usuario?          @relation("UsuarioCliente", fields: [usuarioId], references: [id], onDelete: SetNull)
   procuracoes         Procuracao[]
+  eventos             Evento[]
+  documentoAssinaturas DocumentoAssinatura[]
 
   @@index([nome])
   @@index([documento])
@@ -545,6 +586,8 @@ model Processo {
   documentosVinculados  ProcessoDocumento[]
   contratos             Contrato[]
   procuracoesVinculadas ProcuracaoProcesso[]
+  eventos               Evento[]
+  documentoAssinaturas  DocumentoAssinatura[]
 
   @@unique([tenantId, numero])
   @@index([status])
@@ -666,6 +709,7 @@ model Documento {
   movimentacao        MovimentacaoProcesso? @relation("MovimentacaoDocumentos", fields: [movimentacaoId], references: [id], onDelete: SetNull)
   uploadedBy          Usuario?              @relation("DocumentoUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
   processosVinculados ProcessoDocumento[]
+  assinaturas         DocumentoAssinatura[]
 
   @@index([processoId])
   @@index([clienteId])
@@ -888,4 +932,77 @@ model AuditLog {
   usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, entidade])
+}
+
+model Evento {
+  id                    String           @id @default(cuid())
+  tenantId              String
+  titulo                String
+  descricao             String?
+  tipo                  EventoTipo       @default(REUNIAO)
+  status                EventoStatus     @default(AGENDADO)
+  dataInicio            DateTime
+  dataFim               DateTime
+  local                 String?
+  participantes         String[]         // Array de emails dos participantes
+  processoId            String?
+  clienteId             String?
+  advogadoResponsavelId String?
+  criadoPorId           String?
+  recorrencia           EventoRecorrencia @default(NENHUMA)
+  recorrenciaFim        DateTime?
+  googleEventId         String?          // ID do evento no Google Calendar
+  googleCalendarId      String?          // ID do calendário do Google
+  lembreteMinutos       Int?             // Lembrete em minutos antes do evento
+  observacoes           String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  tenant                Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  processo              Processo?        @relation(fields: [processoId], references: [id], onDelete: SetNull)
+  cliente               Cliente?         @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  advogadoResponsavel   Advogado?        @relation(fields: [advogadoResponsavelId], references: [id], onDelete: SetNull)
+  criadoPor             Usuario?         @relation(fields: [criadoPorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, dataInicio])
+  @@index([tenantId, status])
+  @@index([processoId])
+  @@index([clienteId])
+  @@index([advogadoResponsavelId])
+  @@index([googleEventId])
+}
+
+model DocumentoAssinatura {
+  id                    String                    @id @default(cuid())
+  tenantId              String
+  documentoId           String
+  processoId            String?
+  clienteId             String
+  advogadoResponsavelId String?
+  titulo                String
+  descricao             String?
+  status                DocumentoAssinaturaStatus @default(PENDENTE)
+  urlDocumento          String                    // URL do documento para assinatura
+  urlAssinado           String?                   // URL do documento após assinatura
+  clicksignDocumentId   String?                   // ID do documento no ClickSign
+  clicksignSignerId     String?                   // ID do signatário no ClickSign
+  dataEnvio             DateTime?
+  dataAssinatura        DateTime?
+  dataExpiracao         DateTime?
+  observacoes           String?
+  criadoPorId           String?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  tenant                Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  documento             Documento                 @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  processo              Processo?                 @relation(fields: [processoId], references: [id], onDelete: SetNull)
+  cliente               Cliente                   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  advogadoResponsavel   Advogado?                 @relation(fields: [advogadoResponsavelId], references: [id], onDelete: SetNull)
+  criadoPor             Usuario?                  @relation(fields: [criadoPorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status])
+  @@index([tenantId, clienteId])
+  @@index([processoId])
+  @@index([clicksignDocumentId])
 }

@@ -250,3 +250,199 @@ Consulta unificada:
 Modelos principais:
 - `Documento`: metadados do arquivo e relacionamentos com cliente/processo/movimentação/contrato.
 - `ProcessoDocumento`: nova tabela pivot para vincular um documento a vários processos.
+
+## 🆕 Novas Funcionalidades Implementadas
+
+### 📅 Sistema de Agenda Integrado
+
+O sistema agora inclui um módulo completo de agenda com as seguintes funcionalidades:
+
+#### **Agenda Local**
+- Criação, edição e exclusão de eventos
+- Tipos de eventos: Audiência, Reunião, Consulta, Prazo, Lembrete, Outro
+- Status de eventos: Agendado, Confirmado, Cancelado, Realizado, Adiado
+- Recorrência de eventos (Diária, Semanal, Mensal, Anual)
+- Lembretes por email configuráveis
+- Vinculação com processos e clientes
+
+#### **Integração com Google Calendar**
+- Sincronização bidirecional com Google Calendar
+- OAuth2 para autenticação segura
+- Criação automática de eventos no Google Calendar
+- Atualização e exclusão sincronizadas
+- Suporte a múltiplos calendários
+
+#### **Notificações por Email**
+- Lembretes automáticos de eventos
+- Notificações de novos eventos para participantes
+- Templates de email personalizados
+- Configuração de lembretes em minutos
+
+### 📝 Assinatura Digital de Documentos
+
+Sistema completo de assinatura digital integrado com ClickSign:
+
+#### **Funcionalidades**
+- Envio de documentos para assinatura
+- Autenticação por email
+- Controle de status (Pendente, Assinado, Rejeitado, Expirado, Cancelado)
+- Notificações automáticas por email
+- Download de documentos assinados
+- Reenvio de links de assinatura
+- Controle de expiração
+
+#### **Integração ClickSign**
+- API completa do ClickSign
+- Suporte a sandbox e produção
+- Gerenciamento de signatários
+- Rastreamento de status em tempo real
+
+### 💰 Organização Financeira Avançada
+
+Sistema financeiro com visões diferenciadas para cada tipo de usuário:
+
+#### **Visão do Cliente**
+- Total devido, pago e pendente
+- Próximos vencimentos
+- Histórico de pagamentos
+- Faturas vencidas e pendentes
+- Contratos ativos
+
+#### **Visão do Advogado**
+- Total a receber e recebido
+- Clientes e processos ativos
+- Próximos recebimentos
+- Performance financeira
+- Contratos sob responsabilidade
+
+#### **Visão do Escritório**
+- Receita total, pendente e recebida
+- Métricas de crescimento
+- Ticket médio por cliente
+- Análise de inadimplência
+- Relatórios financeiros detalhados
+
+#### **Automações Financeiras**
+- Lembretes de vencimento automáticos
+- Notificações de pagamento
+- Relatórios por período
+- Análise de performance
+
+### 📧 Sistema de Email (Nodemailer)
+
+Configuração completa de envio de emails:
+
+#### **Configuração SMTP**
+- Suporte a Gmail, Outlook e outros provedores
+- Configuração via variáveis de ambiente
+- Verificação de conexão
+- Templates de email personalizados
+
+#### **Templates Disponíveis**
+- Notificação de novo evento
+- Lembrete de evento
+- Documento para assinatura
+- Notificações financeiras
+- Lembretes de vencimento
+
+### 🗄️ Schema do Banco de Dados Atualizado
+
+Novos modelos adicionados ao Prisma:
+
+#### **Evento**
+```prisma
+model Evento {
+  id                    String           @id @default(cuid())
+  tenantId              String
+  titulo                String
+  descricao             String?
+  tipo                  EventoTipo       @default(REUNIAO)
+  status                EventoStatus     @default(AGENDADO)
+  dataInicio            DateTime
+  dataFim               DateTime
+  local                 String?
+  participantes         String[]
+  processoId            String?
+  clienteId             String?
+  advogadoResponsavelId String?
+  criadoPorId           String?
+  recorrencia           EventoRecorrencia @default(NENHUMA)
+  recorrenciaFim        DateTime?
+  googleEventId         String?
+  googleCalendarId      String?
+  lembreteMinutos       Int?
+  observacoes           String?
+  // ... relacionamentos
+}
+```
+
+#### **DocumentoAssinatura**
+```prisma
+model DocumentoAssinatura {
+  id                    String                    @id @default(cuid())
+  tenantId              String
+  documentoId           String
+  processoId            String?
+  clienteId             String
+  advogadoResponsavelId String?
+  titulo                String
+  descricao             String?
+  status                DocumentoAssinaturaStatus @default(PENDENTE)
+  urlDocumento          String
+  urlAssinado           String?
+  clicksignDocumentId   String?
+  clicksignSignerId     String?
+  dataEnvio             DateTime?
+  dataAssinatura        DateTime?
+  dataExpiracao         DateTime?
+  observacoes           String?
+  criadoPorId           String?
+  // ... relacionamentos
+}
+```
+
+### 🔧 Variáveis de Ambiente Necessárias
+
+Adicione as seguintes variáveis ao seu arquivo `.env`:
+
+```env
+# Email (Nodemailer)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=seu-email@gmail.com
+SMTP_PASS=sua-senha-de-app
+SMTP_FROM=seu-email@gmail.com
+
+# Google Calendar
+GOOGLE_CLIENT_ID=seu-client-id
+GOOGLE_CLIENT_SECRET=seu-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:9192/api/auth/google/callback
+
+# ClickSign
+CLICKSIGN_API_BASE=https://sandbox.clicksign.com/api/v1
+CLICKSIGN_ACCESS_TOKEN=seu-access-token
+```
+
+### 📱 Interface do Usuário
+
+#### **Página de Agenda**
+- Visualização de eventos do dia
+- Lista de próximos eventos
+- Integração com Google Calendar (em desenvolvimento)
+- Criação rápida de eventos
+- Filtros por tipo e status
+
+#### **Navegação Atualizada**
+- Novo item "Agenda" no menu lateral
+- Ícone de calendário personalizado
+- Integração com o sistema de navegação existente
+
+### 🚀 Próximos Passos
+
+1. **Implementar APIs REST** para as funcionalidades de agenda e assinatura
+2. **Criar componentes React** para formulários de eventos e assinatura
+3. **Implementar webhooks** do ClickSign para atualizações em tempo real
+4. **Adicionar calendário visual** com integração ao Google Calendar
+5. **Criar relatórios financeiros** com gráficos e exportação
+6. **Implementar notificações push** para eventos e lembretes

@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import { Link } from "@heroui/link";
 import clsx from "clsx";
+import { Toaster } from "sonner";
 
 import { Providers } from "./providers";
 
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <DynamicFavicon />
           {children}
+          <Toaster position="top-right" richColors />
         </Providers>
       </body>
     </html>

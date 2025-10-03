@@ -6,6 +6,7 @@ const seedCategoriasTarefa = require("./seeds/categoriasTarefa");
 const seedPlanos = require("./seeds/planos");
 const { seedTenantSandra } = require("./seeds/tenants/tenantSandra");
 const { seedSalbaAdvocacia } = require("./seeds/tenants/salbaAdvocacia");
+const { seedEventos } = require("./seeds/eventos");
 
 const prisma = new PrismaClient();
 
@@ -23,6 +24,11 @@ async function main() {
   // Seeds de tenants
   await seedTenantSandra(prisma, Prisma);
   await seedSalbaAdvocacia(prisma);
+
+  console.log("\n📅 Criando eventos...\n");
+
+  // Seed de eventos
+  await seedEventos();
 
   console.log("\n🎉 Seed concluído com sucesso!");
 }

@@ -1,0 +1,362 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea, Select, SelectItem, DatePicker, TimeInput, Chip, Spinner } from "@heroui/react";
+import { Calendar, Clock, MapPin, Users, FileText, AlertCircle } from "lucide-react";
+import { createEvento, updateEvento, type EventoFormData } from "@/app/actions/eventos";
+import { useEventoFormData } from "@/app/hooks/use-eventos";
+import { toast } from "sonner";
+
+interface EventoFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  evento?: any; // Evento existente para edição
+  onSuccess?: () => void;
+}
+
+const tiposEvento = [
+  { key: "REUNIAO", label: "Reunião" },
+  { key: "AUDIENCIA", label: "Audiência" },
+  { key: "CONSULTA", label: "Consulta" },
+  { key: "PRAZO", label: "Prazo" },
+  { key: "LEMBRETE", label: "Lembrete" },
+];
+
+const statusEvento = [
+  { key: "AGENDADO", label: "Agendado" },
+  { key: "CONFIRMADO", label: "Confirmado" },
+  { key: "REALIZADO", label: "Realizado" },
+  { key: "CANCELADO", label: "Cancelado" },
+];
+
+const lembretes = [
+  { key: 0, label: "Sem lembrete" },
+  { key: 15, label: "15 minutos antes" },
+  { key: 30, label: "30 minutos antes" },
+  { key: 60, label: "1 hora antes" },
+  { key: 120, label: "2 horas antes" },
+  { key: 1440, label: "1 dia antes" },
+];
+
+export default function EventoForm({ isOpen, onClose, evento, onSuccess }: EventoFormProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [participantes, setParticipantes] = useState<string[]>([]);
+  const [novoParticipante, setNovoParticipante] = useState("");
+  const [formData, setFormData] = useState<Partial<EventoFormData>>({
+    titulo: "",
+    descricao: "",
+    tipo: "REUNIAO",
+    dataInicio: "",
+    dataFim: "",
+    local: "",
+    processoId: "",
+    clienteId: "",
+    advogadoResponsavelId: "",
+    status: "AGENDADO",
+    lembreteMinutos: 30,
+    observacoes: "",
+  });
+
+  const { formData: selectData, isLoading: isLoadingFormData } = useEventoFormData();
+
+  useEffect(() => {
+    if (evento) {
+      // Preencher formulário com dados do evento existente
+      setFormData({
+        titulo: evento.titulo || "",
+        descricao: evento.descricao || "",
+        tipo: evento.tipo || "REUNIAO",
+        dataInicio: evento.dataInicio ? new Date(evento.dataInicio).toISOString().slice(0, 16) : "",
+        dataFim: evento.dataFim ? new Date(evento.dataFim).toISOString().slice(0, 16) : "",
+        local: evento.local || "",
+        processoId: evento.processoId || "",
+        clienteId: evento.clienteId || "",
+        advogadoResponsavelId: evento.advogadoResponsavelId || "",
+        status: evento.status || "AGENDADO",
+        lembreteMinutos: evento.lembreteMinutos || 30,
+        observacoes: evento.observacoes || "",
+      });
+      setParticipantes(evento.participantes || []);
+    } else {
+      // Limpar formulário para novo evento
+      setFormData({
+        titulo: "",
+        descricao: "",
+        tipo: "REUNIAO",
+        dataInicio: "",
+        dataFim: "",
+        local: "",
+        processoId: "",
+        clienteId: "",
+        advogadoResponsavelId: "",
+        status: "AGENDADO",
+        lembreteMinutos: 30,
+        observacoes: "",
+      });
+      setParticipantes([]);
+    }
+  }, [evento, isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const dataToSubmit = {
+        ...formData,
+        participantes,
+        dataInicio: formData.dataInicio ? new Date(formData.dataInicio).toISOString() : "",
+        dataFim: formData.dataFim ? new Date(formData.dataFim).toISOString() : "",
+      } as EventoFormData;
+
+      let result;
+      if (evento) {
+        result = await updateEvento(evento.id, dataToSubmit);
+      } else {
+        result = await createEvento(dataToSubmit);
+      }
+
+      if (result.success) {
+        toast.success(evento ? "Evento atualizado com sucesso!" : "Evento criado com sucesso!");
+        onSuccess?.();
+        onClose();
+      } else {
+        toast.error(result.error || "Erro ao salvar evento");
+      }
+    } catch (error) {
+      console.error("Erro ao salvar evento:", error);
+      toast.error("Erro interno do servidor");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const adicionarParticipante = () => {
+    if (novoParticipante && !participantes.includes(novoParticipante)) {
+      setParticipantes([...participantes, novoParticipante]);
+      setNovoParticipante("");
+    }
+  };
+
+  const removerParticipante = (email: string) => {
+    setParticipantes(participantes.filter((p) => p !== email));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      adicionarParticipante();
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="2xl"
+      scrollBehavior="inside"
+      classNames={{
+        base: "max-h-[90vh]",
+        body: "py-6",
+      }}
+    >
+      <ModalContent>
+        <form onSubmit={handleSubmit}>
+          <ModalHeader className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              {evento ? "Editar Evento" : "Novo Evento"}
+            </div>
+          </ModalHeader>
+
+          <ModalBody className="gap-4">
+            {isLoadingFormData ? (
+              <div className="flex justify-center py-8">
+                <Spinner size="lg" />
+              </div>
+            ) : (
+              <>
+                {/* Título */}
+                <Input
+                  label="Título do Evento"
+                  placeholder="Ex: Audiência de Conciliação"
+                  value={formData.titulo}
+                  onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                  isRequired
+                  startContent={<FileText className="w-4 h-4 text-default-400" />}
+                />
+
+                {/* Descrição */}
+                <Textarea
+                  label="Descrição"
+                  placeholder="Descrição detalhada do evento..."
+                  value={formData.descricao}
+                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                  minRows={2}
+                />
+
+                {/* Tipo e Status */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Select
+                    label="Tipo"
+                    placeholder="Selecione o tipo"
+                    selectedKeys={formData.tipo ? [formData.tipo] : []}
+                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value as any })}
+                    isRequired
+                  >
+                    {tiposEvento.map((tipo) => (
+                      <SelectItem key={tipo.key} value={tipo.key}>
+                        {tipo.label}
+                      </SelectItem>
+                    ))}
+                  </Select>
+
+                  <Select
+                    label="Status"
+                    placeholder="Selecione o status"
+                    selectedKeys={formData.status ? [formData.status] : []}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                  >
+                    {statusEvento.map((status) => (
+                      <SelectItem key={status.key} value={status.key}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+
+                {/* Data e Hora */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    type="datetime-local"
+                    label="Data e Hora de Início"
+                    value={formData.dataInicio}
+                    onChange={(e) => setFormData({ ...formData, dataInicio: e.target.value })}
+                    isRequired
+                    startContent={<Calendar className="w-4 h-4 text-default-400" />}
+                  />
+
+                  <Input
+                    type="datetime-local"
+                    label="Data e Hora de Fim"
+                    value={formData.dataFim}
+                    onChange={(e) => setFormData({ ...formData, dataFim: e.target.value })}
+                    isRequired
+                    startContent={<Clock className="w-4 h-4 text-default-400" />}
+                  />
+                </div>
+
+                {/* Local */}
+                <Input
+                  label="Local"
+                  placeholder="Ex: Fórum Central - Sala 101"
+                  value={formData.local}
+                  onChange={(e) => setFormData({ ...formData, local: e.target.value })}
+                  startContent={<MapPin className="w-4 h-4 text-default-400" />}
+                />
+
+                {/* Relacionamentos */}
+                <div className="grid grid-cols-3 gap-4">
+                  <Select
+                    label="Processo"
+                    placeholder="Selecione um processo"
+                    selectedKeys={formData.processoId ? [formData.processoId] : []}
+                    onChange={(e) => setFormData({ ...formData, processoId: e.target.value })}
+                  >
+                    {selectData.processos.map((processo) => (
+                      <SelectItem key={processo.id} value={processo.id}>
+                        {processo.numero}
+                      </SelectItem>
+                    ))}
+                  </Select>
+
+                  <Select
+                    label="Cliente"
+                    placeholder="Selecione um cliente"
+                    selectedKeys={formData.clienteId ? [formData.clienteId] : []}
+                    onChange={(e) => setFormData({ ...formData, clienteId: e.target.value })}
+                  >
+                    {selectData.clientes.map((cliente) => (
+                      <SelectItem key={cliente.id} value={cliente.id}>
+                        {cliente.nome}
+                      </SelectItem>
+                    ))}
+                  </Select>
+
+                  <Select
+                    label="Advogado Responsável"
+                    placeholder="Selecione um advogado"
+                    selectedKeys={formData.advogadoResponsavelId ? [formData.advogadoResponsavelId] : []}
+                    onChange={(e) => setFormData({ ...formData, advogadoResponsavelId: e.target.value })}
+                  >
+                    {selectData.advogados.map((advogado) => (
+                      <SelectItem key={advogado.id} value={advogado.id}>
+                        {`${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() || advogado.usuario.email}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+
+                {/* Participantes */}
+                <div>
+                  <label className="text-sm font-medium text-default-700 mb-2 block">
+                    <Users className="w-4 h-4 inline mr-1" />
+                    Participantes
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <Input placeholder="Digite o email do participante" value={novoParticipante} onChange={(e) => setNovoParticipante(e.target.value)} onKeyPress={handleKeyPress} className="flex-1" />
+                    <Button type="button" onPress={adicionarParticipante} isDisabled={!novoParticipante} size="sm">
+                      Adicionar
+                    </Button>
+                  </div>
+                  {participantes.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {participantes.map((email) => (
+                        <Chip key={email} onClose={() => removerParticipante(email)} variant="flat" color="primary">
+                          {email}
+                        </Chip>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Lembrete */}
+                <Select
+                  label="Lembrete"
+                  placeholder="Selecione quando receber o lembrete"
+                  selectedKeys={formData.lembreteMinutos !== undefined ? [formData.lembreteMinutos.toString()] : []}
+                  onChange={(e) => setFormData({ ...formData, lembreteMinutos: parseInt(e.target.value) })}
+                  startContent={<AlertCircle className="w-4 h-4 text-default-400" />}
+                >
+                  {lembretes.map((lembrete) => (
+                    <SelectItem key={lembrete.key.toString()} value={lembrete.key.toString()}>
+                      {lembrete.label}
+                    </SelectItem>
+                  ))}
+                </Select>
+
+                {/* Observações */}
+                <Textarea
+                  label="Observações"
+                  placeholder="Observações adicionais..."
+                  value={formData.observacoes}
+                  onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                  minRows={2}
+                />
+              </>
+            )}
+          </ModalBody>
+
+          <ModalFooter>
+            <Button type="button" variant="light" onPress={onClose} isDisabled={isLoading}>
+              Cancelar
+            </Button>
+            <Button type="submit" color="primary" isLoading={isLoading} isDisabled={!formData.titulo || !formData.dataInicio || !formData.dataFim}>
+              {evento ? "Atualizar" : "Criar"} Evento
+            </Button>
+          </ModalFooter>
+        </form>
+      </ModalContent>
+    </Modal>
+  );
+}
