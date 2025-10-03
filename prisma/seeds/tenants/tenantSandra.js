@@ -39,7 +39,7 @@ async function ensurePermission(prisma, tenantId, usuarioId, permissao) {
   });
 }
 
-module.exports = async function seedTenantSandra(prisma, Prisma) {
+async function seedTenantSandra(prisma, Prisma) {
   const [adminPasswordHash, clientePasswordHash, advogadoPasswordHash] = await Promise.all([bcrypt.hash("Sandra@123", 10), bcrypt.hash("Cliente@123", 10), bcrypt.hash("Advogado@123", 10)]);
 
   const tenant = await prisma.tenant.upsert({
@@ -619,4 +619,6 @@ module.exports = async function seedTenantSandra(prisma, Prisma) {
   });
 
   console.log("Seed tenant Sandra: OK");
-};
+}
+
+module.exports = { seedTenantSandra };

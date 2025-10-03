@@ -3,9 +3,11 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "PORT=9192 next dev --turbopack",
+    "dev": "cross-env PORT=9192 next dev --turbopack",
+    "dev:mac": "PORT=9192 next dev --turbopack",
+    "dev:windows": "set PORT=9192 && next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "cross-env PORT=9192 next start",
     "lint": "eslint --fix",
     "db:up": "docker compose -f docker-compose.db.yml up -d",
     "db:down": "docker compose -f docker-compose.db.yml down",
@@ -14,7 +16,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "setup": "npm install && npm run db:up && npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed",
+    "clean": "npm run db:down && rm -rf node_modules && rm -rf .next"
   },
   "dependencies": {
     "@heroui/accordion": "2.2.23",
@@ -83,6 +87,7 @@
     "@types/react-dom": "18.3.0",
     "@typescript-eslint/eslint-plugin": "8.34.1",
     "@typescript-eslint/parser": "8.34.1",
+    "cross-env": "^10.1.0",
     "eslint": "9.25.1",
     "eslint-config-next": "15.3.4",
     "eslint-config-prettier": "9.1.0",

@@ -1,6 +1,28 @@
-Instrução e Apresentação do Projeto – Sistema para Escritório de Advocacia (SaaS White Label)
+# 🏛️ Magic Lawyer - Sistema para Escritório de Advocacia (SaaS White Label)
 
 Este projeto tem como objetivo o desenvolvimento de um sistema moderno, escalável e white label para escritórios de advocacia. A proposta é criar uma plataforma centralizada que organize e facilite a gestão de clientes, processos, diligências, documentos e informações internas, oferecendo acesso controlado para diferentes perfis de usuários: advogados, equipe administrativa, financeiro, secretariado e clientes.
+
+## 🚀 Início Rápido
+
+Para começar a desenvolver, consulte o **[Guia de Desenvolvimento](DEVELOPMENT.md)** que contém instruções específicas para Windows, macOS e Linux.
+
+### Comando Universal
+```bash
+npm run dev
+```
+Este comando funciona em todos os sistemas operacionais.
+
+## 📋 Credenciais de Teste
+
+### 🏢 Tenant Sandra Advocacia
+- **URL**: http://localhost:9192/login
+- **Slug**: `sandra`
+- **Admin**: sandra@adv.br / Sandra@123
+
+### 🏢 Tenant Salba Advocacia  
+- **URL**: http://localhost:9192/login
+- **Slug**: `salba`
+- **Admin**: luciano@salbaadvocacia.com.br / Luciano@123
 
 Stack e Tecnologia
 	•	Next.js: base para o front e back com server actions e SSR/ISR.
