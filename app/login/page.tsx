@@ -40,6 +40,19 @@ export default function LoginPage() {
       return;
     }
 
+    // Validação básica de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      addToast({
+        title: "E-mail inválido",
+        description: "Por favor, insira um e-mail válido.",
+        color: "warning",
+        timeout: 4000,
+      });
+
+      return;
+    }
+
     const attemptContext = {
       email: sanitizedEmail,
       tenant: sanitizedTenant || "(auto)",
@@ -62,6 +75,10 @@ export default function LoginPage() {
       }
 
       if (!response.ok) {
+        // Tratamento específico de erros
+        if (response.error === "CredentialsSignin") {
+          throw new Error("Usuário não encontrado ou credenciais inválidas. Verifique seu e-mail, senha e escritório.");
+        }
         throw new Error(response.error ?? "Credenciais inválidas. Verifique seus dados e tente novamente.");
       }
 
@@ -107,11 +124,25 @@ export default function LoginPage() {
         closeToast(loaderKey);
       }
 
+      // Mensagens mais específicas baseadas no tipo de erro
+      let title = "Erro ao entrar";
+      let description = message;
+      let color: "danger" | "warning" = "danger";
+
+      if (message.includes("Usuário não encontrado") || message.includes("credenciais inválidas")) {
+        title = "Credenciais inválidas";
+        description = "Verifique se seu e-mail, senha e escritório estão corretos. Se não souber o slug do escritório, deixe o campo vazio.";
+        color = "warning";
+      } else if (message.includes("Não foi possível contatar")) {
+        title = "Erro de conexão";
+        description = "Verifique sua conexão com a internet e tente novamente.";
+      }
+
       addToast({
-        title: "Erro ao entrar",
-        description: message,
-        color: "danger",
-        timeout: 5000,
+        title,
+        description,
+        color,
+        timeout: 6000,
       });
     } finally {
       setLoading(false);
@@ -158,6 +189,15 @@ export default function LoginPage() {
               <h2 className="text-lg font-semibold text-white">Acesso seguro</h2>
             </div>
             <p className="text-sm text-default-400">Suas credenciais são protegidas com criptografia de ponta</p>
+            <div className="mt-2 rounded-lg bg-blue-500/10 border border-blue-500/20 p-3">
+              <div className="flex items-start gap-2">
+                <span className="text-blue-400 text-sm">💡</span>
+                <div>
+                  <p className="text-xs font-medium text-blue-300">Dica:</p>
+                  <p className="text-xs text-blue-200">Se não souber o slug do escritório, deixe o campo vazio. O sistema tentará encontrar automaticamente.</p>
+                </div>
+              </div>
+            </div>
           </CardHeader>
           <Divider className="border-white/10" />
           <CardBody className="pt-6">
@@ -181,11 +221,12 @@ export default function LoginPage() {
                 className="mb-4"
               />
               <Input
-                description="Opcional. Se vazio, buscamos pelo e-mail dentro do tenant associado."
+                description="Opcional. Se não souber, deixe vazio. Exemplo: meu-escritorio ou meuescritorio.com.br"
                 label="Escritório (slug/domínio)"
                 value={tenant}
                 onChange={(e) => setTenant(e.target.value)}
                 startContent={<span className="text-default-400 text-sm">🏢</span>}
+                placeholder="meu-escritorio"
                 className="mb-6"
               />
               <Button fullWidth color="primary" isLoading={loading} type="submit" size="lg" startContent={loading ? null : <span>🚀</span>}>
