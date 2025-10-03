@@ -214,37 +214,23 @@ function SidebarContent({
 
       {isDesktop ? (
         <div className="border-t border-default-200 p-3 space-y-2">
-          <Button
-            as={NextLink}
-            href="/help"
-            className={clsx(
-              "group relative w-full overflow-hidden border border-orange-500/30 bg-orange-500/10 text-orange-500 transition-all duration-300 hover:border-orange-500/50 hover:bg-orange-500/20 hover:text-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50",
-              collapsed ? "p-2" : "px-3 py-2"
-            )}
-            isIconOnly={collapsed}
-            radius="none"
-            variant="light"
-          >
+          <Button as={NextLink} href="/help" className={clsx("group relative w-full", collapsed ? "p-2" : "px-3 py-2")} isIconOnly={collapsed} radius="none" variant="bordered" color="warning">
             <HelpIcon size={collapsed ? 16 : 18} />
             <span className="sr-only">Abrir chamado</span>
-            {!collapsed ? (
-              <span className="ml-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-orange-500/75 transition-opacity duration-300 group-hover:text-orange-600">Ajuda</span>
-            ) : null}
+            {!collapsed ? <span className="ml-3 text-[10px] font-semibold uppercase tracking-[0.35em]">Ajuda</span> : null}
           </Button>
           <Button
             aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-            className={clsx(
-              "group relative w-full overflow-hidden border border-default-200 bg-default-50 text-primary shadow-sm transition-all duration-300 hover:border-primary/60 hover:bg-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-              collapsed ? "p-2" : "px-3 py-2"
-            )}
+            className={clsx("group relative w-full", collapsed ? "p-2" : "px-3 py-2")}
             isIconOnly={collapsed}
             radius="none"
-            variant="light"
+            variant="bordered"
+            color="primary"
             onPress={onToggleCollapse}
           >
             <SidebarToggleIcon collapsed={collapsed} />
             <span className="sr-only">{collapsed ? "Expandir menu" : "Recolher menu"}</span>
-            {!collapsed ? <span className="ml-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-primary/75 transition-opacity duration-300 group-hover:text-primary">Menu</span> : null}
+            {!collapsed ? <span className="ml-3 text-[10px] font-semibold uppercase tracking-[0.35em]">Menu</span> : null}
           </Button>
         </div>
       ) : null}

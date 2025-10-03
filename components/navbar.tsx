@@ -6,7 +6,6 @@ import { useMemo } from "react";
 import { Navbar as HeroUINavbar, NavbarBrand, NavbarContent, NavbarMenu, NavbarMenuItem, NavbarMenuToggle } from "@heroui/navbar";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Link } from "@heroui/link";
 import { link as linkStyles } from "@heroui/theme";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { User } from "@heroui/user";
@@ -20,8 +19,9 @@ import { siteConfig } from "@/config/site";
 import packageInfo from "@/package.json";
 import { SignInOut } from "@/components/signinout";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { GithubIcon, Logo } from "@/components/icons";
+import { Logo } from "@/components/icons";
 import { NotificationCenter } from "@/components/notifications/notification-center";
+import { SearchBar } from "@/components/searchbar";
 import { TENANT_PERMISSIONS } from "@/types";
 
 const breadcrumbLabelMap: Record<string, string> = {
@@ -62,7 +62,6 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
-  const isAuthenticated = Boolean(session?.user);
   const tenantLogoUrl = session?.user?.tenantLogoUrl || undefined;
   const tenantName = session?.user?.tenantName || "Magic Lawyer";
   const hasTenantBranding = Boolean(session?.user?.tenantName || tenantLogoUrl);
@@ -78,10 +77,6 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
 
   const appVersion = packageInfo.version ?? "0.0.0";
 
-  const navItems = isAuthenticated ? siteConfig.navItemsAuthenticated : siteConfig.navItemsPublic;
-  const menuItems = session?.user ? siteConfig.navMenuItemsAuthenticated : siteConfig.navMenuItemsPublic;
-  const filteredMenuItems = menuItems.filter((item: any) => hasPermission(item.requiresPermission));
-  const primaryCta = session?.user ? { label: "Abrir chamado", href: "/help" } : { label: "Falar com vendas", href: "/about" };
   const canManageTenantSettings = hasPermission(TENANT_PERMISSIONS.manageOfficeSettings);
 
   const renderNavLink = (label: string, href: string) => {
@@ -121,8 +116,6 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
   };
 
   const breadcrumbItems = useMemo(() => {
-    if (!isAuthenticated) return [];
-
     const segments = pathname.split("/").filter(Boolean);
     const items = segments.map((segment, index) => {
       const href = `/${segments.slice(0, index + 1).join("/")}`;
@@ -140,10 +133,10 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
     }
 
     return items;
-  }, [isAuthenticated, pathname]);
+  }, [pathname]);
 
   const authenticatedNav = useMemo(() => {
-    if (!isAuthenticated || !showAuthenticatedSecondaryNav) return null;
+    if (!showAuthenticatedSecondaryNav) return null;
 
     return (
       <div className="mx-auto w-full max-w-6xl border-b border-divider bg-background/60 px-6 py-3 backdrop-blur-xl">
@@ -164,13 +157,13 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
         </div>
       </div>
     );
-  }, [isAuthenticated, pathname, showAuthenticatedSecondaryNav]);
+  }, [pathname, showAuthenticatedSecondaryNav]);
 
   return (
     <div className="sticky top-0 z-50 flex flex-col">
-      <HeroUINavbar className="border-b border-divider bg-background/95 backdrop-blur-xl py-4" isBordered={false} maxWidth="xl">
-        <NavbarContent className="max-w-fit items-center gap-4" justify="start">
-          {isAuthenticated && onOpenSidebar ? (
+      <HeroUINavbar className="border-b border-divider bg-background/95 backdrop-blur-xl py-3" isBordered={false} maxWidth="xl">
+        <NavbarContent justify="start" className="flex-1">
+          {onOpenSidebar ? (
             <Button
               isIconOnly
               className="inline-flex h-10 w-10 items-center justify-center border border-divider bg-content1 text-default-500 transition hover:border-primary/40 hover:text-primary md:hidden"
@@ -181,40 +174,23 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
               <MenuIcon />
             </Button>
           ) : null}
+          <NavbarBrand>
+            <NextLink className="flex items-center gap-3" href="/">
+              <span className="flex flex-col leading-tight">
+                <span className={brandTitleClasses}>{tenantName}</span>
+                <span className="text-xs text-default-400">{brandSubtitle}</span>
+                <span className="text-[10px] uppercase tracking-wide text-default-600">versão {appVersion}</span>
+              </span>
+            </NextLink>
+          </NavbarBrand>
         </NavbarContent>
 
-        {isAuthenticated ? (
-          <NavbarContent className="hidden flex-1 items-center md:flex pl-6" justify="start">
-            <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm text-default-500">
-              {breadcrumbItems.map((item, index) => {
-                const isLast = index === breadcrumbItems.length - 1;
-
-                return (
-                  <span key={item.href} className="flex items-center gap-1">
-                    {index > 0 ? <span className="text-default-600">/</span> : null}
-                    {isLast ? (
-                      <span className="font-medium text-default-200">{item.label}</span>
-                    ) : (
-                      <NextLink className="transition hover:text-primary" href={item.href}>
-                        {item.label}
-                      </NextLink>
-                    )}
-                  </span>
-                );
-              })}
-            </nav>
-          </NavbarContent>
-        ) : (
-          <NavbarContent className="hidden items-center gap-2 lg:flex" justify="center">
-            {navItems.map((item) => renderNavLink(item.label, item.href))}
-          </NavbarContent>
-        )}
-
-        <NavbarContent className="hidden items-center gap-4 sm:flex pr-6" justify="end">
+        <NavbarContent justify="end" className="flex-shrink-0">
           {session?.user ? rightExtras : null}
           <Chip className="hidden text-xs uppercase tracking-wide text-primary-200 xl:flex" color="primary" variant="flat">
             Novas automações 2025.3
           </Chip>
+          {session?.user ? <SearchBar /> : null}
           {session?.user ? <NotificationCenter /> : null}
           <ThemeSwitch />
           {session?.user ? (
@@ -225,9 +201,9 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
                   avatarProps={{
                     src: userAvatar,
                     name: userDisplayName,
-                    size: "sm",
+                    size: "lg",
                   }}
-                  className="cursor-pointer gap-3 border border-divider bg-content1 px-4 py-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+                  className="cursor-pointer gap-2 border border-divider bg-content1 px-6 py-2 text-left shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
                   description={userEmail}
                   name={userDisplayName}
                 />
@@ -251,51 +227,11 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
               <SignInOut />
             </div>
           )}
-          {!isAuthenticated ? <NavbarMenuToggle aria-label="Abrir menu" className="lg:hidden" /> : null}
         </NavbarContent>
 
         <NavbarContent className="flex items-center gap-2 sm:hidden" justify="end">
-          <Link isExternal aria-label="Github" href={siteConfig.links.github}>
-            <GithubIcon className="text-default-500" />
-          </Link>
           <ThemeSwitch />
-          {!session?.user ? <NavbarMenuToggle aria-label="Abrir menu" /> : null}
         </NavbarContent>
-
-        {!isAuthenticated ? (
-          <NavbarMenu className="backdrop-blur-xl">
-            <div className="mx-2 mt-4 flex flex-col gap-4">
-              {navItems.map((item) => (
-                <NavbarMenuItem key={item.href}>
-                  <NextLink className="text-base font-medium text-default-500" href={item.href}>
-                    {item.label}
-                  </NextLink>
-                </NavbarMenuItem>
-              ))}
-            </div>
-            <div className="mx-2 mt-6 flex flex-col gap-3 border-t border-white/10 pt-4">
-              {filteredMenuItems.map((item) => (
-                <NavbarMenuItem key={item.href}>
-                  <NextLink className="text-sm text-default-500" href={item.href}>
-                    {item.label}
-                  </NextLink>
-                </NavbarMenuItem>
-              ))}
-              <NavbarMenuItem className="pt-2">
-                <SignInOut />
-              </NavbarMenuItem>
-              <div className="flex items-center justify-between border border-white/10 bg-background/70 px-4 py-3">
-                <div className="flex flex-col text-xs text-default-400">
-                  <span>Precisa ver uma demonstração?</span>
-                  <span className="font-semibold text-white">Fale com nossa equipe</span>
-                </div>
-                <Button as={NextLink} color="primary" href="/about" radius="none" size="sm">
-                  Agendar demo
-                </Button>
-              </div>
-            </div>
-          </NavbarMenu>
-        ) : null}
       </HeroUINavbar>
 
       {authenticatedNav}

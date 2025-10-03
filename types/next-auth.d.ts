@@ -9,6 +9,7 @@ declare module "next-auth" {
       tenantSlug?: string;
       tenantName?: string;
       tenantLogoUrl?: string;
+      tenantFaviconUrl?: string;
     } & DefaultSession["user"];
   }
 
@@ -19,6 +20,7 @@ declare module "next-auth" {
     tenantSlug?: string;
     tenantName?: string;
     tenantLogoUrl?: string;
+    tenantFaviconUrl?: string;
   }
 }
 
@@ -30,5 +32,6 @@ declare module "next-auth/jwt" {
     tenantSlug?: string;
     tenantName?: string;
     tenantLogoUrl?: string;
+    tenantFaviconUrl?: string;
   }
 }
