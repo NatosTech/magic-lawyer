@@ -32,9 +32,12 @@ export const authOptions: NextAuthOptions = {
         const normalizedEmail = credentials?.email?.trim();
         const normalizedTenant = credentials?.tenant?.trim().toLowerCase();
 
+        // Se o tenant está vazio, undefined ou 'undefined', tratamos como auto-detect
+        const shouldAutoDetect = !normalizedTenant || normalizedTenant === "undefined" || normalizedTenant === "";
+
         const attemptContext = {
           email: normalizedEmail ?? "(missing)",
-          tenant: normalizedTenant ?? "(auto)",
+          tenant: shouldAutoDetect ? "(auto)" : normalizedTenant,
         };
 
         if (!credentials?.email || !credentials?.password) {
@@ -48,13 +51,52 @@ export const authOptions: NextAuthOptions = {
         try {
           let tenantWhere: any = undefined;
 
-          if (normalizedTenant && normalizedTenant.length > 0) {
+          if (!shouldAutoDetect) {
             tenantWhere = {
               OR: [{ slug: normalizedTenant }, { domain: normalizedTenant }],
             };
           }
 
           const email = normalizedEmail ?? credentials.email;
+
+          // Log para debug
+          console.info("[auth] Buscando usuário", {
+            email,
+            tenantWhere: shouldAutoDetect ? "todos os tenants" : "específico",
+            tenant: shouldAutoDetect ? "(auto-detect)" : normalizedTenant,
+            shouldAutoDetect,
+          });
+
+          // Primeiro, vamos tentar buscar o usuário sem filtro de tenant para debug
+          if (shouldAutoDetect) {
+            console.info("[auth] Buscando usuário em todos os tenants");
+            const allUsers = await prisma.usuario.findMany({
+              where: {
+                email,
+                active: true,
+              },
+              include: {
+                tenant: {
+                  select: {
+                    id: true,
+                    slug: true,
+                    name: true,
+                    status: true,
+                  },
+                },
+              },
+            });
+            console.info("[auth] Usuários encontrados em todos os tenants", {
+              count: allUsers.length,
+              users: allUsers.map((u) => ({
+                id: u.id,
+                email: u.email,
+                tenantSlug: u.tenant?.slug,
+                tenantName: u.tenant?.name,
+                tenantStatus: u.tenant?.status,
+              })),
+            });
+          }
 
           const user = await prisma.usuario.findFirst({
             where: {
@@ -78,6 +120,15 @@ export const authOptions: NextAuthOptions = {
                 },
               },
             } as any,
+          });
+
+          // Log do resultado da busca
+          console.info("[auth] Resultado da busca", {
+            userFound: !!user,
+            userId: user?.id,
+            tenantId: user?.tenantId,
+            tenantSlug: (user as any)?.tenant?.slug,
+            tenantName: (user as any)?.tenant?.name,
           });
 
           if (!user || !user.passwordHash) {
