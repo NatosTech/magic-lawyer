@@ -1,0 +1,306 @@
+"use client";
+
+import { useMemo, type ReactNode } from "react";
+import Image from "next/image";
+import NextLink from "next/link";
+import { usePathname } from "next/navigation";
+import clsx from "clsx";
+import { Drawer, DrawerBody, DrawerContent, DrawerHeader } from "@heroui/drawer";
+import { Button } from "@heroui/button";
+
+import { Logo } from "@/components/icons";
+
+const navIconStroke = 1.6;
+
+type IconProps = {
+  size?: number;
+};
+
+const DashboardIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <path d="M3 13h8V3H3zM13 21h8V11h-8z" />
+    <path d="M3 21h8v-4H3zM13 3v4h8V3z" />
+  </svg>
+);
+
+const FolderIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 3h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+    <path d="M3 7h18" />
+  </svg>
+);
+
+const FileIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <path d="M4 3h9l5 5v13H4z" />
+    <path d="M13 3v6h6" />
+  </svg>
+);
+
+const WalletIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <rect height="14" rx="2" width="20" x="2" y="5" />
+    <path d="M16 12h4" />
+  </svg>
+);
+
+const ChartIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <path d="M4 19v-8" />
+    <path d="M9 19V5" />
+    <path d="M15 19v-5" />
+    <path d="M20 19V9" />
+  </svg>
+);
+
+const PeopleIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+const SettingsIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+);
+
+const UserIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <circle cx="12" cy="7" r="4" />
+    <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
+  </svg>
+);
+
+const HelpIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+    <path d="M12 17h.01" />
+  </svg>
+);
+
+const navIconMap: Record<string, JSX.Element> = {
+  Painel: <DashboardIcon />,
+  Processos: <FolderIcon />,
+  Documentos: <FileIcon />,
+  Financeiro: <WalletIcon />,
+  Relatórios: <ChartIcon />,
+  Equipe: <PeopleIcon />,
+  "Meu Perfil": <UserIcon />,
+  "Configurações do escritório": <SettingsIcon />,
+  Suporte: <HelpIcon />,
+};
+
+export type SidebarNavItem = {
+  label: string;
+  href: string;
+};
+
+export type SidebarProps = {
+  tenantName: string;
+  tenantLogoUrl?: string;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+  isMobileOpen: boolean;
+  onCloseMobile: () => void;
+  navItems: SidebarNavItem[];
+  secondaryItems: SidebarNavItem[];
+};
+
+const SidebarSectionLabel = ({ collapsed, children }: { collapsed: boolean; children: ReactNode }) =>
+  collapsed ? null : <p className="px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-default-500">{children}</p>;
+
+const SidebarToggleIcon = ({ collapsed }: { collapsed: boolean }) => (
+  <span className="relative flex h-6 w-6 items-center justify-center">
+    <span className={clsx("absolute inset-0 rounded-full border border-primary/50 transition-all duration-500 ease-out", collapsed ? "scale-90 opacity-50" : "scale-110 opacity-80")} />
+    <span className={clsx("absolute inset-0 rounded-full bg-primary/20 transition-opacity duration-500", collapsed ? "opacity-25" : "opacity-40")} />
+    <svg aria-hidden className={clsx("relative h-4 w-4 text-primary transition-transform duration-500 ease-in-out", collapsed ? "rotate-0" : "rotate-180")} fill="none" viewBox="0 0 24 24">
+      <path d="M13 5l7 7-7 7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} />
+      <path d="M4 5l7 7-7 7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} />
+    </svg>
+  </span>
+);
+
+function SidebarContent({
+  tenantName,
+  tenantLogoUrl,
+  collapsed,
+  onToggleCollapse,
+  navItems,
+  secondaryItems,
+  isDesktop,
+  onCloseMobile,
+}: {
+  tenantName: string;
+  tenantLogoUrl?: string;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+  navItems: SidebarNavItem[];
+  secondaryItems: SidebarNavItem[];
+  isDesktop: boolean;
+  onCloseMobile?: () => void;
+}) {
+  const pathname = usePathname();
+
+  const sections = useMemo(() => {
+    const groups: Array<{ title: string; items: SidebarNavItem[] }> = [{ title: "Navegação", items: navItems }];
+
+    if (secondaryItems.length > 0) {
+      groups.push({ title: "Administração", items: secondaryItems });
+    }
+
+    return groups;
+  }, [navItems, secondaryItems]);
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="mb-6 flex items-center gap-3 px-3 pt-4">
+        {tenantLogoUrl ? (
+          <span className="flex h-10 w-16 items-center justify-center rounded-xl border border-white/10 bg-white/5 p-1">
+            <Image unoptimized alt={`Logo ${tenantName}`} className="max-h-full w-full object-contain" height={40} src={tenantLogoUrl} width={64} />
+          </span>
+        ) : (
+          <span className="rounded-xl bg-primary/15 p-2 text-primary">
+            <Logo className="h-6 w-6" />
+          </span>
+        )}
+        {!collapsed ? (
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-white">{tenantName}</span>
+            <span className="text-[11px] text-default-500">Workspace</span>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex-1 space-y-4 overflow-y-auto px-2">
+        {sections.map((section) => (
+          <div key={section.title} className="space-y-2">
+            <SidebarSectionLabel collapsed={collapsed}>{section.title}</SidebarSectionLabel>
+            <ul className="space-y-1">
+              {section.items.map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const icon = navIconMap[item.label] ?? <DashboardIcon />;
+
+                return (
+                  <li key={item.href}>
+                    <NextLink
+                      className={clsx(
+                        "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition",
+                        collapsed ? "justify-center" : "justify-start",
+                        isActive ? "bg-primary/25 text-primary" : "text-default-400 hover:bg-default-100 hover:text-default-900"
+                      )}
+                      href={item.href}
+                      onClick={() => {
+                        if (!isDesktop && onCloseMobile) {
+                          onCloseMobile();
+                        }
+                      }}
+                    >
+                      <span className="shrink-0 text-base">{icon}</span>
+                      {!collapsed ? <span className="truncate">{item.label}</span> : null}
+                    </NextLink>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      {isDesktop ? (
+        <div className="border-t border-default-200 p-3 space-y-2">
+          <Button
+            as={NextLink}
+            href="/help"
+            className={clsx(
+              "group relative w-full overflow-hidden border border-orange-500/30 bg-orange-500/10 text-orange-500 transition-all duration-300 hover:border-orange-500/50 hover:bg-orange-500/20 hover:text-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50",
+              collapsed ? "p-2" : "px-3 py-2"
+            )}
+            isIconOnly={collapsed}
+            radius="none"
+            variant="light"
+          >
+            <HelpIcon size={collapsed ? 16 : 18} />
+            <span className="sr-only">Abrir chamado</span>
+            {!collapsed ? (
+              <span className="ml-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-orange-500/75 transition-opacity duration-300 group-hover:text-orange-600">Ajuda</span>
+            ) : null}
+          </Button>
+          <Button
+            aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+            className={clsx(
+              "group relative w-full overflow-hidden border border-default-200 bg-default-50 text-primary shadow-sm transition-all duration-300 hover:border-primary/60 hover:bg-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+              collapsed ? "p-2" : "px-3 py-2"
+            )}
+            isIconOnly={collapsed}
+            radius="none"
+            variant="light"
+            onPress={onToggleCollapse}
+          >
+            <SidebarToggleIcon collapsed={collapsed} />
+            <span className="sr-only">{collapsed ? "Expandir menu" : "Recolher menu"}</span>
+            {!collapsed ? <span className="ml-3 text-[10px] font-semibold uppercase tracking-[0.35em] text-primary/75 transition-opacity duration-300 group-hover:text-primary">Menu</span> : null}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function AppSidebar({ tenantName, tenantLogoUrl, collapsed, onToggleCollapse, isMobileOpen, onCloseMobile, navItems, secondaryItems }: SidebarProps) {
+  return (
+    <>
+      <aside className={clsx("hidden h-screen flex-col border-r border-divider bg-background/80 backdrop-blur-xl transition-all duration-300 md:flex", collapsed ? "md:w-[84px]" : "md:w-64")}>
+        <SidebarContent
+          isDesktop
+          collapsed={collapsed}
+          navItems={navItems}
+          secondaryItems={secondaryItems}
+          tenantLogoUrl={tenantLogoUrl}
+          tenantName={tenantName}
+          onCloseMobile={onCloseMobile}
+          onToggleCollapse={onToggleCollapse}
+        />
+      </aside>
+
+      <Drawer
+        isOpen={isMobileOpen}
+        placement="left"
+        size="xs"
+        onOpenChange={(open) => {
+          if (!open) {
+            onCloseMobile();
+          }
+        }}
+      >
+        <DrawerContent className="bg-background/95 text-white">
+          {(onClose) => (
+            <>
+              <DrawerHeader className="text-sm font-semibold uppercase tracking-[0.3em] text-default-500">Menu</DrawerHeader>
+              <DrawerBody className="p-0">
+                <SidebarContent
+                  collapsed={false}
+                  isDesktop={false}
+                  navItems={navItems}
+                  secondaryItems={secondaryItems}
+                  tenantLogoUrl={tenantLogoUrl}
+                  tenantName={tenantName}
+                  onCloseMobile={() => {
+                    onCloseMobile();
+                    onClose();
+                  }}
+                  onToggleCollapse={onToggleCollapse}
+                />
+              </DrawerBody>
+            </>
+          )}
+        </DrawerContent>
+      </Drawer>
+    </>
+  );
+}

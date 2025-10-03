@@ -1,7 +1,9 @@
 "use client";
 
+import type { ReactNode, SVGProps } from "react";
+
 import { useMemo } from "react";
-import { Navbar as HeroUINavbar, NavbarContent, NavbarMenu, NavbarMenuToggle, NavbarBrand, NavbarMenuItem } from "@heroui/navbar";
+import { Navbar as HeroUINavbar, NavbarBrand, NavbarContent, NavbarMenu, NavbarMenuItem, NavbarMenuToggle } from "@heroui/navbar";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Link } from "@heroui/link";
@@ -36,13 +38,27 @@ const breadcrumbLabelMap: Record<string, string> = {
   help: "Suporte",
 };
 
+type NavbarProps = {
+  onOpenSidebar?: () => void;
+  rightExtras?: ReactNode;
+  showAuthenticatedSecondaryNav?: boolean;
+};
+
+const MenuIcon = ({ className, ...props }: SVGProps<SVGSVGElement>) => (
+  <svg aria-hidden className={clsx("h-5 w-5", className)} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24" {...props}>
+    <line x1="3" x2="21" y1="6" y2="6" />
+    <line x1="3" x2="21" y1="12" y2="12" />
+    <line x1="3" x2="21" y1="18" y2="18" />
+  </svg>
+);
+
 const toTitleCase = (value: string) =>
   value
     .split(" ")
     .map((part) => (part.length > 0 ? part[0].toUpperCase() + part.slice(1) : part))
     .join(" ");
 
-export const Navbar = () => {
+export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryNav = true }: NavbarProps) => {
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -76,7 +92,7 @@ export const Navbar = () => {
         key={label}
         className={clsx(
           linkStyles({ color: "foreground" }),
-          "relative rounded-full px-4 py-2 text-sm font-medium transition-colors",
+          "relative px-4 py-2 text-sm font-medium transition-colors",
           isActive ? "bg-primary/15 text-primary" : "text-default-500 hover:text-primary"
         )}
         href={href}
@@ -127,18 +143,18 @@ export const Navbar = () => {
   }, [isAuthenticated, pathname]);
 
   const authenticatedNav = useMemo(() => {
-    if (!isAuthenticated) return null;
+    if (!isAuthenticated || !showAuthenticatedSecondaryNav) return null;
 
     return (
-      <div className="mx-auto w-full max-w-6xl rounded-2xl border border-white/5 bg-background/60 px-3 py-2 shadow-[0_12px_35px_-25px_rgba(59,130,246,0.35)] backdrop-blur-xl">
-        <div className="flex flex-wrap items-center gap-1">
+      <div className="mx-auto w-full max-w-6xl border-b border-divider bg-background/60 px-6 py-3 backdrop-blur-xl">
+        <div className="flex flex-wrap items-center gap-2">
           {siteConfig.navItemsAuthenticated.map((item) => {
             const isActive = pathname.startsWith(item.href);
 
             return (
               <NextLink
                 key={item.href}
-                className={clsx("rounded-full px-3 py-1.5 text-sm transition", isActive ? "bg-primary/25 text-primary" : "text-default-500 hover:text-primary")}
+                className={clsx("px-4 py-2 text-sm font-medium transition rounded-md", isActive ? "bg-primary/25 text-primary" : "text-default-500 hover:text-primary hover:bg-default-100")}
                 href={item.href}
               >
                 {item.label}
@@ -148,39 +164,28 @@ export const Navbar = () => {
         </div>
       </div>
     );
-  }, [isAuthenticated, pathname]);
+  }, [isAuthenticated, pathname, showAuthenticatedSecondaryNav]);
 
   return (
-    <div className="sticky top-4 z-50 flex flex-col gap-3">
-      <HeroUINavbar
-        className="mx-auto rounded-3xl border border-white/10 bg-background/70 px-3 py-2 backdrop-blur-2xl shadow-[0_15px_45px_-25px_rgba(59,130,246,0.8)]"
-        isBordered={false}
-        maxWidth="xl"
-      >
-        <NavbarContent className="max-w-fit" justify="start">
-          <NavbarBrand className="max-w-fit">
-            <NextLink className="flex items-center gap-3" href="/">
-              {tenantLogoUrl ? (
-                <span className="flex h-12 w-24 items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-2">
-                  <Image priority unoptimized alt={`Logo ${tenantName}`} className="max-h-full w-full object-contain" height={48} src={tenantLogoUrl} width={96} />
-                </span>
-              ) : (
-                <span className="rounded-2xl bg-primary/15 p-2 text-primary">
-                  <Logo animated className="h-7 w-7" />
-                </span>
-              )}
-              <span className="flex flex-col leading-tight">
-                <span className={brandTitleClasses}>{tenantName}</span>
-                <span className="text-xs text-default-400">{brandSubtitle}</span>
-                <span className="text-[10px] uppercase tracking-wide text-default-600">versão {appVersion}</span>
-              </span>
-            </NextLink>
-          </NavbarBrand>
+    <div className="sticky top-0 z-50 flex flex-col">
+      <HeroUINavbar className="border-b border-divider bg-background/95 backdrop-blur-xl py-4" isBordered={false} maxWidth="xl">
+        <NavbarContent className="max-w-fit items-center gap-4" justify="start">
+          {isAuthenticated && onOpenSidebar ? (
+            <Button
+              isIconOnly
+              className="inline-flex h-10 w-10 items-center justify-center border border-divider bg-content1 text-default-500 transition hover:border-primary/40 hover:text-primary md:hidden"
+              radius="none"
+              variant="light"
+              onPress={onOpenSidebar}
+            >
+              <MenuIcon />
+            </Button>
+          ) : null}
         </NavbarContent>
 
         {isAuthenticated ? (
-          <NavbarContent className="hidden flex-1 items-center md:flex" justify="start">
-            <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 text-xs text-default-500">
+          <NavbarContent className="hidden flex-1 items-center md:flex pl-6" justify="start">
+            <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm text-default-500">
               {breadcrumbItems.map((item, index) => {
                 const isLast = index === breadcrumbItems.length - 1;
 
@@ -205,15 +210,13 @@ export const Navbar = () => {
           </NavbarContent>
         )}
 
-        <NavbarContent className="hidden items-center gap-3 sm:flex" justify="end">
+        <NavbarContent className="hidden items-center gap-4 sm:flex pr-6" justify="end">
+          {session?.user ? rightExtras : null}
           <Chip className="hidden text-xs uppercase tracking-wide text-primary-200 xl:flex" color="primary" variant="flat">
             Novas automações 2025.3
           </Chip>
           {session?.user ? <NotificationCenter /> : null}
           <ThemeSwitch />
-          <Button as={NextLink} className="border-white/20 text-sm text-white hover:border-primary/60 hover:text-primary" href={primaryCta.href} radius="full" variant="bordered">
-            {primaryCta.label}
-          </Button>
           {session?.user ? (
             <Dropdown placement="bottom-end">
               <DropdownTrigger>
@@ -222,8 +225,9 @@ export const Navbar = () => {
                   avatarProps={{
                     src: userAvatar,
                     name: userDisplayName,
+                    size: "sm",
                   }}
-                  className="cursor-pointer gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left shadow-lg shadow-black/5 transition hover:border-primary/40 hover:bg-primary/10"
+                  className="cursor-pointer gap-3 border border-divider bg-content1 px-4 py-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
                   description={userEmail}
                   name={userDisplayName}
                 />
@@ -247,7 +251,7 @@ export const Navbar = () => {
               <SignInOut />
             </div>
           )}
-          <NavbarMenuToggle aria-label="Abrir menu" className="lg:hidden" />
+          {!isAuthenticated ? <NavbarMenuToggle aria-label="Abrir menu" className="lg:hidden" /> : null}
         </NavbarContent>
 
         <NavbarContent className="flex items-center gap-2 sm:hidden" justify="end">
@@ -255,41 +259,43 @@ export const Navbar = () => {
             <GithubIcon className="text-default-500" />
           </Link>
           <ThemeSwitch />
-          <NavbarMenuToggle aria-label="Abrir menu" />
+          {!session?.user ? <NavbarMenuToggle aria-label="Abrir menu" /> : null}
         </NavbarContent>
 
-        <NavbarMenu className="backdrop-blur-xl">
-          <div className="mx-2 mt-4 flex flex-col gap-4">
-            {navItems.map((item) => (
-              <NavbarMenuItem key={item.href}>
-                <NextLink className="text-base font-medium text-default-500" href={item.href}>
-                  {item.label}
-                </NextLink>
-              </NavbarMenuItem>
-            ))}
-          </div>
-          <div className="mx-2 mt-6 flex flex-col gap-3 border-t border-white/10 pt-4">
-            {filteredMenuItems.map((item) => (
-              <NavbarMenuItem key={item.href}>
-                <NextLink className="text-sm text-default-500" href={item.href}>
-                  {item.label}
-                </NextLink>
-              </NavbarMenuItem>
-            ))}
-            <NavbarMenuItem className="pt-2">
-              <SignInOut />
-            </NavbarMenuItem>
-            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-background/70 px-4 py-3">
-              <div className="flex flex-col text-xs text-default-400">
-                <span>Precisa ver uma demonstração?</span>
-                <span className="font-semibold text-white">Fale com nossa equipe</span>
-              </div>
-              <Button as={NextLink} color="primary" href="/about" radius="full" size="sm">
-                Agendar demo
-              </Button>
+        {!isAuthenticated ? (
+          <NavbarMenu className="backdrop-blur-xl">
+            <div className="mx-2 mt-4 flex flex-col gap-4">
+              {navItems.map((item) => (
+                <NavbarMenuItem key={item.href}>
+                  <NextLink className="text-base font-medium text-default-500" href={item.href}>
+                    {item.label}
+                  </NextLink>
+                </NavbarMenuItem>
+              ))}
             </div>
-          </div>
-        </NavbarMenu>
+            <div className="mx-2 mt-6 flex flex-col gap-3 border-t border-white/10 pt-4">
+              {filteredMenuItems.map((item) => (
+                <NavbarMenuItem key={item.href}>
+                  <NextLink className="text-sm text-default-500" href={item.href}>
+                    {item.label}
+                  </NextLink>
+                </NavbarMenuItem>
+              ))}
+              <NavbarMenuItem className="pt-2">
+                <SignInOut />
+              </NavbarMenuItem>
+              <div className="flex items-center justify-between border border-white/10 bg-background/70 px-4 py-3">
+                <div className="flex flex-col text-xs text-default-400">
+                  <span>Precisa ver uma demonstração?</span>
+                  <span className="font-semibold text-white">Fale com nossa equipe</span>
+                </div>
+                <Button as={NextLink} color="primary" href="/about" radius="none" size="sm">
+                  Agendar demo
+                </Button>
+              </div>
+            </div>
+          </NavbarMenu>
+        ) : null}
       </HeroUINavbar>
 
       {authenticatedNav}
