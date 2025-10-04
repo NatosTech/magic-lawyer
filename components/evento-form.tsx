@@ -1,32 +1,54 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea, Select, SelectItem, DatePicker, TimeInput, Chip, Spinner } from "@heroui/react";
 import { Calendar, Clock, MapPin, Users, FileText, AlertCircle } from "lucide-react";
 import { createEvento, updateEvento, type EventoFormData } from "@/app/actions/eventos";
 import { useEventoFormData } from "@/app/hooks/use-eventos";
 import { toast } from "sonner";
+import { Evento, EventoTipo, EventoStatus } from "@/app/generated/prisma";
+
+// Interface específica para o formulário (com strings para datas)
+interface FormEventoData {
+  titulo: string;
+  descricao: string;
+  tipo: EventoTipo;
+  dataInicio: string;
+  dataFim: string;
+  local: string;
+  participantes: string[];
+  processoId: string | null;
+  clienteId: string | null;
+  advogadoResponsavelId: string | null;
+  status: EventoStatus;
+  lembreteMinutos: number;
+  observacoes: string;
+  recorrencia: string | null;
+  recorrenciaFim: string | null;
+  googleEventId: string | null;
+  googleCalendarId: string | null;
+}
 
 interface EventoFormProps {
   isOpen: boolean;
   onClose: () => void;
-  evento?: any; // Evento existente para edição
+  evento?: Evento; // Evento existente para edição
   onSuccess?: () => void;
 }
 
 const tiposEvento = [
-  { key: "REUNIAO", label: "Reunião" },
-  { key: "AUDIENCIA", label: "Audiência" },
-  { key: "CONSULTA", label: "Consulta" },
-  { key: "PRAZO", label: "Prazo" },
-  { key: "LEMBRETE", label: "Lembrete" },
+  { key: EventoTipo.REUNIAO, label: "Reunião" },
+  { key: EventoTipo.AUDIENCIA, label: "Audiência" },
+  { key: EventoTipo.CONSULTA, label: "Consulta" },
+  { key: EventoTipo.PRAZO, label: "Prazo" },
+  { key: EventoTipo.LEMBRETE, label: "Lembrete" },
 ];
 
 const statusEvento = [
-  { key: "AGENDADO", label: "Agendado" },
-  { key: "CONFIRMADO", label: "Confirmado" },
-  { key: "REALIZADO", label: "Realizado" },
-  { key: "CANCELADO", label: "Cancelado" },
+  { key: EventoStatus.AGENDADO, label: "Agendado" },
+  { key: EventoStatus.CONFIRMADO, label: "Confirmado" },
+  { key: EventoStatus.REALIZADO, label: "Realizado" },
+  { key: EventoStatus.CANCELADO, label: "Cancelado" },
 ];
 
 const lembretes = [
@@ -40,60 +62,122 @@ const lembretes = [
 
 export default function EventoForm({ isOpen, onClose, evento, onSuccess }: EventoFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [participantes, setParticipantes] = useState<string[]>([]);
   const [novoParticipante, setNovoParticipante] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formData, setFormData] = useState<FormEventoData>({
+    titulo: "",
+    descricao: "",
+    tipo: EventoTipo.REUNIAO,
+    dataInicio: "",
+    dataFim: "",
+    local: "",
+    participantes: [],
+    processoId: null,
+    clienteId: null,
+    advogadoResponsavelId: null,
+    status: EventoStatus.AGENDADO,
+    lembreteMinutos: 30,
+    observacoes: "",
+    recorrencia: null,
+    recorrenciaFim: null,
+    googleEventId: null,
+    googleCalendarId: null,
+  });
+  const [participantes, setParticipantes] = useState<string[]>([]);
 
-  // Estado inicial baseado no evento (se houver)
-  const [formData, setFormData] = useState<any>(() => {
+  const { formData: selectData, isLoading: isLoadingFormData } = useEventoFormData();
+
+  // Estado derivado do evento - sem useEffect!
+  const initialFormData = useMemo(() => {
     if (evento) {
       return {
         titulo: evento.titulo || "",
         descricao: evento.descricao || "",
-        tipo: evento.tipo || "REUNIAO",
+        tipo: evento.tipo || EventoTipo.REUNIAO,
         dataInicio: evento.dataInicio ? new Date(evento.dataInicio).toISOString().slice(0, 16) : "",
         dataFim: evento.dataFim ? new Date(evento.dataFim).toISOString().slice(0, 16) : "",
         local: evento.local || "",
+        participantes: evento.participantes || [],
         processoId: evento.processoId || null,
         clienteId: evento.clienteId || null,
         advogadoResponsavelId: evento.advogadoResponsavelId || null,
-        status: evento.status || "AGENDADO",
+        status: evento.status || EventoStatus.AGENDADO,
         lembreteMinutos: evento.lembreteMinutos || 30,
         observacoes: evento.observacoes || "",
+        recorrencia: evento.recorrencia || null,
+        recorrenciaFim: evento.recorrenciaFim || null,
+        googleEventId: evento.googleEventId || null,
+        googleCalendarId: evento.googleCalendarId || null,
       };
     }
     return {
       titulo: "",
       descricao: "",
-      tipo: "REUNIAO",
+      tipo: EventoTipo.REUNIAO,
       dataInicio: "",
       dataFim: "",
       local: "",
+      participantes: [],
       processoId: null,
       clienteId: null,
       advogadoResponsavelId: null,
-      status: "AGENDADO",
+      status: EventoStatus.AGENDADO,
       lembreteMinutos: 30,
       observacoes: "",
-    };
-  });
+      recorrencia: null,
+      recorrenciaFim: null,
+      googleEventId: null,
+      googleCalendarId: null,
+    } as FormEventoData;
+  }, [evento]);
 
-  const { formData: selectData, isLoading: isLoadingFormData } = useEventoFormData();
+  // Participantes derivados do evento
+  const participantesIniciais = useMemo(() => {
+    return evento?.participantes || [];
+  }, [evento]);
 
   // Filtrar processos baseado no cliente selecionado
-  const processosFiltrados =
-    selectData?.processos?.filter((processo: any) => {
-      if (!formData.clienteId) return true; // Se não há cliente selecionado, mostrar todos
-      return processo.clienteId === formData.clienteId;
-    }) || [];
+  const processosFiltrados = useMemo(() => {
+    const currentClienteId = formData.clienteId || initialFormData.clienteId;
+    return (
+      selectData?.processos?.filter((processo) => {
+        if (!currentClienteId) return true; // Se não há cliente selecionado, mostrar todos
+        return processo.clienteId === currentClienteId;
+      }) || []
+    );
+  }, [selectData?.processos, formData.clienteId, initialFormData.clienteId]);
 
-  // Inicializar participantes baseado no evento
-  const [participantesIniciais] = useState(() => evento?.participantes || []);
-
-  // Limpar erros quando o modal abre
-  if (isOpen && Object.keys(errors).length > 0) {
-    setErrors({});
-  }
+  // Inicializar formData quando modal abre ou evento muda
+  useEffect(() => {
+    if (isOpen && evento) {
+      setFormData(initialFormData as FormEventoData);
+      setParticipantes(participantesIniciais);
+      setErrors({});
+    } else if (isOpen && !evento) {
+      // Reset para criação
+      setFormData({
+        titulo: "",
+        descricao: "",
+        tipo: EventoTipo.REUNIAO,
+        dataInicio: "",
+        dataFim: "",
+        local: "",
+        participantes: [],
+        processoId: null,
+        clienteId: null,
+        advogadoResponsavelId: null,
+        status: EventoStatus.AGENDADO,
+        lembreteMinutos: 30,
+        observacoes: "",
+        recorrencia: null,
+        recorrenciaFim: null,
+        googleEventId: null,
+        googleCalendarId: null,
+      });
+      setParticipantes([]);
+      setErrors({});
+    }
+  }, [isOpen, evento]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -202,8 +286,9 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
       size="2xl"
       scrollBehavior="inside"
       classNames={{
-        base: "max-h-[90vh]",
-        body: "py-6",
+        base: "max-h-[85vh]",
+        body: "max-h-[50vh] overflow-y-auto py-6",
+        footer: "border-t border-default-200 mt-4",
       }}
     >
       <ModalContent>
@@ -271,7 +356,10 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                     label="Tipo"
                     placeholder="Selecione o tipo"
                     selectedKeys={formData.tipo ? [formData.tipo] : []}
-                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value as any })}
+                    onSelectionChange={(keys) => {
+                      const selectedKey = Array.from(keys)[0] as string;
+                      setFormData({ ...formData, tipo: selectedKey as EventoTipo });
+                    }}
                     isRequired
                     color="primary"
                   >
@@ -284,7 +372,10 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                     label="Status"
                     placeholder="Selecione o status"
                     selectedKeys={formData.status ? [formData.status] : []}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    onSelectionChange={(keys) => {
+                      const selectedKey = Array.from(keys)[0] as string;
+                      setFormData({ ...formData, status: selectedKey as EventoStatus });
+                    }}
                     color="default"
                   >
                     {statusEvento.map((status) => (
@@ -355,12 +446,12 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                   <Select
                     label="Cliente"
                     placeholder="Selecione um cliente"
-                    selectedKeys={formData.clienteId ? [formData.clienteId.toString()] : []}
-                    onChange={(e) => {
-                      const novoClienteId = e.target.value;
+                    selectedKeys={formData.clienteId ? [formData.clienteId] : []}
+                    onSelectionChange={(keys) => {
+                      const selectedKey = Array.from(keys)[0] as string;
                       setFormData({
                         ...formData,
-                        clienteId: novoClienteId,
+                        clienteId: selectedKey,
                         processoId: null, // Limpar processo quando cliente muda
                       });
                     }}
@@ -372,8 +463,11 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                   <Select
                     label="Processo"
                     placeholder={formData.clienteId ? "Selecione um processo" : "Primeiro selecione um cliente"}
-                    selectedKeys={formData.processoId ? [formData.processoId.toString()] : []}
-                    onChange={(e) => setFormData({ ...formData, processoId: e.target.value })}
+                    selectedKeys={formData.processoId ? [formData.processoId] : []}
+                    onSelectionChange={(keys) => {
+                      const selectedKey = Array.from(keys)[0] as string;
+                      setFormData({ ...formData, processoId: selectedKey });
+                    }}
                     isDisabled={!formData.clienteId}
                     color="warning"
                   >
@@ -385,8 +479,11 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                   <Select
                     label="Advogado Responsável"
                     placeholder="Selecione um advogado"
-                    selectedKeys={formData.advogadoResponsavelId ? [formData.advogadoResponsavelId.toString()] : []}
-                    onChange={(e) => setFormData({ ...formData, advogadoResponsavelId: e.target.value })}
+                    selectedKeys={formData.advogadoResponsavelId ? [formData.advogadoResponsavelId] : []}
+                    onSelectionChange={(keys) => {
+                      const selectedKey = Array.from(keys)[0] as string;
+                      setFormData({ ...formData, advogadoResponsavelId: selectedKey });
+                    }}
                     color="success"
                   >
                     {selectData?.advogados?.map((advogado) => (
@@ -432,7 +529,10 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                   label="Lembrete"
                   placeholder="Selecione quando receber o lembrete"
                   selectedKeys={formData.lembreteMinutos !== undefined && formData.lembreteMinutos !== null ? [formData.lembreteMinutos.toString()] : []}
-                  onChange={(e) => setFormData({ ...formData, lembreteMinutos: parseInt(e.target.value) })}
+                  onSelectionChange={(keys) => {
+                    const selectedKey = Array.from(keys)[0] as string;
+                    setFormData({ ...formData, lembreteMinutos: parseInt(selectedKey) });
+                  }}
                   startContent={<AlertCircle className="w-4 h-4 text-warning" />}
                   color="warning"
                 >
@@ -462,7 +562,7 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
             )}
           </ModalBody>
 
-          <ModalFooter>
+          <ModalFooter className="gap-3 px-6 py-4">
             <Button type="button" variant="light" onPress={onClose} isDisabled={isLoading}>
               Cancelar
             </Button>

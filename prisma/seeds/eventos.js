@@ -23,16 +23,16 @@ async function seedEventos() {
     });
 
     const sandra = usuarios.find((u) => u.email === "sandra@adv.br");
-    const ricardo = usuarios.find((u) => u.email === "ricardo@adv.br");
-    const fernanda = usuarios.find((u) => u.email === "fernanda@adv.br");
+    const ricardo = usuarios.find((u) => u.email === "ricardo@sandraadv.br");
+    const fernanda = usuarios.find((u) => u.email === "fernanda@sandraadv.br");
 
     // Buscar clientes
     const clientes = await prisma.cliente.findMany({
       where: { tenantId: tenantSandra.id },
     });
 
-    const marcos = clientes.find((c) => c.nome === "Marcos Silva");
-    const ana = clientes.find((c) => c.nome === "Ana Santos");
+    const marcos = clientes.find((c) => c.nome === "Marcos Souza");
+    const ana = clientes.find((c) => c.nome === "Ana Paula Oliveira");
     const inovaTech = clientes.find((c) => c.nome === "Inova Tech Ltda");
 
     // Buscar processos
@@ -42,6 +42,22 @@ async function seedEventos() {
 
     const processo1 = processos[0];
     const processo2 = processos[1];
+
+    // Verificar se temos os dados necessários
+    if (!processo1 || !processo2) {
+      console.log("❌ Processos não encontrados. Criando processos de exemplo...");
+      return;
+    }
+
+    if (!marcos || !ana || !inovaTech) {
+      console.log("❌ Clientes não encontrados. Verifique o seed de clientes.");
+      return;
+    }
+
+    if (!sandra?.advogado || !ricardo?.advogado || !fernanda?.advogado) {
+      console.log("❌ Advogados não encontrados. Verifique o seed de usuários.");
+      return;
+    }
 
     // Criar eventos
     const eventos = [
@@ -54,10 +70,10 @@ async function seedEventos() {
         dataFim: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // +2 horas
         local: "Fórum Central - Sala 101",
         participantes: ["marcos.silva@email.com", "sandra@adv.br"],
-        processoId: processo1?.id,
-        clienteId: marcos?.id,
-        advogadoResponsavelId: sandra?.advogado?.id,
-        criadoPorId: sandra?.id,
+        processoId: processo1.id,
+        clienteId: marcos.id,
+        advogadoResponsavelId: sandra.advogado.id,
+        criadoPorId: sandra.id,
         status: "AGENDADO",
         lembreteMinutos: 30,
         observacoes: "Levar documentos originais e cópias",
@@ -71,9 +87,9 @@ async function seedEventos() {
         dataFim: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000), // +1 hora
         local: "Escritório - Sala de Reuniões",
         participantes: ["ana.santos@email.com", "ricardo@adv.br"],
-        clienteId: ana?.id,
-        advogadoResponsavelId: ricardo?.advogado?.id,
-        criadoPorId: ricardo?.id,
+        clienteId: ana.id,
+        advogadoResponsavelId: ricardo.advogado.id,
+        criadoPorId: ricardo.id,
         status: "CONFIRMADO",
         lembreteMinutos: 15,
         observacoes: "Cliente confirmou presença",
@@ -87,9 +103,9 @@ async function seedEventos() {
         dataFim: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000), // +1.5 horas
         local: "Escritório",
         participantes: ["contato@inovatech.com", "fernanda@adv.br"],
-        clienteId: inovaTech?.id,
-        advogadoResponsavelId: fernanda?.advogado?.id,
-        criadoPorId: fernanda?.id,
+        clienteId: inovaTech.id,
+        advogadoResponsavelId: fernanda.advogado.id,
+        criadoPorId: fernanda.id,
         status: "AGENDADO",
         lembreteMinutos: 60,
         observacoes: "Empresa nova, primeira consulta",
@@ -102,9 +118,9 @@ async function seedEventos() {
         dataInicio: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 dias no futuro
         dataFim: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 24 * 60 * 60 * 1000), // +1 dia
         participantes: ["sandra@adv.br", "ricardo@adv.br"],
-        processoId: processo2?.id,
-        advogadoResponsavelId: sandra?.advogado?.id,
-        criadoPorId: sandra?.id,
+        processoId: processo2.id,
+        advogadoResponsavelId: sandra.advogado.id,
+        criadoPorId: sandra.id,
         status: "AGENDADO",
         lembreteMinutos: 120, // 2 horas antes
         observacoes: "Prazo crítico - não pode ser perdido",
@@ -117,8 +133,8 @@ async function seedEventos() {
         dataInicio: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dias no futuro
         dataFim: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // +2 horas
         participantes: ["sandra@adv.br"],
-        advogadoResponsavelId: sandra?.advogado?.id,
-        criadoPorId: sandra?.id,
+        advogadoResponsavelId: sandra.advogado.id,
+        criadoPorId: sandra.id,
         status: "AGENDADO",
         lembreteMinutos: 0,
         observacoes: "Tarefa administrativa importante",
@@ -132,10 +148,10 @@ async function seedEventos() {
         dataFim: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000), // +3 horas
         local: "Fórum Regional - Sala 205",
         participantes: ["marcos.silva@email.com", "sandra@adv.br"],
-        processoId: processo1?.id,
-        clienteId: marcos?.id,
-        advogadoResponsavelId: sandra?.advogado?.id,
-        criadoPorId: sandra?.id,
+        processoId: processo1.id,
+        clienteId: marcos.id,
+        advogadoResponsavelId: sandra.advogado.id,
+        criadoPorId: sandra.id,
         status: "AGENDADO",
         lembreteMinutos: 60,
         observacoes: "Levar testemunhas e documentos",
@@ -149,7 +165,7 @@ async function seedEventos() {
         dataFim: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000), // +1.5 horas
         local: "Escritório - Sala de Conferências",
         participantes: ["sandra@adv.br", "ricardo@adv.br", "fernanda@adv.br"],
-        criadoPorId: sandra?.id,
+        criadoPorId: sandra.id,
         status: "AGENDADO",
         lembreteMinutos: 30,
         observacoes: "Reunião semanal obrigatória",

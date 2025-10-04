@@ -12,6 +12,7 @@ import EventoForm from "@/components/evento-form";
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { toast } from "sonner";
 import { DateUtils } from "@/app/lib/date-utils";
+import { Evento } from "@/app/generated/prisma";
 
 type ViewMode = "calendar" | "list";
 
@@ -56,7 +57,7 @@ export default function AgendaPage() {
     setIsEventoFormOpen(true);
   };
 
-  const handleEditEvento = async (evento: any) => {
+  const handleEditEvento = async (evento: Evento) => {
     try {
       // Buscar o evento completo com todos os relacionamentos
       const result = await getEventoById(evento.id);
