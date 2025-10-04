@@ -6,7 +6,8 @@ import { useSession } from "next-auth/react";
 import { AppSidebar, type SidebarNavItem } from "@/components/app-sidebar";
 import { Navbar } from "@/components/navbar";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
-import { siteConfig } from "@/config/site";
+import { useProfileNavigation } from "@/app/hooks/use-profile-navigation";
+import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 
 export type AppShellProps = {
   children: ReactNode;
@@ -16,25 +17,27 @@ export function AppShell({ children }: AppShellProps) {
   const { data: session } = useSession();
   const tenantName = session?.user?.tenantName || "Magic Lawyer";
   const tenantLogoUrl = session?.user?.tenantLogoUrl || undefined;
-  const userPermissions = (session?.user as any)?.permissions as string[] | undefined;
-  const userRole = (session?.user as any)?.role as string | undefined;
-  const isSuperAdmin = userRole === "SUPER_ADMIN";
+
+  const { navigationItems, secondaryNavigationItems } = useProfileNavigation();
+  const { isSuperAdmin } = useUserPermissions();
 
   const [collapsed, setCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const hasPermission = useCallback((permission?: string) => !permission || isSuperAdmin || userPermissions?.includes(permission), [isSuperAdmin, userPermissions]);
-
+  // Converter NavigationItem para SidebarNavItem
   const primaryNavItems = useMemo<SidebarNavItem[]>(() => {
-    return siteConfig.navItemsAuthenticated.map((item) => ({
+    return navigationItems.map((item) => ({
       label: item.label,
       href: item.href,
     }));
-  }, []);
+  }, [navigationItems]);
 
-  const secondaryNavItems = useMemo<SidebarNavItem[]>(() => {
-    return siteConfig.navMenuItemsAuthenticated.filter((item) => hasPermission(item.requiresPermission)).map((item) => ({ label: item.label, href: item.href }));
-  }, [hasPermission]);
+  const secondaryNavItemsFormatted = useMemo<SidebarNavItem[]>(() => {
+    return secondaryNavigationItems.map((item) => ({
+      label: item.label,
+      href: item.href,
+    }));
+  }, [secondaryNavigationItems]);
 
   const openSidebarMobile = () => setIsMobileOpen(true);
   const closeSidebarMobile = () => setIsMobileOpen(false);
@@ -46,7 +49,7 @@ export function AppShell({ children }: AppShellProps) {
         collapsed={collapsed}
         isMobileOpen={isMobileOpen}
         navItems={primaryNavItems}
-        secondaryItems={secondaryNavItems}
+        secondaryItems={secondaryNavItemsFormatted}
         tenantLogoUrl={tenantLogoUrl}
         tenantName={tenantName}
         onCloseMobile={closeSidebarMobile}

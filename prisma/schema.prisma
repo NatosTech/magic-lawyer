@@ -185,6 +185,13 @@ enum DocumentoAssinaturaStatus {
   CANCELADO
 }
 
+enum TipoComissao {
+  HONORARIOS
+  ACAO_GANHA
+  CUSTAS
+  OUTROS
+}
+
 model AreaProcesso {
   id        String   @id @default(cuid())
   tenantId  String?
@@ -389,6 +396,10 @@ model Advogado {
   bio            String?
   telefone       String?
   whatsapp       String?
+  // Campos financeiros para comissões
+  comissaoPadrao     Decimal?          @db.Decimal(5, 2) @default(0.00) // Percentual padrão (0-100)
+  comissaoAcaoGanha  Decimal?          @db.Decimal(5, 2) @default(0.00) // Percentual em ações ganhas (0-100)
+  comissaoHonorarios Decimal?          @db.Decimal(5, 2) @default(0.00) // Percentual em honorários (0-100)
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   clientes       AdvogadoCliente[]
@@ -750,6 +761,10 @@ model Contrato {
   status                ContratoStatus @default(RASCUNHO)
   valor                 Decimal?       @db.Decimal(14, 2)
   moeda                 String?        @default("BRL")
+  // Campos financeiros para comissões
+  comissaoAdvogado      Decimal?       @db.Decimal(5, 2) @default(0.00) // Percentual específico para este contrato (0-100)
+  percentualAcaoGanha   Decimal?       @db.Decimal(5, 2) @default(0.00) // Percentual sobre resultado em ação ganha (0-100)
+  valorAcaoGanha        Decimal?       @db.Decimal(14, 2) @default(0.00) // Valor base para cálculo de comissão em ação ganha
   dataInicio            DateTime?
   dataFim               DateTime?
   dataAssinatura        DateTime?
@@ -877,6 +892,10 @@ model Fatura {
   valor             Decimal       @db.Decimal(12, 2)
   moeda             String        @default("BRL")
   status            InvoiceStatus @default(RASCUNHO)
+  // Campos financeiros para comissões
+  comissaoAdvogado  Decimal?      @db.Decimal(5, 2) @default(0.00) // Percentual de comissão aplicado nesta fatura (0-100)
+  valorComissao     Decimal?      @db.Decimal(14, 2) @default(0.00) // Valor calculado da comissão do advogado
+  tipoComissao      TipoComissao? @default(HONORARIOS) // Tipo de comissão
   periodoInicio     DateTime?
   periodoFim        DateTime?
   vencimento        DateTime?
@@ -901,6 +920,10 @@ model Pagamento {
   faturaId     String
   valor        Decimal       @db.Decimal(12, 2)
   status       PaymentStatus @default(PENDENTE)
+  // Campos financeiros para comissões
+  comissaoAdvogado Decimal?  @db.Decimal(5, 2) @default(0.00) // Percentual de comissão aplicado neste pagamento (0-100)
+  valorComissao    Decimal?  @db.Decimal(14, 2) @default(0.00) // Valor da comissão paga ao advogado
+  pagoParaAdvogado Boolean   @default(false) // Indica se a comissão já foi paga ao advogado
   metodo       String?
   transacaoId  String?
   autorizadoEm DateTime?

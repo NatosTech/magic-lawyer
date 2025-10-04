@@ -9,7 +9,9 @@ import { useLocale } from "@react-aria/i18n";
 import { useEventos, useEventosHoje, useEventosSemana, useEventosMes } from "@/app/hooks/use-eventos";
 import { deleteEvento, marcarEventoComoRealizado } from "@/app/actions/eventos";
 import EventoForm from "@/components/evento-form";
+import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { toast } from "sonner";
+import { DateUtils } from "@/app/lib/date-utils";
 
 type ViewMode = "calendar" | "list";
 
@@ -37,6 +39,7 @@ export default function AgendaPage() {
   const [filtroStatus, setFiltroStatus] = useState<string>("");
 
   const locale = useLocale();
+  const { permissions, isCliente, isAdvogado, isSecretaria, isAdmin } = useUserPermissions();
 
   // Buscar eventos com filtros
   const { eventos, isLoading, error, mutate } = useEventos({
@@ -99,25 +102,22 @@ export default function AgendaPage() {
   };
 
   const eventosFiltrados = (eventos || []).filter((evento) => {
-    const dataEvento = new Date(evento.dataInicio);
-    const dataSelecionada = new Date(selectedDate.toString());
+    const dataEvento = DateUtils.parse(evento.dataInicio as any);
+    const dataSelecionada = DateUtils.fromCalendarDate(selectedDate);
 
-    return dataEvento.toDateString() === dataSelecionada.toDateString();
+    return dataEvento && DateUtils.isSameDay(dataEvento, dataSelecionada);
   });
 
   const formatarHora = (data: string) => {
-    return new Date(data).toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return DateUtils.formatTime(data);
   };
 
   const formatarData = (data: string) => {
-    return new Date(data).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+    return DateUtils.formatDate(data);
+  };
+
+  const formatarDataSelecionada = (data: any) => {
+    return DateUtils.formatCalendarDate(data);
   };
 
   if (error) {
@@ -154,9 +154,11 @@ export default function AgendaPage() {
             </Button>
           </ButtonGroup>
 
-          <Button color="primary" startContent={<Plus className="w-4 h-4" />} onPress={handleCreateEvento}>
-            Novo Evento
-          </Button>
+          {permissions.canCreateEvents && (
+            <Button color="primary" startContent={<Plus className="w-4 h-4" />} onPress={handleCreateEvento}>
+              Novo Evento
+            </Button>
+          )}
         </div>
       </div>
 
@@ -263,7 +265,7 @@ export default function AgendaPage() {
           <div>
             <Card>
               <CardHeader>
-                <h3 className="text-lg font-semibold">Eventos - {formatarData(selectedDate.toString())}</h3>
+                <h3 className="text-lg font-semibold">Eventos - {formatarDataSelecionada(selectedDate)}</h3>
               </CardHeader>
               <CardBody>
                 {isLoading ? (
@@ -300,17 +302,21 @@ export default function AgendaPage() {
                                 </Button>
                               </DropdownTrigger>
                               <DropdownMenu>
-                                <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />} onPress={() => handleEditEvento(evento)}>
-                                  Editar
-                                </DropdownItem>
-                                {evento.status !== "REALIZADO" ? (
-                                  <DropdownItem key="realizado" startContent={<CheckCircle className="w-4 h-4" />} onPress={() => handleMarcarComoRealizado(evento.id)}>
-                                    Marcar como Realizado
-                                  </DropdownItem>
+                                {permissions.canEditAllEvents ? (
+                                  <>
+                                    <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />} onPress={() => handleEditEvento(evento)}>
+                                      Editar
+                                    </DropdownItem>
+                                    {evento.status !== "REALIZADO" && (
+                                      <DropdownItem key="realizado" startContent={<CheckCircle className="w-4 h-4" />} onPress={() => handleMarcarComoRealizado(evento.id)}>
+                                        Marcar como Realizado
+                                      </DropdownItem>
+                                    )}
+                                    <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="w-4 h-4" />} onPress={() => handleDeleteEvento(evento.id)}>
+                                      Excluir
+                                    </DropdownItem>
+                                  </>
                                 ) : null}
-                                <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="w-4 h-4" />} onPress={() => handleDeleteEvento(evento.id)}>
-                                  Excluir
-                                </DropdownItem>
                               </DropdownMenu>
                             </Dropdown>
                           </div>
@@ -419,17 +425,21 @@ export default function AgendaPage() {
                             </Button>
                           </DropdownTrigger>
                           <DropdownMenu>
-                            <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />} onPress={() => handleEditEvento(evento)}>
-                              Editar
-                            </DropdownItem>
-                            {evento.status !== "REALIZADO" ? (
-                              <DropdownItem key="realizado" startContent={<CheckCircle className="w-4 h-4" />} onPress={() => handleMarcarComoRealizado(evento.id)}>
-                                Marcar como Realizado
-                              </DropdownItem>
+                            {permissions.canEditAllEvents ? (
+                              <>
+                                <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />} onPress={() => handleEditEvento(evento)}>
+                                  Editar
+                                </DropdownItem>
+                                {evento.status !== "REALIZADO" && (
+                                  <DropdownItem key="realizado" startContent={<CheckCircle className="w-4 h-4" />} onPress={() => handleMarcarComoRealizado(evento.id)}>
+                                    Marcar como Realizado
+                                  </DropdownItem>
+                                )}
+                                <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="w-4 h-4" />} onPress={() => handleDeleteEvento(evento.id)}>
+                                  Excluir
+                                </DropdownItem>
+                              </>
                             ) : null}
-                            <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="w-4 h-4" />} onPress={() => handleDeleteEvento(evento.id)}>
-                              Excluir
-                            </DropdownItem>
                           </DropdownMenu>
                         </Dropdown>
                       </div>

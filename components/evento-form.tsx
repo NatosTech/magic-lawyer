@@ -42,6 +42,7 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
   const [isLoading, setIsLoading] = useState(false);
   const [participantes, setParticipantes] = useState<string[]>([]);
   const [novoParticipante, setNovoParticipante] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<Partial<EventoFormData>>({
     titulo: "",
     descricao: "",
@@ -95,11 +96,62 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
       });
       setParticipantes([]);
     }
+
+    // Limpar erros quando o modal abre
+    setErrors({});
   }, [evento, isOpen]);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.titulo?.trim()) {
+      newErrors.titulo = "Título é obrigatório";
+    } else if (formData.titulo.length > 200) {
+      newErrors.titulo = "Título deve ter no máximo 200 caracteres";
+    }
+
+    if (!formData.dataInicio) {
+      newErrors.dataInicio = "Data de início é obrigatória";
+    }
+
+    if (!formData.dataFim) {
+      newErrors.dataFim = "Data de fim é obrigatória";
+    }
+
+    if (formData.dataInicio && formData.dataFim) {
+      const inicio = new Date(formData.dataInicio);
+      const fim = new Date(formData.dataFim);
+      if (fim <= inicio) {
+        newErrors.dataFim = "Data de fim deve ser posterior à data de início";
+      }
+    }
+
+    if (formData.descricao && formData.descricao.length > 1000) {
+      newErrors.descricao = "Descrição deve ter no máximo 1000 caracteres";
+    }
+
+    if (formData.local && formData.local.length > 200) {
+      newErrors.local = "Local deve ter no máximo 200 caracteres";
+    }
+
+    if (formData.observacoes && formData.observacoes.length > 500) {
+      newErrors.observacoes = "Observações devem ter no máximo 500 caracteres";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      toast.error("Por favor, corrija os erros no formulário");
+      return;
+    }
+
     setIsLoading(true);
+    setErrors({});
 
     try {
       const dataToSubmit = {
@@ -167,6 +219,12 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
               <Calendar className="w-5 h-5" />
               {evento ? "Editar Evento" : "Novo Evento"}
             </div>
+            <div className="text-sm text-default-500 mt-2">
+              <p>
+                Campos obrigatórios: <span className="text-danger">*</span>
+              </p>
+              <p className="text-xs">Título, Tipo, Data de Início e Data de Fim são obrigatórios.</p>
+            </div>
           </ModalHeader>
 
           <ModalBody className="gap-4">
@@ -181,8 +239,15 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                   label="Título do Evento"
                   placeholder="Ex: Audiência de Conciliação"
                   value={formData.titulo}
-                  onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, titulo: e.target.value });
+                    if (errors.titulo) {
+                      setErrors({ ...errors, titulo: "" });
+                    }
+                  }}
                   isRequired
+                  isInvalid={!!errors.titulo}
+                  errorMessage={errors.titulo}
                   startContent={<FileText className="w-4 h-4 text-default-400" />}
                 />
 
@@ -191,8 +256,15 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                   label="Descrição"
                   placeholder="Descrição detalhada do evento..."
                   value={formData.descricao}
-                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, descricao: e.target.value });
+                    if (errors.descricao) {
+                      setErrors({ ...errors, descricao: "" });
+                    }
+                  }}
                   minRows={2}
+                  isInvalid={!!errors.descricao}
+                  errorMessage={errors.descricao}
                 />
 
                 {/* Tipo e Status */}
@@ -231,8 +303,15 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                     type="datetime-local"
                     label="Data e Hora de Início"
                     value={formData.dataInicio}
-                    onChange={(e) => setFormData({ ...formData, dataInicio: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, dataInicio: e.target.value });
+                      if (errors.dataInicio) {
+                        setErrors({ ...errors, dataInicio: "" });
+                      }
+                    }}
                     isRequired
+                    isInvalid={!!errors.dataInicio}
+                    errorMessage={errors.dataInicio}
                     startContent={<Calendar className="w-4 h-4 text-default-400" />}
                   />
 
@@ -240,8 +319,15 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                     type="datetime-local"
                     label="Data e Hora de Fim"
                     value={formData.dataFim}
-                    onChange={(e) => setFormData({ ...formData, dataFim: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, dataFim: e.target.value });
+                      if (errors.dataFim) {
+                        setErrors({ ...errors, dataFim: "" });
+                      }
+                    }}
                     isRequired
+                    isInvalid={!!errors.dataFim}
+                    errorMessage={errors.dataFim}
                     startContent={<Clock className="w-4 h-4 text-default-400" />}
                   />
                 </div>
@@ -251,7 +337,14 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                   label="Local"
                   placeholder="Ex: Fórum Central - Sala 101"
                   value={formData.local}
-                  onChange={(e) => setFormData({ ...formData, local: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, local: e.target.value });
+                    if (errors.local) {
+                      setErrors({ ...errors, local: "" });
+                    }
+                  }}
+                  isInvalid={!!errors.local}
+                  errorMessage={errors.local}
                   startContent={<MapPin className="w-4 h-4 text-default-400" />}
                 />
 
@@ -340,8 +433,15 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                   label="Observações"
                   placeholder="Observações adicionais..."
                   value={formData.observacoes}
-                  onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, observacoes: e.target.value });
+                    if (errors.observacoes) {
+                      setErrors({ ...errors, observacoes: "" });
+                    }
+                  }}
                   minRows={2}
+                  isInvalid={!!errors.observacoes}
+                  errorMessage={errors.observacoes}
                 />
               </>
             )}

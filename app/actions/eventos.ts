@@ -5,26 +5,60 @@ import { getTenantWithBranding } from "@/app/lib/tenant";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
+// Usar tipos do Prisma - sempre sincronizado com o banco!
+import type { Evento, EventoTipo, EventoStatus } from "@/app/generated/prisma";
 
-// Schema de validação para eventos
-const eventoSchema = z.object({
-  titulo: z.string().min(1, "Título é obrigatório"),
-  descricao: z.string().optional(),
-  tipo: z.enum(["REUNIAO", "AUDIENCIA", "CONSULTA", "PRAZO", "LEMBRETE"]),
-  dataInicio: z.string().datetime(),
-  dataFim: z.string().datetime(),
-  local: z.string().optional(),
-  participantes: z.array(z.string().email()).optional().default([]),
-  processoId: z.string().optional(),
-  clienteId: z.string().optional(),
-  advogadoResponsavelId: z.string().optional(),
-  status: z.enum(["AGENDADO", "CONFIRMADO", "REALIZADO", "CANCELADO"]).default("AGENDADO"),
-  lembreteMinutos: z.number().min(0).optional(),
-  observacoes: z.string().optional(),
-});
+// Tipo para criação de evento (sem campos auto-gerados)
+export type EventoFormData = Omit<Evento, "id" | "tenantId" | "criadoPorId" | "createdAt" | "updatedAt"> & {
+  dataInicio: string; // String para o formulário, será convertido para Date
+  dataFim: string; // String para o formulário, será convertido para Date
+};
 
-export type EventoFormData = z.infer<typeof eventoSchema>;
+// Função de validação simples usando tipos do Prisma
+function validateEvento(data: EventoFormData): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  // Validações básicas
+  if (!data.titulo?.trim()) {
+    errors.push("Título é obrigatório");
+  }
+
+  if (!data.tipo) {
+    errors.push("Tipo de evento é obrigatório");
+  }
+
+  if (!data.dataInicio) {
+    errors.push("Data de início é obrigatória");
+  }
+
+  if (!data.dataFim) {
+    errors.push("Data de fim é obrigatória");
+  }
+
+  // Validação de datas
+  if (data.dataInicio && data.dataFim) {
+    const inicio = new Date(data.dataInicio);
+    const fim = new Date(data.dataFim);
+    if (fim <= inicio) {
+      errors.push("Data de fim deve ser posterior à data de início");
+    }
+  }
+
+  // Validação de emails dos participantes
+  if (data.participantes) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    for (const email of data.participantes) {
+      if (!emailRegex.test(email)) {
+        errors.push(`Email inválido: ${email}`);
+      }
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
 
 // Função auxiliar para buscar o tenant do usuário atual
 async function getCurrentTenant(userId: string) {
@@ -212,52 +246,75 @@ export async function createEvento(formData: EventoFormData) {
     }
 
     // Validar dados
-    const validatedData = eventoSchema.parse(formData);
+    const validation = validateEvento(formData);
+    if (!validation.isValid) {
+      return {
+        success: false,
+        error: validation.errors.join(". "),
+      };
+    }
 
     // Verificar se processo e cliente pertencem ao tenant
-    if (validatedData.processoId) {
+    if (formData.processoId) {
       const processo = await prisma.processo.findFirst({
         where: {
-          id: validatedData.processoId,
+          id: formData.processoId,
           tenantId: tenant.id,
         },
+        select: { id: true, numero: true, titulo: true },
       });
       if (!processo) {
-        throw new Error("Processo não encontrado ou não pertence ao tenant");
+        return {
+          success: false,
+          error: "Processo selecionado não foi encontrado. Verifique se o processo existe e pertence ao seu escritório.",
+        };
       }
     }
 
-    if (validatedData.clienteId) {
+    if (formData.clienteId) {
       const cliente = await prisma.cliente.findFirst({
         where: {
-          id: validatedData.clienteId,
+          id: formData.clienteId,
           tenantId: tenant.id,
         },
+        select: { id: true, nome: true },
       });
       if (!cliente) {
-        throw new Error("Cliente não encontrado ou não pertence ao tenant");
+        return {
+          success: false,
+          error: "Cliente selecionado não foi encontrado. Verifique se o cliente existe e pertence ao seu escritório.",
+        };
       }
     }
 
-    if (validatedData.advogadoResponsavelId) {
+    if (formData.advogadoResponsavelId) {
       const advogado = await prisma.advogado.findFirst({
         where: {
-          id: validatedData.advogadoResponsavelId,
+          id: formData.advogadoResponsavelId,
           tenantId: tenant.id,
+        },
+        select: {
+          id: true,
+          usuario: {
+            select: { firstName: true, lastName: true, email: true },
+          },
         },
       });
       if (!advogado) {
-        throw new Error("Advogado não encontrado ou não pertence ao tenant");
+        return {
+          success: false,
+          error: "Advogado selecionado não foi encontrado. Verifique se o advogado existe e pertence ao seu escritório.",
+        };
       }
     }
 
     const evento = await prisma.evento.create({
       data: {
-        ...validatedData,
+        ...formData,
         tenantId: tenant.id,
         criadoPorId: session.user.id,
-        dataInicio: new Date(validatedData.dataInicio),
-        dataFim: new Date(validatedData.dataFim),
+        dataInicio: new Date(formData.dataInicio),
+        dataFim: new Date(formData.dataFim),
       },
       include: {
         processo: {
@@ -301,9 +358,32 @@ export async function createEvento(formData: EventoFormData) {
     return { success: true, data: evento };
   } catch (error) {
     console.error("Erro ao criar evento:", error);
+
+    // Tratar erros específicos do Prisma
+    if (error instanceof Error) {
+      if (error.message.includes("P2003")) {
+        return {
+          success: false,
+          error: "Erro de referência: um dos itens selecionados (processo, cliente ou advogado) não existe mais. Por favor, recarregue a página e tente novamente.",
+        };
+      }
+      if (error.message.includes("P2002")) {
+        return {
+          success: false,
+          error: "Já existe um evento com essas características. Verifique os dados e tente novamente.",
+        };
+      }
+      if (error.message.includes("ZodError") || error.message.includes("Validation")) {
+        return {
+          success: false,
+          error: "Dados inválidos. Verifique se todos os campos obrigatórios estão preenchidos corretamente.",
+        };
+      }
+    }
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error: "Erro interno do servidor. Tente novamente em alguns instantes.",
     };
   }
 }
@@ -334,52 +414,69 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
     }
 
     // Validar dados se fornecidos
-    const validatedData = formData ? eventoSchema.partial().parse(formData) : {};
+    if (formData) {
+      const validation = validateEvento(formData as EventoFormData);
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: validation.errors.join(". "),
+        };
+      }
+    }
 
     // Verificar relacionamentos se fornecidos
-    if (validatedData.processoId) {
+    if (formData?.processoId) {
       const processo = await prisma.processo.findFirst({
         where: {
-          id: validatedData.processoId,
+          id: formData.processoId,
           tenantId: tenant.id,
         },
       });
       if (!processo) {
-        throw new Error("Processo não encontrado ou não pertence ao tenant");
+        return {
+          success: false,
+          error: "Processo selecionado não foi encontrado. Verifique se o processo existe e pertence ao seu escritório.",
+        };
       }
     }
 
-    if (validatedData.clienteId) {
+    if (formData?.clienteId) {
       const cliente = await prisma.cliente.findFirst({
         where: {
-          id: validatedData.clienteId,
+          id: formData.clienteId,
           tenantId: tenant.id,
         },
       });
       if (!cliente) {
-        throw new Error("Cliente não encontrado ou não pertence ao tenant");
+        return {
+          success: false,
+          error: "Cliente selecionado não foi encontrado. Verifique se o cliente existe e pertence ao seu escritório.",
+        };
       }
     }
 
-    if (validatedData.advogadoResponsavelId) {
+    if (formData?.advogadoResponsavelId) {
       const advogado = await prisma.advogado.findFirst({
         where: {
-          id: validatedData.advogadoResponsavelId,
+          id: formData.advogadoResponsavelId,
           tenantId: tenant.id,
         },
       });
       if (!advogado) {
-        throw new Error("Advogado não encontrado ou não pertence ao tenant");
+        return {
+          success: false,
+          error: "Advogado selecionado não foi encontrado. Verifique se o advogado existe e pertence ao seu escritório.",
+        };
       }
     }
 
-    const updateData: any = { ...validatedData };
+    const updateData: any = { ...formData };
 
-    if (validatedData.dataInicio) {
-      updateData.dataInicio = new Date(validatedData.dataInicio);
+    if (formData?.dataInicio) {
+      updateData.dataInicio = new Date(formData.dataInicio);
     }
-    if (validatedData.dataFim) {
-      updateData.dataFim = new Date(validatedData.dataFim);
+    if (formData?.dataFim) {
+      updateData.dataFim = new Date(formData.dataFim);
     }
 
     const evento = await prisma.evento.update({

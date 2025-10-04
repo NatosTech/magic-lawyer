@@ -1,0 +1,178 @@
+import { useSession } from "next-auth/react";
+import { useMemo } from "react";
+
+export type UserRole = "SUPER_ADMIN" | "ADMIN" | "ADVOGADO" | "SECRETARIA" | "FINANCEIRO" | "CLIENTE";
+
+export interface UserPermissions {
+  canViewAllProcesses: boolean;
+  canViewAllClients: boolean;
+  canViewAllEvents: boolean;
+  canViewFinancialData: boolean;
+  canManageTeam: boolean;
+  canManageOfficeSettings: boolean;
+  canCreateEvents: boolean;
+  canEditAllEvents: boolean;
+  canViewReports: boolean;
+  canManageContracts: boolean;
+  canViewAllDocuments: boolean;
+  canManageUsers: boolean;
+}
+
+export function useUserPermissions() {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role as UserRole | undefined;
+  const userPermissions = (session?.user as any)?.permissions as string[] | undefined;
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
+
+  const permissions = useMemo<UserPermissions>(() => {
+    // SUPER_ADMIN tem acesso total
+    if (isSuperAdmin) {
+      return {
+        canViewAllProcesses: true,
+        canViewAllClients: true,
+        canViewAllEvents: true,
+        canViewFinancialData: true,
+        canManageTeam: true,
+        canManageOfficeSettings: true,
+        canCreateEvents: true,
+        canEditAllEvents: true,
+        canViewReports: true,
+        canManageContracts: true,
+        canViewAllDocuments: true,
+        canManageUsers: true,
+      };
+    }
+
+    // ADMIN (Escritório) - Acesso total ao escritório
+    if (userRole === "ADMIN") {
+      return {
+        canViewAllProcesses: true,
+        canViewAllClients: true,
+        canViewAllEvents: true,
+        canViewFinancialData: true,
+        canManageTeam: true,
+        canManageOfficeSettings: true,
+        canCreateEvents: true,
+        canEditAllEvents: true,
+        canViewReports: true,
+        canManageContracts: true,
+        canViewAllDocuments: true,
+        canManageUsers: true,
+      };
+    }
+
+    // ADVOGADO - Acesso aos seus clientes e processos
+    if (userRole === "ADVOGADO") {
+      return {
+        canViewAllProcesses: false, // Apenas os seus
+        canViewAllClients: false, // Apenas os seus
+        canViewAllEvents: false, // Apenas os seus
+        canViewFinancialData: true, // Apenas o que deve receber
+        canManageTeam: false,
+        canManageOfficeSettings: false,
+        canCreateEvents: true,
+        canEditAllEvents: false, // Apenas os seus
+        canViewReports: false, // Apenas os seus
+        canManageContracts: true, // Apenas os seus
+        canViewAllDocuments: false, // Apenas os dos seus clientes
+        canManageUsers: false,
+      };
+    }
+
+    // SECRETARIA - Acesso operacional
+    if (userRole === "SECRETARIA") {
+      return {
+        canViewAllProcesses: true, // Para organização
+        canViewAllClients: true, // Para atendimento
+        canViewAllEvents: true, // Para organização da agenda
+        canViewFinancialData: false, // Não acessa dados financeiros
+        canManageTeam: false,
+        canManageOfficeSettings: false,
+        canCreateEvents: true, // Para organizar agenda
+        canEditAllEvents: true, // Para reagendar
+        canViewReports: false,
+        canManageContracts: false,
+        canViewAllDocuments: true, // Para organização
+        canManageUsers: false,
+      };
+    }
+
+    // FINANCEIRO - Acesso ao módulo financeiro
+    if (userRole === "FINANCEIRO") {
+      return {
+        canViewAllProcesses: false,
+        canViewAllClients: true, // Para faturas
+        canViewAllEvents: false,
+        canViewFinancialData: true, // Acesso total ao financeiro
+        canManageTeam: false,
+        canManageOfficeSettings: false,
+        canCreateEvents: false,
+        canEditAllEvents: false,
+        canViewReports: true, // Relatórios financeiros
+        canManageContracts: true, // Para faturas
+        canViewAllDocuments: false,
+        canManageUsers: false,
+      };
+    }
+
+    // CLIENTE - Acesso limitado aos seus dados
+    if (userRole === "CLIENTE") {
+      return {
+        canViewAllProcesses: false, // Apenas o seu
+        canViewAllClients: false,
+        canViewAllEvents: false, // Apenas eventos do seu processo
+        canViewFinancialData: true, // Apenas o que deve pagar
+        canManageTeam: false,
+        canManageOfficeSettings: false,
+        canCreateEvents: false,
+        canEditAllEvents: false,
+        canViewReports: false,
+        canManageContracts: false,
+        canViewAllDocuments: true, // Apenas os seus
+        canManageUsers: false,
+      };
+    }
+
+    // Default - sem permissões
+    return {
+      canViewAllProcesses: false,
+      canViewAllClients: false,
+      canViewAllEvents: false,
+      canViewFinancialData: false,
+      canManageTeam: false,
+      canManageOfficeSettings: false,
+      canCreateEvents: false,
+      canEditAllEvents: false,
+      canViewReports: false,
+      canManageContracts: false,
+      canViewAllDocuments: false,
+      canManageUsers: false,
+    };
+  }, [userRole, isSuperAdmin]);
+
+  const hasPermission = (permission: keyof UserPermissions) => {
+    return permissions[permission];
+  };
+
+  const hasAnyPermission = (permissionsList: (keyof UserPermissions)[]) => {
+    return permissionsList.some((permission) => permissions[permission]);
+  };
+
+  const hasAllPermissions = (permissionsList: (keyof UserPermissions)[]) => {
+    return permissionsList.every((permission) => permissions[permission]);
+  };
+
+  return {
+    userRole,
+    permissions,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    isSuperAdmin,
+    isAdmin: userRole === "ADMIN",
+    isAdvogado: userRole === "ADVOGADO",
+    isSecretaria: userRole === "SECRETARIA",
+    isFinanceiro: userRole === "FINANCEIRO",
+    isCliente: userRole === "CLIENTE",
+  };
+}

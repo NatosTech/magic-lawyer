@@ -6,6 +6,8 @@ Este projeto tem como objetivo o desenvolvimento de um sistema moderno, escaláv
 
 Para começar a desenvolver, consulte o **[Guia de Desenvolvimento](DEVELOPMENT.md)** que contém instruções específicas para Windows, macOS e Linux.
 
+> **🤖 Para IA/Assistentes**: Consulte o arquivo **[AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md)** que contém diretrizes específicas para desenvolvimento no projeto, incluindo a regra fundamental de sempre usar tipos do Prisma.
+
 ### Comando Universal
 ```bash
 npm run dev
@@ -92,6 +94,52 @@ npx prisma db seed
 ```
 
 - Como o `prisma.config.ts` controla o carregamento, garanta que as variáveis de ambiente (`DATABASE_URL`, etc.) estejam ativas no shell antes de executar os comandos (ex.: `export $(grep -v "^#" .env | xargs)` em bash/zsh).
+
+### 🎯 **IMPORTANTE: Sempre Use Tipos do Prisma**
+
+**REGRA FUNDAMENTAL**: Sempre prefira usar os tipos gerados pelo Prisma em vez de criar interfaces customizadas.
+
+#### ✅ **Por que usar tipos do Prisma?**
+- **Sempre sincronizado** com o banco de dados
+- **Menos código** para manter
+- **Tipagem automática** quando o schema muda
+- **Menos duplicação** de tipos
+- **Type safety** garantido
+
+#### ✅ **Como usar corretamente:**
+```typescript
+// ❌ EVITE - Interface customizada
+interface EventoFormData {
+  titulo: string;
+  descricao?: string;
+  tipo: "REUNIAO" | "AUDIENCIA";
+  // ... mais campos
+}
+
+// ✅ PREFIRA - Tipos do Prisma
+import type { Evento, EventoTipo, EventoStatus } from "@/app/generated/prisma";
+
+// Para formulários (sem campos auto-gerados)
+export type EventoFormData = Omit<Evento, "id" | "tenantId" | "criadoPorId" | "createdAt" | "updatedAt"> & {
+  dataInicio: string; // String para o formulário, será convertido para Date
+  dataFim: string;    // String para o formulário, será convertido para Date
+};
+
+// Para validação
+function validateEvento(data: EventoFormData): { isValid: boolean; errors: string[] } {
+  // Validação usando os tipos do Prisma
+}
+```
+
+#### ✅ **Vantagens práticas:**
+- Quando você adiciona um campo no schema, o TypeScript automaticamente detecta onde precisa atualizar
+- Não há risco de desincronização entre interface e banco
+- Menos trabalho de manutenção
+- Código mais limpo e consistente
+
+#### ⚠️ **Exceções raras:**
+- Apenas quando precisar de tipos muito específicos para formulários (como converter Date para string)
+- Use `Omit<>` ou `Pick<>` para adaptar os tipos do Prisma
 
 ## Containerização com Docker
 
@@ -250,6 +298,92 @@ Consulta unificada:
 Modelos principais:
 - `Documento`: metadados do arquivo e relacionamentos com cliente/processo/movimentação/contrato.
 - `ProcessoDocumento`: nova tabela pivot para vincular um documento a vários processos.
+
+### 📅 **IMPORTANTE: Use Day.js para Manipulação de Datas**
+
+**REGRA FUNDAMENTAL**: Sempre use `DateUtils` para manipulação de datas em vez de `Date` nativo.
+
+#### ✅ **Por que usar Day.js?**
+- **Performance**: Muito mais rápido que Moment.js
+- **Imutabilidade**: Objetos não são mutados
+- **API Consistente**: Métodos padronizados
+- **Localização**: Suporte completo ao português
+- **Plugins**: Extensões para timezone, UTC, etc.
+
+#### ✅ **Como usar corretamente:**
+```typescript
+import { DateUtils } from "@/app/lib/date-utils";
+
+// ❌ EVITE - Date nativo
+const data = new Date(evento.dataInicio);
+const formatada = data.toLocaleDateString("pt-BR");
+
+// ✅ PREFIRA - DateUtils
+const dataFormatada = DateUtils.formatDate(evento.dataInicio);
+const horaFormatada = DateUtils.formatTime(evento.dataInicio);
+const dataLonga = DateUtils.formatDateLong(evento.dataInicio);
+
+// Comparações
+const isToday = DateUtils.isToday(evento.dataInicio);
+const isSameDay = DateUtils.isSameDay(data1, data2);
+
+// Conversões com CalendarDate
+const calendarDate = DateUtils.fromCalendarDate(selectedDate);
+const formatada = DateUtils.formatCalendarDate(selectedDate);
+```
+
+#### 📚 **Métodos Disponíveis:**
+- `formatDate()` - DD/MM/YYYY
+- `formatDateTime()` - DD/MM/YYYY HH:mm
+- `formatTime()` - HH:mm
+- `formatDateLong()` - DD de MMMM de YYYY
+- `formatRelative()` - há 2 dias, em 3 horas
+- `isToday()`, `isTomorrow()`, `isYesterday()`
+- `isSameDay()`, `isBetween()`
+- `addDays()`, `subtractDays()`, `addMonths()`
+- `startOfDay()`, `endOfDay()`, `startOfWeek()`, `endOfWeek()`
+
+## 📋 **Regras de Negócio e Visões por Perfil**
+
+> **📖 Documentação Completa**: Consulte o arquivo **[BUSINESS_RULES.md](BUSINESS_RULES.md)** para regras detalhadas de negócio e visões específicas por perfil de usuário.
+
+### **🎯 Visões por Perfil:**
+
+#### **ADMIN/ESCRITÓRIO:**
+- ✅ **Acesso total** a todos os módulos
+- ✅ **Visão completa** da agenda (todos os eventos)
+- ✅ **Controle financeiro** total (receitas, despesas, comissões)
+- ✅ **Relatórios** e analytics completos
+
+#### **ADVOGADO:**
+- ✅ **Agenda pessoal** (seus eventos e clientes)
+- ✅ **Financeiro pessoal** (o que deve receber)
+- ✅ **Seus clientes** e processos
+- ❌ **Não vê** dados de outros advogados
+
+#### **SECRETARIA:**
+- ✅ **Agenda operacional** (todos os eventos para organização)
+- ✅ **Controle de prazos** e compromissos
+- ❌ **Não acessa** dados financeiros
+
+#### **CLIENTE:**
+- ✅ **Agenda do processo** (eventos relacionados)
+- ✅ **Financeiro pessoal** (o que deve pagar)
+- ✅ **Status do processo**
+- ❌ **Não vê** dados internos
+
+### **💰 Sistema Financeiro:**
+
+#### **Fluxo Financeiro:**
+```
+Cliente Paga → Escritório Recebe → Advogado Recebe Comissão
+```
+
+#### **Tipos de Comissão:**
+- **Honorários Contratuais** (valor fixo)
+- **Ação Ganha** (percentual sobre resultado)
+- **Custas Reembolsáveis** (despesas do processo)
+- **Despesas Extras** (perícias, viagens, etc.)
 
 ## 🆕 Novas Funcionalidades Implementadas
 

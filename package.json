@@ -71,6 +71,7 @@
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
     "clsx": "2.1.1",
+    "dayjs": "^1.11.18",
     "framer-motion": "11.18.2",
     "googleapis": "^161.0.0",
     "intl-messageformat": "10.7.16",
@@ -82,8 +83,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "sonner": "^2.0.7",
-    "swr": "^2.3.6",
-    "zod": "^4.1.11"
+    "swr": "^2.3.6"
   },
   "devDependencies": {
     "@eslint/compat": "1.2.5",
