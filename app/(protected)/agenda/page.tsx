@@ -7,7 +7,7 @@ import { Calendar as CalendarComponent } from "@heroui/react";
 import { today, getLocalTimeZone, startOfWeek, startOfMonth } from "@internationalized/date";
 import { useLocale } from "@react-aria/i18n";
 import { useEventos, useEventosHoje, useEventosSemana, useEventosMes } from "@/app/hooks/use-eventos";
-import { deleteEvento, marcarEventoComoRealizado } from "@/app/actions/eventos";
+import { deleteEvento, marcarEventoComoRealizado, getEventoById } from "@/app/actions/eventos";
 import EventoForm from "@/components/evento-form";
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { toast } from "sonner";
@@ -56,9 +56,20 @@ export default function AgendaPage() {
     setIsEventoFormOpen(true);
   };
 
-  const handleEditEvento = (evento: any) => {
-    setEventoEditando(evento);
-    setIsEventoFormOpen(true);
+  const handleEditEvento = async (evento: any) => {
+    try {
+      // Buscar o evento completo com todos os relacionamentos
+      const result = await getEventoById(evento.id);
+      if (result.success && result.data) {
+        setEventoEditando(result.data);
+        setIsEventoFormOpen(true);
+      } else {
+        toast.error("Erro ao carregar dados do evento");
+      }
+    } catch (error) {
+      console.error("Erro ao buscar evento:", error);
+      toast.error("Erro ao carregar dados do evento");
+    }
   };
 
   const handleDeleteEvento = async (eventoId: string) => {
@@ -411,9 +422,7 @@ export default function AgendaPage() {
 
                           {(evento as any).cliente && (
                             <div className="mt-3">
-                              <Badge content="" color="primary" size="sm">
-                                <span className="text-xs text-default-500">Cliente: {(evento as any).cliente?.nome}</span>
-                              </Badge>
+                              <span className="text-xs text-default-500">Cliente: {(evento as any).cliente?.nome}</span>
                             </div>
                           )}
                         </div>

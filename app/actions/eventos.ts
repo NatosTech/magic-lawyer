@@ -625,6 +625,7 @@ export async function getEventoFormData() {
           id: true,
           numero: true,
           titulo: true,
+          clienteId: true,
         },
         orderBy: { numero: "desc" },
       }),

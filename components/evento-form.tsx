@@ -43,63 +43,57 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
   const [participantes, setParticipantes] = useState<string[]>([]);
   const [novoParticipante, setNovoParticipante] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formData, setFormData] = useState<Partial<EventoFormData>>({
-    titulo: "",
-    descricao: "",
-    tipo: "REUNIAO",
-    dataInicio: "",
-    dataFim: "",
-    local: "",
-    processoId: "",
-    clienteId: "",
-    advogadoResponsavelId: "",
-    status: "AGENDADO",
-    lembreteMinutos: 30,
-    observacoes: "",
-  });
 
-  const { formData: selectData, isLoading: isLoadingFormData } = useEventoFormData();
-
-  useEffect(() => {
+  // Estado inicial baseado no evento (se houver)
+  const [formData, setFormData] = useState<any>(() => {
     if (evento) {
-      // Preencher formulário com dados do evento existente
-      setFormData({
+      return {
         titulo: evento.titulo || "",
         descricao: evento.descricao || "",
         tipo: evento.tipo || "REUNIAO",
         dataInicio: evento.dataInicio ? new Date(evento.dataInicio).toISOString().slice(0, 16) : "",
         dataFim: evento.dataFim ? new Date(evento.dataFim).toISOString().slice(0, 16) : "",
         local: evento.local || "",
-        processoId: evento.processoId || "",
-        clienteId: evento.clienteId || "",
-        advogadoResponsavelId: evento.advogadoResponsavelId || "",
+        processoId: evento.processoId || null,
+        clienteId: evento.clienteId || null,
+        advogadoResponsavelId: evento.advogadoResponsavelId || null,
         status: evento.status || "AGENDADO",
         lembreteMinutos: evento.lembreteMinutos || 30,
         observacoes: evento.observacoes || "",
-      });
-      setParticipantes(evento.participantes || []);
-    } else {
-      // Limpar formulário para novo evento
-      setFormData({
-        titulo: "",
-        descricao: "",
-        tipo: "REUNIAO",
-        dataInicio: "",
-        dataFim: "",
-        local: "",
-        processoId: "",
-        clienteId: "",
-        advogadoResponsavelId: "",
-        status: "AGENDADO",
-        lembreteMinutos: 30,
-        observacoes: "",
-      });
-      setParticipantes([]);
+      };
     }
+    return {
+      titulo: "",
+      descricao: "",
+      tipo: "REUNIAO",
+      dataInicio: "",
+      dataFim: "",
+      local: "",
+      processoId: null,
+      clienteId: null,
+      advogadoResponsavelId: null,
+      status: "AGENDADO",
+      lembreteMinutos: 30,
+      observacoes: "",
+    };
+  });
 
-    // Limpar erros quando o modal abre
+  const { formData: selectData, isLoading: isLoadingFormData } = useEventoFormData();
+
+  // Filtrar processos baseado no cliente selecionado
+  const processosFiltrados =
+    selectData?.processos?.filter((processo: any) => {
+      if (!formData.clienteId) return true; // Se não há cliente selecionado, mostrar todos
+      return processo.clienteId === formData.clienteId;
+    }) || [];
+
+  // Inicializar participantes baseado no evento
+  const [participantesIniciais] = useState(() => evento?.participantes || []);
+
+  // Limpar erros quando o modal abre
+  if (isOpen && Object.keys(errors).length > 0) {
     setErrors({});
-  }, [evento, isOpen]);
+  }
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -248,7 +242,9 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                   isRequired
                   isInvalid={!!errors.titulo}
                   errorMessage={errors.titulo}
-                  startContent={<FileText className="w-4 h-4 text-default-400" />}
+                  startContent={<FileText className="w-4 h-4 text-primary" />}
+                  color="primary"
+                  variant="bordered"
                 />
 
                 {/* Descrição */}
@@ -265,6 +261,8 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                   minRows={2}
                   isInvalid={!!errors.descricao}
                   errorMessage={errors.descricao}
+                  color="secondary"
+                  variant="bordered"
                 />
 
                 {/* Tipo e Status */}
@@ -275,11 +273,10 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                     selectedKeys={formData.tipo ? [formData.tipo] : []}
                     onChange={(e) => setFormData({ ...formData, tipo: e.target.value as any })}
                     isRequired
+                    color="primary"
                   >
                     {tiposEvento.map((tipo) => (
-                      <SelectItem key={tipo.key} value={tipo.key}>
-                        {tipo.label}
-                      </SelectItem>
+                      <SelectItem key={tipo.key}>{tipo.label}</SelectItem>
                     ))}
                   </Select>
 
@@ -288,11 +285,10 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                     placeholder="Selecione o status"
                     selectedKeys={formData.status ? [formData.status] : []}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    color="default"
                   >
                     {statusEvento.map((status) => (
-                      <SelectItem key={status.key} value={status.key}>
-                        {status.label}
-                      </SelectItem>
+                      <SelectItem key={status.key}>{status.label}</SelectItem>
                     ))}
                   </Select>
                 </div>
@@ -312,7 +308,9 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                     isRequired
                     isInvalid={!!errors.dataInicio}
                     errorMessage={errors.dataInicio}
-                    startContent={<Calendar className="w-4 h-4 text-default-400" />}
+                    startContent={<Calendar className="w-4 h-4 text-success" />}
+                    color="success"
+                    variant="bordered"
                   />
 
                   <Input
@@ -328,7 +326,9 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                     isRequired
                     isInvalid={!!errors.dataFim}
                     errorMessage={errors.dataFim}
-                    startContent={<Clock className="w-4 h-4 text-default-400" />}
+                    startContent={<Clock className="w-4 h-4 text-warning" />}
+                    color="warning"
+                    variant="bordered"
                   />
                 </div>
 
@@ -345,48 +345,53 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                   }}
                   isInvalid={!!errors.local}
                   errorMessage={errors.local}
-                  startContent={<MapPin className="w-4 h-4 text-default-400" />}
+                  startContent={<MapPin className="w-4 h-4 text-danger" />}
+                  color="danger"
+                  variant="bordered"
                 />
 
                 {/* Relacionamentos */}
                 <div className="grid grid-cols-3 gap-4">
                   <Select
-                    label="Processo"
-                    placeholder="Selecione um processo"
-                    selectedKeys={formData.processoId ? [formData.processoId] : []}
-                    onChange={(e) => setFormData({ ...formData, processoId: e.target.value })}
+                    label="Cliente"
+                    placeholder="Selecione um cliente"
+                    selectedKeys={formData.clienteId ? [formData.clienteId.toString()] : []}
+                    onChange={(e) => {
+                      const novoClienteId = e.target.value;
+                      setFormData({
+                        ...formData,
+                        clienteId: novoClienteId,
+                        processoId: null, // Limpar processo quando cliente muda
+                      });
+                    }}
+                    color="secondary"
                   >
-                    {selectData.processos.map((processo) => (
-                      <SelectItem key={processo.id} value={processo.id}>
-                        {processo.numero}
-                      </SelectItem>
-                    ))}
+                    {selectData?.clientes?.map((cliente) => <SelectItem key={cliente.id}>{cliente.nome}</SelectItem>) || []}
                   </Select>
 
                   <Select
-                    label="Cliente"
-                    placeholder="Selecione um cliente"
-                    selectedKeys={formData.clienteId ? [formData.clienteId] : []}
-                    onChange={(e) => setFormData({ ...formData, clienteId: e.target.value })}
+                    label="Processo"
+                    placeholder={formData.clienteId ? "Selecione um processo" : "Primeiro selecione um cliente"}
+                    selectedKeys={formData.processoId ? [formData.processoId.toString()] : []}
+                    onChange={(e) => setFormData({ ...formData, processoId: e.target.value })}
+                    isDisabled={!formData.clienteId}
+                    color="warning"
                   >
-                    {selectData.clientes.map((cliente) => (
-                      <SelectItem key={cliente.id} value={cliente.id}>
-                        {cliente.nome}
-                      </SelectItem>
+                    {processosFiltrados.map((processo) => (
+                      <SelectItem key={processo.id}>{processo.numero}</SelectItem>
                     ))}
                   </Select>
 
                   <Select
                     label="Advogado Responsável"
                     placeholder="Selecione um advogado"
-                    selectedKeys={formData.advogadoResponsavelId ? [formData.advogadoResponsavelId] : []}
+                    selectedKeys={formData.advogadoResponsavelId ? [formData.advogadoResponsavelId.toString()] : []}
                     onChange={(e) => setFormData({ ...formData, advogadoResponsavelId: e.target.value })}
+                    color="success"
                   >
-                    {selectData.advogados.map((advogado) => (
-                      <SelectItem key={advogado.id} value={advogado.id}>
-                        {`${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() || advogado.usuario.email}
-                      </SelectItem>
-                    ))}
+                    {selectData?.advogados?.map((advogado) => (
+                      <SelectItem key={advogado.id}>{`${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() || advogado.usuario.email}</SelectItem>
+                    )) || []}
                   </Select>
                 </div>
 
@@ -397,7 +402,16 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                     Participantes
                   </label>
                   <div className="flex gap-2 mb-2">
-                    <Input placeholder="Digite o email do participante" value={novoParticipante} onChange={(e) => setNovoParticipante(e.target.value)} onKeyPress={handleKeyPress} className="flex-1" />
+                    <Input
+                      placeholder="Digite o email do participante"
+                      value={novoParticipante}
+                      onChange={(e) => setNovoParticipante(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      className="flex-1"
+                      color="primary"
+                      variant="bordered"
+                      startContent={<Users className="w-4 h-4 text-primary" />}
+                    />
                     <Button type="button" onPress={adicionarParticipante} isDisabled={!novoParticipante} size="sm">
                       Adicionar
                     </Button>
@@ -417,14 +431,13 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                 <Select
                   label="Lembrete"
                   placeholder="Selecione quando receber o lembrete"
-                  selectedKeys={formData.lembreteMinutos !== undefined ? [formData.lembreteMinutos.toString()] : []}
+                  selectedKeys={formData.lembreteMinutos !== undefined && formData.lembreteMinutos !== null ? [formData.lembreteMinutos.toString()] : []}
                   onChange={(e) => setFormData({ ...formData, lembreteMinutos: parseInt(e.target.value) })}
-                  startContent={<AlertCircle className="w-4 h-4 text-default-400" />}
+                  startContent={<AlertCircle className="w-4 h-4 text-warning" />}
+                  color="warning"
                 >
                   {lembretes.map((lembrete) => (
-                    <SelectItem key={lembrete.key.toString()} value={lembrete.key.toString()}>
-                      {lembrete.label}
-                    </SelectItem>
+                    <SelectItem key={lembrete.key.toString()}>{lembrete.label}</SelectItem>
                   ))}
                 </Select>
 
@@ -442,6 +455,8 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
                   minRows={2}
                   isInvalid={!!errors.observacoes}
                   errorMessage={errors.observacoes}
+                  color="default"
+                  variant="bordered"
                 />
               </>
             )}
