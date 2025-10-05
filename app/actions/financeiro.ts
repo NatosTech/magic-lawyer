@@ -316,14 +316,16 @@ export async function getTopTenants(): Promise<{
     });
 
     const tenantsComReceita = tenants.map((tenant) => {
-      const receitaTotal = tenant.subscription ? tenant.subscription.faturas.reduce((fatTotal: number, fatura: any) => {
-        return (
-          fatTotal +
-          fatura.pagamentos.reduce((pagTotal: number, pagamento: any) => {
-            return pagTotal + Number(pagamento.valor);
+      const receitaTotal = tenant.subscription
+        ? tenant.subscription.faturas.reduce((fatTotal: number, fatura: any) => {
+            return (
+              fatTotal +
+              fatura.pagamentos.reduce((pagTotal: number, pagamento: any) => {
+                return pagTotal + Number(pagamento.valor);
+              }, 0)
+            );
           }, 0)
-        );
-      }, 0) : 0;
+        : 0;
 
       const assinaturasAtivas = tenant.subscription && tenant.subscription.status === "ATIVA" ? 1 : 0;
 
