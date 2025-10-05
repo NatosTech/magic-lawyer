@@ -9,6 +9,7 @@ export interface NavigationItem {
   badge?: string;
   children?: NavigationItem[];
   isAccordion?: boolean;
+  section?: string; // Nova propriedade para agrupamento
 }
 
 export function useProfileNavigation() {
@@ -17,14 +18,27 @@ export function useProfileNavigation() {
   const navigationItems = useMemo<NavigationItem[]>(() => {
     const items: NavigationItem[] = [];
 
-    // Dashboard - Todos os perfis
+    // ===== SEÇÃO: VISÃO GERAL =====
     items.push({
       label: "Painel",
       href: "/dashboard",
       icon: "LayoutDashboard",
       description: "Visão geral do sistema",
+      section: "Visão Geral",
     });
 
+    // Relatórios - Apenas para perfis com acesso
+    if (permissions.canViewReports) {
+      items.push({
+        label: "Relatórios",
+        href: "/relatorios",
+        icon: "BarChart3",
+        description: "Relatórios e analytics",
+        section: "Visão Geral",
+      });
+    }
+
+    // ===== SEÇÃO: GESTÃO DE PESSOAS =====
     // Clientes - Baseado em permissões
     if (permissions.canViewAllClients) {
       items.push({
@@ -32,9 +46,33 @@ export function useProfileNavigation() {
         href: "/clientes",
         icon: "Users",
         description: "Gestão da base de clientes",
+        section: "Gestão de Pessoas",
       });
     }
 
+    // Advogados - Apenas para ADMIN
+    if (permissions.canManageTeam) {
+      items.push({
+        label: "Advogados",
+        href: "/advogados",
+        icon: "Users",
+        description: "Gestão de advogados do escritório",
+        section: "Gestão de Pessoas",
+      });
+    }
+
+    // Equipe - Apenas para ADMIN
+    if (permissions.canManageTeam) {
+      items.push({
+        label: "Equipe",
+        href: "/equipe",
+        icon: "Users",
+        description: "Gestão de usuários e permissões",
+        section: "Gestão de Pessoas",
+      });
+    }
+
+    // ===== SEÇÃO: ATIVIDADES JURÍDICAS =====
     // Processos com accordion - Baseado em permissões
     if (permissions.canViewAllProcesses || permissions.canViewAllClients) {
       items.push({
@@ -43,6 +81,7 @@ export function useProfileNavigation() {
         icon: "FileText",
         description: isCliente ? "Meu processo" : "Gestão de processos",
         isAccordion: true,
+        section: "Atividades Jurídicas",
         children: [
           {
             label: "Processos",
@@ -68,6 +107,7 @@ export function useProfileNavigation() {
         icon: "FileSignature",
         description: "Gestão de contratos e modelos",
         isAccordion: true,
+        section: "Atividades Jurídicas",
         children: [
           {
             label: "Contratos",
@@ -92,26 +132,7 @@ export function useProfileNavigation() {
         href: "/documentos",
         icon: "FolderOpen",
         description: isCliente ? "Meus documentos" : "Gestão de documentos",
-      });
-    }
-
-    // Agenda - Baseado em permissões
-    if (permissions.canViewAllEvents || permissions.canCreateEvents) {
-      items.push({
-        label: "Agenda",
-        href: "/agenda",
-        icon: "Calendar",
-        description: isCliente ? "Eventos do meu processo" : "Gestão de agenda",
-      });
-    }
-
-    // Financeiro - Baseado em permissões
-    if (permissions.canViewFinancialData) {
-      items.push({
-        label: "Financeiro",
-        href: "/financeiro",
-        icon: "DollarSign",
-        description: isCliente ? "Minhas faturas" : isAdvogado ? "Minhas comissões" : "Gestão financeira",
+        section: "Atividades Jurídicas",
       });
     }
 
@@ -122,48 +143,44 @@ export function useProfileNavigation() {
         href: "/juizes",
         icon: "Scale",
         description: isCliente ? "Informações sobre juízes" : "Base de dados de juízes",
+        section: "Atividades Jurídicas",
       });
     }
 
-    // Relatórios - Apenas para perfis com acesso
-    if (permissions.canViewReports) {
+    // ===== SEÇÃO: OPERACIONAL =====
+    // Agenda - Baseado em permissões
+    if (permissions.canViewAllEvents || permissions.canCreateEvents) {
       items.push({
-        label: "Relatórios",
-        href: "/relatorios",
-        icon: "BarChart3",
-        description: "Relatórios e analytics",
+        label: "Agenda",
+        href: "/agenda",
+        icon: "Calendar",
+        description: isCliente ? "Eventos do meu processo" : "Gestão de agenda",
+        section: "Operacional",
       });
     }
 
-    // Advogados - Apenas para ADMIN
-    if (permissions.canManageTeam) {
+    // Financeiro - Baseado em permissões
+    if (permissions.canViewFinancialData) {
       items.push({
-        label: "Advogados",
-        href: "/advogados",
-        icon: "Users",
-        description: "Gestão de advogados do escritório",
+        label: "Financeiro",
+        href: "/financeiro",
+        icon: "DollarSign",
+        description: isCliente ? "Minhas faturas" : isAdvogado ? "Minhas comissões" : "Gestão financeira",
+        section: "Operacional",
       });
     }
 
-    // Equipe - Apenas para ADMIN
-    if (permissions.canManageTeam) {
-      items.push({
-        label: "Equipe",
-        href: "/equipe",
-        icon: "Users",
-        description: "Gestão de usuários e permissões",
-      });
-    }
-
-    // Configurações - Apenas para ADMIN
-    if (permissions.canManageOfficeSettings) {
-      items.push({
-        label: "Configurações",
-        href: "/configuracoes",
-        icon: "Settings",
-        description: "Configurações do escritório",
-      });
-    }
+    // ===== SEÇÃO: ADMINISTRAÇÃO =====
+    // Configurações - Apenas para ADMIN (removido daqui, vai para secondary)
+    // if (permissions.canManageOfficeSettings) {
+    //   items.push({
+    //     label: "Configurações",
+    //     href: "/configuracoes",
+    //     icon: "Settings",
+    //     description: "Configurações do escritório",
+    //     section: "Administração",
+    //   });
+    // }
 
     return items;
   }, [permissions, userRole, isAdmin, isAdvogado, isSecretaria, isFinanceiro, isCliente]);
@@ -196,6 +213,7 @@ export function useProfileNavigation() {
         href: "/configuracoes",
         icon: "Settings",
         description: "Configurações gerais do escritório",
+        section: "Administração",
       });
     }
 
@@ -205,6 +223,7 @@ export function useProfileNavigation() {
       href: "/help",
       icon: "HelpCircle",
       description: "Central de ajuda e suporte",
+      section: "Administração",
     });
 
     return items;

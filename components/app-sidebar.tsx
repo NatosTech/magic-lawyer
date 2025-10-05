@@ -180,6 +180,7 @@ export type SidebarNavItem = {
   href: string;
   children?: SidebarNavItem[];
   isAccordion?: boolean;
+  section?: string;
 };
 
 export type SidebarProps = {
@@ -194,7 +195,11 @@ export type SidebarProps = {
 };
 
 const SidebarSectionLabel = ({ collapsed, children }: { collapsed: boolean; children: ReactNode }) =>
-  collapsed ? null : <p className="px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-default-500">{children}</p>;
+  collapsed ? null : (
+    <div className="px-2 py-0.5">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-default-500">{children}</p>
+    </div>
+  );
 
 // Componente para item com accordion
 const AccordionNavItem = ({ item, isActive, icon, isDesktop, onCloseMobile }: { item: SidebarNavItem; isActive: boolean; icon: JSX.Element; isDesktop: boolean; onCloseMobile?: () => void }) => {
@@ -373,13 +378,68 @@ function SidebarContent({
   const pathname = usePathname();
 
   const sections = useMemo(() => {
-    const groups: Array<{ title: string; items: SidebarNavItem[] }> = [{ title: "Navegação", items: navItems }];
+    // Agrupar itens principais por seção
+    const groupedItems = navItems.reduce(
+      (acc, item) => {
+        const section = item.section || "Geral";
+        if (!acc[section]) {
+          acc[section] = [];
+        }
+        acc[section].push(item);
+        return acc;
+      },
+      {} as Record<string, SidebarNavItem[]>
+    );
 
-    if (secondaryItems.length > 0) {
-      groups.push({ title: "Administração", items: secondaryItems });
-    }
+    // Agrupar itens secundários por seção
+    const groupedSecondaryItems = secondaryItems.reduce(
+      (acc, item) => {
+        const section = item.section || "Administração";
+        if (!acc[section]) {
+          acc[section] = [];
+        }
+        acc[section].push(item);
+        return acc;
+      },
+      {} as Record<string, SidebarNavItem[]>
+    );
 
-    return groups;
+    // Criar seções ordenadas
+    const sections: Array<{ title: string; items: SidebarNavItem[] }> = [];
+
+    // Ordem das seções principais
+    const sectionOrder = ["Visão Geral", "Gestão de Pessoas", "Atividades Jurídicas", "Operacional", "Administração"];
+
+    // Adicionar seções principais na ordem
+    sectionOrder.forEach((sectionTitle) => {
+      if (groupedItems[sectionTitle]?.length > 0) {
+        sections.push({ title: sectionTitle, items: groupedItems[sectionTitle] });
+      }
+    });
+
+    // Adicionar seções não ordenadas
+    Object.entries(groupedItems).forEach(([sectionTitle, items]) => {
+      if (!sectionOrder.includes(sectionTitle) && items.length > 0) {
+        sections.push({ title: sectionTitle, items });
+      }
+    });
+
+    // Adicionar seções secundárias (evitando duplicatas)
+    Object.entries(groupedSecondaryItems).forEach(([sectionTitle, items]) => {
+      if (items.length > 0) {
+        // Verificar se já existe uma seção com esse nome
+        const existingSectionIndex = sections.findIndex((s) => s.title === sectionTitle);
+        if (existingSectionIndex >= 0) {
+          // Se existe, mesclar os itens
+          sections[existingSectionIndex].items.push(...items);
+        } else {
+          // Se não existe, criar nova seção
+          sections.push({ title: sectionTitle, items });
+        }
+      }
+    });
+
+    return sections;
   }, [navItems, secondaryItems]);
 
   return (
@@ -402,9 +462,12 @@ function SidebarContent({
         ) : null}
       </div>
 
-      <div className="flex-1 space-y-4 overflow-y-auto px-2">
-        {sections.map((section) => (
-          <div key={section.title} className="space-y-2">
+      <div className="flex-1 space-y-3 overflow-y-auto px-2">
+        {sections.map((section, index) => (
+          <div key={section.title} className="space-y-1.5">
+            {/* Separador visual entre seções (exceto a primeira) */}
+            {index > 0 && !collapsed && <div className="mx-2 my-1.5 border-t border-default-200/50"></div>}
+
             <SidebarSectionLabel collapsed={collapsed}>{section.title}</SidebarSectionLabel>
 
             {collapsed ? (
