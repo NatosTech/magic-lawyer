@@ -192,6 +192,39 @@ enum TipoComissao {
   OUTROS
 }
 
+enum JuizStatus {
+  ATIVO
+  INATIVO
+  APOSENTADO
+  SUSPENSO
+}
+
+enum EspecialidadeJuridica {
+  CIVIL
+  CRIMINAL
+  TRABALHISTA
+  FAMILIA
+  TRIBUTARIO
+  ADMINISTRATIVO
+  EMPRESARIAL
+  CONSUMIDOR
+  AMBIENTAL
+  ELETORAL
+  MILITAR
+  PREVIDENCIARIO
+  CONSTITUCIONAL
+  INTERNACIONAL
+  OUTROS
+}
+
+enum JuizNivel {
+  JUIZ_SUBSTITUTO
+  JUIZ_TITULAR
+  DESEMBARGADOR
+  MINISTRO
+  OUTROS
+}
+
 model AreaProcesso {
   id        String   @id @default(cuid())
   tenantId  String?
@@ -286,6 +319,10 @@ model Tenant {
   areasProcesso       AreaProcesso[]
   tiposContrato       TipoContrato[]
   categoriasTarefa    CategoriaTarefa[]
+  julgamentos         Julgamento[]
+  analisesJuiz        AnaliseJuiz[]
+  favoritosJuiz       FavoritoJuiz[]
+  acessosJuiz         AcessoJuiz[]
   subscription        TenantSubscription?
   faturas             Fatura[]
   pagamentos          Pagamento[]
@@ -379,6 +416,10 @@ model Usuario {
   permissoes                UsuarioPermissao[]
   eventosCriados            Evento[]
   documentoAssinaturasCriadas DocumentoAssinatura[]
+  julgamentosCriados        Julgamento[]       @relation("JulgamentoCriador")
+  analisesJuizCriadas       AnaliseJuiz[]      @relation("AnaliseJuizCriador")
+  favoritosJuiz             FavoritoJuiz[]
+  acessosJuiz               AcessoJuiz[]
 
   @@unique([email, tenantId])
   @@index([role])
@@ -392,7 +433,7 @@ model Advogado {
   usuario        Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   oabNumero      String?
   oabUf          String?
-  especialidades String?
+  especialidades EspecialidadeJuridica[]
   bio            String?
   telefone       String?
   whatsapp       String?
@@ -461,21 +502,57 @@ model AdvogadoCliente {
 }
 
 model Juiz {
-  id          String   @id @default(cuid())
-  tenantId    String?
-  tribunalId  String?
-  nome        String
-  vara        String?
-  comarca     String?
-  observacoes String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String            @id @default(cuid())
+  tenantId          String?
+  tribunalId        String?
+  nome              String
+  nomeCompleto      String?
+  cpf               String?           @unique
+  oab               String?
+  email             String?
+  telefone          String?
+  endereco          String?
+  cidade            String?
+  estado            String?
+  cep               String?
+  dataNascimento    DateTime?
+  dataPosse         DateTime?
+  dataAposentadoria DateTime?
+  status            JuizStatus        @default(ATIVO)
+  nivel             JuizNivel         @default(JUIZ_TITULAR)
+  especialidades    EspecialidadeJuridica[]
+  vara              String?
+  comarca           String?
+  biografia         String?
+  formacao          String?
+  experiencia       String?
+  premios           String?
+  publicacoes       String?
+  foto              String?
+  website           String?
+  linkedin          String?
+  twitter           String?
+  instagram         String?
+  observacoes       String?
+  isPublico         Boolean           @default(false) // Se pode ser compartilhado entre tenants
+  isPremium         Boolean           @default(false) // Se é conteúdo premium
+  precoAcesso       Decimal?          @db.Decimal(10, 2) // Preço para acesso premium
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
-  tenant    Tenant?    @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  tribunal  Tribunal?  @relation(fields: [tribunalId], references: [id], onDelete: SetNull)
-  processos Processo[]
+  // Relacionamentos
+  tenant            Tenant?           @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  tribunal          Tribunal?         @relation(fields: [tribunalId], references: [id], onDelete: SetNull)
+  processos         Processo[]
+  julgamentos       Julgamento[]
+  analises          AnaliseJuiz[]
+  favoritos         FavoritoJuiz[]
+  acessos           AcessoJuiz[]
 
   @@index([nome])
+  @@index([tenantId])
+  @@index([status])
+  @@index([especialidades])
 }
 
 model Tribunal {
@@ -599,6 +676,7 @@ model Processo {
   procuracoesVinculadas ProcuracaoProcesso[]
   eventos               Evento[]
   documentoAssinaturas  DocumentoAssinatura[]
+  julgamentos           Julgamento[]
 
   @@unique([tenantId, numero])
   @@index([status])
@@ -1028,4 +1106,97 @@ model DocumentoAssinatura {
   @@index([tenantId, clienteId])
   @@index([processoId])
   @@index([clicksignDocumentId])
+}
+
+
+model Julgamento {
+  id                String        @id @default(cuid())
+  tenantId          String
+  juizId            String
+  processoId        String?
+  titulo            String
+  descricao         String?
+  dataJulgamento    DateTime
+  tipoJulgamento    String        // "SENTENCA", "DECISAO", "ACORDAO", "DESPACHO", etc.
+  resultado         String?       // "PROCEDENTE", "IMPROCEDENTE", "PARCIALMENTE_PROCEDENTE", etc.
+  valorCausa        Decimal?      @db.Decimal(14, 2)
+  valorCondenacao   Decimal?      @db.Decimal(14, 2)
+  observacoes       String?
+  pontosPositivos   String[]      // Pontos que o juiz gostou
+  pontosNegativos   String[]      // Pontos que o juiz não gostou
+  estrategias       String[]      // Estratégias que funcionaram
+  recomendacoes     String[]      // Recomendações para futuros processos
+  tags              String[]      // Tags para categorização
+  isPublico         Boolean       @default(false)
+  criadoPorId       String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relacionamentos
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  juiz              Juiz          @relation(fields: [juizId], references: [id], onDelete: Cascade)
+  processo          Processo?     @relation(fields: [processoId], references: [id], onDelete: SetNull)
+  criadoPor         Usuario?      @relation("JulgamentoCriador", fields: [criadoPorId], references: [id], onDelete: SetNull)
+
+  @@map("Julgamentos")
+}
+
+model AnaliseJuiz {
+  id                String        @id @default(cuid())
+  tenantId          String
+  juizId            String
+  titulo            String
+  descricao         String?
+  tipoAnalise       String        // "PERFIL", "TENDENCIA", "ESTATISTICA", "COMPARATIVO", etc.
+  dados             Json          // Dados da análise em formato JSON
+  conclusoes        String[]
+  recomendacoes     String[]
+  isPublico         Boolean       @default(false)
+  criadoPorId       String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relacionamentos
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  juiz              Juiz          @relation(fields: [juizId], references: [id], onDelete: Cascade)
+  criadoPor         Usuario?      @relation("AnaliseJuizCriador", fields: [criadoPorId], references: [id], onDelete: SetNull)
+
+  @@map("AnalisesJuiz")
+}
+
+model FavoritoJuiz {
+  id                String        @id @default(cuid())
+  tenantId          String
+  juizId            String
+  usuarioId         String
+  observacoes       String?
+  tags              String[]
+  createdAt         DateTime      @default(now())
+
+  // Relacionamentos
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  juiz              Juiz          @relation(fields: [juizId], references: [id], onDelete: Cascade)
+  usuario           Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, juizId, usuarioId])
+  @@map("FavoritosJuiz")
+}
+
+model AcessoJuiz {
+  id                String        @id @default(cuid())
+  tenantId          String
+  juizId            String
+  usuarioId         String
+  tipoAcesso        String        // "CONSULTA", "DOWNLOAD", "ANALISE", etc.
+  dataAcesso        DateTime      @default(now())
+  ipAddress         String?
+  userAgent         String?
+  observacoes       String?
+
+  // Relacionamentos
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  juiz              Juiz          @relation(fields: [juizId], references: [id], onDelete: Cascade)
+  usuario           Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("AcessosJuiz")
 }

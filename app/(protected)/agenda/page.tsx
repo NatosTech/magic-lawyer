@@ -35,7 +35,7 @@ export default function AgendaPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [selectedDate, setSelectedDate] = useState(today(getLocalTimeZone()));
   const [isEventoFormOpen, setIsEventoFormOpen] = useState(false);
-  const [eventoEditando, setEventoEditando] = useState<any>(null);
+  const [eventoEditando, setEventoEditando] = useState<Evento | null>(null);
   const [filtroTipo, setFiltroTipo] = useState<string>("");
   const [filtroStatus, setFiltroStatus] = useState<string>("");
 
@@ -148,16 +148,16 @@ export default function AgendaPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 space-y-4 sm:p-6 sm:space-y-6 min-w-0 overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Agenda</h1>
-          <p className="text-default-500 mt-1">Gerencie seus compromissos e eventos</p>
+          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Agenda</h1>
+          <p className="text-default-500 mt-1 text-sm sm:text-base">Gerencie seus compromissos e eventos</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <ButtonGroup>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <ButtonGroup className="w-full sm:w-auto">
             <Button variant={viewMode === "calendar" ? "solid" : "bordered"} onPress={() => setViewMode("calendar")}>
               Calendário
             </Button>
@@ -167,7 +167,7 @@ export default function AgendaPage() {
           </ButtonGroup>
 
           {permissions.canCreateEvents && (
-            <Button color="primary" startContent={<Plus className="w-4 h-4" />} onPress={handleCreateEvento}>
+            <Button color="primary" startContent={<Plus className="w-4 h-4" />} onPress={handleCreateEvento} className="w-full sm:w-auto">
               Novo Evento
             </Button>
           )}
@@ -199,10 +199,10 @@ export default function AgendaPage() {
       {/* Filtros */}
       <Card>
         <CardBody>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Tipo:</span>
-              <ButtonGroup size="sm" variant="bordered">
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center min-w-0">
+              <span className="text-sm font-medium flex-shrink-0">Tipo:</span>
+              <ButtonGroup size="sm" variant="bordered" className="flex-wrap min-w-0">
                 <Button variant={filtroTipo === "" ? "solid" : "bordered"} onPress={() => setFiltroTipo("")}>
                   Todos
                 </Button>
@@ -214,9 +214,9 @@ export default function AgendaPage() {
               </ButtonGroup>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Status:</span>
-              <ButtonGroup size="sm" variant="bordered">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center min-w-0">
+              <span className="text-sm font-medium flex-shrink-0">Status:</span>
+              <ButtonGroup size="sm" variant="bordered" className="flex-wrap min-w-0">
                 <Button variant={filtroStatus === "" ? "solid" : "bordered"} onPress={() => setFiltroStatus("")}>
                   Todos
                 </Button>
@@ -233,7 +233,7 @@ export default function AgendaPage() {
 
       {/* Conteúdo Principal */}
       {viewMode === "calendar" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-w-0">
           {/* Calendário */}
           <div className="lg:col-span-2">
             <Card>
@@ -244,10 +244,10 @@ export default function AgendaPage() {
                 <CalendarComponent
                   aria-label="Agenda"
                   classNames={{
-                    content: "w-full",
-                    base: "w-full",
-                    grid: "w-full",
-                    cell: "w-full h-16 text-center text-lg font-medium",
+                    content: "w-full max-w-full overflow-hidden",
+                    base: "w-full max-w-full",
+                    grid: "w-full max-w-full",
+                    cell: "w-full h-16 text-center text-lg font-medium min-w-0",
                   }}
                   focusedValue={selectedDate as any}
                   nextButtonProps={{
@@ -469,7 +469,7 @@ export default function AgendaPage() {
           setIsEventoFormOpen(false);
           setEventoEditando(null);
         }}
-        evento={eventoEditando}
+        evento={eventoEditando || undefined}
         onSuccess={handleEventoFormSuccess}
       />
     </div>

@@ -9,6 +9,7 @@ import { Providers } from "./providers";
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { DynamicFavicon } from "@/components/dynamic-favicon";
+import { FloatingAutomationBadge } from "@/components/floating-automation-badge";
 
 export const metadata: Metadata = {
   title: {
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <DynamicFavicon />
           {children}
+          <FloatingAutomationBadge />
           <Toaster position="top-right" richColors />
         </Providers>
       </body>

@@ -9,6 +9,12 @@ import { Drawer, DrawerBody, DrawerContent, DrawerHeader } from "@heroui/drawer"
 import { Button } from "@heroui/button";
 
 import { Logo } from "@/components/icons";
+import { SearchBar } from "@/components/searchbar";
+import { NotificationCenter } from "@/components/notifications/notification-center";
+import { User } from "@heroui/user";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 const navIconStroke = 1.6;
 
@@ -62,6 +68,14 @@ const CalendarIcon = ({ size = 18 }: IconProps) => (
   </svg>
 );
 
+const ScaleIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <path d="M16 11V7a4 4 0 0 0-8 0v4" />
+    <rect height="11" rx="2" width="18" x="3" y="11" />
+    <circle cx="12" cy="16" r="1" />
+  </svg>
+);
+
 const PeopleIcon = ({ size = 18 }: IconProps) => (
   <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -99,6 +113,7 @@ const navIconMap: Record<string, JSX.Element> = {
   Documentos: <FileIcon />,
   Agenda: <CalendarIcon />,
   Financeiro: <WalletIcon />,
+  Juízes: <ScaleIcon />,
   Relatórios: <ChartIcon />,
   Equipe: <PeopleIcon />,
   "Meu Perfil": <UserIcon />,
@@ -135,6 +150,71 @@ const SidebarToggleIcon = ({ collapsed }: { collapsed: boolean }) => (
     </svg>
   </span>
 );
+
+function MobileUserProfile({ onClose }: { onClose: () => void }) {
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  if (!session?.user) return null;
+
+  const userDisplayName = session.user.name || session.user.email || "Usuário";
+  const userEmail = session.user.email || "";
+  const userAvatar = session.user.image || undefined;
+  const isSuperAdmin = (session.user as any)?.role === "SUPER_ADMIN";
+
+  const handleUserAction = (key: string) => {
+    onClose(); // Fechar o drawer
+
+    if (key === "profile") {
+      router.push("/usuario/perfil/editar");
+      return;
+    }
+
+    if (key === "tenant-settings") {
+      router.push("/configuracoes");
+      return;
+    }
+
+    if (key === "logout") {
+      void signOut({ callbackUrl: "/login" });
+    }
+  };
+
+  return (
+    <div className="px-4 py-3 border-b border-default-200">
+      <Dropdown placement="bottom-start" className="w-full">
+        <DropdownTrigger>
+          <Button variant="light" className="w-full justify-start p-3 h-auto">
+            <User
+              avatarProps={{
+                src: userAvatar,
+                name: userDisplayName,
+                size: "sm",
+                className: "w-8 h-8 text-xs",
+              }}
+              className="w-full"
+              description={userEmail}
+              name={userDisplayName}
+            />
+          </Button>
+        </DropdownTrigger>
+        <DropdownMenu aria-label="Menu do usuário" className="min-w-[220px]" onAction={(key) => handleUserAction(String(key))}>
+          <DropdownItem key="profile" description="Gerenciar informações pessoais">
+            Meu perfil
+          </DropdownItem>
+          {isSuperAdmin ? (
+            <DropdownItem key="tenant-settings" description="Configurações do escritório">
+              Configurações
+            </DropdownItem>
+          ) : null}
+          <DropdownItem key="logout" className="text-danger" color="danger" description="Sair da sua conta">
+            Sair
+          </DropdownItem>
+        </DropdownMenu>
+      </Dropdown>
+    </div>
+  );
+}
 
 function SidebarContent({
   tenantName,
@@ -279,6 +359,24 @@ export function AppSidebar({ tenantName, tenantLogoUrl, collapsed, onToggleColla
             <>
               <DrawerHeader className="text-sm font-semibold uppercase tracking-[0.3em] text-default-500">Menu</DrawerHeader>
               <DrawerBody className="p-0">
+                {/* Mobile Search and Notifications */}
+                <div className="px-4 py-3 border-b border-default-200">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <SearchBar className="w-full" />
+                    </div>
+                    <NotificationCenter />
+                  </div>
+                </div>
+
+                {/* Mobile User Profile */}
+                <MobileUserProfile
+                  onClose={() => {
+                    onCloseMobile();
+                    onClose();
+                  }}
+                />
+
                 <SidebarContent
                   collapsed={false}
                   isDesktop={false}

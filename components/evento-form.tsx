@@ -286,8 +286,8 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
       size="2xl"
       scrollBehavior="inside"
       classNames={{
-        base: "max-h-[85vh]",
-        body: "max-h-[50vh] overflow-y-auto py-6",
+        base: "max-h-[90vh]",
+        body: "max-h-[65vh] overflow-y-auto py-6",
         footer: "border-t border-default-200 mt-4",
       }}
     >

@@ -105,6 +105,43 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
       });
     });
 
+    // Buscar juízes
+    const juizes = await prisma.juiz.findMany({
+      where: {
+        OR: [
+          { nome: { contains: searchTerm, mode: "insensitive" } },
+          { nomeCompleto: { contains: searchTerm, mode: "insensitive" } },
+          { cpf: { contains: searchTerm, mode: "insensitive" } },
+          { oab: { contains: searchTerm, mode: "insensitive" } },
+          { email: { contains: searchTerm, mode: "insensitive" } },
+          { vara: { contains: searchTerm, mode: "insensitive" } },
+          { comarca: { contains: searchTerm, mode: "insensitive" } },
+        ],
+      },
+      take: 5,
+      select: {
+        id: true,
+        nome: true,
+        nomeCompleto: true,
+        vara: true,
+        comarca: true,
+        status: true,
+        nivel: true,
+      },
+    });
+
+    juizes.forEach((juiz) => {
+      results.push({
+        id: `juiz-${juiz.id}`,
+        type: "juiz",
+        title: juiz.nomeCompleto || juiz.nome,
+        description: `${juiz.vara || "Vara não informada"} - ${juiz.comarca || "Comarca não informada"}`,
+        href: `/juizes/${juiz.id}`,
+        status: juiz.status,
+        statusColor: juiz.status === "ATIVO" ? "success" : "default",
+      });
+    });
+
     // Buscar usuários (apenas se for admin)
     const usuarios = await prisma.usuario.findMany({
       where: {

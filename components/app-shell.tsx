@@ -44,7 +44,7 @@ export function AppShell({ children }: AppShellProps) {
   const toggleCollapse = () => setCollapsed((current) => !current);
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       <AppSidebar
         collapsed={collapsed}
         isMobileOpen={isMobileOpen}
@@ -56,10 +56,10 @@ export function AppShell({ children }: AppShellProps) {
         onToggleCollapse={toggleCollapse}
       />
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         <Navbar showAuthenticatedSecondaryNav={false} onOpenSidebar={openSidebarMobile} />
         <BreadcrumbNav />
-        <main className="flex-1 overflow-y-auto px-6 pb-10 pt-8">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 pb-10 pt-4 sm:px-6 sm:pt-8">
           <div className="mx-auto w-full max-w-6xl space-y-6">{children}</div>
         </main>
       </div>

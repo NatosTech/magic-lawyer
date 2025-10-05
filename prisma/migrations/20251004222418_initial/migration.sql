@@ -58,6 +58,30 @@ CREATE TYPE "public"."ProcuracaoEmitidaPor" AS ENUM ('ESCRITORIO', 'ADVOGADO');
 -- CreateEnum
 CREATE TYPE "public"."ProcuracaoStatus" AS ENUM ('RASCUNHO', 'PENDENTE_ASSINATURA', 'VIGENTE', 'REVOGADA', 'EXPIRADA');
 
+-- CreateEnum
+CREATE TYPE "public"."EventoTipo" AS ENUM ('AUDIENCIA', 'REUNIAO', 'CONSULTA', 'PRAZO', 'LEMBRETE', 'OUTRO');
+
+-- CreateEnum
+CREATE TYPE "public"."EventoStatus" AS ENUM ('AGENDADO', 'CONFIRMADO', 'CANCELADO', 'REALIZADO', 'ADIADO');
+
+-- CreateEnum
+CREATE TYPE "public"."EventoRecorrencia" AS ENUM ('NENHUMA', 'DIARIA', 'SEMANAL', 'MENSAL', 'ANUAL');
+
+-- CreateEnum
+CREATE TYPE "public"."DocumentoAssinaturaStatus" AS ENUM ('PENDENTE', 'ASSINADO', 'REJEITADO', 'EXPIRADO', 'CANCELADO');
+
+-- CreateEnum
+CREATE TYPE "public"."TipoComissao" AS ENUM ('HONORARIOS', 'ACAO_GANHA', 'CUSTAS', 'OUTROS');
+
+-- CreateEnum
+CREATE TYPE "public"."JuizStatus" AS ENUM ('ATIVO', 'INATIVO', 'APOSENTADO', 'SUSPENSO');
+
+-- CreateEnum
+CREATE TYPE "public"."EspecialidadeJuridica" AS ENUM ('CIVIL', 'CRIMINAL', 'TRABALHISTA', 'FAMILIA', 'TRIBUTARIO', 'ADMINISTRATIVO', 'EMPRESARIAL', 'CONSUMIDOR', 'AMBIENTAL', 'ELETORAL', 'MILITAR', 'PREVIDENCIARIO', 'CONSTITUCIONAL', 'INTERNACIONAL', 'OUTROS');
+
+-- CreateEnum
+CREATE TYPE "public"."JuizNivel" AS ENUM ('JUIZ_SUBSTITUTO', 'JUIZ_TITULAR', 'DESEMBARGADOR', 'MINISTRO', 'OUTROS');
+
 -- CreateTable
 CREATE TABLE "public"."AreaProcesso" (
     "id" TEXT NOT NULL,
@@ -194,10 +218,13 @@ CREATE TABLE "public"."Advogado" (
     "usuarioId" TEXT NOT NULL,
     "oabNumero" TEXT,
     "oabUf" TEXT,
-    "especialidades" TEXT,
+    "especialidades" "public"."EspecialidadeJuridica"[],
     "bio" TEXT,
     "telefone" TEXT,
     "whatsapp" TEXT,
+    "comissaoPadrao" DECIMAL(5,2) DEFAULT 0.00,
+    "comissaoAcaoGanha" DECIMAL(5,2) DEFAULT 0.00,
+    "comissaoHonorarios" DECIMAL(5,2) DEFAULT 0.00,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -246,9 +273,37 @@ CREATE TABLE "public"."Juiz" (
     "tenantId" TEXT,
     "tribunalId" TEXT,
     "nome" TEXT NOT NULL,
+    "nomeCompleto" TEXT,
+    "cpf" TEXT,
+    "oab" TEXT,
+    "email" TEXT,
+    "telefone" TEXT,
+    "endereco" TEXT,
+    "cidade" TEXT,
+    "estado" TEXT,
+    "cep" TEXT,
+    "dataNascimento" TIMESTAMP(3),
+    "dataPosse" TIMESTAMP(3),
+    "dataAposentadoria" TIMESTAMP(3),
+    "status" "public"."JuizStatus" NOT NULL DEFAULT 'ATIVO',
+    "nivel" "public"."JuizNivel" NOT NULL DEFAULT 'JUIZ_TITULAR',
+    "especialidades" "public"."EspecialidadeJuridica"[],
     "vara" TEXT,
     "comarca" TEXT,
+    "biografia" TEXT,
+    "formacao" TEXT,
+    "experiencia" TEXT,
+    "premios" TEXT,
+    "publicacoes" TEXT,
+    "foto" TEXT,
+    "website" TEXT,
+    "linkedin" TEXT,
+    "twitter" TEXT,
+    "instagram" TEXT,
     "observacoes" TEXT,
+    "isPublico" BOOLEAN NOT NULL DEFAULT false,
+    "isPremium" BOOLEAN NOT NULL DEFAULT false,
+    "precoAcesso" DECIMAL(10,2),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -467,6 +522,9 @@ CREATE TABLE "public"."Contrato" (
     "status" "public"."ContratoStatus" NOT NULL DEFAULT 'RASCUNHO',
     "valor" DECIMAL(14,2),
     "moeda" TEXT DEFAULT 'BRL',
+    "comissaoAdvogado" DECIMAL(5,2) DEFAULT 0.00,
+    "percentualAcaoGanha" DECIMAL(5,2) DEFAULT 0.00,
+    "valorAcaoGanha" DECIMAL(14,2) DEFAULT 0.00,
     "dataInicio" TIMESTAMP(3),
     "dataFim" TIMESTAMP(3),
     "dataAssinatura" TIMESTAMP(3),
@@ -570,6 +628,9 @@ CREATE TABLE "public"."Fatura" (
     "valor" DECIMAL(12,2) NOT NULL,
     "moeda" TEXT NOT NULL DEFAULT 'BRL',
     "status" "public"."InvoiceStatus" NOT NULL DEFAULT 'RASCUNHO',
+    "comissaoAdvogado" DECIMAL(5,2) DEFAULT 0.00,
+    "valorComissao" DECIMAL(14,2) DEFAULT 0.00,
+    "tipoComissao" "public"."TipoComissao" DEFAULT 'HONORARIOS',
     "periodoInicio" TIMESTAMP(3),
     "periodoFim" TIMESTAMP(3),
     "vencimento" TIMESTAMP(3),
@@ -590,6 +651,9 @@ CREATE TABLE "public"."Pagamento" (
     "faturaId" TEXT NOT NULL,
     "valor" DECIMAL(12,2) NOT NULL,
     "status" "public"."PaymentStatus" NOT NULL DEFAULT 'PENDENTE',
+    "comissaoAdvogado" DECIMAL(5,2) DEFAULT 0.00,
+    "valorComissao" DECIMAL(14,2) DEFAULT 0.00,
+    "pagoParaAdvogado" BOOLEAN NOT NULL DEFAULT false,
     "metodo" TEXT,
     "transacaoId" TEXT,
     "autorizadoEm" TIMESTAMP(3),
@@ -616,6 +680,134 @@ CREATE TABLE "public"."AuditLog" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."Evento" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "titulo" TEXT NOT NULL,
+    "descricao" TEXT,
+    "tipo" "public"."EventoTipo" NOT NULL DEFAULT 'REUNIAO',
+    "status" "public"."EventoStatus" NOT NULL DEFAULT 'AGENDADO',
+    "dataInicio" TIMESTAMP(3) NOT NULL,
+    "dataFim" TIMESTAMP(3) NOT NULL,
+    "local" TEXT,
+    "participantes" TEXT[],
+    "processoId" TEXT,
+    "clienteId" TEXT,
+    "advogadoResponsavelId" TEXT,
+    "criadoPorId" TEXT,
+    "recorrencia" "public"."EventoRecorrencia" NOT NULL DEFAULT 'NENHUMA',
+    "recorrenciaFim" TIMESTAMP(3),
+    "googleEventId" TEXT,
+    "googleCalendarId" TEXT,
+    "lembreteMinutos" INTEGER,
+    "observacoes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Evento_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."DocumentoAssinatura" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "documentoId" TEXT NOT NULL,
+    "processoId" TEXT,
+    "clienteId" TEXT NOT NULL,
+    "advogadoResponsavelId" TEXT,
+    "titulo" TEXT NOT NULL,
+    "descricao" TEXT,
+    "status" "public"."DocumentoAssinaturaStatus" NOT NULL DEFAULT 'PENDENTE',
+    "urlDocumento" TEXT NOT NULL,
+    "urlAssinado" TEXT,
+    "clicksignDocumentId" TEXT,
+    "clicksignSignerId" TEXT,
+    "dataEnvio" TIMESTAMP(3),
+    "dataAssinatura" TIMESTAMP(3),
+    "dataExpiracao" TIMESTAMP(3),
+    "observacoes" TEXT,
+    "criadoPorId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DocumentoAssinatura_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."Julgamentos" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "juizId" TEXT NOT NULL,
+    "processoId" TEXT,
+    "titulo" TEXT NOT NULL,
+    "descricao" TEXT,
+    "dataJulgamento" TIMESTAMP(3) NOT NULL,
+    "tipoJulgamento" TEXT NOT NULL,
+    "resultado" TEXT,
+    "valorCausa" DECIMAL(14,2),
+    "valorCondenacao" DECIMAL(14,2),
+    "observacoes" TEXT,
+    "pontosPositivos" TEXT[],
+    "pontosNegativos" TEXT[],
+    "estrategias" TEXT[],
+    "recomendacoes" TEXT[],
+    "tags" TEXT[],
+    "isPublico" BOOLEAN NOT NULL DEFAULT false,
+    "criadoPorId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Julgamentos_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."AnalisesJuiz" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "juizId" TEXT NOT NULL,
+    "titulo" TEXT NOT NULL,
+    "descricao" TEXT,
+    "tipoAnalise" TEXT NOT NULL,
+    "dados" JSONB NOT NULL,
+    "conclusoes" TEXT[],
+    "recomendacoes" TEXT[],
+    "isPublico" BOOLEAN NOT NULL DEFAULT false,
+    "criadoPorId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AnalisesJuiz_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."FavoritosJuiz" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "juizId" TEXT NOT NULL,
+    "usuarioId" TEXT NOT NULL,
+    "observacoes" TEXT,
+    "tags" TEXT[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "FavoritosJuiz_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."AcessosJuiz" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "juizId" TEXT NOT NULL,
+    "usuarioId" TEXT NOT NULL,
+    "tipoAcesso" TEXT NOT NULL,
+    "dataAcesso" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "observacoes" TEXT,
+
+    CONSTRAINT "AcessosJuiz_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -700,7 +892,19 @@ CREATE INDEX "AdvogadoCliente_clienteId_idx" ON "public"."AdvogadoCliente"("clie
 CREATE UNIQUE INDEX "AdvogadoCliente_advogadoId_clienteId_key" ON "public"."AdvogadoCliente"("advogadoId", "clienteId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Juiz_cpf_key" ON "public"."Juiz"("cpf");
+
+-- CreateIndex
 CREATE INDEX "Juiz_nome_idx" ON "public"."Juiz"("nome");
+
+-- CreateIndex
+CREATE INDEX "Juiz_tenantId_idx" ON "public"."Juiz"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "Juiz_status_idx" ON "public"."Juiz"("status");
+
+-- CreateIndex
+CREATE INDEX "Juiz_especialidades_idx" ON "public"."Juiz"("especialidades");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Tribunal_nome_uf_key" ON "public"."Tribunal"("nome", "uf");
@@ -821,6 +1025,39 @@ CREATE INDEX "Pagamento_faturaId_idx" ON "public"."Pagamento"("faturaId");
 
 -- CreateIndex
 CREATE INDEX "AuditLog_tenantId_entidade_idx" ON "public"."AuditLog"("tenantId", "entidade");
+
+-- CreateIndex
+CREATE INDEX "Evento_tenantId_dataInicio_idx" ON "public"."Evento"("tenantId", "dataInicio");
+
+-- CreateIndex
+CREATE INDEX "Evento_tenantId_status_idx" ON "public"."Evento"("tenantId", "status");
+
+-- CreateIndex
+CREATE INDEX "Evento_processoId_idx" ON "public"."Evento"("processoId");
+
+-- CreateIndex
+CREATE INDEX "Evento_clienteId_idx" ON "public"."Evento"("clienteId");
+
+-- CreateIndex
+CREATE INDEX "Evento_advogadoResponsavelId_idx" ON "public"."Evento"("advogadoResponsavelId");
+
+-- CreateIndex
+CREATE INDEX "Evento_googleEventId_idx" ON "public"."Evento"("googleEventId");
+
+-- CreateIndex
+CREATE INDEX "DocumentoAssinatura_tenantId_status_idx" ON "public"."DocumentoAssinatura"("tenantId", "status");
+
+-- CreateIndex
+CREATE INDEX "DocumentoAssinatura_tenantId_clienteId_idx" ON "public"."DocumentoAssinatura"("tenantId", "clienteId");
+
+-- CreateIndex
+CREATE INDEX "DocumentoAssinatura_processoId_idx" ON "public"."DocumentoAssinatura"("processoId");
+
+-- CreateIndex
+CREATE INDEX "DocumentoAssinatura_clicksignDocumentId_idx" ON "public"."DocumentoAssinatura"("clicksignDocumentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "FavoritosJuiz_tenantId_juizId_usuarioId_key" ON "public"."FavoritosJuiz"("tenantId", "juizId", "usuarioId");
 
 -- AddForeignKey
 ALTER TABLE "public"."AreaProcesso" ADD CONSTRAINT "AreaProcesso_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -1049,3 +1286,75 @@ ALTER TABLE "public"."AuditLog" ADD CONSTRAINT "AuditLog_tenantId_fkey" FOREIGN 
 
 -- AddForeignKey
 ALTER TABLE "public"."AuditLog" ADD CONSTRAINT "AuditLog_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "public"."Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Evento" ADD CONSTRAINT "Evento_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Evento" ADD CONSTRAINT "Evento_processoId_fkey" FOREIGN KEY ("processoId") REFERENCES "public"."Processo"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Evento" ADD CONSTRAINT "Evento_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "public"."Cliente"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Evento" ADD CONSTRAINT "Evento_advogadoResponsavelId_fkey" FOREIGN KEY ("advogadoResponsavelId") REFERENCES "public"."Advogado"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Evento" ADD CONSTRAINT "Evento_criadoPorId_fkey" FOREIGN KEY ("criadoPorId") REFERENCES "public"."Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."DocumentoAssinatura" ADD CONSTRAINT "DocumentoAssinatura_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."DocumentoAssinatura" ADD CONSTRAINT "DocumentoAssinatura_documentoId_fkey" FOREIGN KEY ("documentoId") REFERENCES "public"."Documento"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."DocumentoAssinatura" ADD CONSTRAINT "DocumentoAssinatura_processoId_fkey" FOREIGN KEY ("processoId") REFERENCES "public"."Processo"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."DocumentoAssinatura" ADD CONSTRAINT "DocumentoAssinatura_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "public"."Cliente"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."DocumentoAssinatura" ADD CONSTRAINT "DocumentoAssinatura_advogadoResponsavelId_fkey" FOREIGN KEY ("advogadoResponsavelId") REFERENCES "public"."Advogado"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."DocumentoAssinatura" ADD CONSTRAINT "DocumentoAssinatura_criadoPorId_fkey" FOREIGN KEY ("criadoPorId") REFERENCES "public"."Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Julgamentos" ADD CONSTRAINT "Julgamentos_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Julgamentos" ADD CONSTRAINT "Julgamentos_juizId_fkey" FOREIGN KEY ("juizId") REFERENCES "public"."Juiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Julgamentos" ADD CONSTRAINT "Julgamentos_processoId_fkey" FOREIGN KEY ("processoId") REFERENCES "public"."Processo"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Julgamentos" ADD CONSTRAINT "Julgamentos_criadoPorId_fkey" FOREIGN KEY ("criadoPorId") REFERENCES "public"."Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."AnalisesJuiz" ADD CONSTRAINT "AnalisesJuiz_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."AnalisesJuiz" ADD CONSTRAINT "AnalisesJuiz_juizId_fkey" FOREIGN KEY ("juizId") REFERENCES "public"."Juiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."AnalisesJuiz" ADD CONSTRAINT "AnalisesJuiz_criadoPorId_fkey" FOREIGN KEY ("criadoPorId") REFERENCES "public"."Usuario"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."FavoritosJuiz" ADD CONSTRAINT "FavoritosJuiz_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."FavoritosJuiz" ADD CONSTRAINT "FavoritosJuiz_juizId_fkey" FOREIGN KEY ("juizId") REFERENCES "public"."Juiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."FavoritosJuiz" ADD CONSTRAINT "FavoritosJuiz_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "public"."Usuario"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."AcessosJuiz" ADD CONSTRAINT "AcessosJuiz_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."AcessosJuiz" ADD CONSTRAINT "AcessosJuiz_juizId_fkey" FOREIGN KEY ("juizId") REFERENCES "public"."Juiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."AcessosJuiz" ADD CONSTRAINT "AcessosJuiz_usuarioId_fkey" FOREIGN KEY ("usuarioId") REFERENCES "public"."Usuario"("id") ON DELETE CASCADE ON UPDATE CASCADE;

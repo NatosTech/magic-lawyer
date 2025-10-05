@@ -9,6 +9,8 @@ import { Chip } from "@heroui/chip";
 import { link as linkStyles } from "@heroui/theme";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { User } from "@heroui/user";
+import { Avatar } from "@heroui/avatar";
+import { Badge } from "@heroui/badge";
 import clsx from "clsx";
 import NextLink from "next/link";
 import Image from "next/image";
@@ -22,7 +24,9 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { Logo } from "@/components/icons";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import { SearchBar } from "@/components/searchbar";
+import { CentralizedSearchBar } from "@/components/centralized-search-bar";
 import { TENANT_PERMISSIONS } from "@/types";
+import { UserRole, TenantPermission } from "@/app/generated/prisma";
 
 const breadcrumbLabelMap: Record<string, string> = {
   dashboard: "Painel",
@@ -70,10 +74,10 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
   const userDisplayName = session?.user?.name || session?.user?.email || "Usuário";
   const userEmail = session?.user?.email || "Conta Magic Lawyer";
   const userAvatar = session?.user?.image || undefined;
-  const userRole = (session?.user as any)?.role as string | undefined;
-  const userPermissions = ((session?.user as any)?.permissions as string[] | undefined) ?? [];
-  const isSuperAdmin = userRole === "SUPER_ADMIN";
-  const hasPermission = (permission?: string) => !permission || isSuperAdmin || userPermissions.includes(permission);
+  const userRole = (session?.user as any)?.role as UserRole | undefined;
+  const userPermissions = ((session?.user as any)?.permissions as TenantPermission[] | undefined) ?? [];
+  const isSuperAdmin = userRole === UserRole.SUPER_ADMIN;
+  const hasPermission = (permission?: string) => !permission || isSuperAdmin || userPermissions.includes(permission as TenantPermission);
 
   const appVersion = packageInfo.version ?? "0.0.0";
 
@@ -161,12 +165,13 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
 
   return (
     <div className="sticky top-0 z-50 flex flex-col">
-      <HeroUINavbar className="border-b border-divider bg-background/95 backdrop-blur-xl py-3" isBordered={false} maxWidth="xl">
-        <NavbarContent justify="start" className="flex-1">
+      <HeroUINavbar className="border-b border-divider bg-background/95 backdrop-blur-xl py-2" isBordered={false} maxWidth="full">
+        {/* Seção Esquerda - Brand e Menu Mobile */}
+        <NavbarContent justify="start" className="flex-shrink-0 min-w-0">
           {onOpenSidebar ? (
             <Button
               isIconOnly
-              className="inline-flex h-10 w-10 items-center justify-center border border-divider bg-content1 text-default-500 transition hover:border-primary/40 hover:text-primary md:hidden"
+              className="inline-flex h-8 w-8 items-center justify-center border border-divider bg-content1 text-default-500 transition hover:border-primary/40 hover:text-primary md:hidden"
               radius="none"
               variant="light"
               onPress={onOpenSidebar}
@@ -174,8 +179,8 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
               <MenuIcon />
             </Button>
           ) : null}
-          <NavbarBrand>
-            <NextLink className="flex items-center gap-3" href="/">
+          <NavbarBrand className="min-w-0">
+            <NextLink className="flex items-center gap-2" href="/">
               <span className="flex flex-col leading-tight">
                 <span className={brandTitleClasses}>{tenantName}</span>
                 <span className="text-xs text-default-400">{brandSubtitle}</span>
@@ -185,52 +190,62 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
           </NavbarBrand>
         </NavbarContent>
 
-        <NavbarContent justify="end" className="flex-shrink-0">
+        {/* Seção Central - Search Bar */}
+        {session?.user && (
+          <NavbarContent justify="center" className="flex-1 min-w-0 px-4">
+            <CentralizedSearchBar className="w-full max-w-3xl" />
+          </NavbarContent>
+        )}
+
+        {/* Seção Direita - Ações */}
+        <NavbarContent justify="end" className="flex-shrink-0 min-w-0">
           {session?.user ? rightExtras : null}
-          <Chip className="hidden text-xs uppercase tracking-wide text-primary-200 xl:flex" color="primary" variant="flat">
-            Novas automações 2025.3
-          </Chip>
-          {session?.user ? <SearchBar /> : null}
-          {session?.user ? <NotificationCenter /> : null}
+          {session?.user ? (
+            <div className="hidden sm:block">
+              <NotificationCenter />
+            </div>
+          ) : null}
           <ThemeSwitch />
           {session?.user ? (
-            <Dropdown placement="bottom-end">
-              <DropdownTrigger>
-                <User
-                  as="button"
-                  avatarProps={{
-                    src: userAvatar,
-                    name: userDisplayName,
-                    size: "lg",
-                  }}
-                  className="cursor-pointer gap-2 border border-divider bg-content1 px-6 py-2 text-left shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
-                  description={userEmail}
-                  name={userDisplayName}
-                />
-              </DropdownTrigger>
-              <DropdownMenu aria-label="Menu do usuário" className="min-w-[220px]" onAction={(key) => handleUserAction(String(key))}>
-                <DropdownItem key="profile" description="Gerenciar informações pessoais">
-                  Meu perfil
-                </DropdownItem>
-                {canManageTenantSettings ? (
-                  <DropdownItem key="tenant-settings" description="Branding, domínios e integrações do escritório">
-                    Configurações do escritório
+            <div className="hidden sm:block">
+              <Dropdown placement="bottom-end">
+                <DropdownTrigger>
+                  <Button variant="light" className="min-w-0 p-2 h-auto gap-2 border border-divider bg-content1 shadow-sm transition hover:border-primary/40 hover:bg-primary/5">
+                    <Badge
+                      content={userRole?.replace(/_/g, " ").charAt(0) || "U"}
+                      color={userRole === "ADMIN" ? "danger" : userRole === "ADVOGADO" ? "primary" : "default"}
+                      size="sm"
+                      placement="bottom-right"
+                      shape="circle"
+                    >
+                      <Avatar src={userAvatar} name={userDisplayName} size="sm" className="w-8 h-8 text-xs" isBordered />
+                    </Badge>
+                    <div className="hidden md:block min-w-0 flex-1 text-left">
+                      <p className="text-sm font-medium truncate">{userDisplayName}</p>
+                      <p className="text-xs text-default-500 truncate">{userRole?.replace(/_/g, " ").toLowerCase()}</p>
+                    </div>
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu aria-label="Menu do usuário" className="min-w-[220px]" onAction={(key) => handleUserAction(String(key))}>
+                  <DropdownItem key="profile" description="Gerenciar informações pessoais">
+                    Meu perfil
                   </DropdownItem>
-                ) : null}
-                <DropdownItem key="logout" className="text-danger" color="danger" description="Encerrar sessão com segurança">
-                  Sair
-                </DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
+                  {canManageTenantSettings ? (
+                    <DropdownItem key="tenant-settings" description="Branding, domínios e integrações do escritório">
+                      Configurações do escritório
+                    </DropdownItem>
+                  ) : null}
+                  <DropdownItem key="logout" className="text-danger" color="danger" description="Encerrar sessão com segurança">
+                    Sair
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+            </div>
           ) : (
             <div className="hidden sm:flex">
               <SignInOut />
             </div>
           )}
-        </NavbarContent>
-
-        <NavbarContent className="flex items-center gap-2 sm:hidden" justify="end">
-          <ThemeSwitch />
         </NavbarContent>
       </HeroUINavbar>
 

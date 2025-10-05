@@ -54,8 +54,8 @@ export function BreadcrumbNav() {
   }
 
   return (
-    <div className="px-6 py-3">
-      <Breadcrumbs variant="light" color="primary" size="sm">
+    <div className="px-3 py-2 sm:px-6 sm:py-3 min-w-0 overflow-hidden">
+      <Breadcrumbs variant="light" color="primary" size="sm" className="text-xs sm:text-sm min-w-0">
         {breadcrumbItems.map((item, index) => {
           const isLast = index === breadcrumbItems.length - 1;
 

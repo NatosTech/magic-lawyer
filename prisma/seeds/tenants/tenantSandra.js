@@ -182,14 +182,14 @@ async function seedTenantSandra(prisma, Prisma) {
     update: {
       oabNumero: "123456",
       oabUf: "SP",
-      especialidades: "Direito Cível",
+      especialidades: ["CIVIL", "EMPRESARIAL"],
     },
     create: {
       tenantId: tenant.id,
       usuarioId: adminUser.id,
       oabNumero: "123456",
       oabUf: "SP",
-      especialidades: "Direito Cível",
+      especialidades: ["CIVIL", "EMPRESARIAL"],
     },
   });
 
@@ -206,14 +206,14 @@ async function seedTenantSandra(prisma, Prisma) {
     update: {
       oabNumero: "789012",
       oabUf: "RJ",
-      especialidades: "Direito Trabalhista",
+      especialidades: ["TRABALHISTA"],
     },
     create: {
       tenantId: tenant.id,
       usuarioId: ricardoUser.id,
       oabNumero: "789012",
       oabUf: "RJ",
-      especialidades: "Direito Trabalhista",
+      especialidades: ["TRABALHISTA"],
     },
   });
 
@@ -230,14 +230,14 @@ async function seedTenantSandra(prisma, Prisma) {
     update: {
       oabNumero: "345678",
       oabUf: "SP",
-      especialidades: "Direito Empresarial",
+      especialidades: ["EMPRESARIAL"],
     },
     create: {
       tenantId: tenant.id,
       usuarioId: fernandaUser.id,
       oabNumero: "345678",
       oabUf: "SP",
-      especialidades: "Direito Empresarial",
+      especialidades: ["EMPRESARIAL"],
     },
   });
 

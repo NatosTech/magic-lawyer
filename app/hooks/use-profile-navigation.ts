@@ -64,6 +64,16 @@ export function useProfileNavigation() {
       });
     }
 
+    // Juízes - Baseado em permissões
+    if (permissions.canViewJudgesDatabase) {
+      items.push({
+        label: "Juízes",
+        href: "/juizes",
+        icon: "Scale",
+        description: isCliente ? "Informações sobre juízes" : "Base de dados de juízes",
+      });
+    }
+
     // Relatórios - Apenas para perfis com acesso
     if (permissions.canViewReports) {
       items.push({

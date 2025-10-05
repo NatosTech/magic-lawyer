@@ -18,6 +18,7 @@ export const siteConfig = {
     { label: "Documentos", href: "/documentos" },
     { label: "Agenda", href: "/agenda" },
     { label: "Financeiro", href: "/financeiro" },
+    { label: "Juízes", href: "/juizes" },
     { label: "Relatórios", href: "/relatorios" },
   ],
   navMenuItemsPublic: [

@@ -16,6 +16,12 @@ export interface UserPermissions {
   canManageContracts: boolean;
   canViewAllDocuments: boolean;
   canManageUsers: boolean;
+  canViewJudgesDatabase: boolean;
+  canManageJudgesDatabase: boolean;
+  canCreateJudgeProfiles: boolean;
+  canEditJudgeProfiles: boolean;
+  canDeleteJudgeProfiles: boolean;
+  canViewPremiumJudges: boolean;
 }
 
 export function useUserPermissions() {
@@ -40,6 +46,12 @@ export function useUserPermissions() {
         canManageContracts: true,
         canViewAllDocuments: true,
         canManageUsers: true,
+        canViewJudgesDatabase: true,
+        canManageJudgesDatabase: true,
+        canCreateJudgeProfiles: true,
+        canEditJudgeProfiles: true,
+        canDeleteJudgeProfiles: true,
+        canViewPremiumJudges: true,
       };
     }
 
@@ -58,6 +70,12 @@ export function useUserPermissions() {
         canManageContracts: true,
         canViewAllDocuments: true,
         canManageUsers: true,
+        canViewJudgesDatabase: true,
+        canManageJudgesDatabase: true,
+        canCreateJudgeProfiles: true,
+        canEditJudgeProfiles: true,
+        canDeleteJudgeProfiles: true,
+        canViewPremiumJudges: true,
       };
     }
 
@@ -76,6 +94,12 @@ export function useUserPermissions() {
         canManageContracts: true, // Apenas os seus
         canViewAllDocuments: false, // Apenas os dos seus clientes
         canManageUsers: false,
+        canViewJudgesDatabase: true,
+        canManageJudgesDatabase: true,
+        canCreateJudgeProfiles: true,
+        canEditJudgeProfiles: true,
+        canDeleteJudgeProfiles: false,
+        canViewPremiumJudges: true,
       };
     }
 
@@ -94,6 +118,12 @@ export function useUserPermissions() {
         canManageContracts: false,
         canViewAllDocuments: true, // Para organização
         canManageUsers: false,
+        canViewJudgesDatabase: true,
+        canManageJudgesDatabase: false,
+        canCreateJudgeProfiles: false,
+        canEditJudgeProfiles: false,
+        canDeleteJudgeProfiles: false,
+        canViewPremiumJudges: false,
       };
     }
 
@@ -112,6 +142,12 @@ export function useUserPermissions() {
         canManageContracts: true, // Para faturas
         canViewAllDocuments: false,
         canManageUsers: false,
+        canViewJudgesDatabase: true,
+        canManageJudgesDatabase: false,
+        canCreateJudgeProfiles: false,
+        canEditJudgeProfiles: false,
+        canDeleteJudgeProfiles: false,
+        canViewPremiumJudges: false,
       };
     }
 
@@ -130,6 +166,12 @@ export function useUserPermissions() {
         canManageContracts: false,
         canViewAllDocuments: true, // Apenas os seus
         canManageUsers: false,
+        canViewJudgesDatabase: true,
+        canManageJudgesDatabase: false,
+        canCreateJudgeProfiles: false,
+        canEditJudgeProfiles: false,
+        canDeleteJudgeProfiles: false,
+        canViewPremiumJudges: false,
       };
     }
 

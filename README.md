@@ -332,6 +332,38 @@ const calendarDate = DateUtils.fromCalendarDate(selectedDate);
 const formatada = DateUtils.formatCalendarDate(selectedDate);
 ```
 
+### 📱 **IMPORTANTE: SEMPRE Responsivo para Mobile**
+
+**REGRA FUNDAMENTAL**: Sempre desenvolva interfaces responsivas que funcionem perfeitamente em dispositivos móveis.
+
+#### ✅ **Padrões de Responsividade:**
+
+```typescript
+// ✅ CORRETO - Use classes responsivas do Tailwind
+<div className="p-3 sm:p-6">  // Padding menor no mobile
+<div className="text-sm sm:text-base">  // Texto menor no mobile
+<div className="flex flex-col sm:flex-row">  // Coluna no mobile, linha no desktop
+<div className="w-full sm:w-auto">  // Largura total no mobile
+<div className="hidden sm:block">  // Esconder no mobile, mostrar no desktop
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">  // Grid responsivo
+```
+
+#### 📋 **Breakpoints do Tailwind:**
+- `sm:` - 640px+ (tablets pequenos)
+- `md:` - 768px+ (tablets)
+- `lg:` - 1024px+ (laptops)
+- `xl:` - 1280px+ (desktops)
+- `2xl:` - 1536px+ (telas grandes)
+
+#### 🎯 **Regras de Mobile-First:**
+1. **SEMPRE** comece com o layout mobile
+2. **SEMPRE** use `flex-col` por padrão, `sm:flex-row` para desktop
+3. **SEMPRE** use `w-full` por padrão, `sm:w-auto` para desktop
+4. **SEMPRE** use padding/margin menores no mobile (`p-3 sm:p-6`)
+5. **SEMPRE** esconda elementos não essenciais no mobile (`hidden sm:block`)
+6. **SEMPRE** teste em diferentes tamanhos de tela
+```
+
 #### 📚 **Métodos Disponíveis:**
 - `formatDate()` - DD/MM/YYYY
 - `formatDateTime()` - DD/MM/YYYY HH:mm

@@ -9,47 +9,49 @@ import { Spinner } from "@heroui/spinner";
 import { Divider } from "@heroui/divider";
 import { Avatar } from "@heroui/avatar";
 import { Chip } from "@heroui/chip";
+import { Search, X } from "lucide-react";
 import clsx from "clsx";
-import { SearchIcon } from "@/components/icons";
 
-import { useSearchResults } from "./use-search-results";
+import { useSearchResults } from "@/components/searchbar/use-search-results";
 
-export type SearchResult = {
-  id: string;
-  type: "processo" | "cliente" | "documento" | "usuario" | "juiz";
-  title: string;
-  description?: string;
-  href: string;
-  avatar?: string;
-  status?: string;
-  statusColor?: "default" | "primary" | "secondary" | "success" | "warning" | "danger";
-};
-
-type SearchBarProps = {
+interface CentralizedSearchBarProps {
   className?: string;
-};
+}
 
-export function SearchBar({ className }: SearchBarProps) {
+export function CentralizedSearchBar({ className = "" }: CentralizedSearchBarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isMac, setIsMac] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
+  const headerInputRef = useRef<HTMLInputElement>(null);
 
   const { data: results, isLoading, mutate } = useSearchResults(query, isOpen);
 
-  // Open modal with Cmd+K or Ctrl+K
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
+    // Detectar se é Mac
+    setIsMac(navigator.platform.toUpperCase().indexOf("MAC") >= 0);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+K ou Cmd+K para abrir
+      if ((isMac ? event.metaKey : event.ctrlKey) && event.key === "k") {
+        event.preventDefault();
         setIsOpen(true);
+      }
+
+      // Escape para fechar
+      if (event.key === "Escape" && isOpen) {
+        setIsOpen(false);
+        setQuery("");
+        setSelectedIndex(0);
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown as any);
-    return () => document.removeEventListener("keydown", handleKeyDown as any);
-  }, []);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isMac, isOpen]);
 
   // Focus input when modal opens
   useEffect(() => {
@@ -58,21 +60,9 @@ export function SearchBar({ className }: SearchBarProps) {
     }
   }, [isOpen]);
 
-  // Close modal with Escape
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsOpen(false);
-        setQuery("");
-        setSelectedIndex(0);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape as any);
-      return () => document.removeEventListener("keydown", handleEscape as any);
-    }
-  }, [isOpen]);
+  const handleHeaderInputClick = () => {
+    setIsOpen(true);
+  };
 
   const handleInputChange = (value: string) => {
     setQuery(value);
@@ -105,7 +95,7 @@ export function SearchBar({ className }: SearchBarProps) {
     }
   };
 
-  const getResultIcon = (type: SearchResult["type"]) => {
+  const getResultIcon = (type: string) => {
     switch (type) {
       case "processo":
         return "⚖️";
@@ -122,7 +112,7 @@ export function SearchBar({ className }: SearchBarProps) {
     }
   };
 
-  const getTypeLabel = (type: SearchResult["type"]) => {
+  const getTypeLabel = (type: string) => {
     switch (type) {
       case "processo":
         return "Processo";
@@ -139,33 +129,87 @@ export function SearchBar({ className }: SearchBarProps) {
     }
   };
 
-  return (
-    <>
-      {/* Search Input Field */}
-      <Button
-        className={`h-10 px-3 ${className}`}
-        variant="bordered"
-        color="secondary"
-        startContent={<SearchIcon className="h-4 w-4" />}
-        endContent={
-          <Kbd keys={["command"]} className="hidden sm:flex">
-            K
-          </Kbd>
-        }
-        onPress={() => setIsOpen(true)}
-      >
-        <span className="hidden sm:inline">Search</span>
-        <span className="sm:hidden">Buscar</span>
-      </Button>
+  const handleSearch = () => {
+    // TODO: Implementar lógica de busca
+    console.log("Buscar...");
+  };
 
-      {/* Search Modal */}
-      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} placement="center" size="2xl" hideCloseButton scrollBehavior="inside">
+  return (
+    <div className={`relative w-full ${className}`}>
+      {/* Search Bar Principal */}
+      <div className="relative">
+        <Input
+          ref={headerInputRef}
+          placeholder="Buscar processos, clientes, documentos, juízes..."
+          className="w-full h-10 text-sm"
+          classNames={{
+            input: "text-sm cursor-pointer",
+            inputWrapper: "h-10 bg-background/70 backdrop-blur-xl border border-default-200 hover:border-primary/50 focus-within:border-primary shadow-sm transition-all duration-200",
+          }}
+          startContent={<Search className="w-4 h-4 text-default-400" />}
+          endContent={
+            <div className="flex items-center gap-2">
+              <Kbd keys={[isMac ? "command" : "ctrl"]} className="hidden sm:flex">
+                K
+              </Kbd>
+              <Button isIconOnly size="sm" variant="light" className="text-default-400 hover:text-default-600 min-w-6 w-6 h-6" onPress={handleSearch}>
+                <Search className="w-3 h-3" />
+              </Button>
+            </div>
+          }
+          onClick={handleHeaderInputClick}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSearch();
+            }
+          }}
+          readOnly
+        />
+      </div>
+
+      {/* Modal de Busca Avançada com Blur */}
+      <Modal
+        isOpen={isOpen}
+        onClose={() => {
+          setIsOpen(false);
+          setQuery("");
+          setSelectedIndex(0);
+        }}
+        placement="center"
+        size="2xl"
+        hideCloseButton
+        scrollBehavior="inside"
+        backdrop="blur"
+        classNames={{
+          backdrop: "bg-black/50 backdrop-blur-sm",
+          base: "border border-default-200 shadow-2xl",
+        }}
+      >
         <ModalContent>
           <ModalBody className="p-0">
             <div className="flex flex-col">
+              {/* Header do Modal */}
+              <div className="flex items-center justify-between p-4 border-b border-default-200">
+                <div className="flex items-center gap-3">
+                  <Search className="h-5 w-5 text-default-400" />
+                  <span className="text-lg font-semibold">Busca Avançada</span>
+                </div>
+                <Button
+                  isIconOnly
+                  variant="light"
+                  size="sm"
+                  onPress={() => {
+                    setIsOpen(false);
+                    setQuery("");
+                    setSelectedIndex(0);
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+
               {/* Search Input */}
               <div className="flex items-center gap-3 p-4">
-                <SearchIcon className="h-5 w-5" />
                 <Input
                   ref={inputRef}
                   value={query}
@@ -205,14 +249,36 @@ export function SearchBar({ className }: SearchBarProps) {
                     <span className="ml-2 text-sm">Buscando...</span>
                   </div>
                 ) : query.length === 0 ? (
-                  <div className="p-6 text-center">
-                    <div className="flex items-center justify-center mb-4">
-                      <Kbd keys={["command"]}>K</Kbd>
-                      <span className="mx-2 text-sm">ou</span>
-                      <Kbd>↑</Kbd>
-                      <Kbd>↓</Kbd>
+                  <div className="p-6">
+                    <div className="text-center mb-6">
+                      <div className="flex items-center justify-center mb-4">
+                        <Kbd keys={["command"]}>K</Kbd>
+                        <span className="mx-2 text-sm">ou</span>
+                        <Kbd>↑</Kbd>
+                        <Kbd>↓</Kbd>
+                      </div>
+                      <p className="text-sm text-default-500">Digite para buscar processos, clientes, documentos...</p>
                     </div>
-                    <p className="text-sm">Digite para buscar processos, clientes, documentos...</p>
+
+                    {/* Filtros Rápidos */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <Button variant="bordered" className="h-10 justify-start">
+                        <Search className="w-4 h-4 mr-2" />
+                        Processos
+                      </Button>
+                      <Button variant="bordered" className="h-10 justify-start">
+                        <Search className="w-4 h-4 mr-2" />
+                        Clientes
+                      </Button>
+                      <Button variant="bordered" className="h-10 justify-start">
+                        <Search className="w-4 h-4 mr-2" />
+                        Documentos
+                      </Button>
+                      <Button variant="bordered" className="h-10 justify-start">
+                        <Search className="w-4 h-4 mr-2" />
+                        Juízes
+                      </Button>
+                    </div>
                   </div>
                 ) : results && results.length > 0 ? (
                   <div className="py-2">
@@ -243,7 +309,7 @@ export function SearchBar({ className }: SearchBarProps) {
                                   {getTypeLabel(result.type)}
                                 </Chip>
                               </div>
-                              {result.description && <p className="text-sm truncate">{result.description}</p>}
+                              {result.description && <p className="text-sm truncate text-default-500">{result.description}</p>}
                               {result.status && (
                                 <div className="mt-1">
                                   <Chip size="sm" variant="flat" color={result.statusColor || "default"}>
@@ -261,15 +327,15 @@ export function SearchBar({ className }: SearchBarProps) {
                 ) : (
                   <div className="p-6 text-center">
                     <p className="text-sm">Nenhum resultado encontrado para "{query}"</p>
-                    <p className="text-xs mt-2">Tente termos diferentes ou mais específicos</p>
+                    <p className="text-xs mt-2 text-default-500">Tente termos diferentes ou mais específicos</p>
                   </div>
                 )}
               </div>
 
               {/* Footer */}
               {query && (
-                <div className="border-t p-3">
-                  <div className="flex items-center justify-between text-xs">
+                <div className="border-t border-default-200 p-3">
+                  <div className="flex items-center justify-between text-xs text-default-500">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-1">
                         <Kbd keys={["arrowup"]} />
@@ -292,6 +358,6 @@ export function SearchBar({ className }: SearchBarProps) {
           </ModalBody>
         </ModalContent>
       </Modal>
-    </>
+    </div>
   );
 }

@@ -7,6 +7,7 @@ const seedPlanos = require("./seeds/planos");
 const { seedTenantSandra } = require("./seeds/tenants/tenantSandra");
 const { seedSalbaAdvocacia } = require("./seeds/tenants/salbaAdvocacia");
 const { seedEventos } = require("./seeds/eventos");
+const { seedJuizes } = require("./seeds/juizes");
 
 const prisma = new PrismaClient();
 
@@ -29,6 +30,11 @@ async function main() {
 
   // Seed de eventos
   await seedEventos();
+
+  console.log("\n👨‍⚖️ Criando base de juízes...\n");
+
+  // Seed de juízes
+  await seedJuizes();
 
   console.log("\n🎉 Seed concluído com sucesso!");
 }
