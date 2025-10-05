@@ -34,7 +34,12 @@ module.exports = async function seedCategoriasTarefa(prisma) {
 
   for (const [index, categoria] of categorias.entries()) {
     await prisma.categoriaTarefa.upsert({
-      where: { slug: categoria.slug },
+      where: {
+        tenantId_slug: {
+          tenantId: "GLOBAL",
+          slug: categoria.slug,
+        },
+      },
       update: {
         nome: categoria.nome,
         descricao: categoria.descricao,
@@ -45,6 +50,7 @@ module.exports = async function seedCategoriasTarefa(prisma) {
       },
       create: {
         ...categoria,
+        tenantId: "GLOBAL", // Categorias globais (disponíveis para todos os tenants)
         ordem: index + 1,
         ativo: true,
       },

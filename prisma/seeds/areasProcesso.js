@@ -44,7 +44,12 @@ module.exports = async function seedAreasProcesso(prisma) {
 
   for (const [index, area] of areas.entries()) {
     await prisma.areaProcesso.upsert({
-      where: { slug: area.slug },
+      where: {
+        tenantId_slug: {
+          tenantId: "GLOBAL",
+          slug: area.slug,
+        },
+      },
       update: {
         nome: area.nome,
         descricao: area.descricao,
@@ -54,6 +59,7 @@ module.exports = async function seedAreasProcesso(prisma) {
       },
       create: {
         ...area,
+        tenantId: "GLOBAL", // Áreas globais (disponíveis para todos os tenants)
         ordem: index + 1,
         ativo: true,
       },

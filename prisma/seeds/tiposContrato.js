@@ -29,7 +29,12 @@ module.exports = async function seedTiposContrato(prisma) {
 
   for (const [index, tipo] of tipos.entries()) {
     await prisma.tipoContrato.upsert({
-      where: { slug: tipo.slug },
+      where: {
+        tenantId_slug: {
+          tenantId: "GLOBAL",
+          slug: tipo.slug,
+        },
+      },
       update: {
         nome: tipo.nome,
         descricao: tipo.descricao,
@@ -39,6 +44,7 @@ module.exports = async function seedTiposContrato(prisma) {
       },
       create: {
         ...tipo,
+        tenantId: "GLOBAL", // Tipos globais (disponíveis para todos os tenants)
         ordem: index + 1,
         ativo: true,
       },

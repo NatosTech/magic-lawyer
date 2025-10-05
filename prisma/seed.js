@@ -14,6 +14,21 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Iniciando seed do banco de dados...\n");
 
+  // Criar tenant global para dados compartilhados
+  console.log("🌍 Criando tenant global...\n");
+  await prisma.tenant.upsert({
+    where: { slug: "global" },
+    update: {},
+    create: {
+      id: "GLOBAL",
+      name: "Sistema Global",
+      slug: "global",
+      status: "ACTIVE",
+      timezone: "America/Sao_Paulo",
+      tipoPessoa: "JURIDICA",
+    },
+  });
+
   // Seeds básicos
   await seedAreasProcesso(prisma);
   await seedTiposContrato(prisma);

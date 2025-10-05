@@ -355,9 +355,24 @@ async function seedTenantSandra(prisma, Prisma) {
     });
   }
 
-  const areaCivel = await prisma.areaProcesso.findFirst({ where: { slug: "civel" } });
-  const areaTrabalhista = await prisma.areaProcesso.findFirst({ where: { slug: "trabalhista" } });
-  const areaEmpresarial = await prisma.areaProcesso.findFirst({ where: { slug: "empresarial" } });
+  const areaCivel = await prisma.areaProcesso.findFirst({
+    where: {
+      tenantId: "GLOBAL",
+      slug: "civel",
+    },
+  });
+  const areaTrabalhista = await prisma.areaProcesso.findFirst({
+    where: {
+      tenantId: "GLOBAL",
+      slug: "trabalhista",
+    },
+  });
+  const areaEmpresarial = await prisma.areaProcesso.findFirst({
+    where: {
+      tenantId: "GLOBAL",
+      slug: "empresarial",
+    },
+  });
 
   let processoMarcos = await prisma.processo.findFirst({
     where: { tenantId: tenant.id, numero: "1020304-56.2025.8.26.0100" },

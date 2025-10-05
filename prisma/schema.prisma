@@ -240,7 +240,6 @@ model AreaProcesso {
   processos Processo[]
 
   @@unique([tenantId, slug])
-  @@unique([slug])
   @@index([tenantId])
   @@index([nome])
 }
@@ -261,7 +260,6 @@ model TipoContrato {
   modelos   ModeloContrato[]
 
   @@unique([tenantId, slug])
-  @@unique([slug])
   @@index([tenantId])
   @@index([nome])
 }
@@ -282,7 +280,6 @@ model CategoriaTarefa {
   tarefas Tarefa[]
 
   @@unique([tenantId, slug])
-  @@unique([slug])
   @@index([tenantId])
   @@index([nome])
 }
@@ -338,6 +335,7 @@ model Tenant {
   usuarioPermissoes   UsuarioPermissao[]
   eventos             Evento[]
   documentoAssinaturas DocumentoAssinatura[]
+  pagamentoComissoes  PagamentoComissao[]
 
   @@index([status])
   @@unique([documento])
@@ -449,6 +447,7 @@ model Advogado {
   procuracoes    ProcuracaoAdvogado[]
   eventos        Evento[]
   documentoAssinaturas DocumentoAssinatura[]
+  pagamentoComissoes PagamentoComissao[]
 }
 
 model Cliente {
@@ -469,6 +468,7 @@ model Cliente {
   endereco            Json?
   observacoes         String?
   usuarioId           String?           @unique
+  deletedAt           DateTime?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   processos           Processo[]
@@ -609,6 +609,8 @@ model NotificacaoUsuario {
   entregueEm     DateTime?
   lidoEm         DateTime?
   reabertoEm     DateTime?
+  tentativaAtual Int                @default(0) // Número da tentativa atual de entrega
+  ultimoErro     String?            // Última mensagem de erro na entrega
   metadata       Json?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
@@ -659,6 +661,7 @@ model Processo {
   prazoPrincipal        DateTime?
   numeroInterno         String?
   pastaCompartilhadaUrl String?
+  deletedAt             DateTime?
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 
@@ -679,6 +682,9 @@ model Processo {
   julgamentos           Julgamento[]
 
   @@unique([tenantId, numero])
+  @@index([tenantId, status])
+  @@index([tenantId, clienteId])
+  @@index([tenantId, createdAt])
   @@index([status])
   @@index([clienteId])
   @@index([areaId])
@@ -788,6 +794,7 @@ model Documento {
   origem             DocumentoOrigem @default(ESCRITORIO)
   visivelParaCliente Boolean         @default(false)
   visivelParaEquipe  Boolean         @default(true)
+  deletedAt          DateTime?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
@@ -800,6 +807,7 @@ model Documento {
   processosVinculados ProcessoDocumento[]
   assinaturas         DocumentoAssinatura[]
 
+  @@index([tenantId, visivelParaCliente])
   @@index([processoId])
   @@index([clienteId])
   @@index([tenantId, createdAt])
@@ -849,6 +857,7 @@ model Contrato {
   resumo                String?
   arquivoUrl            String?
   observacoes           String?
+  deletedAt             DateTime?
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 
@@ -905,6 +914,7 @@ model Tarefa {
   dataLimite    DateTime?
   completedAt   DateTime?
   lembreteEm    DateTime?
+  deletedAt     DateTime?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
@@ -915,6 +925,9 @@ model Tarefa {
   responsavel Usuario?         @relation("TarefasResponsaveis", fields: [responsavelId], references: [id], onDelete: SetNull)
   criadoPor   Usuario?         @relation("TarefasCriadas", fields: [criadoPorId], references: [id], onDelete: SetNull)
 
+  @@index([tenantId, status])
+  @@index([tenantId, responsavelId])
+  @@index([tenantId, dataLimite])
   @@index([processoId])
   @@index([responsavelId])
   @@index([status])
@@ -1011,28 +1024,55 @@ model Pagamento {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  fatura Fatura @relation(fields: [faturaId], references: [id], onDelete: Cascade)
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fatura     Fatura              @relation(fields: [faturaId], references: [id], onDelete: Cascade)
+  comissoes  PagamentoComissao[]
 
   @@index([faturaId])
 }
 
+model PagamentoComissao {
+  id                String        @id @default(cuid())
+  tenantId          String
+  pagamentoId       String
+  advogadoId        String
+  valorComissao     Decimal       @db.Decimal(14, 2)
+  percentualComissao Decimal      @db.Decimal(5, 2) // Percentual aplicado (0-100)
+  tipoComissao      TipoComissao  @default(HONORARIOS)
+  status            String        @default("PENDENTE") // "PENDENTE", "PAGO", "CANCELADO"
+  dataPagamento     DateTime?
+  observacoes       String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pagamento Pagamento @relation(fields: [pagamentoId], references: [id], onDelete: Cascade)
+  advogado  Advogado @relation(fields: [advogadoId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, advogadoId])
+  @@index([tenantId, status])
+  @@index([pagamentoId])
+}
+
 model AuditLog {
-  id         String   @id @default(cuid())
-  tenantId   String
-  usuarioId  String?
-  acao       String
-  entidade   String
-  entidadeId String?
-  dados      Json?
-  ip         String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
+  id             String   @id @default(cuid())
+  tenantId       String
+  usuarioId      String?
+  acao           String
+  entidade       String
+  entidadeId     String?
+  dados          Json?
+  previousValues Json?    // Valores anteriores dos campos alterados
+  changedFields  String[] // Lista dos campos que foram alterados
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
 
   tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, entidade])
+  @@index([tenantId, createdAt])
 }
 
 model Evento {
@@ -1066,6 +1106,7 @@ model Evento {
   criadoPor             Usuario?         @relation(fields: [criadoPorId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, dataInicio])
+  @@index([tenantId, dataFim])
   @@index([tenantId, status])
   @@index([processoId])
   @@index([clienteId])
