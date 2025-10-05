@@ -103,14 +103,22 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
 
   const handleUserAction = (key: string) => {
     if (key === "profile") {
-      router.push("/usuario/perfil/editar");
-
+      // SuperAdmin não tem perfil de usuário comum
+      if (isSuperAdmin) {
+        router.push("/admin/configuracoes");
+      } else {
+        router.push("/usuario/perfil/editar");
+      }
       return;
     }
 
     if (key === "tenant-settings") {
-      router.push("/configuracoes");
-
+      // SuperAdmin vai para configurações do sistema
+      if (isSuperAdmin) {
+        router.push("/admin/configuracoes");
+      } else {
+        router.push("/configuracoes");
+      }
       return;
     }
 
@@ -227,10 +235,10 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
                   </Button>
                 </DropdownTrigger>
                 <DropdownMenu aria-label="Menu do usuário" className="min-w-[220px]" onAction={(key) => handleUserAction(String(key))}>
-                  <DropdownItem key="profile" description="Gerenciar informações pessoais">
-                    Meu perfil
+                  <DropdownItem key="profile" description={isSuperAdmin ? "Configurações do sistema" : "Gerenciar informações pessoais"}>
+                    {isSuperAdmin ? "Configurações" : "Meu perfil"}
                   </DropdownItem>
-                  {canManageTenantSettings ? (
+                  {!isSuperAdmin && canManageTenantSettings ? (
                     <DropdownItem key="tenant-settings" description="Branding, domínios e integrações do escritório">
                       Configurações do escritório
                     </DropdownItem>

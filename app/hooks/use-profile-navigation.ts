@@ -185,21 +185,20 @@ export function useProfileNavigation() {
 
   const getWelcomeMessage = () => {
     const userName = "Usuário"; // TODO: Pegar do session
-    const timeOfDay = new Date().getHours() < 12 ? "Bom dia" : new Date().getHours() < 18 ? "Boa tarde" : "Boa noite";
 
     switch (userRole) {
       case "ADMIN":
-        return `${timeOfDay}, ${userName}! Aqui está o resumo do seu escritório.`;
+        return `Olá, ${userName}! Aqui está o resumo do seu escritório.`;
       case "ADVOGADO":
-        return `${timeOfDay}, Dr(a). ${userName}! Veja sua agenda e clientes.`;
+        return `Olá, Dr(a). ${userName}! Veja sua agenda e clientes.`;
       case "SECRETARIA":
-        return `${timeOfDay}, ${userName}! Organize a agenda do escritório.`;
+        return `Olá, ${userName}! Organize a agenda do escritório.`;
       case "FINANCEIRO":
-        return `${timeOfDay}, ${userName}! Controle as finanças do escritório.`;
+        return `Olá, ${userName}! Controle as finanças do escritório.`;
       case "CLIENTE":
-        return `${timeOfDay}, ${userName}! Acompanhe seu processo.`;
+        return `Olá, ${userName}! Acompanhe seu processo.`;
       default:
-        return `${timeOfDay}, ${userName}!`;
+        return `Olá, ${userName}!`;
     }
   };
 

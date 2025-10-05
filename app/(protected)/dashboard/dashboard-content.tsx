@@ -57,12 +57,6 @@ export function DashboardContent() {
             <h1 className={title({ size: "lg", color: "blue" })}>{getDashboardTitle()}</h1>
             <p className={subtitle({ fullWidth: true })}>{getDashboardDescription()}</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-sm text-default-500">Perfil:</span>
-            <Badge color={getRoleBadgeColor()} variant="flat" className="capitalize">
-              {getRoleLabel()}
-            </Badge>
-          </div>
         </div>
 
         <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">

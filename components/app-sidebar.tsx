@@ -109,16 +109,22 @@ const HelpIcon = ({ size = 18 }: IconProps) => (
 
 const navIconMap: Record<string, JSX.Element> = {
   Painel: <DashboardIcon />,
+  Dashboard: <DashboardIcon />,
   Processos: <FolderIcon />,
   Documentos: <FileIcon />,
   Agenda: <CalendarIcon />,
   Financeiro: <WalletIcon />,
   Juízes: <ScaleIcon />,
+  "Juízes Globais": <ScaleIcon />,
   Relatórios: <ChartIcon />,
   Equipe: <PeopleIcon />,
+  Tenants: <PeopleIcon />,
   "Meu Perfil": <UserIcon />,
   "Configurações do escritório": <SettingsIcon />,
+  Configurações: <SettingsIcon />,
   Suporte: <HelpIcon />,
+  "Pacotes Premium": <WalletIcon />,
+  Auditoria: <ScaleIcon />,
 };
 
 export type SidebarNavItem = {
@@ -166,12 +172,22 @@ function MobileUserProfile({ onClose }: { onClose: () => void }) {
     onClose(); // Fechar o drawer
 
     if (key === "profile") {
-      router.push("/usuario/perfil/editar");
+      // SuperAdmin não tem perfil de usuário comum
+      if (isSuperAdmin) {
+        router.push("/admin/configuracoes");
+      } else {
+        router.push("/usuario/perfil/editar");
+      }
       return;
     }
 
     if (key === "tenant-settings") {
-      router.push("/configuracoes");
+      // SuperAdmin vai para configurações do sistema
+      if (isSuperAdmin) {
+        router.push("/admin/configuracoes");
+      } else {
+        router.push("/configuracoes");
+      }
       return;
     }
 
@@ -199,10 +215,10 @@ function MobileUserProfile({ onClose }: { onClose: () => void }) {
           </Button>
         </DropdownTrigger>
         <DropdownMenu aria-label="Menu do usuário" className="min-w-[220px]" onAction={(key) => handleUserAction(String(key))}>
-          <DropdownItem key="profile" description="Gerenciar informações pessoais">
-            Meu perfil
+          <DropdownItem key="profile" description={isSuperAdmin ? "Configurações do sistema" : "Gerenciar informações pessoais"}>
+            {isSuperAdmin ? "Configurações" : "Meu perfil"}
           </DropdownItem>
-          {isSuperAdmin ? (
+          {!isSuperAdmin ? (
             <DropdownItem key="tenant-settings" description="Configurações do escritório">
               Configurações
             </DropdownItem>

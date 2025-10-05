@@ -62,6 +62,18 @@ function validateEvento(data: EventoFormData): { isValid: boolean; errors: strin
 
 // Função auxiliar para buscar o tenant do usuário atual
 async function getCurrentTenant(userId: string) {
+  // Primeiro verificar se é SuperAdmin
+  const superAdmin = await prisma.superAdmin.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+
+  if (superAdmin) {
+    // SuperAdmin não tem tenant, retorna null
+    return null;
+  }
+
+  // Se não é SuperAdmin, buscar como usuário normal
   const usuario = await prisma.usuario.findUnique({
     where: { id: userId },
     select: { tenantId: true },
@@ -83,7 +95,28 @@ export async function getEventos(filters?: { dataInicio?: Date; dataFim?: Date; 
     }
 
     const tenant = await getCurrentTenant(session.user.id);
+
+    // SuperAdmin não tem eventos específicos por enquanto
     if (!tenant) {
+      const superAdmin = await prisma.superAdmin.findUnique({
+        where: { id: session.user.id },
+        select: { id: true },
+      });
+
+      if (superAdmin) {
+        // SuperAdmin - retorna array vazio
+        return {
+          success: true,
+          data: [],
+          pagination: {
+            total: 0,
+            page: 1,
+            limit: 50,
+            totalPages: 0,
+          },
+        };
+      }
+
       throw new Error("Tenant não encontrado");
     }
 

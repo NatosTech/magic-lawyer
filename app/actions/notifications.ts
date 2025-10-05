@@ -34,22 +34,34 @@ export type NotificationsResponse = {
 async function ensureSession() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id || !session.user.tenantId) {
+  if (!session?.user?.id) {
     throw new Error("Não autenticado");
   }
 
+  const userRole = (session.user as any)?.role;
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
+
   return {
     userId: session.user.id,
-    tenantId: session.user.tenantId,
+    tenantId: session.user.tenantId, // null para SuperAdmin
+    isSuperAdmin,
+    userRole,
   };
 }
 
-export async function getNotifications(
-  options: GetNotificationsOptions = {},
-): Promise<NotificationsResponse> {
-  const { tenantId, userId } = await ensureSession();
+export async function getNotifications(options: GetNotificationsOptions = {}): Promise<NotificationsResponse> {
+  const { tenantId, userId, isSuperAdmin } = await ensureSession();
 
   const take = Math.min(options.limit ?? 50, 100);
+
+  // SuperAdmin não tem notificações específicas por enquanto
+  // Retorna array vazio para evitar erros
+  if (isSuperAdmin) {
+    return {
+      notifications: [],
+      unreadCount: 0,
+    };
+  }
 
   const notifications = await prisma.notificacaoUsuario.findMany({
     where: {
@@ -88,11 +100,13 @@ export async function getNotifications(
   };
 }
 
-export async function setNotificationStatus(
-  id: string,
-  status: NotificationStatus,
-): Promise<void> {
-  const { tenantId, userId } = await ensureSession();
+export async function setNotificationStatus(id: string, status: NotificationStatus): Promise<void> {
+  const { tenantId, userId, isSuperAdmin } = await ensureSession();
+
+  // SuperAdmin não tem notificações por enquanto
+  if (isSuperAdmin) {
+    return;
+  }
 
   if (!id) {
     throw new Error("Notificação inválida");
@@ -110,12 +124,7 @@ export async function setNotificationStatus(
     },
     data: {
       status,
-      lidoEm:
-        status === "LIDA"
-          ? new Date()
-          : status === "NAO_LIDA"
-            ? null
-            : undefined,
+      lidoEm: status === "LIDA" ? new Date() : status === "NAO_LIDA" ? null : undefined,
       reabertoEm: status === "NAO_LIDA" ? new Date() : undefined,
       updatedAt: new Date(),
     },
@@ -131,7 +140,12 @@ export async function markNotificationAsRead(id: string): Promise<void> {
 }
 
 export async function markAllNotificationsAsRead(): Promise<void> {
-  const { tenantId, userId } = await ensureSession();
+  const { tenantId, userId, isSuperAdmin } = await ensureSession();
+
+  // SuperAdmin não tem notificações por enquanto
+  if (isSuperAdmin) {
+    return;
+  }
 
   await prisma.notificacaoUsuario.updateMany({
     where: {
@@ -150,7 +164,12 @@ export async function markAllNotificationsAsRead(): Promise<void> {
 }
 
 export async function clearAllNotifications(): Promise<void> {
-  const { tenantId, userId } = await ensureSession();
+  const { tenantId, userId, isSuperAdmin } = await ensureSession();
+
+  // SuperAdmin não tem notificações por enquanto
+  if (isSuperAdmin) {
+    return;
+  }
 
   await prisma.notificacaoUsuario.deleteMany({
     where: {
