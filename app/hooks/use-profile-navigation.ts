@@ -135,6 +135,16 @@ export function useProfileNavigation() {
       });
     }
 
+    // Advogados - Apenas para ADMIN
+    if (permissions.canManageTeam) {
+      items.push({
+        label: "Advogados",
+        href: "/advogados",
+        icon: "Users",
+        description: "Gestão de advogados do escritório",
+      });
+    }
+
     // Equipe - Apenas para ADMIN
     if (permissions.canManageTeam) {
       items.push({
