@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, type KeyboardEvent } from "react";
-import { Modal, ModalContent, ModalBody } from "@heroui/modal";
+import { Modal } from "@/components/ui/modal";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Kbd } from "@heroui/kbd";
@@ -34,15 +34,16 @@ export function CentralizedSearchBar({ className = "" }: CentralizedSearchBarPro
   }, []);
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = (event: Event) => {
+      const keyboardEvent = event as unknown as KeyboardEvent;
       // Ctrl+K ou Cmd+K para abrir
-      if ((isMac ? event.metaKey : event.ctrlKey) && event.key === "k") {
+      if ((isMac ? keyboardEvent.metaKey : keyboardEvent.ctrlKey) && keyboardEvent.key === "k") {
         event.preventDefault();
         setIsOpen(true);
       }
 
       // Escape para fechar
-      if (event.key === "Escape" && isOpen) {
+      if (keyboardEvent.key === "Escape" && isOpen) {
         setIsOpen(false);
         setQuery("");
         setSelectedIndex(0);
@@ -175,188 +176,176 @@ export function CentralizedSearchBar({ className = "" }: CentralizedSearchBarPro
           setQuery("");
           setSelectedIndex(0);
         }}
-        placement="center"
         size="2xl"
-        hideCloseButton
-        scrollBehavior="inside"
+        showCloseButton={false}
+        closeOnEscape={true}
+        closeOnOverlayClick={true}
         backdrop="blur"
-        classNames={{
-          backdrop: "bg-black/50 backdrop-blur-sm",
-          base: "border border-default-200 shadow-2xl",
-        }}
+        className="p-0"
       >
-        <ModalContent>
-          <ModalBody className="p-0">
-            <div className="flex flex-col">
-              {/* Header do Modal */}
-              <div className="flex items-center justify-between p-4 border-b border-default-200">
-                <div className="flex items-center gap-3">
-                  <Search className="h-5 w-5 text-default-400" />
-                  <span className="text-lg font-semibold">Busca Avançada</span>
+        <div className="flex flex-col">
+          {/* Search Input - Estilo HeroUI */}
+          <div className="p-6 pb-4">
+            <Input
+              ref={inputRef}
+              value={query}
+              placeholder="Buscar processos, clientes, documentos..."
+              variant="flat"
+              size="lg"
+              className="flex-1"
+              onChange={(e) => handleInputChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              startContent={<Search className="h-4 w-4 text-default-400" />}
+              endContent={
+                <div className="flex items-center gap-2">
+                  {query && (
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      color="default"
+                      className="h-6 w-6 min-w-6"
+                      onPress={() => {
+                        setQuery("");
+                        setSelectedIndex(0);
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                  <Kbd keys={["escape"]} className="text-xs">
+                    ESC
+                  </Kbd>
                 </div>
-                <Button
-                  isIconOnly
-                  variant="light"
-                  size="sm"
-                  onPress={() => {
-                    setIsOpen(false);
-                    setQuery("");
-                    setSelectedIndex(0);
-                  }}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+              }
+              classNames={{
+                base: "w-full",
+                input: "text-base",
+                inputWrapper: "bg-default-100/50 border-none shadow-none hover:bg-default-100/70 focus-within:bg-default-100/70",
+              }}
+            />
+          </div>
+
+          {/* Search Results - Estilo HeroUI */}
+          <div className="max-h-96 overflow-y-auto px-6 pb-6">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Spinner size="sm" color="primary" />
+                <span className="ml-3 text-sm text-default-500">Buscando...</span>
               </div>
-
-              {/* Search Input */}
-              <div className="flex items-center gap-3 p-4">
-                <Input
-                  ref={inputRef}
-                  value={query}
-                  placeholder="Buscar processos, clientes, documentos..."
-                  variant="flat"
-                  size="lg"
-                  className="flex-1"
-                  onChange={(e) => handleInputChange(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  endContent={
-                    <div className="flex items-center gap-2">
-                      {query && (
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          color="default"
-                          onPress={() => {
-                            setQuery("");
-                            setSelectedIndex(0);
-                          }}
-                        >
-                          ×
-                        </Button>
-                      )}
-                      <Kbd keys={["escape"]}>ESC</Kbd>
-                    </div>
-                  }
-                />
-              </div>
-
-              {/* Search Results */}
-              <div className="max-h-96 overflow-y-auto">
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Spinner size="sm" />
-                    <span className="ml-2 text-sm">Buscando...</span>
-                  </div>
-                ) : query.length === 0 ? (
-                  <div className="p-6">
-                    <div className="text-center mb-6">
-                      <div className="flex items-center justify-center mb-4">
-                        <Kbd keys={["command"]}>K</Kbd>
-                        <span className="mx-2 text-sm">ou</span>
-                        <Kbd>↑</Kbd>
-                        <Kbd>↓</Kbd>
-                      </div>
-                      <p className="text-sm text-default-500">Digite para buscar processos, clientes, documentos...</p>
-                    </div>
-
-                    {/* Filtros Rápidos */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <Button variant="bordered" className="h-10 justify-start">
-                        <Search className="w-4 h-4 mr-2" />
-                        Processos
-                      </Button>
-                      <Button variant="bordered" className="h-10 justify-start">
-                        <Search className="w-4 h-4 mr-2" />
-                        Clientes
-                      </Button>
-                      <Button variant="bordered" className="h-10 justify-start">
-                        <Search className="w-4 h-4 mr-2" />
-                        Documentos
-                      </Button>
-                      <Button variant="bordered" className="h-10 justify-start">
-                        <Search className="w-4 h-4 mr-2" />
-                        Juízes
-                      </Button>
-                    </div>
-                  </div>
-                ) : results && results.length > 0 ? (
-                  <div className="py-2">
-                    {results.map((result, index) => (
-                      <div key={result.id}>
-                        <Button
-                          className="w-full justify-start p-4 h-auto"
-                          variant={index === selectedIndex ? "flat" : "light"}
-                          color={index === selectedIndex ? "primary" : "default"}
-                          onPress={() => {
-                            window.location.href = result.href;
-                            setIsOpen(false);
-                            setQuery("");
-                          }}
-                        >
-                          <div className="flex items-center gap-3 w-full">
-                            <div className="flex-shrink-0">
-                              {result.avatar ? (
-                                <Avatar src={result.avatar} size="sm" className="flex-shrink-0" />
-                              ) : (
-                                <div className="h-8 w-8 rounded-full bg-default-100 flex items-center justify-center text-lg">{getResultIcon(result.type)}</div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium truncate">{result.title}</span>
-                                <Chip size="sm" variant="flat" color={result.statusColor || "default"}>
-                                  {getTypeLabel(result.type)}
-                                </Chip>
-                              </div>
-                              {result.description && <p className="text-sm truncate text-default-500">{result.description}</p>}
-                              {result.status && (
-                                <div className="mt-1">
-                                  <Chip size="sm" variant="flat" color={result.statusColor || "default"}>
-                                    {result.status}
-                                  </Chip>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </Button>
-                        {index < results.length - 1 && <Divider className="mx-4" />}
-                      </div>
+            ) : query.length === 0 ? (
+              <div className="py-6">
+                {/* Quick Filters - Estilo HeroUI */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium text-foreground mb-4">Filtros Rápidos</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: "Processos", icon: "⚖️", count: "12" },
+                      { label: "Clientes", icon: "👤", count: "8" },
+                      { label: "Documentos", icon: "📄", count: "24" },
+                      { label: "Juízes", icon: "👨‍⚖️", count: "5" },
+                    ].map((filter) => (
+                      <button
+                        key={filter.label}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-default-50/70 hover:bg-default-100/70 backdrop-blur-sm transition-colors group"
+                        onClick={() => handleInputChange(filter.label)}
+                      >
+                        <span className="text-lg group-hover:scale-110 transition-transform">{filter.icon}</span>
+                        <div className="flex-1 text-left">
+                          <div className="font-medium text-sm text-foreground">{filter.label}</div>
+                          <div className="text-xs text-default-500">{filter.count} itens</div>
+                        </div>
+                        <div className="h-4 w-4 rounded-full border border-default-300 group-hover:border-primary-300 transition-colors"></div>
+                      </button>
                     ))}
                   </div>
-                ) : (
-                  <div className="p-6 text-center">
-                    <p className="text-sm">Nenhum resultado encontrado para "{query}"</p>
-                    <p className="text-xs mt-2 text-default-500">Tente termos diferentes ou mais específicos</p>
-                  </div>
-                )}
-              </div>
+                </div>
 
-              {/* Footer */}
-              {query && (
-                <div className="border-t border-default-200 p-3">
-                  <div className="flex items-center justify-between text-xs text-default-500">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1">
-                        <Kbd keys={["arrowup"]} />
-                        <Kbd keys={["arrowdown"]} />
-                        <span>navegar</span>
+                {/* Keyboard Shortcuts */}
+                <div className="pt-4 border-t border-default-200">
+                  <h4 className="text-sm font-medium text-foreground mb-3">Atalhos de Teclado</h4>
+                  <div className="grid grid-cols-3 gap-4 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <Kbd keys={["up"]} />
+                        <Kbd keys={["down"]} />
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Kbd keys={["enter"]} />
-                        <span>selecionar</span>
-                      </div>
+                      <span className="text-default-500">navegar</span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
+                      <Kbd keys={["enter"]} />
+                      <span className="text-default-500">selecionar</span>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <Kbd keys={["escape"]} />
-                      <span>fechar</span>
+                      <span className="text-default-500">fechar</span>
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          </ModalBody>
-        </ModalContent>
+              </div>
+            ) : results && results.length > 0 ? (
+              <div>
+                <div className="text-sm text-default-500 mb-4 px-1">
+                  {results.length} resultado{results.length !== 1 ? "s" : ""} encontrado{results.length !== 1 ? "s" : ""}
+                </div>
+                <div className="space-y-1">
+                  {results.map((result, index) => (
+                    <button
+                      key={result.id}
+                      className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-200 ${
+                        index === selectedIndex ? "bg-primary-100 border border-primary-200 shadow-sm" : "hover:bg-default-100 border border-transparent"
+                      }`}
+                      onClick={() => {
+                        window.location.href = result.href;
+                        setIsOpen(false);
+                        setQuery("");
+                      }}
+                    >
+                      <div className="flex-shrink-0">
+                        {result.avatar ? (
+                          <Avatar src={result.avatar} size="sm" className="flex-shrink-0" />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-default-100 flex items-center justify-center text-lg">{getResultIcon(result.type)}</div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium truncate text-foreground">{result.title}</span>
+                          <Chip size="sm" variant="flat" color={result.statusColor || "default"} className="text-xs">
+                            {getTypeLabel(result.type)}
+                          </Chip>
+                        </div>
+                        {result.description && <p className="text-sm text-default-500 truncate">{result.description}</p>}
+                        {result.status && (
+                          <div className="mt-1">
+                            <Chip size="sm" variant="flat" color={result.statusColor || "default"} className="text-xs">
+                              {result.status}
+                            </Chip>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0">
+                        <div className={`h-4 w-4 rounded-full border transition-colors ${index === selectedIndex ? "border-primary-300 bg-primary-200" : "border-default-300"}`}></div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="py-12 text-center">
+                <div className="h-12 w-12 rounded-full bg-default-100 flex items-center justify-center mx-auto mb-4">
+                  <Search className="h-6 w-6 text-default-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Nenhum resultado encontrado</h3>
+                <p className="text-sm text-default-500 mb-6">Tente usar termos diferentes ou verifique a ortografia</p>
+                <div className="flex items-center justify-center gap-2 text-xs text-default-400">
+                  <Kbd keys={["escape"]} />
+                  <span>para fechar</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -7,7 +7,7 @@ import { Input } from "@heroui/input";
 import { Badge } from "@heroui/badge";
 import { Chip } from "@heroui/chip";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import { Modal } from "@/components/ui/modal";
 import { Select, SelectItem } from "@heroui/select";
 // import { Textarea } from "@heroui/textarea";
 import { title, subtitle } from "@/components/primitives";
@@ -321,36 +321,44 @@ export function JuizesContent() {
         )}
 
         {/* Modal de Criação/Edição - Placeholder */}
-        <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} size="2xl">
-          <ModalContent>
-            <ModalHeader>Novo Juiz</ModalHeader>
-            <ModalBody>
-              <p className="text-default-500">Formulário de criação de juiz será implementado aqui.</p>
-            </ModalBody>
-            <ModalFooter>
+        <Modal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          size="2xl"
+          title="Novo Juiz"
+          backdrop="blur"
+          showFooter={true}
+          footerContent={
+            <>
               <Button variant="light" onPress={() => setIsCreateModalOpen(false)}>
                 Cancelar
               </Button>
               <Button color="primary">Salvar</Button>
-            </ModalFooter>
-          </ModalContent>
+            </>
+          }
+        >
+          <p className="text-default-500">Formulário de criação de juiz será implementado aqui.</p>
         </Modal>
 
         {/* Modal de Edição - Placeholder */}
-        <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} size="2xl">
-          <ModalContent>
-            <ModalHeader>Editar Juiz</ModalHeader>
-            <ModalBody>
-              <p className="text-default-500">Formulário de edição de juiz será implementado aqui.</p>
-              {selectedJuiz && <p className="text-sm text-default-400 mt-2">Editando: {selectedJuiz.nomeCompleto}</p>}
-            </ModalBody>
-            <ModalFooter>
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          size="2xl"
+          title="Editar Juiz"
+          backdrop="blur"
+          showFooter={true}
+          footerContent={
+            <>
               <Button variant="light" onPress={() => setIsEditModalOpen(false)}>
                 Cancelar
               </Button>
               <Button color="primary">Salvar</Button>
-            </ModalFooter>
-          </ModalContent>
+            </>
+          }
+        >
+          <p className="text-default-500">Formulário de edição de juiz será implementado aqui.</p>
+          {selectedJuiz && <p className="text-sm text-default-400 mt-2">Editando: {selectedJuiz.nomeCompleto}</p>}
         </Modal>
       </section>
     </PermissionGuard>
