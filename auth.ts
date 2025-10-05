@@ -49,14 +49,6 @@ export const authOptions: NextAuthOptions = {
         console.info("[auth] Tentativa de login recebida", attemptContext);
 
         try {
-          let tenantWhere: any = undefined;
-
-          if (!shouldAutoDetect) {
-            tenantWhere = {
-              OR: [{ slug: normalizedTenant }, { domain: normalizedTenant }],
-            };
-          }
-
           const email = normalizedEmail ?? credentials.email;
 
           // Log para debug
@@ -67,9 +59,61 @@ export const authOptions: NextAuthOptions = {
             shouldAutoDetect,
           });
 
+          // PRIMEIRO: Verificar se é SuperAdmin
+          console.info("[auth] Verificando se é SuperAdmin");
+          const superAdmin = await prisma.superAdmin.findUnique({
+            where: { email },
+          });
+
+          if (superAdmin) {
+            console.info("[auth] SuperAdmin encontrado", { id: superAdmin.id, email: superAdmin.email });
+
+            // Verificar senha do SuperAdmin
+            if (!superAdmin.passwordHash) {
+              console.warn("[auth] SuperAdmin sem senha cadastrada");
+              return null;
+            }
+
+            const validPassword = await bcrypt.compare(credentials.password, superAdmin.passwordHash);
+            if (!validPassword) {
+              console.warn("[auth] Senha inválida para SuperAdmin");
+              return null;
+            }
+
+            // Login do SuperAdmin autorizado
+            const resultUser = {
+              id: superAdmin.id,
+              email: superAdmin.email,
+              name: `${superAdmin.firstName} ${superAdmin.lastName}`,
+              image: superAdmin.image || undefined,
+              tenantId: null, // SuperAdmin não tem tenant
+              role: "SUPER_ADMIN",
+              tenantSlug: null,
+              tenantName: "Magic Lawyer Admin",
+              permissions: ["*"], // SuperAdmin tem todas as permissões
+            };
+
+            console.info("[auth] Login SuperAdmin autorizado", {
+              ...attemptContext,
+              userId: superAdmin.id,
+              role: "SUPER_ADMIN",
+            });
+
+            return resultUser as any;
+          }
+
+          // SEGUNDO: Se não é SuperAdmin, buscar usuário normal
+          let tenantWhere: any = undefined;
+
+          if (!shouldAutoDetect) {
+            tenantWhere = {
+              OR: [{ slug: normalizedTenant }, { domain: normalizedTenant }],
+            };
+          }
+
           // Primeiro, vamos tentar buscar o usuário sem filtro de tenant para debug
           if (shouldAutoDetect) {
-            console.info("[auth] Buscando usuário em todos os tenants");
+            console.info("[auth] Buscando usuário normal em todos os tenants");
             const allUsers = await prisma.usuario.findMany({
               where: {
                 email,

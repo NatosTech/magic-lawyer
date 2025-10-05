@@ -8,6 +8,7 @@ const { seedTenantSandra } = require("./seeds/tenants/tenantSandra");
 const { seedSalbaAdvocacia } = require("./seeds/tenants/salbaAdvocacia");
 const { seedEventos } = require("./seeds/eventos");
 const { seedJuizes } = require("./seeds/juizes");
+const { seedSuperAdmin } = require("./seeds/superAdmin");
 
 const prisma = new PrismaClient();
 
@@ -46,10 +47,15 @@ async function main() {
   // Seed de eventos
   await seedEventos();
 
+  console.log("\n🔑 Criando Super Admin do sistema...\n");
+
+  // Seed do Super Admin
+  const superAdmin = await seedSuperAdmin(prisma);
+
   console.log("\n👨‍⚖️ Criando base de juízes...\n");
 
-  // Seed de juízes
-  await seedJuizes();
+  // Seed de juízes (controlados pelo Super Admin)
+  await seedJuizes(superAdmin.id, prisma);
 
   console.log("\n🚀 Aplicando otimizações enterprise...\n");
 

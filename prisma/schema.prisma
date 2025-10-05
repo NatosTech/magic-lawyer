@@ -311,7 +311,6 @@ model Tenant {
   tarefas             Tarefa[]
   movimentacoes       MovimentacaoProcesso[]
   documentos          Documento[]
-  juizes              Juiz[]
   tribunais           Tribunal[]
   areasProcesso       AreaProcesso[]
   tiposContrato       TipoContrato[]
@@ -336,9 +335,12 @@ model Tenant {
   eventos             Evento[]
   documentoAssinaturas DocumentoAssinatura[]
   pagamentoComissoes  PagamentoComissao[]
+  superAdminId         String?
+  superAdmin           SuperAdmin? @relation("SuperAdminTenant", fields: [superAdminId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@unique([documento])
+  @@index([superAdminId])
 }
 
 model TenantEndereco {
@@ -421,6 +423,47 @@ model Usuario {
 
   @@unique([email, tenantId])
   @@index([role])
+}
+
+model SuperAdmin {
+  id                String                @id @default(cuid())
+  email             String                @unique
+  firstName         String
+  lastName          String
+  passwordHash      String?
+  image             String?
+  emailVerified     DateTime?
+  status            String                @default("ACTIVE")
+  lastLoginAt       DateTime?
+  lastLoginIp       String?
+  preferences       Json?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  // Relacionamentos
+  tenantGerenciados Tenant[]              @relation("SuperAdminTenant")
+  juizesCriados     Juiz[]                @relation("SuperAdminJuiz")
+  logsAuditoria     SuperAdminAuditLog[]
+}
+
+model SuperAdminAuditLog {
+  id              String     @id @default(cuid())
+  superAdminId    String
+  acao            String     // CREATE_TENANT, UPDATE_TENANT, DELETE_TENANT, etc.
+  entidade        String     // TENANT, JUIZ, SYSTEM, etc.
+  entidadeId      String?
+  dadosAntigos    Json?
+  dadosNovos      Json?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime   @default(now())
+
+  superAdmin      SuperAdmin @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
+
+  @@index([superAdminId])
+  @@index([acao])
+  @@index([entidade])
+  @@index([createdAt])
 }
 
 model Advogado {
@@ -508,7 +551,6 @@ model AdvogadoCliente {
 
 model Juiz {
   id                String            @id @default(cuid())
-  tenantId          String?
   tribunalId        String?
   nome              String
   nomeCompleto      String?
@@ -539,15 +581,16 @@ model Juiz {
   twitter           String?
   instagram         String?
   observacoes       String?
-  isPublico         Boolean           @default(false) // Se pode ser compartilhado entre tenants
+  isPublico         Boolean           @default(true) // Juízes são públicos por padrão (globais)
   isPremium         Boolean           @default(false) // Se é conteúdo premium
   precoAcesso       Decimal?          @db.Decimal(10, 2) // Preço para acesso premium
+  superAdminId      String?           // Quem criou/gerencia este juiz
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
   // Relacionamentos
-  tenant            Tenant?           @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   tribunal          Tribunal?         @relation(fields: [tribunalId], references: [id], onDelete: SetNull)
+  superAdmin        SuperAdmin?       @relation("SuperAdminJuiz", fields: [superAdminId], references: [id], onDelete: SetNull)
   processos         Processo[]
   julgamentos       Julgamento[]
   analises          AnaliseJuiz[]
@@ -555,7 +598,7 @@ model Juiz {
   acessos           AcessoJuiz[]
 
   @@index([nome])
-  @@index([tenantId])
+  @@index([superAdminId])
   @@index([status])
   @@index([especialidades])
 }

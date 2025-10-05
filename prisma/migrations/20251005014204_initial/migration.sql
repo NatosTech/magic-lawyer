@@ -146,6 +146,7 @@ CREATE TABLE "public"."Tenant" (
     "telefone" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "superAdminId" TEXT,
 
     CONSTRAINT "Tenant_pkey" PRIMARY KEY ("id")
 );
@@ -212,6 +213,41 @@ CREATE TABLE "public"."Usuario" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."SuperAdmin" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
+    "passwordHash" TEXT,
+    "image" TEXT,
+    "emailVerified" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "lastLoginAt" TIMESTAMP(3),
+    "lastLoginIp" TEXT,
+    "preferences" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SuperAdmin_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."SuperAdminAuditLog" (
+    "id" TEXT NOT NULL,
+    "superAdminId" TEXT NOT NULL,
+    "acao" TEXT NOT NULL,
+    "entidade" TEXT NOT NULL,
+    "entidadeId" TEXT,
+    "dadosAntigos" JSONB,
+    "dadosNovos" JSONB,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "SuperAdminAuditLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."Advogado" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -271,7 +307,6 @@ CREATE TABLE "public"."AdvogadoCliente" (
 -- CreateTable
 CREATE TABLE "public"."Juiz" (
     "id" TEXT NOT NULL,
-    "tenantId" TEXT,
     "tribunalId" TEXT,
     "nome" TEXT NOT NULL,
     "nomeCompleto" TEXT,
@@ -302,9 +337,10 @@ CREATE TABLE "public"."Juiz" (
     "twitter" TEXT,
     "instagram" TEXT,
     "observacoes" TEXT,
-    "isPublico" BOOLEAN NOT NULL DEFAULT false,
+    "isPublico" BOOLEAN NOT NULL DEFAULT true,
     "isPremium" BOOLEAN NOT NULL DEFAULT false,
     "precoAcesso" DECIMAL(10,2),
+    "superAdminId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -874,6 +910,9 @@ CREATE UNIQUE INDEX "Tenant_domain_key" ON "public"."Tenant"("domain");
 CREATE INDEX "Tenant_status_idx" ON "public"."Tenant"("status");
 
 -- CreateIndex
+CREATE INDEX "Tenant_superAdminId_idx" ON "public"."Tenant"("superAdminId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Tenant_documento_key" ON "public"."Tenant"("documento");
 
 -- CreateIndex
@@ -890,6 +929,21 @@ CREATE INDEX "Usuario_role_idx" ON "public"."Usuario"("role");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Usuario_email_tenantId_key" ON "public"."Usuario"("email", "tenantId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SuperAdmin_email_key" ON "public"."SuperAdmin"("email");
+
+-- CreateIndex
+CREATE INDEX "SuperAdminAuditLog_superAdminId_idx" ON "public"."SuperAdminAuditLog"("superAdminId");
+
+-- CreateIndex
+CREATE INDEX "SuperAdminAuditLog_acao_idx" ON "public"."SuperAdminAuditLog"("acao");
+
+-- CreateIndex
+CREATE INDEX "SuperAdminAuditLog_entidade_idx" ON "public"."SuperAdminAuditLog"("entidade");
+
+-- CreateIndex
+CREATE INDEX "SuperAdminAuditLog_createdAt_idx" ON "public"."SuperAdminAuditLog"("createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Advogado_usuarioId_key" ON "public"."Advogado"("usuarioId");
@@ -925,7 +979,7 @@ CREATE UNIQUE INDEX "Juiz_cpf_key" ON "public"."Juiz"("cpf");
 CREATE INDEX "Juiz_nome_idx" ON "public"."Juiz"("nome");
 
 -- CreateIndex
-CREATE INDEX "Juiz_tenantId_idx" ON "public"."Juiz"("tenantId");
+CREATE INDEX "Juiz_superAdminId_idx" ON "public"."Juiz"("superAdminId");
 
 -- CreateIndex
 CREATE INDEX "Juiz_status_idx" ON "public"."Juiz"("status");
@@ -1144,6 +1198,9 @@ ALTER TABLE "public"."TipoContrato" ADD CONSTRAINT "TipoContrato_tenantId_fkey" 
 ALTER TABLE "public"."CategoriaTarefa" ADD CONSTRAINT "CategoriaTarefa_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."Tenant" ADD CONSTRAINT "Tenant_superAdminId_fkey" FOREIGN KEY ("superAdminId") REFERENCES "public"."SuperAdmin"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."TenantEndereco" ADD CONSTRAINT "TenantEndereco_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -1151,6 +1208,9 @@ ALTER TABLE "public"."TenantBranding" ADD CONSTRAINT "TenantBranding_tenantId_fk
 
 -- AddForeignKey
 ALTER TABLE "public"."Usuario" ADD CONSTRAINT "Usuario_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."SuperAdminAuditLog" ADD CONSTRAINT "SuperAdminAuditLog_superAdminId_fkey" FOREIGN KEY ("superAdminId") REFERENCES "public"."SuperAdmin"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Advogado" ADD CONSTRAINT "Advogado_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1174,10 +1234,10 @@ ALTER TABLE "public"."AdvogadoCliente" ADD CONSTRAINT "AdvogadoCliente_advogadoI
 ALTER TABLE "public"."AdvogadoCliente" ADD CONSTRAINT "AdvogadoCliente_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "public"."Cliente"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Juiz" ADD CONSTRAINT "Juiz_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."Juiz" ADD CONSTRAINT "Juiz_tribunalId_fkey" FOREIGN KEY ("tribunalId") REFERENCES "public"."Tribunal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Juiz" ADD CONSTRAINT "Juiz_tribunalId_fkey" FOREIGN KEY ("tribunalId") REFERENCES "public"."Tribunal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."Juiz" ADD CONSTRAINT "Juiz_superAdminId_fkey" FOREIGN KEY ("superAdminId") REFERENCES "public"."SuperAdmin"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Tribunal" ADD CONSTRAINT "Tribunal_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE SET NULL ON UPDATE CASCADE;

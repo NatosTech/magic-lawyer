@@ -24,10 +24,13 @@ export interface GetJuizResponse {
   error?: string;
 }
 
-// Buscar juízes com filtros
+// Buscar juízes com filtros - APENAS JUÍZES PÚBLICOS GLOBAIS
 export async function getJuizes(filters?: JuizFilters): Promise<GetJuizesResponse> {
   try {
-    const where: any = {};
+    const where: any = {
+      // SEGURANÇA: Apenas juízes públicos (globais) são visíveis
+      isPublico: true,
+    };
 
     // Filtro por busca textual
     if (filters?.search) {
@@ -57,12 +60,7 @@ export async function getJuizes(filters?: JuizFilters): Promise<GetJuizesRespons
       where.nivel = filters.nivel;
     }
 
-    // Filtro por público
-    if (filters?.isPublico !== undefined) {
-      where.isPublico = filters.isPublico;
-    }
-
-    // Filtro por premium
+    // Filtro por premium (mantém isPublico = true sempre)
     if (filters?.isPremium !== undefined) {
       where.isPremium = filters.isPremium;
     }
@@ -108,7 +106,7 @@ export async function getJuizes(filters?: JuizFilters): Promise<GetJuizesRespons
         precoAcesso: true,
         createdAt: true,
         updatedAt: true,
-        tenantId: true,
+        superAdminId: true,
         tribunalId: true,
       },
     });
@@ -132,11 +130,15 @@ export async function getJuizes(filters?: JuizFilters): Promise<GetJuizesRespons
   }
 }
 
-// Buscar juiz por ID
+// Buscar juiz por ID - APENAS JUÍZES PÚBLICOS GLOBAIS
 export async function getJuizById(id: string): Promise<GetJuizResponse> {
   try {
-    const juiz = await prisma.juiz.findUnique({
-      where: { id },
+    const juiz = await prisma.juiz.findFirst({
+      where: {
+        id,
+        // SEGURANÇA: Apenas juízes públicos (globais) são visíveis
+        isPublico: true,
+      },
       select: {
         id: true,
         nome: true,
@@ -172,7 +174,7 @@ export async function getJuizById(id: string): Promise<GetJuizResponse> {
         precoAcesso: true,
         createdAt: true,
         updatedAt: true,
-        tenantId: true,
+        superAdminId: true,
         tribunalId: true,
         tribunal: {
           select: {
@@ -210,14 +212,15 @@ export async function getJuizById(id: string): Promise<GetJuizResponse> {
   }
 }
 
-// Criar novo juiz
-export async function createJuiz(data: any) {
+// Criar novo juiz - APENAS PARA SUPER ADMIN
+export async function createJuiz(data: any, superAdminId: string) {
   try {
     const juiz = await prisma.juiz.create({
       data: {
         ...data,
-        isPublico: data.isPublico ?? false,
+        isPublico: data.isPublico ?? true, // Juízes são públicos por padrão
         isPremium: data.isPremium ?? false,
+        superAdminId, // Controlado pelo super admin
       },
     });
 
@@ -234,9 +237,24 @@ export async function createJuiz(data: any) {
   }
 }
 
-// Atualizar juiz
-export async function updateJuiz(id: string, data: any) {
+// Atualizar juiz - APENAS PARA SUPER ADMIN
+export async function updateJuiz(id: string, data: any, superAdminId: string) {
   try {
+    // Verificar se o juiz existe e se o super admin tem permissão
+    const juizExistente = await prisma.juiz.findFirst({
+      where: {
+        id,
+        superAdminId, // Apenas o super admin que criou pode editar
+      },
+    });
+
+    if (!juizExistente) {
+      return {
+        success: false,
+        error: "Juiz não encontrado ou sem permissão para editar",
+      };
+    }
+
     const juiz = await prisma.juiz.update({
       where: { id },
       data,
@@ -255,9 +273,24 @@ export async function updateJuiz(id: string, data: any) {
   }
 }
 
-// Deletar juiz
-export async function deleteJuiz(id: string) {
+// Deletar juiz - APENAS PARA SUPER ADMIN
+export async function deleteJuiz(id: string, superAdminId: string) {
   try {
+    // Verificar se o juiz existe e se o super admin tem permissão
+    const juizExistente = await prisma.juiz.findFirst({
+      where: {
+        id,
+        superAdminId, // Apenas o super admin que criou pode deletar
+      },
+    });
+
+    if (!juizExistente) {
+      return {
+        success: false,
+        error: "Juiz não encontrado ou sem permissão para deletar",
+      };
+    }
+
     await prisma.juiz.delete({
       where: { id },
     });

@@ -165,7 +165,7 @@ const juizesData = [
   },
 ];
 
-async function seedJuizes() {
+async function seedJuizes(superAdminId, prisma) {
   try {
     console.log("🌱 Iniciando seed de juízes...");
 
@@ -176,7 +176,10 @@ async function seedJuizes() {
     // Inserir novos dados
     for (const juizData of juizesData) {
       const juiz = await prisma.juiz.create({
-        data: juizData,
+        data: {
+          ...juizData,
+          superAdminId, // Controlado pelo Super Admin
+        },
       });
       console.log(`✅ Juiz criado: ${juiz.nomeCompleto} (${juiz.comarca})`);
     }
