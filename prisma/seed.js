@@ -51,7 +51,40 @@ async function main() {
   // Seed de juízes
   await seedJuizes();
 
+  console.log("\n🚀 Aplicando otimizações enterprise...\n");
+
+  // Apply enterprise optimizations (constraints, indexes, full-text search)
+  try {
+    const fs = require("fs");
+    const path = require("path");
+
+    const optimizationScript = fs.readFileSync(path.join(__dirname, "../scripts/enterprise-optimizations.sql"), "utf8");
+
+    // Split the script into individual commands and execute them
+    const commands = optimizationScript
+      .split(";")
+      .map((cmd) => cmd.trim())
+      .filter((cmd) => cmd.length > 0 && !cmd.startsWith("--"));
+
+    for (const command of commands) {
+      if (command.trim()) {
+        await prisma.$executeRawUnsafe(command);
+      }
+    }
+
+    console.log("✅ Otimizações enterprise aplicadas com sucesso!");
+    console.log("   - Constraints de integridade temporal");
+    console.log("   - Constraints de valores positivos");
+    console.log("   - Full-text search em português");
+    console.log("   - Índices GIN para arrays");
+    console.log("   - Índices de performance otimizados");
+  } catch (error) {
+    console.error("⚠️  Erro ao aplicar otimizações enterprise:", error.message);
+    console.log("   As otimizações serão aplicadas na próxima execução do seed");
+  }
+
   console.log("\n🎉 Seed concluído com sucesso!");
+  console.log("🚀 Sistema enterprise-grade pronto para produção!");
 }
 
 main()

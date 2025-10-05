@@ -407,7 +407,7 @@ model Usuario {
   contratosResponsavel      Contrato[]             @relation("ContratoResponsavel")
   contratosCriados          Contrato[]             @relation("ContratoCriador")
   processoDocumentosCriados ProcessoDocumento[]    @relation("ProcessoDocumentoCriador")
-  cliente                   Cliente?               @relation("UsuarioCliente")
+  clientes                  Cliente[]              @relation("UsuarioCliente")
   procuracoesCriadas        Procuracao[]           @relation("ProcuracaoCriador")
   notificacoesCriadas       Notificacao[]          @relation("NotificacaoCriador")
   notificacoesRecebidas     NotificacaoUsuario[]
@@ -436,9 +436,9 @@ model Advogado {
   telefone       String?
   whatsapp       String?
   // Campos financeiros para comissões
-  comissaoPadrao     Decimal?          @db.Decimal(5, 2) @default(0.00) // Percentual padrão (0-100)
-  comissaoAcaoGanha  Decimal?          @db.Decimal(5, 2) @default(0.00) // Percentual em ações ganhas (0-100)
-  comissaoHonorarios Decimal?          @db.Decimal(5, 2) @default(0.00) // Percentual em honorários (0-100)
+  comissaoPadrao     Decimal          @db.Decimal(5, 2) @default(0.00) // Percentual padrão (0-100)
+  comissaoAcaoGanha  Decimal          @db.Decimal(5, 2) @default(0.00) // Percentual em ações ganhas (0-100)
+  comissaoHonorarios Decimal          @db.Decimal(5, 2) @default(0.00) // Percentual em honorários (0-100)
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   clientes       AdvogadoCliente[]
@@ -448,6 +448,8 @@ model Advogado {
   eventos        Evento[]
   documentoAssinaturas DocumentoAssinatura[]
   pagamentoComissoes PagamentoComissao[]
+
+  @@unique([tenantId, oabUf, oabNumero])
 }
 
 model Cliente {
@@ -467,7 +469,7 @@ model Cliente {
   responsavelTelefone String?
   endereco            Json?
   observacoes         String?
-  usuarioId           String?           @unique
+  usuarioId           String?
   deletedAt           DateTime?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
@@ -483,6 +485,9 @@ model Cliente {
 
   @@index([nome])
   @@index([documento])
+  @@index([tenantId, deletedAt])
+  @@unique([tenantId, documento])
+  @@unique([tenantId, usuarioId])
 }
 
 model AdvogadoCliente {
@@ -597,6 +602,7 @@ model Notificacao {
   @@index([tenantId, tipo])
   @@index([tenantId, prioridade])
   @@index([tenantId, agendarPara])
+  @@index([tenantId, createdAt])
 }
 
 model NotificacaoUsuario {
@@ -621,6 +627,7 @@ model NotificacaoUsuario {
 
   @@unique([notificacaoId, usuarioId, canal])
   @@index([tenantId, usuarioId, status])
+  @@index([tenantId, createdAt])
 }
 
 model UsuarioPermissao {
@@ -685,9 +692,7 @@ model Processo {
   @@index([tenantId, status])
   @@index([tenantId, clienteId])
   @@index([tenantId, createdAt])
-  @@index([status])
-  @@index([clienteId])
-  @@index([areaId])
+  @@index([tenantId, deletedAt])
 }
 
 // Procuração é emitida pelo Escritório ou por um Advogado e é assinada pelo Cliente.
@@ -808,6 +813,7 @@ model Documento {
   assinaturas         DocumentoAssinatura[]
 
   @@index([tenantId, visivelParaCliente])
+  @@index([tenantId, deletedAt])
   @@index([processoId])
   @@index([clienteId])
   @@index([tenantId, createdAt])
@@ -831,6 +837,7 @@ model ProcessoDocumento {
 
   @@unique([processoId, documentoId])
   @@index([tenantId, processoId])
+  @@index([tenantId, documentoId])
 }
 
 model Contrato {
@@ -848,9 +855,9 @@ model Contrato {
   valor                 Decimal?       @db.Decimal(14, 2)
   moeda                 String?        @default("BRL")
   // Campos financeiros para comissões
-  comissaoAdvogado      Decimal?       @db.Decimal(5, 2) @default(0.00) // Percentual específico para este contrato (0-100)
-  percentualAcaoGanha   Decimal?       @db.Decimal(5, 2) @default(0.00) // Percentual sobre resultado em ação ganha (0-100)
-  valorAcaoGanha        Decimal?       @db.Decimal(14, 2) @default(0.00) // Valor base para cálculo de comissão em ação ganha
+  comissaoAdvogado      Decimal       @db.Decimal(5, 2) @default(0.00) // Percentual específico para este contrato (0-100)
+  percentualAcaoGanha   Decimal       @db.Decimal(5, 2) @default(0.00) // Percentual sobre resultado em ação ganha (0-100)
+  valorAcaoGanha        Decimal       @db.Decimal(14, 2) @default(0.00) // Valor base para cálculo de comissão em ação ganha
   dataInicio            DateTime?
   dataFim               DateTime?
   dataAssinatura        DateTime?
@@ -875,6 +882,7 @@ model Contrato {
   @@index([clienteId])
   @@index([status])
   @@index([tipoId])
+  @@index([tenantId, deletedAt])
 }
 
 model ModeloContrato {
@@ -928,10 +936,7 @@ model Tarefa {
   @@index([tenantId, status])
   @@index([tenantId, responsavelId])
   @@index([tenantId, dataLimite])
-  @@index([processoId])
-  @@index([responsavelId])
-  @@index([status])
-  @@index([categoriaId])
+  @@index([tenantId, deletedAt])
 }
 
 model Plano {
@@ -984,9 +989,9 @@ model Fatura {
   moeda             String        @default("BRL")
   status            InvoiceStatus @default(RASCUNHO)
   // Campos financeiros para comissões
-  comissaoAdvogado  Decimal?      @db.Decimal(5, 2) @default(0.00) // Percentual de comissão aplicado nesta fatura (0-100)
-  valorComissao     Decimal?      @db.Decimal(14, 2) @default(0.00) // Valor calculado da comissão do advogado
-  tipoComissao      TipoComissao? @default(HONORARIOS) // Tipo de comissão
+  comissaoAdvogado  Decimal      @db.Decimal(5, 2) @default(0.00) // Percentual de comissão aplicado nesta fatura (0-100)
+  valorComissao     Decimal      @db.Decimal(14, 2) @default(0.00) // Valor calculado da comissão do advogado
+  tipoComissao      TipoComissao @default(HONORARIOS) // Tipo de comissão
   periodoInicio     DateTime?
   periodoFim        DateTime?
   vencimento        DateTime?
@@ -1002,6 +1007,7 @@ model Fatura {
   contrato     Contrato?           @relation(fields: [contratoId], references: [id], onDelete: SetNull)
   pagamentos   Pagamento[]
 
+  @@unique([tenantId, numero])
   @@index([tenantId, status])
 }
 
@@ -1012,8 +1018,8 @@ model Pagamento {
   valor        Decimal       @db.Decimal(12, 2)
   status       PaymentStatus @default(PENDENTE)
   // Campos financeiros para comissões
-  comissaoAdvogado Decimal?  @db.Decimal(5, 2) @default(0.00) // Percentual de comissão aplicado neste pagamento (0-100)
-  valorComissao    Decimal?  @db.Decimal(14, 2) @default(0.00) // Valor da comissão paga ao advogado
+  comissaoAdvogado Decimal  @db.Decimal(5, 2) @default(0.00) // Percentual de comissão aplicado neste pagamento (0-100)
+  valorComissao    Decimal  @db.Decimal(14, 2) @default(0.00) // Valor da comissão paga ao advogado
   pagoParaAdvogado Boolean   @default(false) // Indica se a comissão já foi paga ao advogado
   metodo       String?
   transacaoId  String?
@@ -1029,6 +1035,8 @@ model Pagamento {
   comissoes  PagamentoComissao[]
 
   @@index([faturaId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
 }
 
 model PagamentoComissao {
@@ -1049,6 +1057,7 @@ model PagamentoComissao {
   pagamento Pagamento @relation(fields: [pagamentoId], references: [id], onDelete: Cascade)
   advogado  Advogado @relation(fields: [advogadoId], references: [id], onDelete: Cascade)
 
+  @@unique([pagamentoId, advogadoId])
   @@index([tenantId, advogadoId])
   @@index([tenantId, status])
   @@index([pagamentoId])

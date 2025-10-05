@@ -222,9 +222,9 @@ CREATE TABLE "public"."Advogado" (
     "bio" TEXT,
     "telefone" TEXT,
     "whatsapp" TEXT,
-    "comissaoPadrao" DECIMAL(5,2) DEFAULT 0.00,
-    "comissaoAcaoGanha" DECIMAL(5,2) DEFAULT 0.00,
-    "comissaoHonorarios" DECIMAL(5,2) DEFAULT 0.00,
+    "comissaoPadrao" DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    "comissaoAcaoGanha" DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    "comissaoHonorarios" DECIMAL(5,2) NOT NULL DEFAULT 0.00,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -249,6 +249,7 @@ CREATE TABLE "public"."Cliente" (
     "endereco" JSONB,
     "observacoes" TEXT,
     "usuarioId" TEXT,
+    "deletedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -357,6 +358,8 @@ CREATE TABLE "public"."NotificacaoUsuario" (
     "entregueEm" TIMESTAMP(3),
     "lidoEm" TIMESTAMP(3),
     "reabertoEm" TIMESTAMP(3),
+    "tentativaAtual" INTEGER NOT NULL DEFAULT 0,
+    "ultimoErro" TEXT,
     "metadata" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -400,6 +403,7 @@ CREATE TABLE "public"."Processo" (
     "prazoPrincipal" TIMESTAMP(3),
     "numeroInterno" TEXT,
     "pastaCompartilhadaUrl" TEXT,
+    "deletedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -486,6 +490,7 @@ CREATE TABLE "public"."Documento" (
     "origem" "public"."DocumentoOrigem" NOT NULL DEFAULT 'ESCRITORIO',
     "visivelParaCliente" BOOLEAN NOT NULL DEFAULT false,
     "visivelParaEquipe" BOOLEAN NOT NULL DEFAULT true,
+    "deletedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -522,15 +527,16 @@ CREATE TABLE "public"."Contrato" (
     "status" "public"."ContratoStatus" NOT NULL DEFAULT 'RASCUNHO',
     "valor" DECIMAL(14,2),
     "moeda" TEXT DEFAULT 'BRL',
-    "comissaoAdvogado" DECIMAL(5,2) DEFAULT 0.00,
-    "percentualAcaoGanha" DECIMAL(5,2) DEFAULT 0.00,
-    "valorAcaoGanha" DECIMAL(14,2) DEFAULT 0.00,
+    "comissaoAdvogado" DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    "percentualAcaoGanha" DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    "valorAcaoGanha" DECIMAL(14,2) NOT NULL DEFAULT 0.00,
     "dataInicio" TIMESTAMP(3),
     "dataFim" TIMESTAMP(3),
     "dataAssinatura" TIMESTAMP(3),
     "resumo" TEXT,
     "arquivoUrl" TEXT,
     "observacoes" TEXT,
+    "deletedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -572,6 +578,7 @@ CREATE TABLE "public"."Tarefa" (
     "dataLimite" TIMESTAMP(3),
     "completedAt" TIMESTAMP(3),
     "lembreteEm" TIMESTAMP(3),
+    "deletedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -628,9 +635,9 @@ CREATE TABLE "public"."Fatura" (
     "valor" DECIMAL(12,2) NOT NULL,
     "moeda" TEXT NOT NULL DEFAULT 'BRL',
     "status" "public"."InvoiceStatus" NOT NULL DEFAULT 'RASCUNHO',
-    "comissaoAdvogado" DECIMAL(5,2) DEFAULT 0.00,
-    "valorComissao" DECIMAL(14,2) DEFAULT 0.00,
-    "tipoComissao" "public"."TipoComissao" DEFAULT 'HONORARIOS',
+    "comissaoAdvogado" DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    "valorComissao" DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    "tipoComissao" "public"."TipoComissao" NOT NULL DEFAULT 'HONORARIOS',
     "periodoInicio" TIMESTAMP(3),
     "periodoFim" TIMESTAMP(3),
     "vencimento" TIMESTAMP(3),
@@ -651,8 +658,8 @@ CREATE TABLE "public"."Pagamento" (
     "faturaId" TEXT NOT NULL,
     "valor" DECIMAL(12,2) NOT NULL,
     "status" "public"."PaymentStatus" NOT NULL DEFAULT 'PENDENTE',
-    "comissaoAdvogado" DECIMAL(5,2) DEFAULT 0.00,
-    "valorComissao" DECIMAL(14,2) DEFAULT 0.00,
+    "comissaoAdvogado" DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    "valorComissao" DECIMAL(14,2) NOT NULL DEFAULT 0.00,
     "pagoParaAdvogado" BOOLEAN NOT NULL DEFAULT false,
     "metodo" TEXT,
     "transacaoId" TEXT,
@@ -667,6 +674,24 @@ CREATE TABLE "public"."Pagamento" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."PagamentoComissao" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "pagamentoId" TEXT NOT NULL,
+    "advogadoId" TEXT NOT NULL,
+    "valorComissao" DECIMAL(14,2) NOT NULL,
+    "percentualComissao" DECIMAL(5,2) NOT NULL,
+    "tipoComissao" "public"."TipoComissao" NOT NULL DEFAULT 'HONORARIOS',
+    "status" TEXT NOT NULL DEFAULT 'PENDENTE',
+    "dataPagamento" TIMESTAMP(3),
+    "observacoes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PagamentoComissao_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."AuditLog" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -675,6 +700,8 @@ CREATE TABLE "public"."AuditLog" (
     "entidade" TEXT NOT NULL,
     "entidadeId" TEXT,
     "dados" JSONB,
+    "previousValues" JSONB,
+    "changedFields" TEXT[],
     "ip" TEXT,
     "userAgent" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -820,9 +847,6 @@ CREATE INDEX "AreaProcesso_nome_idx" ON "public"."AreaProcesso"("nome");
 CREATE UNIQUE INDEX "AreaProcesso_tenantId_slug_key" ON "public"."AreaProcesso"("tenantId", "slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AreaProcesso_slug_key" ON "public"."AreaProcesso"("slug");
-
--- CreateIndex
 CREATE INDEX "TipoContrato_tenantId_idx" ON "public"."TipoContrato"("tenantId");
 
 -- CreateIndex
@@ -832,9 +856,6 @@ CREATE INDEX "TipoContrato_nome_idx" ON "public"."TipoContrato"("nome");
 CREATE UNIQUE INDEX "TipoContrato_tenantId_slug_key" ON "public"."TipoContrato"("tenantId", "slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "TipoContrato_slug_key" ON "public"."TipoContrato"("slug");
-
--- CreateIndex
 CREATE INDEX "CategoriaTarefa_tenantId_idx" ON "public"."CategoriaTarefa"("tenantId");
 
 -- CreateIndex
@@ -842,9 +863,6 @@ CREATE INDEX "CategoriaTarefa_nome_idx" ON "public"."CategoriaTarefa"("nome");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CategoriaTarefa_tenantId_slug_key" ON "public"."CategoriaTarefa"("tenantId", "slug");
-
--- CreateIndex
-CREATE UNIQUE INDEX "CategoriaTarefa_slug_key" ON "public"."CategoriaTarefa"("slug");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Tenant_slug_key" ON "public"."Tenant"("slug");
@@ -877,13 +895,22 @@ CREATE UNIQUE INDEX "Usuario_email_tenantId_key" ON "public"."Usuario"("email", 
 CREATE UNIQUE INDEX "Advogado_usuarioId_key" ON "public"."Advogado"("usuarioId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Cliente_usuarioId_key" ON "public"."Cliente"("usuarioId");
+CREATE UNIQUE INDEX "Advogado_tenantId_oabUf_oabNumero_key" ON "public"."Advogado"("tenantId", "oabUf", "oabNumero");
 
 -- CreateIndex
 CREATE INDEX "Cliente_nome_idx" ON "public"."Cliente"("nome");
 
 -- CreateIndex
 CREATE INDEX "Cliente_documento_idx" ON "public"."Cliente"("documento");
+
+-- CreateIndex
+CREATE INDEX "Cliente_tenantId_deletedAt_idx" ON "public"."Cliente"("tenantId", "deletedAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Cliente_tenantId_documento_key" ON "public"."Cliente"("tenantId", "documento");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Cliente_tenantId_usuarioId_key" ON "public"."Cliente"("tenantId", "usuarioId");
 
 -- CreateIndex
 CREATE INDEX "AdvogadoCliente_clienteId_idx" ON "public"."AdvogadoCliente"("clienteId");
@@ -919,7 +946,13 @@ CREATE INDEX "Notificacao_tenantId_prioridade_idx" ON "public"."Notificacao"("te
 CREATE INDEX "Notificacao_tenantId_agendarPara_idx" ON "public"."Notificacao"("tenantId", "agendarPara");
 
 -- CreateIndex
+CREATE INDEX "Notificacao_tenantId_createdAt_idx" ON "public"."Notificacao"("tenantId", "createdAt");
+
+-- CreateIndex
 CREATE INDEX "NotificacaoUsuario_tenantId_usuarioId_status_idx" ON "public"."NotificacaoUsuario"("tenantId", "usuarioId", "status");
+
+-- CreateIndex
+CREATE INDEX "NotificacaoUsuario_tenantId_createdAt_idx" ON "public"."NotificacaoUsuario"("tenantId", "createdAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "NotificacaoUsuario_notificacaoId_usuarioId_canal_key" ON "public"."NotificacaoUsuario"("notificacaoId", "usuarioId", "canal");
@@ -931,13 +964,16 @@ CREATE INDEX "UsuarioPermissao_tenantId_permissao_idx" ON "public"."UsuarioPermi
 CREATE UNIQUE INDEX "UsuarioPermissao_tenantId_usuarioId_permissao_key" ON "public"."UsuarioPermissao"("tenantId", "usuarioId", "permissao");
 
 -- CreateIndex
-CREATE INDEX "Processo_status_idx" ON "public"."Processo"("status");
+CREATE INDEX "Processo_tenantId_status_idx" ON "public"."Processo"("tenantId", "status");
 
 -- CreateIndex
-CREATE INDEX "Processo_clienteId_idx" ON "public"."Processo"("clienteId");
+CREATE INDEX "Processo_tenantId_clienteId_idx" ON "public"."Processo"("tenantId", "clienteId");
 
 -- CreateIndex
-CREATE INDEX "Processo_areaId_idx" ON "public"."Processo"("areaId");
+CREATE INDEX "Processo_tenantId_createdAt_idx" ON "public"."Processo"("tenantId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Processo_tenantId_deletedAt_idx" ON "public"."Processo"("tenantId", "deletedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Processo_tenantId_numero_key" ON "public"."Processo"("tenantId", "numero");
@@ -973,6 +1009,12 @@ CREATE INDEX "MovimentacaoProcesso_processoId_idx" ON "public"."MovimentacaoProc
 CREATE INDEX "MovimentacaoProcesso_dataMovimentacao_idx" ON "public"."MovimentacaoProcesso"("dataMovimentacao");
 
 -- CreateIndex
+CREATE INDEX "Documento_tenantId_visivelParaCliente_idx" ON "public"."Documento"("tenantId", "visivelParaCliente");
+
+-- CreateIndex
+CREATE INDEX "Documento_tenantId_deletedAt_idx" ON "public"."Documento"("tenantId", "deletedAt");
+
+-- CreateIndex
 CREATE INDEX "Documento_processoId_idx" ON "public"."Documento"("processoId");
 
 -- CreateIndex
@@ -983,6 +1025,9 @@ CREATE INDEX "Documento_tenantId_createdAt_idx" ON "public"."Documento"("tenantI
 
 -- CreateIndex
 CREATE INDEX "ProcessoDocumento_tenantId_processoId_idx" ON "public"."ProcessoDocumento"("tenantId", "processoId");
+
+-- CreateIndex
+CREATE INDEX "ProcessoDocumento_tenantId_documentoId_idx" ON "public"."ProcessoDocumento"("tenantId", "documentoId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ProcessoDocumento_processoId_documentoId_key" ON "public"."ProcessoDocumento"("processoId", "documentoId");
@@ -997,19 +1042,22 @@ CREATE INDEX "Contrato_status_idx" ON "public"."Contrato"("status");
 CREATE INDEX "Contrato_tipoId_idx" ON "public"."Contrato"("tipoId");
 
 -- CreateIndex
+CREATE INDEX "Contrato_tenantId_deletedAt_idx" ON "public"."Contrato"("tenantId", "deletedAt");
+
+-- CreateIndex
 CREATE INDEX "ModeloContrato_tipoId_idx" ON "public"."ModeloContrato"("tipoId");
 
 -- CreateIndex
-CREATE INDEX "Tarefa_processoId_idx" ON "public"."Tarefa"("processoId");
+CREATE INDEX "Tarefa_tenantId_status_idx" ON "public"."Tarefa"("tenantId", "status");
 
 -- CreateIndex
-CREATE INDEX "Tarefa_responsavelId_idx" ON "public"."Tarefa"("responsavelId");
+CREATE INDEX "Tarefa_tenantId_responsavelId_idx" ON "public"."Tarefa"("tenantId", "responsavelId");
 
 -- CreateIndex
-CREATE INDEX "Tarefa_status_idx" ON "public"."Tarefa"("status");
+CREATE INDEX "Tarefa_tenantId_dataLimite_idx" ON "public"."Tarefa"("tenantId", "dataLimite");
 
 -- CreateIndex
-CREATE INDEX "Tarefa_categoriaId_idx" ON "public"."Tarefa"("categoriaId");
+CREATE INDEX "Tarefa_tenantId_deletedAt_idx" ON "public"."Tarefa"("tenantId", "deletedAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Plano_slug_key" ON "public"."Plano"("slug");
@@ -1021,13 +1069,40 @@ CREATE UNIQUE INDEX "TenantSubscription_tenantId_key" ON "public"."TenantSubscri
 CREATE INDEX "Fatura_tenantId_status_idx" ON "public"."Fatura"("tenantId", "status");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Fatura_tenantId_numero_key" ON "public"."Fatura"("tenantId", "numero");
+
+-- CreateIndex
 CREATE INDEX "Pagamento_faturaId_idx" ON "public"."Pagamento"("faturaId");
+
+-- CreateIndex
+CREATE INDEX "Pagamento_tenantId_status_idx" ON "public"."Pagamento"("tenantId", "status");
+
+-- CreateIndex
+CREATE INDEX "Pagamento_tenantId_createdAt_idx" ON "public"."Pagamento"("tenantId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "PagamentoComissao_tenantId_advogadoId_idx" ON "public"."PagamentoComissao"("tenantId", "advogadoId");
+
+-- CreateIndex
+CREATE INDEX "PagamentoComissao_tenantId_status_idx" ON "public"."PagamentoComissao"("tenantId", "status");
+
+-- CreateIndex
+CREATE INDEX "PagamentoComissao_pagamentoId_idx" ON "public"."PagamentoComissao"("pagamentoId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PagamentoComissao_pagamentoId_advogadoId_key" ON "public"."PagamentoComissao"("pagamentoId", "advogadoId");
 
 -- CreateIndex
 CREATE INDEX "AuditLog_tenantId_entidade_idx" ON "public"."AuditLog"("tenantId", "entidade");
 
 -- CreateIndex
+CREATE INDEX "AuditLog_tenantId_createdAt_idx" ON "public"."AuditLog"("tenantId", "createdAt");
+
+-- CreateIndex
 CREATE INDEX "Evento_tenantId_dataInicio_idx" ON "public"."Evento"("tenantId", "dataInicio");
+
+-- CreateIndex
+CREATE INDEX "Evento_tenantId_dataFim_idx" ON "public"."Evento"("tenantId", "dataFim");
 
 -- CreateIndex
 CREATE INDEX "Evento_tenantId_status_idx" ON "public"."Evento"("tenantId", "status");
@@ -1280,6 +1355,15 @@ ALTER TABLE "public"."Pagamento" ADD CONSTRAINT "Pagamento_tenantId_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "public"."Pagamento" ADD CONSTRAINT "Pagamento_faturaId_fkey" FOREIGN KEY ("faturaId") REFERENCES "public"."Fatura"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."PagamentoComissao" ADD CONSTRAINT "PagamentoComissao_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."PagamentoComissao" ADD CONSTRAINT "PagamentoComissao_pagamentoId_fkey" FOREIGN KEY ("pagamentoId") REFERENCES "public"."Pagamento"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."PagamentoComissao" ADD CONSTRAINT "PagamentoComissao_advogadoId_fkey" FOREIGN KEY ("advogadoId") REFERENCES "public"."Advogado"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."AuditLog" ADD CONSTRAINT "AuditLog_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "public"."Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
