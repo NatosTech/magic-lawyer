@@ -8,6 +8,7 @@ export interface NavigationItem {
   description?: string;
   badge?: string;
   children?: NavigationItem[];
+  isAccordion?: boolean;
 }
 
 export function useProfileNavigation() {
@@ -24,13 +25,63 @@ export function useProfileNavigation() {
       description: "Visão geral do sistema",
     });
 
-    // Processos - Baseado em permissões
+    // Clientes - Baseado em permissões
+    if (permissions.canViewAllClients) {
+      items.push({
+        label: "Clientes",
+        href: "/clientes",
+        icon: "Users",
+        description: "Gestão da base de clientes",
+      });
+    }
+
+    // Processos com accordion - Baseado em permissões
     if (permissions.canViewAllProcesses || permissions.canViewAllClients) {
       items.push({
         label: "Processos",
         href: "/processos",
         icon: "FileText",
         description: isCliente ? "Meu processo" : "Gestão de processos",
+        isAccordion: true,
+        children: [
+          {
+            label: "Processos",
+            href: "/processos",
+            icon: "FileText",
+            description: "Gestão de processos jurídicos",
+          },
+          {
+            label: "Procurações",
+            href: "/processos/procuracoes",
+            icon: "Shield",
+            description: "Gestão de procurações e poderes",
+          },
+        ],
+      });
+    }
+
+    // Contratos com accordion - Baseado em permissões
+    if (permissions.canViewAllDocuments) {
+      items.push({
+        label: "Contratos",
+        href: "/contratos",
+        icon: "FileSignature",
+        description: "Gestão de contratos e modelos",
+        isAccordion: true,
+        children: [
+          {
+            label: "Contratos",
+            href: "/contratos",
+            icon: "FileSignature",
+            description: "Gestão de contratos ativos",
+          },
+          {
+            label: "Modelos",
+            href: "/contratos/modelos",
+            icon: "FileTemplate",
+            description: "Modelos de contratos reutilizáveis",
+          },
+        ],
       });
     }
 

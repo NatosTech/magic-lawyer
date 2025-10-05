@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useMemo, type ReactNode, useState, useEffect } from "react";
 import Image from "next/image";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
@@ -107,10 +107,48 @@ const HelpIcon = ({ size = 18 }: IconProps) => (
   </svg>
 );
 
+const FileSignatureIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <path d="M20 19.5v.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l4 4v13.5" />
+    <path d="M14 2v4h4" />
+    <path d="M10 9H8" />
+    <path d="M16 13H8" />
+    <path d="M16 17H8" />
+    <path d="M10 5H8" />
+  </svg>
+);
+
+const FileTemplateIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <path d="M14 2v6h6" />
+    <path d="M16 13H8" />
+    <path d="M16 17H8" />
+    <path d="M10 9H8" />
+  </svg>
+);
+
+const ShieldIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <path d="M9 12l2 2 4-4" />
+  </svg>
+);
+
+const ChevronDownIcon = ({ size = 16 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
 const navIconMap: Record<string, JSX.Element> = {
   Painel: <DashboardIcon />,
   Dashboard: <DashboardIcon />,
+  Clientes: <PeopleIcon />,
   Processos: <FolderIcon />,
+  Procurações: <ShieldIcon />,
+  Contratos: <FileSignatureIcon />,
+  Modelos: <FileTemplateIcon />,
   Documentos: <FileIcon />,
   Agenda: <CalendarIcon />,
   Financeiro: <WalletIcon />,
@@ -130,6 +168,8 @@ const navIconMap: Record<string, JSX.Element> = {
 export type SidebarNavItem = {
   label: string;
   href: string;
+  children?: SidebarNavItem[];
+  isAccordion?: boolean;
 };
 
 export type SidebarProps = {
@@ -145,6 +185,75 @@ export type SidebarProps = {
 
 const SidebarSectionLabel = ({ collapsed, children }: { collapsed: boolean; children: ReactNode }) =>
   collapsed ? null : <p className="px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-default-500">{children}</p>;
+
+// Componente para item com accordion
+const AccordionNavItem = ({ item, isActive, icon, isDesktop, onCloseMobile }: { item: SidebarNavItem; isActive: boolean; icon: JSX.Element; isDesktop: boolean; onCloseMobile?: () => void }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const pathname = usePathname();
+
+  // Auto-expandir se algum filho estiver ativo
+  const hasActiveChild = item.children?.some((child) => pathname === child.href || pathname.startsWith(`${child.href}/`));
+
+  // Expandir automaticamente se houver filho ativo
+  useEffect(() => {
+    if (hasActiveChild) {
+      setIsExpanded(true);
+    }
+  }, [hasActiveChild]);
+
+  return (
+    <li key={item.href}>
+      <div className="space-y-1">
+        {/* Item principal com botão de toggle */}
+        <div className="flex items-center">
+          {/* Botão de toggle - só expande/recolhe */}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition text-default-400 hover:bg-default-100 hover:text-default-900 flex-1"
+            aria-label={isExpanded ? "Recolher" : "Expandir"}
+          >
+            <span className="shrink-0 text-base">{icon}</span>
+            <span className="truncate">{item.label}</span>
+            <span className={`transition-transform duration-200 ml-auto ${isExpanded ? "rotate-180" : ""}`}>
+              <ChevronDownIcon size={14} />
+            </span>
+          </button>
+        </div>
+
+        {/* Sub-itens com animação */}
+        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}>
+          <ul className="space-y-1 pl-6">
+            {item.children?.map((child) => {
+              const isChildActive = pathname === child.href;
+              const childIcon = navIconMap[child.label] ?? <DashboardIcon />;
+
+              return (
+                <li key={child.href}>
+                  <NextLink
+                    className={
+                      isChildActive
+                        ? "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition bg-primary/25 text-primary"
+                        : "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition text-default-400 hover:bg-default-100 hover:text-default-900"
+                    }
+                    href={child.href}
+                    onClick={() => {
+                      if (!isDesktop && onCloseMobile) {
+                        onCloseMobile();
+                      }
+                    }}
+                  >
+                    <span className="shrink-0 text-base">{childIcon}</span>
+                    <span className="truncate">{child.label}</span>
+                  </NextLink>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </div>
+    </li>
+  );
+};
 
 const SidebarToggleIcon = ({ collapsed }: { collapsed: boolean }) => (
   <span className="relative flex h-6 w-6 items-center justify-center">
@@ -287,33 +396,71 @@ function SidebarContent({
         {sections.map((section) => (
           <div key={section.title} className="space-y-2">
             <SidebarSectionLabel collapsed={collapsed}>{section.title}</SidebarSectionLabel>
-            <ul className="space-y-1">
-              {section.items.map((item) => {
-                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-                const icon = navIconMap[item.label] ?? <DashboardIcon />;
 
-                return (
-                  <li key={item.href}>
-                    <NextLink
-                      className={clsx(
-                        "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition",
-                        collapsed ? "justify-center" : "justify-start",
-                        isActive ? "bg-primary/25 text-primary" : "text-default-400 hover:bg-default-100 hover:text-default-900"
-                      )}
-                      href={item.href}
-                      onClick={() => {
-                        if (!isDesktop && onCloseMobile) {
-                          onCloseMobile();
+            {collapsed ? (
+              // Versão colapsada - sem accordion
+              <ul className="space-y-1">
+                {section.items.map((item) => {
+                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  const icon = navIconMap[item.label] ?? <DashboardIcon />;
+
+                  return (
+                    <li key={item.href}>
+                      <NextLink
+                        className={
+                          isActive
+                            ? "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition justify-center bg-primary/25 text-primary"
+                            : "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition justify-center text-default-400 hover:bg-default-100 hover:text-default-900"
                         }
-                      }}
-                    >
-                      <span className="shrink-0 text-base">{icon}</span>
-                      {!collapsed ? <span className="truncate">{item.label}</span> : null}
-                    </NextLink>
-                  </li>
-                );
-              })}
-            </ul>
+                        href={item.href}
+                        onClick={() => {
+                          if (!isDesktop && onCloseMobile) {
+                            onCloseMobile();
+                          }
+                        }}
+                      >
+                        <span className="shrink-0 text-base">{icon}</span>
+                      </NextLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              // Versão expandida - com accordion
+              <ul className="space-y-1">
+                {section.items.map((item) => {
+                  // Para itens com accordion, nunca considerar o pai como ativo - FIXED v2
+                  const isActive = item.isAccordion ? false : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  const icon = navIconMap[item.label] ?? <DashboardIcon />;
+
+                  if (item.isAccordion && item.children) {
+                    return <AccordionNavItem key={item.href} item={item} isActive={isActive} icon={icon} isDesktop={isDesktop} onCloseMobile={onCloseMobile} />;
+                  }
+
+                  // Item normal sem accordion
+                  return (
+                    <li key={item.href}>
+                      <NextLink
+                        className={
+                          isActive
+                            ? "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition bg-primary/25 text-primary"
+                            : "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition text-default-400 hover:bg-default-100 hover:text-default-900"
+                        }
+                        href={item.href}
+                        onClick={() => {
+                          if (!isDesktop && onCloseMobile) {
+                            onCloseMobile();
+                          }
+                        }}
+                      >
+                        <span className="shrink-0 text-base">{icon}</span>
+                        <span className="truncate">{item.label}</span>
+                      </NextLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         ))}
       </div>

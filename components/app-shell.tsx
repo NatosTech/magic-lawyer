@@ -29,6 +29,11 @@ export function AppShell({ children }: AppShellProps) {
     return navigationItems.map((item) => ({
       label: item.label,
       href: item.href,
+      children: item.children?.map((child) => ({
+        label: child.label,
+        href: child.href,
+      })),
+      isAccordion: item.isAccordion,
     }));
   }, [navigationItems]);
 
