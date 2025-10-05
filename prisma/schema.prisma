@@ -337,6 +337,7 @@ model Tenant {
   pagamentoComissoes  PagamentoComissao[]
   superAdminId         String?
   superAdmin           SuperAdmin? @relation("SuperAdminTenant", fields: [superAdminId], references: [id], onDelete: SetNull)
+  assinaturasPacoteJuiz AssinaturaPacoteJuiz[] @relation("TenantAssinaturaPacote")
 
   @@index([status])
   @@unique([documento])
@@ -444,6 +445,8 @@ model SuperAdmin {
   tenantGerenciados Tenant[]              @relation("SuperAdminTenant")
   juizesCriados     Juiz[]                @relation("SuperAdminJuiz")
   logsAuditoria     SuperAdminAuditLog[]
+  configuracoes     ConfiguracaoPreco[]   @relation("SuperAdminConfiguracao")
+  pacotesJuiz       PacoteJuiz[]          @relation("SuperAdminPacoteJuiz")
 }
 
 model SuperAdminAuditLog {
@@ -596,6 +599,7 @@ model Juiz {
   analises          AnaliseJuiz[]
   favoritos         FavoritoJuiz[]
   acessos           AcessoJuiz[]
+  pacotes           PacoteJuizItem[]  @relation("JuizPacote")
 
   @@index([nome])
   @@index([superAdminId])
@@ -1292,4 +1296,104 @@ model AcessoJuiz {
   usuario           Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@map("AcessosJuiz")
+}
+
+// ==================== SISTEMA DE PACOTES DE JUÍZES ====================
+
+enum StatusPacoteJuiz {
+  ATIVO
+  INATIVO
+  PROMOCIONAL
+}
+
+model PacoteJuiz {
+  id                String            @id @default(cuid())
+  nome              String
+  descricao         String?
+  preco             Decimal           @db.Decimal(10, 2)
+  moeda             String            @default("BRL")
+  duracaoDias       Int?              // null = permanente
+  limiteUsuarios    Int?              // quantos usuários do tenant podem acessar
+  limiteConsultas   Int?              // quantas consultas por mês
+  isPublico         Boolean           @default(true)
+  status            StatusPacoteJuiz  @default(ATIVO)
+  ordemExibicao     Int               @default(0)
+  cor               String            @default("primary")
+  icone             String?           // emoji ou nome do ícone
+  superAdminId      String?           // quem criou/gerencia
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // Relacionamentos
+  superAdmin        SuperAdmin?       @relation("SuperAdminPacoteJuiz", fields: [superAdminId], references: [id], onDelete: SetNull)
+  juizes            PacoteJuizItem[]  // juízes incluídos no pacote
+  assinaturas       AssinaturaPacoteJuiz[]
+
+  @@unique([nome])
+  @@index([status])
+  @@index([superAdminId])
+  @@map("PacotesJuiz")
+}
+
+model PacoteJuizItem {
+  id                String        @id @default(cuid())
+  pacoteId          String
+  juizId            String
+  ordemExibicao     Int           @default(0)
+  createdAt         DateTime      @default(now())
+
+  // Relacionamentos
+  pacote            PacoteJuiz    @relation(fields: [pacoteId], references: [id], onDelete: Cascade)
+  juiz              Juiz          @relation("JuizPacote", fields: [juizId], references: [id], onDelete: Cascade)
+
+  @@unique([pacoteId, juizId])
+  @@index([pacoteId])
+  @@index([juizId])
+  @@map("PacoteJuizItems")
+}
+
+model AssinaturaPacoteJuiz {
+  id                String        @id @default(cuid())
+  tenantId          String
+  pacoteId          String
+  status            String        // "ATIVA", "SUSPENSA", "CANCELADA", "EXPIRADA"
+  dataInicio        DateTime      @default(now())
+  dataFim           DateTime?
+  renovacaoAutomatica Boolean     @default(true)
+  precoPago         Decimal       @db.Decimal(10, 2)
+  formaPagamento    String?       // "CARTAO", "BOLETO", "PIX", etc.
+  observacoes       String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relacionamentos
+  tenant            Tenant        @relation("TenantAssinaturaPacote", fields: [tenantId], references: [id], onDelete: Cascade)
+  pacote            PacoteJuiz    @relation(fields: [pacoteId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([pacoteId])
+  @@index([status])
+  @@map("AssinaturasPacoteJuiz")
+}
+
+// ==================== SISTEMA DE CONFIGURAÇÕES DE PREÇO ====================
+
+model ConfiguracaoPreco {
+  id                String        @id @default(cuid())
+  chave             String        @unique
+  valor             String
+  tipo              String        // "DECIMAL", "INTEGER", "BOOLEAN", "STRING"
+  descricao         String?
+  categoria         String        // "SISTEMA", "JUIZES", "PACOTES", "TAXAS"
+  isAtivo           Boolean       @default(true)
+  superAdminId      String?       // quem configurou
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relacionamentos
+  superAdmin        SuperAdmin?   @relation("SuperAdminConfiguracao", fields: [superAdminId], references: [id], onDelete: SetNull)
+
+  @@index([chave])
+  @@index([categoria])
+  @@map("ConfiguracoesPreco")
 }
