@@ -29,20 +29,14 @@ export function CepInput({ label = "CEP", placeholder = "00000-000", value = "",
   };
 
   const buscarCep = async () => {
-    console.log("🔍 Buscando CEP:", value);
-    
     if (!value || !validarCep(value)) {
-      console.log("❌ CEP inválido:", value);
       toast.error("Digite um CEP válido");
       return;
     }
 
     try {
       setIsLoading(true);
-      console.log("⏳ Fazendo requisição para:", value);
       const result = await buscarCepAction(value);
-      
-      console.log("📦 Resultado:", result);
       
       if (result.success && result.cepData) {
         onCepFound?.(result.cepData);
@@ -51,7 +45,6 @@ export function CepInput({ label = "CEP", placeholder = "00000-000", value = "",
         toast.error(result.error || "CEP não encontrado");
       }
     } catch (error) {
-      console.error("💥 Erro ao buscar CEP:", error);
       toast.error("Erro ao buscar CEP");
     } finally {
       setIsLoading(false);
@@ -59,11 +52,8 @@ export function CepInput({ label = "CEP", placeholder = "00000-000", value = "",
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    console.log("⌨️ Tecla pressionada:", e.key);
-    
     if (e.key === "Enter" || e.key === "Tab") {
       e.preventDefault();
-      console.log("🚀 Executando busca do CEP");
       buscarCep();
     }
   };
