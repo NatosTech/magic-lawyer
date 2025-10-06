@@ -1,11 +1,12 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/auth";
-import { prisma } from "../lib/prisma";
 import { revalidatePath } from "next/cache";
+import { authOptions } from "@/auth";
+import prisma from "@/app/lib/prisma";
 import { TipoEndereco } from "@/app/generated/prisma";
 
+// Tipos simples
 export interface EnderecoData {
   apelido: string;
   tipo: TipoEndereco;
@@ -28,24 +29,22 @@ export interface EnderecoWithId extends EnderecoData {
   updatedAt: Date;
 }
 
-// Buscar endereços do usuário atual
-export async function getEnderecosUsuario(): Promise<{
-  success: boolean;
-  enderecos?: EnderecoWithId[];
-  error?: string;
-}> {
+// Buscar endereços do usuário
+export async function getEnderecosUsuario() {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return { success: false, error: "Não autorizado" };
+    
+    if (!session?.user?.id || !session?.user?.tenantId) {
+      return { success: false, error: "Não autorizado", enderecos: [] };
     }
 
-    // Determinar se é usuário ou cliente baseado no role
     const isCliente = session.user.role === "CLIENTE";
     const whereClause = {
       tenantId: session.user.tenantId,
-      ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
+      ...(isCliente 
+        ? { clienteId: session.user.id }
+        : { usuarioId: session.user.id }
+      ),
     };
 
     const enderecos = await prisma.endereco.findMany({
@@ -76,70 +75,35 @@ export async function getEnderecosUsuario(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar endereços:", error);
-    return {
-      success: false,
-      error: "Erro interno do servidor",
-    };
+    return { success: false, error: "Erro interno do servidor", enderecos: [] };
   }
 }
 
 // Criar novo endereço
-export async function criarEndereco(data: EnderecoData): Promise<{
-  success: boolean;
-  endereco?: EnderecoWithId;
-  error?: string;
-}> {
+export async function criarEndereco(data: EnderecoData) {
   try {
-    console.log("🔍 [criarEndereco] Função chamada");
     const session = await getServerSession(authOptions);
-    console.log("🔍 [criarEndereco] Sessão:", session?.user?.id ? "OK" : "SEM SESSÃO");
-
-    if (!session?.user?.id) {
-      console.error("❌ [criarEndereco] Usuário não autorizado");
+    
+    if (!session?.user?.id || !session?.user?.tenantId) {
       return { success: false, error: "Não autorizado" };
     }
 
-    if (!session?.user?.tenantId) {
-      return { success: false, error: "TenantId não encontrado" };
-    }
-
     // Validar dados obrigatórios
-    if (!data.apelido?.trim()) {
-      return { success: false, error: "Apelido é obrigatório" };
+    if (!data.apelido?.trim() || !data.logradouro?.trim() || !data.cidade?.trim() || !data.estado?.trim()) {
+      return { success: false, error: "Dados obrigatórios não preenchidos" };
     }
 
-    if (!data.logradouro?.trim()) {
-      return { success: false, error: "Logradouro é obrigatório" };
-    }
-
-    if (!data.cidade?.trim()) {
-      return { success: false, error: "Cidade é obrigatória" };
-    }
-
-    if (!data.estado?.trim()) {
-      return { success: false, error: "Estado é obrigatório" };
-    }
-
-    // Se for endereço principal, desmarcar outros como principais
-    if (data.principal) {
-      await prisma.endereco.updateMany({
-        where: {
-          tenantId: session.user.tenantId,
-          usuarioId: session.user.id,
-          principal: true,
-        },
-        data: {
-          principal: false,
-        },
-      });
-    }
-
+    const isCliente = session.user.role === "CLIENTE";
+    
     // Verificar se já existe endereço com mesmo apelido
     const enderecoExistente = await prisma.endereco.findFirst({
       where: {
         tenantId: session.user.tenantId,
-        usuarioId: session.user.id,
         apelido: data.apelido.trim(),
+        ...(isCliente 
+          ? { clienteId: session.user.id }
+          : { usuarioId: session.user.id }
+        ),
       },
     });
 
@@ -147,34 +111,43 @@ export async function criarEndereco(data: EnderecoData): Promise<{
       return { success: false, error: "Já existe um endereço com este apelido" };
     }
 
-    // Determinar se é usuário ou cliente baseado no role
-    const isCliente = session.user.role === "CLIENTE";
-    const enderecoData = {
-      tenantId: session.user.tenantId,
-      apelido: data.apelido.trim(),
-      tipo: data.tipo,
-      principal: data.principal,
-      logradouro: data.logradouro.trim(),
-      numero: data.numero?.trim() || null,
-      complemento: data.complemento?.trim() || null,
-      bairro: data.bairro?.trim() || null,
-      cidade: data.cidade.trim(),
-      estado: data.estado.trim(),
-      cep: data.cep?.trim() || null,
-      pais: data.pais?.trim() || "Brasil",
-      telefone: data.telefone?.trim() || null,
-      observacoes: data.observacoes?.trim() || null,
-    };
-
-    // Adicionar usuarioId ou clienteId baseado no role
-    if (isCliente) {
-      enderecoData.clienteId = session.user.id;
-    } else {
-      enderecoData.usuarioId = session.user.id;
+    // Se for principal, desmarcar outros
+    if (data.principal) {
+      await prisma.endereco.updateMany({
+        where: {
+          tenantId: session.user.tenantId,
+          principal: true,
+          ...(isCliente 
+            ? { clienteId: session.user.id }
+            : { usuarioId: session.user.id }
+          ),
+        },
+        data: { principal: false },
+      });
     }
 
+    // Criar endereço
     const endereco = await prisma.endereco.create({
-      data: enderecoData,
+      data: {
+        tenantId: session.user.tenantId,
+        apelido: data.apelido.trim(),
+        tipo: data.tipo,
+        principal: data.principal,
+        logradouro: data.logradouro.trim(),
+        numero: data.numero?.trim() || null,
+        complemento: data.complemento?.trim() || null,
+        bairro: data.bairro?.trim() || null,
+        cidade: data.cidade.trim(),
+        estado: data.estado.trim(),
+        cep: data.cep?.trim() || null,
+        pais: data.pais?.trim() || "Brasil",
+        telefone: data.telefone?.trim() || null,
+        observacoes: data.observacoes?.trim() || null,
+        ...(isCliente 
+          ? { clienteId: session.user.id }
+          : { usuarioId: session.user.id }
+        ),
+      },
     });
 
     revalidatePath("/usuario/perfil/editar");
@@ -202,36 +175,32 @@ export async function criarEndereco(data: EnderecoData): Promise<{
     };
   } catch (error) {
     console.error("Erro ao criar endereço:", error);
-    return {
-      success: false,
-      error: "Erro interno do servidor",
-    };
+    return { success: false, error: "Erro interno do servidor" };
   }
 }
 
 // Atualizar endereço
-export async function atualizarEndereco(
-  enderecoId: string,
-  data: EnderecoData
-): Promise<{
-  success: boolean;
-  endereco?: EnderecoWithId;
-  error?: string;
-}> {
+export async function atualizarEndereco(enderecoId: string, data: EnderecoData) {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
+    
+    if (!session?.user?.id || !session?.user?.tenantId) {
       return { success: false, error: "Não autorizado" };
     }
 
-    // Verificar se o endereço pertence ao usuário
+    const isCliente = session.user.role === "CLIENTE";
+    const whereClause = {
+      id: enderecoId,
+      tenantId: session.user.tenantId,
+      ...(isCliente 
+        ? { clienteId: session.user.id }
+        : { usuarioId: session.user.id }
+      ),
+    };
+
+    // Verificar se endereço existe e pertence ao usuário
     const enderecoExistente = await prisma.endereco.findFirst({
-      where: {
-        id: enderecoId,
-        tenantId: session.user.tenantId,
-        usuarioId: session.user.id,
-      },
+      where: whereClause,
     });
 
     if (!enderecoExistente) {
@@ -239,54 +208,43 @@ export async function atualizarEndereco(
     }
 
     // Validar dados obrigatórios
-    if (!data.apelido?.trim()) {
-      return { success: false, error: "Apelido é obrigatório" };
-    }
-
-    if (!data.logradouro?.trim()) {
-      return { success: false, error: "Logradouro é obrigatório" };
-    }
-
-    if (!data.cidade?.trim()) {
-      return { success: false, error: "Cidade é obrigatória" };
-    }
-
-    if (!data.estado?.trim()) {
-      return { success: false, error: "Estado é obrigatório" };
-    }
-
-    // Se for endereço principal, desmarcar outros como principais
-    if (data.principal && !enderecoExistente.principal) {
-      const updateWhereClause = {
-        tenantId: session.user.tenantId,
-        principal: true,
-        ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
-      };
-
-      await prisma.endereco.updateMany({
-        where: updateWhereClause,
-        data: {
-          principal: false,
-        },
-      });
+    if (!data.apelido?.trim() || !data.logradouro?.trim() || !data.cidade?.trim() || !data.estado?.trim()) {
+      return { success: false, error: "Dados obrigatórios não preenchidos" };
     }
 
     // Verificar se já existe outro endereço com mesmo apelido
-    const apelidoWhereClause = {
-      tenantId: session.user.tenantId,
-      apelido: data.apelido.trim(),
-      id: { not: enderecoId },
-      ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
-    };
-
     const apelidoExistente = await prisma.endereco.findFirst({
-      where: apelidoWhereClause,
+      where: {
+        tenantId: session.user.tenantId,
+        apelido: data.apelido.trim(),
+        id: { not: enderecoId },
+        ...(isCliente 
+          ? { clienteId: session.user.id }
+          : { usuarioId: session.user.id }
+        ),
+      },
     });
 
     if (apelidoExistente) {
       return { success: false, error: "Já existe um endereço com este apelido" };
     }
 
+    // Se for principal, desmarcar outros
+    if (data.principal && !enderecoExistente.principal) {
+      await prisma.endereco.updateMany({
+        where: {
+          tenantId: session.user.tenantId,
+          principal: true,
+          ...(isCliente 
+            ? { clienteId: session.user.id }
+            : { usuarioId: session.user.id }
+          ),
+        },
+        data: { principal: false },
+      });
+    }
+
+    // Atualizar endereço
     const endereco = await prisma.endereco.update({
       where: { id: enderecoId },
       data: {
@@ -303,7 +261,6 @@ export async function atualizarEndereco(
         pais: data.pais?.trim() || "Brasil",
         telefone: data.telefone?.trim() || null,
         observacoes: data.observacoes?.trim() || null,
-        updatedAt: new Date(),
       },
     });
 
@@ -332,34 +289,30 @@ export async function atualizarEndereco(
     };
   } catch (error) {
     console.error("Erro ao atualizar endereço:", error);
-    return {
-      success: false,
-      error: "Erro interno do servidor",
-    };
+    return { success: false, error: "Erro interno do servidor" };
   }
 }
 
 // Deletar endereço
-export async function deletarEndereco(enderecoId: string): Promise<{
-  success: boolean;
-  error?: string;
-}> {
+export async function deletarEndereco(enderecoId: string) {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
+    
+    if (!session?.user?.id || !session?.user?.tenantId) {
       return { success: false, error: "Não autorizado" };
     }
 
-    // Determinar se é usuário ou cliente baseado no role
     const isCliente = session.user.role === "CLIENTE";
     const whereClause = {
       id: enderecoId,
       tenantId: session.user.tenantId,
-      ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
+      ...(isCliente 
+        ? { clienteId: session.user.id }
+        : { usuarioId: session.user.id }
+      ),
     };
 
-    // Verificar se o endereço pertence ao usuário
+    // Verificar se endereço existe e pertence ao usuário
     const enderecoExistente = await prisma.endereco.findFirst({
       where: whereClause,
     });
@@ -368,20 +321,22 @@ export async function deletarEndereco(enderecoId: string): Promise<{
       return { success: false, error: "Endereço não encontrado" };
     }
 
-    // Não permitir deletar se for o único endereço
-    const countWhereClause = {
-      tenantId: session.user.tenantId,
-      ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
-    };
-
+    // Verificar se é o único endereço
     const totalEnderecos = await prisma.endereco.count({
-      where: countWhereClause,
+      where: {
+        tenantId: session.user.tenantId,
+        ...(isCliente 
+          ? { clienteId: session.user.id }
+          : { usuarioId: session.user.id }
+        ),
+      },
     });
 
     if (totalEnderecos <= 1) {
       return { success: false, error: "Não é possível deletar o único endereço" };
     }
 
+    // Deletar endereço
     await prisma.endereco.delete({
       where: { id: enderecoId },
     });
@@ -391,34 +346,30 @@ export async function deletarEndereco(enderecoId: string): Promise<{
     return { success: true };
   } catch (error) {
     console.error("Erro ao deletar endereço:", error);
-    return {
-      success: false,
-      error: "Erro interno do servidor",
-    };
+    return { success: false, error: "Erro interno do servidor" };
   }
 }
 
 // Definir endereço como principal
-export async function definirEnderecoPrincipal(enderecoId: string): Promise<{
-  success: boolean;
-  error?: string;
-}> {
+export async function definirEnderecoPrincipal(enderecoId: string) {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
+    
+    if (!session?.user?.id || !session?.user?.tenantId) {
       return { success: false, error: "Não autorizado" };
     }
 
-    // Determinar se é usuário ou cliente baseado no role
     const isCliente = session.user.role === "CLIENTE";
     const whereClause = {
       id: enderecoId,
       tenantId: session.user.tenantId,
-      ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
+      ...(isCliente 
+        ? { clienteId: session.user.id }
+        : { usuarioId: session.user.id }
+      ),
     };
 
-    // Verificar se o endereço pertence ao usuário
+    // Verificar se endereço existe e pertence ao usuário
     const enderecoExistente = await prisma.endereco.findFirst({
       where: whereClause,
     });
@@ -428,26 +379,22 @@ export async function definirEnderecoPrincipal(enderecoId: string): Promise<{
     }
 
     // Desmarcar todos os outros como principais
-    const updateWhereClause = {
-      tenantId: session.user.tenantId,
-      principal: true,
-      ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
-    };
-
     await prisma.endereco.updateMany({
-      where: updateWhereClause,
-      data: {
-        principal: false,
+      where: {
+        tenantId: session.user.tenantId,
+        principal: true,
+        ...(isCliente 
+          ? { clienteId: session.user.id }
+          : { usuarioId: session.user.id }
+        ),
       },
+      data: { principal: false },
     });
 
     // Marcar o selecionado como principal
     await prisma.endereco.update({
       where: { id: enderecoId },
-      data: {
-        principal: true,
-        updatedAt: new Date(),
-      },
+      data: { principal: true },
     });
 
     revalidatePath("/usuario/perfil/editar");
@@ -455,9 +402,6 @@ export async function definirEnderecoPrincipal(enderecoId: string): Promise<{
     return { success: true };
   } catch (error) {
     console.error("Erro ao definir endereço principal:", error);
-    return {
-      success: false,
-      error: "Erro interno do servidor",
-    };
+    return { success: false, error: "Erro interno do servidor" };
   }
 }
