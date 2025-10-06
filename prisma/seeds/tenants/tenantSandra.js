@@ -647,6 +647,131 @@ async function seedTenantSandra(prisma, Prisma) {
     },
   });
 
+  // Criar endereços para os usuários
+  console.log("🏠 Criando endereços dos usuários...");
+  
+  // Endereço da Sandra (Wall Street)
+  await prisma.endereco.upsert({
+    where: {
+      tenantId_apelido: {
+        tenantId: tenant.id,
+        apelido: "Wall Street - Sandra",
+      },
+    },
+    update: {
+      tipo: "ESCRITORIO",
+      principal: true,
+      logradouro: "Av. Luiz Viana Filho",
+      numero: "6462",
+      complemento: "Empresarial Wall Street, Torre A, Sala 1202",
+      bairro: "Paralela",
+      cidade: "Salvador",
+      estado: "BA",
+      cep: "41730-101",
+      pais: "Brasil",
+      telefone: "+55 71 4000-1234",
+      usuarioId: adminUser.id,
+    },
+    create: {
+      tenantId: tenant.id,
+      apelido: "Wall Street - Sandra",
+      tipo: "ESCRITORIO",
+      principal: true,
+      logradouro: "Av. Luiz Viana Filho",
+      numero: "6462",
+      complemento: "Empresarial Wall Street, Torre A, Sala 1202",
+      bairro: "Paralela",
+      cidade: "Salvador",
+      estado: "BA",
+      cep: "41730-101",
+      pais: "Brasil",
+      telefone: "+55 71 4000-1234",
+      usuarioId: adminUser.id,
+    },
+  });
+
+  // Endereço do Ricardo
+  await prisma.endereco.upsert({
+    where: {
+      tenantId_apelido: {
+        tenantId: tenant.id,
+        apelido: "Residencial - Ricardo",
+      },
+    },
+    update: {
+      tipo: "RESIDENCIAL",
+      principal: true,
+      logradouro: "Rua das Flores",
+      numero: "123",
+      complemento: "Apto 45",
+      bairro: "Copacabana",
+      cidade: "Rio de Janeiro",
+      estado: "RJ",
+      cep: "22000-000",
+      pais: "Brasil",
+      telefone: "+55 21 99999-1111",
+      usuarioId: ricardoUser.id,
+    },
+    create: {
+      tenantId: tenant.id,
+      apelido: "Residencial - Ricardo",
+      tipo: "RESIDENCIAL",
+      principal: true,
+      logradouro: "Rua das Flores",
+      numero: "123",
+      complemento: "Apto 45",
+      bairro: "Copacabana",
+      cidade: "Rio de Janeiro",
+      estado: "RJ",
+      cep: "22000-000",
+      pais: "Brasil",
+      telefone: "+55 21 99999-1111",
+      usuarioId: ricardoUser.id,
+    },
+  });
+
+  // Endereço do cliente Marcos
+  await prisma.endereco.upsert({
+    where: {
+      tenantId_apelido: {
+        tenantId: tenant.id,
+        apelido: "Casa - Marcos",
+      },
+    },
+    update: {
+      tipo: "RESIDENCIAL",
+      principal: true,
+      logradouro: "Av. Paulista",
+      numero: "2000",
+      complemento: "Conj. 501",
+      bairro: "Bela Vista",
+      cidade: "São Paulo",
+      estado: "SP",
+      cep: "01310-200",
+      pais: "Brasil",
+      telefone: "+55 11 99999-0000",
+      clienteId: clienteMarcos.id,
+    },
+    create: {
+      tenantId: tenant.id,
+      apelido: "Casa - Marcos",
+      tipo: "RESIDENCIAL",
+      principal: true,
+      logradouro: "Av. Paulista",
+      numero: "2000",
+      complemento: "Conj. 501",
+      bairro: "Bela Vista",
+      cidade: "São Paulo",
+      estado: "SP",
+      cep: "01310-200",
+      pais: "Brasil",
+      telefone: "+55 11 99999-0000",
+      clienteId: clienteMarcos.id,
+    },
+  });
+
+  console.log("✅ Endereços dos usuários criados com sucesso!");
+
   console.log("Seed tenant Sandra: OK");
 }
 
