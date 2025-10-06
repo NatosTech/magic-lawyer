@@ -90,7 +90,9 @@ export async function criarEndereco(data: EnderecoData): Promise<{
   error?: string;
 }> {
   try {
+    console.log("🔍 [criarEndereco] Função chamada");
     const session = await getServerSession(authOptions);
+    console.log("🔍 [criarEndereco] Sessão:", session?.user?.id ? "OK" : "SEM SESSÃO");
 
     if (!session?.user?.id) {
       console.error("❌ [criarEndereco] Usuário não autorizado");
@@ -258,12 +260,9 @@ export async function atualizarEndereco(
       const updateWhereClause = {
         tenantId: session.user.tenantId,
         principal: true,
-        ...(isCliente 
-          ? { clienteId: session.user.id }
-          : { usuarioId: session.user.id }
-        ),
+        ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
       };
-      
+
       await prisma.endereco.updateMany({
         where: updateWhereClause,
         data: {
@@ -277,12 +276,9 @@ export async function atualizarEndereco(
       tenantId: session.user.tenantId,
       apelido: data.apelido.trim(),
       id: { not: enderecoId },
-      ...(isCliente 
-        ? { clienteId: session.user.id }
-        : { usuarioId: session.user.id }
-      ),
+      ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
     };
-    
+
     const apelidoExistente = await prisma.endereco.findFirst({
       where: apelidoWhereClause,
     });
@@ -360,10 +356,7 @@ export async function deletarEndereco(enderecoId: string): Promise<{
     const whereClause = {
       id: enderecoId,
       tenantId: session.user.tenantId,
-      ...(isCliente 
-        ? { clienteId: session.user.id }
-        : { usuarioId: session.user.id }
-      ),
+      ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
     };
 
     // Verificar se o endereço pertence ao usuário
@@ -378,10 +371,7 @@ export async function deletarEndereco(enderecoId: string): Promise<{
     // Não permitir deletar se for o único endereço
     const countWhereClause = {
       tenantId: session.user.tenantId,
-      ...(isCliente 
-        ? { clienteId: session.user.id }
-        : { usuarioId: session.user.id }
-      ),
+      ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
     };
 
     const totalEnderecos = await prisma.endereco.count({
@@ -425,10 +415,7 @@ export async function definirEnderecoPrincipal(enderecoId: string): Promise<{
     const whereClause = {
       id: enderecoId,
       tenantId: session.user.tenantId,
-      ...(isCliente 
-        ? { clienteId: session.user.id }
-        : { usuarioId: session.user.id }
-      ),
+      ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
     };
 
     // Verificar se o endereço pertence ao usuário
@@ -444,10 +431,7 @@ export async function definirEnderecoPrincipal(enderecoId: string): Promise<{
     const updateWhereClause = {
       tenantId: session.user.tenantId,
       principal: true,
-      ...(isCliente 
-        ? { clienteId: session.user.id }
-        : { usuarioId: session.user.id }
-      ),
+      ...(isCliente ? { clienteId: session.user.id } : { usuarioId: session.user.id }),
     };
 
     await prisma.endereco.updateMany({
