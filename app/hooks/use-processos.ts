@@ -1,0 +1,194 @@
+import useSWR from "swr";
+import {
+  getProcessosDoClienteLogado,
+  getProcessosDoCliente,
+  getProcessoDetalhado,
+  getDocumentosProcesso,
+  getEventosProcesso,
+  getMovimentacoesProcesso,
+  type Processo,
+  type ProcessoDetalhado,
+} from "@/app/actions/processos";
+
+/**
+ * Hook para buscar processos do cliente logado (quando usuário É um cliente)
+ */
+export function useProcessosClienteLogado() {
+  const { data, error, isLoading, mutate } = useSWR(
+    "processos-cliente-logado",
+    async () => {
+      const result = await getProcessosDoClienteLogado();
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar processos");
+      }
+      return result.processos || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    processos: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar processos de um cliente específico (para advogados)
+ */
+export function useProcessosCliente(clienteId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    clienteId ? `processos-cliente-${clienteId}` : null,
+    async () => {
+      if (!clienteId) return null;
+      const result = await getProcessosDoCliente(clienteId);
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar processos");
+      }
+      return result.processos || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    processos: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar detalhes completos de um processo
+ */
+export function useProcessoDetalhado(processoId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    processoId ? `processo-${processoId}` : null,
+    async () => {
+      if (!processoId) return null;
+      const result = await getProcessoDetalhado(processoId);
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar processo");
+      }
+      return {
+        processo: result.processo || null,
+        isCliente: result.isCliente || false,
+      };
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    processo: data?.processo,
+    isCliente: data?.isCliente,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar documentos de um processo
+ */
+export function useDocumentosProcesso(processoId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    processoId ? `documentos-processo-${processoId}` : null,
+    async () => {
+      if (!processoId) return null;
+      const result = await getDocumentosProcesso(processoId);
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar documentos");
+      }
+      return result.documentos || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    documentos: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar eventos de um processo
+ */
+export function useEventosProcesso(processoId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    processoId ? `eventos-processo-${processoId}` : null,
+    async () => {
+      if (!processoId) return null;
+      const result = await getEventosProcesso(processoId);
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar eventos");
+      }
+      return result.eventos || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    eventos: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar movimentações de um processo
+ */
+export function useMovimentacoesProcesso(processoId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    processoId ? `movimentacoes-processo-${processoId}` : null,
+    async () => {
+      if (!processoId) return null;
+      const result = await getMovimentacoesProcesso(processoId);
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar movimentações");
+      }
+      return result.movimentacoes || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    movimentacoes: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}

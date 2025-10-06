@@ -6,7 +6,8 @@ import clsx from "clsx";
 
 interface ModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
+  onOpenChange?: (isOpen: boolean) => void;
   children: React.ReactNode;
   title?: string;
   size?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
@@ -20,11 +21,13 @@ interface ModalProps {
   footerClassName?: string;
   showFooter?: boolean;
   footerContent?: React.ReactNode;
+  footer?: React.ReactNode; // Alias para footerContent
 }
 
 export function Modal({
   isOpen,
   onClose,
+  onOpenChange,
   children,
   title,
   size = "md",
@@ -36,13 +39,28 @@ export function Modal({
   headerClassName,
   bodyClassName,
   footerClassName,
-  showFooter = false,
+  showFooter,
   footerContent,
+  footer, // Suporte para alias
 }: ModalProps) {
+  // Usar footer ou footerContent
+  const actualFooter = footer || footerContent;
+  const shouldShowFooter = showFooter !== undefined ? showFooter : !!actualFooter;
+
+  // Handler para mudança de estado
+  const handleOpenChange = (open: boolean) => {
+    if (onOpenChange) {
+      onOpenChange(open);
+    }
+    if (!open && onClose) {
+      onClose();
+    }
+  };
+
   return (
     <HeroUIModal
       isOpen={isOpen}
-      onClose={onClose}
+      onOpenChange={handleOpenChange}
       size={size}
       backdrop={backdrop}
       hideCloseButton={!showCloseButton}
@@ -66,7 +84,7 @@ export function Modal({
             <ModalBody>{children}</ModalBody>
 
             {/* Footer */}
-            {showFooter && <ModalFooter>{footerContent}</ModalFooter>}
+            {shouldShowFooter && <ModalFooter>{actualFooter}</ModalFooter>}
           </>
         )}
       </ModalContent>

@@ -223,8 +223,11 @@ model Usuario {
   avatarUrl                   String?
   active                      Boolean                @default(true)
   lastLoginAt                 DateTime?
+  createdById                 String?
   createdAt                   DateTime               @default(now())
   updatedAt                   DateTime               @updatedAt
+  createdBy                   Usuario?               @relation("UsuarioCriador", fields: [createdById], references: [id])
+  usuariosCriados             Usuario[]              @relation("UsuarioCriador")
   acessosJuiz                 AcessoJuiz[]
   advogado                    Advogado?
   analisesJuizCriadas         AnaliseJuiz[]          @relation("AnaliseJuizCriador")
