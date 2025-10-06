@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState } from "react";
 import { Input } from "@heroui/input";
 import { Spinner } from "@heroui/spinner";
 import { toast } from "sonner";
 import { MapPin } from "lucide-react";
 import { formatarCep, validarCep } from "@/lib/api/cep";
 import { type CepData } from "@/types/brazil";
-import { useCep } from "@/hooks/use-brazil-apis";
+import { buscarCepAction } from "@/app/actions/brazil-apis";
 
 interface CepInputProps {
   label?: string;
@@ -21,35 +21,40 @@ interface CepInputProps {
 }
 
 export function CepInput({ label = "CEP", placeholder = "00000-000", value = "", onChange, onCepFound, isRequired = false, isDisabled = false, className }: CepInputProps) {
-  const { cepData, isLoading, error } = useCep(value);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleCepChange = (newValue: string) => {
     const formatted = formatarCep(newValue);
     onChange?.(formatted);
   };
 
-  // Chamar onCepFound quando os dados chegarem via SWR
-  useEffect(() => {
-    if (cepData && validarCep(value)) {
-      onCepFound?.(cepData);
-      toast.success("CEP encontrado!");
+  const buscarCep = async () => {
+    if (!value || !validarCep(value)) {
+      toast.error("Digite um CEP válido");
+      return;
     }
-  }, [cepData, value]); // Removido onCepFound das dependências
 
-  // Mostrar erro se houver
-  useEffect(() => {
-    if (error && validarCep(value)) {
-      toast.error("CEP não encontrado");
+    try {
+      setIsLoading(true);
+      const result = await buscarCepAction(value);
+      
+      if (result.success && result.cepData) {
+        onCepFound?.(result.cepData);
+        toast.success("CEP encontrado!");
+      } else {
+        toast.error(result.error || "CEP não encontrado");
+      }
+    } catch (error) {
+      toast.error("Erro ao buscar CEP");
+    } finally {
+      setIsLoading(false);
     }
-  }, [error, value]);
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === "Tab") {
-      if (!value || !validarCep(value)) {
-        toast.error("Digite um CEP válido");
-        return;
-      }
-      // SWR já faz a busca automaticamente quando o valor muda
+      e.preventDefault();
+      buscarCep();
     }
   };
 
