@@ -157,6 +157,7 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
   const handleSave = async () => {
     try {
       setSaving(true);
+      console.log("💾 Salvando endereço:", formData);
 
       let result;
       if (editingEndereco) {
@@ -165,14 +166,18 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
         result = await criarEndereco(formData);
       }
 
+      console.log("📦 Resultado da operação:", result);
+
       if (result.success) {
         toast.success(editingEndereco ? "Endereço atualizado!" : "Endereço criado!");
         await loadEnderecos();
         handleCloseModal();
       } else {
+        console.error("❌ Erro ao salvar:", result.error);
         toast.error(result.error || "Erro ao salvar endereço");
       }
     } catch (error) {
+      console.error("💥 Erro inesperado:", error);
       toast.error("Erro ao salvar endereço");
     } finally {
       setSaving(false);
@@ -278,8 +283,10 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
                             <h4 className="font-semibold text-white">{endereco.apelido}</h4>
                             {endereco.principal && (
                               <Chip size="sm" color="primary" variant="flat" className="flex items-center gap-1 font-medium">
-                                <Star className="w-3 h-3" />
-                                Principal
+                                <span className="flex items-center gap-1">
+                                  <Star className="w-3 h-3" />
+                                  Principal
+                                </span>
                               </Chip>
                             )}
                             <Chip size="sm" color="secondary" variant="flat">
