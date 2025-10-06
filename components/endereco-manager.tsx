@@ -8,6 +8,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
+import { Checkbox } from "@heroui/checkbox";
 import { toast } from "sonner";
 import { MapPin, Plus, Edit3, Trash2, Star, StarOff, Home, Building2, Briefcase, Mail, User, Building } from "lucide-react";
 import { getEnderecosUsuario, criarEndereco, atualizarEndereco, deletarEndereco, definirEnderecoPrincipal, EnderecoData, EnderecoWithId } from "@/app/actions/enderecos";
@@ -422,12 +423,12 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
 
             <Input label="Observações" placeholder="Informações adicionais..." value={formData.observacoes} onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })} />
 
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="principal" checked={formData.principal} onChange={(e) => setFormData({ ...formData, principal: e.target.checked })} className="rounded" />
-              <label htmlFor="principal" className="text-sm text-default-600">
-                Definir como endereço principal
-              </label>
-            </div>
+            <Checkbox
+              isSelected={formData.principal}
+              onValueChange={(checked) => setFormData({ ...formData, principal: checked })}
+            >
+              Definir como endereço principal
+            </Checkbox>
           </ModalBody>
 
           <ModalFooter>
