@@ -16,6 +16,7 @@ import { useSession } from "next-auth/react";
 import { EstadoSelect } from "./estado-select";
 import { CidadeSelect } from "./cidade-select";
 import { CepInput } from "./cep-input";
+import { useEstadosBrasil } from "@/hooks/use-brazil-apis";
 import { type CepData } from "@/types/brazil";
 
 // Opções de tipo de endereço para funcionários do escritório
@@ -40,6 +41,7 @@ interface EnderecoManagerProps {
 
 export function EnderecoManager({ className }: EnderecoManagerProps) {
   const { data: session } = useSession();
+  const { estados, isLoading: estadosLoading } = useEstadosBrasil();
   const [enderecos, setEnderecos] = useState<EnderecoWithId[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -54,12 +56,24 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
     complemento: "",
     bairro: "",
     cidade: "",
-    estado: "",
+    estado: "", // FORÇADO LIMPO
     cep: "",
     pais: "Brasil",
     telefone: "",
     observacoes: "",
   });
+
+  // FORÇAR LIMPEZA DO ESTADO - MAIS AGRESSIVA
+  useEffect(() => {
+    setFormData((prev) => ({ ...prev, estado: "" }));
+  }, []);
+
+  // LIMPAR ESTADO QUANDO MODAL ABRIR
+  useEffect(() => {
+    if (isModalOpen) {
+      setFormData((prev) => ({ ...prev, estado: "" }));
+    }
+  }, [isModalOpen]);
 
   // Obter opções de tipo baseadas no role do usuário
   const getTipoEnderecoOptions = () => {
@@ -387,17 +401,31 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
                 isRequired
               />
 
-              <EstadoSelect
-                label="Estado"
-                selectedKeys={formData.estado ? [formData.estado] : []}
-                onSelectionChange={(keys) => {
-                  const selected = Array.from(keys)[0] as string;
-                  console.log("Estado selecionado:", selected);
-                  setFormData({ ...formData, estado: selected, cidade: "" }); // Limpa cidade quando estado muda
-                }}
-                isRequired
-              />
-              {/* Debug: formData.estado = {formData.estado} */}
+              {estadosLoading ? (
+                <div className="flex items-center gap-2">
+                  <Spinner size="sm" />
+                  <span className="text-sm text-default-500">Carregando estados...</span>
+                </div>
+              ) : (
+                <Select
+                  label="Estado"
+                  placeholder="Selecione o estado"
+                  selectedKeys={[]}
+                  onSelectionChange={(keys) => {
+                    const selected = Array.from(keys)[0] as string;
+                    console.log("Estado selecionado:", selected);
+                    setFormData({ ...formData, estado: selected, cidade: "" });
+                  }}
+                  isRequired
+                >
+                  {estados?.map((estado) => (
+                    <SelectItem key={estado.sigla}>
+                      {estado.nome} ({estado.sigla})
+                    </SelectItem>
+                  )) || []}
+                </Select>
+              )}
+              {/* Debug: Estados carregados: {estados?.length || 0} | Estado atual: {formData.estado} */}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
