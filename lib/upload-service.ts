@@ -285,4 +285,70 @@ export class UploadService {
       return false;
     }
   }
+
+  /**
+   * Upload de foto de juiz para Cloudinary
+   * Estrutura: magiclawyer/juizes/{nome-juiz}-{juiz-id}/foto_{timestamp}
+   */
+  async uploadJuizFoto(file: Buffer, juizId: string, juizNome: string, originalName: string): Promise<UploadResult> {
+    try {
+      if (!this.useCloudinary) {
+        return {
+          success: false,
+          error: "Upload de fotos de juízes requer Cloudinary configurado",
+        };
+      }
+
+      // Otimizar imagem com Sharp (mesmo que avatar)
+      const optimizedBuffer = await sharp(file)
+        .resize(500, 500, {
+          fit: "cover",
+          position: "center",
+        })
+        .jpeg({ quality: 90 })
+        .toBuffer();
+
+      const base64Image = `data:image/jpeg;base64,${optimizedBuffer.toString("base64")}`;
+
+      // Criar nome limpo para a pasta
+      const cleanJuizNome = juizNome
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+        .replace(/[^a-z0-9]+/g, "-") // Substitui caracteres especiais por hífen
+        .replace(/^-+|-+$/g, ""); // Remove hífens do início e fim
+
+      // Estrutura de pasta para juízes com nome
+      // Exemplo: magiclawyer/juizes/joao-silva-cmxyz123/foto_1234567890
+      const folderPath = `magiclawyer/juizes/${cleanJuizNome}-${juizId}`;
+      const publicId = `${folderPath}/foto_${Date.now()}`;
+
+      const uploadResult = await cloudinary.uploader.upload(base64Image, {
+        public_id: publicId,
+        folder: folderPath,
+        resource_type: "image",
+        transformation: [
+          {
+            width: 500,
+            height: 500,
+            crop: "fill",
+            gravity: "face",
+            quality: "auto:good",
+          },
+        ],
+        tags: ["juiz", "foto", juizId, cleanJuizNome],
+      });
+
+      return {
+        success: true,
+        url: uploadResult.secure_url,
+      };
+    } catch (error) {
+      console.error("Erro ao fazer upload da foto do juiz:", error);
+      return {
+        success: false,
+        error: "Erro ao fazer upload",
+      };
+    }
+  }
 }
