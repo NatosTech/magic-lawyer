@@ -277,13 +277,8 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
                             <TipoIcon className="w-5 h-5 text-primary" />
                             <h4 className="font-semibold text-white">{endereco.apelido}</h4>
                             {endereco.principal && (
-                              <Chip
-                                size="sm"
-                                color="primary"
-                                variant="flat"
-                                className="flex items-center gap-1 font-medium"
-                              >
-                                <Star className="w-3 h-3 mr-1" />
+                              <Chip size="sm" color="primary" variant="flat" className="flex items-center gap-1 font-medium">
+                                <Star className="w-3 h-3" />
                                 Principal
                               </Chip>
                             )}
