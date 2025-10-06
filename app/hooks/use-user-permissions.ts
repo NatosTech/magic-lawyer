@@ -166,7 +166,7 @@ export function useUserPermissions() {
         canManageContracts: false,
         canViewAllDocuments: true, // Apenas os seus
         canManageUsers: false,
-        canViewJudgesDatabase: true,
+        canViewJudgesDatabase: false, // ✨ Cliente NÃO vê juízes
         canManageJudgesDatabase: false,
         canCreateJudgeProfiles: false,
         canEditJudgeProfiles: false,

@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/app/lib/prisma";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 
 // ==================== TIPOS ====================
@@ -87,15 +87,12 @@ export async function getPlanos(): Promise<GetPlanosResponse> {
     await ensureSuperAdmin();
 
     const planos = await prisma.plano.findMany({
-      orderBy: [
-        { valorMensal: "asc" },
-        { nome: "asc" },
-      ],
+      orderBy: [{ valorMensal: "asc" }, { nome: "asc" }],
     });
 
     return {
       success: true,
-      data: planos.map(plano => ({
+      data: planos.map((plano) => ({
         ...plano,
         valorMensal: plano.valorMensal ? Number(plano.valorMensal) : undefined,
         valorAnual: plano.valorAnual ? Number(plano.valorAnual) : undefined,
@@ -211,21 +208,15 @@ export async function getEstatisticasPlanos(): Promise<GetEstatisticasPlanosResp
   try {
     await ensureSuperAdmin();
 
-    const [
-      totalPlanos,
-      planosAtivos,
-      totalAssinaturas,
-      assinaturasAtivas,
-      faturamentoMensal,
-    ] = await Promise.all([
+    const [totalPlanos, planosAtivos, totalAssinaturas, assinaturasAtivas, faturamentoMensal] = await Promise.all([
       prisma.plano.count(),
       prisma.plano.count({ where: { ativo: true } }),
       prisma.tenantSubscription.count(),
-      prisma.tenantSubscription.count({ 
-        where: { 
+      prisma.tenantSubscription.count({
+        where: {
           status: "ACTIVE",
-          planoId: { not: null }
-        } 
+          planoId: { not: null },
+        },
       }),
       prisma.fatura.aggregate({
         where: {
@@ -290,13 +281,15 @@ export async function getAssinaturas() {
 
     return {
       success: true,
-      data: assinaturas.map(assinatura => ({
+      data: assinaturas.map((assinatura) => ({
         ...assinatura,
-        plano: assinatura.plano ? {
-          ...assinatura.plano,
-          valorMensal: assinatura.plano.valorMensal ? Number(assinatura.plano.valorMensal) : undefined,
-          valorAnual: assinatura.plano.valorAnual ? Number(assinatura.plano.valorAnual) : undefined,
-        } : null,
+        plano: assinatura.plano
+          ? {
+              ...assinatura.plano,
+              valorMensal: assinatura.plano.valorMensal ? Number(assinatura.plano.valorMensal) : undefined,
+              valorAnual: assinatura.plano.valorAnual ? Number(assinatura.plano.valorAnual) : undefined,
+            }
+          : null,
       })),
     };
   } catch (error) {

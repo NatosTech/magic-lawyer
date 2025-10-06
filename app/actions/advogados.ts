@@ -8,6 +8,15 @@ export interface Advogado {
   usuarioId: string;
   oabNumero: string | null;
   oabUf: string | null;
+  especialidades: string[];
+  bio: string | null;
+  telefone: string | null;
+  whatsapp: string | null;
+  comissaoPadrao: number;
+  comissaoAcaoGanha: number;
+  comissaoHonorarios: number;
+  createdAt: Date;
+  updatedAt: Date;
   usuario: {
     firstName: string | null;
     lastName: string | null;
@@ -46,7 +55,7 @@ export async function getAdvogadosDoTenant(): Promise<{
     }
 
     // Buscar advogados do tenant
-    const advogados = await prisma.advogado.findMany({
+    const advogadosRaw = await prisma.advogado.findMany({
       where: {
         tenantId: user.tenantId,
       },
@@ -68,6 +77,14 @@ export async function getAdvogadosDoTenant(): Promise<{
         },
       },
     });
+
+    // Converter Decimal para number para serialização
+    const advogados: Advogado[] = advogadosRaw.map((advogado) => ({
+      ...advogado,
+      comissaoPadrao: Number(advogado.comissaoPadrao),
+      comissaoAcaoGanha: Number(advogado.comissaoAcaoGanha),
+      comissaoHonorarios: Number(advogado.comissaoHonorarios),
+    }));
 
     return {
       success: true,

@@ -99,34 +99,46 @@ export function useProfileNavigation() {
       });
     }
 
-    // Contratos com accordion - Baseado em permissões
-    if (permissions.canViewAllDocuments) {
-      items.push({
-        label: "Contratos",
-        href: "/contratos",
-        icon: "FileSignature",
-        description: "Gestão de contratos e modelos",
-        isAccordion: true,
-        section: "Atividades Jurídicas",
-        children: [
-          {
-            label: "Contratos",
-            href: "/contratos",
-            icon: "FileSignature",
-            description: "Gestão de contratos ativos",
-          },
-          {
-            label: "Modelos",
-            href: "/contratos/modelos",
-            icon: "FileTemplate",
-            description: "Modelos de contratos reutilizáveis",
-          },
-        ],
-      });
+    // Contratos - Baseado em permissões
+    if (permissions.canViewAllDocuments || isCliente) {
+      if (isCliente) {
+        // Cliente vê apenas seus contratos (sem modelos)
+        items.push({
+          label: "Contratos",
+          href: "/contratos",
+          icon: "FileSignature",
+          description: "Meus contratos com advogados",
+          section: "Atividades Jurídicas",
+        });
+      } else {
+        // Admin/Advogado vê accordion completo
+        items.push({
+          label: "Contratos",
+          href: "/contratos",
+          icon: "FileSignature",
+          description: "Gestão de contratos e modelos",
+          isAccordion: true,
+          section: "Atividades Jurídicas",
+          children: [
+            {
+              label: "Contratos",
+              href: "/contratos",
+              icon: "FileSignature",
+              description: "Gestão de contratos ativos",
+            },
+            {
+              label: "Modelos",
+              href: "/contratos/modelos",
+              icon: "FileTemplate",
+              description: "Modelos de contratos reutilizáveis",
+            },
+          ],
+        });
+      }
     }
 
     // Documentos - Baseado em permissões
-    if (permissions.canViewAllDocuments) {
+    if (permissions.canViewAllDocuments || isCliente) {
       items.push({
         label: "Documentos",
         href: "/documentos",

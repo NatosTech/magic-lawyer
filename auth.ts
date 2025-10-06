@@ -282,12 +282,14 @@ export const authOptions: NextAuthOptions = {
         (token as any).tenantLogoUrl = (user as any).tenantLogoUrl;
         (token as any).tenantFaviconUrl = (user as any).tenantFaviconUrl;
         (token as any).permissions = (user as any).permissions ?? [];
+        (token as any).avatarUrl = (user as any).image; // image contém o avatarUrl
       }
 
       return token;
     },
     async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
       if (session.user) {
+        // Usar dados do token (mais rápido e confiável)
         (session.user as any).id = (token as any).id as string | undefined;
         (session.user as any).tenantId = (token as any).tenantId as string | undefined;
         (session.user as any).role = (token as any).role as string | undefined;
@@ -296,6 +298,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as string | undefined;
         (session.user as any).tenantFaviconUrl = (token as any).tenantFaviconUrl as string | undefined;
         (session.user as any).permissions = (token as any).permissions as string[] | undefined;
+        (session.user as any).avatarUrl = (token as any).avatarUrl as string | undefined;
       }
 
       return session;

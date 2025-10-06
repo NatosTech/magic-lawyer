@@ -1,6 +1,6 @@
 "use server";
 
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 
 import { prisma } from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
@@ -34,7 +34,12 @@ export type NotificationsResponse = {
 async function ensureSession() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id) {
+  if (!session?.user) {
+    throw new Error("Não autenticado");
+  }
+
+  const userId = (session.user as any)?.id;
+  if (!userId) {
     throw new Error("Não autenticado");
   }
 
@@ -42,8 +47,8 @@ async function ensureSession() {
   const isSuperAdmin = userRole === "SUPER_ADMIN";
 
   return {
-    userId: session.user.id,
-    tenantId: session.user.tenantId, // null para SuperAdmin
+    userId,
+    tenantId: (session.user as any)?.tenantId, // null para SuperAdmin
     isSuperAdmin,
     userRole,
   };

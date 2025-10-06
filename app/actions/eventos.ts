@@ -2,7 +2,7 @@
 
 import { prisma } from "@/app/lib/prisma";
 import { getTenantWithBranding } from "@/app/lib/tenant";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import { revalidatePath } from "next/cache";
 // Usar tipos do Prisma - sempre sincronizado com o banco!

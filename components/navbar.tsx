@@ -2,7 +2,7 @@
 
 import type { ReactNode, SVGProps } from "react";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Navbar as HeroUINavbar, NavbarBrand, NavbarContent, NavbarMenu, NavbarMenuItem, NavbarMenuToggle } from "@heroui/navbar";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
@@ -16,6 +16,7 @@ import NextLink from "next/link";
 import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
+import { useAvatar } from "@/app/hooks/use-avatar";
 
 import { siteConfig } from "@/config/site";
 import packageInfo from "@/package.json";
@@ -66,6 +67,8 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const { avatarUrl, mutate: mutateAvatar } = useAvatar();
+
   const tenantLogoUrl = session?.user?.tenantLogoUrl || undefined;
   const tenantName = session?.user?.tenantName || "Magic Lawyer";
   const hasTenantBranding = Boolean(session?.user?.tenantName || tenantLogoUrl);
@@ -73,11 +76,25 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
   const brandTitleClasses = clsx("text-sm font-semibold text-primary", hasTenantBranding ? "tracking-tight" : "uppercase tracking-[0.3em]");
   const userDisplayName = session?.user?.name || session?.user?.email || "Usuário";
   const userEmail = session?.user?.email || "Conta Magic Lawyer";
-  const userAvatar = session?.user?.image || undefined;
+  const userAvatar = avatarUrl || (session?.user as any)?.avatarUrl || undefined;
   const userRole = (session?.user as any)?.role as UserRole | undefined;
   const userPermissions = ((session?.user as any)?.permissions as TenantPermission[] | undefined) ?? [];
   const isSuperAdmin = userRole === UserRole.SUPER_ADMIN;
   const hasPermission = (permission?: string) => !permission || isSuperAdmin || userPermissions.includes(permission as TenantPermission);
+
+  // Escutar evento customizado de atualização do avatar
+  useEffect(() => {
+    const handleAvatarUpdate = () => {
+      // Revalidar dados do SWR quando o avatar for atualizado
+      mutateAvatar();
+    };
+
+    window.addEventListener("avatarUpdated", handleAvatarUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener("avatarUpdated", handleAvatarUpdate as EventListener);
+    };
+  }, [mutateAvatar]);
 
   const appVersion = packageInfo.version ?? "0.0.0";
 
