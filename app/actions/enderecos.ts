@@ -88,15 +88,20 @@ export async function criarEndereco(data: EnderecoData): Promise<{
   try {
     console.log("🔍 [criarEndereco] Iniciando criação de endereço");
     const session = await getServerSession(authOptions);
-    console.log("👤 [criarEndereco] Sessão:", { 
-      userId: session?.user?.id, 
+    console.log("👤 [criarEndereco] Sessão:", {
+      userId: session?.user?.id,
       tenantId: session?.user?.tenantId,
-      email: session?.user?.email 
+      email: session?.user?.email,
     });
 
     if (!session?.user?.id) {
       console.error("❌ [criarEndereco] Usuário não autorizado");
       return { success: false, error: "Não autorizado" };
+    }
+
+    if (!session?.user?.tenantId) {
+      console.error("❌ [criarEndereco] TenantId não encontrado na sessão");
+      return { success: false, error: "TenantId não encontrado" };
     }
 
     // Validar dados obrigatórios
@@ -200,7 +205,8 @@ export async function criarEndereco(data: EnderecoData): Promise<{
       },
     };
   } catch (error) {
-    console.error("Erro ao criar endereço:", error);
+    console.error("💥 [criarEndereco] Erro ao criar endereço:", error);
+    console.error("💥 [criarEndereco] Stack trace:", error instanceof Error ? error.stack : "No stack trace");
     return {
       success: false,
       error: "Erro interno do servidor",
