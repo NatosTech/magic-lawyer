@@ -1295,6 +1295,9 @@ enum TipoEndereco {
   MATRIZ
   FILIAL
   ESCRITORIO
+  RESIDENCIAL
+  COMERCIAL
+  CORRESPONDENCIA
 
   @@schema("magiclawyer")
 }

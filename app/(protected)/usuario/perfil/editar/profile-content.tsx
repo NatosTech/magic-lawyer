@@ -11,7 +11,7 @@ import { Divider } from "@heroui/divider";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Spinner } from "@heroui/spinner";
 import { toast } from "sonner";
-import { User, Mail, Phone, Shield, Settings, BarChart3, Camera, UserCheck, Lock, Info, MapPin } from "lucide-react";
+import { User, Mail, Phone, Shield, Settings, BarChart3, Camera, UserCheck, Lock, Info, MapPin, Copy, CopyCheck } from "lucide-react";
 
 import {
   getCurrentUserProfile,
@@ -36,6 +36,7 @@ export function ProfileContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("dados-pessoais");
+  const [copied, setCopied] = useState(false);
 
   // Estados dos formulários
   const [profileData, setProfileData] = useState<UpdateProfileData>({});
@@ -162,6 +163,22 @@ export function ProfileContent() {
     }).format(new Date(date));
   };
 
+  // Copiar ID do usuário
+  const handleCopyId = async () => {
+    try {
+      await navigator.clipboard.writeText(profile?.id || "");
+      setCopied(true);
+      toast.success("ID copiado para a área de transferência!");
+
+      // Resetar o ícone após 2 segundos
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (error) {
+      toast.error("Erro ao copiar ID");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -244,13 +261,13 @@ export function ProfileContent() {
           <Tabs
             selectedKey={activeTab}
             onSelectionChange={(key) => setActiveTab(key as string)}
-            className="w-full"
+            className="w-full justify-center mt-2"
             color="primary"
-            variant="bordered"
+            variant="underlined"
             radius="lg"
             classNames={{
               tabList: "bg-default-100/50 p-1 justify-center",
-              tab: "data-[selected=true]:bg-background data-[selected=true]:shadow-sm",
+              tab: "data-[selected=true]:bg-background data-[selected=true]:shadow-sm p-4",
               cursor: "bg-gradient-to-r from-primary to-secondary",
               panel: "w-full",
             }}
@@ -425,6 +442,9 @@ export function ProfileContent() {
                       <div className="flex items-center gap-2 mb-2">
                         <Info className="w-4 h-4 text-default-400" />
                         <label className="text-sm font-medium text-default-400">ID do Usuário</label>
+                        <button type="button" className="ml-2 p-1 rounded hover:bg-default-200 transition cursor-pointer" title="Copiar ID" onClick={handleCopyId}>
+                          {copied ? <CopyCheck className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4 text-default-400" />}
+                        </button>
                       </div>
                       <p className="text-white font-mono text-xs">{profile.id}</p>
                     </div>

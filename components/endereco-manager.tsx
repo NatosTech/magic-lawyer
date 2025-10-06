@@ -9,23 +9,37 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@herou
 import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
 import { toast } from "sonner";
-import { MapPin, Plus, Edit3, Trash2, Star, StarOff, Home, Building2, Briefcase, Mail } from "lucide-react";
+import { MapPin, Plus, Edit3, Trash2, Star, StarOff, Home, Building2, Briefcase, Mail, User, Building } from "lucide-react";
 import { getEnderecosUsuario, criarEndereco, atualizarEndereco, deletarEndereco, definirEnderecoPrincipal, EnderecoData, EnderecoWithId } from "@/app/actions/enderecos";
 import { TipoEndereco } from "@/app/generated/prisma";
+import { useSession } from "next-auth/react";
+import { EstadoSelect } from "./estado-select";
+import { CidadeSelect } from "./cidade-select";
+import { CepInput } from "./cep-input";
+import { type CepData } from "@/types/brazil";
 
-const tipoEnderecoOptions = [
+// Opções de tipo de endereço para funcionários do escritório
+const tipoEnderecoEscritorioOptions = [
   { key: "MATRIZ", label: "Matriz", icon: Home },
   { key: "FILIAL", label: "Filial", icon: Building2 },
   { key: "ESCRITORIO", label: "Escritório", icon: Briefcase },
 ];
 
-const estadosBrasil = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
+// Opções de tipo de endereço para clientes
+const tipoEnderecoClienteOptions = [
+  { key: "RESIDENCIAL", label: "Residencial", icon: Home },
+  { key: "COMERCIAL", label: "Comercial", icon: Building },
+  { key: "CORRESPONDENCIA", label: "Correspondência", icon: Mail },
+];
+
+// Removido - agora usando EstadoSelect que busca via API
 
 interface EnderecoManagerProps {
   className?: string;
 }
 
 export function EnderecoManager({ className }: EnderecoManagerProps) {
+  const { data: session } = useSession();
   const [enderecos, setEnderecos] = useState<EnderecoWithId[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,7 +47,7 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
   const [editingEndereco, setEditingEndereco] = useState<EnderecoWithId | null>(null);
   const [formData, setFormData] = useState<EnderecoData>({
     apelido: "",
-    tipo: "MATRIZ" as TipoEndereco,
+    tipo: "RESIDENCIAL" as TipoEndereco, // Valor padrão, será atualizado baseado no role
     principal: false,
     logradouro: "",
     numero: "",
@@ -46,6 +60,50 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
     telefone: "",
     observacoes: "",
   });
+
+  // Debug: Log do formData inicial
+  console.log("formData inicial:", formData);
+
+  // Obter opções de tipo baseadas no role do usuário
+  const getTipoEnderecoOptions = () => {
+    const isCliente = session?.user?.role === "CLIENTE";
+    return isCliente ? tipoEnderecoClienteOptions : tipoEnderecoEscritorioOptions;
+  };
+
+  // Obter tipo padrão baseado no role do usuário
+  const getDefaultTipo = (): TipoEndereco => {
+    const isCliente = session?.user?.role === "CLIENTE";
+    return isCliente ? "RESIDENCIAL" : "ESCRITORIO";
+  };
+
+  // Preencher dados do endereço automaticamente quando CEP for encontrado
+  const handleCepFound = (cepData: CepData) => {
+    setFormData((prev) => ({
+      ...prev,
+      logradouro: cepData.logradouro,
+      bairro: cepData.bairro,
+      cidade: cepData.localidade,
+      estado: cepData.uf,
+      cep: cepData.cep,
+    }));
+  };
+
+  // Debug: Log quando formData.tipo muda
+  useEffect(() => {
+    console.log("formData.tipo mudou para:", formData.tipo);
+  }, [formData.tipo]);
+
+  // Atualizar tipo padrão quando sessão carregar
+  useEffect(() => {
+    if (session?.user?.role) {
+      const defaultTipo = getDefaultTipo();
+      console.log("Atualizando tipo padrão para:", defaultTipo);
+      setFormData((prev) => ({
+        ...prev,
+        tipo: defaultTipo,
+      }));
+    }
+  }, [session?.user?.role]);
 
   // Carregar endereços
   useEffect(() => {
@@ -91,7 +149,7 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
       setEditingEndereco(null);
       setFormData({
         apelido: "",
-        tipo: "MATRIZ" as TipoEndereco,
+        tipo: getDefaultTipo(),
         principal: false,
         logradouro: "",
         numero: "",
@@ -177,12 +235,14 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
   };
 
   const getTipoIcon = (tipo: TipoEndereco) => {
-    const tipoOption = tipoEnderecoOptions.find((opt) => opt.key === tipo);
+    const options = getTipoEnderecoOptions();
+    const tipoOption = options.find((opt) => opt.key === tipo);
     return tipoOption ? tipoOption.icon : Home;
   };
 
   const getTipoLabel = (tipo: TipoEndereco) => {
-    const tipoOption = tipoEnderecoOptions.find((opt) => opt.key === tipo);
+    const options = getTipoEnderecoOptions();
+    const tipoOption = options.find((opt) => opt.key === tipo);
     return tipoOption ? tipoOption.label : tipo;
   };
 
@@ -299,18 +359,27 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
 
           <ModalBody className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Apelido" placeholder="Ex: Casa, Trabalho, Escritório" value={formData.apelido} onChange={(e) => setFormData({ ...formData, apelido: e.target.value })} isRequired />
+              <Input
+                label="Apelido"
+                placeholder={session?.user?.role === "CLIENTE" ? "Ex: Casa, Trabalho, Comercial" : "Ex: Matriz, Filial, Escritório"}
+                value={formData.apelido}
+                onChange={(e) => setFormData({ ...formData, apelido: e.target.value })}
+                isRequired
+              />
 
               <Select
                 label="Tipo"
-                selectedKeys={[formData.tipo]}
+                placeholder="Selecione o tipo de endereço"
+                selectedKeys={formData.tipo ? [formData.tipo] : []}
                 onSelectionChange={(keys) => {
                   const selected = Array.from(keys)[0] as TipoEndereco;
+                  console.log("Tipo selecionado:", selected);
                   setFormData({ ...formData, tipo: selected });
                 }}
                 isRequired
               >
-                {tipoEnderecoOptions.map((option) => (
+                {/* Debug: {console.log("formData.tipo atual:", formData.tipo)} */}
+                {getTipoEnderecoOptions().map((option) => (
                   <SelectItem key={option.key}>
                     <div className="flex items-center gap-2">
                       <option.icon className="w-4 h-4" />
@@ -321,34 +390,39 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
               </Select>
             </div>
 
+            <CepInput label="CEP" value={formData.cep} onChange={(value) => setFormData({ ...formData, cep: value })} onCepFound={handleCepFound} isRequired />
+
             <Input label="Logradouro" placeholder="Rua, Avenida, etc." value={formData.logradouro} onChange={(e) => setFormData({ ...formData, logradouro: e.target.value })} isRequired />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input label="Número" placeholder="123" value={formData.numero} onChange={(e) => setFormData({ ...formData, numero: e.target.value })} />
 
               <Input label="Complemento" placeholder="Apto, Sala, etc." value={formData.complemento} onChange={(e) => setFormData({ ...formData, complemento: e.target.value })} />
-
-              <Input label="CEP" placeholder="00000-000" value={formData.cep} onChange={(e) => setFormData({ ...formData, cep: e.target.value })} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input label="Bairro" placeholder="Centro, Vila, etc." value={formData.bairro} onChange={(e) => setFormData({ ...formData, bairro: e.target.value })} />
 
-              <Input label="Cidade" placeholder="São Paulo" value={formData.cidade} onChange={(e) => setFormData({ ...formData, cidade: e.target.value })} isRequired />
-
-              <Select
-                label="Estado"
-                selectedKeys={[formData.estado]}
+              <CidadeSelect
+                label="Cidade"
+                selectedKeys={formData.cidade ? [formData.cidade] : []}
                 onSelectionChange={(keys) => {
                   const selected = Array.from(keys)[0] as string;
-                  setFormData({ ...formData, estado: selected });
+                  setFormData({ ...formData, cidade: selected });
+                }}
+                estadoSelecionado={formData.estado}
+                isRequired
+              />
+
+              <EstadoSelect
+                label="Estado"
+                selectedKeys={formData.estado ? [formData.estado] : []}
+                onSelectionChange={(keys) => {
+                  const selected = Array.from(keys)[0] as string;
+                  setFormData({ ...formData, estado: selected, cidade: "" }); // Limpa cidade quando estado muda
                 }}
                 isRequired
-              >
-                {estadosBrasil.map((estado) => (
-                  <SelectItem key={estado}>{estado}</SelectItem>
-                ))}
-              </Select>
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
