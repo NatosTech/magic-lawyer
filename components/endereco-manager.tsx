@@ -12,7 +12,6 @@ import { Checkbox } from "@heroui/checkbox";
 import { toast } from "sonner";
 import { MapPin, Plus, Edit3, Trash2, Star, StarOff, Home, Building2, Briefcase, Mail, User, Building } from "lucide-react";
 import { getEnderecosUsuario, criarEndereco, atualizarEndereco, deletarEndereco, definirEnderecoPrincipal, EnderecoData, EnderecoWithId } from "@/app/actions/enderecos";
-import { testSession } from "@/app/actions/test-session";
 import { TipoEndereco } from "@/app/generated/prisma";
 import { useSession } from "next-auth/react";
 import { EstadoSelect } from "./estado-select";
@@ -158,7 +157,6 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
   const handleSave = async () => {
     try {
       setSaving(true);
-      console.log("💾 Salvando endereço:", formData);
 
       let result;
       if (editingEndereco) {
@@ -167,18 +165,14 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
         result = await criarEndereco(formData);
       }
 
-      console.log("📦 Resultado da operação:", result);
-
       if (result.success) {
         toast.success(editingEndereco ? "Endereço atualizado!" : "Endereço criado!");
         await loadEnderecos();
         handleCloseModal();
       } else {
-        console.error("❌ Erro ao salvar:", result.error);
         toast.error(result.error || "Erro ao salvar endereço");
       }
     } catch (error) {
-      console.error("💥 Erro inesperado:", error);
       toast.error("Erro ao salvar endereço");
     } finally {
       setSaving(false);
@@ -223,17 +217,6 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
     }
   };
 
-  const handleTestSession = async () => {
-    try {
-      console.log("🧪 Testando sessão...");
-      const result = await testSession();
-      console.log("🧪 Resultado do teste:", result);
-      toast.success("Teste de sessão executado - veja o console");
-    } catch (error) {
-      console.error("💥 Erro no teste de sessão:", error);
-      toast.error("Erro no teste de sessão");
-    }
-  };
 
   const getTipoIcon = (tipo: TipoEndereco) => {
     const options = getTipoEnderecoOptions();
@@ -270,14 +253,9 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
               <p className="text-sm text-default-400">Gerencie seus endereços</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button color="secondary" variant="bordered" onPress={handleTestSession} isDisabled={saving}>
-              Testar Sessão
-            </Button>
-            <Button color="primary" variant="bordered" startContent={<Plus className="w-4 h-4" />} onPress={() => handleOpenModal()} isDisabled={saving}>
-              Adicionar
-            </Button>
-          </div>
+          <Button color="primary" variant="bordered" startContent={<Plus className="w-4 h-4" />} onPress={() => handleOpenModal()} isDisabled={saving}>
+            Adicionar
+          </Button>
         </CardHeader>
 
         <CardBody className="space-y-4">
