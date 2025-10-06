@@ -192,6 +192,8 @@ export async function criarEndereco(data: EnderecoData): Promise<{
       enderecoData.usuarioId = session.user.id;
     }
 
+    console.log("💾 [criarEndereco] Dados finais para criação:", enderecoData);
+
     const endereco = await prisma.endereco.create({
       data: enderecoData,
     });
