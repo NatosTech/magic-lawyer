@@ -86,9 +86,16 @@ export async function criarEndereco(data: EnderecoData): Promise<{
   error?: string;
 }> {
   try {
+    console.log("🔍 [criarEndereco] Iniciando criação de endereço");
     const session = await getServerSession(authOptions);
+    console.log("👤 [criarEndereco] Sessão:", { 
+      userId: session?.user?.id, 
+      tenantId: session?.user?.tenantId,
+      email: session?.user?.email 
+    });
 
     if (!session?.user?.id) {
+      console.error("❌ [criarEndereco] Usuário não autorizado");
       return { success: false, error: "Não autorizado" };
     }
 
@@ -136,6 +143,17 @@ export async function criarEndereco(data: EnderecoData): Promise<{
       return { success: false, error: "Já existe um endereço com este apelido" };
     }
 
+    console.log("💾 [criarEndereco] Criando endereço no banco:", {
+      tenantId: session.user.tenantId,
+      usuarioId: session.user.id,
+      apelido: data.apelido.trim(),
+      tipo: data.tipo,
+      principal: data.principal,
+      logradouro: data.logradouro.trim(),
+      cidade: data.cidade.trim(),
+      estado: data.estado.trim(),
+    });
+
     const endereco = await prisma.endereco.create({
       data: {
         tenantId: session.user.tenantId,
@@ -155,6 +173,8 @@ export async function criarEndereco(data: EnderecoData): Promise<{
         observacoes: data.observacoes?.trim() || null,
       },
     });
+
+    console.log("✅ [criarEndereco] Endereço criado com sucesso:", endereco.id);
 
     revalidatePath("/usuario/perfil/editar");
 
