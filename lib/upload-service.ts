@@ -33,12 +33,12 @@ export class UploadService {
     return UploadService.instance;
   }
 
-  async uploadAvatar(file: Buffer, userId: string, originalName: string, tenantSlug?: string): Promise<UploadResult> {
+  async uploadAvatar(file: Buffer, userId: string, originalName: string, tenantSlug?: string, userName?: string): Promise<UploadResult> {
     try {
       if (this.useCloudinary) {
-        return await this.uploadToCloudinary(file, userId, originalName, tenantSlug);
+        return await this.uploadToCloudinary(file, userId, originalName, tenantSlug, userName);
       } else {
-        return await this.uploadLocally(file, userId, originalName, tenantSlug);
+        return await this.uploadLocally(file, userId, originalName, tenantSlug, userName);
       }
     } catch (error) {
       console.error("Erro no upload:", error);
@@ -49,7 +49,7 @@ export class UploadService {
     }
   }
 
-  private async uploadToCloudinary(file: Buffer, userId: string, originalName: string, tenantSlug?: string): Promise<UploadResult> {
+  private async uploadToCloudinary(file: Buffer, userId: string, originalName: string, tenantSlug?: string, userName?: string): Promise<UploadResult> {
     try {
       // Otimizar imagem com Sharp
       const optimizedBuffer = await sharp(file)
@@ -60,8 +60,18 @@ export class UploadService {
         .jpeg({ quality: 85 })
         .toBuffer();
 
-      // Criar estrutura de pastas hierárquica: magiclawyer/tenant/user
-      const folderPath = tenantSlug ? `magiclawyer/${tenantSlug}/${userId}` : `magiclawyer/avatars/${userId}`;
+      // Criar nome de usuário limpo para pasta
+      const cleanUserName = userName
+        ? userName
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "")
+        : "user";
+
+      // Criar estrutura de pastas hierárquica: magiclawyer/tenant/nome-id
+      const userFolder = `${cleanUserName}-${userId}`;
+      const folderPath = tenantSlug ? `magiclawyer/${tenantSlug}/${userFolder}` : `magiclawyer/avatars/${userFolder}`;
 
       // Upload para Cloudinary
       const result = await cloudinary.uploader.upload(`data:image/jpeg;base64,${optimizedBuffer.toString("base64")}`, {
@@ -87,10 +97,20 @@ export class UploadService {
     }
   }
 
-  private async uploadLocally(file: Buffer, userId: string, originalName: string, tenantSlug?: string): Promise<UploadResult> {
+  private async uploadLocally(file: Buffer, userId: string, originalName: string, tenantSlug?: string, userName?: string): Promise<UploadResult> {
     try {
-      // Criar estrutura de diretórios hierárquica: magiclawyer/tenant/user
-      const uploadDir = tenantSlug ? join(process.cwd(), "public", "uploads", "magiclawyer", tenantSlug, userId) : join(process.cwd(), "public", "uploads", "magiclawyer", "avatars", userId);
+      // Criar nome de usuário limpo para pasta
+      const cleanUserName = userName
+        ? userName
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "")
+        : "user";
+
+      // Criar estrutura de diretórios hierárquica: magiclawyer/tenant/nome-id
+      const userFolder = `${cleanUserName}-${userId}`;
+      const uploadDir = tenantSlug ? join(process.cwd(), "public", "uploads", "magiclawyer", tenantSlug, userFolder) : join(process.cwd(), "public", "uploads", "magiclawyer", "avatars", userFolder);
 
       if (!existsSync(uploadDir)) {
         await mkdir(uploadDir, { recursive: true });
@@ -115,7 +135,7 @@ export class UploadService {
       await writeFile(filePath, optimizedBuffer);
 
       // Retornar URL pública
-      const avatarUrl = tenantSlug ? `/uploads/magiclawyer/${tenantSlug}/${userId}/${fileName}` : `/uploads/magiclawyer/avatars/${userId}/${fileName}`;
+      const avatarUrl = tenantSlug ? `/uploads/magiclawyer/${tenantSlug}/${userFolder}/${fileName}` : `/uploads/magiclawyer/avatars/${userFolder}/${fileName}`;
 
       return {
         success: true,
@@ -132,10 +152,30 @@ export class UploadService {
 
   async deleteAvatar(avatarUrl: string, userId: string): Promise<UploadResult> {
     try {
-      if (this.useCloudinary) {
-        return await this.deleteFromCloudinary(avatarUrl);
+      if (!avatarUrl || typeof avatarUrl !== "string") {
+        return {
+          success: false,
+          error: "URL inválida",
+        };
+      }
+
+      // Verificar se é uma URL do Cloudinary
+      if (this.isCloudinaryUrl(avatarUrl)) {
+        if (this.useCloudinary) {
+          return await this.deleteFromCloudinary(avatarUrl);
+        } else {
+          // Se não está usando Cloudinary mas a URL é do Cloudinary, não pode deletar
+          return {
+            success: false,
+            error: "Não é possível deletar imagem do Cloudinary quando usando armazenamento local",
+          };
+        }
       } else {
-        return await this.deleteLocally(avatarUrl, userId);
+        // É uma URL externa, não pode ser deletada
+        return {
+          success: false,
+          error: "Não é possível deletar imagens de URLs externas",
+        };
       }
     } catch (error) {
       console.error("Erro ao deletar avatar:", error);
@@ -148,6 +188,13 @@ export class UploadService {
 
   private async deleteFromCloudinary(avatarUrl: string): Promise<UploadResult> {
     try {
+      if (!avatarUrl || typeof avatarUrl !== "string") {
+        return {
+          success: false,
+          error: "URL inválida",
+        };
+      }
+
       // Extrair public_id completo da URL do Cloudinary
       // A URL do Cloudinary tem formato: https://res.cloudinary.com/cloud_name/image/upload/v1234567890/folder/subfolder/public_id.jpg
       const urlParts = avatarUrl.split("/");
@@ -228,5 +275,14 @@ export class UploadService {
 
   getUploadMethod(): string {
     return this.useCloudinary ? "Cloudinary" : "Local";
+  }
+
+  private isCloudinaryUrl(url: string): boolean {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.hostname.includes("cloudinary.com") || urlObj.hostname.includes("res.cloudinary.com");
+    } catch {
+      return false;
+    }
   }
 }

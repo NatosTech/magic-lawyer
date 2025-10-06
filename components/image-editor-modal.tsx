@@ -132,12 +132,20 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
 
     try {
       if (activeTab === "url" && imageUrl) {
-        // Se for URL, salvar diretamente
+        // Se for URL, salvar diretamente (sem crop)
         onSave(imageUrl, true);
-      } else if (imageFile && completedCrop && imgRef.current) {
-        // Se for upload, fazer crop e salvar
+      } else if (activeTab === "upload" && imageFile && completedCrop && imgRef.current) {
+        // Se for upload com crop, fazer crop e salvar
         const croppedImageData = await getCroppedImg(imgRef.current, completedCrop);
         onSave(croppedImageData, false);
+      } else if (activeTab === "upload" && imageFile && !completedCrop) {
+        // Se for upload mas não fez crop, usar a imagem original
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          onSave(result, false);
+        };
+        reader.readAsDataURL(imageFile);
       } else {
         setError("Erro ao processar a imagem.");
       }
@@ -165,7 +173,7 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <h3 className="text-lg font-semibold">Editar Avatar</h3>
-          <p className="text-sm text-default-500">Faça upload de uma imagem ou insira uma URL</p>
+          <p className="text-sm text-default-500">Faça upload de uma imagem (com crop) ou insira uma URL (sem crop)</p>
         </ModalHeader>
 
         <ModalBody>
@@ -199,6 +207,12 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
 
             <Tab key="url" title="URL">
               <div className="space-y-4">
+                <div className="bg-warning-50 border border-warning-200 rounded-lg p-3">
+                  <p className="text-sm text-warning-700">
+                    <strong>Nota:</strong> Imagens via URL são usadas diretamente sem possibilidade de crop.
+                  </p>
+                </div>
+
                 <div>
                   <Input
                     label="URL da Imagem"
@@ -213,7 +227,7 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
                   <Card className="w-full max-w-md mx-auto">
                     <CardBody className="p-4">
                       <div className="space-y-4">
-                        <p className="text-sm text-center text-default-600">Preview da imagem:</p>
+                        <p className="text-sm text-center text-default-600">Preview da imagem (será usada como está):</p>
                         <div className="flex justify-center">
                           <img
                             src={previewUrl}

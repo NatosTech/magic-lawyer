@@ -27,7 +27,7 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
         <CardBody className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {profile.advogado.oabNumero && (
-              <div>
+              <div> 
                 <label className="text-sm font-medium text-default-600">OAB</label>
                 <p className="text-white">
                   {profile.advogado.oabUf} {profile.advogado.oabNumero}
@@ -122,46 +122,89 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
 
   const renderClienteInfo = () => {
     return (
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-2 pb-0">
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">Informações do Cliente</h3>
+      <Card className="border border-white/10 bg-gradient-to-br from-background/80 to-background/60 backdrop-blur-xl overflow-hidden">
+        <CardHeader className="relative pb-4">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/5 to-primary/10 opacity-50"></div>
+          <div className="relative flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30">
+              <Users className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Informações do Cliente</h3>
+              <p className="text-sm text-primary-300">Portal de acesso aos seus serviços jurídicos</p>
+            </div>
           </div>
         </CardHeader>
-        <CardBody className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-default-600">Escritório Vinculado</label>
-              <p className="text-white">{profile.tenant?.name || "N/A"}</p>
+
+        <CardBody className="space-y-6">
+          {/* Informações Principais */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+              <div className="flex items-center gap-3 mb-2">
+                <Building2 className="w-5 h-5 text-primary" />
+                <label className="text-sm font-medium text-primary-300">Escritório Vinculado</label>
+              </div>
+              <p className="text-white font-semibold text-lg">{profile.tenant?.name || "N/A"}</p>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-default-600">Status da Conta</label>
-              <Badge color={profile.active ? "success" : "danger"} variant="flat">
-                {profile.active ? "Ativo" : "Inativo"}
+            <div className="p-4 rounded-xl bg-gradient-to-br from-success/10 to-success/5 border border-success/20">
+              <div className="flex items-center gap-3 mb-2">
+                <Shield className="w-5 h-5 text-success" />
+                <label className="text-sm font-medium text-success-300">Status da Conta</label>
+              </div>
+              <Badge color={profile.active ? "success" : "danger"} variant="flat" size="lg" className="font-semibold">
+                {profile.active ? "✓ Ativo" : "✗ Inativo"}
               </Badge>
             </div>
           </div>
 
-          <Divider />
-
-          <div>
-            <label className="text-sm font-medium text-default-600 mb-2 block">Acesso Permitido</label>
-            <div className="flex flex-wrap gap-2">
-              <Badge color="primary" variant="flat">
-                <FileText className="w-3 h-3 mr-1" />
-                Meus Documentos
-              </Badge>
-              <Badge color="primary" variant="flat">
-                <Users className="w-3 h-3 mr-1" />
-                Meus Processos
-              </Badge>
-              <Badge color="primary" variant="flat">
-                <DollarSign className="w-3 h-3 mr-1" />
-                Minhas Faturas
-              </Badge>
+          {/* Acesso Permitido */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary"></div>
+              <h4 className="text-lg font-semibold text-white">Acesso Permitido</h4>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 hover:border-blue-400/40 transition-all duration-300 cursor-pointer">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-blue-500/20 group-hover:bg-blue-400/30 transition-colors">
+                    <FileText className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <h5 className="font-semibold text-white">Meus Documentos</h5>
+                </div>
+                <p className="text-sm text-blue-300">Acesse seus contratos, procurações e documentos jurídicos</p>
+              </div>
+
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300 cursor-pointer">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-purple-500/20 group-hover:bg-purple-400/30 transition-colors">
+                    <Users className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <h5 className="font-semibold text-white">Meus Processos</h5>
+                </div>
+                <p className="text-sm text-purple-300">Acompanhe o andamento dos seus processos jurídicos</p>
+              </div>
+
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 hover:border-green-400/40 transition-all duration-300 cursor-pointer">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-green-500/20 group-hover:bg-green-400/30 transition-colors">
+                    <DollarSign className="w-5 h-5 text-green-400" />
+                  </div>
+                  <h5 className="font-semibold text-white">Minhas Faturas</h5>
+                </div>
+                <p className="text-sm text-green-300">Visualize e gerencie suas faturas e pagamentos</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Informações Adicionais */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-default/10 to-default/5 border border-default/20">
+            <div className="flex items-center gap-3 mb-3">
+              <Phone className="w-5 h-5 text-default-400" />
+              <h5 className="font-semibold text-white">Contato</h5>
+            </div>
+            <p className="text-sm text-default-300">Para dúvidas ou suporte, entre em contato com seu escritório de advocacia.</p>
           </div>
         </CardBody>
       </Card>

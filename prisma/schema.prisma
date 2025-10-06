@@ -116,7 +116,8 @@ model Tenant {
   tarefas               Tarefa[]
   superAdmin            SuperAdmin?            @relation("SuperAdminTenant", fields: [superAdminId], references: [id])
   branding              TenantBranding?
-  enderecos             TenantEndereco[]
+  enderecos             Endereco[]
+  enderecosLegacy       TenantEndereco[] @relation("TenantEnderecoLegacy")
   subscription          TenantSubscription?
   tiposContrato         TipoContrato[]
   tribunais             Tribunal[]
@@ -129,6 +130,42 @@ model Tenant {
   @@schema("magiclawyer")
 }
 
+model Endereco {
+  id          String       @id @default(cuid())
+  tenantId    String
+  apelido     String
+  tipo        TipoEndereco @default(ESCRITORIO)
+  principal   Boolean      @default(false)
+  logradouro  String
+  numero      String?
+  complemento String?
+  bairro      String?
+  cidade      String
+  estado      String
+  cep         String?
+  pais        String       @default("Brasil")
+  telefone    String?
+  observacoes String?
+  
+  // Relacionamentos opcionais - apenas um será preenchido
+  usuarioId   String?
+  clienteId   String?
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario     Usuario?     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cliente     Cliente?     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, apelido])
+  @@index([tenantId, principal])
+  @@index([usuarioId])
+  @@index([clienteId])
+  @@schema("magiclawyer")
+}
+
+// Manter TenantEndereco para compatibilidade (deprecated)
 model TenantEndereco {
   id          String       @id @default(cuid())
   tenantId    String
@@ -146,7 +183,7 @@ model TenantEndereco {
   telefone    String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant      Tenant       @relation("TenantEnderecoLegacy", fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, apelido])
   @@index([tenantId, principal])
@@ -207,6 +244,7 @@ model Usuario {
   tarefasCriadas              Tarefa[]               @relation("TarefasCriadas")
   tarefas                     Tarefa[]               @relation("TarefasResponsaveis")
   tenant                      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enderecos                   Endereco[]
   permissoes                  UsuarioPermissao[]
   ticketAttachments           TicketAttachment[]     @relation("UserAttachments")
   ticketMessages              TicketMessage[]        @relation("UserMessages")
@@ -303,7 +341,6 @@ model Cliente {
   responsavelNome      String?
   responsavelEmail     String?
   responsavelTelefone  String?
-  endereco             Json?
   observacoes          String?
   usuarioId            String?
   deletedAt            DateTime?
@@ -312,6 +349,7 @@ model Cliente {
   advogadoClientes     AdvogadoCliente[]
   tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   usuario              Usuario?              @relation("UsuarioCliente", fields: [usuarioId], references: [id])
+  enderecos            Endereco[]
   contratos            Contrato[]
   documentos           Documento[]           @relation("DocumentoCliente")
   documentoAssinaturas DocumentoAssinatura[]

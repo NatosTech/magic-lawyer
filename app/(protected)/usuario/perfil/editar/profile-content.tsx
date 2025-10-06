@@ -11,7 +11,7 @@ import { Divider } from "@heroui/divider";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Spinner } from "@heroui/spinner";
 import { toast } from "sonner";
-import { User, Mail, Phone, Shield, Settings, BarChart3, Camera } from "lucide-react";
+import { User, Mail, Phone, Shield, Settings, BarChart3, Camera, UserCheck, Lock, Info, MapPin } from "lucide-react";
 
 import {
   getCurrentUserProfile,
@@ -26,6 +26,8 @@ import {
 } from "@/app/actions/profile";
 import { RoleSpecificInfo } from "./role-specific-info";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { EnderecoManager } from "@/components/endereco-manager";
+import { UserPermissionsInfo } from "@/components/user-permissions-info";
 
 export function ProfileContent() {
   const { data: session, update } = useSession();
@@ -38,7 +40,6 @@ export function ProfileContent() {
   // Estados dos formulários
   const [profileData, setProfileData] = useState<UpdateProfileData>({});
   const [passwordData, setPasswordData] = useState<ChangePasswordData>({
-    currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
@@ -108,7 +109,6 @@ export function ProfileContent() {
       if (result.success) {
         toast.success("Senha alterada com sucesso!");
         setPasswordData({
-          currentPassword: "",
           newPassword: "",
           confirmPassword: "",
         });
@@ -207,32 +207,32 @@ export function ProfileContent() {
       {/* Estatísticas */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <Card className="border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-xl">
             <CardBody className="text-center p-4">
               <BarChart3 className="w-8 h-8 mx-auto mb-2 text-primary" />
               <p className="text-2xl font-bold text-white">{stats.totalProcessos}</p>
-              <p className="text-sm text-default-400">Processos</p>
+              <p className="text-sm text-primary-300">Processos</p>
             </CardBody>
           </Card>
-          <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <Card className="border border-secondary/20 bg-gradient-to-br from-secondary/10 to-secondary/5 backdrop-blur-xl">
             <CardBody className="text-center p-4">
-              <User className="w-8 h-8 mx-auto mb-2 text-primary" />
+              <User className="w-8 h-8 mx-auto mb-2 text-secondary" />
               <p className="text-2xl font-bold text-white">{stats.totalDocumentos}</p>
-              <p className="text-sm text-default-400">Documentos</p>
+              <p className="text-sm text-secondary-300">Documentos</p>
             </CardBody>
           </Card>
-          <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <Card className="border border-success/20 bg-gradient-to-br from-success/10 to-success/5 backdrop-blur-xl">
             <CardBody className="text-center p-4">
-              <Settings className="w-8 h-8 mx-auto mb-2 text-primary" />
+              <Settings className="w-8 h-8 mx-auto mb-2 text-success" />
               <p className="text-2xl font-bold text-white">{stats.totalEventos}</p>
-              <p className="text-sm text-default-400">Eventos</p>
+              <p className="text-sm text-success-300">Eventos</p>
             </CardBody>
           </Card>
-          <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <Card className="border border-warning/20 bg-gradient-to-br from-warning/10 to-warning/5 backdrop-blur-xl">
             <CardBody className="text-center p-4">
-              <Shield className="w-8 h-8 mx-auto mb-2 text-primary" />
+              <Shield className="w-8 h-8 mx-auto mb-2 text-warning" />
               <p className="text-2xl font-bold text-white">{stats.totalTarefas}</p>
-              <p className="text-sm text-default-400">Tarefas</p>
+              <p className="text-sm text-warning-300">Tarefas</p>
             </CardBody>
           </Card>
         </div>
@@ -245,12 +245,25 @@ export function ProfileContent() {
             selectedKey={activeTab}
             onSelectionChange={(key) => setActiveTab(key as string)}
             className="w-full"
+            color="primary"
+            variant="bordered"
+            radius="lg"
             classNames={{
-              tabList: "bg-default-100/50",
-              tab: "data-[selected=true]:bg-background",
+              tabList: "bg-default-100/50 p-1 justify-center",
+              tab: "data-[selected=true]:bg-background data-[selected=true]:shadow-sm",
+              cursor: "bg-gradient-to-r from-primary to-secondary",
+              panel: "w-full",
             }}
           >
-            <Tab key="dados-pessoais" title="Dados Pessoais">
+            <Tab
+              key="dados-pessoais"
+              title={
+                <div className="flex items-center space-x-2">
+                  <UserCheck className="w-4 h-4" />
+                  <span>Dados Pessoais</span>
+                </div>
+              }
+            >
               <div className="p-6 space-y-6">
                 <div className="flex items-center gap-3 mb-4">
                   <User className="w-5 h-5 text-primary" />
@@ -300,20 +313,20 @@ export function ProfileContent() {
               </div>
             </Tab>
 
-            <Tab key="seguranca" title="Segurança">
+            <Tab
+              key="seguranca"
+              title={
+                <div className="flex items-center space-x-2">
+                  <Lock className="w-4 h-4" />
+                  <span>Segurança</span>
+                </div>
+              }
+            >
               <div className="p-6 space-y-6">
                 <div className="flex items-center gap-3 mb-4">
                   <Shield className="w-5 h-5 text-primary" />
                   <h3 className="text-lg font-semibold">Alterar Senha</h3>
                 </div>
-
-                <Input
-                  label="Senha Atual"
-                  type="password"
-                  placeholder="Digite sua senha atual"
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                />
 
                 <Input
                   label="Nova Senha"
@@ -341,41 +354,99 @@ export function ProfileContent() {
               </div>
             </Tab>
 
-            <Tab key="informacoes" title="Informações">
+            <Tab
+              key="informacoes"
+              title={
+                <div className="flex items-center space-x-2">
+                  <Info className="w-4 h-4" />
+                  <span>Informações</span>
+                </div>
+              }
+            >
               <div className="p-6 space-y-6">
                 <div className="flex items-center gap-3 mb-4">
                   <Settings className="w-5 h-5 text-primary" />
                   <h3 className="text-lg font-semibold">Informações da Conta</h3>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-default-600">Função</label>
-                    <p className="text-white">{getRoleLabel(profile.role)}</p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-default-600">Status</label>
-                    <p className="text-white">{profile.active ? "Ativo" : "Inativo"}</p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-default-600">Último Login</label>
-                    <p className="text-white">{formatDate(profile.lastLoginAt)}</p>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium text-default-600">Membro desde</label>
-                    <p className="text-white">{formatDate(profile.createdAt)}</p>
-                  </div>
-
-                  {profile.tenant && (
-                    <div>
-                      <label className="text-sm font-medium text-default-600">Escritório</label>
-                      <p className="text-white">{profile.tenant.name}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Shield className="w-4 h-4 text-primary" />
+                        <label className="text-sm font-medium text-primary-300">Função</label>
+                      </div>
+                      <Chip color="primary" variant="flat" size="sm">
+                        {getRoleLabel(profile.role)}
+                      </Chip>
                     </div>
-                  )}
+
+                    <div className="p-4 rounded-lg bg-gradient-to-r from-success/10 to-success/5 border border-success/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <UserCheck className="w-4 h-4 text-success" />
+                        <label className="text-sm font-medium text-success-300">Status</label>
+                      </div>
+                      <Chip color={profile.active ? "success" : "danger"} variant="flat" size="sm">
+                        {profile.active ? "Ativo" : "Inativo"}
+                      </Chip>
+                    </div>
+
+                    <div className="p-4 rounded-lg bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Settings className="w-4 h-4 text-warning" />
+                        <label className="text-sm font-medium text-warning-300">Último Login</label>
+                      </div>
+                      <p className="text-white font-medium">{formatDate(profile.lastLoginAt)}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-lg bg-gradient-to-r from-secondary/10 to-secondary/5 border border-secondary/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <User className="w-4 h-4 text-secondary" />
+                        <label className="text-sm font-medium text-secondary-300">Membro desde</label>
+                      </div>
+                      <p className="text-white font-medium">{formatDate(profile.createdAt)}</p>
+                    </div>
+
+                    {profile.tenant && (
+                      <div className="p-4 rounded-lg bg-gradient-to-r from-info/10 to-info/5 border border-info/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Mail className="w-4 h-4 text-info" />
+                          <label className="text-sm font-medium text-info-300">Escritório</label>
+                        </div>
+                        <Chip color="secondary" variant="flat" size="sm">
+                          {profile.tenant.name}
+                        </Chip>
+                      </div>
+                    )}
+
+                    <div className="p-4 rounded-lg bg-gradient-to-r from-default/10 to-default/5 border border-default/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Info className="w-4 h-4 text-default-400" />
+                        <label className="text-sm font-medium text-default-400">ID do Usuário</label>
+                      </div>
+                      <p className="text-white font-mono text-xs">{profile.id}</p>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Informações de Permissões */}
+                <UserPermissionsInfo />
+              </div>
+            </Tab>
+
+            <Tab
+              key="enderecos"
+              title={
+                <div className="flex items-center space-x-2">
+                  <MapPin className="w-4 h-4" />
+                  <span>Endereços</span>
+                </div>
+              }
+            >
+              <div className="p-6">
+                <EnderecoManager />
               </div>
             </Tab>
           </Tabs>

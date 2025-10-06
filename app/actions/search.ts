@@ -1,10 +1,16 @@
 "use server";
 
 import { prisma } from "@/app/lib/prisma";
+import { getSession } from "@/app/lib/auth";
 import type { SearchResult } from "@/components/searchbar";
 
 export async function searchContent(query: string): Promise<SearchResult[]> {
   if (!query.trim() || query.length < 2) {
+    return [];
+  }
+
+  const session = await getSession();
+  if (!session?.user?.tenantId) {
     return [];
   }
 
@@ -15,6 +21,7 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     // Buscar processos
     const processos = await prisma.processo.findMany({
       where: {
+        tenantId: session.user.tenantId,
         OR: [{ numero: { contains: searchTerm, mode: "insensitive" } }, { assunto: { contains: searchTerm, mode: "insensitive" } }, { observacoes: { contains: searchTerm, mode: "insensitive" } }],
       },
       take: 5,
@@ -46,6 +53,7 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     // Buscar clientes
     const clientes = await prisma.cliente.findMany({
       where: {
+        tenantId: session.user.tenantId,
         OR: [
           { nome: { contains: searchTerm, mode: "insensitive" } },
           { email: { contains: searchTerm, mode: "insensitive" } },
@@ -77,6 +85,7 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     // Buscar documentos
     const documentos = await prisma.documento.findMany({
       where: {
+        tenantId: session.user.tenantId,
         OR: [{ titulo: { contains: searchTerm, mode: "insensitive" } }, { descricao: { contains: searchTerm, mode: "insensitive" } }, { nomeArquivo: { contains: searchTerm, mode: "insensitive" } }],
       },
       take: 5,
@@ -145,6 +154,7 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     // Buscar usuários (apenas se for admin)
     const usuarios = await prisma.usuario.findMany({
       where: {
+        tenantId: session.user.tenantId,
         OR: [{ nome: { contains: searchTerm, mode: "insensitive" } }, { email: { contains: searchTerm, mode: "insensitive" } }],
       },
       take: 3,

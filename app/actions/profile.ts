@@ -42,7 +42,6 @@ export interface UpdateProfileData {
 }
 
 export interface ChangePasswordData {
-  currentPassword: string;
   newPassword: string;
   confirmPassword: string;
 }
@@ -61,7 +60,10 @@ export async function getCurrentUserProfile(): Promise<{
     }
 
     const user = await prisma.usuario.findUnique({
-      where: { id: session.user.id },
+      where: {
+        id: session.user.id,
+        tenantId: session.user.tenantId,
+      },
       include: {
         tenant: {
           select: {
@@ -169,22 +171,17 @@ export async function changePassword(data: ChangePasswordData): Promise<{
       return { success: false, error: "Nova senha deve ter pelo menos 8 caracteres" };
     }
 
-    // Buscar usuário atual
+    // Verificar se o usuário existe
     const user = await prisma.usuario.findUnique({
-      where: { id: session.user.id },
-      select: { passwordHash: true },
+      where: {
+        id: session.user.id,
+        tenantId: session.user.tenantId,
+      },
+      select: { id: true },
     });
 
     if (!user) {
       return { success: false, error: "Usuário não encontrado" };
-    }
-
-    // Verificar senha atual
-    if (user.passwordHash) {
-      const isCurrentPasswordValid = await bcrypt.compare(data.currentPassword, user.passwordHash);
-      if (!isCurrentPasswordValid) {
-        return { success: false, error: "Senha atual incorreta" };
-      }
     }
 
     // Hash da nova senha
@@ -259,7 +256,8 @@ export async function uploadAvatar(formData: FormData): Promise<{
       // Usar o serviço de upload
       const { UploadService } = await import("@/lib/upload-service");
       const uploadService = UploadService.getInstance();
-      const result = await uploadService.uploadAvatar(buffer, session.user.id, file.name, session.user.tenantSlug);
+      const userName = `${session.user.firstName || ""} ${session.user.lastName || ""}`.trim() || session.user.email;
+      const result = await uploadService.uploadAvatar(buffer, session.user.id, file.name, session.user.tenantSlug, userName);
 
       if (!result.success || !result.url) {
         return {
@@ -362,7 +360,10 @@ export async function getCurrentUserAvatar(): Promise<{
     }
 
     const user = await prisma.usuario.findUnique({
-      where: { id: session.user.id },
+      where: {
+        id: session.user.id,
+        tenantId: session.user.tenantId,
+      },
       select: {
         avatarUrl: true,
       },
