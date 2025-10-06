@@ -85,18 +85,18 @@ export function useUserPermissions() {
     // ADVOGADO - Acesso aos seus clientes e processos
     if (userRole === "ADVOGADO") {
       return {
-        canViewAllProcesses: false, // Apenas os seus
-        canViewAllClients: false, // Apenas os seus
-        canViewAllEvents: false, // Apenas os seus
+        canViewAllProcesses: true, // Vê seus processos (filtrados no backend)
+        canViewAllClients: true, // Vê seus clientes (filtrados no backend)
+        canViewAllEvents: true, // Vê sua agenda (filtrados no backend)
         canViewClientEvents: false, // Não é cliente
-        canViewFinancialData: true, // Apenas o que deve receber
+        canViewFinancialData: true, // Vê suas comissões
         canManageTeam: false,
         canManageOfficeSettings: false,
         canCreateEvents: true,
-        canEditAllEvents: false, // Apenas os seus
-        canViewReports: false, // Apenas os seus
-        canManageContracts: true, // Apenas os seus
-        canViewAllDocuments: false, // Apenas os dos seus clientes
+        canEditAllEvents: true, // Pode editar os eventos da sua agenda
+        canViewReports: true, // Relatórios dos seus processos
+        canManageContracts: true, // Gerencia contratos dos seus clientes
+        canViewAllDocuments: true, // Vê documentos dos seus clientes (filtrados no backend)
         canManageUsers: false,
         canViewJudgesDatabase: true,
         canManageJudgesDatabase: true,
