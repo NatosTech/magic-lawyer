@@ -27,7 +27,7 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
         <CardBody className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {profile.advogado.oabNumero && (
-              <div> 
+              <div>
                 <label className="text-sm font-medium text-default-600">OAB</label>
                 <p className="text-white">
                   {profile.advogado.oabUf} {profile.advogado.oabNumero}
