@@ -61,9 +61,6 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
     observacoes: "",
   });
 
-  // Debug: Log do formData inicial
-  console.log("formData inicial:", formData);
-
   // Obter opções de tipo baseadas no role do usuário
   const getTipoEnderecoOptions = () => {
     const isCliente = session?.user?.role === "CLIENTE";
@@ -87,23 +84,6 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
       cep: cepData.cep,
     }));
   };
-
-  // Debug: Log quando formData.tipo muda
-  useEffect(() => {
-    console.log("formData.tipo mudou para:", formData.tipo);
-  }, [formData.tipo]);
-
-  // Atualizar tipo padrão quando sessão carregar
-  useEffect(() => {
-    if (session?.user?.role) {
-      const defaultTipo = getDefaultTipo();
-      console.log("Atualizando tipo padrão para:", defaultTipo);
-      setFormData((prev) => ({
-        ...prev,
-        tipo: defaultTipo,
-      }));
-    }
-  }, [session?.user?.role]);
 
   // Carregar endereços
   useEffect(() => {
@@ -373,19 +353,12 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
                 selectedKeys={formData.tipo ? [formData.tipo] : []}
                 onSelectionChange={(keys) => {
                   const selected = Array.from(keys)[0] as TipoEndereco;
-                  console.log("Tipo selecionado:", selected);
                   setFormData({ ...formData, tipo: selected });
                 }}
                 isRequired
               >
-                {/* Debug: {console.log("formData.tipo atual:", formData.tipo)} */}
                 {getTipoEnderecoOptions().map((option) => (
-                  <SelectItem key={option.key}>
-                    <div className="flex items-center gap-2">
-                      <option.icon className="w-4 h-4" />
-                      {option.label}
-                    </div>
-                  </SelectItem>
+                  <SelectItem key={option.key}>{option.label}</SelectItem>
                 ))}
               </Select>
             </div>
@@ -419,10 +392,12 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
                 selectedKeys={formData.estado ? [formData.estado] : []}
                 onSelectionChange={(keys) => {
                   const selected = Array.from(keys)[0] as string;
+                  console.log("Estado selecionado:", selected);
                   setFormData({ ...formData, estado: selected, cidade: "" }); // Limpa cidade quando estado muda
                 }}
                 isRequired
               />
+              {/* Debug: formData.estado = {formData.estado} */}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

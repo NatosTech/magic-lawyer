@@ -65,14 +65,7 @@ export function CidadeSelect({
 
   return (
     <Select label={label} placeholder={placeholder} selectedKeys={selectedKeys || []} onSelectionChange={onSelectionChange} isRequired={isRequired} isDisabled={isDisabled} className={className}>
-      {municipios?.map((municipio) => (
-        <SelectItem key={municipio.nome}>
-          <div className="flex items-center justify-between w-full">
-            <span>{municipio.nome}</span>
-            <span className="text-default-400 text-sm ml-2">{municipio.microrregiao.nome}</span>
-          </div>
-        </SelectItem>
-      ))}
+      {municipios?.map((municipio) => <SelectItem key={municipio.nome}>{municipio.nome}</SelectItem>)}
     </Select>
   );
 }

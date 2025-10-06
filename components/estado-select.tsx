@@ -17,6 +17,12 @@ interface EstadoSelectProps {
 
 export function EstadoSelect({ label = "Estado", placeholder = "Selecione o estado", selectedKeys, onSelectionChange, isRequired = false, isDisabled = false, className }: EstadoSelectProps) {
   const { estados, isLoading, error } = useEstadosBrasil();
+  
+  // Debug
+  console.log("EstadoSelect - selectedKeys:", selectedKeys);
+  console.log("EstadoSelect - estados:", estados);
+  console.log("EstadoSelect - isLoading:", isLoading);
+  console.log("EstadoSelect - error:", error);
 
   if (isLoading) {
     return (
@@ -36,13 +42,18 @@ export function EstadoSelect({ label = "Estado", placeholder = "Selecione o esta
   }
 
   return (
-    <Select label={label} placeholder={placeholder} selectedKeys={selectedKeys || []} onSelectionChange={onSelectionChange} isRequired={isRequired} isDisabled={isDisabled} className={className}>
+    <Select 
+      label={label} 
+      placeholder={placeholder} 
+      selectedKeys={selectedKeys || []} 
+      onSelectionChange={onSelectionChange} 
+      isRequired={isRequired} 
+      isDisabled={isDisabled} 
+      className={className}
+    >
       {estados?.map((estado) => (
         <SelectItem key={estado.sigla}>
-          <div className="flex items-center justify-between w-full">
-            <span>{estado.nome}</span>
-            <span className="text-default-400 text-sm ml-2">({estado.sigla})</span>
-          </div>
+          {estado.nome} ({estado.sigla})
         </SelectItem>
       ))}
     </Select>
