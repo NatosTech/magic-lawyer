@@ -63,18 +63,6 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
     observacoes: "",
   });
 
-  // FORÇAR LIMPEZA DO ESTADO - MAIS AGRESSIVA
-  useEffect(() => {
-    setFormData((prev) => ({ ...prev, estado: "" }));
-  }, []);
-
-  // LIMPAR ESTADO QUANDO MODAL ABRIR
-  useEffect(() => {
-    if (isModalOpen) {
-      setFormData((prev) => ({ ...prev, estado: "" }));
-    }
-  }, [isModalOpen]);
-
   // Obter opções de tipo baseadas no role do usuário
   const getTipoEnderecoOptions = () => {
     const isCliente = session?.user?.role === "CLIENTE";
@@ -410,22 +398,20 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
                 <Select
                   label="Estado"
                   placeholder="Selecione o estado"
-                  selectedKeys={[]}
+                  selectedKeys={formData.estado ? [formData.estado] : []}
                   onSelectionChange={(keys) => {
                     const selected = Array.from(keys)[0] as string;
-                    console.log("Estado selecionado:", selected);
                     setFormData({ ...formData, estado: selected, cidade: "" });
                   }}
                   isRequired
                 >
                   {estados?.map((estado) => (
-                    <SelectItem key={estado.sigla}>
+                    <SelectItem key={estado.sigla} textValue={`${estado.nome} (${estado.sigla})`}>
                       {estado.nome} ({estado.sigla})
                     </SelectItem>
                   )) || []}
                 </Select>
               )}
-              {/* Debug: Estados carregados: {estados?.length || 0} | Estado atual: {formData.estado} */}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
