@@ -41,11 +41,18 @@ export async function getEnderecosUsuario(): Promise<{
       return { success: false, error: "Não autorizado" };
     }
 
+    // Determinar se é usuário ou cliente baseado no role
+    const isCliente = session.user.role === "CLIENTE";
+    const whereClause = {
+      tenantId: session.user.tenantId,
+      ...(isCliente 
+        ? { clienteId: session.user.id }
+        : { usuarioId: session.user.id }
+      ),
+    };
+
     const enderecos = await prisma.endereco.findMany({
-      where: {
-        tenantId: session.user.tenantId,
-        usuarioId: session.user.id,
-      },
+      where: whereClause,
       orderBy: [{ principal: "desc" }, { createdAt: "desc" }],
     });
 
@@ -159,24 +166,34 @@ export async function criarEndereco(data: EnderecoData): Promise<{
       estado: data.estado.trim(),
     });
 
+    // Determinar se é usuário ou cliente baseado no role
+    const isCliente = session.user.role === "CLIENTE";
+    const enderecoData = {
+      tenantId: session.user.tenantId,
+      apelido: data.apelido.trim(),
+      tipo: data.tipo,
+      principal: data.principal,
+      logradouro: data.logradouro.trim(),
+      numero: data.numero?.trim() || null,
+      complemento: data.complemento?.trim() || null,
+      bairro: data.bairro?.trim() || null,
+      cidade: data.cidade.trim(),
+      estado: data.estado.trim(),
+      cep: data.cep?.trim() || null,
+      pais: data.pais?.trim() || "Brasil",
+      telefone: data.telefone?.trim() || null,
+      observacoes: data.observacoes?.trim() || null,
+    };
+
+    // Adicionar usuarioId ou clienteId baseado no role
+    if (isCliente) {
+      enderecoData.clienteId = session.user.id;
+    } else {
+      enderecoData.usuarioId = session.user.id;
+    }
+
     const endereco = await prisma.endereco.create({
-      data: {
-        tenantId: session.user.tenantId,
-        usuarioId: session.user.id,
-        apelido: data.apelido.trim(),
-        tipo: data.tipo,
-        principal: data.principal,
-        logradouro: data.logradouro.trim(),
-        numero: data.numero?.trim() || null,
-        complemento: data.complemento?.trim() || null,
-        bairro: data.bairro?.trim() || null,
-        cidade: data.cidade.trim(),
-        estado: data.estado.trim(),
-        cep: data.cep?.trim() || null,
-        pais: data.pais?.trim() || "Brasil",
-        telefone: data.telefone?.trim() || null,
-        observacoes: data.observacoes?.trim() || null,
-      },
+      data: enderecoData,
     });
 
     console.log("✅ [criarEndereco] Endereço criado com sucesso:", endereco.id);
