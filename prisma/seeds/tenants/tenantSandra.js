@@ -649,7 +649,7 @@ async function seedTenantSandra(prisma, Prisma) {
 
   // Criar endereços para os usuários
   console.log("🏠 Criando endereços dos usuários...");
-  
+
   // Endereço da Sandra (Wall Street)
   await prisma.endereco.upsert({
     where: {
