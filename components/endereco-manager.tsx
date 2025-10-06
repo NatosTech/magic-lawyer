@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
@@ -77,7 +77,7 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
   };
 
   // Preencher dados do endereço automaticamente quando CEP for encontrado
-  const handleCepFound = (cepData: CepData) => {
+  const handleCepFound = useCallback((cepData: CepData) => {
     setFormData((prev) => ({
       ...prev,
       logradouro: cepData.logradouro,
@@ -86,7 +86,7 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
       estado: cepData.uf,
       cep: cepData.cep,
     }));
-  };
+  }, []);
 
   // Carregar endereços
   useEffect(() => {
@@ -423,10 +423,7 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
 
             <Input label="Observações" placeholder="Informações adicionais..." value={formData.observacoes} onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })} />
 
-            <Checkbox
-              isSelected={formData.principal}
-              onValueChange={(checked) => setFormData({ ...formData, principal: checked })}
-            >
+            <Checkbox isSelected={formData.principal} onValueChange={(checked) => setFormData({ ...formData, principal: checked })}>
               Definir como endereço principal
             </Checkbox>
           </ModalBody>

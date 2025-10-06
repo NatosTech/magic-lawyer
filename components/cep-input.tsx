@@ -34,7 +34,7 @@ export function CepInput({ label = "CEP", placeholder = "00000-000", value = "",
       onCepFound?.(cepData);
       toast.success("CEP encontrado!");
     }
-  }, [cepData, value, onCepFound]);
+  }, [cepData, value]); // Removido onCepFound das dependências
 
   // Mostrar erro se houver
   useEffect(() => {
