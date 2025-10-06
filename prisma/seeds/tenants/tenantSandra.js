@@ -106,6 +106,20 @@ async function seedTenantSandra(prisma, Prisma) {
       telefone: "+55 11 4000-1234",
     },
     {
+      apelido: "Wall Street - Salvador",
+      tipo: "ESCRITORIO",
+      principal: false,
+      logradouro: "Av. Luiz Viana Filho",
+      numero: "6462",
+      complemento: "Empresarial Wall Street, Torre A, Sala 1202",
+      bairro: "Paralela",
+      cidade: "Salvador",
+      estado: "BA",
+      cep: "41730-101",
+      pais: "Brasil",
+      telefone: "+55 71 4000-1234",
+    },
+    {
       apelido: "Filial Rio de Janeiro",
       tipo: "FILIAL",
       principal: false,
@@ -164,8 +178,8 @@ async function seedTenantSandra(prisma, Prisma) {
   }
 
   const adminUser = await ensureUsuario(prisma, tenant.id, "sandra@adv.br", {
-    firstName: "Sandra",
-    lastName: "Guimarães",
+    firstName: "Sandra Quesia de Souza Costa",
+    lastName: "Porto",
     passwordHash: adminPasswordHash,
     role: "ADMIN",
     active: true,
@@ -180,15 +194,15 @@ async function seedTenantSandra(prisma, Prisma) {
   const advogadoSandra = await prisma.advogado.upsert({
     where: { usuarioId: adminUser.id },
     update: {
-      oabNumero: "123456",
-      oabUf: "SP",
+      oabNumero: "19872",
+      oabUf: "BA",
       especialidades: ["CIVIL", "EMPRESARIAL"],
     },
     create: {
       tenantId: tenant.id,
       usuarioId: adminUser.id,
-      oabNumero: "123456",
-      oabUf: "SP",
+      oabNumero: "19872",
+      oabUf: "BA",
       especialidades: ["CIVIL", "EMPRESARIAL"],
     },
   });
