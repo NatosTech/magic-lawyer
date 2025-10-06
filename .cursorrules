@@ -1,0 +1,33 @@
+# Regras do Cursor para o Projeto Magic Lawyer
+
+## Idioma e Comunicação
+- **OBRIGATÓRIO**: Todas as mensagens de commit devem ser escritas em PORTUGUÊS BRASILEIRO
+- Use verbos no infinitivo: "adicionar", "corrigir", "implementar", "refatorar", "atualizar", "remover"
+- Seja claro e conciso nas descrições
+- Evite jargões técnicos desnecessários
+
+## Padrão de Mensagens de Commit
+- Formato: `[tipo]: [descrição em português]`
+- Tipos: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+- Exemplos:
+  - `feat: adicionar sistema de upload de avatares`
+  - `fix: corrigir vazamento de dados entre tenants`
+  - `docs: atualizar documentação da estrutura do projeto`
+  - `refactor: reorganizar componentes do sidebar`
+  - `style: melhorar layout das tabs do perfil`
+
+## Contexto do Projeto
+Este é um sistema SaaS multi-tenant para escritórios de advocacia com:
+- Next.js 14 + App Router
+- Prisma + PostgreSQL (multi-schema)
+- HeroUI + Tailwind CSS
+- NextAuth.js para autenticação
+- Cloudinary para upload de arquivos
+- Estrutura white label
+
+## Regras Importantes
+- Sempre incluir `tenantId` em consultas do banco
+- Usar Server Actions ao invés de API routes
+- Preferir SWR para cache client-side
+- Manter isolamento total entre tenants
+- Seguir padrões de segurança LGPD

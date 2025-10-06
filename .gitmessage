@@ -1,0 +1,21 @@
+# <tipo>: <descrição em português>
+
+# Tipos permitidos:
+# feat: nova funcionalidade
+# fix: correção de bug
+# docs: documentação
+# style: formatação, sem mudança de código
+# refactor: refatoração de código
+# test: testes
+# chore: tarefas de manutenção
+
+# Exemplos:
+# feat: adicionar sistema de upload de avatares
+# fix: corrigir vazamento de dados entre tenants
+# docs: atualizar documentação da estrutura do projeto
+# refactor: reorganizar componentes do sidebar
+# style: melhorar layout das tabs do perfil
+
+# <corpo da mensagem (opcional)>
+
+# <rodapé (opcional)>
