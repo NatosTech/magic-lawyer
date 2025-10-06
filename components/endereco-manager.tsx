@@ -12,6 +12,7 @@ import { Checkbox } from "@heroui/checkbox";
 import { toast } from "sonner";
 import { MapPin, Plus, Edit3, Trash2, Star, StarOff, Home, Building2, Briefcase, Mail, User, Building } from "lucide-react";
 import { getEnderecosUsuario, criarEndereco, atualizarEndereco, deletarEndereco, definirEnderecoPrincipal, EnderecoData, EnderecoWithId } from "@/app/actions/enderecos";
+import { testSession } from "@/app/actions/test-session";
 import { TipoEndereco } from "@/app/generated/prisma";
 import { useSession } from "next-auth/react";
 import { EstadoSelect } from "./estado-select";
@@ -222,6 +223,18 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
     }
   };
 
+  const handleTestSession = async () => {
+    try {
+      console.log("🧪 Testando sessão...");
+      const result = await testSession();
+      console.log("🧪 Resultado do teste:", result);
+      toast.success("Teste de sessão executado - veja o console");
+    } catch (error) {
+      console.error("💥 Erro no teste de sessão:", error);
+      toast.error("Erro no teste de sessão");
+    }
+  };
+
   const getTipoIcon = (tipo: TipoEndereco) => {
     const options = getTipoEnderecoOptions();
     const tipoOption = options.find((opt) => opt.key === tipo);
@@ -257,9 +270,14 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
               <p className="text-sm text-default-400">Gerencie seus endereços</p>
             </div>
           </div>
-          <Button color="primary" variant="bordered" startContent={<Plus className="w-4 h-4" />} onPress={() => handleOpenModal()} isDisabled={saving}>
-            Adicionar
-          </Button>
+          <div className="flex gap-2">
+            <Button color="secondary" variant="bordered" onPress={handleTestSession} isDisabled={saving}>
+              Testar Sessão
+            </Button>
+            <Button color="primary" variant="bordered" startContent={<Plus className="w-4 h-4" />} onPress={() => handleOpenModal()} isDisabled={saving}>
+              Adicionar
+            </Button>
+          </div>
         </CardHeader>
 
         <CardBody className="space-y-4">
