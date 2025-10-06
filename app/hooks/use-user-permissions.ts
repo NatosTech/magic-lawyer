@@ -7,6 +7,7 @@ export interface UserPermissions {
   canViewAllProcesses: boolean;
   canViewAllClients: boolean;
   canViewAllEvents: boolean;
+  canViewClientEvents: boolean; // Nova permissão para clientes verem eventos dos seus processos
   canViewFinancialData: boolean;
   canManageTeam: boolean;
   canManageOfficeSettings: boolean;
@@ -37,6 +38,7 @@ export function useUserPermissions() {
         canViewAllProcesses: true,
         canViewAllClients: true,
         canViewAllEvents: true,
+        canViewClientEvents: true,
         canViewFinancialData: true,
         canManageTeam: true,
         canManageOfficeSettings: true,
@@ -61,6 +63,7 @@ export function useUserPermissions() {
         canViewAllProcesses: true,
         canViewAllClients: true,
         canViewAllEvents: true,
+        canViewClientEvents: true,
         canViewFinancialData: true,
         canManageTeam: true,
         canManageOfficeSettings: true,
@@ -85,6 +88,7 @@ export function useUserPermissions() {
         canViewAllProcesses: false, // Apenas os seus
         canViewAllClients: false, // Apenas os seus
         canViewAllEvents: false, // Apenas os seus
+        canViewClientEvents: false, // Não é cliente
         canViewFinancialData: true, // Apenas o que deve receber
         canManageTeam: false,
         canManageOfficeSettings: false,
@@ -109,6 +113,7 @@ export function useUserPermissions() {
         canViewAllProcesses: true, // Para organização
         canViewAllClients: true, // Para atendimento
         canViewAllEvents: true, // Para organização da agenda
+        canViewClientEvents: false, // Não é cliente
         canViewFinancialData: false, // Não acessa dados financeiros
         canManageTeam: false,
         canManageOfficeSettings: false,
@@ -133,6 +138,7 @@ export function useUserPermissions() {
         canViewAllProcesses: false,
         canViewAllClients: true, // Para faturas
         canViewAllEvents: false,
+        canViewClientEvents: false, // Não é cliente
         canViewFinancialData: true, // Acesso total ao financeiro
         canManageTeam: false,
         canManageOfficeSettings: false,
@@ -156,11 +162,12 @@ export function useUserPermissions() {
       return {
         canViewAllProcesses: false, // Apenas o seu
         canViewAllClients: false,
-        canViewAllEvents: false, // Apenas eventos do seu processo
+        canViewAllEvents: false, // Não vê todos os eventos
+        canViewClientEvents: true, // Pode ver eventos dos seus processos
         canViewFinancialData: true, // Apenas o que deve pagar
         canManageTeam: false,
         canManageOfficeSettings: false,
-        canCreateEvents: false,
+        canCreateEvents: false, // Cliente não cria eventos
         canEditAllEvents: false,
         canViewReports: false,
         canManageContracts: false,
@@ -180,6 +187,7 @@ export function useUserPermissions() {
       canViewAllProcesses: false,
       canViewAllClients: false,
       canViewAllEvents: false,
+      canViewClientEvents: false,
       canViewFinancialData: false,
       canManageTeam: false,
       canManageOfficeSettings: false,
@@ -189,6 +197,12 @@ export function useUserPermissions() {
       canManageContracts: false,
       canViewAllDocuments: false,
       canManageUsers: false,
+      canViewJudgesDatabase: false,
+      canManageJudgesDatabase: false,
+      canCreateJudgeProfiles: false,
+      canEditJudgeProfiles: false,
+      canDeleteJudgeProfiles: false,
+      canViewPremiumJudges: false,
     };
   }, [userRole, isSuperAdmin]);
 

@@ -6,7 +6,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import { revalidatePath } from "next/cache";
 // Usar tipos do Prisma - sempre sincronizado com o banco!
-import type { Evento, EventoTipo, EventoStatus } from "@/app/generated/prisma";
+import type { Evento, EventoTipo, EventoStatus, EventoParticipante, EventoConfirmacaoStatus } from "@/app/generated/prisma";
 
 // Tipo para criação de evento (sem campos auto-gerados)
 export type EventoFormData = Omit<Evento, "id" | "tenantId" | "criadoPorId" | "createdAt" | "updatedAt"> & {
@@ -86,6 +86,19 @@ async function getCurrentTenant(userId: string) {
   return await getTenantWithBranding(usuario.tenantId);
 }
 
+// Função auxiliar para buscar o cliente associado ao usuário
+async function getCurrentCliente(userId: string) {
+  const cliente = await prisma.cliente.findFirst({
+    where: {
+      usuarioId: userId,
+      deletedAt: null, // Não deletado
+    },
+    select: { id: true, nome: true },
+  });
+
+  return cliente;
+}
+
 // Buscar eventos do tenant atual
 export async function getEventos(filters?: { dataInicio?: Date; dataFim?: Date; status?: string; tipo?: string }) {
   try {
@@ -123,6 +136,21 @@ export async function getEventos(filters?: { dataInicio?: Date; dataFim?: Date; 
     const where: any = {
       tenantId: tenant.id,
     };
+
+    // Se o usuário for um cliente, filtrar apenas eventos relacionados aos seus processos
+    const userRole = (session.user as any)?.role;
+    if (userRole === "CLIENTE") {
+      const cliente = await getCurrentCliente(session.user.id);
+      if (cliente) {
+        where.clienteId = cliente.id;
+      } else {
+        // Cliente sem registro na tabela Cliente - não tem eventos
+        return {
+          success: true,
+          data: [],
+        };
+      }
+    }
 
     if (filters?.dataInicio || filters?.dataFim) {
       where.dataInicio = {};
@@ -179,6 +207,16 @@ export async function getEventos(filters?: { dataInicio?: Date; dataFim?: Date; 
             email: true,
           },
         },
+        confirmacoes: {
+          select: {
+            id: true,
+            participanteEmail: true,
+            participanteNome: true,
+            status: true,
+            confirmadoEm: true,
+            observacoes: true,
+          },
+        },
       },
       orderBy: {
         dataInicio: "asc",
@@ -208,11 +246,24 @@ export async function getEventoById(id: string) {
       throw new Error("Tenant não encontrado");
     }
 
+    const where: any = {
+      id,
+      tenantId: tenant.id,
+    };
+
+    // Se o usuário for um cliente, verificar se o evento pertence aos seus processos
+    const userRole = (session.user as any)?.role;
+    if (userRole === "CLIENTE") {
+      const cliente = await getCurrentCliente(session.user.id);
+      if (cliente) {
+        where.clienteId = cliente.id;
+      } else {
+        throw new Error("Cliente não encontrado");
+      }
+    }
+
     const evento = await prisma.evento.findFirst({
-      where: {
-        id,
-        tenantId: tenant.id,
-      },
+      where,
       include: {
         processo: {
           select: {
@@ -246,6 +297,16 @@ export async function getEventoById(id: string) {
             firstName: true,
             lastName: true,
             email: true,
+          },
+        },
+        confirmacoes: {
+          select: {
+            id: true,
+            participanteEmail: true,
+            participanteNome: true,
+            status: true,
+            confirmadoEm: true,
+            observacoes: true,
           },
         },
       },
@@ -384,8 +445,57 @@ export async function createEvento(formData: EventoFormData) {
             email: true,
           },
         },
+        confirmacoes: {
+          select: {
+            id: true,
+            participanteEmail: true,
+            participanteNome: true,
+            status: true,
+            confirmadoEm: true,
+            observacoes: true,
+          },
+        },
       },
     });
+
+    // Criar registros de confirmação para os participantes
+    if (formData.participantes && formData.participantes.length > 0) {
+      const confirmacoesData = formData.participantes.map((email) => ({
+        tenantId: tenant.id,
+        eventoId: evento.id,
+        participanteEmail: email,
+        status: "PENDENTE" as EventoConfirmacaoStatus,
+      }));
+
+      await prisma.eventoParticipante.createMany({
+        data: confirmacoesData,
+      });
+
+      // Criar notificações para os participantes
+      const notificacoesData = formData.participantes.map((email) => ({
+        tenantId: tenant.id,
+        titulo: "Novo Evento - Confirmação Necessária",
+        mensagem: `Você foi convidado para o evento "${evento.titulo}" em ${new Date(evento.dataInicio).toLocaleDateString("pt-BR")} às ${new Date(evento.dataInicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Por favor, confirme sua participação.`,
+        tipo: "OUTRO" as any,
+        prioridade: "MEDIA" as any,
+        canais: ["IN_APP"] as any,
+        referenciaTipo: "EVENTO",
+        referenciaId: evento.id,
+        dados: {
+          eventoId: evento.id,
+          participanteEmail: email,
+          tipoConfirmacao: "INVITE",
+          eventoTitulo: evento.titulo,
+          eventoData: evento.dataInicio,
+          eventoLocal: evento.local,
+        },
+        createdById: session.user.id,
+      }));
+
+      await prisma.notificacao.createMany({
+        data: notificacoesData,
+      });
+    }
 
     revalidatePath("/agenda");
     return { success: true, data: evento };
@@ -503,6 +613,22 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
       }
     }
 
+    // Buscar evento atual para comparar mudanças
+    const eventoAtual = await prisma.evento.findUnique({
+      where: { id },
+      select: {
+        dataInicio: true,
+        dataFim: true,
+        local: true,
+        participantes: true,
+        titulo: true,
+      },
+    });
+
+    if (!eventoAtual) {
+      throw new Error("Evento não encontrado");
+    }
+
     const updateData: any = { ...formData };
 
     if (formData?.dataInicio) {
@@ -552,6 +678,57 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
         },
       },
     });
+
+    // Verificar se houve mudanças que exigem re-confirmação
+    const mudancasCriticas =
+      eventoAtual.dataInicio.getTime() !== (formData?.dataInicio ? new Date(formData.dataInicio).getTime() : eventoAtual.dataInicio.getTime()) ||
+      eventoAtual.dataFim.getTime() !== (formData?.dataFim ? new Date(formData.dataFim).getTime() : eventoAtual.dataFim.getTime()) ||
+      eventoAtual.local !== (formData?.local || eventoAtual.local) ||
+      JSON.stringify(eventoAtual.participantes.sort()) !== JSON.stringify((formData?.participantes || eventoAtual.participantes).sort());
+
+    if (mudancasCriticas) {
+      // Resetar todas as confirmações para PENDENTE
+      await prisma.eventoParticipante.updateMany({
+        where: {
+          eventoId: id,
+          tenantId: tenant.id,
+        },
+        data: {
+          status: "PENDENTE",
+          confirmadoEm: null,
+          observacoes: "Evento alterado - confirmação necessária",
+        },
+      });
+
+      // Criar notificações para todos os participantes sobre a mudança
+      const participantes = formData?.participantes || eventoAtual.participantes;
+      if (participantes.length > 0) {
+        const notificacoesData = participantes.map((email) => ({
+          tenantId: tenant.id,
+          titulo: "Evento Alterado - Nova Confirmação Necessária",
+          mensagem: `O evento "${eventoAtual.titulo}" foi alterado. Por favor, confirme novamente sua participação.`,
+          tipo: "OUTRO" as any,
+          prioridade: "ALTA" as any,
+          canais: ["IN_APP"] as any,
+          referenciaTipo: "EVENTO",
+          referenciaId: evento.id,
+          dados: {
+            eventoId: evento.id,
+            participanteEmail: email,
+            tipoConfirmacao: "RE_CONFIRMACAO",
+            motivo: "Evento alterado",
+            eventoTitulo: eventoAtual.titulo,
+            eventoData: evento.dataInicio,
+            eventoLocal: evento.local,
+          },
+          createdById: session.user.id,
+        }));
+
+        await prisma.notificacao.createMany({
+          data: notificacoesData,
+        });
+      }
+    }
 
     revalidatePath("/agenda");
     return { success: true, data: evento };
@@ -617,11 +794,24 @@ export async function marcarEventoComoRealizado(id: string) {
       throw new Error("Tenant não encontrado");
     }
 
+    const where: any = {
+      id,
+      tenantId: tenant.id,
+    };
+
+    // Se o usuário for um cliente, verificar se o evento pertence aos seus processos
+    const userRole = (session.user as any)?.role;
+    if (userRole === "CLIENTE") {
+      const cliente = await getCurrentCliente(session.user.id);
+      if (cliente) {
+        where.clienteId = cliente.id;
+      } else {
+        throw new Error("Cliente não encontrado");
+      }
+    }
+
     const evento = await prisma.evento.update({
-      where: {
-        id,
-        tenantId: tenant.id,
-      },
+      where,
       data: {
         status: "REALIZADO",
       },
@@ -631,6 +821,139 @@ export async function marcarEventoComoRealizado(id: string) {
     return { success: true, data: evento };
   } catch (error) {
     console.error("Erro ao marcar evento como realizado:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro interno do servidor",
+    };
+  }
+}
+
+// Confirmar participação em evento
+export async function confirmarParticipacaoEvento(eventoId: string, participanteEmail: string, status: EventoConfirmacaoStatus, observacoes?: string) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      throw new Error("Usuário não autenticado");
+    }
+
+    const tenant = await getCurrentTenant(session.user.id);
+    if (!tenant) {
+      throw new Error("Tenant não encontrado");
+    }
+
+    // Verificar se o evento existe e pertence ao tenant
+    const evento = await prisma.evento.findFirst({
+      where: {
+        id: eventoId,
+        tenantId: tenant.id,
+      },
+    });
+
+    if (!evento) {
+      throw new Error("Evento não encontrado");
+    }
+
+    // Verificar se o participante está na lista de participantes do evento
+    if (!evento.participantes.includes(participanteEmail)) {
+      throw new Error("Participante não está na lista de participantes do evento");
+    }
+
+    // Atualizar ou criar confirmação
+    const confirmacao = await prisma.eventoParticipante.upsert({
+      where: {
+        eventoId_participanteEmail: {
+          eventoId,
+          participanteEmail,
+        },
+      },
+      update: {
+        status,
+        confirmadoEm: new Date(),
+        observacoes,
+      },
+      create: {
+        tenantId: tenant.id,
+        eventoId,
+        participanteEmail,
+        status,
+        confirmadoEm: new Date(),
+        observacoes,
+      },
+    });
+
+    // Criar notificações para todos os outros participantes do evento
+    const statusLabels: Record<EventoConfirmacaoStatus, string> = {
+      PENDENTE: "atualizou a confirmação",
+      CONFIRMADO: "confirmou",
+      RECUSADO: "recusou",
+      TALVEZ: "marcou como talvez",
+    };
+
+    const statusLabel = statusLabels[status];
+    const outrosParticipantes = evento.participantes.filter((email) => email !== participanteEmail);
+
+    if (outrosParticipantes.length > 0) {
+      const notificacoesData = outrosParticipantes.map((email) => ({
+        tenantId: tenant.id,
+        titulo: "Atualização de Confirmação",
+        mensagem: `${participanteEmail} ${statusLabel} o evento "${evento.titulo}".`,
+        tipo: "OUTRO" as any,
+        prioridade: "BAIXA" as any,
+        canais: ["IN_APP"] as any,
+        referenciaTipo: "EVENTO",
+        referenciaId: eventoId,
+        dados: {
+          eventoId,
+          participanteEmail,
+          status,
+          tipoConfirmacao: "RESPONSE",
+          destinatarioEmail: email,
+        },
+        createdById: session.user.id,
+      }));
+
+      await prisma.notificacao.createMany({
+        data: notificacoesData,
+      });
+    }
+
+    revalidatePath("/agenda");
+    return { success: true, data: confirmacao };
+  } catch (error) {
+    console.error("Erro ao confirmar participação:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro interno do servidor",
+    };
+  }
+}
+
+// Buscar confirmações de um evento
+export async function getConfirmacoesEvento(eventoId: string) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      throw new Error("Usuário não autenticado");
+    }
+
+    const tenant = await getCurrentTenant(session.user.id);
+    if (!tenant) {
+      throw new Error("Tenant não encontrado");
+    }
+
+    const confirmacoes = await prisma.eventoParticipante.findMany({
+      where: {
+        eventoId,
+        tenantId: tenant.id,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+
+    return { success: true, data: confirmacoes };
+  } catch (error) {
+    console.error("Erro ao buscar confirmações:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro interno do servidor",

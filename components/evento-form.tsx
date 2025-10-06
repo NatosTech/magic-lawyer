@@ -5,6 +5,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input
 import { Calendar, Clock, MapPin, Users, FileText, AlertCircle } from "lucide-react";
 import { createEvento, updateEvento, type EventoFormData } from "@/app/actions/eventos";
 import { useEventoFormData } from "@/app/hooks/use-eventos";
+import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { toast } from "sonner";
 import { Evento, EventoTipo, EventoStatus } from "@/app/generated/prisma";
 
@@ -64,6 +65,7 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
   const [isLoading, setIsLoading] = useState(false);
   const [novoParticipante, setNovoParticipante] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { isCliente } = useUserPermissions();
   const [formData, setFormData] = useState<FormEventoData>({
     titulo: "",
     descricao: "",
@@ -278,6 +280,11 @@ export default function EventoForm({ isOpen, onClose, evento, onSuccess }: Event
       adicionarParticipante();
     }
   };
+
+  // Se for cliente, não permitir abrir o formulário
+  if (isCliente) {
+    return null;
+  }
 
   return (
     <Modal

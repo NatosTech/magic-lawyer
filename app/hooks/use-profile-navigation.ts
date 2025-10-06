@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useSession } from "next-auth/react";
 import { useUserPermissions } from "./use-user-permissions";
 
 export interface NavigationItem {
@@ -13,6 +14,7 @@ export interface NavigationItem {
 }
 
 export function useProfileNavigation() {
+  const { data: session } = useSession();
   const { userRole, permissions, isAdmin, isAdvogado, isSecretaria, isFinanceiro, isCliente } = useUserPermissions();
 
   const navigationItems = useMemo<NavigationItem[]>(() => {
@@ -161,7 +163,7 @@ export function useProfileNavigation() {
 
     // ===== SEÇÃO: OPERACIONAL =====
     // Agenda - Baseado em permissões
-    if (permissions.canViewAllEvents || permissions.canCreateEvents) {
+    if (permissions.canViewAllEvents || permissions.canCreateEvents || permissions.canViewClientEvents) {
       items.push({
         label: "Agenda",
         href: "/agenda",
@@ -276,7 +278,7 @@ export function useProfileNavigation() {
   };
 
   const getWelcomeMessage = () => {
-    const userName = "Usuário"; // TODO: Pegar do session
+    const userName = session?.user?.name || "Usuário";
 
     switch (userRole) {
       case "ADMIN":

@@ -141,7 +141,7 @@ export function JuizesContent() {
   }
 
   return (
-    <PermissionGuard permission="canManageTeam">
+    <PermissionGuard permission="canViewJudgesDatabase">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 py-12 px-3 sm:px-6">
         <header className="space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Base de Juízes</p>

@@ -772,6 +772,16 @@ async function seedTenantSandra(prisma, Prisma) {
 
   console.log("✅ Endereços dos usuários criados com sucesso!");
 
+  console.log("\n📋 Credenciais de teste - Sandra Advocacia:");
+  console.log("👑 ADMIN: sandra@adv.br / Sandra@123");
+  console.log("⚖️ ADVOGADO: ricardo@sandraadv.br / Advogado@123");
+  console.log("⚖️ ADVOGADO: fernanda@sandraadv.br / Advogado@123");
+  console.log("👤 CLIENTE: cliente@sandraadv.br / Cliente@123");
+  console.log("👤 CLIENTE: ana@sandraadv.br / Cliente@123");
+  console.log("👤 CLIENTE: inova@sandraadv.br / Cliente@123");
+  console.log("\n🔗 Acesso: http://localhost:9192/login");
+  console.log("🏢 Slug do tenant: sandra");
+
   console.log("Seed tenant Sandra: OK");
 }
 

@@ -217,7 +217,6 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
     }
   };
 
-
   const getTipoIcon = (tipo: TipoEndereco) => {
     const options = getTipoEnderecoOptions();
     const tipoOption = options.find((opt) => opt.key === tipo);

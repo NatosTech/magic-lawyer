@@ -99,6 +99,7 @@ model Tenant {
   documentos            Documento[]
   documentoAssinaturas  DocumentoAssinatura[]
   eventos               Evento[]
+  eventoParticipantes   EventoParticipante[]
   faturas               Fatura[]
   favoritosJuiz         FavoritoJuiz[]
   julgamentos           Julgamento[]
@@ -983,6 +984,7 @@ model Evento {
   criadoPor             Usuario?          @relation(fields: [criadoPorId], references: [id])
   processo              Processo?         @relation(fields: [processoId], references: [id])
   tenant                Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  confirmacoes          EventoParticipante[]
 
   @@index([tenantId, dataInicio])
   @@index([tenantId, dataFim])
@@ -991,6 +993,27 @@ model Evento {
   @@index([clienteId])
   @@index([advogadoResponsavelId])
   @@index([googleEventId])
+  @@schema("magiclawyer")
+}
+
+model EventoParticipante {
+  id                    String                    @id @default(cuid())
+  tenantId              String
+  eventoId              String
+  participanteEmail     String
+  participanteNome      String?
+  status                EventoConfirmacaoStatus   @default(PENDENTE)
+  confirmadoEm          DateTime?
+  observacoes           String?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  evento                Evento                    @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  tenant                Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([eventoId, participanteEmail])
+  @@index([tenantId, eventoId])
+  @@index([tenantId, status])
+  @@index([participanteEmail])
   @@schema("magiclawyer")
 }
 
@@ -1497,6 +1520,15 @@ enum EventoStatus {
   CANCELADO
   REALIZADO
   ADIADO
+
+  @@schema("magiclawyer")
+}
+
+enum EventoConfirmacaoStatus {
+  PENDENTE
+  CONFIRMADO
+  RECUSADO
+  TALVEZ
 
   @@schema("magiclawyer")
 }
