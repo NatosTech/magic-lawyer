@@ -259,7 +259,7 @@ export async function uploadAvatar(formData: FormData): Promise<{
       // Usar o serviço de upload
       const { UploadService } = await import("@/lib/upload-service");
       const uploadService = UploadService.getInstance();
-      const result = await uploadService.uploadAvatar(buffer, session.user.id, file.name);
+      const result = await uploadService.uploadAvatar(buffer, session.user.id, file.name, session.user.tenantSlug);
 
       if (!result.success || !result.url) {
         return {
