@@ -4,7 +4,8 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Spinner } from "@heroui/spinner";
-import { Scale, Briefcase, Calendar, Clock, AlertCircle, CheckCircle, XCircle, User, FileText } from "lucide-react";
+import { Button } from "@heroui/button";
+import { Scale, Briefcase, Calendar, Clock, AlertCircle, CheckCircle, XCircle, User, FileText, Plus } from "lucide-react";
 import Link from "next/link";
 import { useAllProcessos } from "@/app/hooks/use-processos";
 import { title } from "@/components/primitives";
@@ -83,10 +84,15 @@ export function ProcessosContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header>
-        <h1 className={title({ size: "lg", color: "blue" })}>Meus Processos</h1>
-        <p className="mt-2 text-sm text-default-500">Acompanhe o andamento dos seus processos</p>
-      </header>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className={title()}>Processos</h1>
+          <p className="text-sm text-default-500 mt-1">Gestão centralizada de processos jurídicos</p>
+        </div>
+        <Button color="primary" startContent={<Plus className="h-4 w-4" />} as={Link} href="/processos/novo">
+          Novo Processo
+        </Button>
+      </div>
 
       {/* Lista de Processos */}
       {!processos || processos.length === 0 ? (

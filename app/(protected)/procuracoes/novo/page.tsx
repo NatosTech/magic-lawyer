@@ -8,13 +8,15 @@ import { Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Checkbox } from "@heroui/checkbox";
 import { Divider } from "@heroui/divider";
-import { ArrowLeft, Save, FileSignature, User, Calendar, Upload } from "lucide-react";
+import { ArrowLeft, Save, FileSignature, User, Calendar, Upload, Building2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { title } from "@/components/primitives";
 import { createProcuracao, type ProcuracaoCreateInput } from "@/app/actions/procuracoes";
 import { ProcuracaoStatus, ProcuracaoEmitidaPor } from "@/app/generated/prisma";
+import { useClientesParaSelect } from "@/app/hooks/use-clientes";
+import { Spinner } from "@heroui/spinner";
 
 export default function NovaProcuracaoPage() {
   const router = useRouter();
@@ -32,6 +34,17 @@ export default function NovaProcuracaoPage() {
     processosIds: [],
     outorgadosIds: [],
   });
+
+  // Buscar clientes para o select (apenas se não veio de um cliente)
+  const { clientes, isLoading: isLoadingClientes } = useClientesParaSelect();
+
+  if (isLoadingClientes && !clienteIdParam) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Spinner size="lg" label="Carregando dados..." />
+      </div>
+    );
+  }
 
   const handleSubmit = async () => {
     if (!formData.clienteId) {
@@ -100,6 +113,31 @@ export default function NovaProcuracaoPage() {
           {/* Dados Básicos */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-default-600">📋 Dados Básicos</h3>
+
+            {/* Select de Cliente (se não veio de um cliente) */}
+            {!clienteIdParam && (
+              <Select
+                label="Cliente *"
+                placeholder="Selecione um cliente"
+                selectedKeys={formData.clienteId ? [formData.clienteId] : []}
+                onSelectionChange={(keys) => setFormData((prev) => ({ ...prev, clienteId: Array.from(keys)[0] as string }))}
+                isRequired
+                description="Selecione o cliente outorgante"
+                startContent={<User className="h-4 w-4 text-default-400" />}
+              >
+                {clientes.map((cliente: any) => (
+                  <SelectItem key={cliente.id} value={cliente.id} textValue={cliente.nome}>
+                    <div className="flex items-center gap-2">
+                      {cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-4 w-4 text-default-400" /> : <User className="h-4 w-4 text-default-400" />}
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold">{cliente.nome}</span>
+                        {cliente.email && <span className="text-xs text-default-400">{cliente.email}</span>}
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </Select>
+            )}
 
             <Input
               label="Número da Procuração"

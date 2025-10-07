@@ -840,6 +840,75 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
 }
 
 // ============================================
+// ACTIONS - BUSCAR CLIENTES PARA SELECT
+// ============================================
+
+/**
+ * Busca clientes disponíveis para o usuário (para usar em selects)
+ * - ADMIN: Todos os clientes do tenant
+ * - ADVOGADO: Apenas clientes vinculados
+ */
+export async function getClientesParaSelect() {
+  try {
+    const session = await getSession();
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado", clientes: [] };
+    }
+
+    const user = session.user as any;
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado", clientes: [] };
+    }
+
+    let whereClause: any = {
+      tenantId: user.tenantId,
+      deletedAt: null,
+    };
+
+    // Se for ADVOGADO, filtrar apenas clientes vinculados
+    if (user.role === "ADVOGADO") {
+      const advogadoId = await getAdvogadoIdFromSession(session);
+      if (!advogadoId) {
+        return { success: false, error: "Advogado não encontrado", clientes: [] };
+      }
+
+      whereClause.advogadoClientes = {
+        some: {
+          advogadoId: advogadoId,
+        },
+      };
+    }
+    // ADMIN vê todos os clientes
+
+    const clientes = await prisma.cliente.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        nome: true,
+        tipoPessoa: true,
+        email: true,
+        documento: true,
+      },
+      orderBy: {
+        nome: "asc",
+      },
+    });
+
+    return {
+      success: true,
+      clientes,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar clientes para select:", error);
+    return {
+      success: false,
+      error: "Erro ao buscar clientes",
+      clientes: [],
+    };
+  }
+}
+
+// ============================================
 // ACTIONS - ANEXAR DOCUMENTO
 // ============================================
 

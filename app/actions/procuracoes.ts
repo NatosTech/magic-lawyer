@@ -1,6 +1,7 @@
 "use server";
 
-import { auth } from "@/auth";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/auth";
 import { prisma } from "@/app/lib/prisma";
 import { ProcuracaoStatus, ProcuracaoEmitidaPor } from "@/app/generated/prisma";
 
@@ -27,7 +28,7 @@ export interface ProcuracaoCreateInput {
 // ============================================
 
 async function getSession() {
-  return await auth();
+  return await getServerSession(authOptions);
 }
 
 async function getAdvogadoIdFromSession(session: any) {

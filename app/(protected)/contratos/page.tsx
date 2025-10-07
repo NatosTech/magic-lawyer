@@ -16,11 +16,16 @@ export default function ContratosPage() {
   return (
     <PermissionGuard permission="canViewAllDocuments">
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 py-12">
-        <header className="space-y-4">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Gestão contratual</p>
-          <h1 className={title({ size: "lg", color: "blue" })}>Contratos e modelos jurídicos</h1>
-          <p className={subtitle({ fullWidth: true })}>Centralize todos os contratos do seu escritório, gerencie modelos reutilizáveis e automatize a criação de documentos contratuais.</p>
-        </header>
+        <div className="flex items-start justify-between gap-4">
+          <header className="space-y-4 flex-1">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Gestão contratual</p>
+            <h1 className={title({ size: "lg", color: "blue" })}>Contratos e modelos jurídicos</h1>
+            <p className={subtitle({ fullWidth: true })}>Centralize todos os contratos do seu escritório, gerencie modelos reutilizáveis e automatize a criação de documentos contratuais.</p>
+          </header>
+          <Button color="secondary" startContent={<span className="text-lg">+</span>} as={NextLink} href="/contratos/novo" size="lg">
+            Novo Contrato
+          </Button>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">

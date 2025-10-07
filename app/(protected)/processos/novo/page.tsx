@@ -10,12 +10,13 @@ import { Checkbox } from "@heroui/checkbox";
 import { Divider } from "@heroui/divider";
 import { ArrowLeft, Save, Scale, User, Building2, MapPin, Calendar, DollarSign } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { title } from "@/components/primitives";
 import { createProcesso, type ProcessoCreateInput } from "@/app/actions/processos";
 import { ProcessoStatus } from "@/app/generated/prisma";
 import { Spinner } from "@heroui/spinner";
+import { useClientesParaSelect } from "@/app/hooks/use-clientes";
 
 export default function NovoProcessoPage() {
   const router = useRouter();
@@ -38,27 +39,8 @@ export default function NovoProcessoPage() {
     segredoJustica: false,
   });
 
-  // Buscar dados necessários para os selects
-  const [clientes, setClientes] = useState<any[]>([]);
-  const [areas, setAreas] = useState<any[]>([]);
-  const [advogados, setAdvogados] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Buscar clientes, áreas e advogados
-    async function loadData() {
-      try {
-        // TODO: Criar Server Actions para buscar esses dados
-        // Por enquanto, vou deixar vazio e você pode implementar depois
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-        setIsLoading(false);
-      }
-    }
-
-    loadData();
-  }, []);
+  // Buscar clientes para o select (apenas se não veio de um cliente)
+  const { clientes, isLoading: isLoadingClientes } = useClientesParaSelect();
 
   const handleSubmit = async () => {
     if (!formData.numero.trim()) {
@@ -96,10 +78,10 @@ export default function NovoProcessoPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoadingClientes && !clienteIdParam) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Spinner size="lg" />
+        <Spinner size="lg" label="Carregando dados..." />
       </div>
     );
   }
@@ -140,6 +122,31 @@ export default function NovoProcessoPage() {
           {/* Seção: Dados Básicos */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-default-600">📋 Dados Básicos</h3>
+
+            {/* Select de Cliente (se não veio de um cliente) */}
+            {!clienteIdParam && (
+              <Select
+                label="Cliente *"
+                placeholder="Selecione um cliente"
+                selectedKeys={formData.clienteId ? [formData.clienteId] : []}
+                onSelectionChange={(keys) => setFormData((prev) => ({ ...prev, clienteId: Array.from(keys)[0] as string }))}
+                isRequired
+                description="Selecione o cliente vinculado a este processo"
+                startContent={<User className="h-4 w-4 text-default-400" />}
+              >
+                {clientes.map((cliente) => (
+                  <SelectItem key={cliente.id} value={cliente.id} textValue={cliente.nome}>
+                    <div className="flex items-center gap-2">
+                      {cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-4 w-4 text-default-400" /> : <User className="h-4 w-4 text-default-400" />}
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold">{cliente.nome}</span>
+                        {cliente.email && <span className="text-xs text-default-400">{cliente.email}</span>}
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </Select>
+            )}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Input

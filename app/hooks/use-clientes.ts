@@ -7,6 +7,7 @@ import {
   getContratosCliente,
   getDocumentosCliente,
   getProcuracoesCliente,
+  getClientesParaSelect,
   type Cliente,
   type ClienteComProcessos,
   type ClientesFiltros,
@@ -214,6 +215,37 @@ export function useProcuracoesCliente(clienteId: string | null) {
 
   return {
     procuracoes: data || [],
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar clientes para select (formulários)
+ * - ADMIN: Todos os clientes do tenant
+ * - ADVOGADO: Apenas clientes vinculados
+ */
+export function useClientesParaSelect() {
+  const { data, error, isLoading, mutate } = useSWR(
+    "clientes-para-select",
+    async () => {
+      const result = await getClientesParaSelect();
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar clientes");
+      }
+      return result.clientes || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    clientes: data || [],
     isLoading,
     isError: !!error,
     error,
