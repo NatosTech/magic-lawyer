@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "@/app/lib/auth";
-import prisma, { convertDecimalFields } from "@/app/lib/prisma";
+import prisma, { convertDecimalFields, convertAllDecimalFields } from "@/app/lib/prisma";
 import { ProcessoStatus, Prisma } from "@/app/generated/prisma";
 
 // ============================================
@@ -292,9 +292,23 @@ export async function getAllProcessos(): Promise<{
       take: 100,
     });
 
+    // Convert Decimal objects to numbers and serialize
+    const convertedProcessos = processos.map((p) => convertAllDecimalFields(p)) as Processo[];
+
+    // Force conversion to plain objects with explicit number conversion
+    const serialized = JSON.parse(
+      JSON.stringify(convertedProcessos, (key, value) => {
+        // If it's a Decimal-like object, convert to number
+        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+          return Number(value.toString());
+        }
+        return value;
+      })
+    );
+
     return {
       success: true,
-      processos: processos.map(p => convertDecimalFields(p, ['valorCausa'])) as Processo[],
+      processos: serialized,
     };
   } catch (error) {
     console.error("Erro ao buscar processos:", error);
@@ -371,9 +385,22 @@ export async function getProcessosDoClienteLogado(): Promise<{
       },
     });
 
+    const convertedProcessos = processos.map((p) => convertAllDecimalFields(p)) as Processo[];
+
+    // Force conversion to plain objects with explicit number conversion
+    const serialized = JSON.parse(
+      JSON.stringify(convertedProcessos, (key, value) => {
+        // If it's a Decimal-like object, convert to number
+        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+          return Number(value.toString());
+        }
+        return value;
+      })
+    );
+
     return {
       success: true,
-      processos: processos.map(p => convertDecimalFields(p, ['valorCausa'])) as Processo[],
+      processos: serialized,
     };
   } catch (error) {
     console.error("Erro ao buscar processos do cliente:", error);
@@ -476,9 +503,22 @@ export async function getProcessosDoCliente(clienteId: string): Promise<{
       },
     });
 
+    const convertedProcessos = processos.map((p) => convertAllDecimalFields(p)) as Processo[];
+
+    // Force conversion to plain objects with explicit number conversion
+    const serialized = JSON.parse(
+      JSON.stringify(convertedProcessos, (key, value) => {
+        // If it's a Decimal-like object, convert to number
+        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+          return Number(value.toString());
+        }
+        return value;
+      })
+    );
+
     return {
       success: true,
-      processos: processos.map(p => convertDecimalFields(p, ['valorCausa'])) as Processo[],
+      processos: serialized,
     };
   } catch (error) {
     console.error("Erro ao buscar processos do cliente:", error);
@@ -649,9 +689,22 @@ export async function getProcessoDetalhado(processoId: string): Promise<{
       return { success: false, error: "Processo não encontrado ou sem acesso" };
     }
 
+    const convertedProcesso = convertAllDecimalFields(processo) as any as ProcessoDetalhado;
+
+    // Force conversion to plain objects with explicit number conversion
+    const serialized = JSON.parse(
+      JSON.stringify(convertedProcesso, (key, value) => {
+        // If it's a Decimal-like object, convert to number
+        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+          return Number(value.toString());
+        }
+        return value;
+      })
+    );
+
     return {
       success: true,
-      processo: convertDecimalFields(processo, ['valorCausa']) as any as ProcessoDetalhado,
+      processo: serialized,
       isCliente,
     };
   } catch (error) {
@@ -1006,9 +1059,22 @@ export async function createProcesso(data: ProcessoCreateInput) {
       },
     });
 
+    const convertedProcesso = convertAllDecimalFields(processo) as any as ProcessoDetalhado;
+
+    // Force conversion to plain objects with explicit number conversion
+    const serialized = JSON.parse(
+      JSON.stringify(convertedProcesso, (key, value) => {
+        // If it's a Decimal-like object, convert to number
+        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+          return Number(value.toString());
+        }
+        return value;
+      })
+    );
+
     return {
       success: true,
-      processo: convertDecimalFields(processo, ['valorCausa']) as any as ProcessoDetalhado,
+      processo: serialized,
     };
   } catch (error) {
     console.error("Erro ao criar processo:", error);

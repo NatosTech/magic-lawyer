@@ -107,34 +107,34 @@ export function ProcessosContent() {
   // Extrair dados únicos para filtros
   const areasUnicas = useMemo(() => {
     if (!processos || !Array.isArray(processos)) return [];
-    const areas = processos.map((p) => p.area?.nome).filter(Boolean);
-    return [...new Set(areas)];
+    const areas = processos.map((p: any) => p.area?.nome).filter(Boolean);
+    return Array.from(new Set(areas));
   }, [processos]);
 
   const advogadosUnicos = useMemo(() => {
     if (!processos || !Array.isArray(processos)) return [];
-    const advogados = processos.map((p) => p.advogadoResponsavel?.nome).filter(Boolean);
-    return [...new Set(advogados)];
+    const advogados = processos.map((p: any) => p.advogadoResponsavel?.usuario?.firstName + " " + p.advogadoResponsavel?.usuario?.lastName).filter(Boolean);
+    return Array.from(new Set(advogados));
   }, [processos]);
 
   const comarcasUnicas = useMemo(() => {
     if (!processos || !Array.isArray(processos)) return [];
-    const comarcas = processos.map((p) => p.comarca).filter(Boolean);
-    return [...new Set(comarcas)];
+    const comarcas = processos.map((p: any) => p.comarca).filter(Boolean);
+    return Array.from(new Set(comarcas));
   }, [processos]);
 
   // Filtrar processos
   const processosFiltrados = useMemo(() => {
     if (!processos || !Array.isArray(processos)) return [];
-    return processos.filter((processo) => {
+    return processos.filter((processo: any) => {
       // Busca geral
       if (filtros.busca) {
         const busca = filtros.busca.toLowerCase();
         const matchBusca =
           processo.numero.toLowerCase().includes(busca) ||
           processo.titulo?.toLowerCase().includes(busca) ||
-          processo.cliente.nome.toLowerCase().includes(busca) ||
-          processo.advogadoResponsavel?.nome?.toLowerCase().includes(busca);
+          processo.cliente?.nome?.toLowerCase().includes(busca) ||
+          (processo.advogadoResponsavel?.usuario?.firstName + " " + processo.advogadoResponsavel?.usuario?.lastName)?.toLowerCase().includes(busca);
         if (!matchBusca) return false;
       }
 
@@ -149,7 +149,7 @@ export function ProcessosContent() {
       }
 
       // Advogado
-      if (filtros.advogadoId && processo.advogadoResponsavel?.nome !== filtros.advogadoId) {
+      if (filtros.advogadoId && processo.advogadoResponsavel?.usuario?.firstName + " " + processo.advogadoResponsavel?.usuario?.lastName !== filtros.advogadoId) {
         return false;
       }
 
@@ -169,44 +169,47 @@ export function ProcessosContent() {
       }
 
       // Valor da causa
-      if (filtros.valorMinimo && processo.valorCausa && Number(processo.valorCausa) < Number(filtros.valorMinimo)) {
+      if (filtros.valorMinimo && processo.valorCausa && !isNaN(Number(processo.valorCausa)) && Number(processo.valorCausa) < Number(filtros.valorMinimo)) {
         return false;
       }
-      if (filtros.valorMaximo && processo.valorCausa && Number(processo.valorCausa) > Number(filtros.valorMaximo)) {
+      if (filtros.valorMaximo && processo.valorCausa && !isNaN(Number(processo.valorCausa)) && Number(processo.valorCausa) > Number(filtros.valorMaximo)) {
         return false;
       }
 
       // Data de distribuição
-      if (filtros.dataDistribuicaoInicio && processo.dataDistribuicao) {
+      if (filtros.dataDistribuicaoInicio && processo.dataDistribuicao && DateUtils.isValid(processo.dataDistribuicao)) {
         const dataInicio = new Date(filtros.dataDistribuicaoInicio);
         const dataProcesso = new Date(processo.dataDistribuicao);
-        if (dataProcesso < dataInicio) return false;
+        if (!isNaN(dataProcesso.getTime()) && dataProcesso < dataInicio) return false;
       }
-      if (filtros.dataDistribuicaoFim && processo.dataDistribuicao) {
+      if (filtros.dataDistribuicaoFim && processo.dataDistribuicao && DateUtils.isValid(processo.dataDistribuicao)) {
         const dataFim = new Date(filtros.dataDistribuicaoFim);
         const dataProcesso = new Date(processo.dataDistribuicao);
-        if (dataProcesso > dataFim) return false;
+        if (!isNaN(dataProcesso.getTime()) && dataProcesso > dataFim) return false;
       }
 
       // Prazo de vencimento
-      if (filtros.prazoVencimento && processo.prazoPrincipal) {
+      if (filtros.prazoVencimento && processo.prazoPrincipal && DateUtils.isValid(processo.prazoPrincipal)) {
         const hoje = new Date();
         const prazo = new Date(processo.prazoPrincipal);
-        const diasRestantes = Math.ceil((prazo.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
 
-        switch (filtros.prazoVencimento) {
-          case "vencido":
-            if (diasRestantes >= 0) return false;
-            break;
-          case "vencendo_hoje":
-            if (diasRestantes !== 0) return false;
-            break;
-          case "vencendo_7_dias":
-            if (diasRestantes < 0 || diasRestantes > 7) return false;
-            break;
-          case "vencendo_30_dias":
-            if (diasRestantes < 0 || diasRestantes > 30) return false;
-            break;
+        if (!isNaN(prazo.getTime())) {
+          const diasRestantes = Math.ceil((prazo.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+
+          switch (filtros.prazoVencimento) {
+            case "vencido":
+              if (diasRestantes >= 0) return false;
+              break;
+            case "vencendo_hoje":
+              if (diasRestantes !== 0) return false;
+              break;
+            case "vencendo_7_dias":
+              if (diasRestantes < 0 || diasRestantes > 7) return false;
+              break;
+            case "vencendo_30_dias":
+              if (diasRestantes < 0 || diasRestantes > 30) return false;
+              break;
+          }
         }
       }
 
@@ -349,9 +352,7 @@ export function ProcessosContent() {
                   }}
                 >
                   {areasUnicas.map((area) => (
-                    <SelectItem key={area} value={area}>
-                      {area}
-                    </SelectItem>
+                    <SelectItem key={area}>{area}</SelectItem>
                   ))}
                 </Select>
               </div>
@@ -368,9 +369,7 @@ export function ProcessosContent() {
                   }}
                 >
                   {advogadosUnicos.map((advogado) => (
-                    <SelectItem key={advogado} value={advogado}>
-                      {advogado}
-                    </SelectItem>
+                    <SelectItem key={advogado}>{advogado}</SelectItem>
                   ))}
                 </Select>
               </div>
@@ -387,7 +386,7 @@ export function ProcessosContent() {
                   }}
                 >
                   {(clientes || []).map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.id}>
+                    <SelectItem key={cliente.id}>
                       <div className="flex items-center gap-2">
                         {cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-4 w-4 text-default-400" /> : <User className="h-4 w-4 text-default-400" />}
                         <span>{cliente.nome}</span>
@@ -409,9 +408,7 @@ export function ProcessosContent() {
                   }}
                 >
                   {comarcasUnicas.map((comarca) => (
-                    <SelectItem key={comarca} value={comarca}>
-                      {comarca}
-                    </SelectItem>
+                    <SelectItem key={comarca}>{comarca}</SelectItem>
                   ))}
                 </Select>
               </div>
@@ -430,13 +427,13 @@ export function ProcessosContent() {
                     }));
                   }}
                 >
-                  <SelectItem key="true" value="true">
+                  <SelectItem key="true">
                     <div className="flex items-center gap-2">
                       <Shield className="h-4 w-4 text-warning" />
                       <span>Em Segredo</span>
                     </div>
                   </SelectItem>
-                  <SelectItem key="false" value="false">
+                  <SelectItem key="false">
                     <div className="flex items-center gap-2">
                       <Eye className="h-4 w-4 text-success" />
                       <span>Público</span>
@@ -486,25 +483,25 @@ export function ProcessosContent() {
                     setFiltros((prev) => ({ ...prev, prazoVencimento: selectedKey || "" }));
                   }}
                 >
-                  <SelectItem key="vencido" value="vencido">
+                  <SelectItem key="vencido">
                     <div className="flex items-center gap-2">
                       <XCircle className="h-4 w-4 text-danger" />
                       <span>Vencido</span>
                     </div>
                   </SelectItem>
-                  <SelectItem key="vencendo_hoje" value="vencendo_hoje">
+                  <SelectItem key="vencendo_hoje">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="h-4 w-4 text-warning" />
                       <span>Vencendo Hoje</span>
                     </div>
                   </SelectItem>
-                  <SelectItem key="vencendo_7_dias" value="vencendo_7_dias">
+                  <SelectItem key="vencendo_7_dias">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-warning" />
                       <span>Vencendo em 7 dias</span>
                     </div>
                   </SelectItem>
-                  <SelectItem key="vencendo_30_dias" value="vencendo_30_dias">
+                  <SelectItem key="vencendo_30_dias">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-primary" />
                       <span>Vencendo em 30 dias</span>
@@ -538,80 +535,103 @@ export function ProcessosContent() {
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {processosFiltrados.map((processo: any) => (
-              <Card key={processo.id} className="border border-default-200 hover:border-primary transition-all hover:shadow-lg cursor-pointer" isPressable as={Link} href={`/processos/${processo.id}`}>
-                <CardHeader className="flex flex-col items-start gap-2 pb-2">
-                  <div className="flex w-full items-start justify-between">
-                    <Chip size="sm" variant="flat" color={getStatusColor(processo.status)} startContent={getStatusIcon(processo.status)}>
-                      {getStatusLabel(processo.status)}
-                    </Chip>
-                    {processo.segredoJustica && <Shield className="h-4 w-4 text-warning" />}
-                  </div>
-                  <div className="w-full">
-                    <p className="text-sm font-semibold text-default-700">{processo.numero}</p>
-                    {processo.titulo && <p className="mt-1 text-xs text-default-500 line-clamp-2">{processo.titulo}</p>}
-                  </div>
-                </CardHeader>
-                <Divider />
-                <CardBody className="gap-3 pt-3">
-                  {processo.area && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <Briefcase className="h-3 w-3 text-default-400" />
-                      <span className="text-default-600">{processo.area.nome}</span>
+            {processosFiltrados.map((processo: any) => {
+              // Debug temporário para verificar valorCausa
+              if (processo.valorCausa !== null && processo.valorCausa !== undefined) {
+                console.log(
+                  "Processo:",
+                  processo.numero,
+                  "valorCausa:",
+                  processo.valorCausa,
+                  "type:",
+                  typeof processo.valorCausa,
+                  "constructor:",
+                  processo.valorCausa.constructor?.name,
+                  "isNumber:",
+                  !isNaN(Number(processo.valorCausa))
+                );
+              }
+              return (
+                <Card
+                  key={processo.id}
+                  className="border border-default-200 hover:border-primary transition-all hover:shadow-lg cursor-pointer"
+                  isPressable
+                  as={Link}
+                  href={`/processos/${processo.id}`}
+                >
+                  <CardHeader className="flex flex-col items-start gap-2 pb-2">
+                    <div className="flex w-full items-start justify-between">
+                      <Chip size="sm" variant="flat" color={getStatusColor(processo.status)} startContent={getStatusIcon(processo.status)}>
+                        {getStatusLabel(processo.status)}
+                      </Chip>
+                      {processo.segredoJustica && <Shield className="h-4 w-4 text-warning" />}
                     </div>
-                  )}
-                  {processo.advogadoResponsavel && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <User className="h-3 w-3 text-default-400" />
-                      <span className="text-default-600">
-                        {processo.advogadoResponsavel.usuario.firstName} {processo.advogadoResponsavel.usuario.lastName}
-                      </span>
+                    <div className="w-full">
+                      <p className="text-sm font-semibold text-default-700">{processo.numero}</p>
+                      {processo.titulo && <p className="mt-1 text-xs text-default-500 line-clamp-2">{processo.titulo}</p>}
                     </div>
-                  )}
-                  {processo.cliente && (
-                    <div className="flex items-center gap-2 text-xs">
-                      {processo.cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-3 w-3 text-default-400" /> : <User className="h-3 w-3 text-default-400" />}
-                      <span className="text-default-600">{processo.cliente.nome}</span>
-                    </div>
-                  )}
-                  {processo.comarca && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <MapPin className="h-3 w-3 text-default-400" />
-                      <span className="text-default-600">{processo.comarca}</span>
-                    </div>
-                  )}
-                  {processo.dataDistribuicao && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <Calendar className="h-3 w-3 text-default-400" />
-                      <span className="text-default-600">{DateUtils.formatDate(processo.dataDistribuicao)}</span>
-                    </div>
-                  )}
-                  {processo.prazoPrincipal && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <Clock className="h-3 w-3 text-warning" />
-                      <span className="text-warning-600">Prazo: {DateUtils.formatDate(processo.prazoPrincipal)}</span>
-                    </div>
-                  )}
-                  {processo.valorCausa && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <DollarSign className="h-3 w-3 text-success" />
-                      <span className="text-success-600">R$ {Number(processo.valorCausa).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                    </div>
-                  )}
+                  </CardHeader>
+                  <Divider />
+                  <CardBody className="gap-3 pt-3">
+                    {processo.area && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <Briefcase className="h-3 w-3 text-default-400" />
+                        <span className="text-default-600">{processo.area.nome}</span>
+                      </div>
+                    )}
+                    {processo.advogadoResponsavel && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <User className="h-3 w-3 text-default-400" />
+                        <span className="text-default-600">
+                          {processo.advogadoResponsavel.usuario.firstName} {processo.advogadoResponsavel.usuario.lastName}
+                        </span>
+                      </div>
+                    )}
+                    {processo.cliente && (
+                      <div className="flex items-center gap-2 text-xs">
+                        {processo.cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-3 w-3 text-default-400" /> : <User className="h-3 w-3 text-default-400" />}
+                        <span className="text-default-600">{processo.cliente.nome}</span>
+                      </div>
+                    )}
+                    {processo.comarca && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <MapPin className="h-3 w-3 text-default-400" />
+                        <span className="text-default-600">{processo.comarca}</span>
+                      </div>
+                    )}
+                    {processo.dataDistribuicao && DateUtils.isValid(processo.dataDistribuicao) && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <Calendar className="h-3 w-3 text-default-400" />
+                        <span className="text-default-600">{DateUtils.formatDate(processo.dataDistribuicao)}</span>
+                      </div>
+                    )}
+                    {processo.prazoPrincipal && DateUtils.isValid(processo.prazoPrincipal) && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <Clock className="h-3 w-3 text-warning" />
+                        <span className="text-warning-600">Prazo: {DateUtils.formatDate(processo.prazoPrincipal)}</span>
+                      </div>
+                    )}
+                    {processo.valorCausa !== null && processo.valorCausa !== undefined && !isNaN(Number(processo.valorCausa)) && Number(processo.valorCausa) > 0 && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <DollarSign className="h-3 w-3 text-success" />
+                        <span className="text-success-600">R$ {Number(processo.valorCausa).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
 
-                  <Divider className="my-2" />
+                    <Divider className="my-2" />
 
-                  <div className="flex flex-wrap gap-2">
-                    <Chip size="sm" variant="flat">
-                      {processo._count.documentos} docs
-                    </Chip>
-                    <Chip size="sm" variant="flat">
-                      {processo._count.eventos} eventos
-                    </Chip>
-                  </div>
-                </CardBody>
-              </Card>
-            ))}
+                    <div className="flex flex-wrap gap-2">
+                      <Chip size="sm" variant="flat">
+                        {processo._count.documentos} docs
+                      </Chip>
+                      <Chip size="sm" variant="flat">
+                        {processo._count.eventos} eventos
+                      </Chip>
+                    </div>
+                  </CardBody>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
