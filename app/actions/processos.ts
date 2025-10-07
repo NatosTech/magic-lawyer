@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "@/app/lib/auth";
-import prisma from "@/app/lib/prisma";
+import prisma, { convertDecimalFields } from "@/app/lib/prisma";
 import { ProcessoStatus, Prisma } from "@/app/generated/prisma";
 
 // ============================================
@@ -294,7 +294,7 @@ export async function getAllProcessos(): Promise<{
 
     return {
       success: true,
-      processos: processos,
+      processos: processos.map(p => convertDecimalFields(p, ['valorCausa'])) as Processo[],
     };
   } catch (error) {
     console.error("Erro ao buscar processos:", error);
@@ -373,7 +373,7 @@ export async function getProcessosDoClienteLogado(): Promise<{
 
     return {
       success: true,
-      processos: processos,
+      processos: processos.map(p => convertDecimalFields(p, ['valorCausa'])) as Processo[],
     };
   } catch (error) {
     console.error("Erro ao buscar processos do cliente:", error);
@@ -478,7 +478,7 @@ export async function getProcessosDoCliente(clienteId: string): Promise<{
 
     return {
       success: true,
-      processos: processos,
+      processos: processos.map(p => convertDecimalFields(p, ['valorCausa'])) as Processo[],
     };
   } catch (error) {
     console.error("Erro ao buscar processos do cliente:", error);
@@ -651,7 +651,7 @@ export async function getProcessoDetalhado(processoId: string): Promise<{
 
     return {
       success: true,
-      processo: processo,
+      processo: convertDecimalFields(processo, ['valorCausa']) as any as ProcessoDetalhado,
       isCliente,
     };
   } catch (error) {
@@ -1008,7 +1008,7 @@ export async function createProcesso(data: ProcessoCreateInput) {
 
     return {
       success: true,
-      processo: processo,
+      processo: convertDecimalFields(processo, ['valorCausa']) as any as ProcessoDetalhado,
     };
   } catch (error) {
     console.error("Erro ao criar processo:", error);
