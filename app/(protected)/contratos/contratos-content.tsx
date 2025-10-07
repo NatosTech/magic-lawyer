@@ -412,7 +412,7 @@ export default function ContratosContent() {
                     }}
                   >
                     {procuracoes.map((procuracao: any) => (
-                      <SelectItem key={procuracao.id}>
+                      <SelectItem key={procuracao.id} textValue={procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}>
                         <div className="flex flex-col">
                           <span className="font-semibold">{procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}</span>
                           <span className="text-xs text-default-400">{procuracao.processos.length} processo(s) vinculado(s)</span>
