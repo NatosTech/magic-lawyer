@@ -928,7 +928,7 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
         acao: "RESET_SENHA_CLIENTE",
         entidade: "Usuario",
         entidadeId: cliente.usuarioId,
-        detalhes: {
+        dados: {
           clienteId: cliente.id,
           clienteNome: cliente.nome,
           usuarioEmail: cliente.usuario.email,
@@ -937,7 +937,7 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
           resetadoPorRole: user.role,
           dataReset: new Date().toISOString(),
         },
-        ipAddress: null,
+        ip: null,
       },
     });
 

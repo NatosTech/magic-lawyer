@@ -19,6 +19,7 @@ Bem-vindo à documentação completa do **Magic Lawyer** - Sistema de Gestão Ju
 - [**CLOUDINARY_FOLDER_STRUCTURE.md**](./CLOUDINARY_FOLDER_STRUCTURE.md) - Estrutura de pastas no Cloudinary
 - [**CLOUDINARY_ORGANIZATION.md**](./CLOUDINARY_ORGANIZATION.md) - Organização completa de arquivos
 - [**PROJECT_STRUCTURE.md**](./PROJECT_STRUCTURE.md) - Estrutura detalhada do projeto
+- [**AUDIT_SCHEMA.md**](./AUDIT_SCHEMA.md) - ⭐ **Schema de Auditoria Isolado**
 
 ### 👥 **Administração**
 - [**ADMIN_README.md**](./ADMIN_README.md) - Guia para administradores
@@ -47,8 +48,9 @@ O **Magic Lawyer** é um sistema completo de gestão jurídica que oferece:
 ### **Backend**
 - **Next.js Server Actions** para API
 - **Prisma ORM** para banco de dados
-- **PostgreSQL** com multi-schema
+- **PostgreSQL** com multi-schema (magiclawyer, support, audit)
 - **NextAuth.js** para autenticação
+- **Schema de Auditoria Isolado** para compliance e LGPD
 
 ### **Infraestrutura**
 - **Cloudinary** para armazenamento de arquivos
@@ -75,6 +77,7 @@ magic-lawyer/
 - **Autenticação robusta** - NextAuth.js com JWT
 - **Autorização granular** - Permissões por role
 - **Validação de dados** - Server Actions com validação
+- **Auditoria Completa** - Schema isolado para logs imutáveis (LGPD)
 
 ## 🚀 **Próximos Passos**
 
