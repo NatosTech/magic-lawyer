@@ -1,5 +1,11 @@
 import useSWR from "swr";
-import { getAllProcuracoes, getProcuracaoById, getProcuracoesCliente } from "@/app/actions/procuracoes";
+
+import {
+  getAllProcuracoes,
+  getProcuracaoById,
+  getProcuracoesCliente,
+  type ProcuracaoListItem,
+} from "@/app/actions/procuracoes";
 
 // ============================================
 // HOOKS
@@ -9,19 +15,21 @@ import { getAllProcuracoes, getProcuracaoById, getProcuracoesCliente } from "@/a
  * Hook para buscar todas as procurações
  */
 export function useAllProcuracoes() {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<ProcuracaoListItem[]>(
     "all-procuracoes",
     async () => {
       const result = await getAllProcuracoes();
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar procurações");
       }
+
       return result.procuracoes || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -38,20 +46,22 @@ export function useAllProcuracoes() {
  * Hook para buscar uma procuração específica
  */
 export function useProcuracao(procuracaoId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<ProcuracaoListItem | null>(
     procuracaoId ? `procuracao-${procuracaoId}` : null,
     async () => {
       if (!procuracaoId) return null;
       const result = await getProcuracaoById(procuracaoId);
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar procuração");
       }
-      return result.procuracao;
+
+      return result.procuracao ?? null;
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -68,20 +78,24 @@ export function useProcuracao(procuracaoId: string | null) {
  * Hook para buscar procurações de um cliente
  */
 export function useProcuracoesCliente(clienteId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<ProcuracaoListItem[]>(
     clienteId ? `procuracoes-cliente-${clienteId}` : null,
     async () => {
       if (!clienteId) return [];
       const result = await getProcuracoesCliente(clienteId);
+
       if (!result.success) {
-        throw new Error(result.error || "Erro ao carregar procurações do cliente");
+        throw new Error(
+          result.error || "Erro ao carregar procurações do cliente",
+        );
       }
+
       return result.procuracoes || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {

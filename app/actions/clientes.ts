@@ -1,9 +1,10 @@
 "use server";
 
-import { getSession } from "@/app/lib/auth";
-import prisma from "@/app/lib/prisma";
-import { TipoPessoa, Prisma } from "@/app/generated/prisma";
 import bcrypt from "bcryptjs";
+
+import { getSession } from "@/app/lib/auth";
+import prisma, { toNumber } from "@/app/lib/prisma";
+import { TipoPessoa, Prisma } from "@/app/generated/prisma";
 
 // ============================================
 // TYPES
@@ -39,6 +40,9 @@ export interface ClienteComProcessos extends Cliente {
   processos: {
     id: string;
     numero: string;
+    numeroCnj: string | null;
+    grau: string | null;
+    fase: string | null;
     titulo: string | null;
     status: string;
     areaId: string | null;
@@ -115,29 +119,33 @@ export async function getClientesAdvogado(): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
 
     // Buscar ID do advogado
     const advogadoId = await getAdvogadoIdFromSession(session);
+
     if (!advogadoId) {
       return { success: false, error: "Advogado não encontrado" };
     }
 
-    // Buscar clientes que o advogado criou (relacionamento direto)
+    // Buscar clientes vinculados ao advogado através da tabela AdvogadoCliente
     const clientesRaw = await prisma.cliente.findMany({
       where: {
         tenantId: user.tenantId,
         deletedAt: null,
-        // Cliente criado pelo advogado (através do usuário criado)
-        usuario: {
-          createdById: user.id,
+        advogadoClientes: {
+          some: {
+            advogadoId: advogadoId,
+          },
         },
       },
       include: {
@@ -160,6 +168,7 @@ export async function getClientesAdvogado(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar clientes do advogado:", error);
+
     return {
       success: false,
       error: "Erro ao buscar clientes",
@@ -177,6 +186,7 @@ export async function getAllClientesTenant(): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
@@ -185,7 +195,10 @@ export async function getAllClientesTenant(): Promise<{
 
     // Verificar se é ADMIN
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-      return { success: false, error: "Acesso negado. Apenas administradores." };
+      return {
+        success: false,
+        error: "Acesso negado. Apenas administradores.",
+      };
     }
 
     if (!user.tenantId) {
@@ -217,6 +230,7 @@ export async function getAllClientesTenant(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar todos os clientes:", error);
+
     return {
       success: false,
       error: "Erro ao buscar clientes",
@@ -238,11 +252,13 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -256,6 +272,7 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
 
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
       const advogadoId = await getAdvogadoIdFromSession(session);
+
       if (!advogadoId) {
         return { success: false, error: "Acesso negado" };
       }
@@ -324,7 +341,7 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
       ...clienteRaw,
       processos: clienteRaw.processos.map((p: any) => ({
         ...p,
-        valorCausa: p.valorCausa,
+        valorCausa: toNumber(p.valorCausa),
       })),
     };
 
@@ -334,6 +351,7 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar cliente com processos:", error);
+
     return {
       success: false,
       error: "Erro ao buscar cliente",
@@ -351,11 +369,13 @@ export async function getClienteById(clienteId: string): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -369,6 +389,7 @@ export async function getClienteById(clienteId: string): Promise<{
     // Se não for ADMIN, verificar se é advogado vinculado
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
       const advogadoId = await getAdvogadoIdFromSession(session);
+
       if (!advogadoId) {
         return { success: false, error: "Acesso negado" };
       }
@@ -403,6 +424,7 @@ export async function getClienteById(clienteId: string): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar cliente:", error);
+
     return {
       success: false,
       error: "Erro ao buscar cliente",
@@ -437,10 +459,13 @@ export interface ClienteCreateInput {
 function generatePassword(length: number = 12): string {
   const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*";
   let password = "";
+
   for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(Math.random() * charset.length);
+
     password += charset[randomIndex];
   }
+
   return password;
 }
 
@@ -458,11 +483,13 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -476,13 +503,18 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
 
     // Validar email se for criar usuário
     if (criarUsuario && !clienteData.email) {
-      return { success: false, error: "Email é obrigatório para criar usuário de acesso" };
+      return {
+        success: false,
+        error: "Email é obrigatório para criar usuário de acesso",
+      };
     }
 
     // Se não forneceu advogadosIds, vincular automaticamente ao advogado logado
     let advogadosParaVincular = advogadosIds;
+
     if (!advogadosParaVincular && user.role === "ADVOGADO") {
       const advogadoLogado = await getAdvogadoIdFromSession(session);
+
       if (advogadoLogado) {
         advogadosParaVincular = [advogadoLogado];
       }
@@ -502,7 +534,10 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
       });
 
       if (superAdminExistente) {
-        return { success: false, error: "Este email pertence a um Super Admin e não pode ser usado para clientes" };
+        return {
+          success: false,
+          error: "Este email pertence a um Super Admin e não pode ser usado para clientes",
+        };
       }
 
       // Verificar se já existe usuário com esse email no tenant
@@ -514,7 +549,10 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
       });
 
       if (usuarioExistente) {
-        return { success: false, error: "Já existe um usuário com este email no sistema" };
+        return {
+          success: false,
+          error: "Já existe um usuário com este email no sistema",
+        };
       }
 
       // Gerar senha aleatória
@@ -581,6 +619,7 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
     };
   } catch (error) {
     console.error("Erro ao criar cliente:", error);
+
     return {
       success: false,
       error: "Erro ao criar cliente",
@@ -617,11 +656,13 @@ export async function updateCliente(
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -675,6 +716,7 @@ export async function updateCliente(
     };
   } catch (error) {
     console.error("Erro ao atualizar cliente:", error);
+
     return {
       success: false,
       error: "Erro ao atualizar cliente",
@@ -691,11 +733,13 @@ export async function deleteCliente(clienteId: string): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -727,6 +771,7 @@ export async function deleteCliente(clienteId: string): Promise<{
     return { success: true };
   } catch (error) {
     console.error("Erro ao deletar cliente:", error);
+
     return {
       success: false,
       error: "Erro ao deletar cliente",
@@ -754,11 +799,13 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -771,6 +818,7 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
     // Se não for ADMIN, filtrar apenas clientes do advogado
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
       const advogadoId = await getAdvogadoIdFromSession(session);
+
       if (!advogadoId) {
         return { success: false, error: "Acesso negado" };
       }
@@ -831,6 +879,7 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar clientes com filtros:", error);
+
     return {
       success: false,
       error: "Erro ao buscar clientes",
@@ -850,11 +899,13 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
 export async function getClientesParaSelect() {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado", clientes: [] };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado", clientes: [] };
     }
@@ -867,8 +918,13 @@ export async function getClientesParaSelect() {
     // Se for ADVOGADO, filtrar apenas clientes vinculados
     if (user.role === "ADVOGADO") {
       const advogadoId = await getAdvogadoIdFromSession(session);
+
       if (!advogadoId) {
-        return { success: false, error: "Advogado não encontrado", clientes: [] };
+        return {
+          success: false,
+          error: "Advogado não encontrado",
+          clientes: [],
+        };
       }
 
       whereClause.advogadoClientes = {
@@ -899,6 +955,7 @@ export async function getClientesParaSelect() {
     };
   } catch (error) {
     console.error("Erro ao buscar clientes para select:", error);
+
     return {
       success: false,
       error: "Erro ao buscar clientes",
@@ -926,11 +983,13 @@ export interface DocumentoCreateInput {
 export async function anexarDocumentoCliente(clienteId: string, formData: FormData) {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -951,6 +1010,7 @@ export async function anexarDocumentoCliente(clienteId: string, formData: FormDa
     // Se não for ADMIN, verificar se é advogado vinculado
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
       const advogadoId = await getAdvogadoIdFromSession(session);
+
       if (!advogadoId) {
         return { success: false, error: "Acesso negado" };
       }
@@ -1038,6 +1098,7 @@ export async function anexarDocumentoCliente(clienteId: string, formData: FormDa
     };
   } catch (error) {
     console.error("Erro ao anexar documento:", error);
+
     return {
       success: false,
       error: "Erro ao anexar documento",
@@ -1055,13 +1116,19 @@ export async function anexarDocumentoCliente(clienteId: string, formData: FormDa
 export async function getProcuracoesCliente(clienteId: string) {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autenticado", procuracoes: [] };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
-      return { success: false, error: "Tenant não encontrado", procuracoes: [] };
+      return {
+        success: false,
+        error: "Tenant não encontrado",
+        procuracoes: [],
+      };
     }
 
     // Buscar cliente para verificar tenantId
@@ -1074,7 +1141,11 @@ export async function getProcuracoesCliente(clienteId: string) {
     });
 
     if (!cliente) {
-      return { success: false, error: "Cliente não encontrado", procuracoes: [] };
+      return {
+        success: false,
+        error: "Cliente não encontrado",
+        procuracoes: [],
+      };
     }
 
     // Se não for ADMIN, verificar se é ADVOGADO vinculado
@@ -1088,7 +1159,11 @@ export async function getProcuracoesCliente(clienteId: string) {
         });
 
         if (!advogado) {
-          return { success: false, error: "Advogado não encontrado", procuracoes: [] };
+          return {
+            success: false,
+            error: "Advogado não encontrado",
+            procuracoes: [],
+          };
         }
 
         // Verificar vínculo
@@ -1129,7 +1204,10 @@ export async function getProcuracoesCliente(clienteId: string) {
         outorgados: {
           include: {
             advogado: {
-              include: {
+              select: {
+                id: true,
+                oabNumero: true,
+                oabUf: true,
                 usuario: {
                   select: {
                     firstName: true,
@@ -1167,7 +1245,12 @@ export async function getProcuracoesCliente(clienteId: string) {
     return { success: true, procuracoes: procuracoes };
   } catch (error) {
     console.error("Erro ao buscar procurações:", error);
-    return { success: false, error: "Erro ao buscar procurações", procuracoes: [] };
+
+    return {
+      success: false,
+      error: "Erro ao buscar procurações",
+      procuracoes: [],
+    };
   }
 }
 
@@ -1188,11 +1271,13 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -1207,6 +1292,7 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
     // Se não for ADMIN, verificar se é advogado vinculado ao cliente
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
       const advogadoId = await getAdvogadoIdFromSession(session);
+
       if (!advogadoId) {
         return { success: false, error: "Acesso negado" };
       }
@@ -1282,6 +1368,7 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
     };
   } catch (error) {
     console.error("Erro ao resetar senha do cliente:", error);
+
     return {
       success: false,
       error: "Erro ao resetar senha",
@@ -1303,11 +1390,13 @@ export async function getContratosCliente(clienteId: string): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -1322,6 +1411,7 @@ export async function getContratosCliente(clienteId: string): Promise<{
     // Se não for ADMIN, verificar se é advogado vinculado
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
       const advogadoId = await getAdvogadoIdFromSession(session);
+
       if (!advogadoId) {
         return { success: false, error: "Acesso negado" };
       }
@@ -1373,10 +1463,10 @@ export async function getContratosCliente(clienteId: string): Promise<{
     // Converter Decimal para number
     const contratosFormatted = contratos.map((c: any) => ({
       ...c,
-      valor: c.valor,
-      comissaoAdvogado: c.comissaoAdvogado,
-      percentualAcaoGanha: c.percentualAcaoGanha,
-      valorAcaoGanha: c.valorAcaoGanha,
+      valor: toNumber(c.valor),
+      comissaoAdvogado: toNumber(c.comissaoAdvogado),
+      percentualAcaoGanha: toNumber(c.percentualAcaoGanha),
+      valorAcaoGanha: toNumber(c.valorAcaoGanha),
     }));
 
     return {
@@ -1385,6 +1475,7 @@ export async function getContratosCliente(clienteId: string): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar contratos do cliente:", error);
+
     return {
       success: false,
       error: "Erro ao buscar contratos",
@@ -1402,11 +1493,13 @@ export async function getDocumentosCliente(clienteId: string): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -1421,6 +1514,7 @@ export async function getDocumentosCliente(clienteId: string): Promise<{
     // Se não for ADMIN, verificar se é advogado vinculado
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
       const advogadoId = await getAdvogadoIdFromSession(session);
+
       if (!advogadoId) {
         return { success: false, error: "Acesso negado" };
       }
@@ -1473,6 +1567,7 @@ export async function getDocumentosCliente(clienteId: string): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar documentos do cliente:", error);
+
     return {
       success: false,
       error: "Erro ao buscar documentos",

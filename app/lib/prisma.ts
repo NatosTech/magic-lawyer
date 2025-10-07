@@ -1,19 +1,50 @@
-import { PrismaClient } from "../generated/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
+
+import { PrismaClient } from "../generated/prisma";
 
 // Evita criar múltiplas instâncias no hot-reload do Next.js (dev)
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
+  consolePatched?: boolean;
 };
 
-// Criar Prisma Client
+// Bloquear APENAS a mensagem gigante de plataforma - EXECUTAR APENAS UMA VEZ
+if (!globalForPrisma.consolePatched) {
+  const originalConsoleError = console.error;
+  const originalConsoleWarn = console.warn;
+
+  console.error = (...args: any[]) => {
+    const str = args.join(" ");
+
+    // Bloquear APENAS a mensagem gigante de checkPlatformCaching
+    if (
+      str.includes("checkPlatformCaching") ||
+      str.includes("prisma:info") ||
+      str.length > 5000 // Apenas mensagens MUITO longas (a gigante tem +10k caracteres)
+    ) {
+      return;
+    }
+
+    originalConsoleError.apply(console, args);
+  };
+
+  console.warn = (...args: any[]) => {
+    const str = args.join(" ");
+    if (str.includes("checkPlatformCaching")) {
+      return;
+    }
+    originalConsoleWarn.apply(console, args);
+  };
+
+  globalForPrisma.consolePatched = true;
+}
+
+// Criar Prisma Client com logs desabilitados
 const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: [
-      { level: "error", emit: "stdout" },
-      { level: "warn", emit: "stdout" },
-    ],
+    log: [], // Desabilita todos os logs do Prisma
+    errorFormat: "minimal", // Formato mínimo de erro
   });
 
 if (process.env.NODE_ENV !== "production") {
@@ -29,6 +60,7 @@ export function toNumber(value: Decimal | null | undefined): number | null {
 
   // Handle different Decimal representations
   let num: number;
+
   if (typeof value === "number") {
     num = value;
   } else if (typeof value === "string") {
@@ -43,10 +75,12 @@ export function toNumber(value: Decimal | null | undefined): number | null {
       const exponent = value.e || 0;
       const sign = value.s || 1;
       const numStr = sign === -1 ? "-" : "";
+
       if (exponent >= 0) {
         num = Number(numStr + digits + "0".repeat(exponent));
       } else {
         const pos = digits.length + exponent;
+
         if (pos <= 0) {
           num = Number(numStr + "0." + "0".repeat(-pos) + digits);
         } else {
@@ -76,6 +110,7 @@ export function convertDecimalFields<T extends Record<string, any>>(obj: T, fiel
   // Converter campos especificados
   for (const field of fields) {
     const value = result[field];
+
     if (value instanceof Decimal) {
       result[field] = toNumber(value);
     }
@@ -135,6 +170,7 @@ export function convertAllDecimalFields<T extends Record<string, any>>(obj: T): 
         } else if (item instanceof Date) {
           return item.toISOString();
         }
+
         return item;
       });
     } else if (typeof value === "object" && value !== null) {

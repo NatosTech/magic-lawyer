@@ -44,27 +44,49 @@ export function getSelfEditPermissions(role: UserRole): SelfEditPermissions {
       return {
         ...basePermissions,
         canEditEmail: true, // Admin pode alterar email
-        restrictions: ["Não pode alterar role para SUPER_ADMIN", "Não pode alterar tenant", "Não pode alterar status ativo de outros usuários"],
+        restrictions: [
+          "Não pode alterar role para SUPER_ADMIN",
+          "Não pode alterar tenant",
+          "Não pode alterar status ativo de outros usuários",
+        ],
       };
 
     case "ADVOGADO":
       return {
         ...basePermissions,
-        restrictions: ["Não pode alterar email", "Não pode alterar role", "Não pode alterar tenant", "Não pode alterar status ativo", "Pode alterar apenas dados profissionais básicos"],
+        restrictions: [
+          "Não pode alterar email",
+          "Não pode alterar role",
+          "Não pode alterar tenant",
+          "Não pode alterar status ativo",
+          "Pode alterar apenas dados profissionais básicos",
+        ],
       };
 
     case "SECRETARIA":
       return {
         ...basePermissions,
         canEditRoleSpecificData: false, // Secretaria não tem dados específicos
-        restrictions: ["Não pode alterar email", "Não pode alterar role", "Não pode alterar tenant", "Não pode alterar status ativo", "Pode alterar apenas dados pessoais básicos"],
+        restrictions: [
+          "Não pode alterar email",
+          "Não pode alterar role",
+          "Não pode alterar tenant",
+          "Não pode alterar status ativo",
+          "Pode alterar apenas dados pessoais básicos",
+        ],
       };
 
     case "CLIENTE":
       return {
         ...basePermissions,
         canEditRoleSpecificData: false, // Cliente não tem dados específicos editáveis
-        restrictions: ["Não pode alterar email", "Não pode alterar role", "Não pode alterar tenant", "Não pode alterar status ativo", "Pode alterar apenas dados pessoais básicos"],
+        restrictions: [
+          "Não pode alterar email",
+          "Não pode alterar role",
+          "Não pode alterar tenant",
+          "Não pode alterar status ativo",
+          "Pode alterar apenas dados pessoais básicos",
+        ],
       };
 
     default:
@@ -76,7 +98,12 @@ export function getSelfEditPermissions(role: UserRole): SelfEditPermissions {
 }
 
 // Validar se usuário pode editar um campo específico
-export function canUserEditField(field: string, role: UserRole, targetUserId?: string, currentUserId?: string): boolean {
+export function canUserEditField(
+  field: string,
+  role: UserRole,
+  targetUserId?: string,
+  currentUserId?: string,
+): boolean {
   const permissions = getSelfEditPermissions(role);
 
   // Se não é auto-edição, precisa de permissões administrativas

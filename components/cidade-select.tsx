@@ -2,8 +2,8 @@
 
 import { Select, SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
+
 import { useMunicipiosPorEstado } from "@/hooks/use-brazil-apis";
-import { type MunicipioIBGE } from "@/types/brazil";
 
 interface CidadeSelectProps {
   label?: string;
@@ -26,18 +26,19 @@ export function CidadeSelect({
   className,
   estadoSelecionado,
 }: CidadeSelectProps) {
-  const { municipios, isLoading, error } = useMunicipiosPorEstado(estadoSelecionado);
+  const { municipios, isLoading, error } =
+    useMunicipiosPorEstado(estadoSelecionado);
 
   if (!estadoSelecionado) {
     return (
       <Select
+        className={className}
+        isDisabled={true}
+        isRequired={isRequired}
         label={label}
         placeholder="Primeiro selecione o estado"
         selectedKeys={selectedKeys || []}
         onSelectionChange={onSelectionChange}
-        isRequired={isRequired}
-        isDisabled={true}
-        className={className}
       >
         <SelectItem key="disabled" isDisabled>
           Selecione um estado primeiro
@@ -64,8 +65,18 @@ export function CidadeSelect({
   }
 
   return (
-    <Select label={label} placeholder={placeholder} selectedKeys={selectedKeys || []} onSelectionChange={onSelectionChange} isRequired={isRequired} isDisabled={isDisabled} className={className}>
-      {municipios?.map((municipio) => <SelectItem key={municipio.nome}>{municipio.nome}</SelectItem>)}
+    <Select
+      className={className}
+      isDisabled={isDisabled}
+      isRequired={isRequired}
+      label={label}
+      placeholder={placeholder}
+      selectedKeys={selectedKeys || []}
+      onSelectionChange={onSelectionChange}
+    >
+      {municipios?.map((municipio) => (
+        <SelectItem key={municipio.nome}>{municipio.nome}</SelectItem>
+      ))}
     </Select>
   );
 }

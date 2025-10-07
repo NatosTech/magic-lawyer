@@ -46,10 +46,10 @@ export interface CepData {
 // Enums para facilitar o uso
 export enum RegiaoBrasil {
   NORTE = "Norte",
-  NORDESTE = "Nordeste", 
+  NORDESTE = "Nordeste",
   SUDESTE = "Sudeste",
   SUL = "Sul",
-  CENTRO_OESTE = "Centro-Oeste"
+  CENTRO_OESTE = "Centro-Oeste",
 }
 
 export enum UfBrasil {
@@ -79,5 +79,5 @@ export enum UfBrasil {
   SC = "SC", // Santa Catarina
   SP = "SP", // São Paulo
   SE = "SE", // Sergipe
-  TO = "TO"  // Tocantins
+  TO = "TO", // Tocantins
 }

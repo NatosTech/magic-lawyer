@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Avatar, Button, Spinner } from "@heroui/react";
 import { Edit3, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+
 import { uploadJuizFoto, deleteJuizFoto } from "@/app/actions/juizes";
 import { ImageEditorModal } from "@/components/image-editor-modal";
 
@@ -15,15 +16,25 @@ interface JuizFotoUploadProps {
   disabled?: boolean;
 }
 
-export function JuizFotoUpload({ juizId, currentFotoUrl, juizNome, onFotoChange, disabled = false }: JuizFotoUploadProps) {
+export function JuizFotoUpload({
+  juizId,
+  currentFotoUrl,
+  juizNome,
+  onFotoChange,
+  disabled = false,
+}: JuizFotoUploadProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
-  const handleSaveFoto = async (imageData: string | FormData | null, isUrl: boolean) => {
+  const handleSaveFoto = async (
+    imageData: string | FormData | null,
+    isUrl: boolean,
+  ) => {
     if (!imageData) return;
 
     if (!juizId) {
       toast.error("Salve o juiz primeiro para fazer upload da foto");
+
       return;
     }
 
@@ -36,6 +47,7 @@ export function JuizFotoUpload({ juizId, currentFotoUrl, juizNome, onFotoChange,
       if (isUrl && typeof imageData === "string") {
         // Se for URL, criar um FormData com a URL
         const formData = new FormData();
+
         formData.append("url", imageData);
         result = await uploadJuizFoto(formData, juizId, juizNome);
       } else if (imageData instanceof FormData) {
@@ -46,6 +58,7 @@ export function JuizFotoUpload({ juizId, currentFotoUrl, juizNome, onFotoChange,
         const response = await fetch(imageData);
         const blob = await response.blob();
         const formData = new FormData();
+
         formData.append("file", blob, "foto-juiz.jpg");
         result = await uploadJuizFoto(formData, juizId, juizNome);
       } else {
@@ -92,7 +105,11 @@ export function JuizFotoUpload({ juizId, currentFotoUrl, juizNome, onFotoChange,
   const isExternalUrl = (url: string): boolean => {
     try {
       const urlObj = new URL(url);
-      return !urlObj.hostname.includes("cloudinary.com") && !urlObj.hostname.includes("res.cloudinary.com");
+
+      return (
+        !urlObj.hostname.includes("cloudinary.com") &&
+        !urlObj.hostname.includes("res.cloudinary.com")
+      );
     } catch {
       return false;
     }
@@ -102,22 +119,43 @@ export function JuizFotoUpload({ juizId, currentFotoUrl, juizNome, onFotoChange,
     <>
       <div className="flex flex-col items-center gap-4 p-4 rounded-xl bg-background/50 border border-primary/20">
         <div className="relative">
-          <Avatar src={currentFotoUrl || undefined} name={juizNome} size="lg" className="w-24 h-24" isBordered color="primary" />
+          <Avatar
+            isBordered
+            className="w-24 h-24"
+            color="primary"
+            name={juizNome}
+            size="lg"
+            src={currentFotoUrl || undefined}
+          />
 
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-              <Spinner size="sm" color="white" />
+              <Spinner color="white" size="sm" />
             </div>
           )}
         </div>
 
         <div className="flex gap-2">
-          <Button size="sm" color="primary" variant="bordered" startContent={<Edit3 className="w-4 h-4" />} onPress={() => setIsEditorOpen(true)} isDisabled={disabled || isLoading || !juizId}>
+          <Button
+            color="primary"
+            isDisabled={disabled || isLoading || !juizId}
+            size="sm"
+            startContent={<Edit3 className="w-4 h-4" />}
+            variant="bordered"
+            onPress={() => setIsEditorOpen(true)}
+          >
             Editar Foto
           </Button>
 
           {currentFotoUrl && !isExternalUrl(currentFotoUrl) && (
-            <Button size="sm" color="danger" variant="bordered" startContent={<Trash2 className="w-4 h-4" />} onPress={handleDelete} isDisabled={disabled || isLoading}>
+            <Button
+              color="danger"
+              isDisabled={disabled || isLoading}
+              size="sm"
+              startContent={<Trash2 className="w-4 h-4" />}
+              variant="bordered"
+              onPress={handleDelete}
+            >
               Remover
             </Button>
           )}
@@ -125,13 +163,28 @@ export function JuizFotoUpload({ juizId, currentFotoUrl, juizNome, onFotoChange,
 
         <div className="text-center">
           <p className="text-xs text-default-400">JPG, PNG, WebP ou URL</p>
-          <p className="text-xs text-default-400">Máximo 5MB | Tamanho ideal: 500x500px</p>
-          {!juizId && <p className="text-xs text-warning mt-1">⚠️ Salve o juiz primeiro para fazer upload</p>}
-          {currentFotoUrl && isExternalUrl(currentFotoUrl) && <p className="text-xs text-warning-500 mt-1">⚠️ URL externa - não pode ser removida</p>}
+          <p className="text-xs text-default-400">
+            Máximo 5MB | Tamanho ideal: 500x500px
+          </p>
+          {!juizId && (
+            <p className="text-xs text-warning mt-1">
+              ⚠️ Salve o juiz primeiro para fazer upload
+            </p>
+          )}
+          {currentFotoUrl && isExternalUrl(currentFotoUrl) && (
+            <p className="text-xs text-warning-500 mt-1">
+              ⚠️ URL externa - não pode ser removida
+            </p>
+          )}
         </div>
       </div>
 
-      <ImageEditorModal isOpen={isEditorOpen} onClose={() => setIsEditorOpen(false)} onSave={handleSaveFoto} currentImageUrl={currentFotoUrl} />
+      <ImageEditorModal
+        currentImageUrl={currentFotoUrl}
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        onSave={handleSaveFoto}
+      />
     </>
   );
 }

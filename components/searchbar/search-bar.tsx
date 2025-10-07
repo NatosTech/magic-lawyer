@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, type KeyboardEvent } from "react";
-import { Modal } from "@/components/ui/modal";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Kbd } from "@heroui/kbd";
@@ -9,10 +8,11 @@ import { Spinner } from "@heroui/spinner";
 import { Divider } from "@heroui/divider";
 import { Avatar } from "@heroui/avatar";
 import { Chip } from "@heroui/chip";
-import clsx from "clsx";
-import { SearchIcon } from "@/components/icons";
 
 import { useSearchResults } from "./use-search-results";
+
+import { SearchIcon } from "@/components/icons";
+import { Modal } from "@/components/ui/modal";
 
 export type SearchResult = {
   id: string;
@@ -22,7 +22,13 @@ export type SearchResult = {
   href: string;
   avatar?: string;
   status?: string;
-  statusColor?: "default" | "primary" | "secondary" | "success" | "warning" | "danger";
+  statusColor?:
+    | "default"
+    | "primary"
+    | "secondary"
+    | "success"
+    | "warning"
+    | "danger";
 };
 
 type SearchBarProps = {
@@ -48,6 +54,7 @@ export function SearchBar({ className }: SearchBarProps) {
     };
 
     document.addEventListener("keydown", handleKeyDown as any);
+
     return () => document.removeEventListener("keydown", handleKeyDown as any);
   }, []);
 
@@ -70,6 +77,7 @@ export function SearchBar({ className }: SearchBarProps) {
 
     if (isOpen) {
       document.addEventListener("keydown", handleEscape as any);
+
       return () => document.removeEventListener("keydown", handleEscape as any);
     }
   }, [isOpen]);
@@ -92,7 +100,9 @@ export function SearchBar({ className }: SearchBarProps) {
         break;
       case "ArrowUp":
         e.preventDefault();
-        setSelectedIndex((prev) => (prev - 1 + results.length) % results.length);
+        setSelectedIndex(
+          (prev) => (prev - 1 + results.length) % results.length,
+        );
         break;
       case "Enter":
         e.preventDefault();
@@ -144,14 +154,14 @@ export function SearchBar({ className }: SearchBarProps) {
       {/* Search Input Field */}
       <Button
         className={`h-10 px-3 ${className}`}
-        variant="bordered"
         color="secondary"
-        startContent={<SearchIcon className="h-4 w-4" />}
         endContent={
-          <Kbd keys={["command"]} className="hidden sm:flex">
+          <Kbd className="hidden sm:flex" keys={["command"]}>
             K
           </Kbd>
         }
+        startContent={<SearchIcon className="h-4 w-4" />}
+        variant="bordered"
         onPress={() => setIsOpen(true)}
       >
         <span className="hidden sm:inline">Search</span>
@@ -159,28 +169,30 @@ export function SearchBar({ className }: SearchBarProps) {
       </Button>
 
       {/* Search Modal */}
-      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} size="2xl" showCloseButton={false} closeOnEscape={true} closeOnOverlayClick={true} backdrop="blur">
+      <Modal
+        backdrop="blur"
+        closeOnEscape={true}
+        closeOnOverlayClick={true}
+        isOpen={isOpen}
+        showCloseButton={false}
+        size="2xl"
+        onClose={() => setIsOpen(false)}
+      >
         <div className="flex flex-col">
           {/* Search Input */}
           <div className="flex items-center gap-3 p-4">
             <SearchIcon className="h-5 w-5" />
             <Input
               ref={inputRef}
-              value={query}
-              placeholder="Buscar processos, clientes, documentos..."
-              variant="flat"
-              size="lg"
               className="flex-1"
-              onChange={(e) => handleInputChange(e.target.value)}
-              onKeyDown={handleKeyDown}
               endContent={
                 <div className="flex items-center gap-2">
                   {query && (
                     <Button
                       isIconOnly
+                      color="default"
                       size="sm"
                       variant="light"
-                      color="default"
                       onPress={() => {
                         setQuery("");
                         setSelectedIndex(0);
@@ -192,6 +204,12 @@ export function SearchBar({ className }: SearchBarProps) {
                   <Kbd keys={["escape"]}>ESC</Kbd>
                 </div>
               }
+              placeholder="Buscar processos, clientes, documentos..."
+              size="lg"
+              value={query}
+              variant="flat"
+              onChange={(e) => handleInputChange(e.target.value)}
+              onKeyDown={handleKeyDown}
             />
           </div>
 
@@ -210,7 +228,9 @@ export function SearchBar({ className }: SearchBarProps) {
                   <Kbd>↑</Kbd>
                   <Kbd>↓</Kbd>
                 </div>
-                <p className="text-sm">Digite para buscar processos, clientes, documentos...</p>
+                <p className="text-sm">
+                  Digite para buscar processos, clientes, documentos...
+                </p>
               </div>
             ) : results && results.length > 0 ? (
               <div className="py-2">
@@ -218,8 +238,8 @@ export function SearchBar({ className }: SearchBarProps) {
                   <div key={result.id}>
                     <Button
                       className="w-full justify-start p-4 h-auto"
-                      variant={index === selectedIndex ? "flat" : "light"}
                       color={index === selectedIndex ? "primary" : "default"}
+                      variant={index === selectedIndex ? "flat" : "light"}
                       onPress={() => {
                         window.location.href = result.href;
                         setIsOpen(false);
@@ -229,22 +249,42 @@ export function SearchBar({ className }: SearchBarProps) {
                       <div className="flex items-center gap-3 w-full">
                         <div className="flex-shrink-0">
                           {result.avatar ? (
-                            <Avatar src={result.avatar} size="sm" className="flex-shrink-0" />
+                            <Avatar
+                              className="flex-shrink-0"
+                              size="sm"
+                              src={result.avatar}
+                            />
                           ) : (
-                            <div className="h-8 w-8 rounded-full bg-default-100 flex items-center justify-center text-lg">{getResultIcon(result.type)}</div>
+                            <div className="h-8 w-8 rounded-full bg-default-100 flex items-center justify-center text-lg">
+                              {getResultIcon(result.type)}
+                            </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium truncate">{result.title}</span>
-                            <Chip size="sm" variant="flat" color={result.statusColor || "default"}>
+                            <span className="font-medium truncate">
+                              {result.title}
+                            </span>
+                            <Chip
+                              color={result.statusColor || "default"}
+                              size="sm"
+                              variant="flat"
+                            >
                               {getTypeLabel(result.type)}
                             </Chip>
                           </div>
-                          {result.description && <p className="text-sm truncate">{result.description}</p>}
+                          {result.description && (
+                            <p className="text-sm truncate">
+                              {result.description}
+                            </p>
+                          )}
                           {result.status && (
                             <div className="mt-1">
-                              <Chip size="sm" variant="flat" color={result.statusColor || "default"}>
+                              <Chip
+                                color={result.statusColor || "default"}
+                                size="sm"
+                                variant="flat"
+                              >
                                 {result.status}
                               </Chip>
                             </div>
@@ -258,8 +298,12 @@ export function SearchBar({ className }: SearchBarProps) {
               </div>
             ) : (
               <div className="p-6 text-center">
-                <p className="text-sm">Nenhum resultado encontrado para "{query}"</p>
-                <p className="text-xs mt-2">Tente termos diferentes ou mais específicos</p>
+                <p className="text-sm">
+                  Nenhum resultado encontrado para "{query}"
+                </p>
+                <p className="text-xs mt-2">
+                  Tente termos diferentes ou mais específicos
+                </p>
               </div>
             )}
           </div>

@@ -1,7 +1,8 @@
 "use server";
 
-import prisma from "@/app/lib/prisma";
 import { getServerSession } from "next-auth/next";
+
+import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
 
 // ==================== TIPOS ====================
@@ -52,8 +53,11 @@ async function ensureSuperAdmin() {
   }
 
   const userRole = (session.user as any)?.role;
+
   if (userRole !== "SUPER_ADMIN") {
-    throw new Error("Acesso negado. Apenas Super Admins podem gerenciar configurações de preço.");
+    throw new Error(
+      "Acesso negado. Apenas Super Admins podem gerenciar configurações de preço.",
+    );
   }
 
   return session.user.id;
@@ -75,7 +79,9 @@ function parseConfigValue(valor: string, tipo: string) {
 
 // ==================== CRUD CONFIGURAÇÕES ====================
 
-export async function getConfiguracoes(categoria?: string): Promise<GetConfiguracoesResponse> {
+export async function getConfiguracoes(
+  categoria?: string,
+): Promise<GetConfiguracoesResponse> {
   try {
     await ensureSuperAdmin();
 
@@ -92,14 +98,18 @@ export async function getConfiguracoes(categoria?: string): Promise<GetConfigura
     };
   } catch (error) {
     console.error("Erro ao buscar configurações:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function getConfiguracaoPorChave(chave: string): Promise<GetConfiguracaoResponse> {
+export async function getConfiguracaoPorChave(
+  chave: string,
+): Promise<GetConfiguracaoResponse> {
   try {
     await ensureSuperAdmin();
 
@@ -120,14 +130,19 @@ export async function getConfiguracaoPorChave(chave: string): Promise<GetConfigu
     };
   } catch (error) {
     console.error("Erro ao buscar configuração:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function updateConfiguracao(chave: string, valor: string): Promise<UpdateConfiguracaoResponse> {
+export async function updateConfiguracao(
+  chave: string,
+  valor: string,
+): Promise<UpdateConfiguracaoResponse> {
   try {
     const superAdminId = await ensureSuperAdmin();
 
@@ -167,14 +182,18 @@ export async function updateConfiguracao(chave: string, valor: string): Promise<
     };
   } catch (error) {
     console.error("Erro ao atualizar configuração:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function bulkUpdateConfiguracoes(configuracoes: Array<{ chave: string; valor: string }>): Promise<BulkUpdateConfiguracoesResponse> {
+export async function bulkUpdateConfiguracoes(
+  configuracoes: Array<{ chave: string; valor: string }>,
+): Promise<BulkUpdateConfiguracoesResponse> {
   try {
     const superAdminId = await ensureSuperAdmin();
 
@@ -214,16 +233,20 @@ export async function bulkUpdateConfiguracoes(configuracoes: Array<{ chave: stri
     };
   } catch (error) {
     console.error("Erro ao atualizar configurações em lote:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
 // ==================== FUNÇÕES DE UTILIDADE ====================
 
-export async function getConfiguracaoValor(chave: string): Promise<string | null> {
+export async function getConfiguracaoValor(
+  chave: string,
+): Promise<string | null> {
   try {
     const configuracao = await prisma.configuracaoPreco.findUnique({
       where: {
@@ -239,11 +262,14 @@ export async function getConfiguracaoValor(chave: string): Promise<string | null
     return configuracao?.valor || null;
   } catch (error) {
     console.error(`Erro ao buscar valor da configuração ${chave}:`, error);
+
     return null;
   }
 }
 
-export async function getConfiguracaoValorNumerico(chave: string): Promise<number | null> {
+export async function getConfiguracaoValorNumerico(
+  chave: string,
+): Promise<number | null> {
   try {
     const configuracao = await prisma.configuracaoPreco.findUnique({
       where: {
@@ -261,14 +287,21 @@ export async function getConfiguracaoValorNumerico(chave: string): Promise<numbe
     }
 
     const valor = parseConfigValue(configuracao.valor, configuracao.tipo);
+
     return typeof valor === "number" ? valor : null;
   } catch (error) {
-    console.error(`Erro ao buscar valor numérico da configuração ${chave}:`, error);
+    console.error(
+      `Erro ao buscar valor numérico da configuração ${chave}:`,
+      error,
+    );
+
     return null;
   }
 }
 
-export async function getConfiguracaoValorBoolean(chave: string): Promise<boolean | null> {
+export async function getConfiguracaoValorBoolean(
+  chave: string,
+): Promise<boolean | null> {
   try {
     const configuracao = await prisma.configuracaoPreco.findUnique({
       where: {
@@ -286,9 +319,14 @@ export async function getConfiguracaoValorBoolean(chave: string): Promise<boolea
     }
 
     const valor = parseConfigValue(configuracao.valor, configuracao.tipo);
+
     return typeof valor === "boolean" ? valor : null;
   } catch (error) {
-    console.error(`Erro ao buscar valor booleano da configuração ${chave}:`, error);
+    console.error(
+      `Erro ao buscar valor booleano da configuração ${chave}:`,
+      error,
+    );
+
     return null;
   }
 }
@@ -312,6 +350,7 @@ export async function getTaxasSistema() {
     };
   } catch (error) {
     console.error("Erro ao buscar taxas do sistema:", error);
+
     return {
       taxaCartao: 3.49,
       taxaBoleto: 2.49,
@@ -323,12 +362,13 @@ export async function getTaxasSistema() {
 
 export async function getPrecosJuizes() {
   try {
-    const [precoConsulta, precoDownload, precoAnalise, multiplicadorPremium] = await Promise.all([
-      getConfiguracaoValorNumerico("preco_base_consulta_juiz"),
-      getConfiguracaoValorNumerico("preco_base_download_juiz"),
-      getConfiguracaoValorNumerico("preco_base_analise_juiz"),
-      getConfiguracaoValorNumerico("multiplicador_juiz_premium"),
-    ]);
+    const [precoConsulta, precoDownload, precoAnalise, multiplicadorPremium] =
+      await Promise.all([
+        getConfiguracaoValorNumerico("preco_base_consulta_juiz"),
+        getConfiguracaoValorNumerico("preco_base_download_juiz"),
+        getConfiguracaoValorNumerico("preco_base_analise_juiz"),
+        getConfiguracaoValorNumerico("multiplicador_juiz_premium"),
+      ]);
 
     return {
       precoConsulta: precoConsulta || 29.9,
@@ -338,6 +378,7 @@ export async function getPrecosJuizes() {
     };
   } catch (error) {
     console.error("Erro ao buscar preços de juízes:", error);
+
     return {
       precoConsulta: 29.9,
       precoDownload: 49.9,
@@ -349,11 +390,12 @@ export async function getPrecosJuizes() {
 
 export async function getConfiguracoesPacotes() {
   try {
-    const [trialPeriodo, cobrancaAutomatica, toleranciaVencimento] = await Promise.all([
-      getConfiguracaoValorNumerico("trial_periodo_dias"),
-      getConfiguracaoValorBoolean("cobranca_automatica_ativa"),
-      getConfiguracaoValorNumerico("tolerancia_vencimento_dias"),
-    ]);
+    const [trialPeriodo, cobrancaAutomatica, toleranciaVencimento] =
+      await Promise.all([
+        getConfiguracaoValorNumerico("trial_periodo_dias"),
+        getConfiguracaoValorBoolean("cobranca_automatica_ativa"),
+        getConfiguracaoValorNumerico("tolerancia_vencimento_dias"),
+      ]);
 
     return {
       trialPeriodo: trialPeriodo || 14,
@@ -362,6 +404,7 @@ export async function getConfiguracoesPacotes() {
     };
   } catch (error) {
     console.error("Erro ao buscar configurações de pacotes:", error);
+
     return {
       trialPeriodo: 14,
       cobrancaAutomatica: true,

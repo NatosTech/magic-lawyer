@@ -5,8 +5,10 @@ import { Avatar, Button, Spinner } from "@heroui/react";
 import { Edit3, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
-import { uploadAvatar, deleteAvatar } from "@/app/actions/profile";
+
 import { ImageEditorModal } from "./image-editor-modal";
+
+import { uploadAvatar, deleteAvatar } from "@/app/actions/profile";
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -15,12 +17,20 @@ interface AvatarUploadProps {
   disabled?: boolean;
 }
 
-export function AvatarUpload({ currentAvatarUrl, userName, onAvatarChange, disabled = false }: AvatarUploadProps) {
+export function AvatarUpload({
+  currentAvatarUrl,
+  userName,
+  onAvatarChange,
+  disabled = false,
+}: AvatarUploadProps) {
   const { update: updateSession } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
-  const handleSaveAvatar = async (imageData: string | FormData | null, isUrl: boolean) => {
+  const handleSaveAvatar = async (
+    imageData: string | FormData | null,
+    isUrl: boolean,
+  ) => {
     if (!imageData) return;
 
     setIsLoading(true);
@@ -32,6 +42,7 @@ export function AvatarUpload({ currentAvatarUrl, userName, onAvatarChange, disab
       if (isUrl && typeof imageData === "string") {
         // Se for URL, criar um FormData com a URL
         const formData = new FormData();
+
         formData.append("url", imageData);
         result = await uploadAvatar(formData);
       } else if (imageData instanceof FormData) {
@@ -42,6 +53,7 @@ export function AvatarUpload({ currentAvatarUrl, userName, onAvatarChange, disab
         const response = await fetch(imageData);
         const blob = await response.blob();
         const formData = new FormData();
+
         formData.append("file", blob, "avatar.jpg");
         result = await uploadAvatar(formData);
       } else {
@@ -59,7 +71,7 @@ export function AvatarUpload({ currentAvatarUrl, userName, onAvatarChange, disab
           window.dispatchEvent(
             new CustomEvent("avatarUpdated", {
               detail: { avatarUrl: result.avatarUrl },
-            })
+            }),
           );
         }
       } else {
@@ -92,7 +104,7 @@ export function AvatarUpload({ currentAvatarUrl, userName, onAvatarChange, disab
           window.dispatchEvent(
             new CustomEvent("avatarUpdated", {
               detail: { avatarUrl: result.avatarUrl },
-            })
+            }),
           );
         }
       } else {
@@ -110,7 +122,11 @@ export function AvatarUpload({ currentAvatarUrl, userName, onAvatarChange, disab
   const isExternalUrl = (url: string): boolean => {
     try {
       const urlObj = new URL(url);
-      return !urlObj.hostname.includes("cloudinary.com") && !urlObj.hostname.includes("res.cloudinary.com");
+
+      return (
+        !urlObj.hostname.includes("cloudinary.com") &&
+        !urlObj.hostname.includes("res.cloudinary.com")
+      );
     } catch {
       return false;
     }
@@ -120,22 +136,43 @@ export function AvatarUpload({ currentAvatarUrl, userName, onAvatarChange, disab
     <>
       <div className="flex flex-col items-center gap-4">
         <div className="relative">
-          <Avatar src={currentAvatarUrl || undefined} name={userName} size="lg" className="w-20 h-20" isBordered color="primary" />
+          <Avatar
+            isBordered
+            className="w-20 h-20"
+            color="primary"
+            name={userName}
+            size="lg"
+            src={currentAvatarUrl || undefined}
+          />
 
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-              <Spinner size="sm" color="white" />
+              <Spinner color="white" size="sm" />
             </div>
           )}
         </div>
 
         <div className="flex gap-2">
-          <Button size="sm" color="primary" variant="bordered" startContent={<Edit3 className="w-4 h-4" />} onPress={() => setIsEditorOpen(true)} isDisabled={disabled || isLoading}>
+          <Button
+            color="primary"
+            isDisabled={disabled || isLoading}
+            size="sm"
+            startContent={<Edit3 className="w-4 h-4" />}
+            variant="bordered"
+            onPress={() => setIsEditorOpen(true)}
+          >
             Editar Avatar
           </Button>
 
           {currentAvatarUrl && !isExternalUrl(currentAvatarUrl) && (
-            <Button size="sm" color="danger" variant="bordered" startContent={<Trash2 className="w-4 h-4" />} onPress={handleDelete} isDisabled={disabled || isLoading}>
+            <Button
+              color="danger"
+              isDisabled={disabled || isLoading}
+              size="sm"
+              startContent={<Trash2 className="w-4 h-4" />}
+              variant="bordered"
+              onPress={handleDelete}
+            >
               Remover
             </Button>
           )}
@@ -144,11 +181,20 @@ export function AvatarUpload({ currentAvatarUrl, userName, onAvatarChange, disab
         <div className="text-center">
           <p className="text-xs text-default-400">JPG, PNG, WebP ou URL</p>
           <p className="text-xs text-default-400">Máximo 5MB</p>
-          {currentAvatarUrl && isExternalUrl(currentAvatarUrl) && <p className="text-xs text-warning-500 mt-1">⚠️ URL externa - não pode ser removida</p>}
+          {currentAvatarUrl && isExternalUrl(currentAvatarUrl) && (
+            <p className="text-xs text-warning-500 mt-1">
+              ⚠️ URL externa - não pode ser removida
+            </p>
+          )}
         </div>
       </div>
 
-      <ImageEditorModal isOpen={isEditorOpen} onClose={() => setIsEditorOpen(false)} onSave={handleSaveAvatar} currentImageUrl={currentAvatarUrl} />
+      <ImageEditorModal
+        currentImageUrl={currentAvatarUrl}
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        onSave={handleSaveAvatar}
+      />
     </>
   );
 }

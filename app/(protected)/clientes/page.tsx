@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+
 import { ClientesContent } from "./clientes-content";
 
 export const metadata: Metadata = {

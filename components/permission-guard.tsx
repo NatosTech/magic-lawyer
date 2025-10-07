@@ -3,6 +3,7 @@
 import { ReactNode } from "react";
 import { Card, CardBody, Button } from "@heroui/react";
 import { Lock, ArrowRight } from "lucide-react";
+
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 
 interface PermissionGuardProps {
@@ -12,7 +13,12 @@ interface PermissionGuardProps {
   showMessage?: boolean;
 }
 
-export function PermissionGuard({ children, permission, fallback, showMessage = true }: PermissionGuardProps) {
+export function PermissionGuard({
+  children,
+  permission,
+  fallback,
+  showMessage = true,
+}: PermissionGuardProps) {
   const { permissions, userRole } = useUserPermissions();
   const hasPermission = permissions[permission];
 
@@ -69,13 +75,23 @@ export function PermissionGuard({ children, permission, fallback, showMessage = 
           <Lock className="w-6 h-6 text-warning" />
         </div>
 
-        <h3 className="text-lg font-semibold text-warning mb-2">Acesso Restrito</h3>
+        <h3 className="text-lg font-semibold text-warning mb-2">
+          Acesso Restrito
+        </h3>
 
-        <p className="text-default-600 mb-4 max-w-md">{getPermissionMessage()}</p>
+        <p className="text-default-600 mb-4 max-w-md">
+          {getPermissionMessage()}
+        </p>
 
-        <p className="text-sm text-default-500 mb-6 max-w-md">{getRoleMessage()}</p>
+        <p className="text-sm text-default-500 mb-6 max-w-md">
+          {getRoleMessage()}
+        </p>
 
-        <Button color="warning" variant="bordered" endContent={<ArrowRight className="w-4 h-4" />}>
+        <Button
+          color="warning"
+          endContent={<ArrowRight className="w-4 h-4" />}
+          variant="bordered"
+        >
           Entrar em Contato
         </Button>
       </CardBody>

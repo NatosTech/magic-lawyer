@@ -1,7 +1,8 @@
 "use server";
 
-import prisma from "@/app/lib/prisma";
 import { getServerSession } from "next-auth/next";
+
+import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
 
 // ==================== TIPOS ====================
@@ -101,8 +102,11 @@ async function ensureSuperAdmin() {
   }
 
   const userRole = (session.user as any)?.role;
+
   if (userRole !== "SUPER_ADMIN") {
-    throw new Error("Acesso negado. Apenas Super Admins podem gerenciar pacotes de juízes.");
+    throw new Error(
+      "Acesso negado. Apenas Super Admins podem gerenciar pacotes de juízes.",
+    );
   }
 
   return session.user.id;
@@ -135,14 +139,18 @@ export async function getPacotesJuiz(): Promise<GetPacotesJuizResponse> {
     };
   } catch (error) {
     console.error("Erro ao buscar pacotes de juízes:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function getPacoteJuizById(id: string): Promise<GetPacoteJuizResponse> {
+export async function getPacoteJuizById(
+  id: string,
+): Promise<GetPacoteJuizResponse> {
   try {
     await ensureSuperAdmin();
 
@@ -196,14 +204,18 @@ export async function getPacoteJuizById(id: string): Promise<GetPacoteJuizRespon
     };
   } catch (error) {
     console.error("Erro ao buscar pacote de juízes:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function createPacoteJuiz(data: Partial<PacoteJuiz>): Promise<CreatePacoteJuizResponse> {
+export async function createPacoteJuiz(
+  data: Partial<PacoteJuiz>,
+): Promise<CreatePacoteJuizResponse> {
   try {
     const superAdminId = await ensureSuperAdmin();
 
@@ -242,14 +254,19 @@ export async function createPacoteJuiz(data: Partial<PacoteJuiz>): Promise<Creat
     };
   } catch (error) {
     console.error("Erro ao criar pacote de juízes:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function updatePacoteJuiz(id: string, data: Partial<PacoteJuiz>): Promise<UpdatePacoteJuizResponse> {
+export async function updatePacoteJuiz(
+  id: string,
+  data: Partial<PacoteJuiz>,
+): Promise<UpdatePacoteJuizResponse> {
   try {
     await ensureSuperAdmin();
 
@@ -293,14 +310,18 @@ export async function updatePacoteJuiz(id: string, data: Partial<PacoteJuiz>): P
     };
   } catch (error) {
     console.error("Erro ao atualizar pacote de juízes:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function deletePacoteJuiz(id: string): Promise<DeletePacoteJuizResponse> {
+export async function deletePacoteJuiz(
+  id: string,
+): Promise<DeletePacoteJuizResponse> {
   try {
     await ensureSuperAdmin();
 
@@ -320,7 +341,9 @@ export async function deletePacoteJuiz(id: string): Promise<DeletePacoteJuizResp
     }
 
     // Verificar se há assinaturas ativas
-    const assinaturasAtivas = pacoteExistente.assinaturas.filter((assinatura) => assinatura.status === "ATIVA");
+    const assinaturasAtivas = pacoteExistente.assinaturas.filter(
+      (assinatura) => assinatura.status === "ATIVA",
+    );
 
     if (assinaturasAtivas.length > 0) {
       return {
@@ -338,16 +361,22 @@ export async function deletePacoteJuiz(id: string): Promise<DeletePacoteJuizResp
     };
   } catch (error) {
     console.error("Erro ao deletar pacote de juízes:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
 // ==================== GERENCIAMENTO DE JUÍZES NO PACOTE ====================
 
-export async function adicionarJuizAoPacote(pacoteId: string, juizId: string, ordemExibicao?: number) {
+export async function adicionarJuizAoPacote(
+  pacoteId: string,
+  juizId: string,
+  ordemExibicao?: number,
+) {
   try {
     await ensureSuperAdmin();
 
@@ -365,9 +394,11 @@ export async function adicionarJuizAoPacote(pacoteId: string, juizId: string, or
     };
   } catch (error) {
     console.error("Erro ao adicionar juiz ao pacote:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -390,9 +421,11 @@ export async function removerJuizDoPacote(pacoteId: string, juizId: string) {
     };
   } catch (error) {
     console.error("Erro ao remover juiz do pacote:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -403,7 +436,13 @@ export async function getEstatisticasPacotesJuiz() {
   try {
     await ensureSuperAdmin();
 
-    const [totalPacotes, pacotesAtivos, totalAssinaturas, assinaturasAtivas, faturamentoMensal] = await Promise.all([
+    const [
+      totalPacotes,
+      pacotesAtivos,
+      totalAssinaturas,
+      assinaturasAtivas,
+      faturamentoMensal,
+    ] = await Promise.all([
       prisma.pacoteJuiz.count(),
       prisma.pacoteJuiz.count({ where: { status: "ATIVO" } }),
       prisma.assinaturaPacoteJuiz.count(),
@@ -433,9 +472,11 @@ export async function getEstatisticasPacotesJuiz() {
     };
   } catch (error) {
     console.error("Erro ao buscar estatísticas de pacotes de juízes:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }

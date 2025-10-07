@@ -2,8 +2,19 @@
 
 import { useState, useCallback, useEffect } from "react";
 import useSWR from "swr";
-import { getEstadosBrasilAction, getMunicipiosPorEstadoAction, buscarCepAction, buscarCnpjAction } from "@/app/actions/brazil-apis";
-import { type EstadoIBGE, type MunicipioIBGE, type CepData, type CnpjData } from "@/types/brazil";
+
+import {
+  getEstadosBrasilAction,
+  getMunicipiosPorEstadoAction,
+  buscarCepAction,
+  buscarCnpjAction,
+} from "@/app/actions/brazil-apis";
+import {
+  type EstadoIBGE,
+  type MunicipioIBGE,
+  type CepData,
+  type CnpjData,
+} from "@/types/brazil";
 
 /**
  * Hook para buscar estados do Brasil com SWR
@@ -13,9 +24,11 @@ export function useEstadosBrasil() {
     "estados-brasil",
     async () => {
       const result = await getEstadosBrasilAction();
+
       if (!result.success) {
         throw new Error(result.error);
       }
+
       return result.estados;
     },
     {
@@ -24,7 +37,7 @@ export function useEstadosBrasil() {
       dedupingInterval: 24 * 60 * 60 * 1000, // 24 horas
       errorRetryCount: 3,
       errorRetryInterval: 5000,
-    }
+    },
   );
 
   return {
@@ -50,6 +63,7 @@ export function useEstadosBrasilInfinite() {
       setIsLoading(true);
 
       const result = await getEstadosBrasilAction();
+
       if (!result.success) {
         throw new Error(result.error);
       }
@@ -60,7 +74,9 @@ export function useEstadosBrasilInfinite() {
       const newItems = allEstados.slice(startIndex, endIndex);
 
       setHasMore(endIndex < allEstados.length);
-      setItems((prevItems) => (currentOffset === 0 ? newItems : [...prevItems, ...newItems]));
+      setItems((prevItems) =>
+        currentOffset === 0 ? newItems : [...prevItems, ...newItems],
+      );
     } catch (error) {
       console.error("Erro ao carregar estados:", error);
     } finally {
@@ -74,6 +90,7 @@ export function useEstadosBrasilInfinite() {
 
   const onLoadMore = useCallback(() => {
     const newOffset = offset + limit;
+
     setOffset(newOffset);
   }, [offset, limit]);
 
@@ -94,9 +111,11 @@ export function useMunicipiosPorEstado(siglaEstado: string | null) {
     async () => {
       if (!siglaEstado) return null;
       const result = await getMunicipiosPorEstadoAction(siglaEstado);
+
       if (!result.success) {
         throw new Error(result.error);
       }
+
       return result.municipios;
     },
     {
@@ -105,7 +124,7 @@ export function useMunicipiosPorEstado(siglaEstado: string | null) {
       dedupingInterval: 24 * 60 * 60 * 1000, // 24 horas
       errorRetryCount: 3,
       errorRetryInterval: 5000,
-    }
+    },
   );
 
   return {
@@ -134,6 +153,7 @@ export function useMunicipiosPorEstadoInfinite(siglaEstado: string | null) {
         setIsLoading(true);
 
         const result = await getMunicipiosPorEstadoAction(siglaEstado);
+
         if (!result.success) {
           throw new Error(result.error);
         }
@@ -144,14 +164,16 @@ export function useMunicipiosPorEstadoInfinite(siglaEstado: string | null) {
         const newItems = allMunicipios.slice(startIndex, endIndex);
 
         setHasMore(endIndex < allMunicipios.length);
-        setItems((prevItems) => (currentOffset === 0 ? newItems : [...prevItems, ...newItems]));
+        setItems((prevItems) =>
+          currentOffset === 0 ? newItems : [...prevItems, ...newItems],
+        );
       } catch (error) {
         console.error("Erro ao carregar municípios:", error);
       } finally {
         setIsLoading(false);
       }
     },
-    [siglaEstado]
+    [siglaEstado],
   );
 
   useEffect(() => {
@@ -166,6 +188,7 @@ export function useMunicipiosPorEstadoInfinite(siglaEstado: string | null) {
   const onLoadMore = useCallback(() => {
     if (siglaEstado) {
       const newOffset = offset + limit;
+
       setOffset(newOffset);
     }
   }, [offset, limit, siglaEstado]);
@@ -183,13 +206,17 @@ export function useMunicipiosPorEstadoInfinite(siglaEstado: string | null) {
  */
 export function useCep(cep: string | null) {
   const { data, error, isLoading, mutate } = useSWR(
-    cep && cep.replace(/\D/g, "").length === 8 ? `cep-${cep.replace(/\D/g, "")}` : null,
+    cep && cep.replace(/\D/g, "").length === 8
+      ? `cep-${cep.replace(/\D/g, "")}`
+      : null,
     async () => {
       if (!cep) return null;
       const result = await buscarCepAction(cep);
+
       if (!result.success) {
         throw new Error(result.error);
       }
+
       return result.cepData;
     },
     {
@@ -198,7 +225,7 @@ export function useCep(cep: string | null) {
       dedupingInterval: 60 * 60 * 1000, // 1 hora
       errorRetryCount: 2,
       errorRetryInterval: 3000,
-    }
+    },
   );
 
   return {
@@ -214,13 +241,17 @@ export function useCep(cep: string | null) {
  */
 export function useCnpj(cnpj: string | null) {
   const { data, error, isLoading, mutate } = useSWR(
-    cnpj && cnpj.replace(/\D/g, "").length === 14 ? `cnpj-${cnpj.replace(/\D/g, "")}` : null,
+    cnpj && cnpj.replace(/\D/g, "").length === 14
+      ? `cnpj-${cnpj.replace(/\D/g, "")}`
+      : null,
     async () => {
       if (!cnpj) return null;
       const result = await buscarCnpjAction(cnpj);
+
       if (!result.success) {
         throw new Error(result.error);
       }
+
       return result.cnpjData;
     },
     {
@@ -229,7 +260,7 @@ export function useCnpj(cnpj: string | null) {
       dedupingInterval: 60 * 60 * 1000, // 1 hora
       errorRetryCount: 2,
       errorRetryInterval: 3000,
-    }
+    },
   );
 
   return {
@@ -256,12 +287,14 @@ export function useCepSearch() {
 
       if (!result.success) {
         setError(result.error || "Erro ao buscar CEP");
+
         return null;
       }
 
       return result.cepData || null;
     } catch (err) {
       setError("Erro ao buscar CEP");
+
       return null;
     } finally {
       setLoading(false);
@@ -291,12 +324,14 @@ export function useCnpjSearch() {
 
       if (!result.success) {
         setError(result.error || "Erro ao buscar CNPJ");
+
         return null;
       }
 
       return result.cnpjData || null;
     } catch (err) {
       setError("Erro ao buscar CNPJ");
+
       return null;
     } finally {
       setLoading(false);

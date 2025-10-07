@@ -63,6 +63,7 @@ export class DateUtils {
     const year = calendarDate.year;
     const month = calendarDate.month.toString().padStart(2, "0");
     const day = calendarDate.day.toString().padStart(2, "0");
+
     return dayjs(`${year}-${month}-${day}`);
   }
 
@@ -176,6 +177,7 @@ export class DateUtils {
    */
   static isBetween(date: string | Date | dayjs.Dayjs, start: string | Date | dayjs.Dayjs, end: string | Date | dayjs.Dayjs): boolean {
     const d = dayjs(date);
+
     return d.isSameOrAfter(start) && d.isSameOrBefore(end);
   }
 
@@ -219,6 +221,7 @@ export class DateUtils {
    */
   static parse(date: string, format?: string): dayjs.Dayjs | null {
     const parsed = format ? dayjs(date, format) : dayjs(date);
+
     return parsed.isValid() ? parsed : null;
   }
 
@@ -227,6 +230,13 @@ export class DateUtils {
    */
   static isValid(date: string): boolean {
     return dayjs(date).isValid();
+  }
+
+  /**
+   * Formatar data para input HTML (YYYY-MM-DD)
+   */
+  static formatToInput(date: string | Date | dayjs.Dayjs): string {
+    return dayjs(date).format("YYYY-MM-DD");
   }
 }
 

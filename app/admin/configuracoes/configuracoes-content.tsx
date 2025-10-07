@@ -6,7 +6,6 @@ import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
 import { Switch } from "@heroui/switch";
 import { Input } from "@heroui/input";
-import { Textarea } from "@heroui/textarea";
 
 import { title, subtitle } from "@/components/primitives";
 
@@ -44,11 +43,17 @@ export function ConfiguracoesContent() {
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 py-12 px-3 sm:px-6">
       <header className="space-y-4">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Administração</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+          Administração
+        </p>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 flex-1">
-            <h1 className={title({ size: "lg", color: "blue" })}>Configurações do Sistema</h1>
-            <p className={subtitle({ fullWidth: true })}>Gerencie as configurações gerais da plataforma</p>
+            <h1 className={title({ size: "lg", color: "blue" })}>
+              Configurações do Sistema
+            </h1>
+            <p className={subtitle({ fullWidth: true })}>
+              Gerencie as configurações gerais da plataforma
+            </p>
           </div>
           <Button color="primary" variant="solid" onPress={handleSave}>
             💾 Salvar Configurações
@@ -59,8 +64,12 @@ export function ConfiguracoesContent() {
       {/* Informações do Sistema */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">ℹ️ Informações do Sistema</h2>
-          <p className="text-sm text-default-400">Configurações básicas da plataforma</p>
+          <h2 className="text-lg font-semibold text-white">
+            ℹ️ Informações do Sistema
+          </h2>
+          <p className="text-sm text-default-400">
+            Configurações básicas da plataforma
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody className="space-y-4">
@@ -75,10 +84,16 @@ export function ConfiguracoesContent() {
                 })
               }
             />
-            <Input label="Versão" value={settings.sistema.versao} isReadOnly />
-            <Input label="Ambiente" value={settings.sistema.ambiente} isReadOnly />
+            <Input isReadOnly label="Versão" value={settings.sistema.versao} />
+            <Input
+              isReadOnly
+              label="Ambiente"
+              value={settings.sistema.ambiente}
+            />
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-white">Modo Manutenção</span>
+              <span className="text-sm font-medium text-white">
+                Modo Manutenção
+              </span>
               <Switch
                 isSelected={settings.sistema.manutencao}
                 onValueChange={(checked) =>
@@ -96,8 +111,12 @@ export function ConfiguracoesContent() {
       {/* Configurações de Email */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">📧 Configurações de Email</h2>
-          <p className="text-sm text-default-400">Servidor SMTP para envio de notificações</p>
+          <h2 className="text-lg font-semibold text-white">
+            📧 Configurações de Email
+          </h2>
+          <p className="text-sm text-default-400">
+            Servidor SMTP para envio de notificações
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody className="space-y-4">
@@ -133,7 +152,9 @@ export function ConfiguracoesContent() {
               }
             />
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-white">Email Ativo</span>
+              <span className="text-sm font-medium text-white">
+                Email Ativo
+              </span>
               <Switch
                 isSelected={settings.email.ativo}
                 onValueChange={(checked) =>
@@ -151,32 +172,46 @@ export function ConfiguracoesContent() {
       {/* Configurações de Pagamento */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">💳 Configurações de Pagamento</h2>
-          <p className="text-sm text-default-400">Integrações com gateways de pagamento</p>
+          <h2 className="text-lg font-semibold text-white">
+            💳 Configurações de Pagamento
+          </h2>
+          <p className="text-sm text-default-400">
+            Integrações com gateways de pagamento
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-white">Stripe Ativo</span>
+              <span className="text-sm font-medium text-white">
+                Stripe Ativo
+              </span>
               <Switch
                 isSelected={settings.pagamentos.stripeAtivo}
                 onValueChange={(checked) =>
                   setSettings({
                     ...settings,
-                    pagamentos: { ...settings.pagamentos, stripeAtivo: checked },
+                    pagamentos: {
+                      ...settings.pagamentos,
+                      stripeAtivo: checked,
+                    },
                   })
                 }
               />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-white">Pagarme Ativo</span>
+              <span className="text-sm font-medium text-white">
+                Pagarme Ativo
+              </span>
               <Switch
                 isSelected={settings.pagamentos.pagarmeAtivo}
                 onValueChange={(checked) =>
                   setSettings({
                     ...settings,
-                    pagamentos: { ...settings.pagamentos, pagarmeAtivo: checked },
+                    pagamentos: {
+                      ...settings.pagamentos,
+                      pagarmeAtivo: checked,
+                    },
                   })
                 }
               />
@@ -188,7 +223,10 @@ export function ConfiguracoesContent() {
                 onChange={(e) =>
                   setSettings({
                     ...settings,
-                    pagamentos: { ...settings.pagamentos, webhookUrl: e.target.value },
+                    pagamentos: {
+                      ...settings.pagamentos,
+                      webhookUrl: e.target.value,
+                    },
                   })
                 }
               />
@@ -200,20 +238,29 @@ export function ConfiguracoesContent() {
       {/* Configurações de Segurança */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">🔒 Configurações de Segurança</h2>
-          <p className="text-sm text-default-400">Políticas de segurança e autenticação</p>
+          <h2 className="text-lg font-semibold text-white">
+            🔒 Configurações de Segurança
+          </h2>
+          <p className="text-sm text-default-400">
+            Políticas de segurança e autenticação
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-white">Login Duplo Fator</span>
+              <span className="text-sm font-medium text-white">
+                Login Duplo Fator
+              </span>
               <Switch
                 isSelected={settings.seguranca.loginDuploFator}
                 onValueChange={(checked) =>
                   setSettings({
                     ...settings,
-                    seguranca: { ...settings.seguranca, loginDuploFator: checked },
+                    seguranca: {
+                      ...settings.seguranca,
+                      loginDuploFator: checked,
+                    },
                   })
                 }
               />
@@ -225,7 +272,10 @@ export function ConfiguracoesContent() {
               onChange={(e) =>
                 setSettings({
                   ...settings,
-                  seguranca: { ...settings.seguranca, sessoesSimultaneas: parseInt(e.target.value) || 3 },
+                  seguranca: {
+                    ...settings.seguranca,
+                    sessoesSimultaneas: parseInt(e.target.value) || 3,
+                  },
                 })
               }
             />
@@ -236,7 +286,10 @@ export function ConfiguracoesContent() {
               onChange={(e) =>
                 setSettings({
                   ...settings,
-                  seguranca: { ...settings.seguranca, tempoSessao: parseInt(e.target.value) || 8 },
+                  seguranca: {
+                    ...settings.seguranca,
+                    tempoSessao: parseInt(e.target.value) || 8,
+                  },
                 })
               }
             />

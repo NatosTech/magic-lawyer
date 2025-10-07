@@ -1,5 +1,6 @@
-import { PrismaClient } from "../generated/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
+
+import { PrismaClient } from "../generated/prisma";
 
 // Tipo base do Prisma Client
 type BasePrismaClient = PrismaClient;
@@ -25,9 +26,11 @@ export function convertDecimalsToNumbers<T>(obj: T): T {
 
   if (typeof obj === "object" && obj.constructor === Object) {
     const newObj: any = {};
+
     for (const key in obj) {
       newObj[key] = convertDecimalsToNumbers(obj[key]);
     }
+
     return newObj;
   }
 

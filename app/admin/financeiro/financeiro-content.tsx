@@ -5,20 +5,52 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
 import { Badge } from "@heroui/badge";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@heroui/table";
 import useSWR from "swr";
 
 import { title, subtitle } from "@/components/primitives";
-import { getEstatisticasFinanceiras, getResumoMensal, getTopTenants, getFaturasRecentes, getPagamentosRecentes, getComissoesPendentes } from "@/app/actions/financeiro";
+import {
+  getEstatisticasFinanceiras,
+  getResumoMensal,
+  getTopTenants,
+  getFaturasRecentes,
+  getPagamentosRecentes,
+  getComissoesPendentes,
+} from "@/app/actions/financeiro";
 
 export function FinanceiroContent() {
   // Buscar dados reais do banco
-  const { data: statsResponse, isLoading: loadingStats } = useSWR("estatisticas-financeiras", getEstatisticasFinanceiras);
-  const { data: resumoResponse, isLoading: loadingResumo } = useSWR("resumo-mensal", getResumoMensal);
-  const { data: topTenantsResponse, isLoading: loadingTopTenants } = useSWR("top-tenants", getTopTenants);
-  const { data: faturasResponse, isLoading: loadingFaturas } = useSWR("faturas-recentes", getFaturasRecentes);
-  const { data: pagamentosResponse, isLoading: loadingPagamentos } = useSWR("pagamentos-recentes", getPagamentosRecentes);
-  const { data: comissoesResponse, isLoading: loadingComissoes } = useSWR("comissoes-pendentes", getComissoesPendentes);
+  const { data: statsResponse, isLoading: loadingStats } = useSWR(
+    "estatisticas-financeiras",
+    getEstatisticasFinanceiras,
+  );
+  const { data: resumoResponse, isLoading: loadingResumo } = useSWR(
+    "resumo-mensal",
+    getResumoMensal,
+  );
+  const { data: topTenantsResponse, isLoading: loadingTopTenants } = useSWR(
+    "top-tenants",
+    getTopTenants,
+  );
+  const { data: faturasResponse, isLoading: loadingFaturas } = useSWR(
+    "faturas-recentes",
+    getFaturasRecentes,
+  );
+  const { data: pagamentosResponse, isLoading: loadingPagamentos } = useSWR(
+    "pagamentos-recentes",
+    getPagamentosRecentes,
+  );
+  const { data: comissoesResponse, isLoading: loadingComissoes } = useSWR(
+    "comissoes-pendentes",
+    getComissoesPendentes,
+  );
 
   const estatisticas = statsResponse?.data || {
     receitaTotal: 0,
@@ -76,11 +108,17 @@ export function FinanceiroContent() {
   return (
     <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 py-12 px-3 sm:px-6">
       <header className="space-y-4">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Administração</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+          Administração
+        </p>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 flex-1">
-            <h1 className={title({ size: "lg", color: "blue" })}>Controle Financeiro</h1>
-            <p className={subtitle({ fullWidth: true })}>Acompanhe receitas, assinaturas, faturas e comissões do sistema</p>
+            <h1 className={title({ size: "lg", color: "blue" })}>
+              Controle Financeiro
+            </h1>
+            <p className={subtitle({ fullWidth: true })}>
+              Acompanhe receitas, assinaturas, faturas e comissões do sistema
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button color="primary" variant="flat">
@@ -100,7 +138,11 @@ export function FinanceiroContent() {
             <span className="text-3xl text-green-600 mr-4">💰</span>
             <div>
               <p className="text-sm font-medium text-gray-500">Receita Total</p>
-              <p className="text-2xl font-bold text-gray-900">{loadingStats ? "..." : formatCurrency(estatisticas.receitaTotal)}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loadingStats
+                  ? "..."
+                  : formatCurrency(estatisticas.receitaTotal)}
+              </p>
               <p className="text-sm text-green-600">Acumulada</p>
             </div>
           </CardBody>
@@ -110,8 +152,14 @@ export function FinanceiroContent() {
           <CardBody className="flex items-center">
             <span className="text-3xl text-blue-600 mr-4">📈</span>
             <div>
-              <p className="text-sm font-medium text-gray-500">Receita Mensal</p>
-              <p className="text-2xl font-bold text-gray-900">{loadingStats ? "..." : formatCurrency(estatisticas.receitaMensal)}</p>
+              <p className="text-sm font-medium text-gray-500">
+                Receita Mensal
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loadingStats
+                  ? "..."
+                  : formatCurrency(estatisticas.receitaMensal)}
+              </p>
               <p className="text-sm text-blue-600">Este mês</p>
             </div>
           </CardBody>
@@ -121,9 +169,15 @@ export function FinanceiroContent() {
           <CardBody className="flex items-center">
             <span className="text-3xl text-purple-600 mr-4">👥</span>
             <div>
-              <p className="text-sm font-medium text-gray-500">Assinaturas Ativas</p>
-              <p className="text-2xl font-bold text-gray-900">{loadingStats ? "..." : estatisticas.assinaturasAtivas}</p>
-              <p className="text-sm text-purple-600">de {estatisticas.totalAssinaturas} total</p>
+              <p className="text-sm font-medium text-gray-500">
+                Assinaturas Ativas
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loadingStats ? "..." : estatisticas.assinaturasAtivas}
+              </p>
+              <p className="text-sm text-purple-600">
+                de {estatisticas.totalAssinaturas} total
+              </p>
             </div>
           </CardBody>
         </Card>
@@ -133,8 +187,12 @@ export function FinanceiroContent() {
             <span className="text-3xl text-yellow-600 mr-4">💳</span>
             <div>
               <p className="text-sm font-medium text-gray-500">Faturas Pagas</p>
-              <p className="text-2xl font-bold text-gray-900">{loadingStats ? "..." : estatisticas.faturasPagas}</p>
-              <p className="text-sm text-yellow-600">de {estatisticas.totalFaturas} total</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loadingStats ? "..." : estatisticas.faturasPagas}
+              </p>
+              <p className="text-sm text-yellow-600">
+                de {estatisticas.totalFaturas} total
+              </p>
             </div>
           </CardBody>
         </Card>
@@ -143,16 +201,24 @@ export function FinanceiroContent() {
       {/* Resumo Mensal */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">📊 Resumo dos Últimos 12 Meses</h2>
-          <p className="text-sm text-default-400">Evolução da receita e volume de transações</p>
+          <h2 className="text-lg font-semibold text-white">
+            📊 Resumo dos Últimos 12 Meses
+          </h2>
+          <p className="text-sm text-default-400">
+            Evolução da receita e volume de transações
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody>
           {loadingResumo ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">⏳</div>
-              <h3 className="text-lg font-medium text-white mb-2">Carregando resumo...</h3>
-              <p className="text-default-400">Buscando dados dos últimos 12 meses</p>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Carregando resumo...
+              </h3>
+              <p className="text-default-400">
+                Buscando dados dos últimos 12 meses
+              </p>
             </div>
           ) : resumoMensal.length > 0 ? (
             <Table aria-label="Tabela de Resumo Mensal">
@@ -167,7 +233,9 @@ export function FinanceiroContent() {
                 {resumoMensal.map((mes, index) => (
                   <TableRow key={index}>
                     <TableCell className="font-medium">{mes.mes}</TableCell>
-                    <TableCell className="text-green-600 font-semibold">{formatCurrency(mes.receita)}</TableCell>
+                    <TableCell className="text-green-600 font-semibold">
+                      {formatCurrency(mes.receita)}
+                    </TableCell>
                     <TableCell>{mes.assinaturas}</TableCell>
                     <TableCell>{mes.faturas}</TableCell>
                     <TableCell>{mes.pagamentos}</TableCell>
@@ -178,8 +246,12 @@ export function FinanceiroContent() {
           ) : (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📊</div>
-              <h3 className="text-lg font-medium text-white mb-2">Nenhum dado encontrado</h3>
-              <p className="text-default-400">Não há dados financeiros para exibir</p>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Nenhum dado encontrado
+              </h3>
+              <p className="text-default-400">
+                Não há dados financeiros para exibir
+              </p>
             </div>
           )}
         </CardBody>
@@ -188,16 +260,24 @@ export function FinanceiroContent() {
       {/* Top Tenants */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">🏆 Top Tenants por Receita</h2>
-          <p className="text-sm text-default-400">Escritórios com maior faturamento</p>
+          <h2 className="text-lg font-semibold text-white">
+            🏆 Top Tenants por Receita
+          </h2>
+          <p className="text-sm text-default-400">
+            Escritórios com maior faturamento
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody>
           {loadingTopTenants ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">⏳</div>
-              <h3 className="text-lg font-medium text-white mb-2">Carregando tenants...</h3>
-              <p className="text-default-400">Buscando dados dos maiores clientes</p>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Carregando tenants...
+              </h3>
+              <p className="text-default-400">
+                Buscando dados dos maiores clientes
+              </p>
             </div>
           ) : topTenants.length > 0 ? (
             <Table aria-label="Tabela de Top Tenants">
@@ -211,10 +291,15 @@ export function FinanceiroContent() {
                 {topTenants.map((tenant) => (
                   <TableRow key={tenant.id}>
                     <TableCell className="font-medium">{tenant.name}</TableCell>
-                    <TableCell className="text-green-600 font-semibold">{formatCurrency(tenant.receitaTotal)}</TableCell>
+                    <TableCell className="text-green-600 font-semibold">
+                      {formatCurrency(tenant.receitaTotal)}
+                    </TableCell>
                     <TableCell>{tenant.assinaturasAtivas}</TableCell>
                     <TableCell>
-                      <Badge color={getStatusColor(tenant.status) as any} variant="flat">
+                      <Badge
+                        color={getStatusColor(tenant.status) as any}
+                        variant="flat"
+                      >
                         {tenant.status}
                       </Badge>
                     </TableCell>
@@ -225,8 +310,12 @@ export function FinanceiroContent() {
           ) : (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🏢</div>
-              <h3 className="text-lg font-medium text-white mb-2">Nenhum tenant encontrado</h3>
-              <p className="text-default-400">Não há dados de receita para exibir</p>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Nenhum tenant encontrado
+              </h3>
+              <p className="text-default-400">
+                Não há dados de receita para exibir
+              </p>
             </div>
           )}
         </CardBody>
@@ -235,15 +324,21 @@ export function FinanceiroContent() {
       {/* Faturas Recentes */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">📄 Faturas Recentes</h2>
-          <p className="text-sm text-default-400">Últimas faturas emitidas no sistema</p>
+          <h2 className="text-lg font-semibold text-white">
+            📄 Faturas Recentes
+          </h2>
+          <p className="text-sm text-default-400">
+            Últimas faturas emitidas no sistema
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody>
           {loadingFaturas ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">⏳</div>
-              <h3 className="text-lg font-medium text-white mb-2">Carregando faturas...</h3>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Carregando faturas...
+              </h3>
               <p className="text-default-400">Buscando faturas recentes</p>
             </div>
           ) : faturasRecentes.length > 0 ? (
@@ -259,16 +354,29 @@ export function FinanceiroContent() {
               <TableBody>
                 {faturasRecentes.map((fatura) => (
                   <TableRow key={fatura.id}>
-                    <TableCell className="font-medium">{fatura.numero}</TableCell>
+                    <TableCell className="font-medium">
+                      {fatura.numero}
+                    </TableCell>
                     <TableCell>{fatura.tenant.name}</TableCell>
-                    <TableCell className="font-semibold">{formatCurrency(fatura.valor)}</TableCell>
+                    <TableCell className="font-semibold">
+                      {formatCurrency(fatura.valor)}
+                    </TableCell>
                     <TableCell>
-                      <Badge color={getStatusColor(fatura.status) as any} variant="flat">
+                      <Badge
+                        color={getStatusColor(fatura.status) as any}
+                        variant="flat"
+                      >
                         {fatura.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{fatura.vencimento ? formatDate(fatura.vencimento) : "N/A"}</TableCell>
-                    <TableCell>{fatura.pagoEm ? formatDate(fatura.pagoEm) : "N/A"}</TableCell>
+                    <TableCell>
+                      {fatura.vencimento
+                        ? formatDate(fatura.vencimento)
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      {fatura.pagoEm ? formatDate(fatura.pagoEm) : "N/A"}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -276,7 +384,9 @@ export function FinanceiroContent() {
           ) : (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📄</div>
-              <h3 className="text-lg font-medium text-white mb-2">Nenhuma fatura encontrada</h3>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Nenhuma fatura encontrada
+              </h3>
               <p className="text-default-400">Não há faturas para exibir</p>
             </div>
           )}
@@ -286,15 +396,21 @@ export function FinanceiroContent() {
       {/* Pagamentos Recentes */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">💳 Pagamentos Recentes</h2>
-          <p className="text-sm text-default-400">Últimos pagamentos confirmados</p>
+          <h2 className="text-lg font-semibold text-white">
+            💳 Pagamentos Recentes
+          </h2>
+          <p className="text-sm text-default-400">
+            Últimos pagamentos confirmados
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody>
           {loadingPagamentos ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">⏳</div>
-              <h3 className="text-lg font-medium text-white mb-2">Carregando pagamentos...</h3>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Carregando pagamentos...
+              </h3>
               <p className="text-default-400">Buscando pagamentos recentes</p>
             </div>
           ) : pagamentosRecentes.length > 0 ? (
@@ -310,16 +426,27 @@ export function FinanceiroContent() {
               <TableBody>
                 {pagamentosRecentes.map((pagamento) => (
                   <TableRow key={pagamento.id}>
-                    <TableCell className="font-medium">{pagamento.fatura.numero}</TableCell>
+                    <TableCell className="font-medium">
+                      {pagamento.fatura.numero}
+                    </TableCell>
                     <TableCell>{pagamento.fatura.tenant.name}</TableCell>
-                    <TableCell className="font-semibold">{formatCurrency(pagamento.valor)}</TableCell>
+                    <TableCell className="font-semibold">
+                      {formatCurrency(pagamento.valor)}
+                    </TableCell>
                     <TableCell>
-                      <Badge color={getStatusColor(pagamento.status) as any} variant="flat">
+                      <Badge
+                        color={getStatusColor(pagamento.status) as any}
+                        variant="flat"
+                      >
                         {pagamento.status}
                       </Badge>
                     </TableCell>
                     <TableCell>{pagamento.metodo}</TableCell>
-                    <TableCell>{pagamento.confirmadoEm ? formatDate(pagamento.confirmadoEm) : "N/A"}</TableCell>
+                    <TableCell>
+                      {pagamento.confirmadoEm
+                        ? formatDate(pagamento.confirmadoEm)
+                        : "N/A"}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -327,7 +454,9 @@ export function FinanceiroContent() {
           ) : (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">💳</div>
-              <h3 className="text-lg font-medium text-white mb-2">Nenhum pagamento encontrado</h3>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Nenhum pagamento encontrado
+              </h3>
               <p className="text-default-400">Não há pagamentos para exibir</p>
             </div>
           )}
@@ -337,15 +466,21 @@ export function FinanceiroContent() {
       {/* Comissões Pendentes */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">⚖️ Comissões Pendentes</h2>
-          <p className="text-sm text-default-400">Comissões de advogados aguardando pagamento</p>
+          <h2 className="text-lg font-semibold text-white">
+            ⚖️ Comissões Pendentes
+          </h2>
+          <p className="text-sm text-default-400">
+            Comissões de advogados aguardando pagamento
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody>
           {loadingComissoes ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">⏳</div>
-              <h3 className="text-lg font-medium text-white mb-2">Carregando comissões...</h3>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Carregando comissões...
+              </h3>
               <p className="text-default-400">Buscando comissões pendentes</p>
             </div>
           ) : comissoesPendentes.length > 0 ? (
@@ -362,14 +497,23 @@ export function FinanceiroContent() {
               <TableBody>
                 {comissoesPendentes.map((comissao) => (
                   <TableRow key={comissao.id}>
-                    <TableCell className="font-medium">{comissao.advogado.nome}</TableCell>
+                    <TableCell className="font-medium">
+                      {comissao.advogado.nome}
+                    </TableCell>
                     <TableCell>{comissao.advogado.oab}</TableCell>
                     <TableCell>{comissao.pagamento.fatura.numero}</TableCell>
-                    <TableCell>{comissao.pagamento.fatura.tenant.name}</TableCell>
-                    <TableCell className="text-green-600 font-semibold">{formatCurrency(comissao.valorComissao)}</TableCell>
+                    <TableCell>
+                      {comissao.pagamento.fatura.tenant.name}
+                    </TableCell>
+                    <TableCell className="text-green-600 font-semibold">
+                      {formatCurrency(comissao.valorComissao)}
+                    </TableCell>
                     <TableCell>{comissao.percentualComissao}%</TableCell>
                     <TableCell>
-                      <Badge color={getStatusColor(comissao.status) as any} variant="flat">
+                      <Badge
+                        color={getStatusColor(comissao.status) as any}
+                        variant="flat"
+                      >
                         {comissao.status}
                       </Badge>
                     </TableCell>
@@ -380,8 +524,12 @@ export function FinanceiroContent() {
           ) : (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">⚖️</div>
-              <h3 className="text-lg font-medium text-white mb-2">Nenhuma comissão pendente</h3>
-              <p className="text-default-400">Todas as comissões estão em dia</p>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Nenhuma comissão pendente
+              </h3>
+              <p className="text-default-400">
+                Todas as comissões estão em dia
+              </p>
             </div>
           )}
         </CardBody>
@@ -391,30 +539,32 @@ export function FinanceiroContent() {
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
           <h2 className="text-lg font-semibold text-white">⚡ Ações Rápidas</h2>
-          <p className="text-sm text-default-400">Operações financeiras frequentes</p>
+          <p className="text-sm text-default-400">
+            Operações financeiras frequentes
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button color="primary" variant="solid" className="h-16">
+            <Button className="h-16" color="primary" variant="solid">
               <div className="text-center">
                 <div className="text-2xl mb-1">💳</div>
                 <div className="text-sm">Emitir Fatura</div>
               </div>
             </Button>
-            <Button color="secondary" variant="solid" className="h-16">
+            <Button className="h-16" color="secondary" variant="solid">
               <div className="text-center">
                 <div className="text-2xl mb-1">📊</div>
                 <div className="text-sm">Relatório Mensal</div>
               </div>
             </Button>
-            <Button color="success" variant="solid" className="h-16">
+            <Button className="h-16" color="success" variant="solid">
               <div className="text-center">
                 <div className="text-2xl mb-1">💰</div>
                 <div className="text-sm">Pagar Comissão</div>
               </div>
             </Button>
-            <Button color="warning" variant="solid" className="h-16">
+            <Button className="h-16" color="warning" variant="solid">
               <div className="text-center">
                 <div className="text-2xl mb-1">📧</div>
                 <div className="text-sm">Lembrar Cobrança</div>

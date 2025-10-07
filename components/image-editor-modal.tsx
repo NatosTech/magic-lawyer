@@ -1,8 +1,25 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Tabs, Tab, Card, CardBody } from "@heroui/react";
-import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Input,
+  Tabs,
+  Tab,
+  Card,
+  CardBody,
+} from "@heroui/react";
+import ReactCrop, {
+  Crop,
+  PixelCrop,
+  centerCrop,
+  makeAspectCrop,
+} from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 
 interface ImageEditorModalProps {
@@ -12,7 +29,12 @@ interface ImageEditorModalProps {
   currentImageUrl?: string | null;
 }
 
-export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: ImageEditorModalProps) {
+export function ImageEditorModal({
+  isOpen,
+  onClose,
+  onSave,
+  currentImageUrl,
+}: ImageEditorModalProps) {
   const [activeTab, setActiveTab] = useState<"upload" | "url">("upload");
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
@@ -25,41 +47,49 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
   const imgRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { width, height } = e.currentTarget;
-    const crop = centerCrop(
-      makeAspectCrop(
-        {
-          unit: "%",
-          width: 90,
-        },
-        1, // Aspect ratio 1:1 (quadrado)
+  const onImageLoad = useCallback(
+    (e: React.SyntheticEvent<HTMLImageElement>) => {
+      const { width, height } = e.currentTarget;
+      const crop = centerCrop(
+        makeAspectCrop(
+          {
+            unit: "%",
+            width: 90,
+          },
+          1, // Aspect ratio 1:1 (quadrado)
+          width,
+          height,
+        ),
         width,
-        height
-      ),
-      width,
-      height
-    );
-    setCrop(crop);
-  }, []);
+        height,
+      );
+
+      setCrop(crop);
+    },
+    [],
+  );
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+
     if (file) {
       if (!file.type.startsWith("image/")) {
         setError("Por favor, selecione apenas arquivos de imagem.");
+
         return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
         // 5MB limit
         setError("A imagem deve ter no máximo 5MB.");
+
         return;
       }
 
       setImageFile(file);
       setError("");
       const url = URL.createObjectURL(file);
+
       setPreviewUrl(url);
       setImageUrl("");
     }
@@ -67,6 +97,7 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const url = e.target.value;
+
     setImageUrl(url);
     setError("");
 
@@ -84,13 +115,17 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
   const isValidImageUrl = (url: string): boolean => {
     try {
       new URL(url);
+
       return /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(url);
     } catch {
       return false;
     }
   };
 
-  const getCroppedImg = (image: HTMLImageElement, crop: PixelCrop): Promise<string> => {
+  const getCroppedImg = (
+    image: HTMLImageElement,
+    crop: PixelCrop,
+  ): Promise<string> => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
@@ -104,19 +139,30 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
     canvas.width = crop.width;
     canvas.height = crop.height;
 
-    ctx.drawImage(image, crop.x * scaleX, crop.y * scaleY, crop.width * scaleX, crop.height * scaleY, 0, 0, crop.width, crop.height);
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height,
+    );
 
     return new Promise((resolve) => {
       canvas.toBlob(
         (blob) => {
           if (blob) {
             const reader = new FileReader();
+
             reader.onload = () => resolve(reader.result as string);
             reader.readAsDataURL(blob);
           }
         },
         "image/jpeg",
-        0.9
+        0.9,
       );
     });
   };
@@ -124,6 +170,7 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
   const handleSave = async () => {
     if (!previewUrl) {
       setError("Por favor, selecione uma imagem ou insira uma URL.");
+
       return;
     }
 
@@ -134,15 +181,26 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
       if (activeTab === "url" && imageUrl) {
         // Se for URL, salvar diretamente (sem crop)
         onSave(imageUrl, true);
-      } else if (activeTab === "upload" && imageFile && completedCrop && imgRef.current) {
+      } else if (
+        activeTab === "upload" &&
+        imageFile &&
+        completedCrop &&
+        imgRef.current
+      ) {
         // Se for upload com crop, fazer crop e salvar
-        const croppedImageData = await getCroppedImg(imgRef.current, completedCrop);
+        const croppedImageData = await getCroppedImg(
+          imgRef.current,
+          completedCrop,
+        );
+
         onSave(croppedImageData, false);
       } else if (activeTab === "upload" && imageFile && !completedCrop) {
         // Se for upload mas não fez crop, usar a imagem original
         const reader = new FileReader();
+
         reader.onload = (e) => {
           const result = e.target?.result as string;
+
           onSave(result, false);
         };
         reader.readAsDataURL(imageFile);
@@ -169,21 +227,43 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="2xl" scrollBehavior="inside">
+    <Modal
+      isOpen={isOpen}
+      scrollBehavior="inside"
+      size="2xl"
+      onClose={handleClose}
+    >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <h3 className="text-lg font-semibold">Editar Avatar</h3>
-          <p className="text-sm text-default-500">Faça upload de uma imagem (com crop) ou insira uma URL (sem crop)</p>
+          <p className="text-sm text-default-500">
+            Faça upload de uma imagem (com crop) ou insira uma URL (sem crop)
+          </p>
         </ModalHeader>
 
         <ModalBody>
-          <Tabs selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key as "upload" | "url")} className="w-full">
+          <Tabs
+            className="w-full"
+            selectedKey={activeTab}
+            onSelectionChange={(key) => setActiveTab(key as "upload" | "url")}
+          >
             <Tab key="upload" title="Upload">
               <div className="space-y-4">
                 <div className="flex flex-col items-center space-y-4">
-                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                  <input
+                    ref={fileInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    type="file"
+                    onChange={handleFileSelect}
+                  />
 
-                  <Button color="primary" variant="bordered" onPress={() => fileInputRef.current?.click()} className="w-full">
+                  <Button
+                    className="w-full"
+                    color="primary"
+                    variant="bordered"
+                    onPress={() => fileInputRef.current?.click()}
+                  >
                     Selecionar Imagem
                   </Button>
 
@@ -191,10 +271,26 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
                     <Card className="w-full max-w-md">
                       <CardBody className="p-4">
                         <div className="space-y-4">
-                          <p className="text-sm text-center text-default-600">Ajuste o recorte da imagem:</p>
+                          <p className="text-sm text-center text-default-600">
+                            Ajuste o recorte da imagem:
+                          </p>
                           <div className="flex justify-center">
-                            <ReactCrop crop={crop} onChange={(_, percentCrop) => setCrop(percentCrop)} onComplete={(c) => setCompletedCrop(c)} aspect={1} circularCrop>
-                              <img ref={imgRef} alt="Preview" src={previewUrl} onLoad={onImageLoad} className="max-w-full max-h-64 object-contain" />
+                            <ReactCrop
+                              circularCrop
+                              aspect={1}
+                              crop={crop}
+                              onChange={(_, percentCrop) =>
+                                setCrop(percentCrop)
+                              }
+                              onComplete={(c) => setCompletedCrop(c)}
+                            >
+                              <img
+                                ref={imgRef}
+                                alt="Preview"
+                                className="max-w-full max-h-64 object-contain"
+                                src={previewUrl}
+                                onLoad={onImageLoad}
+                              />
                             </ReactCrop>
                           </div>
                         </div>
@@ -209,17 +305,18 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
               <div className="space-y-4">
                 <div className="bg-warning-50 border border-warning-200 rounded-lg p-3">
                   <p className="text-sm text-warning-700">
-                    <strong>Nota:</strong> Imagens via URL são usadas diretamente sem possibilidade de crop.
+                    <strong>Nota:</strong> Imagens via URL são usadas
+                    diretamente sem possibilidade de crop.
                   </p>
                 </div>
 
                 <div>
                   <Input
+                    description="Insira uma URL válida de imagem (JPG, PNG, GIF, WebP, SVG)"
                     label="URL da Imagem"
                     placeholder="https://exemplo.com/imagem.jpg"
                     value={imageUrl}
                     onChange={handleUrlChange}
-                    description="Insira uma URL válida de imagem (JPG, PNG, GIF, WebP, SVG)"
                   />
                 </div>
 
@@ -227,12 +324,14 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
                   <Card className="w-full max-w-md mx-auto">
                     <CardBody className="p-4">
                       <div className="space-y-4">
-                        <p className="text-sm text-center text-default-600">Preview da imagem (será usada como está):</p>
+                        <p className="text-sm text-center text-default-600">
+                          Preview da imagem (será usada como está):
+                        </p>
                         <div className="flex justify-center">
                           <img
-                            src={previewUrl}
                             alt="Preview"
                             className="max-w-full max-h-64 object-contain rounded-lg"
+                            src={previewUrl}
                             onError={() => {
                               setError("Erro ao carregar a imagem da URL.");
                               setPreviewUrl(null);
@@ -247,14 +346,23 @@ export function ImageEditorModal({ isOpen, onClose, onSave, currentImageUrl }: I
             </Tab>
           </Tabs>
 
-          {error && <div className="text-danger text-sm text-center bg-danger-50 p-3 rounded-lg">{error}</div>}
+          {error && (
+            <div className="text-danger text-sm text-center bg-danger-50 p-3 rounded-lg">
+              {error}
+            </div>
+          )}
         </ModalBody>
 
         <ModalFooter>
           <Button color="danger" variant="light" onPress={handleClose}>
             Cancelar
           </Button>
-          <Button color="primary" onPress={handleSave} isLoading={isLoading} isDisabled={!previewUrl || !!error}>
+          <Button
+            color="primary"
+            isDisabled={!previewUrl || !!error}
+            isLoading={isLoading}
+            onPress={handleSave}
+          >
             {isLoading ? "Salvando..." : "Salvar Avatar"}
           </Button>
         </ModalFooter>

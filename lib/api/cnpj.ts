@@ -15,7 +15,9 @@ export async function buscarCnpj(cnpj: string): Promise<CnpjData | null> {
   }
 
   try {
-    const response = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cnpjLimpo}`);
+    const response = await fetch(
+      `https://www.receitaws.com.br/v1/cnpj/${cnpjLimpo}`,
+    );
 
     if (!response.ok) {
       throw new Error(`Erro ao buscar CNPJ: ${response.status}`);
@@ -56,7 +58,9 @@ export async function buscarCnpj(cnpj: string): Promise<CnpjData | null> {
       ddd_telefone_2: "",
       ddd_fax: "",
       qualificacao_do_responsavel: 0,
-      capital_social: parseFloat(data.capital_social?.replace(/[^\d,]/g, "").replace(",", ".") || "0"),
+      capital_social: parseFloat(
+        data.capital_social?.replace(/[^\d,]/g, "").replace(",", ".") || "0",
+      ),
       porte: data.porte,
       descricao_porte: data.porte,
       opcao_pelo_simples: false,
@@ -102,6 +106,7 @@ export function formatarCnpj(cnpj: string): string {
  */
 export function validarCnpj(cnpj: string): boolean {
   const cnpjLimpo = cnpj.replace(/\D/g, "");
+
   return cnpjLimpo.length === 14;
 }
 
@@ -117,12 +122,14 @@ export async function buscarCnpjCached(cnpj: string): Promise<CnpjData | null> {
 
   // Verificar cache
   const cached = cnpjCache.get(cnpjLimpo);
+
   if (cached && now - (cached as any).timestamp < CACHE_DURATION) {
     return cached;
   }
 
   // Buscar novo dado
   const data = await buscarCnpj(cnpj);
+
   if (data) {
     (data as any).timestamp = now;
     cnpjCache.set(cnpjLimpo, data);

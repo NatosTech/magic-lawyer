@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+
 import { getCurrentUserAvatar } from "@/app/actions/profile";
 
 export function useAvatar() {

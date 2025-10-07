@@ -1,8 +1,9 @@
 "use server";
 
+import type { SearchResult } from "@/components/searchbar";
+
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
-import type { SearchResult } from "@/components/searchbar";
 
 export async function searchContent(query: string): Promise<SearchResult[]> {
   if (!query.trim() || query.length < 2) {
@@ -10,6 +11,7 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
   }
 
   const session = await getSession();
+
   if (!session?.user?.tenantId) {
     return [];
   }
@@ -22,7 +24,11 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     const processos = await prisma.processo.findMany({
       where: {
         tenantId: session.user.tenantId,
-        OR: [{ numero: { contains: searchTerm, mode: "insensitive" } }, { assunto: { contains: searchTerm, mode: "insensitive" } }, { observacoes: { contains: searchTerm, mode: "insensitive" } }],
+        OR: [
+          { numero: { contains: searchTerm, mode: "insensitive" } },
+          { assunto: { contains: searchTerm, mode: "insensitive" } },
+          { observacoes: { contains: searchTerm, mode: "insensitive" } },
+        ],
       },
       take: 5,
       select: {
@@ -75,7 +81,9 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
         id: `cliente-${cliente.id}`,
         type: "cliente",
         title: cliente.nome,
-        description: cliente.email || `${cliente.tipo === "PESSOA_FISICA" ? "Pessoa Física" : "Pessoa Jurídica"}`,
+        description:
+          cliente.email ||
+          `${cliente.tipo === "PESSOA_FISICA" ? "Pessoa Física" : "Pessoa Jurídica"}`,
         href: `/clientes/${cliente.id}`,
         status: cliente.tipo === "PESSOA_FISICA" ? "PF" : "PJ",
         statusColor: cliente.tipo === "PESSOA_FISICA" ? "primary" : "secondary",
@@ -86,7 +94,11 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     const documentos = await prisma.documento.findMany({
       where: {
         tenantId: session.user.tenantId,
-        OR: [{ titulo: { contains: searchTerm, mode: "insensitive" } }, { descricao: { contains: searchTerm, mode: "insensitive" } }, { nomeArquivo: { contains: searchTerm, mode: "insensitive" } }],
+        OR: [
+          { titulo: { contains: searchTerm, mode: "insensitive" } },
+          { descricao: { contains: searchTerm, mode: "insensitive" } },
+          { nomeArquivo: { contains: searchTerm, mode: "insensitive" } },
+        ],
       },
       take: 5,
       select: {
@@ -155,7 +167,10 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     const usuarios = await prisma.usuario.findMany({
       where: {
         tenantId: session.user.tenantId,
-        OR: [{ nome: { contains: searchTerm, mode: "insensitive" } }, { email: { contains: searchTerm, mode: "insensitive" } }],
+        OR: [
+          { nome: { contains: searchTerm, mode: "insensitive" } },
+          { email: { contains: searchTerm, mode: "insensitive" } },
+        ],
       },
       take: 3,
       select: {
@@ -192,11 +207,14 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     return results.slice(0, 10); // Limitar a 10 resultados
   } catch (error) {
     console.error("Erro na busca:", error);
+
     return [];
   }
 }
 
-function getStatusColor(status: string): "default" | "primary" | "secondary" | "success" | "warning" | "danger" {
+function getStatusColor(
+  status: string,
+): "default" | "primary" | "secondary" | "success" | "warning" | "danger" {
   switch (status?.toUpperCase()) {
     case "ATIVO":
     case "EM_ANDAMENTO":

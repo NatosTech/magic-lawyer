@@ -1,21 +1,30 @@
 "use server";
 
+import type { Evento, EventoConfirmacaoStatus } from "@/app/generated/prisma";
+
+import { getServerSession } from "next-auth/next";
+import { revalidatePath } from "next/cache";
+
 import prisma from "@/app/lib/prisma";
 import { getTenantWithBranding } from "@/app/lib/tenant";
-import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
-import { revalidatePath } from "next/cache";
+
 // Usar tipos do Prisma - sempre sincronizado com o banco!
-import type { Evento, EventoTipo, EventoStatus, EventoParticipante, EventoConfirmacaoStatus } from "@/app/generated/prisma";
 
 // Tipo para criação de evento (sem campos auto-gerados)
-export type EventoFormData = Omit<Evento, "id" | "tenantId" | "criadoPorId" | "createdAt" | "updatedAt"> & {
+export type EventoFormData = Omit<
+  Evento,
+  "id" | "tenantId" | "criadoPorId" | "createdAt" | "updatedAt"
+> & {
   dataInicio: string; // String para o formulário, será convertido para Date
   dataFim: string; // String para o formulário, será convertido para Date
 };
 
 // Função de validação simples usando tipos do Prisma
-function validateEvento(data: EventoFormData): { isValid: boolean; errors: string[] } {
+function validateEvento(data: EventoFormData): {
+  isValid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   // Validações básicas
@@ -39,6 +48,7 @@ function validateEvento(data: EventoFormData): { isValid: boolean; errors: strin
   if (data.dataInicio && data.dataFim) {
     const inicio = new Date(data.dataInicio);
     const fim = new Date(data.dataFim);
+
     if (fim <= inicio) {
       errors.push("Data de fim deve ser posterior à data de início");
     }
@@ -47,6 +57,7 @@ function validateEvento(data: EventoFormData): { isValid: boolean; errors: strin
   // Validação de emails dos participantes
   if (data.participantes) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     for (const email of data.participantes) {
       if (!emailRegex.test(email)) {
         errors.push(`Email inválido: ${email}`);
@@ -100,9 +111,15 @@ async function getCurrentCliente(userId: string) {
 }
 
 // Buscar eventos do tenant atual
-export async function getEventos(filters?: { dataInicio?: Date; dataFim?: Date; status?: string; tipo?: string }) {
+export async function getEventos(filters?: {
+  dataInicio?: Date;
+  dataFim?: Date;
+  status?: string;
+  tipo?: string;
+}) {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
       throw new Error("Usuário não autenticado");
     }
@@ -139,8 +156,10 @@ export async function getEventos(filters?: { dataInicio?: Date; dataFim?: Date; 
 
     // Se o usuário for um cliente, filtrar apenas eventos relacionados aos seus processos
     const userRole = (session.user as any)?.role;
+
     if (userRole === "CLIENTE") {
       const cliente = await getCurrentCliente(session.user.id);
+
       if (cliente) {
         where.clienteId = cliente.id;
       } else {
@@ -226,9 +245,11 @@ export async function getEventos(filters?: { dataInicio?: Date; dataFim?: Date; 
     return { success: true, data: eventos };
   } catch (error) {
     console.error("Erro ao buscar eventos:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -237,11 +258,13 @@ export async function getEventos(filters?: { dataInicio?: Date; dataFim?: Date; 
 export async function getEventoById(id: string) {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
       throw new Error("Usuário não autenticado");
     }
 
     const tenant = await getCurrentTenant(session.user.id);
+
     if (!tenant) {
       throw new Error("Tenant não encontrado");
     }
@@ -253,8 +276,10 @@ export async function getEventoById(id: string) {
 
     // Se o usuário for um cliente, verificar se o evento pertence aos seus processos
     const userRole = (session.user as any)?.role;
+
     if (userRole === "CLIENTE") {
       const cliente = await getCurrentCliente(session.user.id);
+
       if (cliente) {
         where.clienteId = cliente.id;
       } else {
@@ -319,9 +344,11 @@ export async function getEventoById(id: string) {
     return { success: true, data: evento };
   } catch (error) {
     console.error("Erro ao buscar evento:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -330,17 +357,20 @@ export async function getEventoById(id: string) {
 export async function createEvento(formData: EventoFormData) {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
       throw new Error("Usuário não autenticado");
     }
 
     const tenant = await getCurrentTenant(session.user.id);
+
     if (!tenant) {
       throw new Error("Tenant não encontrado");
     }
 
     // Validar dados
     const validation = validateEvento(formData);
+
     if (!validation.isValid) {
       return {
         success: false,
@@ -357,10 +387,12 @@ export async function createEvento(formData: EventoFormData) {
         },
         select: { id: true, numero: true, titulo: true },
       });
+
       if (!processo) {
         return {
           success: false,
-          error: "Processo selecionado não foi encontrado. Verifique se o processo existe e pertence ao seu escritório.",
+          error:
+            "Processo selecionado não foi encontrado. Verifique se o processo existe e pertence ao seu escritório.",
         };
       }
     }
@@ -373,10 +405,12 @@ export async function createEvento(formData: EventoFormData) {
         },
         select: { id: true, nome: true },
       });
+
       if (!cliente) {
         return {
           success: false,
-          error: "Cliente selecionado não foi encontrado. Verifique se o cliente existe e pertence ao seu escritório.",
+          error:
+            "Cliente selecionado não foi encontrado. Verifique se o cliente existe e pertence ao seu escritório.",
         };
       }
     }
@@ -394,10 +428,12 @@ export async function createEvento(formData: EventoFormData) {
           },
         },
       });
+
       if (!advogado) {
         return {
           success: false,
-          error: "Advogado selecionado não foi encontrado. Verifique se o advogado existe e pertence ao seu escritório.",
+          error:
+            "Advogado selecionado não foi encontrado. Verifique se o advogado existe e pertence ao seu escritório.",
         };
       }
     }
@@ -498,6 +534,7 @@ export async function createEvento(formData: EventoFormData) {
     }
 
     revalidatePath("/agenda");
+
     return { success: true, data: evento };
   } catch (error) {
     console.error("Erro ao criar evento:", error);
@@ -507,19 +544,25 @@ export async function createEvento(formData: EventoFormData) {
       if (error.message.includes("P2003")) {
         return {
           success: false,
-          error: "Erro de referência: um dos itens selecionados (processo, cliente ou advogado) não existe mais. Por favor, recarregue a página e tente novamente.",
+          error:
+            "Erro de referência: um dos itens selecionados (processo, cliente ou advogado) não existe mais. Por favor, recarregue a página e tente novamente.",
         };
       }
       if (error.message.includes("P2002")) {
         return {
           success: false,
-          error: "Já existe um evento com essas características. Verifique os dados e tente novamente.",
+          error:
+            "Já existe um evento com essas características. Verifique os dados e tente novamente.",
         };
       }
-      if (error.message.includes("ZodError") || error.message.includes("Validation")) {
+      if (
+        error.message.includes("ZodError") ||
+        error.message.includes("Validation")
+      ) {
         return {
           success: false,
-          error: "Dados inválidos. Verifique se todos os campos obrigatórios estão preenchidos corretamente.",
+          error:
+            "Dados inválidos. Verifique se todos os campos obrigatórios estão preenchidos corretamente.",
         };
       }
     }
@@ -532,14 +575,19 @@ export async function createEvento(formData: EventoFormData) {
 }
 
 // Atualizar evento
-export async function updateEvento(id: string, formData: Partial<EventoFormData>) {
+export async function updateEvento(
+  id: string,
+  formData: Partial<EventoFormData>,
+) {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
       throw new Error("Usuário não autenticado");
     }
 
     const tenant = await getCurrentTenant(session.user.id);
+
     if (!tenant) {
       throw new Error("Tenant não encontrado");
     }
@@ -559,6 +607,7 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
     // Validar dados se fornecidos
     if (formData) {
       const validation = validateEvento(formData as EventoFormData);
+
       if (!validation.isValid) {
         return {
           success: false,
@@ -575,10 +624,12 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
           tenantId: tenant.id,
         },
       });
+
       if (!processo) {
         return {
           success: false,
-          error: "Processo selecionado não foi encontrado. Verifique se o processo existe e pertence ao seu escritório.",
+          error:
+            "Processo selecionado não foi encontrado. Verifique se o processo existe e pertence ao seu escritório.",
         };
       }
     }
@@ -590,10 +641,12 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
           tenantId: tenant.id,
         },
       });
+
       if (!cliente) {
         return {
           success: false,
-          error: "Cliente selecionado não foi encontrado. Verifique se o cliente existe e pertence ao seu escritório.",
+          error:
+            "Cliente selecionado não foi encontrado. Verifique se o cliente existe e pertence ao seu escritório.",
         };
       }
     }
@@ -605,10 +658,12 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
           tenantId: tenant.id,
         },
       });
+
       if (!advogado) {
         return {
           success: false,
-          error: "Advogado selecionado não foi encontrado. Verifique se o advogado existe e pertence ao seu escritório.",
+          error:
+            "Advogado selecionado não foi encontrado. Verifique se o advogado existe e pertence ao seu escritório.",
         };
       }
     }
@@ -681,10 +736,19 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
 
     // Verificar se houve mudanças que exigem re-confirmação
     const mudancasCriticas =
-      eventoAtual.dataInicio.getTime() !== (formData?.dataInicio ? new Date(formData.dataInicio).getTime() : eventoAtual.dataInicio.getTime()) ||
-      eventoAtual.dataFim.getTime() !== (formData?.dataFim ? new Date(formData.dataFim).getTime() : eventoAtual.dataFim.getTime()) ||
+      eventoAtual.dataInicio.getTime() !==
+        (formData?.dataInicio
+          ? new Date(formData.dataInicio).getTime()
+          : eventoAtual.dataInicio.getTime()) ||
+      eventoAtual.dataFim.getTime() !==
+        (formData?.dataFim
+          ? new Date(formData.dataFim).getTime()
+          : eventoAtual.dataFim.getTime()) ||
       eventoAtual.local !== (formData?.local || eventoAtual.local) ||
-      JSON.stringify(eventoAtual.participantes.sort()) !== JSON.stringify((formData?.participantes || eventoAtual.participantes).sort());
+      JSON.stringify(eventoAtual.participantes.sort()) !==
+        JSON.stringify(
+          (formData?.participantes || eventoAtual.participantes).sort(),
+        );
 
     if (mudancasCriticas) {
       // Resetar todas as confirmações para PENDENTE
@@ -701,7 +765,9 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
       });
 
       // Criar notificações para todos os participantes sobre a mudança
-      const participantes = formData?.participantes || eventoAtual.participantes;
+      const participantes =
+        formData?.participantes || eventoAtual.participantes;
+
       if (participantes.length > 0) {
         const notificacoesData = participantes.map((email) => ({
           tenantId: tenant.id,
@@ -731,12 +797,15 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
     }
 
     revalidatePath("/agenda");
+
     return { success: true, data: evento };
   } catch (error) {
     console.error("Erro ao atualizar evento:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -745,11 +814,13 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
 export async function deleteEvento(id: string) {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
       throw new Error("Usuário não autenticado");
     }
 
     const tenant = await getCurrentTenant(session.user.id);
+
     if (!tenant) {
       throw new Error("Tenant não encontrado");
     }
@@ -771,12 +842,15 @@ export async function deleteEvento(id: string) {
     });
 
     revalidatePath("/agenda");
+
     return { success: true };
   } catch (error) {
     console.error("Erro ao deletar evento:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -785,11 +859,13 @@ export async function deleteEvento(id: string) {
 export async function marcarEventoComoRealizado(id: string) {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
       throw new Error("Usuário não autenticado");
     }
 
     const tenant = await getCurrentTenant(session.user.id);
+
     if (!tenant) {
       throw new Error("Tenant não encontrado");
     }
@@ -801,8 +877,10 @@ export async function marcarEventoComoRealizado(id: string) {
 
     // Se o usuário for um cliente, verificar se o evento pertence aos seus processos
     const userRole = (session.user as any)?.role;
+
     if (userRole === "CLIENTE") {
       const cliente = await getCurrentCliente(session.user.id);
+
       if (cliente) {
         where.clienteId = cliente.id;
       } else {
@@ -818,25 +896,35 @@ export async function marcarEventoComoRealizado(id: string) {
     });
 
     revalidatePath("/agenda");
+
     return { success: true, data: evento };
   } catch (error) {
     console.error("Erro ao marcar evento como realizado:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
 // Confirmar participação em evento
-export async function confirmarParticipacaoEvento(eventoId: string, participanteEmail: string, status: EventoConfirmacaoStatus, observacoes?: string) {
+export async function confirmarParticipacaoEvento(
+  eventoId: string,
+  participanteEmail: string,
+  status: EventoConfirmacaoStatus,
+  observacoes?: string,
+) {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
       throw new Error("Usuário não autenticado");
     }
 
     const tenant = await getCurrentTenant(session.user.id);
+
     if (!tenant) {
       throw new Error("Tenant não encontrado");
     }
@@ -855,7 +943,9 @@ export async function confirmarParticipacaoEvento(eventoId: string, participante
 
     // Verificar se o participante está na lista de participantes do evento
     if (!evento.participantes.includes(participanteEmail)) {
-      throw new Error("Participante não está na lista de participantes do evento");
+      throw new Error(
+        "Participante não está na lista de participantes do evento",
+      );
     }
 
     // Atualizar ou criar confirmação
@@ -890,7 +980,9 @@ export async function confirmarParticipacaoEvento(eventoId: string, participante
     };
 
     const statusLabel = statusLabels[status];
-    const outrosParticipantes = evento.participantes.filter((email) => email !== participanteEmail);
+    const outrosParticipantes = evento.participantes.filter(
+      (email) => email !== participanteEmail,
+    );
 
     if (outrosParticipantes.length > 0) {
       const notificacoesData = outrosParticipantes.map((email) => ({
@@ -918,12 +1010,15 @@ export async function confirmarParticipacaoEvento(eventoId: string, participante
     }
 
     revalidatePath("/agenda");
+
     return { success: true, data: confirmacao };
   } catch (error) {
     console.error("Erro ao confirmar participação:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -932,11 +1027,13 @@ export async function confirmarParticipacaoEvento(eventoId: string, participante
 export async function getConfirmacoesEvento(eventoId: string) {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
       throw new Error("Usuário não autenticado");
     }
 
     const tenant = await getCurrentTenant(session.user.id);
+
     if (!tenant) {
       throw new Error("Tenant não encontrado");
     }
@@ -954,9 +1051,11 @@ export async function getConfirmacoesEvento(eventoId: string) {
     return { success: true, data: confirmacoes };
   } catch (error) {
     console.error("Erro ao buscar confirmações:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -965,11 +1064,13 @@ export async function getConfirmacoesEvento(eventoId: string) {
 export async function getEventoFormData() {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
       throw new Error("Usuário não autenticado");
     }
 
     const tenant = await getCurrentTenant(session.user.id);
+
     if (!tenant) {
       throw new Error("Tenant não encontrado");
     }
@@ -1016,9 +1117,11 @@ export async function getEventoFormData() {
     };
   } catch (error) {
     console.error("Erro ao buscar dados do formulário:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }

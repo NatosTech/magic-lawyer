@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useSession } from "next-auth/react";
+
 import { useUserPermissions } from "./use-user-permissions";
 
 export interface NavigationItem {
@@ -15,7 +16,15 @@ export interface NavigationItem {
 
 export function useProfileNavigation() {
   const { data: session } = useSession();
-  const { userRole, permissions, isAdmin, isAdvogado, isSecretaria, isFinanceiro, isCliente } = useUserPermissions();
+  const {
+    userRole,
+    permissions,
+    isAdmin,
+    isAdvogado,
+    isSecretaria,
+    isFinanceiro,
+    isCliente,
+  } = useUserPermissions();
 
   const navigationItems = useMemo<NavigationItem[]>(() => {
     const items: NavigationItem[] = [];
@@ -167,14 +176,20 @@ export function useProfileNavigation() {
         label: "Juízes",
         href: "/juizes",
         icon: "Scale",
-        description: isCliente ? "Informações sobre juízes" : "Base de dados de juízes",
+        description: isCliente
+          ? "Informações sobre juízes"
+          : "Base de dados de juízes",
         section: "Atividades Jurídicas",
       });
     }
 
     // ===== SEÇÃO: OPERACIONAL =====
     // Agenda - Baseado em permissões
-    if (permissions.canViewAllEvents || permissions.canCreateEvents || permissions.canViewClientEvents) {
+    if (
+      permissions.canViewAllEvents ||
+      permissions.canCreateEvents ||
+      permissions.canViewClientEvents
+    ) {
       items.push({
         label: "Agenda",
         href: "/agenda",
@@ -190,7 +205,11 @@ export function useProfileNavigation() {
         label: "Financeiro",
         href: "/financeiro",
         icon: "DollarSign",
-        description: isCliente ? "Minhas faturas" : isAdvogado ? "Minhas comissões" : "Gestão financeira",
+        description: isCliente
+          ? "Minhas faturas"
+          : isAdvogado
+            ? "Minhas comissões"
+            : "Gestão financeira",
         section: "Operacional",
       });
     }
@@ -208,7 +227,15 @@ export function useProfileNavigation() {
     // }
 
     return items;
-  }, [permissions, userRole, isAdmin, isAdvogado, isSecretaria, isFinanceiro, isCliente]);
+  }, [
+    permissions,
+    userRole,
+    isAdmin,
+    isAdvogado,
+    isSecretaria,
+    isFinanceiro,
+    isCliente,
+  ]);
 
   const secondaryNavigationItems = useMemo<NavigationItem[]>(() => {
     const items: NavigationItem[] = [];

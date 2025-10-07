@@ -1,6 +1,8 @@
 import { Metadata } from "next";
-import { ProfileDashboard } from "@/components/profile-dashboard";
+
 import { AdminDashboardContent } from "./admin-dashboard-content";
+
+import { ProfileDashboard } from "@/components/profile-dashboard";
 
 export const metadata: Metadata = {
   title: "Painel Administrativo",

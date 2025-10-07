@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardBody, CardHeader } from "@heroui/react";
 import { useProfileNavigation } from "@/app/hooks/use-profile-navigation";
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 
@@ -9,7 +8,12 @@ interface ProfileDashboardProps {
 }
 
 export function ProfileDashboard({ children }: ProfileDashboardProps) {
-  const { getDashboardTitle, getDashboardDescription, getWelcomeMessage, userRole } = useProfileNavigation();
+  const {
+    getDashboardTitle,
+    getDashboardDescription,
+    getWelcomeMessage,
+    userRole,
+  } = useProfileNavigation();
   const { permissions } = useUserPermissions();
 
   const getRoleBadgeColor = () => {

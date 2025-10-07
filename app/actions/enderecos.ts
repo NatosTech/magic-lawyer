@@ -2,6 +2,7 @@
 
 import { getServerSession } from "next-auth/next";
 import { revalidatePath } from "next/cache";
+
 import { authOptions } from "../../auth";
 import prisma from "../lib/prisma";
 import { TipoEndereco } from "../generated/prisma";
@@ -54,6 +55,7 @@ async function getCorrectId(user: any) {
         tenantId: user.tenantId,
       },
     });
+
     return { isCliente: true, id: cliente?.id };
   } else {
     // Para usuários normais, usar o usuarioId diretamente
@@ -110,6 +112,7 @@ export async function getEnderecosUsuario() {
     };
   } catch (error) {
     console.error("Erro ao buscar endereços:", error);
+
     return { success: false, error: "Erro interno do servidor", enderecos: [] };
   }
 }
@@ -125,7 +128,12 @@ export async function criarEndereco(data: EnderecoData) {
     }
 
     // Validar dados obrigatórios
-    if (!data.apelido?.trim() || !data.logradouro?.trim() || !data.cidade?.trim() || !data.estado?.trim()) {
+    if (
+      !data.apelido?.trim() ||
+      !data.logradouro?.trim() ||
+      !data.cidade?.trim() ||
+      !data.estado?.trim()
+    ) {
       return { success: false, error: "Dados obrigatórios não preenchidos" };
     }
 
@@ -145,7 +153,10 @@ export async function criarEndereco(data: EnderecoData) {
     });
 
     if (enderecoExistente) {
-      return { success: false, error: "Já existe um endereço com este apelido" };
+      return {
+        success: false,
+        error: "Já existe um endereço com este apelido",
+      };
     }
 
     // Se for principal, desmarcar outros
@@ -206,12 +217,16 @@ export async function criarEndereco(data: EnderecoData) {
     };
   } catch (error) {
     console.error("Erro ao criar endereço:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
 
 // Atualizar endereço
-export async function atualizarEndereco(enderecoId: string, data: EnderecoData) {
+export async function atualizarEndereco(
+  enderecoId: string,
+  data: EnderecoData,
+) {
   try {
     const session = await getServerSession(authOptions);
     const user = session?.user as any;
@@ -242,7 +257,12 @@ export async function atualizarEndereco(enderecoId: string, data: EnderecoData) 
     }
 
     // Validar dados obrigatórios
-    if (!data.apelido?.trim() || !data.logradouro?.trim() || !data.cidade?.trim() || !data.estado?.trim()) {
+    if (
+      !data.apelido?.trim() ||
+      !data.logradouro?.trim() ||
+      !data.cidade?.trim() ||
+      !data.estado?.trim()
+    ) {
       return { success: false, error: "Dados obrigatórios não preenchidos" };
     }
 
@@ -257,7 +277,10 @@ export async function atualizarEndereco(enderecoId: string, data: EnderecoData) 
     });
 
     if (apelidoExistente) {
-      return { success: false, error: "Já existe um endereço com este apelido" };
+      return {
+        success: false,
+        error: "Já existe um endereço com este apelido",
+      };
     }
 
     // Se for principal, desmarcar outros
@@ -317,6 +340,7 @@ export async function atualizarEndereco(enderecoId: string, data: EnderecoData) 
     };
   } catch (error) {
     console.error("Erro ao atualizar endereço:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -361,7 +385,10 @@ export async function deletarEndereco(enderecoId: string) {
     });
 
     if (totalEnderecos <= 1) {
-      return { success: false, error: "Não é possível deletar o único endereço" };
+      return {
+        success: false,
+        error: "Não é possível deletar o único endereço",
+      };
     }
 
     // Deletar endereço
@@ -374,6 +401,7 @@ export async function deletarEndereco(enderecoId: string) {
     return { success: true };
   } catch (error) {
     console.error("Erro ao deletar endereço:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -430,6 +458,7 @@ export async function definirEnderecoPrincipal(enderecoId: string) {
     return { success: true };
   } catch (error) {
     console.error("Erro ao definir endereço principal:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }

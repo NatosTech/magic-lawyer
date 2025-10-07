@@ -2,8 +2,9 @@
 
 import { Input } from "@heroui/input";
 import { User } from "lucide-react";
+import { useState } from "react";
+
 import { formatarCpf, validarCpf } from "@/lib/api/cpf";
-import { useState, useEffect } from "react";
 
 interface CpfInputProps {
   label?: string;
@@ -29,8 +30,9 @@ export function CpfInput({
 
   const handleCpfChange = (newValue: string) => {
     const formatted = formatarCpf(newValue);
+
     onChange?.(formatted);
-    
+
     // Limpar erro ao digitar
     if (isInvalid) {
       setIsInvalid(false);
@@ -52,19 +54,18 @@ export function CpfInput({
 
   return (
     <Input
-      label={label}
-      placeholder={placeholder}
-      value={value}
-      onChange={(e) => handleCpfChange(e.target.value)}
-      onBlur={handleBlur}
-      isRequired={isRequired}
+      className={className}
+      errorMessage={errorMessage}
       isDisabled={isDisabled}
       isInvalid={isInvalid}
-      errorMessage={errorMessage}
-      startContent={<User className="w-4 h-4 text-default-400" />}
-      className={className}
+      isRequired={isRequired}
+      label={label}
       maxLength={14}
+      placeholder={placeholder}
+      startContent={<User className="w-4 h-4 text-default-400" />}
+      value={value}
+      onBlur={handleBlur}
+      onChange={(e) => handleCpfChange(e.target.value)}
     />
   );
 }
-

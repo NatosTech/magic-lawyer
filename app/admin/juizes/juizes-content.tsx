@@ -5,7 +5,14 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
 import { Badge } from "@heroui/badge";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@heroui/table";
 
 import { title, subtitle } from "@/components/primitives";
 
@@ -73,6 +80,7 @@ export function JuizesContent() {
 
   const formatCurrency = (value: number | null) => {
     if (!value) return "Gratuito";
+
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
@@ -82,11 +90,17 @@ export function JuizesContent() {
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 py-12 px-3 sm:px-6">
       <header className="space-y-4">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Administração</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+          Administração
+        </p>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 flex-1">
-            <h1 className={title({ size: "lg", color: "blue" })}>Gerenciar Juízes Globais</h1>
-            <p className={subtitle({ fullWidth: true })}>Administre os juízes públicos e pacotes premium do sistema</p>
+            <h1 className={title({ size: "lg", color: "blue" })}>
+              Gerenciar Juízes Globais
+            </h1>
+            <p className={subtitle({ fullWidth: true })}>
+              Administre os juízes públicos e pacotes premium do sistema
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button color="primary" variant="flat">
@@ -105,8 +119,12 @@ export function JuizesContent() {
           <CardBody className="flex items-center">
             <span className="text-3xl text-blue-600 mr-4">👨‍⚖️</span>
             <div>
-              <p className="text-sm font-medium text-gray-500">Total de Juízes</p>
-              <p className="text-2xl font-bold text-gray-900">{juizes.length}</p>
+              <p className="text-sm font-medium text-gray-500">
+                Total de Juízes
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {juizes.length}
+              </p>
               <p className="text-sm text-blue-600">Globais e privados</p>
             </div>
           </CardBody>
@@ -116,8 +134,12 @@ export function JuizesContent() {
           <CardBody className="flex items-center">
             <span className="text-3xl text-green-600 mr-4">🌐</span>
             <div>
-              <p className="text-sm font-medium text-gray-500">Juízes Globais</p>
-              <p className="text-2xl font-bold text-gray-900">{juizesGlobais.length}</p>
+              <p className="text-sm font-medium text-gray-500">
+                Juízes Globais
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {juizesGlobais.length}
+              </p>
               <p className="text-sm text-green-600">Públicos + Premium</p>
             </div>
           </CardBody>
@@ -128,7 +150,9 @@ export function JuizesContent() {
             <span className="text-3xl text-purple-600 mr-4">💎</span>
             <div>
               <p className="text-sm font-medium text-gray-500">Premium</p>
-              <p className="text-2xl font-bold text-gray-900">{juizesGlobais.filter((j) => j.isPremium).length}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {juizesGlobais.filter((j) => j.isPremium).length}
+              </p>
               <p className="text-sm text-purple-600">Monetizáveis</p>
             </div>
           </CardBody>
@@ -138,8 +162,12 @@ export function JuizesContent() {
           <CardBody className="flex items-center">
             <span className="text-3xl text-yellow-600 mr-4">📊</span>
             <div>
-              <p className="text-sm font-medium text-gray-500">Processos Totais</p>
-              <p className="text-2xl font-bold text-gray-900">{juizes.reduce((sum, j) => sum + j._count.processos, 0)}</p>
+              <p className="text-sm font-medium text-gray-500">
+                Processos Totais
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {juizes.reduce((sum, j) => sum + j._count.processos, 0)}
+              </p>
               <p className="text-sm text-yellow-600">Ativos</p>
             </div>
           </CardBody>
@@ -149,8 +177,13 @@ export function JuizesContent() {
       {/* Lista de Juízes Globais */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">🌐 Juízes Globais</h2>
-          <p className="text-sm text-default-400">Estes juízes são visíveis para todos os tenants e podem ser vendidos como pacotes premium</p>
+          <h2 className="text-lg font-semibold text-white">
+            🌐 Juízes Globais
+          </h2>
+          <p className="text-sm text-default-400">
+            Estes juízes são visíveis para todos os tenants e podem ser vendidos
+            como pacotes premium
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody>
@@ -170,43 +203,76 @@ export function JuizesContent() {
                   <TableRow key={juiz.id}>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-white">{juiz.nome}</span>
-                        {juiz.nomeCompleto && <span className="text-xs text-default-400">{juiz.nomeCompleto}</span>}
-                        <Badge color={getNivelColor(juiz.nivel) as any} variant="flat" size="sm">
+                        <span className="text-sm font-medium text-white">
+                          {juiz.nome}
+                        </span>
+                        {juiz.nomeCompleto && (
+                          <span className="text-xs text-default-400">
+                            {juiz.nomeCompleto}
+                          </span>
+                        )}
+                        <Badge
+                          color={getNivelColor(juiz.nivel) as any}
+                          size="sm"
+                          variant="flat"
+                        >
                           {juiz.nivel.replace("_", " ")}
                         </Badge>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="text-sm text-white">{juiz.comarca}</span>
-                        {juiz.vara && <span className="text-xs text-default-400">{juiz.vara}</span>}
-                        {juiz.tribunal && <span className="text-xs text-primary">{juiz.tribunal.nome}</span>}
+                        <span className="text-sm text-white">
+                          {juiz.comarca}
+                        </span>
+                        {juiz.vara && (
+                          <span className="text-xs text-default-400">
+                            {juiz.vara}
+                          </span>
+                        )}
+                        {juiz.tribunal && (
+                          <span className="text-xs text-primary">
+                            {juiz.tribunal.nome}
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {juiz.especialidades.slice(0, 2).map((esp, index) => (
-                          <Badge key={index} color="primary" variant="flat" size="sm">
+                          <Badge
+                            key={index}
+                            color="primary"
+                            size="sm"
+                            variant="flat"
+                          >
                             {esp.replace("_", " ")}
                           </Badge>
                         ))}
-                        {juiz.especialidades.length > 2 && <span className="text-xs text-default-400">+{juiz.especialidades.length - 2}</span>}
+                        {juiz.especialidades.length > 2 && (
+                          <span className="text-xs text-default-400">
+                            +{juiz.especialidades.length - 2}
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
-                        <Badge color={getStatusColor(juiz.status) as any} variant="flat" size="sm">
+                        <Badge
+                          color={getStatusColor(juiz.status) as any}
+                          size="sm"
+                          variant="flat"
+                        >
                           {juiz.status === "ATIVO" ? "✅ Ativo" : "❌ Inativo"}
                         </Badge>
                         <div className="flex gap-1">
                           {juiz.isPublico && (
-                            <Badge color="success" variant="flat" size="sm">
+                            <Badge color="success" size="sm" variant="flat">
                               🌐 Público
                             </Badge>
                           )}
                           {juiz.isPremium && (
-                            <Badge color="secondary" variant="flat" size="sm">
+                            <Badge color="secondary" size="sm" variant="flat">
                               💎 Premium
                             </Badge>
                           )}
@@ -215,19 +281,29 @@ export function JuizesContent() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-white">{formatCurrency(juiz.precoAcesso)}</span>
-                        {juiz.precoAcesso && <span className="text-xs text-default-400">por acesso</span>}
+                        <span className="text-sm font-medium text-white">
+                          {formatCurrency(juiz.precoAcesso)}
+                        </span>
+                        {juiz.precoAcesso && (
+                          <span className="text-xs text-default-400">
+                            por acesso
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-white">{juiz._count.processos}</span>
-                        <span className="text-xs text-default-400">processos</span>
+                        <span className="text-sm font-medium text-white">
+                          {juiz._count.processos}
+                        </span>
+                        <span className="text-xs text-default-400">
+                          processos
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button size="sm" color="primary" variant="flat">
+                        <Button color="primary" size="sm" variant="flat">
                           ✏️ Editar
                         </Button>
                         <Button size="sm" variant="light">
@@ -242,8 +318,12 @@ export function JuizesContent() {
           ) : (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">👨‍⚖️</div>
-              <h3 className="text-lg font-medium text-white mb-2">Nenhum juiz global encontrado</h3>
-              <p className="text-default-400 mb-4">Os juízes globais aparecerão aqui quando forem criados</p>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Nenhum juiz global encontrado
+              </h3>
+              <p className="text-default-400 mb-4">
+                Os juízes globais aparecerão aqui quando forem criados
+              </p>
               <Button color="primary">➕ Criar Primeiro Juiz</Button>
             </div>
           )}

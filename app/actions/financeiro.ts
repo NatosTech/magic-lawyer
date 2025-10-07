@@ -1,7 +1,8 @@
 "use server";
 
-import prisma from "@/app/lib/prisma";
 import { getServerSession } from "next-auth/next";
+
+import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
 
 // ==================== TIPOS ====================
@@ -100,8 +101,11 @@ async function ensureSuperAdmin() {
   }
 
   const userRole = (session.user as any)?.role;
+
   if (userRole !== "SUPER_ADMIN") {
-    throw new Error("Acesso negado. Apenas Super Admins podem acessar dados financeiros.");
+    throw new Error(
+      "Acesso negado. Apenas Super Admins podem acessar dados financeiros.",
+    );
   }
 
   return session.user.id;
@@ -158,25 +162,33 @@ export async function getEstatisticasFinanceiras(): Promise<{
     });
 
     // Assinaturas
-    const [totalAssinaturas, assinaturasAtivas, assinaturasInadimplentes] = await Promise.all([
-      prisma.tenantSubscription.count(),
-      prisma.tenantSubscription.count({ where: { status: "ATIVA" } }),
-      prisma.tenantSubscription.count({ where: { status: "INADIMPLENTE" } }),
-    ]);
+    const [totalAssinaturas, assinaturasAtivas, assinaturasInadimplentes] =
+      await Promise.all([
+        prisma.tenantSubscription.count(),
+        prisma.tenantSubscription.count({ where: { status: "ATIVA" } }),
+        prisma.tenantSubscription.count({ where: { status: "INADIMPLENTE" } }),
+      ]);
 
     // Faturas
-    const [totalFaturas, faturasPagas, faturasPendentes, faturasVencidas] = await Promise.all([
-      prisma.fatura.count(),
-      prisma.fatura.count({ where: { status: "PAGA" } }),
-      prisma.fatura.count({ where: { status: "ABERTA" } }),
-      prisma.fatura.count({ where: { status: "VENCIDA" } }),
-    ]);
+    const [totalFaturas, faturasPagas, faturasPendentes, faturasVencidas] =
+      await Promise.all([
+        prisma.fatura.count(),
+        prisma.fatura.count({ where: { status: "PAGA" } }),
+        prisma.fatura.count({ where: { status: "ABERTA" } }),
+        prisma.fatura.count({ where: { status: "VENCIDA" } }),
+      ]);
 
     // Pagamentos
-    const [totalPagamentos, pagamentosConfirmados] = await Promise.all([prisma.pagamento.count(), prisma.pagamento.count({ where: { status: "PAGO" } })]);
+    const [totalPagamentos, pagamentosConfirmados] = await Promise.all([
+      prisma.pagamento.count(),
+      prisma.pagamento.count({ where: { status: "PAGO" } }),
+    ]);
 
     // Comissões
-    const [comissoesPendentes, comissoesPagas] = await Promise.all([prisma.pagamentoComissao.count({ where: { status: "PENDENTE" } }), prisma.pagamentoComissao.count({ where: { status: "PAGO" } })]);
+    const [comissoesPendentes, comissoesPagas] = await Promise.all([
+      prisma.pagamentoComissao.count({ where: { status: "PENDENTE" } }),
+      prisma.pagamentoComissao.count({ where: { status: "PAGO" } }),
+    ]);
 
     const estatisticas: EstatisticasFinanceiras = {
       receitaTotal: Number(receitaTotalResult._sum.valor || 0),
@@ -201,9 +213,11 @@ export async function getEstatisticasFinanceiras(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar estatísticas financeiras:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -226,7 +240,12 @@ export async function getResumoMensal(): Promise<{
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const nextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 1);
 
-      const [receitaResult, assinaturasResult, faturasResult, pagamentosResult] = await Promise.all([
+      const [
+        receitaResult,
+        assinaturasResult,
+        faturasResult,
+        pagamentosResult,
+      ] = await Promise.all([
         prisma.pagamento.aggregate({
           where: {
             status: "PAGO",
@@ -266,7 +285,10 @@ export async function getResumoMensal(): Promise<{
       ]);
 
       meses.push({
-        mes: date.toLocaleDateString("pt-BR", { month: "short", year: "numeric" }),
+        mes: date.toLocaleDateString("pt-BR", {
+          month: "short",
+          year: "numeric",
+        }),
         receita: Number(receitaResult._sum.valor || 0),
         assinaturas: assinaturasResult,
         faturas: faturasResult,
@@ -280,9 +302,11 @@ export async function getResumoMensal(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar resumo mensal:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -317,17 +341,21 @@ export async function getTopTenants(): Promise<{
 
     const tenantsComReceita = tenants.map((tenant) => {
       const receitaTotal = tenant.subscription
-        ? tenant.subscription.faturas.reduce((fatTotal: number, fatura: any) => {
-            return (
-              fatTotal +
-              fatura.pagamentos.reduce((pagTotal: number, pagamento: any) => {
-                return pagTotal + Number(pagamento.valor);
-              }, 0)
-            );
-          }, 0)
+        ? tenant.subscription.faturas.reduce(
+            (fatTotal: number, fatura: any) => {
+              return (
+                fatTotal +
+                fatura.pagamentos.reduce((pagTotal: number, pagamento: any) => {
+                  return pagTotal + Number(pagamento.valor);
+                }, 0)
+              );
+            },
+            0,
+          )
         : 0;
 
-      const assinaturasAtivas = tenant.subscription && tenant.subscription.status === "ATIVA" ? 1 : 0;
+      const assinaturasAtivas =
+        tenant.subscription && tenant.subscription.status === "ATIVA" ? 1 : 0;
 
       return {
         id: tenant.id,
@@ -339,7 +367,9 @@ export async function getTopTenants(): Promise<{
     });
 
     // Ordenar por receita total (decrescente) e pegar top 10
-    const topTenants = tenantsComReceita.sort((a, b) => b.receitaTotal - a.receitaTotal).slice(0, 10);
+    const topTenants = tenantsComReceita
+      .sort((a, b) => b.receitaTotal - a.receitaTotal)
+      .slice(0, 10);
 
     return {
       success: true,
@@ -347,9 +377,11 @@ export async function getTopTenants(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar top tenants:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -399,9 +431,11 @@ export async function getFaturasRecentes(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar faturas recentes:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -455,9 +489,11 @@ export async function getPagamentosRecentes(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar pagamentos recentes:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -509,27 +545,31 @@ export async function getComissoesPendentes(): Promise<{
       take: 10,
     });
 
-    const comissoesResumo: ComissaoResumo[] = comissoes.map((comissao: any) => ({
-      id: comissao.id,
-      advogado: {
-        nome: `${comissao.advogado.usuario.firstName} ${comissao.advogado.usuario.lastName}`,
-        oab: `${comissao.advogado.oabNumero}/${comissao.advogado.oabUf}`,
-      },
-      pagamento: {
-        valor: Number(comissao.pagamento.valor),
-        fatura: {
-          numero: comissao.pagamento.fatura.numero || `#${comissao.pagamento.fatura.id.slice(-8)}`,
-          tenant: {
-            name: comissao.pagamento.fatura.tenant.name,
+    const comissoesResumo: ComissaoResumo[] = comissoes.map(
+      (comissao: any) => ({
+        id: comissao.id,
+        advogado: {
+          nome: `${comissao.advogado.usuario.firstName} ${comissao.advogado.usuario.lastName}`,
+          oab: `${comissao.advogado.oabNumero}/${comissao.advogado.oabUf}`,
+        },
+        pagamento: {
+          valor: Number(comissao.pagamento.valor),
+          fatura: {
+            numero:
+              comissao.pagamento.fatura.numero ||
+              `#${comissao.pagamento.fatura.id.slice(-8)}`,
+            tenant: {
+              name: comissao.pagamento.fatura.tenant.name,
+            },
           },
         },
-      },
-      valorComissao: Number(comissao.valorComissao),
-      percentualComissao: Number(comissao.percentualComissao),
-      status: comissao.status,
-      dataPagamento: comissao.dataPagamento || undefined,
-      createdAt: comissao.createdAt,
-    }));
+        valorComissao: Number(comissao.valorComissao),
+        percentualComissao: Number(comissao.percentualComissao),
+        status: comissao.status,
+        dataPagamento: comissao.dataPagamento || undefined,
+        createdAt: comissao.createdAt,
+      }),
+    );
 
     return {
       success: true,
@@ -537,9 +577,11 @@ export async function getComissoesPendentes(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar comissões pendentes:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }

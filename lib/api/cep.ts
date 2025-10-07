@@ -64,6 +64,7 @@ export function formatarCep(cep: string): string {
  */
 export function validarCep(cep: string): boolean {
   const cepLimpo = cep.replace(/\D/g, "");
+
   return cepLimpo.length === 8;
 }
 
@@ -79,12 +80,14 @@ export async function buscarCepCached(cep: string): Promise<CepData | null> {
 
   // Verificar cache
   const cached = cepCache.get(cepLimpo);
+
   if (cached && now - (cached as any).timestamp < CACHE_DURATION) {
     return cached;
   }
 
   // Buscar novo dado
   const data = await buscarCep(cep);
+
   if (data) {
     (data as any).timestamp = now;
     cepCache.set(cepLimpo, data);

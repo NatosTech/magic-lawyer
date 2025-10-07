@@ -1,6 +1,8 @@
 import { Metadata } from "next";
-import { ProfileDashboard } from "@/components/profile-dashboard";
+
 import { FinanceiroContent } from "./financeiro-content";
+
+import { ProfileDashboard } from "@/components/profile-dashboard";
 
 export const metadata: Metadata = {
   title: "Financeiro Global",

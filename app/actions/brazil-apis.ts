@@ -4,7 +4,12 @@ import { getEstadosBrasilCached } from "@/lib/api/brazil-states";
 import { getMunicipiosPorSiglaEstado } from "@/lib/api/brazil-municipios";
 import { buscarCepCached } from "@/lib/api/cep";
 import { buscarCnpjCached } from "@/lib/api/cnpj";
-import { type EstadoIBGE, type MunicipioIBGE, type CepData, type CnpjData } from "@/types/brazil";
+import {
+  type EstadoIBGE,
+  type MunicipioIBGE,
+  type CepData,
+  type CnpjData,
+} from "@/types/brazil";
 
 /**
  * Server Action para buscar estados do Brasil
@@ -16,12 +21,14 @@ export async function getEstadosBrasilAction(): Promise<{
 }> {
   try {
     const estados = await getEstadosBrasilCached();
+
     return {
       success: true,
       estados,
     };
   } catch (error) {
     console.error("Erro ao buscar estados:", error);
+
     return {
       success: false,
       error: "Erro ao buscar estados do Brasil",
@@ -60,6 +67,7 @@ export async function buscarCepAction(cep: string): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar CEP:", error);
+
     return {
       success: false,
       error: "Erro ao buscar CEP",
@@ -70,7 +78,9 @@ export async function buscarCepAction(cep: string): Promise<{
 /**
  * Server Action para buscar municípios por estado
  */
-export async function getMunicipiosPorEstadoAction(siglaEstado: string): Promise<{
+export async function getMunicipiosPorEstadoAction(
+  siglaEstado: string,
+): Promise<{
   success: boolean;
   municipios?: MunicipioIBGE[];
   error?: string;
@@ -91,6 +101,7 @@ export async function getMunicipiosPorEstadoAction(siglaEstado: string): Promise
     };
   } catch (error) {
     console.error("Erro ao buscar municípios:", error);
+
     return {
       success: false,
       error: "Erro ao buscar municípios do estado",
@@ -129,6 +140,7 @@ export async function buscarCnpjAction(cnpj: string): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar CNPJ:", error);
+
     return {
       success: false,
       error: "Erro ao buscar CNPJ",

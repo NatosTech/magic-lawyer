@@ -1,8 +1,12 @@
 "use server";
 
 import prisma from "@/app/lib/prisma";
-import { EspecialidadeJuridica, JuizStatus, JuizNivel, Juiz } from "@/app/generated/prisma";
-import { Decimal } from "@prisma/client/runtime/library";
+import {
+  EspecialidadeJuridica,
+  JuizStatus,
+  JuizNivel,
+  Juiz,
+} from "@/app/generated/prisma";
 
 export interface JuizFilters {
   search?: string;
@@ -14,7 +18,16 @@ export interface JuizFilters {
 }
 
 // Tipo serializado do Juiz (sem Decimal, com strings)
-export interface JuizSerializado extends Omit<Juiz, "precoAcesso" | "createdAt" | "updatedAt" | "dataNascimento" | "dataPosse" | "dataAposentadoria"> {
+export interface JuizSerializado
+  extends Omit<
+    Juiz,
+    | "precoAcesso"
+    | "createdAt"
+    | "updatedAt"
+    | "dataNascimento"
+    | "dataPosse"
+    | "dataAposentadoria"
+  > {
   precoAcesso: number | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -66,7 +79,9 @@ export interface SaveJuizResponse {
 }
 
 // Buscar juízes com filtros - APENAS JUÍZES PÚBLICOS GLOBAIS
-export async function getJuizes(filters?: JuizFilters): Promise<GetJuizesResponse> {
+export async function getJuizes(
+  filters?: JuizFilters,
+): Promise<GetJuizesResponse> {
   try {
     const where: any = {
       // SEGURANÇA: Apenas juízes públicos (globais) são visíveis
@@ -119,9 +134,13 @@ export async function getJuizes(filters?: JuizFilters): Promise<GetJuizesRespons
     const juizesSerializados = juizes.map((juiz) => ({
       ...juiz,
       precoAcesso: juiz.precoAcesso ? Number(juiz.precoAcesso) : null,
-      dataNascimento: juiz.dataNascimento ? juiz.dataNascimento.toISOString() : null,
+      dataNascimento: juiz.dataNascimento
+        ? juiz.dataNascimento.toISOString()
+        : null,
       dataPosse: juiz.dataPosse ? juiz.dataPosse.toISOString() : null,
-      dataAposentadoria: juiz.dataAposentadoria ? juiz.dataAposentadoria.toISOString() : null,
+      dataAposentadoria: juiz.dataAposentadoria
+        ? juiz.dataAposentadoria.toISOString()
+        : null,
       createdAt: juiz.createdAt.toISOString(),
       updatedAt: juiz.updatedAt.toISOString(),
     }));
@@ -132,6 +151,7 @@ export async function getJuizes(filters?: JuizFilters): Promise<GetJuizesRespons
     };
   } catch (error) {
     console.error("Erro ao buscar juízes:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao buscar juízes",
@@ -170,9 +190,13 @@ export async function getJuizById(id: string): Promise<GetJuizResponse> {
     const juizSerializado = {
       ...juiz,
       precoAcesso: juiz.precoAcesso ? Number(juiz.precoAcesso) : null,
-      dataNascimento: juiz.dataNascimento ? juiz.dataNascimento.toISOString() : null,
+      dataNascimento: juiz.dataNascimento
+        ? juiz.dataNascimento.toISOString()
+        : null,
       dataPosse: juiz.dataPosse ? juiz.dataPosse.toISOString() : null,
-      dataAposentadoria: juiz.dataAposentadoria ? juiz.dataAposentadoria.toISOString() : null,
+      dataAposentadoria: juiz.dataAposentadoria
+        ? juiz.dataAposentadoria.toISOString()
+        : null,
       createdAt: juiz.createdAt.toISOString(),
       updatedAt: juiz.updatedAt.toISOString(),
     };
@@ -183,6 +207,7 @@ export async function getJuizById(id: string): Promise<GetJuizResponse> {
     };
   } catch (error) {
     console.error("Erro ao buscar juiz:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao buscar juiz",
@@ -208,6 +233,7 @@ export async function createJuiz(data: any, superAdminId: string) {
     };
   } catch (error) {
     console.error("Erro ao criar juiz:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao criar juiz",
@@ -244,6 +270,7 @@ export async function updateJuiz(id: string, data: any, superAdminId: string) {
     };
   } catch (error) {
     console.error("Erro ao atualizar juiz:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao atualizar juiz",
@@ -278,6 +305,7 @@ export async function deleteJuiz(id: string, superAdminId: string) {
     };
   } catch (error) {
     console.error("Erro ao deletar juiz:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao deletar juiz",
@@ -307,6 +335,7 @@ export async function getJuizFormData() {
     };
   } catch (error) {
     console.error("Erro ao buscar dados do formulário:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -317,6 +346,7 @@ export async function getJuizFormData() {
 // ========== NOVAS SERVER ACTIONS MULTI-TENANT COM AUDITORIA ==========
 
 import { getServerSession } from "next-auth/next";
+
 import { authOptions } from "@/auth";
 
 async function ensureSession() {
@@ -337,7 +367,16 @@ async function ensureSession() {
   return { userId, tenantId, userRole, session };
 }
 
-async function createAuditLog(tenantId: string, usuarioId: string, acao: string, entidade: string, entidadeId: string, dados?: any, previousValues?: any, changedFields?: string[]) {
+async function createAuditLog(
+  tenantId: string,
+  usuarioId: string,
+  acao: string,
+  entidade: string,
+  entidadeId: string,
+  dados?: any,
+  previousValues?: any,
+  changedFields?: string[],
+) {
   try {
     await prisma.auditLog.create({
       data: {
@@ -361,16 +400,22 @@ function serializeJuiz(juiz: any) {
   return {
     ...juiz,
     precoAcesso: juiz.precoAcesso ? juiz.precoAcesso.toString() : null,
-    dataNascimento: juiz.dataNascimento ? juiz.dataNascimento.toISOString() : null,
+    dataNascimento: juiz.dataNascimento
+      ? juiz.dataNascimento.toISOString()
+      : null,
     dataPosse: juiz.dataPosse ? juiz.dataPosse.toISOString() : null,
-    dataAposentadoria: juiz.dataAposentadoria ? juiz.dataAposentadoria.toISOString() : null,
+    dataAposentadoria: juiz.dataAposentadoria
+      ? juiz.dataAposentadoria.toISOString()
+      : null,
     createdAt: juiz.createdAt ? juiz.createdAt.toISOString() : null,
     updatedAt: juiz.updatedAt ? juiz.updatedAt.toISOString() : null,
   };
 }
 
 // Criar juiz - Multi-tenant com auditoria
-export async function createJuizTenant(data: JuizFormData): Promise<SaveJuizResponse> {
+export async function createJuizTenant(
+  data: JuizFormData,
+): Promise<SaveJuizResponse> {
   try {
     const { userId, tenantId } = await ensureSession();
 
@@ -408,7 +453,16 @@ export async function createJuizTenant(data: JuizFormData): Promise<SaveJuizResp
     });
 
     // Criar log de auditoria
-    await createAuditLog(tenantId, userId, "CREATE", "Juiz", juiz.id, { ...data, id: juiz.id }, null, Object.keys(data));
+    await createAuditLog(
+      tenantId,
+      userId,
+      "CREATE",
+      "Juiz",
+      juiz.id,
+      { ...data, id: juiz.id },
+      null,
+      Object.keys(data),
+    );
 
     return {
       success: true,
@@ -416,6 +470,7 @@ export async function createJuizTenant(data: JuizFormData): Promise<SaveJuizResp
     };
   } catch (error) {
     console.error("Erro ao criar juiz:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao criar juiz",
@@ -424,7 +479,10 @@ export async function createJuizTenant(data: JuizFormData): Promise<SaveJuizResp
 }
 
 // Atualizar juiz - Multi-tenant com auditoria
-export async function updateJuizTenant(id: string, data: Partial<JuizFormData>): Promise<SaveJuizResponse> {
+export async function updateJuizTenant(
+  id: string,
+  data: Partial<JuizFormData>,
+): Promise<SaveJuizResponse> {
   try {
     const { userId, tenantId } = await ensureSession();
 
@@ -458,9 +516,10 @@ export async function updateJuizTenant(id: string, data: Partial<JuizFormData>):
     const preparedData = Object.entries(data).reduce(
       (acc, [key, value]) => {
         acc[key] = value === "" || value === undefined ? null : value;
+
         return acc;
       },
-      {} as Record<string, any>
+      {} as Record<string, any>,
     );
 
     // Atualizar juiz
@@ -474,11 +533,21 @@ export async function updateJuizTenant(id: string, data: Partial<JuizFormData>):
     // Identificar campos alterados
     const changedFields = Object.keys(data).filter((key) => {
       const dataKey = key as keyof Partial<JuizFormData>;
+
       return juizAtual[key as keyof typeof juizAtual] !== data[dataKey];
     });
 
     // Criar log de auditoria
-    await createAuditLog(tenantId, userId, "UPDATE", "Juiz", juiz.id, data, juizAtual, changedFields);
+    await createAuditLog(
+      tenantId,
+      userId,
+      "UPDATE",
+      "Juiz",
+      juiz.id,
+      data,
+      juizAtual,
+      changedFields,
+    );
 
     return {
       success: true,
@@ -486,6 +555,7 @@ export async function updateJuizTenant(id: string, data: Partial<JuizFormData>):
     };
   } catch (error) {
     console.error("Erro ao atualizar juiz:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao atualizar juiz",
@@ -523,7 +593,16 @@ export async function deleteJuizTenant(id: string) {
     });
 
     // Criar log de auditoria
-    await createAuditLog(tenantId, userId, "DELETE", "Juiz", id, null, juiz, []);
+    await createAuditLog(
+      tenantId,
+      userId,
+      "DELETE",
+      "Juiz",
+      id,
+      null,
+      juiz,
+      [],
+    );
 
     return {
       success: true,
@@ -531,6 +610,7 @@ export async function deleteJuizTenant(id: string) {
     };
   } catch (error) {
     console.error("Erro ao deletar juiz:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao deletar juiz",
@@ -540,7 +620,11 @@ export async function deleteJuizTenant(id: string) {
 
 // ========== UPLOAD DE FOTO DO JUIZ (IGUAL AO AVATAR DO USUÁRIO) ==========
 
-export async function uploadJuizFoto(formData: FormData, juizId: string, juizNome: string): Promise<{ success: boolean; fotoUrl?: string; error?: string }> {
+export async function uploadJuizFoto(
+  formData: FormData,
+  juizId: string,
+  juizNome: string,
+): Promise<{ success: boolean; fotoUrl?: string; error?: string }> {
   try {
     const { userId, tenantId } = await ensureSession();
 
@@ -558,7 +642,10 @@ export async function uploadJuizFoto(formData: FormData, juizId: string, juizNom
       try {
         new URL(url);
         if (!/\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(url)) {
-          return { success: false, error: "URL deve apontar para uma imagem válida" };
+          return {
+            success: false,
+            error: "URL deve apontar para uma imagem válida",
+          };
         }
         fotoUrl = url;
       } catch {
@@ -566,12 +653,22 @@ export async function uploadJuizFoto(formData: FormData, juizId: string, juizNom
       }
     } else if (file) {
       // Se for um arquivo, fazer upload para Cloudinary
-      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp",
+      ];
+
       if (!allowedTypes.includes(file.type)) {
-        return { success: false, error: "Tipo de arquivo não permitido. Use JPG, PNG ou WebP." };
+        return {
+          success: false,
+          error: "Tipo de arquivo não permitido. Use JPG, PNG ou WebP.",
+        };
       }
 
       const maxSize = 5 * 1024 * 1024; // 5MB
+
       if (file.size > maxSize) {
         return { success: false, error: "Arquivo muito grande. Máximo 5MB." };
       }
@@ -585,10 +682,18 @@ export async function uploadJuizFoto(formData: FormData, juizId: string, juizNom
       const uploadService = UploadService.getInstance();
 
       // Estrutura: magiclawyer/juizes/{nome-juiz}-{juiz-id}/foto_{timestamp}
-      const result = await uploadService.uploadJuizFoto(buffer, juizId, juizNome, file.name);
+      const result = await uploadService.uploadJuizFoto(
+        buffer,
+        juizId,
+        juizNome,
+        file.name,
+      );
 
       if (!result.success || !result.url) {
-        return { success: false, error: result.error || "Erro ao fazer upload" };
+        return {
+          success: false,
+          error: result.error || "Erro ao fazer upload",
+        };
       }
 
       fotoUrl = result.url;
@@ -606,7 +711,16 @@ export async function uploadJuizFoto(formData: FormData, juizId: string, juizNom
     });
 
     // Criar log de auditoria
-    await createAuditLog(tenantId, userId, "UPDATE", "Juiz", juizId, { foto: fotoUrl }, null, ["foto"]);
+    await createAuditLog(
+      tenantId,
+      userId,
+      "UPDATE",
+      "Juiz",
+      juizId,
+      { foto: fotoUrl },
+      null,
+      ["foto"],
+    );
 
     return {
       success: true,
@@ -614,6 +728,7 @@ export async function uploadJuizFoto(formData: FormData, juizId: string, juizNom
     };
   } catch (error) {
     console.error("Erro ao fazer upload da foto do juiz:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -621,7 +736,10 @@ export async function uploadJuizFoto(formData: FormData, juizId: string, juizNom
   }
 }
 
-export async function deleteJuizFoto(juizId: string, fotoUrl: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteJuizFoto(
+  juizId: string,
+  fotoUrl: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     const { userId, tenantId } = await ensureSession();
 
@@ -645,7 +763,16 @@ export async function deleteJuizFoto(juizId: string, fotoUrl: string): Promise<{
       });
 
       // Criar log de auditoria
-      await createAuditLog(tenantId, userId, "UPDATE", "Juiz", juizId, { foto: null }, { foto: fotoUrl }, ["foto"]);
+      await createAuditLog(
+        tenantId,
+        userId,
+        "UPDATE",
+        "Juiz",
+        juizId,
+        { foto: null },
+        { foto: fotoUrl },
+        ["foto"],
+      );
 
       return { success: true };
     } else {
@@ -656,6 +783,7 @@ export async function deleteJuizFoto(juizId: string, fotoUrl: string): Promise<{
     }
   } catch (error) {
     console.error("Erro ao deletar foto do juiz:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",

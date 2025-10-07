@@ -10,7 +10,13 @@ interface UseInfiniteScrollOptions {
   threshold?: number;
 }
 
-export function useInfiniteScroll({ hasMore, isEnabled, shouldUseLoader = true, onLoadMore, threshold = 0.1 }: UseInfiniteScrollOptions) {
+export function useInfiniteScroll({
+  hasMore,
+  isEnabled,
+  shouldUseLoader = true,
+  onLoadMore,
+  threshold = 0.1,
+}: UseInfiniteScrollOptions) {
   const [isLoading, setIsLoading] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const elementRef = useRef<HTMLElement | null>(null);
@@ -18,18 +24,20 @@ export function useInfiniteScroll({ hasMore, isEnabled, shouldUseLoader = true, 
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       const [target] = entries;
+
       if (target.isIntersecting && hasMore && !isLoading && isEnabled) {
         setIsLoading(true);
         onLoadMore();
       }
     },
-    [hasMore, isLoading, isEnabled, onLoadMore]
+    [hasMore, isLoading, isEnabled, onLoadMore],
   );
 
   useEffect(() => {
     if (!isEnabled) return;
 
     const element = elementRef.current;
+
     if (!element) return;
 
     observerRef.current = new IntersectionObserver(handleObserver, {
@@ -51,6 +59,7 @@ export function useInfiniteScroll({ hasMore, isEnabled, shouldUseLoader = true, 
       const timer = setTimeout(() => {
         setIsLoading(false);
       }, 100);
+
       return () => clearTimeout(timer);
     }
   }, [isLoading]);

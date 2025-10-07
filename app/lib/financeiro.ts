@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+import prisma from "./prisma";
 import { sendEmail, emailTemplates } from "./email";
 
 // Interface para resumo financeiro do cliente
@@ -51,7 +51,13 @@ export interface ResumoFinanceiroEscritorio {
 }
 
 // Função para obter resumo financeiro do cliente
-export const getResumoFinanceiroCliente = async (clienteId: string): Promise<{ success: boolean; data?: ResumoFinanceiroCliente; error?: string }> => {
+export const getResumoFinanceiroCliente = async (
+  clienteId: string
+): Promise<{
+  success: boolean;
+  data?: ResumoFinanceiroCliente;
+  error?: string;
+}> => {
   try {
     const cliente = await prisma.cliente.findUnique({
       where: { id: clienteId },
@@ -90,6 +96,7 @@ export const getResumoFinanceiroCliente = async (clienteId: string): Promise<{ s
           if (pagamento.status === "PAGO") {
             return sum + Number(pagamento.valor);
           }
+
           return sum;
         }, 0);
 
@@ -142,6 +149,7 @@ export const getResumoFinanceiroCliente = async (clienteId: string): Promise<{ s
     return { success: true, data: resumo };
   } catch (error) {
     console.error("Erro ao obter resumo financeiro do cliente:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -150,7 +158,13 @@ export const getResumoFinanceiroCliente = async (clienteId: string): Promise<{ s
 };
 
 // Função para obter resumo financeiro do advogado
-export const getResumoFinanceiroAdvogado = async (advogadoId: string): Promise<{ success: boolean; data?: ResumoFinanceiroAdvogado; error?: string }> => {
+export const getResumoFinanceiroAdvogado = async (
+  advogadoId: string
+): Promise<{
+  success: boolean;
+  data?: ResumoFinanceiroAdvogado;
+  error?: string;
+}> => {
   try {
     const advogado = await prisma.advogado.findUnique({
       where: { id: advogadoId },
@@ -194,6 +208,7 @@ export const getResumoFinanceiroAdvogado = async (advogadoId: string): Promise<{
           if (pagamento.status === "PAGO") {
             return sum + Number(pagamento.valor);
           }
+
           return sum;
         }, 0);
 
@@ -236,6 +251,7 @@ export const getResumoFinanceiroAdvogado = async (advogadoId: string): Promise<{
     return { success: true, data: resumo };
   } catch (error) {
     console.error("Erro ao obter resumo financeiro do advogado:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -244,7 +260,13 @@ export const getResumoFinanceiroAdvogado = async (advogadoId: string): Promise<{
 };
 
 // Função para obter resumo financeiro do escritório
-export const getResumoFinanceiroEscritorio = async (tenantId: string): Promise<{ success: boolean; data?: ResumoFinanceiroEscritorio; error?: string }> => {
+export const getResumoFinanceiroEscritorio = async (
+  tenantId: string
+): Promise<{
+  success: boolean;
+  data?: ResumoFinanceiroEscritorio;
+  error?: string;
+}> => {
   try {
     // Buscar todas as faturas do tenant
     const faturas = await prisma.fatura.findMany({
@@ -282,6 +304,7 @@ export const getResumoFinanceiroEscritorio = async (tenantId: string): Promise<{
         if (pagamento.status === "PAGO") {
           return sum + Number(pagamento.valor);
         }
+
         return sum;
       }, 0);
 
@@ -348,6 +371,7 @@ export const getResumoFinanceiroEscritorio = async (tenantId: string): Promise<{
     return { success: true, data: resumo };
   } catch (error) {
     console.error("Erro ao obter resumo financeiro do escritório:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -407,6 +431,7 @@ export const listFaturasPorPeriodo = async (
     return { success: true, data: faturas };
   } catch (error) {
     console.error("Erro ao listar faturas por período:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -480,6 +505,7 @@ export const enviarLembretesVencimento = async () => {
     };
   } catch (error) {
     console.error("Erro ao enviar lembretes de vencimento:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -528,6 +554,7 @@ export const marcarFaturaComoPaga = async (faturaId: string, valorPago: number, 
     return { success: true, data: pagamento };
   } catch (error) {
     console.error("Erro ao marcar fatura como paga:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -573,6 +600,7 @@ export const gerarRelatorioFinanceiro = async (tenantId: string, dataInicio: Dat
             for (const fatura of contrato.faturas) {
               totalFaturado += Number(fatura.valor);
               const pago = fatura.pagamentos.reduce((sum, p) => (p.status === "PAGO" ? sum + Number(p.valor) : sum), 0);
+
               totalPago += pago;
               totalPendente += Number(fatura.valor) - pago;
             }
@@ -622,6 +650,7 @@ export const gerarRelatorioFinanceiro = async (tenantId: string, dataInicio: Dat
             for (const fatura of contrato.faturas) {
               totalFaturado += Number(fatura.valor);
               const pago = fatura.pagamentos.reduce((sum, p) => (p.status === "PAGO" ? sum + Number(p.valor) : sum), 0);
+
               totalPago += pago;
               totalPendente += Number(fatura.valor) - pago;
             }
@@ -666,11 +695,17 @@ export const gerarRelatorioFinanceiro = async (tenantId: string, dataInicio: Dat
         let totalFaturado = 0;
         let totalPago = 0;
         let totalPendente = 0;
-        const faturasPorStatus = { PAGA: 0, ABERTA: 0, VENCIDA: 0, CANCELADA: 0 };
+        const faturasPorStatus = {
+          PAGA: 0,
+          ABERTA: 0,
+          VENCIDA: 0,
+          CANCELADA: 0,
+        };
 
         for (const fatura of faturas) {
           totalFaturado += Number(fatura.valor);
           const pago = fatura.pagamentos.reduce((sum, p) => (p.status === "PAGO" ? sum + Number(p.valor) : sum), 0);
+
           totalPago += pago;
           totalPendente += Number(fatura.valor) - pago;
           faturasPorStatus[fatura.status as keyof typeof faturasPorStatus]++;
@@ -690,6 +725,7 @@ export const gerarRelatorioFinanceiro = async (tenantId: string, dataInicio: Dat
     return { success: true, data: relatorio };
   } catch (error) {
     console.error("Erro ao gerar relatório financeiro:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",

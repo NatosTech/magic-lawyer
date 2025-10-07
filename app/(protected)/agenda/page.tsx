@@ -1,19 +1,63 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Plus, Clock, MapPin, Users, Edit, Trash2, CheckCircle, MoreVertical, Check, X, HelpCircle, AlertCircle, Info } from "lucide-react";
-import { Card, CardBody, CardHeader, Button, ButtonGroup, Badge, Chip, Spinner, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Tooltip } from "@heroui/react";
+import {
+  Calendar,
+  Plus,
+  Clock,
+  MapPin,
+  Users,
+  Edit,
+  Trash2,
+  CheckCircle,
+  MoreVertical,
+  Check,
+  X,
+  HelpCircle,
+  AlertCircle,
+  Info,
+} from "lucide-react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Button,
+  ButtonGroup,
+  Chip,
+  Spinner,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Tooltip,
+} from "@heroui/react";
 import { Calendar as CalendarComponent } from "@heroui/react";
-import { today, getLocalTimeZone, startOfWeek, startOfMonth } from "@internationalized/date";
+import {
+  today,
+  getLocalTimeZone,
+  startOfWeek,
+  startOfMonth,
+} from "@internationalized/date";
 import { useLocale } from "@react-aria/i18n";
-import { useEventos, useEventosHoje, useEventosSemana, useEventosMes } from "@/app/hooks/use-eventos";
-import { deleteEvento, marcarEventoComoRealizado, getEventoById, confirmarParticipacaoEvento } from "@/app/actions/eventos";
-import EventoForm from "@/components/evento-form";
-import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+
+import {
+  useEventos,
+  useEventosHoje,
+  useEventosSemana,
+  useEventosMes,
+} from "@/app/hooks/use-eventos";
+import {
+  deleteEvento,
+  marcarEventoComoRealizado,
+  getEventoById,
+  confirmarParticipacaoEvento,
+} from "@/app/actions/eventos";
+import EventoForm from "@/components/evento-form";
+import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { DateUtils } from "@/app/lib/date-utils";
-import { Evento, EventoConfirmacaoStatus, EventoParticipante } from "@/app/generated/prisma";
+import { Evento, EventoConfirmacaoStatus } from "@/app/generated/prisma";
 
 type ViewMode = "calendar" | "list";
 
@@ -60,7 +104,8 @@ export default function AgendaPage() {
   const [filtroStatus, setFiltroStatus] = useState<string>("");
 
   const locale = useLocale();
-  const { permissions, isCliente, isAdvogado, isSecretaria, isAdmin } = useUserPermissions();
+  const { permissions, isCliente, isAdvogado, isSecretaria, isAdmin } =
+    useUserPermissions();
   const session = useSession();
   const userEmail = session?.data?.user?.email;
 
@@ -83,6 +128,7 @@ export default function AgendaPage() {
     try {
       // Buscar o evento completo com todos os relacionamentos
       const result = await getEventoById(evento.id);
+
       if (result.success && result.data) {
         setEventoEditando(result.data);
         setIsEventoFormOpen(true);
@@ -102,6 +148,7 @@ export default function AgendaPage() {
 
     try {
       const result = await deleteEvento(eventoId);
+
       if (result.success) {
         toast.success("Evento excluído com sucesso!");
         mutate();
@@ -117,6 +164,7 @@ export default function AgendaPage() {
   const handleMarcarComoRealizado = async (eventoId: string) => {
     try {
       const result = await marcarEventoComoRealizado(eventoId);
+
       if (result.success) {
         toast.success("Evento marcado como realizado!");
         mutate();
@@ -135,9 +183,18 @@ export default function AgendaPage() {
     setEventoEditando(null);
   };
 
-  const handleConfirmarParticipacao = async (eventoId: string, participanteEmail: string, status: EventoConfirmacaoStatus) => {
+  const handleConfirmarParticipacao = async (
+    eventoId: string,
+    participanteEmail: string,
+    status: EventoConfirmacaoStatus,
+  ) => {
     try {
-      const result = await confirmarParticipacaoEvento(eventoId, participanteEmail, status);
+      const result = await confirmarParticipacaoEvento(
+        eventoId,
+        participanteEmail,
+        status,
+      );
+
       if (result.success) {
         toast.success("Confirmação atualizada com sucesso!");
         mutate();
@@ -175,7 +232,9 @@ export default function AgendaPage() {
     }
 
     // Verificar se o usuário atual é participante do evento
-    const userConfirmacao = evento.confirmacoes.find((c) => c.participanteEmail === userEmail);
+    const userConfirmacao = evento.confirmacoes.find(
+      (c) => c.participanteEmail === userEmail,
+    );
 
     return (
       <div className="mt-2">
@@ -184,35 +243,67 @@ export default function AgendaPage() {
         {/* Botões de confirmação para o usuário atual se for participante */}
         {userConfirmacao && (
           <div className="mb-2 p-2 bg-default-50 rounded-lg">
-            <div className="text-xs text-default-600 mb-2">Sua confirmação:</div>
+            <div className="text-xs text-default-600 mb-2">
+              Sua confirmação:
+            </div>
             <div className="flex gap-1">
               <Button
-                size="sm"
-                color={userConfirmacao.status === "CONFIRMADO" ? "success" : "default"}
-                variant={userConfirmacao.status === "CONFIRMADO" ? "solid" : "flat"}
-                startContent={<Check className="w-3 h-3" />}
-                onPress={() => handleConfirmarParticipacao(evento.id, userEmail || "", "CONFIRMADO")}
                 className="text-xs"
+                color={
+                  userConfirmacao.status === "CONFIRMADO"
+                    ? "success"
+                    : "default"
+                }
+                size="sm"
+                startContent={<Check className="w-3 h-3" />}
+                variant={
+                  userConfirmacao.status === "CONFIRMADO" ? "solid" : "flat"
+                }
+                onPress={() =>
+                  handleConfirmarParticipacao(
+                    evento.id,
+                    userEmail || "",
+                    "CONFIRMADO",
+                  )
+                }
               >
                 Confirmar
               </Button>
               <Button
-                size="sm"
-                color={userConfirmacao.status === "RECUSADO" ? "danger" : "default"}
-                variant={userConfirmacao.status === "RECUSADO" ? "solid" : "flat"}
-                startContent={<X className="w-3 h-3" />}
-                onPress={() => handleConfirmarParticipacao(evento.id, userEmail || "", "RECUSADO")}
                 className="text-xs"
+                color={
+                  userConfirmacao.status === "RECUSADO" ? "danger" : "default"
+                }
+                size="sm"
+                startContent={<X className="w-3 h-3" />}
+                variant={
+                  userConfirmacao.status === "RECUSADO" ? "solid" : "flat"
+                }
+                onPress={() =>
+                  handleConfirmarParticipacao(
+                    evento.id,
+                    userEmail || "",
+                    "RECUSADO",
+                  )
+                }
               >
                 Recusar
               </Button>
               <Button
-                size="sm"
-                color={userConfirmacao.status === "TALVEZ" ? "secondary" : "default"}
-                variant={userConfirmacao.status === "TALVEZ" ? "solid" : "flat"}
-                startContent={<HelpCircle className="w-3 h-3" />}
-                onPress={() => handleConfirmarParticipacao(evento.id, userEmail || "", "TALVEZ")}
                 className="text-xs"
+                color={
+                  userConfirmacao.status === "TALVEZ" ? "secondary" : "default"
+                }
+                size="sm"
+                startContent={<HelpCircle className="w-3 h-3" />}
+                variant={userConfirmacao.status === "TALVEZ" ? "solid" : "flat"}
+                onPress={() =>
+                  handleConfirmarParticipacao(
+                    evento.id,
+                    userEmail || "",
+                    "TALVEZ",
+                  )
+                }
               >
                 Talvez
               </Button>
@@ -223,20 +314,45 @@ export default function AgendaPage() {
         {/* Lista de confirmações */}
         <div className="flex flex-wrap gap-1">
           {evento.confirmacoes.map((confirmacao) => {
-            const statusInfo = statusConfirmacao[confirmacao.status as keyof typeof statusConfirmacao];
+            const statusInfo =
+              statusConfirmacao[
+                confirmacao.status as keyof typeof statusConfirmacao
+              ];
             const IconComponent = statusInfo?.icon || AlertCircle;
 
             const tooltipContent = (
               <div className="text-xs">
-                <div className="font-semibold">{statusInfo?.label || confirmacao.status}</div>
-                {confirmacao.observacoes && <div className="text-default-400 mt-1">{confirmacao.observacoes}</div>}
-                {confirmacao.confirmadoEm && <div className="text-default-400 mt-1">Confirmado em: {new Date(confirmacao.confirmadoEm).toLocaleString("pt-BR")}</div>}
+                <div className="font-semibold">
+                  {statusInfo?.label || confirmacao.status}
+                </div>
+                {confirmacao.observacoes && (
+                  <div className="text-default-400 mt-1">
+                    {confirmacao.observacoes}
+                  </div>
+                )}
+                {confirmacao.confirmadoEm && (
+                  <div className="text-default-400 mt-1">
+                    Confirmado em:{" "}
+                    {new Date(confirmacao.confirmadoEm).toLocaleString("pt-BR")}
+                  </div>
+                )}
               </div>
             );
 
             return (
-              <Tooltip key={confirmacao.id} content={tooltipContent} color={statusInfo?.color || "default"} placement="top">
-                <Chip size="sm" color={statusInfo?.color || "default"} variant="flat" startContent={<IconComponent className="w-3 h-3" />} className="cursor-help">
+              <Tooltip
+                key={confirmacao.id}
+                color={statusInfo?.color || "default"}
+                content={tooltipContent}
+                placement="top"
+              >
+                <Chip
+                  className="cursor-help"
+                  color={statusInfo?.color || "default"}
+                  size="sm"
+                  startContent={<IconComponent className="w-3 h-3" />}
+                  variant="flat"
+                >
                   {confirmacao.participanteEmail}
                 </Chip>
               </Tooltip>
@@ -253,7 +369,7 @@ export default function AgendaPage() {
         <Card>
           <CardBody className="text-center py-12">
             <p className="text-danger">Erro ao carregar eventos: {error}</p>
-            <Button color="primary" className="mt-4" onPress={() => mutate()}>
+            <Button className="mt-4" color="primary" onPress={() => mutate()}>
               Tentar Novamente
             </Button>
           </CardBody>
@@ -267,22 +383,37 @@ export default function AgendaPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Agenda</h1>
-          <p className="text-default-500 mt-1 text-sm sm:text-base">Gerencie seus compromissos e eventos</p>
+          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+            Agenda
+          </h1>
+          <p className="text-default-500 mt-1 text-sm sm:text-base">
+            Gerencie seus compromissos e eventos
+          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <ButtonGroup className="w-full sm:w-auto">
-            <Button variant={viewMode === "calendar" ? "solid" : "bordered"} onPress={() => setViewMode("calendar")}>
+            <Button
+              variant={viewMode === "calendar" ? "solid" : "bordered"}
+              onPress={() => setViewMode("calendar")}
+            >
               Calendário
             </Button>
-            <Button variant={viewMode === "list" ? "solid" : "bordered"} onPress={() => setViewMode("list")}>
+            <Button
+              variant={viewMode === "list" ? "solid" : "bordered"}
+              onPress={() => setViewMode("list")}
+            >
               Lista
             </Button>
           </ButtonGroup>
 
           {permissions.canCreateEvents && !isCliente && (
-            <Button color="primary" startContent={<Plus className="w-4 h-4" />} onPress={handleCreateEvento} className="w-full sm:w-auto">
+            <Button
+              className="w-full sm:w-auto"
+              color="primary"
+              startContent={<Plus className="w-4 h-4" />}
+              onPress={handleCreateEvento}
+            >
               Novo Evento
             </Button>
           )}
@@ -297,28 +428,71 @@ export default function AgendaPage() {
             <span className="text-sm font-medium">Legenda de Confirmações</span>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Tooltip content="Participante confirmou presença no evento" color="success" placement="top">
-              <Chip size="sm" color="success" variant="flat" startContent={<Check className="w-3 h-3" />} className="cursor-help">
+            <Tooltip
+              color="success"
+              content="Participante confirmou presença no evento"
+              placement="top"
+            >
+              <Chip
+                className="cursor-help"
+                color="success"
+                size="sm"
+                startContent={<Check className="w-3 h-3" />}
+                variant="flat"
+              >
                 Confirmado
               </Chip>
             </Tooltip>
-            <Tooltip content="Participante recusou o convite para o evento" color="danger" placement="top">
-              <Chip size="sm" color="danger" variant="flat" startContent={<X className="w-3 h-3" />} className="cursor-help">
+            <Tooltip
+              color="danger"
+              content="Participante recusou o convite para o evento"
+              placement="top"
+            >
+              <Chip
+                className="cursor-help"
+                color="danger"
+                size="sm"
+                startContent={<X className="w-3 h-3" />}
+                variant="flat"
+              >
                 Recusado
               </Chip>
             </Tooltip>
-            <Tooltip content="Participante marcou como 'talvez' - aguardando confirmação" color="secondary" placement="top">
-              <Chip size="sm" color="secondary" variant="flat" startContent={<HelpCircle className="w-3 h-3" />} className="cursor-help">
+            <Tooltip
+              color="secondary"
+              content="Participante marcou como 'talvez' - aguardando confirmação"
+              placement="top"
+            >
+              <Chip
+                className="cursor-help"
+                color="secondary"
+                size="sm"
+                startContent={<HelpCircle className="w-3 h-3" />}
+                variant="flat"
+              >
                 Talvez
               </Chip>
             </Tooltip>
-            <Tooltip content="Aguardando confirmação do participante" color="warning" placement="top">
-              <Chip size="sm" color="warning" variant="flat" startContent={<AlertCircle className="w-3 h-3" />} className="cursor-help">
+            <Tooltip
+              color="warning"
+              content="Aguardando confirmação do participante"
+              placement="top"
+            >
+              <Chip
+                className="cursor-help"
+                color="warning"
+                size="sm"
+                startContent={<AlertCircle className="w-3 h-3" />}
+                variant="flat"
+              >
                 Pendente
               </Chip>
             </Tooltip>
           </div>
-          <p className="text-xs text-default-400 mt-2">Passe o mouse sobre os chips para ver mais detalhes sobre cada confirmação</p>
+          <p className="text-xs text-default-400 mt-2">
+            Passe o mouse sobre os chips para ver mais detalhes sobre cada
+            confirmação
+          </p>
         </CardBody>
       </Card>
 
@@ -326,25 +500,36 @@ export default function AgendaPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardBody className="text-center">
-            <div className="text-2xl font-bold text-primary">{eventosHoje?.length || 0}</div>
+            <div className="text-2xl font-bold text-primary">
+              {eventosHoje?.length || 0}
+            </div>
             <div className="text-sm text-default-500">Eventos Hoje</div>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center">
-            <div className="text-2xl font-bold text-warning">{eventosSemana?.length || 0}</div>
+            <div className="text-2xl font-bold text-warning">
+              {eventosSemana?.length || 0}
+            </div>
             <div className="text-sm text-default-500">Esta Semana</div>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center">
-            <div className="text-2xl font-bold text-success">{eventosMes?.length || 0}</div>
+            <div className="text-2xl font-bold text-success">
+              {eventosMes?.length || 0}
+            </div>
             <div className="text-sm text-default-500">Este Mês</div>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center">
-            <div className="text-2xl font-bold text-secondary">{(eventos || []).reduce((total, evento) => total + (evento.confirmacoes?.length || 0), 0)}</div>
+            <div className="text-2xl font-bold text-secondary">
+              {(eventos || []).reduce(
+                (total, evento) => total + (evento.confirmacoes?.length || 0),
+                0,
+              )}
+            </div>
             <div className="text-sm text-default-500">Confirmações</div>
           </CardBody>
         </Card>
@@ -356,12 +541,23 @@ export default function AgendaPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center min-w-0">
               <span className="text-sm font-medium flex-shrink-0">Tipo:</span>
-              <ButtonGroup size="sm" variant="bordered" className="flex-wrap min-w-0">
-                <Button variant={filtroTipo === "" ? "solid" : "bordered"} onPress={() => setFiltroTipo("")}>
+              <ButtonGroup
+                className="flex-wrap min-w-0"
+                size="sm"
+                variant="bordered"
+              >
+                <Button
+                  variant={filtroTipo === "" ? "solid" : "bordered"}
+                  onPress={() => setFiltroTipo("")}
+                >
                   Todos
                 </Button>
                 {Object.entries(tiposEvento).map(([key, tipo]) => (
-                  <Button key={key} variant={filtroTipo === key ? "solid" : "bordered"} onPress={() => setFiltroTipo(filtroTipo === key ? "" : key)}>
+                  <Button
+                    key={key}
+                    variant={filtroTipo === key ? "solid" : "bordered"}
+                    onPress={() => setFiltroTipo(filtroTipo === key ? "" : key)}
+                  >
                     {tipo.label}
                   </Button>
                 ))}
@@ -370,12 +566,25 @@ export default function AgendaPage() {
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center min-w-0">
               <span className="text-sm font-medium flex-shrink-0">Status:</span>
-              <ButtonGroup size="sm" variant="bordered" className="flex-wrap min-w-0">
-                <Button variant={filtroStatus === "" ? "solid" : "bordered"} onPress={() => setFiltroStatus("")}>
+              <ButtonGroup
+                className="flex-wrap min-w-0"
+                size="sm"
+                variant="bordered"
+              >
+                <Button
+                  variant={filtroStatus === "" ? "solid" : "bordered"}
+                  onPress={() => setFiltroStatus("")}
+                >
                   Todos
                 </Button>
                 {Object.entries(statusEvento).map(([key, status]) => (
-                  <Button key={key} variant={filtroStatus === key ? "solid" : "bordered"} onPress={() => setFiltroStatus(filtroStatus === key ? "" : key)}>
+                  <Button
+                    key={key}
+                    variant={filtroStatus === key ? "solid" : "bordered"}
+                    onPress={() =>
+                      setFiltroStatus(filtroStatus === key ? "" : key)
+                    }
+                  >
                     {status.label}
                   </Button>
                 ))}
@@ -413,10 +622,43 @@ export default function AgendaPage() {
                     size: "lg",
                   }}
                   topContent={
-                    <ButtonGroup fullWidth className="px-4 pb-4 pt-4 bg-content1 [&>button]:text-default-500 [&>button]:border-default-200/60" radius="full" size="lg" variant="bordered">
-                      <Button onPress={() => setSelectedDate(today(getLocalTimeZone()))}>Hoje</Button>
-                      <Button onPress={() => setSelectedDate(startOfWeek(today(getLocalTimeZone()).add({ weeks: 1 }), "pt-BR"))}>Próxima semana</Button>
-                      <Button onPress={() => setSelectedDate(startOfMonth(today(getLocalTimeZone()).add({ months: 1 })))}>Próximo mês</Button>
+                    <ButtonGroup
+                      fullWidth
+                      className="px-4 pb-4 pt-4 bg-content1 [&>button]:text-default-500 [&>button]:border-default-200/60"
+                      radius="full"
+                      size="lg"
+                      variant="bordered"
+                    >
+                      <Button
+                        onPress={() =>
+                          setSelectedDate(today(getLocalTimeZone()))
+                        }
+                      >
+                        Hoje
+                      </Button>
+                      <Button
+                        onPress={() =>
+                          setSelectedDate(
+                            startOfWeek(
+                              today(getLocalTimeZone()).add({ weeks: 1 }),
+                              "pt-BR",
+                            ),
+                          )
+                        }
+                      >
+                        Próxima semana
+                      </Button>
+                      <Button
+                        onPress={() =>
+                          setSelectedDate(
+                            startOfMonth(
+                              today(getLocalTimeZone()).add({ months: 1 }),
+                            ),
+                          )
+                        }
+                      >
+                        Próximo mês
+                      </Button>
                     </ButtonGroup>
                   }
                   value={selectedDate as any}
@@ -431,7 +673,9 @@ export default function AgendaPage() {
           <div>
             <Card>
               <CardHeader>
-                <h3 className="text-lg font-semibold">Eventos - {formatarDataSelecionada(selectedDate)}</h3>
+                <h3 className="text-lg font-semibold">
+                  Eventos - {formatarDataSelecionada(selectedDate)}
+                </h3>
               </CardHeader>
               <CardBody>
                 {isLoading ? (
@@ -446,17 +690,42 @@ export default function AgendaPage() {
                 ) : (
                   <div className="space-y-3">
                     {eventosFiltrados.map((evento) => (
-                      <Card key={evento.id} className="border-l-4 border-l-primary">
+                      <Card
+                        key={evento.id}
+                        className="border-l-4 border-l-primary"
+                      >
                         <CardBody className="p-4">
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex-1">
-                              <h4 className="font-semibold text-sm">{evento.titulo}</h4>
+                              <h4 className="font-semibold text-sm">
+                                {evento.titulo}
+                              </h4>
                               <div className="flex items-center gap-2 mt-1">
-                                <Chip size="sm" color={tiposEvento[evento.tipo as keyof typeof tiposEvento]?.color || "default"} variant="flat">
-                                  {tiposEvento[evento.tipo as keyof typeof tiposEvento]?.label || evento.tipo}
+                                <Chip
+                                  color={
+                                    tiposEvento[
+                                      evento.tipo as keyof typeof tiposEvento
+                                    ]?.color || "default"
+                                  }
+                                  size="sm"
+                                  variant="flat"
+                                >
+                                  {tiposEvento[
+                                    evento.tipo as keyof typeof tiposEvento
+                                  ]?.label || evento.tipo}
                                 </Chip>
-                                <Chip size="sm" color={statusEvento[evento.status as keyof typeof statusEvento]?.color || "default"} variant="flat">
-                                  {statusEvento[evento.status as keyof typeof statusEvento]?.label || evento.status}
+                                <Chip
+                                  color={
+                                    statusEvento[
+                                      evento.status as keyof typeof statusEvento
+                                    ]?.color || "default"
+                                  }
+                                  size="sm"
+                                  variant="flat"
+                                >
+                                  {statusEvento[
+                                    evento.status as keyof typeof statusEvento
+                                  ]?.label || evento.status}
                                 </Chip>
                               </div>
                             </div>
@@ -470,15 +739,39 @@ export default function AgendaPage() {
                               <DropdownMenu>
                                 {permissions.canEditAllEvents && !isCliente ? (
                                   <>
-                                    <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />} onPress={() => handleEditEvento(evento)}>
+                                    <DropdownItem
+                                      key="edit"
+                                      startContent={
+                                        <Edit className="w-4 h-4" />
+                                      }
+                                      onPress={() => handleEditEvento(evento)}
+                                    >
                                       Editar
                                     </DropdownItem>
                                     {evento.status !== "REALIZADO" && (
-                                      <DropdownItem key="realizado" startContent={<CheckCircle className="w-4 h-4" />} onPress={() => handleMarcarComoRealizado(evento.id)}>
+                                      <DropdownItem
+                                        key="realizado"
+                                        startContent={
+                                          <CheckCircle className="w-4 h-4" />
+                                        }
+                                        onPress={() =>
+                                          handleMarcarComoRealizado(evento.id)
+                                        }
+                                      >
                                         Marcar como Realizado
                                       </DropdownItem>
                                     )}
-                                    <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="w-4 h-4" />} onPress={() => handleDeleteEvento(evento.id)}>
+                                    <DropdownItem
+                                      key="delete"
+                                      className="text-danger"
+                                      color="danger"
+                                      startContent={
+                                        <Trash2 className="w-4 h-4" />
+                                      }
+                                      onPress={() =>
+                                        handleDeleteEvento(evento.id)
+                                      }
+                                    >
                                       Excluir
                                     </DropdownItem>
                                   </>
@@ -490,7 +783,9 @@ export default function AgendaPage() {
                           <div className="space-y-1 text-xs text-default-500">
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              {formatarHora(evento.dataInicio.toString())} - {formatarHora(evento.dataFim.toString())}
+                              {formatarHora(
+                                evento.dataInicio.toString(),
+                              )} - {formatarHora(evento.dataFim.toString())}
                             </div>
                             {evento.local && (
                               <div className="flex items-center gap-1">
@@ -541,26 +836,55 @@ export default function AgendaPage() {
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h4 className="font-semibold text-lg">{evento.titulo}</h4>
-                            <Chip size="sm" color={tiposEvento[evento.tipo as keyof typeof tiposEvento]?.color || "default"} variant="flat">
-                              {tiposEvento[evento.tipo as keyof typeof tiposEvento]?.label || evento.tipo}
+                            <h4 className="font-semibold text-lg">
+                              {evento.titulo}
+                            </h4>
+                            <Chip
+                              color={
+                                tiposEvento[
+                                  evento.tipo as keyof typeof tiposEvento
+                                ]?.color || "default"
+                              }
+                              size="sm"
+                              variant="flat"
+                            >
+                              {tiposEvento[
+                                evento.tipo as keyof typeof tiposEvento
+                              ]?.label || evento.tipo}
                             </Chip>
-                            <Chip size="sm" color={statusEvento[evento.status as keyof typeof statusEvento]?.color || "default"} variant="flat">
-                              {statusEvento[evento.status as keyof typeof statusEvento]?.label || evento.status}
+                            <Chip
+                              color={
+                                statusEvento[
+                                  evento.status as keyof typeof statusEvento
+                                ]?.color || "default"
+                              }
+                              size="sm"
+                              variant="flat"
+                            >
+                              {statusEvento[
+                                evento.status as keyof typeof statusEvento
+                              ]?.label || evento.status}
                             </Chip>
                           </div>
 
-                          {evento.descricao && <p className="text-default-600 mb-3">{evento.descricao}</p>}
+                          {evento.descricao && (
+                            <p className="text-default-600 mb-3">
+                              {evento.descricao}
+                            </p>
+                          )}
 
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4 text-default-400" />
-                              <span>{formatarData(evento.dataInicio.toString())}</span>
+                              <span>
+                                {formatarData(evento.dataInicio.toString())}
+                              </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Clock className="w-4 h-4 text-default-400" />
                               <span>
-                                {formatarHora(evento.dataInicio.toString())} - {formatarHora(evento.dataFim.toString())}
+                                {formatarHora(evento.dataInicio.toString())} -{" "}
+                                {formatarHora(evento.dataFim.toString())}
                               </span>
                             </div>
                             {evento.local && (
@@ -572,14 +896,18 @@ export default function AgendaPage() {
                             {evento.participantes.length > 0 && (
                               <div className="flex items-center gap-2">
                                 <Users className="w-4 h-4 text-default-400" />
-                                <span>{evento.participantes.length} participante(s)</span>
+                                <span>
+                                  {evento.participantes.length} participante(s)
+                                </span>
                               </div>
                             )}
                           </div>
 
                           {(evento as any).cliente && (
                             <div className="mt-3">
-                              <span className="text-xs text-default-500">Cliente: {(evento as any).cliente?.nome}</span>
+                              <span className="text-xs text-default-500">
+                                Cliente: {(evento as any).cliente?.nome}
+                              </span>
                             </div>
                           )}
 
@@ -595,15 +923,33 @@ export default function AgendaPage() {
                           <DropdownMenu>
                             {permissions.canEditAllEvents && !isCliente ? (
                               <>
-                                <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />} onPress={() => handleEditEvento(evento)}>
+                                <DropdownItem
+                                  key="edit"
+                                  startContent={<Edit className="w-4 h-4" />}
+                                  onPress={() => handleEditEvento(evento)}
+                                >
                                   Editar
                                 </DropdownItem>
                                 {evento.status !== "REALIZADO" && (
-                                  <DropdownItem key="realizado" startContent={<CheckCircle className="w-4 h-4" />} onPress={() => handleMarcarComoRealizado(evento.id)}>
+                                  <DropdownItem
+                                    key="realizado"
+                                    startContent={
+                                      <CheckCircle className="w-4 h-4" />
+                                    }
+                                    onPress={() =>
+                                      handleMarcarComoRealizado(evento.id)
+                                    }
+                                  >
                                     Marcar como Realizado
                                   </DropdownItem>
                                 )}
-                                <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="w-4 h-4" />} onPress={() => handleDeleteEvento(evento.id)}>
+                                <DropdownItem
+                                  key="delete"
+                                  className="text-danger"
+                                  color="danger"
+                                  startContent={<Trash2 className="w-4 h-4" />}
+                                  onPress={() => handleDeleteEvento(evento.id)}
+                                >
                                   Excluir
                                 </DropdownItem>
                               </>
@@ -622,12 +968,12 @@ export default function AgendaPage() {
 
       {/* Modal do Formulário */}
       <EventoForm
+        evento={eventoEditando || undefined}
         isOpen={isEventoFormOpen}
         onClose={() => {
           setIsEventoFormOpen(false);
           setEventoEditando(null);
         }}
-        evento={eventoEditando || undefined}
         onSuccess={handleEventoFormSuccess}
       />
     </div>

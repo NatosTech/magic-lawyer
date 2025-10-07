@@ -1,8 +1,8 @@
 "use server";
 
 import { getSession } from "@/app/lib/auth";
-import prisma from "@/app/lib/prisma";
-import { Prisma } from "@/app/generated/prisma";
+import prisma, { toNumber } from "@/app/lib/prisma";
+import { Prisma, ProcuracaoEmitidaPor, ProcuracaoStatus } from "@/app/generated/prisma";
 
 // ============================================
 // TYPES
@@ -10,19 +10,93 @@ import { Prisma } from "@/app/generated/prisma";
 
 export interface ProcuracaoFormData {
   numero?: string;
+  arquivoUrl?: string;
   observacoes?: string;
   emitidaEm?: Date;
   validaAte?: Date;
+  revogadaEm?: Date;
+  assinadaPeloClienteEm?: Date;
   emitidaPor: "ESCRITORIO" | "ADVOGADO";
   clienteId: string;
   modeloId?: string;
   processoIds?: string[];
   advogadoIds: string[];
+  status?: ProcuracaoStatus;
+  ativa?: boolean;
+  poderes?: {
+    titulo?: string;
+    descricao: string;
+  }[];
 }
+
+export type ProcuracaoCreateInput = ProcuracaoFormData;
 
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
+
+const procuracaoListInclude = Prisma.validator<Prisma.ProcuracaoInclude>()({
+  cliente: {
+    select: {
+      id: true,
+      nome: true,
+      tipoPessoa: true,
+    },
+  },
+  modelo: {
+    select: {
+      id: true,
+      nome: true,
+      categoria: true,
+    },
+  },
+  outorgados: {
+    include: {
+      advogado: {
+        select: {
+          id: true,
+          oabNumero: true,
+          oabUf: true,
+          usuario: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      },
+    },
+  },
+  processos: {
+    include: {
+      processo: {
+        select: {
+          id: true,
+          numero: true,
+          titulo: true,
+        },
+      },
+    },
+  },
+  poderes: {
+    select: {
+      id: true,
+      titulo: true,
+      descricao: true,
+      ativo: true,
+    },
+  },
+  _count: {
+    select: {
+      processos: true,
+      outorgados: true,
+    },
+  },
+});
+
+export type ProcuracaoListItem = Prisma.ProcuracaoGetPayload<{
+  include: typeof procuracaoListInclude;
+}>;
 
 async function getAdvogadoIdFromSession(session: { user: any }): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
@@ -70,11 +144,13 @@ export async function getAllProcuracoes(): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -85,12 +161,14 @@ export async function getAllProcuracoes(): Promise<{
 
     // CLIENTE: Apenas suas procurações
     const clienteId = await getClienteIdFromSession(session);
+
     if (clienteId) {
       whereClause.clienteId = clienteId;
     }
     // ADVOGADO: Procurações onde ele está habilitado OU dos clientes que ele criou
     else if (user.role === "ADVOGADO") {
       const advogadoId = await getAdvogadoIdFromSession(session);
+
       if (!advogadoId) {
         return { success: false, error: "Advogado não encontrado" };
       }
@@ -160,60 +238,7 @@ export async function getAllProcuracoes(): Promise<{
 
     const procuracoes = await prisma.procuracao.findMany({
       where: whereClause,
-      include: {
-        cliente: {
-          select: {
-            id: true,
-            nome: true,
-            tipoPessoa: true,
-          },
-        },
-        modelo: {
-          select: {
-            id: true,
-            nome: true,
-            categoria: true,
-          },
-        },
-        outorgados: {
-          include: {
-            advogado: {
-              select: {
-                id: true,
-                oabNumero: true,
-                oabUf: true,
-                especialidades: true,
-                bio: true,
-                telefone: true,
-                whatsapp: true,
-                usuario: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        processos: {
-          include: {
-            processo: {
-              select: {
-                id: true,
-                numero: true,
-                titulo: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            processos: true,
-            outorgados: true,
-          },
-        },
-      },
+      include: procuracaoListInclude,
       orderBy: {
         createdAt: "desc",
       },
@@ -226,6 +251,7 @@ export async function getAllProcuracoes(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar todas as procurações:", error);
+
     return {
       success: false,
       error: "Erro ao buscar procurações",
@@ -243,11 +269,13 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -260,6 +288,7 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
     // Verificar acesso baseado no role
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
       const advogadoId = await getAdvogadoIdFromSession(session);
+
       if (!advogadoId) {
         return { success: false, error: "Acesso negado" };
       }
@@ -348,15 +377,33 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
     });
 
     if (!procuracao) {
-      return { success: false, error: "Procuração não encontrada ou sem acesso" };
+      return {
+        success: false,
+        error: "Procuração não encontrada ou sem acesso",
+      };
     }
+
+    // Converter Decimals para number nos advogados outorgados
+    const procuracaoSerializada = {
+      ...procuracao,
+      outorgados: procuracao.outorgados?.map((outorgado: any) => ({
+        ...outorgado,
+        advogado: {
+          ...outorgado.advogado,
+          comissaoPadrao: toNumber(outorgado.advogado.comissaoPadrao) || 0,
+          comissaoAcaoGanha: toNumber(outorgado.advogado.comissaoAcaoGanha) || 0,
+          comissaoHonorarios: toNumber(outorgado.advogado.comissaoHonorarios) || 0,
+        },
+      })),
+    };
 
     return {
       success: true,
-      procuracao: procuracao,
+      procuracao: procuracaoSerializada,
     };
   } catch (error) {
     console.error("Erro ao buscar procuração:", error);
+
     return {
       success: false,
       error: "Erro ao buscar procuração",
@@ -374,11 +421,13 @@ export async function getProcuracoesCliente(clienteId: string): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -393,6 +442,7 @@ export async function getProcuracoesCliente(clienteId: string): Promise<{
     // Se não for ADMIN, verificar se é advogado vinculado
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
       const advogadoId = await getAdvogadoIdFromSession(session);
+
       if (!advogadoId) {
         return { success: false, error: "Acesso negado" };
       }
@@ -476,6 +526,7 @@ export async function getProcuracoesCliente(clienteId: string): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar procurações do cliente:", error);
+
     return {
       success: false,
       error: "Erro ao buscar procurações do cliente",
@@ -493,11 +544,13 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -548,7 +601,10 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
       });
 
       if (advogados.length !== data.advogadoIds.length) {
-        return { success: false, error: "Um ou mais advogados não encontrados" };
+        return {
+          success: false,
+          error: "Um ou mais advogados não encontrados",
+        };
       }
     }
 
@@ -565,7 +621,10 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
       });
 
       if (processos.length !== data.processoIds.length) {
-        return { success: false, error: "Um ou mais processos não encontrados" };
+        return {
+          success: false,
+          error: "Um ou mais processos não encontrados",
+        };
       }
     }
 
@@ -576,60 +635,18 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
         clienteId: data.clienteId,
         modeloId: data.modeloId,
         numero: data.numero,
+        arquivoUrl: data.arquivoUrl,
         observacoes: data.observacoes,
         emitidaEm: data.emitidaEm,
         validaAte: data.validaAte,
-        emitidaPor: data.emitidaPor,
+        revogadaEm: data.revogadaEm,
+        assinadaPeloClienteEm: data.assinadaPeloClienteEm,
+        emitidaPor: data.emitidaPor === "ADVOGADO" ? ProcuracaoEmitidaPor.ADVOGADO : ProcuracaoEmitidaPor.ESCRITORIO,
+        status: data.status ?? ProcuracaoStatus.RASCUNHO,
+        ativa: data.ativa ?? true,
         createdById: user.id,
       },
-      include: {
-        cliente: {
-          select: {
-            id: true,
-            nome: true,
-            tipoPessoa: true,
-          },
-        },
-        modelo: {
-          select: {
-            id: true,
-            nome: true,
-            categoria: true,
-          },
-        },
-        outorgados: {
-          include: {
-            advogado: {
-              select: {
-                id: true,
-                oabNumero: true,
-                oabUf: true,
-                especialidades: true,
-                bio: true,
-                telefone: true,
-                whatsapp: true,
-                usuario: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        processos: {
-          include: {
-            processo: {
-              select: {
-                id: true,
-                numero: true,
-                titulo: true,
-              },
-            },
-          },
-        },
-      },
+      include: procuracaoListInclude,
     });
 
     // Vincular advogados
@@ -654,15 +671,424 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
       });
     }
 
+    if (data.poderes && data.poderes.length > 0) {
+      const poderesParaCriar = data.poderes
+        .filter((poder) => poder.descricao.trim().length > 0)
+        .map((poder) => ({
+          tenantId: user.tenantId,
+          procuracaoId: procuracao.id,
+          titulo: poder.titulo,
+          descricao: poder.descricao,
+        }));
+
+      if (poderesParaCriar.length > 0) {
+        await prisma.procuracaoPoder.createMany({
+          data: poderesParaCriar,
+        });
+      }
+    }
+
     return {
       success: true,
       procuracao: procuracao,
     };
   } catch (error) {
     console.error("Erro ao criar procuração:", error);
+
     return {
       success: false,
       error: "Erro ao criar procuração",
+    };
+  }
+}
+
+// ============================================
+// UPDATE PROCURAÇÃO
+// ============================================
+
+export interface ProcuracaoUpdateInput {
+  numero?: string;
+  arquivoUrl?: string;
+  observacoes?: string;
+  emitidaEm?: string;
+  validaAte?: string;
+  revogadaEm?: string;
+  status?: ProcuracaoStatus;
+  emitidaPor?: ProcuracaoEmitidaPor;
+  ativa?: boolean;
+}
+
+export async function updateProcuracao(
+  procuracaoId: string,
+  data: ProcuracaoUpdateInput
+): Promise<{
+  success: boolean;
+  procuracao?: any;
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Verificar se a procuração existe e o usuário tem acesso
+    const procuracaoExistente = await prisma.procuracao.findFirst({
+      where: {
+        id: procuracaoId,
+        tenantId: user.tenantId,
+      },
+    });
+
+    if (!procuracaoExistente) {
+      return { success: false, error: "Procuração não encontrada" };
+    }
+
+    // Atualizar procuração
+    const procuracao = await prisma.procuracao.update({
+      where: {
+        id: procuracaoId,
+      },
+      data: {
+        numero: data.numero,
+        arquivoUrl: data.arquivoUrl,
+        observacoes: data.observacoes,
+        emitidaEm: data.emitidaEm ? new Date(data.emitidaEm) : undefined,
+        validaAte: data.validaAte ? new Date(data.validaAte) : undefined,
+        revogadaEm: data.revogadaEm ? new Date(data.revogadaEm) : undefined,
+        status: data.status,
+        emitidaPor: data.emitidaPor,
+        ativa: data.ativa,
+      },
+      include: procuracaoListInclude,
+    });
+
+    return {
+      success: true,
+      procuracao,
+    };
+  } catch (error) {
+    console.error("Erro ao atualizar procuração:", error);
+
+    return {
+      success: false,
+      error: "Erro ao atualizar procuração",
+    };
+  }
+}
+
+// ============================================
+// DELETE PROCURAÇÃO
+// ============================================
+
+export async function deleteProcuracao(procuracaoId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Verificar se a procuração existe e o usuário tem acesso
+    const procuracao = await prisma.procuracao.findFirst({
+      where: {
+        id: procuracaoId,
+        tenantId: user.tenantId,
+      },
+    });
+
+    if (!procuracao) {
+      return { success: false, error: "Procuração não encontrada" };
+    }
+
+    // Deletar procuração (cascade deleta os relacionamentos)
+    await prisma.procuracao.delete({
+      where: {
+        id: procuracaoId,
+      },
+    });
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("Erro ao deletar procuração:", error);
+
+    return {
+      success: false,
+      error: "Erro ao deletar procuração",
+    };
+  }
+}
+
+// ============================================
+// ADVOGADOS
+// ============================================
+
+export async function adicionarAdvogadoNaProcuracao(
+  procuracaoId: string,
+  advogadoId: string
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Verificar se a procuração existe
+    const procuracao = await prisma.procuracao.findFirst({
+      where: {
+        id: procuracaoId,
+        tenantId: user.tenantId,
+      },
+    });
+
+    if (!procuracao) {
+      return { success: false, error: "Procuração não encontrada" };
+    }
+
+    // Verificar se o advogado existe
+    const advogado = await prisma.advogado.findFirst({
+      where: {
+        id: advogadoId,
+        tenantId: user.tenantId,
+      },
+    });
+
+    if (!advogado) {
+      return { success: false, error: "Advogado não encontrado" };
+    }
+
+    // Verificar se já existe o vínculo
+    const vinculoExistente = await prisma.procuracaoAdvogado.findFirst({
+      where: {
+        procuracaoId,
+        advogadoId,
+      },
+    });
+
+    if (vinculoExistente) {
+      return { success: false, error: "Advogado já está na procuração" };
+    }
+
+    // Criar vínculo
+    await prisma.procuracaoAdvogado.create({
+      data: {
+        tenantId: user.tenantId,
+        procuracaoId,
+        advogadoId,
+      },
+    });
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("Erro ao adicionar advogado na procuração:", error);
+
+    return {
+      success: false,
+      error: "Erro ao adicionar advogado na procuração",
+    };
+  }
+}
+
+export async function removerAdvogadoDaProcuracao(
+  procuracaoId: string,
+  advogadoId: string
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Remover vínculo
+    const result = await prisma.procuracaoAdvogado.deleteMany({
+      where: {
+        procuracaoId,
+        advogadoId,
+        tenantId: user.tenantId,
+      },
+    });
+
+    if (result.count === 0) {
+      return { success: false, error: "Vínculo não encontrado" };
+    }
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("Erro ao remover advogado da procuração:", error);
+
+    return {
+      success: false,
+      error: "Erro ao remover advogado da procuração",
+    };
+  }
+}
+
+// ============================================
+// PROCESSOS
+// ============================================
+
+export async function vincularProcesso(
+  procuracaoId: string,
+  processoId: string
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Verificar se a procuração existe
+    const procuracao = await prisma.procuracao.findFirst({
+      where: {
+        id: procuracaoId,
+        tenantId: user.tenantId,
+      },
+    });
+
+    if (!procuracao) {
+      return { success: false, error: "Procuração não encontrada" };
+    }
+
+    // Verificar se o processo existe
+    const processo = await prisma.processo.findFirst({
+      where: {
+        id: processoId,
+        tenantId: user.tenantId,
+      },
+    });
+
+    if (!processo) {
+      return { success: false, error: "Processo não encontrado" };
+    }
+
+    // Verificar se já existe o vínculo
+    const vinculoExistente = await prisma.procuracaoProcesso.findFirst({
+      where: {
+        procuracaoId,
+        processoId,
+      },
+    });
+
+    if (vinculoExistente) {
+      return { success: false, error: "Processo já está vinculado" };
+    }
+
+    // Criar vínculo
+    await prisma.procuracaoProcesso.create({
+      data: {
+        tenantId: user.tenantId,
+        procuracaoId,
+        processoId,
+      },
+    });
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("Erro ao vincular processo:", error);
+
+    return {
+      success: false,
+      error: "Erro ao vincular processo",
+    };
+  }
+}
+
+export async function desvincularProcesso(
+  procuracaoId: string,
+  processoId: string
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Remover vínculo
+    const result = await prisma.procuracaoProcesso.deleteMany({
+      where: {
+        procuracaoId,
+        processoId,
+        tenantId: user.tenantId,
+      },
+    });
+
+    if (result.count === 0) {
+      return { success: false, error: "Vínculo não encontrado" };
+    }
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("Erro ao desvincular processo:", error);
+
+    return {
+      success: false,
+      error: "Erro ao desvincular processo",
     };
   }
 }

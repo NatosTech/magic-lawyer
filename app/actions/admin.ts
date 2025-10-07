@@ -1,7 +1,8 @@
 "use server";
 
-import prisma from "@/app/lib/prisma";
 import bcrypt from "bcryptjs";
+
+import prisma from "@/app/lib/prisma";
 
 // =============================================
 // TENANT MANAGEMENT
@@ -33,7 +34,10 @@ export interface TenantResponse {
 }
 
 // Criar novo tenant
-export async function createTenant(data: CreateTenantData, superAdminId: string): Promise<TenantResponse> {
+export async function createTenant(
+  data: CreateTenantData,
+  superAdminId: string,
+): Promise<TenantResponse> {
   try {
     // Verificar se slug já existe
     const existingTenant = await prisma.tenant.findUnique({
@@ -124,6 +128,7 @@ export async function createTenant(data: CreateTenantData, superAdminId: string)
     };
   } catch (error) {
     console.error("Erro ao criar tenant:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao criar tenant",
@@ -166,6 +171,7 @@ export async function getAllTenants(): Promise<TenantResponse> {
     };
   } catch (error) {
     console.error("Erro ao buscar tenants:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao buscar tenants",
@@ -174,7 +180,11 @@ export async function getAllTenants(): Promise<TenantResponse> {
 }
 
 // Atualizar status do tenant
-export async function updateTenantStatus(tenantId: string, status: "ACTIVE" | "SUSPENDED" | "CANCELLED", superAdminId: string): Promise<TenantResponse> {
+export async function updateTenantStatus(
+  tenantId: string,
+  status: "ACTIVE" | "SUSPENDED" | "CANCELLED",
+  superAdminId: string,
+): Promise<TenantResponse> {
   try {
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
@@ -210,6 +220,7 @@ export async function updateTenantStatus(tenantId: string, status: "ACTIVE" | "S
     };
   } catch (error) {
     console.error("Erro ao atualizar status do tenant:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao atualizar tenant",
@@ -234,7 +245,12 @@ export interface CreateJuizData {
   dataNascimento?: Date;
   dataPosse?: Date;
   status: "ATIVO" | "INATIVO" | "APOSENTADO";
-  nivel: "JUIZ_SUBSTITUTO" | "JUIZ_TITULAR" | "DESEMBARGADOR" | "MINISTRO" | "OUTROS";
+  nivel:
+    | "JUIZ_SUBSTITUTO"
+    | "JUIZ_TITULAR"
+    | "DESEMBARGADOR"
+    | "MINISTRO"
+    | "OUTROS";
   especialidades: string[];
   vara?: string;
   comarca?: string;
@@ -256,7 +272,10 @@ export interface CreateJuizData {
 }
 
 // Criar novo juiz global
-export async function createJuizGlobal(data: CreateJuizData, superAdminId: string): Promise<TenantResponse> {
+export async function createJuizGlobal(
+  data: CreateJuizData,
+  superAdminId: string,
+): Promise<TenantResponse> {
   try {
     const juiz = await prisma.juiz.create({
       data: {
@@ -287,6 +306,7 @@ export async function createJuizGlobal(data: CreateJuizData, superAdminId: strin
     };
   } catch (error) {
     console.error("Erro ao criar juiz:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao criar juiz",
@@ -328,6 +348,7 @@ export async function getAllJuizes(): Promise<TenantResponse> {
     };
   } catch (error) {
     console.error("Erro ao buscar juízes:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao buscar juízes",
@@ -336,7 +357,11 @@ export async function getAllJuizes(): Promise<TenantResponse> {
 }
 
 // Atualizar juiz
-export async function updateJuizGlobal(juizId: string, data: Partial<CreateJuizData>, superAdminId: string): Promise<TenantResponse> {
+export async function updateJuizGlobal(
+  juizId: string,
+  data: Partial<CreateJuizData>,
+  superAdminId: string,
+): Promise<TenantResponse> {
   try {
     // Verificar se o juiz existe e se o super admin tem permissão
     const juizExistente = await prisma.juiz.findFirst({
@@ -376,6 +401,7 @@ export async function updateJuizGlobal(juizId: string, data: Partial<CreateJuizD
     };
   } catch (error) {
     console.error("Erro ao atualizar juiz:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao atualizar juiz",
@@ -388,7 +414,10 @@ export async function updateJuizGlobal(juizId: string, data: Partial<CreateJuizD
 // =============================================
 
 // Buscar logs de auditoria
-export async function getAuditLogs(superAdminId: string, limit: number = 50): Promise<TenantResponse> {
+export async function getAuditLogs(
+  superAdminId: string,
+  limit: number = 50,
+): Promise<TenantResponse> {
   try {
     const logs = await prisma.superAdminAuditLog.findMany({
       where: { superAdminId },
@@ -402,6 +431,7 @@ export async function getAuditLogs(superAdminId: string, limit: number = 50): Pr
     };
   } catch (error) {
     console.error("Erro ao buscar logs de auditoria:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor ao buscar logs",

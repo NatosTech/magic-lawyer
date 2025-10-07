@@ -1,8 +1,9 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
+
 import { authOptions } from "@/auth";
-import prisma from "@/lib/prisma";
+import prisma from "@/app/lib/prisma";
 import { TicketStatus, TicketPriority, TicketCategory } from "@/app/generated/prisma";
 
 export interface CreateTicketData {

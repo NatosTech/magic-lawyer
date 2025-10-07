@@ -112,19 +112,26 @@ model Tenant {
   pagamentoComissoes    PagamentoComissao[]
   processos             Processo[]
   processoDocumentos    ProcessoDocumento[]
+  processoPartes        ProcessoParte[]
+  processoPrazos        ProcessoPrazo[]
   procuracoes           Procuracao[]
   procuracaoAdvogados   ProcuracaoAdvogado[]
+  procuracaoAssinaturas ProcuracaoAssinatura[]
+  procuracaoPoderes     ProcuracaoPoder[]
   procuracaoProcessos   ProcuracaoProcesso[]
   tarefas               Tarefa[]
   superAdmin            SuperAdmin?            @relation("SuperAdminTenant", fields: [superAdminId], references: [id])
   branding              TenantBranding?
   enderecos             Endereco[]
-  enderecosLegacy       TenantEndereco[] @relation("TenantEnderecoLegacy")
+  enderecosLegacy       TenantEndereco[]       @relation("TenantEnderecoLegacy")
   subscription          TenantSubscription?
   tiposContrato         TipoContrato[]
   tribunais             Tribunal[]
   usuarios              Usuario[]
   usuarioPermissoes     UsuarioPermissao[]
+  documentoVersoes      DocumentoVersao[]
+  contratoHonorarios    ContratoHonorario[]
+  contratoParcelas      ContratoParcela[]
   tickets               Ticket[]               @relation("TenantTickets")
 
   @@index([status])
@@ -148,17 +155,17 @@ model Endereco {
   pais        String       @default("Brasil")
   telefone    String?
   observacoes String?
-  
+
   // Relacionamentos opcionais - apenas um será preenchido
-  usuarioId   String?
-  clienteId   String?
-  
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  usuario     Usuario?     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  cliente     Cliente?     @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  usuarioId String?
+  clienteId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cliente Cliente? @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, apelido])
   @@index([tenantId, principal])
@@ -237,6 +244,8 @@ model Usuario {
   contratosCriados            Contrato[]             @relation("ContratoCriador")
   contratosResponsavel        Contrato[]             @relation("ContratoResponsavel")
   documentos                  Documento[]            @relation("DocumentoUploader")
+  documentoVersoesEnviadas    DocumentoVersao[]      @relation("DocumentoVersaoUploader")
+  documentoVersoesAssinadas   DocumentoVersao[]      @relation("DocumentoVersaoAssinador")
   documentoAssinaturasCriadas DocumentoAssinatura[]
   eventosCriados              Evento[]
   favoritosJuiz               FavoritoJuiz[]
@@ -245,7 +254,9 @@ model Usuario {
   notificacoesCriadas         Notificacao[]          @relation("NotificacaoCriador")
   notificacoesRecebidas       NotificacaoUsuario[]
   processoDocumentosCriados   ProcessoDocumento[]    @relation("ProcessoDocumentoCriador")
+  processoPrazosResponsavel   ProcessoPrazo[]        @relation("ProcessoPrazoResponsavel")
   procuracoesCriadas          Procuracao[]           @relation("ProcuracaoCriador")
+  procuracaoAssinaturas       ProcuracaoAssinatura[]
   tarefasCriadas              Tarefa[]               @relation("TarefasCriadas")
   tarefas                     Tarefa[]               @relation("TarefasResponsaveis")
   tenant                      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -254,6 +265,7 @@ model Usuario {
   ticketAttachments           TicketAttachment[]     @relation("UserAttachments")
   ticketMessages              TicketMessage[]        @relation("UserMessages")
   tickets                     Ticket[]               @relation("UserTickets")
+  contratoParcelasResponsavel ContratoParcela[]
 
   @@unique([email, tenantId])
   @@index([role])
@@ -327,6 +339,7 @@ model Advogado {
   pagamentoComissoes   PagamentoComissao[]
   processos            Processo[]              @relation("ProcessoAdvogadoResponsavel")
   procuracoes          ProcuracaoAdvogado[]
+  ProcessoParte        ProcessoParte[]
 
   @@unique([tenantId, oabUf, oabNumero])
   @@schema("magiclawyer")
@@ -362,6 +375,7 @@ model Cliente {
   processos            Processo[]
   procuracoes          Procuracao[]
   tarefas              Tarefa[]              @relation("TarefaCliente")
+  ProcessoParte        ProcessoParte[]
 
   @@unique([tenantId, documento])
   @@unique([tenantId, usuarioId])
@@ -529,11 +543,15 @@ model Processo {
   id                    String                 @id @default(cuid())
   tenantId              String
   numero                String
+  numeroCnj             String?
+  grau                  ProcessoGrau?
+  fase                  ProcessoFase?
   titulo                String?
   descricao             String?
   status                ProcessoStatus         @default(RASCUNHO)
   areaId                String?
   classeProcessual      String?
+  orgaoJulgador         String?
   vara                  String?
   comarca               String?
   foro                  String?
@@ -567,6 +585,8 @@ model Processo {
   documentosVinculados  ProcessoDocumento[]
   procuracoesVinculadas ProcuracaoProcesso[]
   tarefas               Tarefa[]
+  partes                ProcessoParte[]
+  prazos                ProcessoPrazo[]
 
   @@unique([tenantId, numero])
   @@index([tenantId, status])
@@ -576,30 +596,85 @@ model Processo {
   @@schema("magiclawyer")
 }
 
+model ProcessoParte {
+  id          String       @id @default(cuid())
+  tenantId    String
+  processoId  String
+  tipoPolo    ProcessoPolo
+  nome        String
+  documento   String?
+  email       String?
+  telefone    String?
+  clienteId   String?
+  advogadoId  String?
+  papel       String?
+  observacoes String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  processo    Processo     @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cliente     Cliente?     @relation(fields: [clienteId], references: [id])
+  advogado    Advogado?    @relation(fields: [advogadoId], references: [id])
+
+  @@index([tenantId, processoId])
+  @@index([tenantId, tipoPolo])
+  @@index([clienteId])
+  @@index([advogadoId])
+  @@schema("magiclawyer")
+}
+
+model ProcessoPrazo {
+  id                   String                @id @default(cuid())
+  tenantId             String
+  processoId           String
+  titulo               String
+  descricao            String?
+  fundamentoLegal      String?
+  status               ProcessoPrazoStatus   @default(ABERTO)
+  dataVencimento       DateTime
+  dataCumprimento      DateTime?
+  prorrogadoPara       DateTime?
+  responsavelId        String?
+  origemMovimentacaoId String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  processo             Processo              @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  responsavel          Usuario?              @relation("ProcessoPrazoResponsavel", fields: [responsavelId], references: [id])
+  origemMovimentacao   MovimentacaoProcesso? @relation(fields: [origemMovimentacaoId], references: [id])
+
+  @@index([tenantId, processoId])
+  @@index([tenantId, status])
+  @@index([tenantId, dataVencimento])
+  @@schema("magiclawyer")
+}
+
 model Procuracao {
-  id                    String               @id @default(cuid())
+  id                    String                 @id @default(cuid())
   tenantId              String
   clienteId             String
-  modeloId              String?              // Referência ao modelo usado
+  modeloId              String? // Referência ao modelo usado
   numero                String?
   arquivoUrl            String?
   observacoes           String?
   emitidaEm             DateTime?
   validaAte             DateTime?
   revogadaEm            DateTime?
-  ativa                 Boolean              @default(true)
-  status                ProcuracaoStatus     @default(RASCUNHO)
+  ativa                 Boolean                @default(true)
+  status                ProcuracaoStatus       @default(RASCUNHO)
   assinadaPeloClienteEm DateTime?
-  emitidaPor            ProcuracaoEmitidaPor @default(ESCRITORIO)
+  emitidaPor            ProcuracaoEmitidaPor   @default(ESCRITORIO)
   createdById           String?
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
-  cliente               Cliente              @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  modelo                ModeloProcuracao?    @relation(fields: [modeloId], references: [id])
-  createdBy             Usuario?             @relation("ProcuracaoCriador", fields: [createdById], references: [id])
-  tenant                Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  cliente               Cliente                @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  modelo                ModeloProcuracao?      @relation(fields: [modeloId], references: [id])
+  createdBy             Usuario?               @relation("ProcuracaoCriador", fields: [createdById], references: [id])
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   outorgados            ProcuracaoAdvogado[]
   processos             ProcuracaoProcesso[]
+  assinaturas           ProcuracaoAssinatura[]
+  poderes               ProcuracaoPoder[]
 
   @@index([tenantId, clienteId])
   @@index([tenantId, ativa])
@@ -639,22 +714,67 @@ model ProcuracaoAdvogado {
   @@schema("magiclawyer")
 }
 
+model ProcuracaoAssinatura {
+  id                 String         @id @default(cuid())
+  tenantId           String
+  procuracaoId       String
+  usuarioId          String?
+  assinanteNome      String
+  assinanteDocumento String?
+  assinanteEmail     String?
+  assinanteTelefone  String?
+  tipoAssinatura     AssinaturaTipo @default(MANUAL)
+  ipAssinatura       String?
+  provedorAssinatura String?
+  hashArquivo        String?
+  arquivoUrl         String?
+  assinadaEm         DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  procuracao         Procuracao     @relation(fields: [procuracaoId], references: [id], onDelete: Cascade)
+  tenant             Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario            Usuario?       @relation(fields: [usuarioId], references: [id])
+
+  @@index([tenantId, procuracaoId])
+  @@index([tenantId, tipoAssinatura])
+  @@schema("magiclawyer")
+}
+
+model ProcuracaoPoder {
+  id           String     @id @default(cuid())
+  tenantId     String
+  procuracaoId String
+  titulo       String?
+  descricao    String
+  ativo        Boolean    @default(true)
+  revogadoEm   DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  procuracao   Procuracao @relation(fields: [procuracaoId], references: [id], onDelete: Cascade)
+  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, procuracaoId])
+  @@index([tenantId, ativo])
+  @@schema("magiclawyer")
+}
+
 model MovimentacaoProcesso {
-  id               String            @id @default(cuid())
-  tenantId         String
-  processoId       String
-  titulo           String
-  descricao        String?
-  tipo             MovimentacaoTipo?
-  dataMovimentacao DateTime          @default(now())
-  prazo            DateTime?
-  criadoPorId      String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  documentos       Documento[]       @relation("MovimentacaoDocumentos")
-  criadoPor        Usuario?          @relation("MovimentacaoCriador", fields: [criadoPorId], references: [id])
-  processo         Processo          @relation(fields: [processoId], references: [id], onDelete: Cascade)
-  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id                 String            @id @default(cuid())
+  tenantId           String
+  processoId         String
+  titulo             String
+  descricao          String?
+  tipo               MovimentacaoTipo?
+  dataMovimentacao   DateTime          @default(now())
+  prazo              DateTime?
+  criadoPorId        String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  documentos         Documento[]       @relation("MovimentacaoDocumentos")
+  criadoPor          Usuario?          @relation("MovimentacaoCriador", fields: [criadoPorId], references: [id])
+  processo           Processo          @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  prazosRelacionados ProcessoPrazo[]
 
   @@index([processoId])
   @@index([dataMovimentacao])
@@ -690,6 +810,8 @@ model Documento {
   uploadedBy          Usuario?              @relation("DocumentoUploader", fields: [uploadedById], references: [id])
   assinaturas         DocumentoAssinatura[]
   processosVinculados ProcessoDocumento[]
+  versoes             DocumentoVersao[]
+  comprovanteParcelas ContratoParcela[]     @relation("ContratoParcelaComprovante")
 
   @@index([tenantId, visivelParaCliente])
   @@index([tenantId, deletedAt])
@@ -720,8 +842,34 @@ model ProcessoDocumento {
   @@schema("magiclawyer")
 }
 
+model DocumentoVersao {
+  id                   String          @id @default(cuid())
+  tenantId             String
+  documentoId          String
+  numeroVersao         Int
+  cloudinaryPublicId   String
+  url                  String
+  hashArquivo          String?
+  assinaturaTipo       AssinaturaTipo?
+  assinaturaReferenca  String?
+  assinaturaRegistrada DateTime?
+  assinadaPorId        String?
+  uploadedById         String?
+  observacoes          String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  documento            Documento       @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  tenant               Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  uploadedBy           Usuario?        @relation("DocumentoVersaoUploader", fields: [uploadedById], references: [id])
+  assinadaPor          Usuario?        @relation("DocumentoVersaoAssinador", fields: [assinadaPorId], references: [id])
+
+  @@unique([documentoId, numeroVersao])
+  @@index([tenantId, documentoId])
+  @@schema("magiclawyer")
+}
+
 model Contrato {
-  id                    String          @id @default(cuid())
+  id                    String              @id @default(cuid())
   tenantId              String
   clienteId             String
   modeloId              String?
@@ -731,12 +879,12 @@ model Contrato {
   processoId            String?
   titulo                String
   tipoId                String?
-  status                ContratoStatus  @default(RASCUNHO)
-  valor                 Decimal?        @db.Decimal(14, 2)
-  moeda                 String?         @default("BRL")
-  comissaoAdvogado      Decimal         @default(0.00) @db.Decimal(5, 2)
-  percentualAcaoGanha   Decimal         @default(0.00) @db.Decimal(5, 2)
-  valorAcaoGanha        Decimal         @default(0.00) @db.Decimal(14, 2)
+  status                ContratoStatus      @default(RASCUNHO)
+  valor                 Decimal?            @db.Decimal(14, 2)
+  moeda                 String?             @default("BRL")
+  comissaoAdvogado      Decimal             @default(0.00) @db.Decimal(5, 2)
+  percentualAcaoGanha   Decimal             @default(0.00) @db.Decimal(5, 2)
+  valorAcaoGanha        Decimal             @default(0.00) @db.Decimal(14, 2)
   dataInicio            DateTime?
   dataFim               DateTime?
   dataAssinatura        DateTime?
@@ -744,23 +892,72 @@ model Contrato {
   arquivoUrl            String?
   observacoes           String?
   deletedAt             DateTime?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
-  advogadoResponsavel   Advogado?       @relation("ContratoAdvogado", fields: [advogadoResponsavelId], references: [id])
-  cliente               Cliente         @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  criadoPor             Usuario?        @relation("ContratoCriador", fields: [criadoPorId], references: [id])
-  modelo                ModeloContrato? @relation(fields: [modeloId], references: [id])
-  processo              Processo?       @relation(fields: [processoId], references: [id])
-  responsavelUsuario    Usuario?        @relation("ContratoResponsavel", fields: [responsavelUsuarioId], references: [id])
-  tenant                Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tipo                  TipoContrato?   @relation(fields: [tipoId], references: [id])
-  documentos            Documento[]     @relation("ContratoDocumentos")
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  advogadoResponsavel   Advogado?           @relation("ContratoAdvogado", fields: [advogadoResponsavelId], references: [id])
+  cliente               Cliente             @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  criadoPor             Usuario?            @relation("ContratoCriador", fields: [criadoPorId], references: [id])
+  modelo                ModeloContrato?     @relation(fields: [modeloId], references: [id])
+  processo              Processo?           @relation(fields: [processoId], references: [id])
+  responsavelUsuario    Usuario?            @relation("ContratoResponsavel", fields: [responsavelUsuarioId], references: [id])
+  tenant                Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tipo                  TipoContrato?       @relation(fields: [tipoId], references: [id])
+  documentos            Documento[]         @relation("ContratoDocumentos")
   faturas               Fatura[]
+  honorarios            ContratoHonorario[]
+  parcelas              ContratoParcela[]
 
   @@index([clienteId])
   @@index([status])
   @@index([tipoId])
   @@index([tenantId, deletedAt])
+  @@schema("magiclawyer")
+}
+
+model ContratoHonorario {
+  id                 String                @id @default(cuid())
+  tenantId           String
+  contratoId         String
+  tipo               ContratoHonorarioTipo
+  valorFixo          Decimal?              @db.Decimal(14, 2)
+  percentualSucesso  Decimal?              @db.Decimal(5, 2)
+  valorMinimoSucesso Decimal?              @db.Decimal(14, 2)
+  baseCalculo        String?
+  observacoes        String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  contrato           Contrato              @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  tenant             Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, tipo])
+  @@index([contratoId])
+  @@schema("magiclawyer")
+}
+
+model ContratoParcela {
+  id                     String                @id @default(cuid())
+  tenantId               String
+  contratoId             String
+  numeroParcela          Int
+  titulo                 String?
+  descricao              String?
+  valor                  Decimal               @db.Decimal(14, 2)
+  dataVencimento         DateTime
+  dataPagamento          DateTime?
+  status                 ContratoParcelaStatus @default(PENDENTE)
+  formaPagamento         String?
+  comprovanteDocumentoId String?
+  responsavelUsuarioId   String?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  contrato               Contrato              @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  tenant                 Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  comprovanteDocumento   Documento?            @relation("ContratoParcelaComprovante", fields: [comprovanteDocumentoId], references: [id])
+  responsavelUsuario     Usuario?              @relation(fields: [responsavelUsuarioId], references: [id])
+
+  @@unique([contratoId, numeroParcela])
+  @@index([tenantId, status])
+  @@index([tenantId, dataVencimento])
   @@schema("magiclawyer")
 }
 
@@ -968,12 +1165,12 @@ model AuditLog {
 }
 
 model Evento {
-  id                    String            @id @default(cuid())
+  id                    String               @id @default(cuid())
   tenantId              String
   titulo                String
   descricao             String?
-  tipo                  EventoTipo        @default(REUNIAO)
-  status                EventoStatus      @default(AGENDADO)
+  tipo                  EventoTipo           @default(REUNIAO)
+  status                EventoStatus         @default(AGENDADO)
   dataInicio            DateTime
   dataFim               DateTime
   local                 String?
@@ -982,19 +1179,19 @@ model Evento {
   clienteId             String?
   advogadoResponsavelId String?
   criadoPorId           String?
-  recorrencia           EventoRecorrencia @default(NENHUMA)
+  recorrencia           EventoRecorrencia    @default(NENHUMA)
   recorrenciaFim        DateTime?
   googleEventId         String?
   googleCalendarId      String?
   lembreteMinutos       Int?
   observacoes           String?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-  advogadoResponsavel   Advogado?         @relation(fields: [advogadoResponsavelId], references: [id])
-  cliente               Cliente?          @relation(fields: [clienteId], references: [id])
-  criadoPor             Usuario?          @relation(fields: [criadoPorId], references: [id])
-  processo              Processo?         @relation(fields: [processoId], references: [id])
-  tenant                Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  advogadoResponsavel   Advogado?            @relation(fields: [advogadoResponsavelId], references: [id])
+  cliente               Cliente?             @relation(fields: [clienteId], references: [id])
+  criadoPor             Usuario?             @relation(fields: [criadoPorId], references: [id])
+  processo              Processo?            @relation(fields: [processoId], references: [id])
+  tenant                Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   confirmacoes          EventoParticipante[]
 
   @@index([tenantId, dataInicio])
@@ -1008,18 +1205,18 @@ model Evento {
 }
 
 model EventoParticipante {
-  id                    String                    @id @default(cuid())
-  tenantId              String
-  eventoId              String
-  participanteEmail     String
-  participanteNome      String?
-  status                EventoConfirmacaoStatus   @default(PENDENTE)
-  confirmadoEm          DateTime?
-  observacoes           String?
-  createdAt             DateTime                  @default(now())
-  updatedAt             DateTime                  @updatedAt
-  evento                Evento                    @relation(fields: [eventoId], references: [id], onDelete: Cascade)
-  tenant                Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id                String                  @id @default(cuid())
+  tenantId          String
+  eventoId          String
+  participanteEmail String
+  participanteNome  String?
+  status            EventoConfirmacaoStatus @default(PENDENTE)
+  confirmadoEm      DateTime?
+  observacoes       String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  evento            Evento                  @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  tenant            Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([eventoId, participanteEmail])
   @@index([tenantId, eventoId])
@@ -1346,6 +1543,44 @@ enum ProcessoStatus {
   @@schema("magiclawyer")
 }
 
+enum ProcessoGrau {
+  PRIMEIRO
+  SEGUNDO
+  SUPERIOR
+
+  @@schema("magiclawyer")
+}
+
+enum ProcessoFase {
+  PETICAO_INICIAL
+  CITACAO
+  INSTRUCAO
+  SENTENCA
+  RECURSO
+  EXECUCAO
+
+  @@schema("magiclawyer")
+}
+
+enum ProcessoPolo {
+  AUTOR
+  REU
+  TERCEIRO
+  MINISTERIO_PUBLICO
+  ASSISTENTE
+
+  @@schema("magiclawyer")
+}
+
+enum ProcessoPrazoStatus {
+  ABERTO
+  CONCLUIDO
+  PRORROGADO
+  CANCELADO
+
+  @@schema("magiclawyer")
+}
+
 enum MovimentacaoTipo {
   ANDAMENTO
   PRAZO
@@ -1357,12 +1592,38 @@ enum MovimentacaoTipo {
   @@schema("magiclawyer")
 }
 
+enum AssinaturaTipo {
+  MANUAL
+  DIGITAL
+  ICP_BRASIL
+  OUTRO
+
+  @@schema("magiclawyer")
+}
+
 enum ContratoStatus {
   RASCUNHO
   ATIVO
   SUSPENSO
   ENCERRADO
   CANCELADO
+
+  @@schema("magiclawyer")
+}
+
+enum ContratoHonorarioTipo {
+  FIXO
+  SUCESSO
+  HIBRIDO
+
+  @@schema("magiclawyer")
+}
+
+enum ContratoParcelaStatus {
+  PENDENTE
+  PAGA
+  ATRASADA
+  CANCELADA
 
   @@schema("magiclawyer")
 }
@@ -1625,19 +1886,19 @@ enum StatusPacoteJuiz {
 // ============================================
 
 model ModeloProcuracao {
-  id          String   @id @default(cuid())
-  tenantId    String
-  nome        String
-  descricao   String?
-  conteudo    String   // Template HTML com placeholders
-  categoria   String?  // Ex: "PREFERITURA", "PESSOA_FISICA", "CRIMINAL"
-  ativo       Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  deletedAt   DateTime?
+  id        String    @id @default(cuid())
+  tenantId  String
+  nome      String
+  descricao String?
+  conteudo  String // Template HTML com placeholders
+  categoria String? // Ex: "PREFERITURA", "PESSOA_FISICA", "CRIMINAL"
+  ativo     Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   // Relacionamentos
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   procuracoes Procuracao[]
 
   @@index([tenantId, ativo])

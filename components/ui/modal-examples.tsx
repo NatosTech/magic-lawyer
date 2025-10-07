@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { Modal, useModal } from "./modal";
 import { Button } from "@heroui/button";
+
+import { Modal, useModal } from "./modal";
 
 // Exemplo de uso básico do Modal
 export function BasicModalExample() {
@@ -12,7 +13,12 @@ export function BasicModalExample() {
     <>
       <Button onPress={openModal}>Abrir Modal Básico</Button>
 
-      <Modal isOpen={isOpen} onClose={closeModal} title="Modal Básico" backdrop="blur">
+      <Modal
+        backdrop="blur"
+        isOpen={isOpen}
+        title="Modal Básico"
+        onClose={closeModal}
+      >
         <p>Este é um modal básico com backdrop blur.</p>
         <p>Pode ser fechado com ESC, clicando fora ou no botão X.</p>
       </Modal>
@@ -29,11 +35,7 @@ export function ModalWithFooterExample() {
       <Button onPress={openModal}>Abrir Modal com Footer</Button>
 
       <Modal
-        isOpen={isOpen}
-        onClose={closeModal}
-        title="Modal com Footer"
         backdrop="blur"
-        showFooter={true}
         footerContent={
           <>
             <Button variant="light" onPress={closeModal}>
@@ -44,6 +46,10 @@ export function ModalWithFooterExample() {
             </Button>
           </>
         }
+        isOpen={isOpen}
+        showFooter={true}
+        title="Modal com Footer"
+        onClose={closeModal}
       >
         <p>Este modal tem um footer com botões de ação.</p>
       </Modal>
@@ -60,17 +66,17 @@ export function ModalWithoutCloseButtonExample() {
       <Button onPress={openModal}>Abrir Modal Sem X</Button>
 
       <Modal
-        isOpen={isOpen}
-        onClose={closeModal}
-        title="Modal Sem Botão X"
-        showCloseButton={false}
         backdrop="blur"
-        showFooter={true}
         footerContent={
           <Button color="primary" onPress={closeModal}>
             Fechar
           </Button>
         }
+        isOpen={isOpen}
+        showCloseButton={false}
+        showFooter={true}
+        title="Modal Sem Botão X"
+        onClose={closeModal}
       >
         <p>Este modal não tem botão X no header.</p>
         <p>Só pode ser fechado com ESC, clicando fora ou no botão do footer.</p>
@@ -81,9 +87,21 @@ export function ModalWithoutCloseButtonExample() {
 
 // Exemplo de modal com diferentes backdrops
 export function ModalBackdropExample() {
-  const { isOpen: isOpaqueOpen, openModal: openOpaque, closeModal: closeOpaque } = useModal();
-  const { isOpen: isBlurOpen, openModal: openBlur, closeModal: closeBlur } = useModal();
-  const { isOpen: isTransparentOpen, openModal: openTransparent, closeModal: closeTransparent } = useModal();
+  const {
+    isOpen: isOpaqueOpen,
+    openModal: openOpaque,
+    closeModal: closeOpaque,
+  } = useModal();
+  const {
+    isOpen: isBlurOpen,
+    openModal: openBlur,
+    closeModal: closeBlur,
+  } = useModal();
+  const {
+    isOpen: isTransparentOpen,
+    openModal: openTransparent,
+    closeModal: closeTransparent,
+  } = useModal();
 
   return (
     <div className="flex gap-3">
@@ -91,15 +109,30 @@ export function ModalBackdropExample() {
       <Button onPress={openBlur}>Blur</Button>
       <Button onPress={openTransparent}>Transparent</Button>
 
-      <Modal isOpen={isOpaqueOpen} onClose={closeOpaque} title="Modal Opaque" backdrop="opaque">
+      <Modal
+        backdrop="opaque"
+        isOpen={isOpaqueOpen}
+        title="Modal Opaque"
+        onClose={closeOpaque}
+      >
         <p>Backdrop opaco (padrão).</p>
       </Modal>
 
-      <Modal isOpen={isBlurOpen} onClose={closeBlur} title="Modal Blur" backdrop="blur">
+      <Modal
+        backdrop="blur"
+        isOpen={isBlurOpen}
+        title="Modal Blur"
+        onClose={closeBlur}
+      >
         <p>Backdrop com efeito blur.</p>
       </Modal>
 
-      <Modal isOpen={isTransparentOpen} onClose={closeTransparent} title="Modal Transparent" backdrop="transparent">
+      <Modal
+        backdrop="transparent"
+        isOpen={isTransparentOpen}
+        title="Modal Transparent"
+        onClose={closeTransparent}
+      >
         <p>Backdrop transparente.</p>
       </Modal>
     </div>
@@ -108,10 +141,26 @@ export function ModalBackdropExample() {
 
 // Exemplo de modal com diferentes tamanhos
 export function ModalSizeExample() {
-  const { isOpen: isSmOpen, openModal: openSm, closeModal: closeSm } = useModal();
-  const { isOpen: isMdOpen, openModal: openMd, closeModal: closeMd } = useModal();
-  const { isOpen: isLgOpen, openModal: openLg, closeModal: closeLg } = useModal();
-  const { isOpen: isXlOpen, openModal: openXl, closeModal: closeXl } = useModal();
+  const {
+    isOpen: isSmOpen,
+    openModal: openSm,
+    closeModal: closeSm,
+  } = useModal();
+  const {
+    isOpen: isMdOpen,
+    openModal: openMd,
+    closeModal: closeMd,
+  } = useModal();
+  const {
+    isOpen: isLgOpen,
+    openModal: openLg,
+    closeModal: closeLg,
+  } = useModal();
+  const {
+    isOpen: isXlOpen,
+    openModal: openXl,
+    closeModal: closeXl,
+  } = useModal();
 
   return (
     <div className="flex gap-3">
@@ -120,19 +169,43 @@ export function ModalSizeExample() {
       <Button onPress={openLg}>Large</Button>
       <Button onPress={openXl}>Extra Large</Button>
 
-      <Modal isOpen={isSmOpen} onClose={closeSm} title="Modal Small" size="sm" backdrop="blur">
+      <Modal
+        backdrop="blur"
+        isOpen={isSmOpen}
+        size="sm"
+        title="Modal Small"
+        onClose={closeSm}
+      >
         <p>Modal pequeno.</p>
       </Modal>
 
-      <Modal isOpen={isMdOpen} onClose={closeMd} title="Modal Medium" size="md" backdrop="blur">
+      <Modal
+        backdrop="blur"
+        isOpen={isMdOpen}
+        size="md"
+        title="Modal Medium"
+        onClose={closeMd}
+      >
         <p>Modal médio (padrão).</p>
       </Modal>
 
-      <Modal isOpen={isLgOpen} onClose={closeLg} title="Modal Large" size="lg" backdrop="blur">
+      <Modal
+        backdrop="blur"
+        isOpen={isLgOpen}
+        size="lg"
+        title="Modal Large"
+        onClose={closeLg}
+      >
         <p>Modal grande.</p>
       </Modal>
 
-      <Modal isOpen={isXlOpen} onClose={closeXl} title="Modal Extra Large" size="xl" backdrop="blur">
+      <Modal
+        backdrop="blur"
+        isOpen={isXlOpen}
+        size="xl"
+        title="Modal Extra Large"
+        onClose={closeXl}
+      >
         <p>Modal extra grande.</p>
       </Modal>
     </div>

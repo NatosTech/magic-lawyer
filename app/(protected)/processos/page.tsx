@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+
 import { ProcessosContent } from "./processos-content";
 
 export const metadata: Metadata = {

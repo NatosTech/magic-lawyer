@@ -1,6 +1,5 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
-import { Link } from "@heroui/link";
 import clsx from "clsx";
 import { Toaster } from "sonner";
 
@@ -29,16 +28,26 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html suppressHydrationWarning lang="pt-br">
       <head />
-      <body className={clsx("min-h-screen text-foreground bg-background font-sans antialiased", fontSans.variable)} suppressHydrationWarning>
+      <body
+        suppressHydrationWarning
+        className={clsx(
+          "min-h-screen text-foreground bg-background font-sans antialiased",
+          fontSans.variable,
+        )}
+      >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <DynamicFavicon />
           {children}
           <FloatingAutomationBadge />
-          <Toaster position="top-right" richColors />
+          <Toaster richColors position="top-right" />
         </Providers>
       </body>
     </html>

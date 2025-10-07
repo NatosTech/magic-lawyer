@@ -1,8 +1,9 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
+
 import { authOptions } from "@/auth";
-import prisma from "@/app/lib/prisma";
+import prisma, { toNumber } from "@/app/lib/prisma";
 import { ContratoStatus } from "@/app/generated/prisma";
 
 // ============================================
@@ -11,7 +12,7 @@ import { ContratoStatus } from "@/app/generated/prisma";
 
 export interface ContratoCreateInput {
   titulo: string;
-  descricao?: string;
+  resumo?: string;
   tipoContratoId?: string;
   modeloContratoId?: string;
   status?: ContratoStatus;
@@ -35,6 +36,7 @@ async function getSession() {
 
 async function getAdvogadoIdFromSession(session: any) {
   const user = session?.user;
+
   if (!user?.id) return null;
 
   const advogado = await prisma.advogado.findFirst({
@@ -53,6 +55,7 @@ async function getAdvogadoIdFromSession(session: any) {
 
 export async function getProcuracoesDisponiveis(clienteId: string) {
   const session = await getSession();
+
   if (!session?.user?.id) {
     throw new Error("Não autorizado");
   }
@@ -67,7 +70,6 @@ export async function getProcuracoesDisponiveis(clienteId: string) {
         tenantId,
         clienteId,
         ativa: true,
-        status: "ATIVA", // Apenas procurações ativas
       },
       include: {
         processos: {
@@ -86,7 +88,14 @@ export async function getProcuracoesDisponiveis(clienteId: string) {
             advogado: {
               select: {
                 id: true,
-                nome: true,
+                oabNumero: true,
+                oabUf: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
               },
             },
           },
@@ -106,6 +115,7 @@ export async function getProcuracoesDisponiveis(clienteId: string) {
 
 export async function vincularContratoProcuracao(contratoId: string, procuracaoId: string) {
   const session = await getSession();
+
   if (!session?.user?.id) {
     throw new Error("Não autorizado");
   }
@@ -136,7 +146,6 @@ export async function vincularContratoProcuracao(contratoId: string, procuracaoI
         id: procuracaoId,
         tenantId,
         ativa: true,
-        status: "ATIVA",
       },
       include: {
         processos: {
@@ -170,7 +179,10 @@ export async function vincularContratoProcuracao(contratoId: string, procuracaoI
       }
     }
 
-    return { success: true, message: "Contrato vinculado à procuração com sucesso" };
+    return {
+      success: true,
+      message: "Contrato vinculado à procuração com sucesso",
+    };
   } catch (error) {
     console.error("Erro ao vincular contrato à procuração:", error);
     throw error;
@@ -184,11 +196,13 @@ export async function vincularContratoProcuracao(contratoId: string, procuracaoI
 export async function createContrato(data: ContratoCreateInput) {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -214,6 +228,7 @@ export async function createContrato(data: ContratoCreateInput) {
     // Se for ADVOGADO, validar vínculo com o cliente
     if (user.role === "ADVOGADO") {
       const advogadoId = await getAdvogadoIdFromSession(session);
+
       if (!advogadoId) {
         return { success: false, error: "Advogado não encontrado" };
       }
@@ -238,6 +253,7 @@ export async function createContrato(data: ContratoCreateInput) {
 
     // Se foi especificada uma procuração, buscar o processo vinculado
     let processoId = data.processoId;
+
     if (data.procuracaoId && !processoId) {
       const procuracao = await prisma.procuracao.findFirst({
         where: {
@@ -252,7 +268,7 @@ export async function createContrato(data: ContratoCreateInput) {
         },
       });
 
-      if (procuracao?.processos.length > 0) {
+      if (procuracao?.processos && procuracao.processos.length > 0) {
         processoId = procuracao.processos[0].processoId;
       }
     }
@@ -262,24 +278,24 @@ export async function createContrato(data: ContratoCreateInput) {
       data: {
         tenantId: user.tenantId,
         titulo: data.titulo,
-        descricao: data.descricao,
-        tipoContratoId: data.tipoContratoId,
-        modeloContratoId: data.modeloContratoId,
+        resumo: data.resumo,
+        tipoId: data.tipoContratoId,
+        modeloId: data.modeloContratoId,
         status: data.status || ContratoStatus.RASCUNHO,
         valor: data.valor,
         dataInicio: data.dataInicio ? new Date(data.dataInicio) : null,
         dataFim: data.dataFim ? new Date(data.dataFim) : null,
         clienteId: data.clienteId,
-        advogadoId: data.advogadoId,
+        advogadoResponsavelId: data.advogadoId,
         processoId,
         observacoes: data.observacoes,
-        createdById: user.id,
+        criadoPorId: user.id,
       },
       include: {
         cliente: true,
         tipo: true,
         modelo: true,
-        advogado: {
+        advogadoResponsavel: {
           include: {
             usuario: true,
           },
@@ -287,12 +303,30 @@ export async function createContrato(data: ContratoCreateInput) {
       },
     });
 
+    // Converter Decimals para number antes de retornar
+    const contratoSerializado = {
+      ...contrato,
+      valor: toNumber(contrato.valor),
+      comissaoAdvogado: toNumber(contrato.comissaoAdvogado),
+      percentualAcaoGanha: toNumber(contrato.percentualAcaoGanha),
+      valorAcaoGanha: toNumber(contrato.valorAcaoGanha),
+      advogadoResponsavel: contrato.advogadoResponsavel
+        ? {
+            ...contrato.advogadoResponsavel,
+            comissaoPadrao: toNumber(contrato.advogadoResponsavel.comissaoPadrao),
+            comissaoAcaoGanha: toNumber(contrato.advogadoResponsavel.comissaoAcaoGanha),
+            comissaoHonorarios: toNumber(contrato.advogadoResponsavel.comissaoHonorarios),
+          }
+        : null,
+    };
+
     return {
       success: true,
-      contrato,
+      contrato: contratoSerializado,
     };
   } catch (error) {
     console.error("Erro ao criar contrato:", error);
+
     return {
       success: false,
       error: "Erro ao criar contrato",

@@ -30,16 +30,17 @@ import {
   FileSignature,
   Eye,
   Upload,
-  Plus,
-  FilePlus,
+  Flag,
+  Layers,
 } from "lucide-react";
 import Link from "next/link";
-import { useClienteComProcessos, useContratosCliente, useDocumentosCliente, useProcuracoesCliente } from "@/app/hooks/use-clientes";
-import { title } from "@/components/primitives";
-import { ProcessoStatus } from "@/app/generated/prisma";
-import { DateUtils } from "@/app/lib/date-utils";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+import { useClienteComProcessos, useContratosCliente, useDocumentosCliente, useProcuracoesCliente } from "@/app/hooks/use-clientes";
+import { title } from "@/components/primitives";
+import { ProcessoStatus, ProcessoFase, ProcessoGrau } from "@/app/generated/prisma";
+import { DateUtils } from "@/app/lib/date-utils";
 import { Modal } from "@/components/ui/modal";
 import { anexarDocumentoCliente } from "@/app/actions/clientes";
 
@@ -75,6 +76,7 @@ export default function ClienteDetalhesPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+
     if (file) {
       setSelectedFile(file);
       // Preencher nome automaticamente
@@ -87,11 +89,13 @@ export default function ClienteDetalhesPage() {
   const handleAnexarDocumento = async () => {
     if (!selectedFile) {
       toast.error("Selecione um arquivo");
+
       return;
     }
 
     if (!uploadFormData.nome.trim()) {
       toast.error("Nome do documento é obrigatório");
+
       return;
     }
 
@@ -99,6 +103,7 @@ export default function ClienteDetalhesPage() {
 
     try {
       const formData = new FormData();
+
       formData.append("nome", uploadFormData.nome);
       formData.append("tipo", uploadFormData.tipo);
       formData.append("descricao", uploadFormData.descricao);
@@ -154,9 +159,11 @@ export default function ClienteDetalhesPage() {
 
   const getInitials = (nome: string) => {
     const names = nome.split(" ");
+
     if (names.length >= 2) {
       return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
     }
+
     return nome.substring(0, 2).toUpperCase();
   };
 
@@ -164,7 +171,7 @@ export default function ClienteDetalhesPage() {
     switch (status) {
       case ProcessoStatus.EM_ANDAMENTO:
         return "primary";
-      case ProcessoStatus.FINALIZADO:
+      case ProcessoStatus.ENCERRADO:
         return "success";
       case ProcessoStatus.ARQUIVADO:
         return "default";
@@ -181,8 +188,8 @@ export default function ClienteDetalhesPage() {
     switch (status) {
       case ProcessoStatus.EM_ANDAMENTO:
         return "Em Andamento";
-      case ProcessoStatus.FINALIZADO:
-        return "Finalizado";
+      case ProcessoStatus.ENCERRADO:
+        return "Encerrado";
       case ProcessoStatus.ARQUIVADO:
         return "Arquivado";
       case ProcessoStatus.SUSPENSO:
@@ -198,7 +205,7 @@ export default function ClienteDetalhesPage() {
     switch (status) {
       case ProcessoStatus.EM_ANDAMENTO:
         return <Clock className="h-4 w-4" />;
-      case ProcessoStatus.FINALIZADO:
+      case ProcessoStatus.ENCERRADO:
         return <CheckCircle className="h-4 w-4" />;
       case ProcessoStatus.ARQUIVADO:
         return <XCircle className="h-4 w-4" />;
@@ -209,25 +216,59 @@ export default function ClienteDetalhesPage() {
     }
   };
 
+  const getFaseLabel = (fase?: ProcessoFase | null) => {
+    if (!fase) return null;
+    switch (fase) {
+      case ProcessoFase.PETICAO_INICIAL:
+        return "Petição Inicial";
+      case ProcessoFase.CITACAO:
+        return "Citação";
+      case ProcessoFase.INSTRUCAO:
+        return "Instrução";
+      case ProcessoFase.SENTENCA:
+        return "Sentença";
+      case ProcessoFase.RECURSO:
+        return "Recurso";
+      case ProcessoFase.EXECUCAO:
+        return "Execução";
+      default:
+        return fase;
+    }
+  };
+
+  const getGrauLabel = (grau?: ProcessoGrau | null) => {
+    if (!grau) return null;
+    switch (grau) {
+      case ProcessoGrau.PRIMEIRO:
+        return "1º Grau";
+      case ProcessoGrau.SEGUNDO:
+        return "2º Grau";
+      case ProcessoGrau.SUPERIOR:
+        return "Tribunal Superior";
+      default:
+        return grau;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header com Botões */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Button as={Link} href="/clientes" variant="light" startContent={<ArrowLeft className="h-4 w-4" />}>
+        <Button as={Link} href="/clientes" startContent={<ArrowLeft className="h-4 w-4" />} variant="light">
           Voltar para Clientes
         </Button>
 
         <div className="flex flex-wrap gap-2">
-          <Button color="primary" variant="flat" startContent={<Upload className="h-4 w-4" />} onPress={() => setIsUploadModalOpen(true)}>
+          <Button color="primary" startContent={<Upload className="h-4 w-4" />} variant="flat" onPress={() => setIsUploadModalOpen(true)}>
             Anexar Documento
           </Button>
-          <Button color="primary" variant="bordered" startContent={<Scale className="h-4 w-4" />} as={Link} href={`/processos/novo?clienteId=${clienteId}`}>
+          <Button as={Link} color="primary" href={`/processos/novo?clienteId=${clienteId}`} startContent={<Scale className="h-4 w-4" />} variant="bordered">
             Novo Processo
           </Button>
-          <Button color="secondary" variant="bordered" startContent={<FileText className="h-4 w-4" />} as={Link} href={`/contratos/novo?clienteId=${clienteId}`}>
+          <Button as={Link} color="secondary" href={`/contratos/novo?clienteId=${clienteId}`} startContent={<FileText className="h-4 w-4" />} variant="bordered">
             Novo Contrato
           </Button>
-          <Button color="success" variant="bordered" startContent={<FileSignature className="h-4 w-4" />} as={Link} href={`/procuracoes/novo?clienteId=${clienteId}`}>
+          <Button as={Link} color="success" href={`/procuracoes/novo?clienteId=${clienteId}`} startContent={<FileSignature className="h-4 w-4" />} variant="bordered">
             Nova Procuração
           </Button>
         </div>
@@ -239,9 +280,9 @@ export default function ClienteDetalhesPage() {
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
             <Avatar
               showFallback
-              name={getInitials(cliente.nome)}
               className="h-20 w-20 bg-primary/10 text-primary text-2xl"
               icon={cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-10 w-10" /> : <User className="h-10 w-10" />}
+              name={getInitials(cliente.nome)}
             />
             <div className="flex-1 space-y-4">
               <div>
@@ -277,16 +318,16 @@ export default function ClienteDetalhesPage() {
               )}
 
               <div className="flex flex-wrap gap-2">
-                <Chip size="sm" variant="flat" color="primary">
+                <Chip color="primary" size="sm" variant="flat">
                   {cliente._count?.processos || 0} processos
                 </Chip>
-                <Chip size="sm" variant="flat" color="secondary">
+                <Chip color="secondary" size="sm" variant="flat">
                   {cliente._count?.contratos || 0} contratos
                 </Chip>
-                <Chip size="sm" variant="flat" color="success">
-                  {cliente._count?.procuracoes || 0} procurações
+                <Chip color="success" size="sm" variant="flat">
+                  {procuracoes?.length || 0} procurações
                 </Chip>
-                <Chip size="sm" variant="flat" color="warning">
+                <Chip color="warning" size="sm" variant="flat">
                   {cliente._count?.documentos || 0} documentos
                 </Chip>
               </div>
@@ -305,7 +346,7 @@ export default function ClienteDetalhesPage() {
               <Scale className="h-4 w-4" />
               <span>Processos</span>
               {cliente.processos && cliente.processos.length > 0 && (
-                <Chip size="sm" variant="flat" color="primary">
+                <Chip color="primary" size="sm" variant="flat">
                   {cliente.processos.length}
                 </Chip>
               )}
@@ -326,24 +367,38 @@ export default function ClienteDetalhesPage() {
                 {cliente.processos.map((processo) => (
                   <Card
                     key={processo.id}
-                    className="border border-default-200 hover:border-primary transition-all hover:shadow-lg cursor-pointer"
                     isPressable
                     as={Link}
+                    className="border border-default-200 hover:border-primary transition-all hover:shadow-lg cursor-pointer"
                     href={`/processos/${processo.id}`}
                   >
                     <CardHeader className="flex flex-col items-start gap-2 pb-2">
-                      <div className="flex w-full items-start justify-between">
-                        <Chip size="sm" variant="flat" color={getStatusColor(processo.status)} startContent={getStatusIcon(processo.status)}>
-                          {getStatusLabel(processo.status)}
-                        </Chip>
+                      <div className="flex w-full items-start justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Chip color={getStatusColor(processo.status as ProcessoStatus)} size="sm" startContent={getStatusIcon(processo.status as ProcessoStatus)} variant="flat">
+                            {getStatusLabel(processo.status as ProcessoStatus)}
+                          </Chip>
+                          {processo.fase && (
+                            <Chip color="secondary" size="sm" startContent={<Flag className="h-3 w-3" />} variant="flat">
+                              {getFaseLabel(processo.fase as ProcessoFase)}
+                            </Chip>
+                          )}
+                          {processo.grau && (
+                            <Chip color="default" size="sm" startContent={<Layers className="h-3 w-3" />} variant="flat">
+                              {getGrauLabel(processo.grau as ProcessoGrau)}
+                            </Chip>
+                          )}
+                        </div>
                         {processo._count.procuracoesVinculadas > 0 && (
-                          <Chip size="sm" variant="flat" color="success">
-                            {processo._count.procuracoesVinculadas} procuração{processo._count.procuracoesVinculadas > 1 ? "ões" : ""}
+                          <Chip color="success" size="sm" variant="flat">
+                            {processo._count.procuracoesVinculadas} procuração
+                            {processo._count.procuracoesVinculadas > 1 ? "ões" : ""}
                           </Chip>
                         )}
                       </div>
                       <div className="w-full">
                         <p className="text-sm font-semibold text-default-700">{processo.numero}</p>
+                        {processo.numeroCnj && processo.numeroCnj !== processo.numero && <p className="text-xs text-default-400">CNJ: {processo.numeroCnj}</p>}
                         {processo.titulo && <p className="mt-1 text-xs text-default-500 line-clamp-2">{processo.titulo}</p>}
                       </div>
                     </CardHeader>
@@ -435,7 +490,7 @@ export default function ClienteDetalhesPage() {
                           <p className="text-sm font-semibold">{contrato.titulo}</p>
                           {contrato.tipo && <p className="text-xs text-default-400">{contrato.tipo.nome}</p>}
                         </div>
-                        <Chip size="sm" variant="flat" color={contrato.status === "ATIVO" ? "success" : "default"}>
+                        <Chip color={contrato.status === "ATIVO" ? "success" : "default"} size="sm" variant="flat">
                           {contrato.status}
                         </Chip>
                       </div>
@@ -467,7 +522,7 @@ export default function ClienteDetalhesPage() {
               <FileSignature className="h-4 w-4" />
               <span>Procurações</span>
               {procuracoes.length > 0 && (
-                <Chip size="sm" variant="flat" color="success">
+                <Chip color="success" size="sm" variant="flat">
                   {procuracoes.length}
                 </Chip>
               )}
@@ -494,14 +549,14 @@ export default function ClienteDetalhesPage() {
                     <CardHeader className="flex flex-col items-start gap-2 pb-2">
                       <div className="flex w-full items-start justify-between">
                         <Chip
-                          size="sm"
-                          variant="flat"
                           color={procuracao.ativa ? "success" : "default"}
+                          size="sm"
                           startContent={procuracao.ativa ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                          variant="flat"
                         >
                           {procuracao.ativa ? "Ativa" : "Inativa"}
                         </Chip>
-                        <Chip size="sm" variant="flat" color={procuracao.status === "VIGENTE" ? "success" : procuracao.status === "REVOGADA" ? "danger" : "warning"}>
+                        <Chip color={procuracao.status === "VIGENTE" ? "success" : procuracao.status === "REVOGADA" ? "danger" : "warning"} size="sm" variant="flat">
                           {procuracao.status}
                         </Chip>
                       </div>
@@ -553,15 +608,15 @@ export default function ClienteDetalhesPage() {
                       )}
                       {procuracao.arquivoUrl && (
                         <Button
-                          size="sm"
-                          color="success"
-                          variant="flat"
-                          startContent={<Eye className="h-3 w-3" />}
                           as="a"
-                          href={procuracao.arquivoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
                           className="mt-2"
+                          color="success"
+                          href={procuracao.arquivoUrl}
+                          rel="noopener noreferrer"
+                          size="sm"
+                          startContent={<Eye className="h-3 w-3" />}
+                          target="_blank"
+                          variant="flat"
                         >
                           Visualizar
                         </Button>
@@ -626,7 +681,7 @@ export default function ClienteDetalhesPage() {
                       )}
                       {doc.descricao && <p className="text-xs text-default-500 line-clamp-2">{doc.descricao}</p>}
                       {doc.url && (
-                        <Button size="sm" color="primary" variant="flat" startContent={<Eye className="h-3 w-3" />} as="a" href={doc.url} target="_blank" rel="noopener noreferrer" className="mt-2">
+                        <Button as="a" className="mt-2" color="primary" href={doc.url} rel="noopener noreferrer" size="sm" startContent={<Eye className="h-3 w-3" />} target="_blank" variant="flat">
                           Visualizar
                         </Button>
                       )}
@@ -641,26 +696,26 @@ export default function ClienteDetalhesPage() {
 
       {/* Modal de Anexar Documento */}
       <Modal
-        isOpen={isUploadModalOpen}
-        onOpenChange={setIsUploadModalOpen}
-        title="📎 Anexar Documento"
-        size="2xl"
         footer={
           <div className="flex gap-2">
             <Button variant="light" onPress={() => setIsUploadModalOpen(false)}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleAnexarDocumento} isLoading={isUploading} startContent={!isUploading ? <Upload className="h-4 w-4" /> : undefined}>
+            <Button color="primary" isLoading={isUploading} startContent={!isUploading ? <Upload className="h-4 w-4" /> : undefined} onPress={handleAnexarDocumento}>
               Anexar Documento
             </Button>
           </div>
         }
+        isOpen={isUploadModalOpen}
+        size="2xl"
+        title="📎 Anexar Documento"
+        onOpenChange={setIsUploadModalOpen}
       >
         <div className="space-y-4">
           {/* Upload de Arquivo */}
           <div className="rounded-lg border-2 border-dashed border-default-300 p-6 text-center hover:border-primary transition-colors">
-            <input type="file" id="file-upload" className="hidden" onChange={handleFileChange} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx" />
-            <label htmlFor="file-upload" className="cursor-pointer">
+            <input accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx" className="hidden" id="file-upload" type="file" onChange={handleFileChange} />
+            <label className="cursor-pointer" htmlFor="file-upload">
               {selectedFile ? (
                 <div className="space-y-2">
                   <FileText className="mx-auto h-12 w-12 text-success" />
@@ -682,22 +737,22 @@ export default function ClienteDetalhesPage() {
 
           {/* Formulário */}
           <Input
+            isRequired
             label="Nome do Documento *"
             placeholder="Ex: Contrato Social, RG, CPF..."
             value={uploadFormData.nome}
             onValueChange={(value) => setUploadFormData((prev) => ({ ...prev, nome: value }))}
-            isRequired
           />
 
           <Input label="Tipo" placeholder="Ex: Contrato, Identidade, Comprovante..." value={uploadFormData.tipo} onValueChange={(value) => setUploadFormData((prev) => ({ ...prev, tipo: value }))} />
 
           <Textarea
             label="Descrição"
+            maxRows={4}
+            minRows={2}
             placeholder="Observações sobre o documento..."
             value={uploadFormData.descricao}
             onValueChange={(value) => setUploadFormData((prev) => ({ ...prev, descricao: value }))}
-            minRows={2}
-            maxRows={4}
           />
 
           {/* Vincular a Processo (opcional) */}
@@ -706,17 +761,28 @@ export default function ClienteDetalhesPage() {
               label="Vincular a Processo (opcional)"
               placeholder="Selecione um processo"
               selectedKeys={uploadFormData.processoId ? [uploadFormData.processoId] : []}
-              onSelectionChange={(keys) => setUploadFormData((prev) => ({ ...prev, processoId: Array.from(keys)[0] as string }))}
+              onSelectionChange={(keys) =>
+                setUploadFormData((prev) => ({
+                  ...prev,
+                  processoId: Array.from(keys)[0] as string,
+                }))
+              }
             >
               {cliente.processos.map((processo) => (
-                <SelectItem key={processo.id} value={processo.id}>
-                  {processo.numero}
-                </SelectItem>
+                <SelectItem key={processo.id}>{processo.numero}</SelectItem>
               ))}
             </Select>
           )}
 
-          <Checkbox isSelected={uploadFormData.visivelParaCliente} onValueChange={(checked) => setUploadFormData((prev) => ({ ...prev, visivelParaCliente: checked }))}>
+          <Checkbox
+            isSelected={uploadFormData.visivelParaCliente}
+            onValueChange={(checked) =>
+              setUploadFormData((prev) => ({
+                ...prev,
+                visivelParaCliente: checked,
+              }))
+            }
+          >
             <div className="flex flex-col">
               <span className="text-sm">Visível para o cliente</span>
               <span className="text-xs text-default-400">O cliente poderá visualizar este documento na área dele</span>

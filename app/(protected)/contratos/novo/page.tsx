@@ -11,11 +11,12 @@ import { ArrowLeft, Save, FileText, User, DollarSign, Calendar, Building2 } from
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Spinner } from "@heroui/spinner";
+
 import { title } from "@/components/primitives";
 import { createContrato, type ContratoCreateInput } from "@/app/actions/contratos";
 import { ContratoStatus } from "@/app/generated/prisma";
 import { useClientesParaSelect, useProcuracoesDisponiveis } from "@/app/hooks/use-clientes";
-import { Spinner } from "@heroui/spinner";
 
 export default function NovoContratoPage() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function NovoContratoPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<ContratoCreateInput>({
     titulo: "",
-    descricao: "",
+    resumo: "",
     status: ContratoStatus.RASCUNHO,
     clienteId: clienteIdParam || "",
     procuracaoId: undefined,
@@ -39,7 +40,7 @@ export default function NovoContratoPage() {
   if (isLoadingClientes && !clienteIdParam) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Spinner size="lg" label="Carregando dados..." />
+        <Spinner label="Carregando dados..." size="lg" />
       </div>
     );
   }
@@ -47,11 +48,13 @@ export default function NovoContratoPage() {
   const handleSubmit = async () => {
     if (!formData.titulo.trim()) {
       toast.error("Título do contrato é obrigatório");
+
       return;
     }
 
     if (!formData.clienteId) {
       toast.error("Selecione um cliente");
+
       return;
     }
 
@@ -88,7 +91,7 @@ export default function NovoContratoPage() {
           <h1 className={title()}>Novo Contrato</h1>
           <p className="text-sm text-default-500 mt-1">Cadastrar novo contrato</p>
         </div>
-        <Button as={Link} href={clienteIdParam ? `/clientes/${clienteIdParam}` : "/contratos"} variant="light" startContent={<ArrowLeft className="h-4 w-4" />}>
+        <Button as={Link} href={clienteIdParam ? `/clientes/${clienteIdParam}` : "/contratos"} startContent={<ArrowLeft className="h-4 w-4" />} variant="light">
           Voltar
         </Button>
       </div>
@@ -120,16 +123,21 @@ export default function NovoContratoPage() {
             {/* Select de Cliente (se não veio de um cliente) */}
             {!clienteIdParam && (
               <Select
+                isRequired
+                description="Selecione o cliente vinculado a este contrato"
                 label="Cliente *"
                 placeholder="Selecione um cliente"
                 selectedKeys={formData.clienteId ? [formData.clienteId] : []}
-                onSelectionChange={(keys) => setFormData((prev) => ({ ...prev, clienteId: Array.from(keys)[0] as string }))}
-                isRequired
-                description="Selecione o cliente vinculado a este contrato"
                 startContent={<User className="h-4 w-4 text-default-400" />}
+                onSelectionChange={(keys) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    clienteId: Array.from(keys)[0] as string,
+                  }))
+                }
               >
                 {clientes.map((cliente: any) => (
-                  <SelectItem key={cliente.id} value={cliente.id} textValue={cliente.nome}>
+                  <SelectItem key={cliente.id} textValue={cliente.nome}>
                     <div className="flex items-center gap-2">
                       {cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-4 w-4 text-default-400" /> : <User className="h-4 w-4 text-default-400" />}
                       <div className="flex flex-col">
@@ -143,30 +151,34 @@ export default function NovoContratoPage() {
             )}
 
             <Input
+              isRequired
               label="Título do Contrato *"
               placeholder="Ex: Contrato de Prestação de Serviços Jurídicos"
               value={formData.titulo}
               onValueChange={(value) => setFormData((prev) => ({ ...prev, titulo: value }))}
-              isRequired
             />
 
             {/* Select de Procuração (se cliente foi selecionado) */}
             {formData.clienteId && (
               <Select
+                description="Selecione uma procuração para vincular automaticamente ao processo"
+                isDisabled={!formData.clienteId}
+                isLoading={isLoadingProcuracoes}
                 label="Vincular a Procuração (Opcional)"
                 placeholder="Selecione uma procuração"
                 selectedKeys={formData.procuracaoId ? [formData.procuracaoId] : []}
+                startContent={<FileText className="h-4 w-4 text-default-400" />}
                 onSelectionChange={(keys) => {
                   const selectedKey = Array.from(keys)[0] as string;
-                  setFormData((prev) => ({ ...prev, procuracaoId: selectedKey || undefined }));
+
+                  setFormData((prev) => ({
+                    ...prev,
+                    procuracaoId: selectedKey || undefined,
+                  }));
                 }}
-                isLoading={isLoadingProcuracoes}
-                isDisabled={!formData.clienteId}
-                description="Selecione uma procuração para vincular automaticamente ao processo"
-                startContent={<FileText className="h-4 w-4 text-default-400" />}
               >
                 {procuracoes.map((procuracao: any) => (
-                  <SelectItem key={procuracao.id} value={procuracao.id} textValue={procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}>
+                  <SelectItem key={procuracao.id} textValue={procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}>
                     <div className="flex flex-col">
                       <span className="text-sm font-semibold">{procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}</span>
                       <span className="text-xs text-default-400">{procuracao.processos.length} processo(s) vinculado(s)</span>
@@ -177,11 +189,11 @@ export default function NovoContratoPage() {
             )}
 
             <Textarea
-              label="Descrição"
-              placeholder="Objeto do contrato..."
-              value={formData.descricao || ""}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, descricao: value }))}
+              label="Resumo"
               minRows={3}
+              placeholder="Resumo do objeto do contrato..."
+              value={formData.resumo || ""}
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, resumo: value }))}
             />
           </div>
 
@@ -196,53 +208,60 @@ export default function NovoContratoPage() {
                 label="Status"
                 placeholder="Selecione o status"
                 selectedKeys={formData.status ? [formData.status] : []}
-                onSelectionChange={(keys) => setFormData((prev) => ({ ...prev, status: Array.from(keys)[0] as ContratoStatus }))}
+                onSelectionChange={(keys) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    status: Array.from(keys)[0] as ContratoStatus,
+                  }))
+                }
               >
-                <SelectItem key={ContratoStatus.RASCUNHO} value={ContratoStatus.RASCUNHO}>
-                  Rascunho
-                </SelectItem>
-                <SelectItem key={ContratoStatus.EM_ANALISE} value={ContratoStatus.EM_ANALISE}>
-                  Em Análise
-                </SelectItem>
-                <SelectItem key={ContratoStatus.ATIVO} value={ContratoStatus.ATIVO}>
-                  Ativo
-                </SelectItem>
-                <SelectItem key={ContratoStatus.SUSPENSO} value={ContratoStatus.SUSPENSO}>
-                  Suspenso
-                </SelectItem>
-                <SelectItem key={ContratoStatus.CANCELADO} value={ContratoStatus.CANCELADO}>
-                  Cancelado
-                </SelectItem>
-                <SelectItem key={ContratoStatus.FINALIZADO} value={ContratoStatus.FINALIZADO}>
-                  Finalizado
-                </SelectItem>
+                <SelectItem key={ContratoStatus.RASCUNHO}>Rascunho</SelectItem>
+                <SelectItem key={ContratoStatus.ATIVO}>Ativo</SelectItem>
+                <SelectItem key={ContratoStatus.SUSPENSO}>Suspenso</SelectItem>
+                <SelectItem key={ContratoStatus.CANCELADO}>Cancelado</SelectItem>
+                <SelectItem key={ContratoStatus.ENCERRADO}>Encerrado</SelectItem>
               </Select>
 
               <Input
-                type="number"
                 label="Valor (R$)"
                 placeholder="0,00"
-                value={formData.valor?.toString() || ""}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, valor: parseFloat(value) || undefined }))}
                 startContent={<DollarSign className="h-4 w-4 text-default-400" />}
+                type="number"
+                value={formData.valor?.toString() || ""}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    valor: parseFloat(value) || undefined,
+                  }))
+                }
               />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
-                type="date"
                 label="Data de Início"
-                value={formData.dataInicio ? (typeof formData.dataInicio === "string" ? formData.dataInicio.split("T")[0] : new Date(formData.dataInicio).toISOString().split("T")[0]) : ""}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, dataInicio: value || undefined }))}
                 startContent={<Calendar className="h-4 w-4 text-default-400" />}
+                type="date"
+                value={formData.dataInicio ? (typeof formData.dataInicio === "string" ? formData.dataInicio.split("T")[0] : new Date(formData.dataInicio).toISOString().split("T")[0]) : ""}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    dataInicio: value || undefined,
+                  }))
+                }
               />
 
               <Input
-                type="date"
                 label="Data de Término"
-                value={formData.dataFim ? (typeof formData.dataFim === "string" ? formData.dataFim.split("T")[0] : new Date(formData.dataFim).toISOString().split("T")[0]) : ""}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, dataFim: value || undefined }))}
                 startContent={<Calendar className="h-4 w-4 text-default-400" />}
+                type="date"
+                value={formData.dataFim ? (typeof formData.dataFim === "string" ? formData.dataFim.split("T")[0] : new Date(formData.dataFim).toISOString().split("T")[0]) : ""}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    dataFim: value || undefined,
+                  }))
+                }
               />
             </div>
           </div>
@@ -255,10 +274,10 @@ export default function NovoContratoPage() {
 
             <Textarea
               label="Observações"
+              minRows={3}
               placeholder="Informações adicionais..."
               value={formData.observacoes || ""}
               onValueChange={(value) => setFormData((prev) => ({ ...prev, observacoes: value }))}
-              minRows={3}
             />
           </div>
 
@@ -272,7 +291,7 @@ export default function NovoContratoPage() {
             <Button variant="light" onPress={() => router.push(clienteIdParam ? `/clientes/${clienteIdParam}` : "/contratos")}>
               Cancelar
             </Button>
-            <Button color="secondary" onPress={handleSubmit} isLoading={isSaving} startContent={!isSaving ? <Save className="h-4 w-4" /> : undefined}>
+            <Button color="secondary" isLoading={isSaving} startContent={!isSaving ? <Save className="h-4 w-4" /> : undefined} onPress={handleSubmit}>
               Criar Contrato
             </Button>
           </div>

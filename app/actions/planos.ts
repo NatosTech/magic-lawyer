@@ -1,7 +1,8 @@
 "use server";
 
-import prisma from "@/app/lib/prisma";
 import { getServerSession } from "next-auth/next";
+
+import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
 
 // ==================== TIPOS ====================
@@ -73,8 +74,11 @@ async function ensureSuperAdmin() {
   }
 
   const userRole = (session.user as any)?.role;
+
   if (userRole !== "SUPER_ADMIN") {
-    throw new Error("Acesso negado. Apenas Super Admins podem gerenciar planos.");
+    throw new Error(
+      "Acesso negado. Apenas Super Admins podem gerenciar planos.",
+    );
   }
 
   return session.user.id;
@@ -100,9 +104,11 @@ export async function getPlanos(): Promise<GetPlanosResponse> {
     };
   } catch (error) {
     console.error("Erro ao buscar planos:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -145,14 +151,19 @@ export async function getPlanoById(id: string): Promise<GetPlanoResponse> {
     };
   } catch (error) {
     console.error("Erro ao buscar plano:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function updatePlano(id: string, data: Partial<Plano>): Promise<GetPlanoResponse> {
+export async function updatePlano(
+  id: string,
+  data: Partial<Plano>,
+): Promise<GetPlanoResponse> {
   try {
     await ensureSuperAdmin();
 
@@ -195,9 +206,11 @@ export async function updatePlano(id: string, data: Partial<Plano>): Promise<Get
     };
   } catch (error) {
     console.error("Erro ao atualizar plano:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -208,7 +221,13 @@ export async function getEstatisticasPlanos(): Promise<GetEstatisticasPlanosResp
   try {
     await ensureSuperAdmin();
 
-    const [totalPlanos, planosAtivos, totalAssinaturas, assinaturasAtivas, faturamentoMensal] = await Promise.all([
+    const [
+      totalPlanos,
+      planosAtivos,
+      totalAssinaturas,
+      assinaturasAtivas,
+      faturamentoMensal,
+    ] = await Promise.all([
       prisma.plano.count(),
       prisma.plano.count({ where: { ativo: true } }),
       prisma.tenantSubscription.count(),
@@ -243,9 +262,11 @@ export async function getEstatisticasPlanos(): Promise<GetEstatisticasPlanosResp
     };
   } catch (error) {
     console.error("Erro ao buscar estatísticas de planos:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -286,17 +307,23 @@ export async function getAssinaturas() {
         plano: assinatura.plano
           ? {
               ...assinatura.plano,
-              valorMensal: assinatura.plano.valorMensal ? Number(assinatura.plano.valorMensal) : undefined,
-              valorAnual: assinatura.plano.valorAnual ? Number(assinatura.plano.valorAnual) : undefined,
+              valorMensal: assinatura.plano.valorMensal
+                ? Number(assinatura.plano.valorMensal)
+                : undefined,
+              valorAnual: assinatura.plano.valorAnual
+                ? Number(assinatura.plano.valorAnual)
+                : undefined,
             }
           : null,
       })),
     };
   } catch (error) {
     console.error("Erro ao buscar assinaturas:", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }

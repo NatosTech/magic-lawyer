@@ -1,4 +1,7 @@
+import type { Cliente } from "@/app/generated/prisma";
+
 import useSWR from "swr";
+
 import {
   getClientesAdvogado,
   getAllClientesTenant,
@@ -8,8 +11,6 @@ import {
   getDocumentosCliente,
   getProcuracoesCliente,
   getClientesParaSelect,
-  type Cliente,
-  type ClienteComProcessos,
   type ClientesFiltros,
 } from "@/app/actions/clientes";
 import { getProcuracoesDisponiveis } from "@/app/actions/contratos";
@@ -22,15 +23,17 @@ export function useClientesAdvogado() {
     "clientes-advogado",
     async () => {
       const result = await getClientesAdvogado();
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar clientes");
       }
+
       return result.clientes || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -51,15 +54,17 @@ export function useAllClientes() {
     "clientes-tenant",
     async () => {
       const result = await getAllClientesTenant();
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar clientes");
       }
+
       return result.clientes || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -81,15 +86,17 @@ export function useClienteComProcessos(clienteId: string | null) {
     async () => {
       if (!clienteId) return null;
       const result = await getClienteComProcessos(clienteId);
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar cliente");
       }
+
       return result.cliente || null;
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -112,16 +119,18 @@ export function useClientesFiltrados(filtros: ClientesFiltros) {
     key,
     async () => {
       const result = await searchClientes(filtros);
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao buscar clientes");
       }
+
       return result.clientes || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 2000, // Evita chamadas duplicadas em 2 segundos
-    }
+    },
   );
 
   return {
@@ -143,15 +152,17 @@ export function useContratosCliente(clienteId: string | null) {
     async () => {
       if (!clienteId) return null;
       const result = await getContratosCliente(clienteId);
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar contratos");
       }
+
       return result.contratos || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -173,15 +184,17 @@ export function useDocumentosCliente(clienteId: string | null) {
     async () => {
       if (!clienteId) return null;
       const result = await getDocumentosCliente(clienteId);
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar documentos");
       }
+
       return result.documentos || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -203,15 +216,17 @@ export function useProcuracoesCliente(clienteId: string | null) {
     async () => {
       if (!clienteId) return null;
       const result = await getProcuracoesCliente(clienteId);
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar procurações");
       }
+
       return result.procuracoes || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -229,20 +244,27 @@ export function useProcuracoesCliente(clienteId: string | null) {
  * - ADMIN: Todos os clientes do tenant
  * - ADVOGADO: Apenas clientes vinculados
  */
+type ClienteSelectItem = Pick<
+  Cliente,
+  "id" | "nome" | "tipoPessoa" | "email" | "documento"
+>;
+
 export function useClientesParaSelect() {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<ClienteSelectItem[]>(
     "clientes-para-select",
     async () => {
       const result = await getClientesParaSelect();
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar clientes");
       }
+
       return result.clientes || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -257,10 +279,14 @@ export function useClientesParaSelect() {
 
 // Hook para buscar procurações disponíveis de um cliente
 export function useProcuracoesDisponiveis(clienteId: string | null) {
-  const { data, error, isLoading } = useSWR(clienteId ? `procuracoes-disponiveis-${clienteId}` : null, () => (clienteId ? getProcuracoesDisponiveis(clienteId) : null), {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-  });
+  const { data, error, isLoading } = useSWR(
+    clienteId ? `procuracoes-disponiveis-${clienteId}` : null,
+    () => (clienteId ? getProcuracoesDisponiveis(clienteId) : null),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    },
+  );
 
   return {
     procuracoes: data || [],

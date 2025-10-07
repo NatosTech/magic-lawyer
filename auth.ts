@@ -33,7 +33,10 @@ export const authOptions: NextAuthOptions = {
         const normalizedTenant = credentials?.tenant?.trim().toLowerCase();
 
         // Se o tenant está vazio, undefined ou 'undefined', tratamos como auto-detect
-        const shouldAutoDetect = !normalizedTenant || normalizedTenant === "undefined" || normalizedTenant === "";
+        const shouldAutoDetect =
+          !normalizedTenant ||
+          normalizedTenant === "undefined" ||
+          normalizedTenant === "";
 
         const attemptContext = {
           email: normalizedEmail ?? "(missing)",
@@ -41,7 +44,10 @@ export const authOptions: NextAuthOptions = {
         };
 
         if (!credentials?.email || !credentials?.password) {
-          console.warn("[auth] Credenciais incompletas para login", attemptContext);
+          console.warn(
+            "[auth] Credenciais incompletas para login",
+            attemptContext,
+          );
 
           return null;
         }
@@ -66,17 +72,26 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (superAdmin) {
-            console.info("[auth] SuperAdmin encontrado", { id: superAdmin.id, email: superAdmin.email });
+            console.info("[auth] SuperAdmin encontrado", {
+              id: superAdmin.id,
+              email: superAdmin.email,
+            });
 
             // Verificar senha do SuperAdmin
             if (!superAdmin.passwordHash) {
               console.warn("[auth] SuperAdmin sem senha cadastrada");
+
               return null;
             }
 
-            const validPassword = await bcrypt.compare(credentials.password, superAdmin.passwordHash);
+            const validPassword = await bcrypt.compare(
+              credentials.password,
+              superAdmin.passwordHash,
+            );
+
             if (!validPassword) {
               console.warn("[auth] Senha inválida para SuperAdmin");
+
               return null;
             }
 
@@ -130,6 +145,7 @@ export const authOptions: NextAuthOptions = {
                 },
               },
             });
+
             console.info("[auth] Usuários encontrados em todos os tenants", {
               count: allUsers.length,
               users: allUsers.map((u) => ({
@@ -176,22 +192,34 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user || !user.passwordHash) {
-            console.warn("[auth] Usuário não encontrado ou sem senha cadastrada", attemptContext);
+            console.warn(
+              "[auth] Usuário não encontrado ou sem senha cadastrada",
+              attemptContext,
+            );
 
             return null;
           }
 
-          const valid = await bcrypt.compare(credentials.password, user.passwordHash);
+          const valid = await bcrypt.compare(
+            credentials.password,
+            user.passwordHash,
+          );
 
           if (!valid) {
-            console.warn("[auth] Senha inválida para o usuário", attemptContext);
+            console.warn(
+              "[auth] Senha inválida para o usuário",
+              attemptContext,
+            );
 
             return null;
           }
 
           const tenantData = (user as any)?.tenant as
             | (typeof user & {
-                branding?: { logoUrl?: string | null; faviconUrl?: string | null } | null;
+                branding?: {
+                  logoUrl?: string | null;
+                  faviconUrl?: string | null;
+                } | null;
                 status?: string;
                 slug?: string | null;
                 nomeFantasia?: string | null;
@@ -212,14 +240,23 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          const tenantName = tenantData?.nomeFantasia ?? tenantData?.razaoSocial ?? tenantData?.name ?? tenantData?.slug ?? undefined;
+          const tenantName =
+            tenantData?.nomeFantasia ??
+            tenantData?.razaoSocial ??
+            tenantData?.name ??
+            tenantData?.slug ??
+            undefined;
 
-          const permissions = permissionsRaw.map((permission) => permission.permissao);
+          const permissions = permissionsRaw.map(
+            (permission) => permission.permissao,
+          );
 
           const resultUser = {
             id: user.id,
             email: user.email,
-            name: [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined,
+            name:
+              [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+              undefined,
             image: user.avatarUrl || undefined,
             tenantId: user.tenantId,
             role: user.role,
@@ -243,7 +280,10 @@ export const authOptions: NextAuthOptions = {
 
           return resultUser as any;
         } catch (error) {
-          const safeError = error instanceof Error ? { message: error.message, stack: error.stack } : error;
+          const safeError =
+            error instanceof Error
+              ? { message: error.message, stack: error.stack }
+              : error;
 
           console.error("[auth] Erro inesperado durante autenticação", {
             ...attemptContext,
@@ -287,18 +327,37 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
-    async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
+    async session({
+      session,
+      token,
+    }: {
+      session: Session;
+      token: JWT;
+    }): Promise<Session> {
       if (session.user) {
         // Usar dados do token (mais rápido e confiável)
         (session.user as any).id = (token as any).id as string | undefined;
-        (session.user as any).tenantId = (token as any).tenantId as string | undefined;
+        (session.user as any).tenantId = (token as any).tenantId as
+          | string
+          | undefined;
         (session.user as any).role = (token as any).role as string | undefined;
-        (session.user as any).tenantSlug = (token as any).tenantSlug as string | undefined;
-        (session.user as any).tenantName = (token as any).tenantName as string | undefined;
-        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as string | undefined;
-        (session.user as any).tenantFaviconUrl = (token as any).tenantFaviconUrl as string | undefined;
-        (session.user as any).permissions = (token as any).permissions as string[] | undefined;
-        (session.user as any).avatarUrl = (token as any).avatarUrl as string | undefined;
+        (session.user as any).tenantSlug = (token as any).tenantSlug as
+          | string
+          | undefined;
+        (session.user as any).tenantName = (token as any).tenantName as
+          | string
+          | undefined;
+        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as
+          | string
+          | undefined;
+        (session.user as any).tenantFaviconUrl = (token as any)
+          .tenantFaviconUrl as string | undefined;
+        (session.user as any).permissions = (token as any).permissions as
+          | string[]
+          | undefined;
+        (session.user as any).avatarUrl = (token as any).avatarUrl as
+          | string
+          | undefined;
       }
 
       return session;

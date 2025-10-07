@@ -5,14 +5,23 @@ import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Badge } from "@heroui/badge";
 import { Chip } from "@heroui/chip";
-import { Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from "@heroui/drawer";
+import {
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+} from "@heroui/drawer";
 import { ScrollShadow } from "@heroui/scroll-shadow";
 import { Spinner } from "@heroui/spinner";
 import { Tooltip } from "@heroui/tooltip";
 import { addToast } from "@heroui/toast";
 import { useDisclosure } from "@heroui/react";
 
-import { useNotifications, type NotificationStatus } from "@/app/hooks/use-notifications";
+import {
+  useNotifications,
+  type NotificationStatus,
+} from "@/app/hooks/use-notifications";
 import { BellIcon } from "@/components/icons";
 
 const statusCopy: Record<NotificationStatus, string> = {
@@ -21,7 +30,10 @@ const statusCopy: Record<NotificationStatus, string> = {
   ARQUIVADA: "Arquivada",
 };
 
-const statusColor: Record<NotificationStatus, "primary" | "success" | "default"> = {
+const statusColor: Record<
+  NotificationStatus,
+  "primary" | "success" | "default"
+> = {
   NAO_LIDA: "primary",
   LIDA: "success",
   ARQUIVADA: "default",
@@ -39,13 +51,25 @@ function formatDate(dateIso: string) {
 export const NotificationCenter = () => {
   const disclosure = useDisclosure();
   const router = useRouter();
-  const { notifications, unreadCount, isLoading, isValidating, markAs, markAllAsRead, clearAll } = useNotifications();
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    isValidating,
+    markAs,
+    markAllAsRead,
+    clearAll,
+  } = useNotifications();
 
   const unreadBadge = useMemo(() => {
     if (unreadCount <= 0) return null;
 
     return (
-      <Badge className="border-none bg-danger text-[10px] font-semibold text-white shadow-lg" content={unreadCount > 99 ? "99+" : unreadCount} placement="top-right">
+      <Badge
+        className="border-none bg-danger text-[10px] font-semibold text-white shadow-lg"
+        content={unreadCount > 99 ? "99+" : unreadCount}
+        placement="top-right"
+      >
         <span className="sr-only">Notificações não lidas</span>
       </Badge>
     );
@@ -55,7 +79,10 @@ export const NotificationCenter = () => {
     try {
       await markAs(id, status);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Falha ao atualizar notificação.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Falha ao atualizar notificação.";
 
       addToast({
         title: "Não foi possível atualizar",
@@ -74,7 +101,10 @@ export const NotificationCenter = () => {
         color: "success",
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Não foi possível limpar as notificações.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível limpar as notificações.";
 
       addToast({
         title: "Erro ao limpar",
@@ -93,7 +123,10 @@ export const NotificationCenter = () => {
         color: "success",
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Não foi possível marcar todas como lidas.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível marcar todas como lidas.";
 
       addToast({
         title: "Erro ao marcar",
@@ -138,8 +171,12 @@ export const NotificationCenter = () => {
             <>
               <DrawerHeader className="flex items-center justify-between gap-4">
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Central</span>
-                  <h2 className="text-lg font-semibold text-white">Notificações</h2>
+                  <span className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+                    Central
+                  </span>
+                  <h2 className="text-lg font-semibold text-white">
+                    Notificações
+                  </h2>
                 </div>
                 <Chip className="text-xs" color="primary" variant="flat">
                   {isValidating ? "Atualizando" : `${unreadCount} não lida(s)`}
@@ -156,8 +193,12 @@ export const NotificationCenter = () => {
                 {!isLoading && !hasNotifications ? (
                   <div className="flex h-48 flex-col items-center justify-center gap-2 text-center text-default-400">
                     <BellIcon className="h-10 w-10 text-default-200" />
-                    <p className="text-sm font-medium text-white">Nenhuma notificação por aqui</p>
-                    <p className="text-xs text-default-400">Quando algo importante acontecer, você será avisado.</p>
+                    <p className="text-sm font-medium text-white">
+                      Nenhuma notificação por aqui
+                    </p>
+                    <p className="text-xs text-default-400">
+                      Quando algo importante acontecer, você será avisado.
+                    </p>
                   </div>
                 ) : null}
 
@@ -168,31 +209,64 @@ export const NotificationCenter = () => {
                         const isUnread = item.status === "NAO_LIDA";
 
                         return (
-                          <li key={item.id} className="group rounded-2xl border border-white/10 bg-white/5 p-4 shadow-lg transition hover:border-primary/40 hover:bg-primary/5">
+                          <li
+                            key={item.id}
+                            className="group rounded-2xl border border-white/10 bg-white/5 p-4 shadow-lg transition hover:border-primary/40 hover:bg-primary/5"
+                          >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex flex-col gap-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-semibold text-white">{item.titulo}</span>
-                                  <Chip className="text-[10px]" color={statusColor[item.status]} size="sm" variant="flat">
+                                  <span className="text-sm font-semibold text-white">
+                                    {item.titulo}
+                                  </span>
+                                  <Chip
+                                    className="text-[10px]"
+                                    color={statusColor[item.status]}
+                                    size="sm"
+                                    variant="flat"
+                                  >
                                     {statusCopy[item.status]}
                                   </Chip>
                                 </div>
-                                <p className="text-sm text-default-400">{item.mensagem}</p>
+                                <p className="text-sm text-default-400">
+                                  {item.mensagem}
+                                </p>
                               </div>
-                              <span className="shrink-0 text-xs text-default-300">{formatDate(item.criadoEm)}</span>
+                              <span className="shrink-0 text-xs text-default-300">
+                                {formatDate(item.criadoEm)}
+                              </span>
                             </div>
 
                             <div className="mt-3 flex flex-wrap items-center gap-2">
                               {isUnread ? (
-                                <Button color="primary" size="sm" variant="flat" onPress={() => handleStatusChange(item.id, "LIDA")}>
+                                <Button
+                                  color="primary"
+                                  size="sm"
+                                  variant="flat"
+                                  onPress={() =>
+                                    handleStatusChange(item.id, "LIDA")
+                                  }
+                                >
                                   Marcar como lida
                                 </Button>
                               ) : (
-                                <Button size="sm" variant="light" onPress={() => handleStatusChange(item.id, "NAO_LIDA")}>
+                                <Button
+                                  size="sm"
+                                  variant="light"
+                                  onPress={() =>
+                                    handleStatusChange(item.id, "NAO_LIDA")
+                                  }
+                                >
                                   Marcar como não lida
                                 </Button>
                               )}
-                              <Button size="sm" variant="light" onPress={() => handleStatusChange(item.id, "ARQUIVADA")}>
+                              <Button
+                                size="sm"
+                                variant="light"
+                                onPress={() =>
+                                  handleStatusChange(item.id, "ARQUIVADA")
+                                }
+                              >
                                 Arquivar
                               </Button>
                               {item.referenciaId && item.referenciaTipo ? (
@@ -200,7 +274,9 @@ export const NotificationCenter = () => {
                                   size="sm"
                                   variant="bordered"
                                   onPress={() => {
-                                    router.push(`/${item.referenciaTipo}/${item.referenciaId}`);
+                                    router.push(
+                                      `/${item.referenciaTipo}/${item.referenciaId}`,
+                                    );
                                     onClose();
                                   }}
                                 >
@@ -222,10 +298,20 @@ export const NotificationCenter = () => {
                   <span>{notifications.length} registro(s)</span>
                 </div>
                 <div className="flex w-full flex-wrap gap-3">
-                  <Button className="flex-1" isDisabled={unreadCount === 0} variant="bordered" onPress={handleMarkAllAsRead}>
+                  <Button
+                    className="flex-1"
+                    isDisabled={unreadCount === 0}
+                    variant="bordered"
+                    onPress={handleMarkAllAsRead}
+                  >
                     Marcar todas como lidas
                   </Button>
-                  <Button className="flex-1" color="primary" variant="flat" onPress={handleClearAll}>
+                  <Button
+                    className="flex-1"
+                    color="primary"
+                    variant="flat"
+                    onPress={handleClearAll}
+                  >
                     Limpar notificações
                   </Button>
                   <Button className="flex-1" variant="light" onPress={onClose}>

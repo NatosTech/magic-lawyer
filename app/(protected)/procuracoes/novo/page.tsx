@@ -1,66 +1,220 @@
 "use client";
 
+import type { Selection } from "@react-types/shared";
+import type { AdvogadoSelectItem } from "@/app/actions/advogados";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Checkbox } from "@heroui/checkbox";
 import { Divider } from "@heroui/divider";
-import { ArrowLeft, Save, FileSignature, User, Calendar, Upload, Building2 } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
-import { toast } from "sonner";
-import { title } from "@/components/primitives";
-import { createProcuracao, type ProcuracaoCreateInput } from "@/app/actions/procuracoes";
-import { ProcuracaoStatus, ProcuracaoEmitidaPor } from "@/app/generated/prisma";
-import { useClientesParaSelect } from "@/app/hooks/use-clientes";
+import { Input, Textarea } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
+import { ArrowLeft, Calendar, FileSignature, Save, User, Building2, Users, FileText, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
+import { createProcuracao, type ProcuracaoCreateInput } from "@/app/actions/procuracoes";
+import { useClientesParaSelect } from "@/app/hooks/use-clientes";
+import { useProcessosCliente } from "@/app/hooks/use-processos";
+import { useModelosProcuracaoParaSelect } from "@/app/hooks/use-modelos-procuracao";
+import { useAdvogadosDisponiveis } from "@/app/hooks/use-advogados";
+import { Cliente, Processo, ProcuracaoEmitidaPor, ProcuracaoStatus, TipoPessoa } from "@/app/generated/prisma";
+import { title } from "@/components/primitives";
+
+type ClienteSelectItem = Pick<Cliente, "id" | "nome" | "tipoPessoa" | "email" | "documento">;
+type ModeloSelectItem = { id: string; nome: string; categoria?: string | null };
+
+const emptyPoder = { titulo: "", descricao: "" };
+
+const formatDateInput = (value?: Date | null) => {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+
+  return date.toISOString().split("T")[0];
+};
+
+const parseDateInput = (value: string): Date | undefined => {
+  if (!value) return undefined;
+
+  return new Date(`${value}T00:00:00`);
+};
 
 export default function NovaProcuracaoPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const clienteIdParam = searchParams.get("clienteId");
+
+  const clienteIdParam = searchParams.get("clienteId") ?? "";
+  const processoIdsParam = searchParams.get("processoIds") ?? "";
+
+  const preselectedProcessoIds = useMemo(
+    () =>
+      processoIdsParam
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0),
+    [processoIdsParam]
+  );
 
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<ProcuracaoCreateInput>({
     numero: "",
+    arquivoUrl: "",
     observacoes: "",
     status: ProcuracaoStatus.RASCUNHO,
     emitidaPor: ProcuracaoEmitidaPor.ESCRITORIO,
     ativa: true,
-    clienteId: clienteIdParam || "",
-    processosIds: [],
-    outorgadosIds: [],
+    clienteId: clienteIdParam,
+    modeloId: undefined,
+    processoIds: preselectedProcessoIds,
+    advogadoIds: [],
+    poderes: [emptyPoder],
   });
 
-  // Buscar clientes para o select (apenas se não veio de um cliente)
   const { clientes, isLoading: isLoadingClientes } = useClientesParaSelect();
+  const { modelos, isLoading: isLoadingModelos } = useModelosProcuracaoParaSelect();
+  const { advogados, isLoading: isLoadingAdvogados } = useAdvogadosDisponiveis();
+  const { processos: processosDoCliente, isLoading: isLoadingProcessos } = useProcessosCliente(formData.clienteId || null);
+
+  useEffect(() => {
+    if (clienteIdParam) {
+      setFormData((prev) => ({ ...prev, clienteId: clienteIdParam }));
+    }
+  }, [clienteIdParam]);
+
+  useEffect(() => {
+    if (preselectedProcessoIds.length === 0) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      processoIds: preselectedProcessoIds,
+    }));
+  }, [preselectedProcessoIds]);
+
+  const selectedProcessoKeys = useMemo(() => new Set(formData.processoIds ?? []), [formData.processoIds]);
+
+  const selectedAdvogadoKeys = useMemo(() => new Set(formData.advogadoIds ?? []), [formData.advogadoIds]);
+
+  const poderes = formData.poderes ?? [];
 
   if (isLoadingClientes && !clienteIdParam) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Spinner size="lg" label="Carregando dados..." />
+        <Spinner label="Carregando dados..." size="lg" />
       </div>
     );
   }
 
+  const handleClienteSelection = (keys: Selection) => {
+    const [key] = Array.from(keys);
+    const novoClienteId = (key as string | undefined) ?? "";
+
+    setFormData((prev) => ({
+      ...prev,
+      clienteId: novoClienteId,
+      processoIds: [],
+    }));
+  };
+
+  const handleProcessoSelectionChange = (keys: Selection) => {
+    if (keys === "all") {
+      const todosProcessos = processosDoCliente?.map((processo) => processo.id) ?? [];
+
+      setFormData((prev) => ({
+        ...prev,
+        processoIds: todosProcessos,
+      }));
+
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      processoIds: Array.from(keys).map(String),
+    }));
+  };
+
+  const handleAdvogadoSelectionChange = (keys: Selection) => {
+    if (keys === "all") {
+      const todosAdvogados = advogados?.map((advogado) => advogado.id) ?? [];
+
+      setFormData((prev) => ({
+        ...prev,
+        advogadoIds: todosAdvogados,
+      }));
+
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      advogadoIds: Array.from(keys).map(String),
+    }));
+  };
+
+  const handleAdicionarPoder = () => {
+    setFormData((prev) => ({
+      ...prev,
+      poderes: [...(prev.poderes ?? []), emptyPoder],
+    }));
+  };
+
+  const handleRemoverPoder = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      poderes: (prev.poderes ?? []).filter((_, idx) => idx !== index),
+    }));
+  };
+
+  const handleAtualizarPoder = (index: number, field: "titulo" | "descricao", value: string) => {
+    setFormData((prev) => {
+      const poderesAtualizados = [...(prev.poderes ?? [])];
+
+      poderesAtualizados[index] = {
+        ...poderesAtualizados[index],
+        [field]: value,
+      };
+
+      return {
+        ...prev,
+        poderes: poderesAtualizados,
+      };
+    });
+  };
+
   const handleSubmit = async () => {
     if (!formData.clienteId) {
       toast.error("Selecione um cliente");
+
       return;
     }
 
     setIsSaving(true);
 
     try {
-      const result = await createProcuracao(formData);
+      const payload: ProcuracaoCreateInput = {
+        ...formData,
+        numero: formData.numero?.trim() || undefined,
+        arquivoUrl: formData.arquivoUrl?.trim() || undefined,
+        observacoes: formData.observacoes?.trim() || undefined,
+        modeloId: formData.modeloId || undefined,
+        processoIds: formData.processoIds && formData.processoIds.length > 0 ? formData.processoIds : undefined,
+        advogadoIds: formData.advogadoIds ?? [],
+        poderes: (formData.poderes ?? [])
+          .map((poder) => ({
+            titulo: poder.titulo?.trim() || undefined,
+            descricao: poder.descricao.trim(),
+          }))
+          .filter((poder) => poder.descricao.length > 0),
+      };
+
+      const result = await createProcuracao(payload);
 
       if (result.success) {
         toast.success("Procuração criada com sucesso!");
 
-        // Redirecionar baseado em onde veio
         if (clienteIdParam) {
           router.push(`/clientes/${clienteIdParam}`);
         } else {
@@ -79,28 +233,25 @@ export default function NovaProcuracaoPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className={title()}>Nova Procuração</h1>
-          <p className="text-sm text-default-500 mt-1">Cadastrar nova procuração</p>
+          <p className="mt-1 text-sm text-default-500">Preencha os dados conforme o modelo e vincule aos responsáveis.</p>
         </div>
-        <Button as={Link} href={clienteIdParam ? `/clientes/${clienteIdParam}` : "/procuracoes"} variant="light" startContent={<ArrowLeft className="h-4 w-4" />}>
+        <Button as={Link} href={clienteIdParam ? `/clientes/${clienteIdParam}` : "/procuracoes"} startContent={<ArrowLeft className="h-4 w-4" />} variant="light">
           Voltar
         </Button>
       </div>
 
-      {/* Aviso se veio de um cliente */}
       {clienteIdParam && (
         <Card className="border border-success/20 bg-success/5">
           <CardBody className="flex flex-row items-center gap-2">
             <User className="h-5 w-5 text-success" />
-            <p className="text-sm text-success">Esta procuração será vinculada ao cliente selecionado</p>
+            <p className="text-sm text-success">Esta procuração será vinculada ao cliente selecionado.</p>
           </CardBody>
         </Card>
       )}
 
-      {/* Formulário */}
       <Card className="border border-default-200">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -110,25 +261,23 @@ export default function NovaProcuracaoPage() {
         </CardHeader>
         <Divider />
         <CardBody className="gap-6">
-          {/* Dados Básicos */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-default-600">📋 Dados Básicos</h3>
 
-            {/* Select de Cliente (se não veio de um cliente) */}
             {!clienteIdParam && (
               <Select
+                isRequired
+                description="Selecione o cliente outorgante"
                 label="Cliente *"
                 placeholder="Selecione um cliente"
                 selectedKeys={formData.clienteId ? [formData.clienteId] : []}
-                onSelectionChange={(keys) => setFormData((prev) => ({ ...prev, clienteId: Array.from(keys)[0] as string }))}
-                isRequired
-                description="Selecione o cliente outorgante"
                 startContent={<User className="h-4 w-4 text-default-400" />}
+                onSelectionChange={handleClienteSelection}
               >
-                {clientes.map((cliente: any) => (
-                  <SelectItem key={cliente.id} value={cliente.id} textValue={cliente.nome}>
+                {clientes.map((cliente: ClienteSelectItem) => (
+                  <SelectItem key={cliente.id}>
                     <div className="flex items-center gap-2">
-                      {cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-4 w-4 text-default-400" /> : <User className="h-4 w-4 text-default-400" />}
+                      {cliente.tipoPessoa === TipoPessoa.JURIDICA ? <Building2 className="h-4 w-4 text-default-400" /> : <User className="h-4 w-4 text-default-400" />}
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold">{cliente.nome}</span>
                         {cliente.email && <span className="text-xs text-default-400">{cliente.email}</span>}
@@ -140,25 +289,100 @@ export default function NovaProcuracaoPage() {
             )}
 
             <Input
+              description="Número de controle interno (opcional)"
               label="Número da Procuração"
               placeholder="Ex: PROC-2024-001"
-              value={formData.numero || ""}
+              value={formData.numero ?? ""}
               onValueChange={(value) => setFormData((prev) => ({ ...prev, numero: value }))}
-              description="Número de controle interno (opcional)"
+            />
+
+            <Select
+              isLoading={isLoadingModelos}
+              label="Modelo de Procuração"
+              placeholder="Selecione um modelo (opcional)"
+              selectedKeys={formData.modeloId ? [formData.modeloId] : []}
+              onSelectionChange={(keys) => {
+                const [key] = Array.from(keys);
+
+                setFormData((prev) => ({
+                  ...prev,
+                  modeloId: (key as string | undefined) || undefined,
+                }));
+              }}
+            >
+              {(modelos ?? []).map((modelo: ModeloSelectItem) => (
+                <SelectItem key={modelo.id}>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-default-700">{modelo.nome}</span>
+                    {modelo.categoria && <span className="text-xs text-default-400">{modelo.categoria}</span>}
+                  </div>
+                </SelectItem>
+              ))}
+            </Select>
+
+            <Input
+              label="URL do Documento (opcional)"
+              placeholder="https://..."
+              startContent={<FileText className="h-4 w-4 text-default-400" />}
+              value={formData.arquivoUrl ?? ""}
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, arquivoUrl: value }))}
             />
 
             <Textarea
               label="Observações"
-              placeholder="Poderes outorgados, observações especiais..."
-              value={formData.observacoes || ""}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, observacoes: value }))}
               minRows={4}
+              placeholder="Poderes outorgados, observações especiais..."
+              value={formData.observacoes ?? ""}
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, observacoes: value }))}
             />
           </div>
 
           <Divider />
 
-          {/* Status e Datas */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-default-600">🔗 Vinculações</h3>
+
+            <Select
+              isDisabled={!formData.clienteId || isLoadingProcessos}
+              isLoading={isLoadingProcessos}
+              label="Processos vinculados"
+              placeholder={formData.clienteId ? "Selecione os processos (opcional)" : "Selecione um cliente para listar processos"}
+              selectedKeys={selectedProcessoKeys}
+              selectionMode="multiple"
+              onSelectionChange={handleProcessoSelectionChange}
+            >
+              {(processosDoCliente ?? []).map((processo: Processo) => (
+                <SelectItem key={processo.id}>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-default-700">{processo.numero}</span>
+                    {processo.titulo && <span className="text-xs text-default-400">{processo.titulo}</span>}
+                  </div>
+                </SelectItem>
+              ))}
+            </Select>
+
+            <Select
+              isLoading={isLoadingAdvogados}
+              label="Advogados outorgados"
+              placeholder="Selecione os advogados habilitados (opcional)"
+              selectedKeys={selectedAdvogadoKeys}
+              selectionMode="multiple"
+              startContent={<Users className="h-4 w-4 text-default-400" />}
+              onSelectionChange={handleAdvogadoSelectionChange}
+            >
+              {(advogados ?? []).map((advogado: AdvogadoSelectItem) => (
+                <SelectItem key={advogado.id}>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-default-700">{`${advogado.usuario.firstName ?? ""} ${advogado.usuario.lastName ?? ""}`.trim() || advogado.usuario.email}</span>
+                    <span className="text-xs text-default-400">{advogado.oabNumero && advogado.oabUf ? `OAB ${advogado.oabNumero}/${advogado.oabUf}` : advogado.usuario.email}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
+
+          <Divider />
+
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-default-600">📅 Status e Validade</h3>
 
@@ -167,84 +391,152 @@ export default function NovaProcuracaoPage() {
                 label="Status"
                 placeholder="Selecione o status"
                 selectedKeys={formData.status ? [formData.status] : []}
-                onSelectionChange={(keys) => setFormData((prev) => ({ ...prev, status: Array.from(keys)[0] as ProcuracaoStatus }))}
+                onSelectionChange={(keys) => {
+                  const [key] = Array.from(keys);
+
+                  setFormData((prev) => ({
+                    ...prev,
+                    status: (key as ProcuracaoStatus | undefined) ?? ProcuracaoStatus.RASCUNHO,
+                  }));
+                }}
               >
-                <SelectItem key={ProcuracaoStatus.RASCUNHO} value={ProcuracaoStatus.RASCUNHO}>
-                  Rascunho
-                </SelectItem>
-                <SelectItem key={ProcuracaoStatus.VIGENTE} value={ProcuracaoStatus.VIGENTE}>
-                  Vigente
-                </SelectItem>
-                <SelectItem key={ProcuracaoStatus.REVOGADA} value={ProcuracaoStatus.REVOGADA}>
-                  Revogada
-                </SelectItem>
-                <SelectItem key={ProcuracaoStatus.EXPIRADA} value={ProcuracaoStatus.EXPIRADA}>
-                  Expirada
-                </SelectItem>
+                <SelectItem key={ProcuracaoStatus.RASCUNHO}>Rascunho</SelectItem>
+                <SelectItem key={ProcuracaoStatus.PENDENTE_ASSINATURA}>Pendente assinatura</SelectItem>
+                <SelectItem key={ProcuracaoStatus.VIGENTE}>Vigente</SelectItem>
+                <SelectItem key={ProcuracaoStatus.REVOGADA}>Revogada</SelectItem>
+                <SelectItem key={ProcuracaoStatus.EXPIRADA}>Expirada</SelectItem>
               </Select>
 
               <Select
-                label="Emitida Por"
+                label="Emitida por"
                 placeholder="Selecione"
                 selectedKeys={formData.emitidaPor ? [formData.emitidaPor] : []}
-                onSelectionChange={(keys) => setFormData((prev) => ({ ...prev, emitidaPor: Array.from(keys)[0] as ProcuracaoEmitidaPor }))}
+                onSelectionChange={(keys) => {
+                  const [key] = Array.from(keys);
+
+                  setFormData((prev) => ({
+                    ...prev,
+                    emitidaPor: (key as ProcuracaoEmitidaPor | undefined) ?? ProcuracaoEmitidaPor.ESCRITORIO,
+                  }));
+                }}
               >
-                <SelectItem key={ProcuracaoEmitidaPor.ESCRITORIO} value={ProcuracaoEmitidaPor.ESCRITORIO}>
-                  Escritório
-                </SelectItem>
-                <SelectItem key={ProcuracaoEmitidaPor.CLIENTE} value={ProcuracaoEmitidaPor.CLIENTE}>
-                  Cliente
-                </SelectItem>
-                <SelectItem key={ProcuracaoEmitidaPor.TRIBUNAL} value={ProcuracaoEmitidaPor.TRIBUNAL}>
-                  Tribunal
-                </SelectItem>
+                <SelectItem key={ProcuracaoEmitidaPor.ESCRITORIO}>Escritório</SelectItem>
+                <SelectItem key={ProcuracaoEmitidaPor.ADVOGADO}>Advogado</SelectItem>
               </Select>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
-                type="date"
-                label="Data de Emissão"
-                value={formData.emitidaEm ? (typeof formData.emitidaEm === "string" ? formData.emitidaEm.split("T")[0] : new Date(formData.emitidaEm).toISOString().split("T")[0]) : ""}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, emitidaEm: value || undefined }))}
+                label="Data de emissão"
                 startContent={<Calendar className="h-4 w-4 text-default-400" />}
+                type="date"
+                value={formatDateInput(formData.emitidaEm)}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    emitidaEm: parseDateInput(value),
+                  }))
+                }
               />
 
               <Input
-                type="date"
-                label="Válida Até"
-                value={formData.validaAte ? (typeof formData.validaAte === "string" ? formData.validaAte.split("T")[0] : new Date(formData.validaAte).toISOString().split("T")[0]) : ""}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, validaAte: value || undefined }))}
+                label="Válida até"
                 startContent={<Calendar className="h-4 w-4 text-default-400" />}
+                type="date"
+                value={formatDateInput(formData.validaAte)}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    validaAte: parseDateInput(value),
+                  }))
+                }
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                label="Revogada em"
+                startContent={<Calendar className="h-4 w-4 text-default-400" />}
+                type="date"
+                value={formatDateInput(formData.revogadaEm)}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    revogadaEm: parseDateInput(value),
+                  }))
+                }
+              />
+
+              <Input
+                label="Assinada pelo cliente em"
+                startContent={<Calendar className="h-4 w-4 text-default-400" />}
+                type="date"
+                value={formatDateInput(formData.assinadaPeloClienteEm)}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    assinadaPeloClienteEm: parseDateInput(value),
+                  }))
+                }
               />
             </div>
 
             <Checkbox isSelected={formData.ativa ?? true} onValueChange={(checked) => setFormData((prev) => ({ ...prev, ativa: checked }))}>
               <div className="flex flex-col">
-                <span className="text-sm font-semibold">Procuração Ativa</span>
-                <span className="text-xs text-default-400">Marque se a procuração está em vigor</span>
+                <span className="text-sm font-semibold">Procuração ativa</span>
+                <span className="text-xs text-default-400">Marque se a procuração está em vigor.</span>
               </div>
             </Checkbox>
           </div>
 
-          {/* Informação */}
-          <div className="rounded-lg bg-success/5 border border-success/20 p-4">
-            <p className="text-xs text-success-600">
-              💡 Após criar a procuração, você poderá:
-              <br />
-              • Vincular processos específicos
-              <br />
-              • Adicionar advogados outorgados
-              <br />• Fazer upload do documento da procuração
-            </p>
+          <Divider />
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-default-600">⚖️ Poderes outorgados</h3>
+              <Button size="sm" startContent={<Plus className="h-4 w-4" />} variant="light" onPress={handleAdicionarPoder}>
+                Adicionar poder
+              </Button>
+            </div>
+
+            {poderes.length === 0 ? (
+              <p className="text-sm text-default-500">Nenhum poder cadastrado. Utilize o botão acima para adicionar.</p>
+            ) : (
+              <div className="space-y-4">
+                {poderes.map((poder, index) => (
+                  <Card key={`poder-${index}`} className="border border-default-200">
+                    <CardBody className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-default-600">Poder {index + 1}</span>
+                        <Button color="danger" size="sm" startContent={<Trash2 className="h-4 w-4" />} variant="light" onPress={() => handleRemoverPoder(index)}>
+                          Remover
+                        </Button>
+                      </div>
+                      <Input label="Título (opcional)" placeholder="Representar em audiências..." value={poder.titulo ?? ""} onValueChange={(value) => handleAtualizarPoder(index, "titulo", value)} />
+                      <Textarea
+                        isRequired
+                        label="Descrição do poder"
+                        minRows={3}
+                        placeholder="Descreva o poder concedido"
+                        value={poder.descricao}
+                        onValueChange={(value) => handleAtualizarPoder(index, "descricao", value)}
+                      />
+                    </CardBody>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Botões de Ação */}
-          <div className="flex gap-3 justify-end">
+          <div className="rounded-lg border border-success/20 bg-success/5 p-4">
+            <p className="text-xs text-success-600">💡 Dica: cadastre todos os poderes necessários e vincule os processos relacionados antes de salvar para evitar retrabalho.</p>
+          </div>
+
+          <div className="flex justify-end gap-3">
             <Button variant="light" onPress={() => router.push(clienteIdParam ? `/clientes/${clienteIdParam}` : "/procuracoes")}>
               Cancelar
             </Button>
-            <Button color="success" onPress={handleSubmit} isLoading={isSaving} startContent={!isSaving ? <Save className="h-4 w-4" /> : undefined}>
+            <Button color="success" isLoading={isSaving} startContent={!isSaving ? <Save className="h-4 w-4" /> : undefined} onPress={handleSubmit}>
               Criar Procuração
             </Button>
           </div>

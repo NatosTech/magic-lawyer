@@ -3,7 +3,11 @@ import { OAuth2Client } from "google-auth-library";
 
 // Configuração do OAuth2 para Google Calendar
 export const createOAuth2Client = () => {
-  return new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, process.env.GOOGLE_REDIRECT_URI);
+  return new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI,
+  );
 };
 
 // Interface para dados do evento
@@ -44,7 +48,10 @@ export interface CalendarApiResponse {
 export const getAuthUrl = (userId: string) => {
   const oauth2Client = createOAuth2Client();
 
-  const scopes = ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/calendar.events"];
+  const scopes = [
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/calendar.events",
+  ];
 
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
@@ -58,10 +65,13 @@ export const getTokensFromCode = async (code: string) => {
   try {
     const oauth2Client = createOAuth2Client();
     const { tokens } = await oauth2Client.getToken(code);
+
     oauth2Client.setCredentials(tokens);
+
     return { success: true, tokens };
   } catch (error) {
     console.error("Erro ao obter tokens:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -70,9 +80,15 @@ export const getTokensFromCode = async (code: string) => {
 };
 
 // Função para criar evento no Google Calendar
-export const createCalendarEvent = async (accessToken: string, refreshToken: string, event: GoogleCalendarEvent, calendarId: string = "primary"): Promise<CalendarApiResponse> => {
+export const createCalendarEvent = async (
+  accessToken: string,
+  refreshToken: string,
+  event: GoogleCalendarEvent,
+  calendarId: string = "primary",
+): Promise<CalendarApiResponse> => {
   try {
     const oauth2Client = createOAuth2Client();
+
     oauth2Client.setCredentials({
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -91,6 +107,7 @@ export const createCalendarEvent = async (accessToken: string, refreshToken: str
     };
   } catch (error) {
     console.error("Erro ao criar evento no Google Calendar:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -104,10 +121,11 @@ export const updateCalendarEvent = async (
   refreshToken: string,
   eventId: string,
   event: Partial<GoogleCalendarEvent>,
-  calendarId: string = "primary"
+  calendarId: string = "primary",
 ): Promise<CalendarApiResponse> => {
   try {
     const oauth2Client = createOAuth2Client();
+
     oauth2Client.setCredentials({
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -127,6 +145,7 @@ export const updateCalendarEvent = async (
     };
   } catch (error) {
     console.error("Erro ao atualizar evento no Google Calendar:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -135,9 +154,15 @@ export const updateCalendarEvent = async (
 };
 
 // Função para deletar evento no Google Calendar
-export const deleteCalendarEvent = async (accessToken: string, refreshToken: string, eventId: string, calendarId: string = "primary"): Promise<CalendarApiResponse> => {
+export const deleteCalendarEvent = async (
+  accessToken: string,
+  refreshToken: string,
+  eventId: string,
+  calendarId: string = "primary",
+): Promise<CalendarApiResponse> => {
   try {
     const oauth2Client = createOAuth2Client();
+
     oauth2Client.setCredentials({
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -155,6 +180,7 @@ export const deleteCalendarEvent = async (accessToken: string, refreshToken: str
     };
   } catch (error) {
     console.error("Erro ao deletar evento no Google Calendar:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -163,9 +189,13 @@ export const deleteCalendarEvent = async (accessToken: string, refreshToken: str
 };
 
 // Função para listar calendários do usuário
-export const listCalendars = async (accessToken: string, refreshToken: string): Promise<CalendarApiResponse> => {
+export const listCalendars = async (
+  accessToken: string,
+  refreshToken: string,
+): Promise<CalendarApiResponse> => {
   try {
     const oauth2Client = createOAuth2Client();
+
     oauth2Client.setCredentials({
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -181,6 +211,7 @@ export const listCalendars = async (accessToken: string, refreshToken: string): 
     };
   } catch (error) {
     console.error("Erro ao listar calendários:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -189,9 +220,16 @@ export const listCalendars = async (accessToken: string, refreshToken: string): 
 };
 
 // Função para listar eventos de um período
-export const listEvents = async (accessToken: string, refreshToken: string, timeMin: string, timeMax: string, calendarId: string = "primary"): Promise<CalendarApiResponse> => {
+export const listEvents = async (
+  accessToken: string,
+  refreshToken: string,
+  timeMin: string,
+  timeMax: string,
+  calendarId: string = "primary",
+): Promise<CalendarApiResponse> => {
   try {
     const oauth2Client = createOAuth2Client();
+
     oauth2Client.setCredentials({
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -213,6 +251,7 @@ export const listEvents = async (accessToken: string, refreshToken: string, time
     };
   } catch (error) {
     console.error("Erro ao listar eventos:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -237,7 +276,7 @@ export const syncEventWithGoogle = async (
     refreshToken: string;
   },
   googleEventId?: string,
-  calendarId: string = "primary"
+  calendarId: string = "primary",
 ): Promise<CalendarApiResponse> => {
   const googleEvent: GoogleCalendarEvent = {
     summary: localEvent.titulo,
@@ -271,9 +310,20 @@ export const syncEventWithGoogle = async (
 
   if (googleEventId) {
     // Atualizar evento existente
-    return updateCalendarEvent(googleTokens.accessToken, googleTokens.refreshToken, googleEventId, googleEvent, calendarId);
+    return updateCalendarEvent(
+      googleTokens.accessToken,
+      googleTokens.refreshToken,
+      googleEventId,
+      googleEvent,
+      calendarId,
+    );
   } else {
     // Criar novo evento
-    return createCalendarEvent(googleTokens.accessToken, googleTokens.refreshToken, googleEvent, calendarId);
+    return createCalendarEvent(
+      googleTokens.accessToken,
+      googleTokens.refreshToken,
+      googleEvent,
+      calendarId,
+    );
   }
 };

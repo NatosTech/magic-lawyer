@@ -1,7 +1,13 @@
 import { useSession } from "next-auth/react";
 import { useMemo } from "react";
 
-export type UserRole = "SUPER_ADMIN" | "ADMIN" | "ADVOGADO" | "SECRETARIA" | "FINANCEIRO" | "CLIENTE";
+export type UserRole =
+  | "SUPER_ADMIN"
+  | "ADMIN"
+  | "ADVOGADO"
+  | "SECRETARIA"
+  | "FINANCEIRO"
+  | "CLIENTE";
 
 export interface UserPermissions {
   canViewAllProcesses: boolean;
@@ -28,7 +34,9 @@ export interface UserPermissions {
 export function useUserPermissions() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role as UserRole | undefined;
-  const userPermissions = (session?.user as any)?.permissions as string[] | undefined;
+  const userPermissions = (session?.user as any)?.permissions as
+    | string[]
+    | undefined;
   const isSuperAdmin = userRole === "SUPER_ADMIN";
 
   const permissions = useMemo<UserPermissions>(() => {

@@ -1,7 +1,8 @@
 import axios from "axios";
 
 // Configuração da API do ClickSign
-const CLICKSIGN_API_BASE = process.env.CLICKSIGN_API_BASE || "https://sandbox.clicksign.com/api/v1";
+const CLICKSIGN_API_BASE =
+  process.env.CLICKSIGN_API_BASE || "https://sandbox.clicksign.com/api/v1";
 const CLICKSIGN_ACCESS_TOKEN = process.env.CLICKSIGN_ACCESS_TOKEN;
 
 // Interface para documento ClickSign
@@ -77,7 +78,11 @@ export interface ClickSignApiResponse<T = any> {
 }
 
 // Função para fazer requisições autenticadas
-const makeAuthenticatedRequest = async <T>(method: "GET" | "POST" | "PUT" | "DELETE", endpoint: string, data?: any): Promise<ClickSignApiResponse<T>> => {
+const makeAuthenticatedRequest = async <T>(
+  method: "GET" | "POST" | "PUT" | "DELETE",
+  endpoint: string,
+  data?: any,
+): Promise<ClickSignApiResponse<T>> => {
   try {
     if (!CLICKSIGN_ACCESS_TOKEN) {
       throw new Error("ClickSign access token não configurado");
@@ -116,7 +121,12 @@ const makeAuthenticatedRequest = async <T>(method: "GET" | "POST" | "PUT" | "DEL
 };
 
 // Função para criar documento no ClickSign
-export const createDocument = async (filename: string, fileContent: Buffer, deadlineAt?: Date, autoClose: boolean = true): Promise<ClickSignApiResponse<ClickSignDocument>> => {
+export const createDocument = async (
+  filename: string,
+  fileContent: Buffer,
+  deadlineAt?: Date,
+  autoClose: boolean = true,
+): Promise<ClickSignApiResponse<ClickSignDocument>> => {
   const contentBase64 = fileContent.toString("base64");
 
   const requestData: CreateDocumentRequest = {
@@ -133,7 +143,11 @@ export const createDocument = async (filename: string, fileContent: Buffer, dead
     requestData.document.deadline_at = deadlineAt.toISOString();
   }
 
-  return makeAuthenticatedRequest<ClickSignDocument>("POST", "/documents", requestData);
+  return makeAuthenticatedRequest<ClickSignDocument>(
+    "POST",
+    "/documents",
+    requestData,
+  );
 };
 
 // Função para adicionar signatário ao documento
@@ -146,7 +160,7 @@ export const addSignerToDocument = async (
     birthday: string; // YYYY-MM-DD
     phone?: string;
     message?: string;
-  }
+  },
 ): Promise<ClickSignApiResponse<ClickSignSigner>> => {
   const requestData: AddSignerRequest = {
     signer: {
@@ -161,32 +175,61 @@ export const addSignerToDocument = async (
     },
   };
 
-  return makeAuthenticatedRequest<ClickSignSigner>("POST", `/documents/${documentKey}/signers`, requestData);
+  return makeAuthenticatedRequest<ClickSignSigner>(
+    "POST",
+    `/documents/${documentKey}/signers`,
+    requestData,
+  );
 };
 
 // Função para obter documento
-export const getDocument = async (documentKey: string): Promise<ClickSignApiResponse<ClickSignDocument>> => {
-  return makeAuthenticatedRequest<ClickSignDocument>("GET", `/documents/${documentKey}`);
+export const getDocument = async (
+  documentKey: string,
+): Promise<ClickSignApiResponse<ClickSignDocument>> => {
+  return makeAuthenticatedRequest<ClickSignDocument>(
+    "GET",
+    `/documents/${documentKey}`,
+  );
 };
 
 // Função para obter signatário
-export const getSigner = async (documentKey: string, signerKey: string): Promise<ClickSignApiResponse<ClickSignSigner>> => {
-  return makeAuthenticatedRequest<ClickSignSigner>("GET", `/documents/${documentKey}/signers/${signerKey}`);
+export const getSigner = async (
+  documentKey: string,
+  signerKey: string,
+): Promise<ClickSignApiResponse<ClickSignSigner>> => {
+  return makeAuthenticatedRequest<ClickSignSigner>(
+    "GET",
+    `/documents/${documentKey}/signers/${signerKey}`,
+  );
 };
 
 // Função para cancelar documento
-export const cancelDocument = async (documentKey: string): Promise<ClickSignApiResponse> => {
+export const cancelDocument = async (
+  documentKey: string,
+): Promise<ClickSignApiResponse> => {
   return makeAuthenticatedRequest("DELETE", `/documents/${documentKey}`);
 };
 
 // Função para listar documentos
-export const listDocuments = async (page: number = 1, perPage: number = 20): Promise<ClickSignApiResponse<{ documents: ClickSignDocument[] }>> => {
-  return makeAuthenticatedRequest<{ documents: ClickSignDocument[] }>("GET", `/documents?page=${page}&per_page=${perPage}`);
+export const listDocuments = async (
+  page: number = 1,
+  perPage: number = 20,
+): Promise<ClickSignApiResponse<{ documents: ClickSignDocument[] }>> => {
+  return makeAuthenticatedRequest<{ documents: ClickSignDocument[] }>(
+    "GET",
+    `/documents?page=${page}&per_page=${perPage}`,
+  );
 };
 
 // Função para obter URL de assinatura
-export const getSigningUrl = async (documentKey: string, signerKey: string): Promise<ClickSignApiResponse<{ url: string }>> => {
-  return makeAuthenticatedRequest<{ url: string }>("GET", `/documents/${documentKey}/signers/${signerKey}/signing_url`);
+export const getSigningUrl = async (
+  documentKey: string,
+  signerKey: string,
+): Promise<ClickSignApiResponse<{ url: string }>> => {
+  return makeAuthenticatedRequest<{ url: string }>(
+    "GET",
+    `/documents/${documentKey}/signers/${signerKey}/signing_url`,
+  );
 };
 
 // Função para enviar documento para assinatura
@@ -211,7 +254,11 @@ export const sendDocumentForSigning = async (documentData: {
 > => {
   try {
     // 1. Criar documento
-    const documentResult = await createDocument(documentData.filename, documentData.fileContent, documentData.deadlineAt);
+    const documentResult = await createDocument(
+      documentData.filename,
+      documentData.fileContent,
+      documentData.deadlineAt,
+    );
 
     if (!documentResult.success || !documentResult.data) {
       return {
@@ -257,6 +304,7 @@ export const sendDocumentForSigning = async (documentData: {
     };
   } catch (error) {
     console.error("Erro ao enviar documento para assinatura:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -266,7 +314,7 @@ export const sendDocumentForSigning = async (documentData: {
 
 // Função para verificar status do documento
 export const checkDocumentStatus = async (
-  documentKey: string
+  documentKey: string,
 ): Promise<
   ClickSignApiResponse<{
     status: string;
@@ -296,6 +344,7 @@ export const checkDocumentStatus = async (
     };
   } catch (error) {
     console.error("Erro ao verificar status do documento:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",

@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+
 import ContratosContent from "./contratos-content";
 
 export const metadata: Metadata = {

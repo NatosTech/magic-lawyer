@@ -3,15 +3,20 @@ import { type MunicipioIBGE } from "@/types/brazil";
 /**
  * Busca todos os municípios de um estado específico via API do IBGE
  */
-export async function getMunicipiosPorEstado(estadoId: number): Promise<MunicipioIBGE[]> {
+export async function getMunicipiosPorEstado(
+  estadoId: number,
+): Promise<MunicipioIBGE[]> {
   try {
-    const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estadoId}/municipios?orderBy=nome`);
+    const response = await fetch(
+      `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estadoId}/municipios?orderBy=nome`,
+    );
 
     if (!response.ok) {
       throw new Error(`Erro ao buscar municípios: ${response.status}`);
     }
 
     const municipios: MunicipioIBGE[] = await response.json();
+
     return municipios;
   } catch (error) {
     console.error("Erro ao buscar municípios do estado:", error);
@@ -25,11 +30,14 @@ export async function getMunicipiosPorEstado(estadoId: number): Promise<Municipi
 const municipiosCache = new Map<number, MunicipioIBGE[]>();
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 horas
 
-export async function getMunicipiosPorEstadoCached(estadoId: number): Promise<MunicipioIBGE[]> {
+export async function getMunicipiosPorEstadoCached(
+  estadoId: number,
+): Promise<MunicipioIBGE[]> {
   const now = Date.now();
 
   // Verificar se o cache ainda é válido
   const cached = municipiosCache.get(estadoId);
+
   if (cached && now - (cached as any).timestamp < CACHE_DURATION) {
     return cached;
   }
@@ -47,7 +55,9 @@ export async function getMunicipiosPorEstadoCached(estadoId: number): Promise<Mu
 /**
  * Busca municípios por sigla do estado
  */
-export async function getMunicipiosPorSiglaEstado(siglaEstado: string): Promise<MunicipioIBGE[]> {
+export async function getMunicipiosPorSiglaEstado(
+  siglaEstado: string,
+): Promise<MunicipioIBGE[]> {
   // Mapear sigla para ID do estado
   const estadoIdMap: Record<string, number> = {
     AC: 12,
@@ -80,6 +90,7 @@ export async function getMunicipiosPorSiglaEstado(siglaEstado: string): Promise<
   };
 
   const estadoId = estadoIdMap[siglaEstado.toUpperCase()];
+
   if (!estadoId) {
     throw new Error(`Estado não encontrado: ${siglaEstado}`);
   }

@@ -12,6 +12,7 @@ import { Divider } from "@heroui/divider";
 import { Chip } from "@heroui/chip";
 import { addToast, closeToast } from "@heroui/toast";
 import NextLink from "next/link";
+
 import { Logo } from "@/components/icons";
 
 export default function LoginPage() {
@@ -42,6 +43,7 @@ export default function LoginPage() {
 
     // Validação básica de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!emailRegex.test(sanitizedEmail)) {
       addToast({
         title: "E-mail inválido",
@@ -71,15 +73,22 @@ export default function LoginPage() {
       });
 
       if (!response) {
-        throw new Error("Não foi possível contatar o servidor de autenticação.");
+        throw new Error(
+          "Não foi possível contatar o servidor de autenticação.",
+        );
       }
 
       if (!response.ok) {
         // Tratamento específico de erros
         if (response.error === "CredentialsSignin") {
-          throw new Error("Usuário não encontrado ou credenciais inválidas. Verifique seu e-mail, senha e escritório.");
+          throw new Error(
+            "Usuário não encontrado ou credenciais inválidas. Verifique seu e-mail, senha e escritório.",
+          );
         }
-        throw new Error(response.error ?? "Credenciais inválidas. Verifique seus dados e tente novamente.");
+        throw new Error(
+          response.error ??
+            "Credenciais inválidas. Verifique seus dados e tente novamente.",
+        );
       }
 
       console.info("[login] Autenticação concluída", attemptContext);
@@ -113,7 +122,10 @@ export default function LoginPage() {
 
       router.push(callbackUrl);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Ocorreu um erro inesperado durante o login.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Ocorreu um erro inesperado durante o login.";
 
       console.warn("[login] Falha na autenticação", {
         ...attemptContext,
@@ -129,9 +141,13 @@ export default function LoginPage() {
       let description = message;
       let color: "danger" | "warning" = "danger";
 
-      if (message.includes("Usuário não encontrado") || message.includes("credenciais inválidas")) {
+      if (
+        message.includes("Usuário não encontrado") ||
+        message.includes("credenciais inválidas")
+      ) {
         title = "Credenciais inválidas";
-        description = "Verifique se seu e-mail, senha e escritório estão corretos. Se não souber o slug do escritório, deixe o campo vazio.";
+        description =
+          "Verifique se seu e-mail, senha e escritório estão corretos. Se não souber o slug do escritório, deixe o campo vazio.";
         color = "warning";
       } else if (message.includes("Não foi possível contatar")) {
         title = "Erro de conexão";
@@ -159,12 +175,22 @@ export default function LoginPage() {
         href="/"
         radius="full"
         size="sm"
-        variant="bordered"
         startContent={
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M15 19l-7-7 7-7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+            />
           </svg>
         }
+        variant="bordered"
       >
         Voltar
       </Button>
@@ -177,8 +203,12 @@ export default function LoginPage() {
               <Logo className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Bem-vindo de volta</h1>
-          <p className="text-default-400 text-sm">Entre na sua conta para acessar o escritório</p>
+          <h1 className="text-2xl font-bold text-white mb-2">
+            Bem-vindo de volta
+          </h1>
+          <p className="text-default-400 text-sm">
+            Entre na sua conta para acessar o escritório
+          </p>
         </div>
 
         {/* Card de login */}
@@ -186,15 +216,22 @@ export default function LoginPage() {
           <CardHeader className="flex flex-col gap-2 pb-2">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🔐</span>
-              <h2 className="text-lg font-semibold text-white">Acesso seguro</h2>
+              <h2 className="text-lg font-semibold text-white">
+                Acesso seguro
+              </h2>
             </div>
-            <p className="text-sm text-default-400">Suas credenciais são protegidas com criptografia de ponta</p>
+            <p className="text-sm text-default-400">
+              Suas credenciais são protegidas com criptografia de ponta
+            </p>
             <div className="mt-2 rounded-lg bg-blue-500/10 border border-blue-500/20 p-3">
               <div className="flex items-start gap-2">
                 <span className="text-blue-400 text-sm">💡</span>
                 <div>
                   <p className="text-xs font-medium text-blue-300">Dica:</p>
-                  <p className="text-xs text-blue-200">Se não souber o slug do escritório, deixe o campo vazio. O sistema tentará encontrar automaticamente.</p>
+                  <p className="text-xs text-blue-200">
+                    Se não souber o slug do escritório, deixe o campo vazio. O
+                    sistema tentará encontrar automaticamente.
+                  </p>
                 </div>
               </div>
             </div>
@@ -204,32 +241,45 @@ export default function LoginPage() {
             <form className="space-y-4" onSubmit={onSubmit}>
               <Input
                 isRequired
+                className="mb-4"
                 label="E-mail"
+                startContent={
+                  <span className="text-default-400 text-sm">📧</span>
+                }
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                startContent={<span className="text-default-400 text-sm">📧</span>}
-                className="mb-4"
               />
               <Input
                 isRequired
+                className="mb-4"
                 label="Senha"
+                startContent={
+                  <span className="text-default-400 text-sm">🔒</span>
+                }
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                startContent={<span className="text-default-400 text-sm">🔒</span>}
-                className="mb-4"
               />
               <Input
+                className="mb-6"
                 description="Opcional. Se não souber, deixe vazio. Exemplo: meu-escritorio ou meuescritorio.com.br"
                 label="Escritório (slug/domínio)"
+                placeholder="meu-escritorio"
+                startContent={
+                  <span className="text-default-400 text-sm">🏢</span>
+                }
                 value={tenant}
                 onChange={(e) => setTenant(e.target.value)}
-                startContent={<span className="text-default-400 text-sm">🏢</span>}
-                placeholder="meu-escritorio"
-                className="mb-6"
               />
-              <Button fullWidth color="primary" isLoading={loading} type="submit" size="lg" startContent={loading ? null : <span>🚀</span>}>
+              <Button
+                fullWidth
+                color="primary"
+                isLoading={loading}
+                size="lg"
+                startContent={loading ? null : <span>🚀</span>}
+                type="submit"
+              >
                 {loading ? "Conectando..." : "Entrar no sistema"}
               </Button>
             </form>
@@ -238,12 +288,30 @@ export default function LoginPage() {
 
         {/* Links úteis */}
         <div className="mt-6 text-center">
-          <p className="text-xs text-default-500 mb-4">Não tem uma conta ainda?</p>
+          <p className="text-xs text-default-500 mb-4">
+            Não tem uma conta ainda?
+          </p>
           <div className="flex flex-col gap-2">
-            <Button as={NextLink} className="border-white/20 text-white" href="/precos" radius="full" size="sm" variant="bordered" startContent={<span>💎</span>}>
+            <Button
+              as={NextLink}
+              className="border-white/20 text-white"
+              href="/precos"
+              radius="full"
+              size="sm"
+              startContent={<span>💎</span>}
+              variant="bordered"
+            >
               Ver planos disponíveis
             </Button>
-            <Button as={NextLink} className="text-default-400" href="/about" radius="full" size="sm" variant="light" startContent={<span>ℹ️</span>}>
+            <Button
+              as={NextLink}
+              className="text-default-400"
+              href="/about"
+              radius="full"
+              size="sm"
+              startContent={<span>ℹ️</span>}
+              variant="light"
+            >
               Saiba mais sobre a plataforma
             </Button>
           </div>
@@ -254,7 +322,9 @@ export default function LoginPage() {
           <CardBody className="py-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">✨</span>
-              <h3 className="text-sm font-semibold text-white">Recursos em destaque</h3>
+              <h3 className="text-sm font-semibold text-white">
+                Recursos em destaque
+              </h3>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="flex items-center gap-2">
@@ -279,7 +349,12 @@ export default function LoginPage() {
 
         {/* Badge de segurança */}
         <div className="mt-6 text-center">
-          <Chip color="success" size="sm" variant="flat" startContent={<span>🛡️</span>}>
+          <Chip
+            color="success"
+            size="sm"
+            startContent={<span>🛡️</span>}
+            variant="flat"
+          >
             Login 100% seguro
           </Chip>
         </div>

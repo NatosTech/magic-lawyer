@@ -20,7 +20,9 @@ export interface ModeloProcuracaoFormData {
 // HELPER FUNCTIONS
 // ============================================
 
-async function getAdvogadoIdFromSession(session: { user: any }): Promise<string | null> {
+async function getAdvogadoIdFromSession(session: {
+  user: any;
+}): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   const advogado = await prisma.advogado.findFirst({
@@ -50,11 +52,13 @@ export async function getAllModelosProcuracao(): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -82,6 +86,7 @@ export async function getAllModelosProcuracao(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar modelos de procuração:", error);
+
     return {
       success: false,
       error: "Erro ao buscar modelos de procuração",
@@ -99,11 +104,13 @@ export async function getModeloProcuracaoById(modeloId: string): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -133,6 +140,7 @@ export async function getModeloProcuracaoById(modeloId: string): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar modelo de procuração:", error);
+
     return {
       success: false,
       error: "Erro ao buscar modelo de procuração",
@@ -143,24 +151,32 @@ export async function getModeloProcuracaoById(modeloId: string): Promise<{
 /**
  * Cria um novo modelo de procuração
  */
-export async function createModeloProcuracao(data: ModeloProcuracaoFormData): Promise<{
+export async function createModeloProcuracao(
+  data: ModeloProcuracaoFormData,
+): Promise<{
   success: boolean;
   modelo?: any;
   error?: string;
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
 
     // Verificar se é ADMIN ou ADVOGADO
-    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADVOGADO") {
+    if (
+      user.role !== "ADMIN" &&
+      user.role !== "SUPER_ADMIN" &&
+      user.role !== "ADVOGADO"
+    ) {
       return { success: false, error: "Acesso negado" };
     }
 
@@ -188,6 +204,7 @@ export async function createModeloProcuracao(data: ModeloProcuracaoFormData): Pr
     };
   } catch (error) {
     console.error("Erro ao criar modelo de procuração:", error);
+
     return {
       success: false,
       error: "Erro ao criar modelo de procuração",
@@ -200,7 +217,7 @@ export async function createModeloProcuracao(data: ModeloProcuracaoFormData): Pr
  */
 export async function updateModeloProcuracao(
   modeloId: string,
-  data: Partial<ModeloProcuracaoFormData>
+  data: Partial<ModeloProcuracaoFormData>,
 ): Promise<{
   success: boolean;
   modelo?: any;
@@ -208,17 +225,23 @@ export async function updateModeloProcuracao(
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
 
     // Verificar se é ADMIN ou ADVOGADO
-    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADVOGADO") {
+    if (
+      user.role !== "ADMIN" &&
+      user.role !== "SUPER_ADMIN" &&
+      user.role !== "ADVOGADO"
+    ) {
       return { success: false, error: "Acesso negado" };
     }
 
@@ -257,6 +280,7 @@ export async function updateModeloProcuracao(
     };
   } catch (error) {
     console.error("Erro ao atualizar modelo de procuração:", error);
+
     return {
       success: false,
       error: "Erro ao atualizar modelo de procuração",
@@ -273,17 +297,23 @@ export async function deleteModeloProcuracao(modeloId: string): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
 
     // Verificar se é ADMIN ou ADVOGADO
-    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADVOGADO") {
+    if (
+      user.role !== "ADMIN" &&
+      user.role !== "SUPER_ADMIN" &&
+      user.role !== "ADVOGADO"
+    ) {
       return { success: false, error: "Acesso negado" };
     }
 
@@ -329,6 +359,7 @@ export async function deleteModeloProcuracao(modeloId: string): Promise<{
     };
   } catch (error) {
     console.error("Erro ao excluir modelo de procuração:", error);
+
     return {
       success: false,
       error: "Erro ao excluir modelo de procuração",
@@ -346,11 +377,13 @@ export async function getModelosProcuracaoParaSelect(): Promise<{
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -377,6 +410,7 @@ export async function getModelosProcuracaoParaSelect(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar modelos para select:", error);
+
     return {
       success: false,
       error: "Erro ao buscar modelos para select",
@@ -389,7 +423,7 @@ export async function getModelosProcuracaoParaSelect(): Promise<{
  */
 export async function gerarPdfProcuracao(
   procuracaoId: string,
-  dadosPreenchidos: Record<string, any>
+  dadosPreenchidos: Record<string, any>,
 ): Promise<{
   success: boolean;
   pdfUrl?: string;
@@ -397,11 +431,13 @@ export async function gerarPdfProcuracao(
 }> {
   try {
     const session = await getSession();
+
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
     }
 
     const user = session.user as any;
+
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
@@ -445,7 +481,10 @@ export async function gerarPdfProcuracao(
     }
 
     if (!procuracao.modelo) {
-      return { success: false, error: "Modelo não encontrado para esta procuração" };
+      return {
+        success: false,
+        error: "Modelo não encontrado para esta procuração",
+      };
     }
 
     // Aqui você implementaria a geração do PDF
@@ -458,6 +497,7 @@ export async function gerarPdfProcuracao(
     };
   } catch (error) {
     console.error("Erro ao gerar PDF da procuração:", error);
+
     return {
       success: false,
       error: "Erro ao gerar PDF da procuração",

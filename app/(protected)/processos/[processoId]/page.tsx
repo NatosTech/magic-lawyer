@@ -1,13 +1,16 @@
 "use client";
 
+import { useMemo, useState, useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
-import { Avatar } from "@heroui/avatar";
 import { Spinner } from "@heroui/spinner";
 import { Tabs, Tab } from "@heroui/tabs";
+import { Input } from "@heroui/input";
+import { Textarea } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
 import {
   ArrowLeft,
   User,
@@ -21,34 +24,233 @@ import {
   Clock,
   AlertCircle,
   CheckCircle,
-  XCircle,
   MapPin,
   DollarSign,
   Gavel,
   Download,
   Eye,
-  FileCheck,
   FileWarning,
+  Edit,
+  Plus,
+  Trash2,
+  Layers,
+  Flag,
+  Landmark,
+  Link2,
+  Info,
+  Users,
+  FileSignature,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
+
 import { useProcessoDetalhado, useDocumentosProcesso, useEventosProcesso } from "@/app/hooks/use-processos";
+import { useProcuracoesDisponiveis } from "@/app/hooks/use-clientes";
 import { title } from "@/components/primitives";
-import { ProcessoStatus } from "@/app/generated/prisma";
+import { ProcessoStatus, ProcessoPolo, ProcessoPrazoStatus, ProcessoFase, ProcessoGrau } from "@/app/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
+import { createProcessoParte, deleteProcessoParte, createProcessoPrazo, updateProcessoPrazo, deleteProcessoPrazo, linkProcuracaoAoProcesso, unlinkProcuracaoDoProcesso } from "@/app/actions/processos";
+
+const parteFormInitial: {
+  tipoPolo: ProcessoPolo;
+  nome: string;
+  documento: string;
+  email: string;
+  telefone: string;
+  papel: string;
+  observacoes: string;
+} = {
+  tipoPolo: ProcessoPolo.AUTOR,
+  nome: "",
+  documento: "",
+  email: "",
+  telefone: "",
+  papel: "",
+  observacoes: "",
+};
+
+const prazoFormInitial = {
+  titulo: "",
+  dataVencimento: "",
+  descricao: "",
+  fundamentoLegal: "",
+};
+
+const getStatusColor = (status: ProcessoStatus) => {
+  switch (status) {
+    case ProcessoStatus.EM_ANDAMENTO:
+      return "primary";
+    case ProcessoStatus.ENCERRADO:
+      return "success";
+    case ProcessoStatus.ARQUIVADO:
+      return "default";
+    case ProcessoStatus.SUSPENSO:
+      return "warning";
+    case ProcessoStatus.RASCUNHO:
+    default:
+      return "default";
+  }
+};
+
+const getStatusLabel = (status: ProcessoStatus) => {
+  switch (status) {
+    case ProcessoStatus.EM_ANDAMENTO:
+      return "Em Andamento";
+    case ProcessoStatus.ENCERRADO:
+      return "Encerrado";
+    case ProcessoStatus.ARQUIVADO:
+      return "Arquivado";
+    case ProcessoStatus.SUSPENSO:
+      return "Suspenso";
+    case ProcessoStatus.RASCUNHO:
+    default:
+      return "Rascunho";
+  }
+};
+
+const getStatusIcon = (status: ProcessoStatus) => {
+  switch (status) {
+    case ProcessoStatus.EM_ANDAMENTO:
+      return <Clock className="h-4 w-4" />;
+    case ProcessoStatus.ENCERRADO:
+      return <CheckCircle className="h-4 w-4" />;
+    case ProcessoStatus.ARQUIVADO:
+      return <FileText className="h-4 w-4" />;
+    case ProcessoStatus.SUSPENSO:
+      return <AlertCircle className="h-4 w-4" />;
+    case ProcessoStatus.RASCUNHO:
+    default:
+      return <FileWarning className="h-4 w-4" />;
+  }
+};
+
+const getFaseLabel = (fase: ProcessoFase) => {
+  switch (fase) {
+    case ProcessoFase.PETICAO_INICIAL:
+      return "Petição Inicial";
+    case ProcessoFase.CITACAO:
+      return "Citação";
+    case ProcessoFase.INSTRUCAO:
+      return "Instrução";
+    case ProcessoFase.SENTENCA:
+      return "Sentença";
+    case ProcessoFase.RECURSO:
+      return "Recurso";
+    case ProcessoFase.EXECUCAO:
+      return "Execução";
+    default:
+      return fase;
+  }
+};
+
+const getGrauLabel = (grau: ProcessoGrau) => {
+  switch (grau) {
+    case ProcessoGrau.PRIMEIRO:
+      return "1º Grau";
+    case ProcessoGrau.SEGUNDO:
+      return "2º Grau";
+    case ProcessoGrau.SUPERIOR:
+      return "Tribunal Superior";
+    default:
+      return grau;
+  }
+};
+
+const getPrazoStatusColor = (status: ProcessoPrazoStatus) => {
+  switch (status) {
+    case ProcessoPrazoStatus.ABERTO:
+      return "primary";
+    case ProcessoPrazoStatus.CONCLUIDO:
+      return "success";
+    case ProcessoPrazoStatus.PRORROGADO:
+      return "warning";
+    case ProcessoPrazoStatus.CANCELADO:
+      return "default";
+    default:
+      return "default";
+  }
+};
+
+const getPrazoStatusLabel = (status: ProcessoPrazoStatus) => {
+  switch (status) {
+    case ProcessoPrazoStatus.ABERTO:
+      return "Aberto";
+    case ProcessoPrazoStatus.CONCLUIDO:
+      return "Concluído";
+    case ProcessoPrazoStatus.PRORROGADO:
+      return "Prorrogado";
+    case ProcessoPrazoStatus.CANCELADO:
+      return "Cancelado";
+    default:
+      return status;
+  }
+};
 
 export default function ProcessoDetalhesPage() {
   const params = useParams();
   const router = useRouter();
   const processoId = params.processoId as string;
 
-  const { processo, isCliente, isLoading, isError } = useProcessoDetalhado(processoId);
+  const { processo, isCliente, isLoading, isError, mutate } = useProcessoDetalhado(processoId);
   const { documentos, isLoading: isLoadingDocs } = useDocumentosProcesso(processoId);
   const { eventos, isLoading: isLoadingEventos } = useEventosProcesso(processoId);
+  const { procuracoes: procuracoesDisponiveis } = useProcuracoesDisponiveis(processo?.cliente?.id ?? null);
+
+  const polos = useMemo(() => Object.values(ProcessoPolo), []);
+  const fases = useMemo(() => Object.values(ProcessoFase), []);
+  const graus = useMemo(() => Object.values(ProcessoGrau), []);
+
+  const [parteForm, setParteForm] = useState(parteFormInitial);
+  const [prazoForm, setPrazoForm] = useState(prazoFormInitial);
+  const [selectedProcuracaoId, setSelectedProcuracaoId] = useState<string>("");
+  const [parteActionId, setParteActionId] = useState<string | null>(null);
+  const [prazoActionId, setPrazoActionId] = useState<string | null>(null);
+  const [procuracaoActionId, setProcuracaoActionId] = useState<string | null>(null);
+  const [isCreatingParte, setIsCreatingParte] = useState(false);
+  const [isCreatingPrazo, setIsCreatingPrazo] = useState(false);
+  const [isLinkingProcuracao, setIsLinkingProcuracao] = useState(false);
+  const [, startTransition] = useTransition();
+
+  const prazosOrdenados = useMemo(() => {
+    if (!processo?.prazos) return [];
+
+    return [...processo.prazos].sort((a, b) => {
+      const diff = new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime();
+
+      return diff;
+    });
+  }, [processo?.prazos]);
+
+  const partesOrdenadas = useMemo(() => {
+    if (!processo?.partes) return [];
+
+    return [...processo.partes].sort((a, b) => {
+      const poloDiff = a.tipoPolo.localeCompare(b.tipoPolo);
+
+      if (poloDiff !== 0) return poloDiff;
+
+      return a.nome.localeCompare(b.nome);
+    });
+  }, [processo?.partes]);
+
+  const vinculoIds = useMemo(() => {
+    if (!processo?.procuracoesVinculadas) return [] as string[];
+
+    return processo.procuracoesVinculadas.map((p) => p.procuracao.id);
+  }, [processo?.procuracoesVinculadas]);
+
+  const procuracoesDisponiveisFiltradas = useMemo(() => {
+    if (!procuracoesDisponiveis) return [] as any[];
+
+    if (vinculoIds.length === 0) return procuracoesDisponiveis;
+
+    return procuracoesDisponiveis.filter((proc: any) => !vinculoIds.includes(proc.id));
+  }, [procuracoesDisponiveis, vinculoIds]);
 
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Spinner size="lg" />
+        <Spinner label="Carregando processo..." size="lg" />
       </div>
     );
   }
@@ -65,177 +267,643 @@ export default function ProcessoDetalhesPage() {
     );
   }
 
-  const getStatusColor = (status: ProcessoStatus) => {
-    switch (status) {
-      case ProcessoStatus.EM_ANDAMENTO:
-        return "primary";
-      case ProcessoStatus.FINALIZADO:
-        return "success";
-      case ProcessoStatus.ARQUIVADO:
-        return "default";
-      case ProcessoStatus.SUSPENSO:
-        return "warning";
-      case ProcessoStatus.RASCUNHO:
-        return "default";
-      default:
-        return "default";
+  const faseLabel = processo.fase ? getFaseLabel(processo.fase) : null;
+  const grauLabel = processo.grau ? getGrauLabel(processo.grau) : null;
+  const pastaUrl = processo.pastaCompartilhadaUrl;
+
+  const handleRefresh = () =>
+    startTransition(() => {
+      mutate();
+    });
+
+  const handleCreateParte = async () => {
+    if (!parteForm.nome.trim()) {
+      toast.error("Informe o nome da parte");
+
+      return;
+    }
+
+    setIsCreatingParte(true);
+    try {
+      const result = await createProcessoParte(processoId, {
+        tipoPolo: parteForm.tipoPolo,
+        nome: parteForm.nome.trim(),
+        documento: parteForm.documento.trim() || undefined,
+        email: parteForm.email.trim() || undefined,
+        telefone: parteForm.telefone.trim() || undefined,
+        papel: parteForm.papel.trim() || undefined,
+        observacoes: parteForm.observacoes.trim() || undefined,
+      });
+
+      if (result.success) {
+        toast.success("Parte adicionada");
+        setParteForm(parteFormInitial);
+        handleRefresh();
+      } else {
+        toast.error(result.error || "Erro ao criar parte");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao criar parte");
+    } finally {
+      setIsCreatingParte(false);
     }
   };
 
-  const getStatusLabel = (status: ProcessoStatus) => {
-    switch (status) {
-      case ProcessoStatus.EM_ANDAMENTO:
-        return "Em Andamento";
-      case ProcessoStatus.FINALIZADO:
-        return "Finalizado";
-      case ProcessoStatus.ARQUIVADO:
-        return "Arquivado";
-      case ProcessoStatus.SUSPENSO:
-        return "Suspenso";
-      case ProcessoStatus.RASCUNHO:
-        return "Rascunho";
-      default:
-        return status;
+  const handleDeleteParte = async (parteId: string) => {
+    setParteActionId(parteId);
+    try {
+      const result = await deleteProcessoParte(parteId);
+
+      if (result.success) {
+        toast.success("Parte removida");
+        handleRefresh();
+      } else {
+        toast.error(result.error || "Erro ao remover parte");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao remover parte");
+    } finally {
+      setParteActionId(null);
     }
   };
 
-  const getStatusIcon = (status: ProcessoStatus) => {
-    switch (status) {
-      case ProcessoStatus.EM_ANDAMENTO:
-        return <Clock className="h-4 w-4" />;
-      case ProcessoStatus.FINALIZADO:
-        return <CheckCircle className="h-4 w-4" />;
-      case ProcessoStatus.ARQUIVADO:
-        return <XCircle className="h-4 w-4" />;
-      case ProcessoStatus.SUSPENSO:
-        return <AlertCircle className="h-4 w-4" />;
-      default:
-        return <FileText className="h-4 w-4" />;
+  const handleCreatePrazo = async () => {
+    if (!prazoForm.titulo.trim()) {
+      toast.error("Informe o título do prazo");
+
+      return;
+    }
+
+    if (!prazoForm.dataVencimento) {
+      toast.error("Informe a data de vencimento");
+
+      return;
+    }
+
+    setIsCreatingPrazo(true);
+    try {
+      const result = await createProcessoPrazo(processoId, {
+        titulo: prazoForm.titulo.trim(),
+        dataVencimento: prazoForm.dataVencimento,
+        descricao: prazoForm.descricao.trim() || undefined,
+        fundamentoLegal: prazoForm.fundamentoLegal.trim() || undefined,
+      });
+
+      if (result.success) {
+        toast.success("Prazo criado");
+        setPrazoForm(prazoFormInitial);
+        handleRefresh();
+      } else {
+        toast.error(result.error || "Erro ao criar prazo");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao criar prazo");
+    } finally {
+      setIsCreatingPrazo(false);
     }
   };
 
-  const getProcuracaoStatusColor = (status: string) => {
-    switch (status) {
-      case "ATIVA":
-        return "success";
-      case "REVOGADA":
-        return "danger";
-      case "VENCIDA":
-        return "warning";
-      default:
-        return "default";
+  const handlePrazoStatus = async (prazoId: string, status: ProcessoPrazoStatus) => {
+    setPrazoActionId(prazoId);
+    try {
+      const result = await updateProcessoPrazo(prazoId, {
+        status,
+        dataCumprimento: status === ProcessoPrazoStatus.CONCLUIDO ? new Date() : null,
+      });
+
+      if (result.success) {
+        toast.success("Prazo atualizado");
+        handleRefresh();
+      } else {
+        toast.error(result.error || "Erro ao atualizar prazo");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao atualizar prazo");
+    } finally {
+      setPrazoActionId(null);
     }
   };
 
-  const getProcuracaoStatusLabel = (status: string) => {
-    switch (status) {
-      case "ATIVA":
-        return "Ativa";
-      case "REVOGADA":
-        return "Revogada";
-      case "VENCIDA":
-        return "Vencida";
-      case "RASCUNHO":
-        return "Rascunho";
-      default:
-        return status;
+  const handleDeletePrazo = async (prazoId: string) => {
+    setPrazoActionId(prazoId);
+    try {
+      const result = await deleteProcessoPrazo(prazoId);
+
+      if (result.success) {
+        toast.success("Prazo removido");
+        handleRefresh();
+      } else {
+        toast.error(result.error || "Erro ao remover prazo");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao remover prazo");
+    } finally {
+      setPrazoActionId(null);
+    }
+  };
+
+  const handleLinkProcuracao = async () => {
+    if (!selectedProcuracaoId) {
+      toast.error("Selecione uma procuração");
+
+      return;
+    }
+
+    setIsLinkingProcuracao(true);
+    try {
+      const result = await linkProcuracaoAoProcesso(processoId, selectedProcuracaoId);
+
+      if (result.success) {
+        toast.success("Procuração vinculada");
+        setSelectedProcuracaoId("");
+        handleRefresh();
+      } else {
+        toast.error(result.error || "Erro ao vincular procuração");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao vincular procuração");
+    } finally {
+      setIsLinkingProcuracao(false);
+    }
+  };
+
+  const handleUnlinkProcuracao = async (procuracaoId: string) => {
+    setProcuracaoActionId(procuracaoId);
+    try {
+      const result = await unlinkProcuracaoDoProcesso(processoId, procuracaoId);
+
+      if (result.success) {
+        toast.success("Procuração desvinculada");
+        handleRefresh();
+      } else {
+        toast.error(result.error || "Erro ao desvincular procuração");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao desvincular procuração");
+    } finally {
+      setProcuracaoActionId(null);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Botão Voltar */}
-      <Button variant="light" startContent={<ArrowLeft className="h-4 w-4" />} onPress={() => router.back()}>
-        Voltar
-      </Button>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <Button startContent={<ArrowLeft className="h-4 w-4" />} variant="light" onPress={() => router.back()}>
+          Voltar
+        </Button>
+        {!isCliente && (
+          <div className="flex gap-2">
+            <Button as={Link} href={`/processos/${processoId}/editar`} startContent={<Edit className="h-4 w-4" />} variant="bordered">
+              Editar Processo
+            </Button>
+          </div>
+        )}
+      </div>
 
-      {/* Header do Processo */}
       <Card className="border border-default-200">
-        <CardBody>
-          <div className="flex flex-col gap-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <Scale className="h-8 w-8 text-primary" />
-                  <div>
-                    <h1 className={title({ size: "md" })}>{processo.numero}</h1>
-                    {processo.titulo && <p className="mt-1 text-sm text-default-500">{processo.titulo}</p>}
-                  </div>
+        <CardBody className="space-y-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 flex-wrap">
+                <Scale className="h-8 w-8 text-primary" />
+                <div>
+                  <h1 className={title({ size: "md" })}>{processo.numero}</h1>
+                  {processo.numeroCnj && processo.numeroCnj !== processo.numero && <p className="text-xs text-default-500">CNJ: {processo.numeroCnj}</p>}
+                  {processo.titulo && <p className="mt-1 text-sm text-default-500">{processo.titulo}</p>}
                 </div>
               </div>
-              <Chip size="lg" variant="flat" color={getStatusColor(processo.status)} startContent={getStatusIcon(processo.status)}>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Chip color={getStatusColor(processo.status)} size="lg" startContent={getStatusIcon(processo.status)} variant="flat">
                 {getStatusLabel(processo.status)}
               </Chip>
-            </div>
-
-            <Divider />
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {processo.area && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Briefcase className="h-4 w-4 text-default-400" />
-                  <span className="text-default-600">{processo.area.nome}</span>
-                </div>
+              {faseLabel && (
+                <Chip color="secondary" size="lg" startContent={<Flag className="h-3 w-3" />} variant="flat">
+                  {faseLabel}
+                </Chip>
               )}
-              {processo.vara && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Gavel className="h-4 w-4 text-default-400" />
-                  <span className="text-default-600">{processo.vara}</span>
-                </div>
+              {grauLabel && (
+                <Chip color="default" size="lg" startContent={<Layers className="h-3 w-3" />} variant="flat">
+                  {grauLabel}
+                </Chip>
               )}
-              {processo.comarca && (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-default-400" />
-                  <span className="text-default-600">{processo.comarca}</span>
-                </div>
-              )}
-              {processo.valorCausa && (
-                <div className="flex items-center gap-2 text-sm">
-                  <DollarSign className="h-4 w-4 text-default-400" />
-                  <span className="text-default-600">
-                    {new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(processo.valorCausa)}
-                  </span>
-                </div>
-              )}
-              {processo.dataDistribuicao && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-default-400" />
-                  <span className="text-default-600">Distribuído em {DateUtils.formatDate(processo.dataDistribuicao)}</span>
-                </div>
+              {processo.segredoJustica && (
+                <Chip color="warning" size="lg" variant="flat">
+                  Segredo de Justiça
+                </Chip>
               )}
             </div>
+          </div>
 
-            {!isCliente && (
-              <>
-                <Divider />
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-default-400" />
-                    <span className="text-sm font-semibold">Cliente:</span>
-                    <span className="text-sm text-default-600">{processo.cliente.nome}</span>
-                  </div>
-                  {processo.advogadoResponsavel && (
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="h-4 w-4 text-default-400" />
-                      <span className="text-sm font-semibold">Advogado:</span>
-                      <span className="text-sm text-default-600">
-                        {processo.advogadoResponsavel.usuario.firstName} {processo.advogadoResponsavel.usuario.lastName}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </>
+          <Divider />
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {processo.area && (
+              <div className="flex items-center gap-2 text-sm">
+                <Briefcase className="h-4 w-4 text-default-400" />
+                <span className="text-default-600">{processo.area.nome}</span>
+              </div>
+            )}
+            {processo.cliente && (
+              <div className="flex items-center gap-2 text-sm">
+                {processo.cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-4 w-4 text-default-400" /> : <User className="h-4 w-4 text-default-400" />}
+                <span className="text-default-600">{processo.cliente.nome}</span>
+              </div>
+            )}
+            {processo.advogadoResponsavel && (
+              <div className="flex items-center gap-2 text-sm">
+                <Briefcase className="h-4 w-4 text-default-400" />
+                <span className="text-default-600">
+                  {processo.advogadoResponsavel.usuario.firstName} {processo.advogadoResponsavel.usuario.lastName}
+                </span>
+              </div>
+            )}
+            {processo.vara && (
+              <div className="flex items-center gap-2 text-sm">
+                <Gavel className="h-4 w-4 text-default-400" />
+                <span className="text-default-600">{processo.vara}</span>
+              </div>
+            )}
+            {processo.comarca && (
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-4 w-4 text-default-400" />
+                <span className="text-default-600">{processo.comarca}</span>
+              </div>
+            )}
+            {processo.valorCausa && (
+              <div className="flex items-center gap-2 text-sm">
+                <DollarSign className="h-4 w-4 text-default-400" />
+                <span className="text-default-600">
+                  {Number(processo.valorCausa).toLocaleString("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  })}
+                </span>
+              </div>
+            )}
+            {processo.dataDistribuicao && (
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="h-4 w-4 text-default-400" />
+                <span className="text-default-600">Distribuído em {DateUtils.formatDate(processo.dataDistribuicao)}</span>
+              </div>
+            )}
+            {processo.prazoPrincipal && (
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4 text-warning" />
+                <span className="text-warning-600">Prazo principal: {DateUtils.formatDate(processo.prazoPrincipal)}</span>
+              </div>
+            )}
+            {processo.orgaoJulgador && (
+              <div className="flex items-center gap-2 text-sm">
+                <Landmark className="h-4 w-4 text-default-400" />
+                <span className="text-default-600">{processo.orgaoJulgador}</span>
+              </div>
+            )}
+            {pastaUrl && (
+              <div className="flex items-center gap-2 text-sm">
+                <Link2 className="h-4 w-4 text-default-400" />
+                <a className="text-primary underline" href={pastaUrl} rel="noopener noreferrer" target="_blank">
+                  Pasta compartilhada
+                </a>
+              </div>
             )}
           </div>
         </CardBody>
       </Card>
 
-      {/* Tabs com Conteúdo */}
       <Tabs aria-label="Informações do Processo" color="primary" variant="underlined">
-        {/* Tab de Documentos */}
+        <Tab
+          key="informacoes"
+          title={
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              <span>Informações</span>
+            </div>
+          }
+        >
+          <div className="mt-4 space-y-4">
+            {!isCliente && (
+              <div className="flex justify-end">
+                <Button as={Link} color="primary" href={`/procuracoes/novo?clienteId=${processo.cliente.id}`} size="sm" startContent={<Plus className="h-3 w-3" />}>
+                  Nova procuração
+                </Button>
+              </div>
+            )}
+
+            <Card className="border border-default-200">
+              <CardHeader>
+                <h3 className="text-lg font-semibold">Dados gerais</h3>
+              </CardHeader>
+              <Divider />
+              <CardBody className="space-y-3">
+                {processo.descricao && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-default-400">Descrição</p>
+                    <p className="mt-1 text-sm text-default-600">{processo.descricao}</p>
+                  </div>
+                )}
+                {processo.classeProcessual && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-default-400">Classe Processual</p>
+                    <p className="mt-1 text-sm text-default-600">{processo.classeProcessual}</p>
+                  </div>
+                )}
+                {processo.rito && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-default-400">Rito</p>
+                    <p className="mt-1 text-sm text-default-600">{processo.rito}</p>
+                  </div>
+                )}
+                {processo.numeroInterno && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-default-400">Número interno</p>
+                    <p className="mt-1 text-sm text-default-600">{processo.numeroInterno}</p>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          </div>
+        </Tab>
+
+        <Tab
+          key="partes"
+          title={
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span>Partes</span>
+              {processo.partes.length > 0 && (
+                <Chip size="sm" variant="flat">
+                  {processo.partes.length}
+                </Chip>
+              )}
+            </div>
+          }
+        >
+          <div className="mt-4 space-y-4">
+            <Card className="border border-default-200">
+              <CardHeader>
+                <div className="flex items-center justify-between w-full">
+                  <h3 className="text-lg font-semibold">Partes vinculadas</h3>
+                  <Chip variant="flat">{processo.partes.length}</Chip>
+                </div>
+              </CardHeader>
+              <Divider />
+              <CardBody className="space-y-3">
+                {partesOrdenadas.length === 0 ? (
+                  <p className="text-sm text-default-500">Nenhuma parte cadastrada.</p>
+                ) : (
+                  partesOrdenadas.map((parte) => (
+                    <Card key={parte.id} className="border border-default-200">
+                      <CardBody className="gap-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Chip size="sm" variant="flat">
+                                {parte.tipoPolo}
+                              </Chip>
+                              <span className="text-sm font-semibold text-default-700">{parte.nome}</span>
+                              {parte.papel && <span className="text-xs text-default-400">{parte.papel}</span>}
+                            </div>
+                            <div className="flex flex-wrap gap-3 text-xs text-default-500">
+                              {parte.documento && (
+                                <span className="flex items-center gap-1">
+                                  <FileText className="h-3 w-3" />
+                                  {parte.documento}
+                                </span>
+                              )}
+                              {parte.email && (
+                                <span className="flex items-center gap-1">
+                                  <Mail className="h-3 w-3" />
+                                  {parte.email}
+                                </span>
+                              )}
+                              {parte.telefone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {parte.telefone}
+                                </span>
+                              )}
+                            </div>
+                            {parte.observacoes && <p className="text-xs text-default-500">{parte.observacoes}</p>}
+                          </div>
+                          {!isCliente && (
+                            <Button isIconOnly color="danger" disabled={parteActionId === parte.id} isLoading={parteActionId === parte.id} variant="light" onPress={() => handleDeleteParte(parte.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </CardBody>
+                    </Card>
+                  ))
+                )}
+              </CardBody>
+            </Card>
+
+            {!isCliente && (
+              <Card className="border border-default-200">
+                <CardHeader>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Plus className="h-4 w-4" /> Nova Parte
+                  </h3>
+                </CardHeader>
+                <Divider />
+                <CardBody className="space-y-4">
+                  <Select
+                    label="Tipo de polo"
+                    selectedKeys={[parteForm.tipoPolo]}
+                    onSelectionChange={(keys) => {
+                      const key = Array.from(keys)[0] as ProcessoPolo | undefined;
+
+                      setParteForm((prev) => ({
+                        ...prev,
+                        tipoPolo: key ?? prev.tipoPolo,
+                      }));
+                    }}
+                  >
+                    {polos.map((polo) => (
+                      <SelectItem key={polo}>{polo}</SelectItem>
+                    ))}
+                  </Select>
+
+                  <Input label="Nome" placeholder="Nome completo da parte" value={parteForm.nome} onValueChange={(value) => setParteForm((prev) => ({ ...prev, nome: value }))} />
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Input label="Documento" value={parteForm.documento} onValueChange={(value) => setParteForm((prev) => ({ ...prev, documento: value }))} />
+                    <Input label="Telefone" value={parteForm.telefone} onValueChange={(value) => setParteForm((prev) => ({ ...prev, telefone: value }))} />
+                  </div>
+
+                  <Input label="E-mail" value={parteForm.email} onValueChange={(value) => setParteForm((prev) => ({ ...prev, email: value }))} />
+                  <Input label="Papel no processo" value={parteForm.papel} onValueChange={(value) => setParteForm((prev) => ({ ...prev, papel: value }))} />
+                  <Textarea label="Observações" minRows={2} value={parteForm.observacoes} onValueChange={(value) => setParteForm((prev) => ({ ...prev, observacoes: value }))} />
+
+                  <div className="flex justify-end">
+                    <Button color="primary" isLoading={isCreatingParte} startContent={<Plus className="h-4 w-4" />} onPress={handleCreateParte}>
+                      Adicionar parte
+                    </Button>
+                  </div>
+                </CardBody>
+              </Card>
+            )}
+          </div>
+        </Tab>
+
+        <Tab
+          key="prazos"
+          title={
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span>Prazos</span>
+              {prazosOrdenados.length > 0 && (
+                <Chip size="sm" variant="flat">
+                  {prazosOrdenados.length}
+                </Chip>
+              )}
+            </div>
+          }
+        >
+          <div className="mt-4 space-y-4">
+            <Card className="border border-default-200">
+              <CardHeader>
+                <div className="flex items-center justify-between w-full">
+                  <h3 className="text-lg font-semibold">Prazos do processo</h3>
+                  <Chip variant="flat">{prazosOrdenados.length}</Chip>
+                </div>
+              </CardHeader>
+              <Divider />
+              <CardBody className="space-y-3">
+                {prazosOrdenados.length === 0 ? (
+                  <p className="text-sm text-default-500">Nenhum prazo cadastrado.</p>
+                ) : (
+                  prazosOrdenados.map((prazo) => {
+                    const vencimento = DateUtils.formatDate(prazo.dataVencimento);
+                    const diasRestantes = DateUtils.diffInDays(prazo.dataVencimento, new Date());
+                    const isVencido = diasRestantes < 0 && prazo.status !== ProcessoPrazoStatus.CONCLUIDO;
+
+                    return (
+                      <Card key={prazo.id} className="border border-default-200">
+                        <CardBody className="gap-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Chip color={getPrazoStatusColor(prazo.status)} size="sm" variant="flat">
+                                  {getPrazoStatusLabel(prazo.status)}
+                                </Chip>
+                                <span className="text-sm font-semibold text-default-700">{prazo.titulo}</span>
+                                <span className={`text-xs ${isVencido ? "text-danger" : "text-default-400"}`}>
+                                  Vencimento: {vencimento}
+                                  {diasRestantes === 0 && " (vence hoje)"}
+                                  {diasRestantes > 0 && ` (em ${diasRestantes} dia${diasRestantes === 1 ? "" : "s"})`}
+                                  {diasRestantes < 0 && ` (${Math.abs(diasRestantes)} dia${Math.abs(diasRestantes) === 1 ? "" : "s"} em atraso)`}
+                                </span>
+                              </div>
+                              {prazo.descricao && <p className="text-xs text-default-500">{prazo.descricao}</p>}
+                              {prazo.fundamentoLegal && (
+                                <p className="text-xs text-default-500">
+                                  <strong>Fundamento:</strong> {prazo.fundamentoLegal}
+                                </p>
+                              )}
+                              {prazo.responsavel && (
+                                <p className="text-xs text-default-500">
+                                  <strong>Responsável:</strong> {prazo.responsavel.firstName} {prazo.responsavel.lastName}
+                                </p>
+                              )}
+                            </div>
+                            {!isCliente && (
+                              <div className="flex gap-2">
+                                {prazo.status !== ProcessoPrazoStatus.CONCLUIDO && (
+                                  <Button
+                                    color="success"
+                                    isLoading={prazoActionId === prazo.id}
+                                    size="sm"
+                                    startContent={<CheckCircle className="h-3 w-3" />}
+                                    variant="flat"
+                                    onPress={() => handlePrazoStatus(prazo.id, ProcessoPrazoStatus.CONCLUIDO)}
+                                  >
+                                    Concluir
+                                  </Button>
+                                )}
+                                {prazo.status === ProcessoPrazoStatus.CONCLUIDO && (
+                                  <Button
+                                    color="warning"
+                                    isLoading={prazoActionId === prazo.id}
+                                    size="sm"
+                                    startContent={<Clock className="h-3 w-3" />}
+                                    variant="flat"
+                                    onPress={() => handlePrazoStatus(prazo.id, ProcessoPrazoStatus.ABERTO)}
+                                  >
+                                    Reabrir
+                                  </Button>
+                                )}
+                                <Button isIconOnly color="danger" isLoading={prazoActionId === prazo.id} size="sm" variant="light" onPress={() => handleDeletePrazo(prazo.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </CardBody>
+                      </Card>
+                    );
+                  })
+                )}
+              </CardBody>
+            </Card>
+
+            {!isCliente && (
+              <Card className="border border-default-200">
+                <CardHeader>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Plus className="h-4 w-4" /> Registrar novo prazo
+                  </h3>
+                </CardHeader>
+                <Divider />
+                <CardBody className="space-y-4">
+                  <Input label="Título do prazo" placeholder="Ex: Apresentar contestação" value={prazoForm.titulo} onValueChange={(value) => setPrazoForm((prev) => ({ ...prev, titulo: value }))} />
+
+                  <Input
+                    label="Data de vencimento"
+                    startContent={<Calendar className="h-4 w-4 text-default-400" />}
+                    type="date"
+                    value={prazoForm.dataVencimento}
+                    onValueChange={(value) =>
+                      setPrazoForm((prev) => ({
+                        ...prev,
+                        dataVencimento: value,
+                      }))
+                    }
+                  />
+
+                  <Textarea label="Descrição" minRows={2} value={prazoForm.descricao} onValueChange={(value) => setPrazoForm((prev) => ({ ...prev, descricao: value }))} />
+
+                  <Textarea
+                    label="Fundamento legal"
+                    minRows={2}
+                    value={prazoForm.fundamentoLegal}
+                    onValueChange={(value) =>
+                      setPrazoForm((prev) => ({
+                        ...prev,
+                        fundamentoLegal: value,
+                      }))
+                    }
+                  />
+
+                  <div className="flex justify-end">
+                    <Button color="primary" isLoading={isCreatingPrazo} startContent={<Plus className="h-4 w-4" />} onPress={handleCreatePrazo}>
+                      Adicionar prazo
+                    </Button>
+                  </div>
+                </CardBody>
+              </Card>
+            )}
+          </div>
+        </Tab>
+
         <Tab
           key="documentos"
           title={
@@ -263,7 +931,7 @@ export default function ProcessoDetalhesPage() {
                 </CardBody>
               </Card>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-2">
                 {documentos.map((doc: any) => (
                   <Card key={doc.id} className="border border-default-200">
                     <CardBody className="gap-2">
@@ -280,7 +948,7 @@ export default function ProcessoDetalhesPage() {
                       </div>
                       {doc.descricao && <p className="text-xs text-default-500">{doc.descricao}</p>}
                       {doc.url && (
-                        <Button size="sm" color="primary" variant="flat" startContent={<Eye className="h-3 w-3" />} as="a" href={doc.url} target="_blank" rel="noopener noreferrer">
+                        <Button as="a" color="primary" href={doc.url} rel="noopener noreferrer" size="sm" startContent={<Eye className="h-3 w-3" />} target="_blank" variant="flat">
                           Visualizar
                         </Button>
                       )}
@@ -292,7 +960,6 @@ export default function ProcessoDetalhesPage() {
           </div>
         </Tab>
 
-        {/* Tab de Eventos/Audiências */}
         <Tab
           key="eventos"
           title={
@@ -330,7 +997,7 @@ export default function ProcessoDetalhesPage() {
                           <p className="text-xs text-default-400">{DateUtils.formatDateTime(evento.dataInicio)}</p>
                         </div>
                         {evento.status && (
-                          <Chip size="sm" variant="flat" color={evento.status === "CONFIRMADO" ? "success" : "default"}>
+                          <Chip color={evento.status === "CONFIRMADO" ? "success" : "default"} size="sm" variant="flat">
                             {evento.status}
                           </Chip>
                         )}
@@ -350,48 +1017,137 @@ export default function ProcessoDetalhesPage() {
           </div>
         </Tab>
 
-        {/* Tab de Informações */}
         <Tab
-          key="informacoes"
+          key="procuracoes"
           title={
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span>Informações</span>
+              <FileSignature className="h-4 w-4" />
+              <span>Procurações</span>
+              {processo.procuracoesVinculadas.length > 0 && (
+                <Chip size="sm" variant="flat">
+                  {processo.procuracoesVinculadas.length}
+                </Chip>
+              )}
             </div>
           }
         >
           <div className="mt-4 space-y-4">
             <Card className="border border-default-200">
               <CardHeader>
-                <h3 className="text-lg font-semibold">Dados do Processo</h3>
+                <div className="flex items-center justify-between w-full">
+                  <h3 className="text-lg font-semibold">Procurações vinculadas</h3>
+                  <Chip variant="flat">{processo.procuracoesVinculadas.length}</Chip>
+                </div>
               </CardHeader>
               <Divider />
-              <CardBody className="gap-3">
-                {processo.descricao && (
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-default-400">Descrição</p>
-                    <p className="mt-1 text-sm text-default-600">{processo.descricao}</p>
-                  </div>
-                )}
-                {processo.classeProcessual && (
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-default-400">Classe Processual</p>
-                    <p className="mt-1 text-sm text-default-600">{processo.classeProcessual}</p>
-                  </div>
-                )}
-                {processo.rito && (
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-default-400">Rito</p>
-                    <p className="mt-1 text-sm text-default-600">{processo.rito}</p>
-                  </div>
-                )}
-                {processo.segredoJustica && (
-                  <Chip color="warning" variant="flat">
-                    Segredo de Justiça
-                  </Chip>
+              <CardBody className="space-y-3">
+                {processo.procuracoesVinculadas.length === 0 ? (
+                  <p className="text-sm text-default-500">Nenhuma procuração vinculada a este processo.</p>
+                ) : (
+                  processo.procuracoesVinculadas.map((item) => (
+                    <Card key={item.id} className="border border-default-200">
+                      <CardBody className="gap-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Chip color={item.procuracao.ativa ? "success" : "danger"} size="sm" variant="flat">
+                                {item.procuracao.status}
+                              </Chip>
+                              <span className="text-sm font-semibold text-default-700">Procuração {item.procuracao.numero || "(sem número)"}</span>
+                            </div>
+                            {item.procuracao.arquivoUrl && (
+                              <Button
+                                as="a"
+                                color="primary"
+                                href={item.procuracao.arquivoUrl}
+                                rel="noopener noreferrer"
+                                size="sm"
+                                startContent={<Download className="h-3 w-3" />}
+                                target="_blank"
+                                variant="flat"
+                              >
+                                Baixar arquivo
+                              </Button>
+                            )}
+                            <div className="text-xs text-default-500 space-y-1">
+                              {item.procuracao.assinaturas.length > 0 && (
+                                <p>
+                                  <strong>Assinada em:</strong> {DateUtils.formatDate(item.procuracao.assinaturas[0].assinadaEm ?? new Date())}
+                                </p>
+                              )}
+                              {item.procuracao.validaAte && (
+                                <p>
+                                  <strong>Validade:</strong> {DateUtils.formatDate(item.procuracao.validaAte)}
+                                </p>
+                              )}
+                              {item.procuracao.outorgados.length > 0 && (
+                                <p>
+                                  <strong>Outorgados:</strong>{" "}
+                                  {item.procuracao.outorgados.map((out) => `${out.advogado.usuario?.firstName || ""} ${out.advogado.usuario?.lastName || ""}`.trim()).join(", ")}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {!isCliente && (
+                            <Button
+                              isIconOnly
+                              color="danger"
+                              isLoading={procuracaoActionId === item.procuracao.id}
+                              size="sm"
+                              variant="light"
+                              onPress={() => handleUnlinkProcuracao(item.procuracao.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </CardBody>
+                    </Card>
+                  ))
                 )}
               </CardBody>
             </Card>
+
+            {!isCliente && (
+              <Card className="border border-default-200">
+                <CardHeader>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Plus className="h-4 w-4" /> Vincular procuração existente
+                  </h3>
+                </CardHeader>
+                <Divider />
+                <CardBody className="space-y-4">
+                  <Select
+                    isDisabled={procuracoesDisponiveisFiltradas.length === 0}
+                    label="Procuração"
+                    placeholder="Selecione uma procuração ativa"
+                    selectedKeys={selectedProcuracaoId ? [selectedProcuracaoId] : []}
+                    onSelectionChange={(keys) => {
+                      const key = Array.from(keys)[0] as string | undefined;
+
+                      setSelectedProcuracaoId(key ?? "");
+                    }}
+                  >
+                    {procuracoesDisponiveisFiltradas.map((proc: any) => (
+                      <SelectItem key={proc.id} textValue={proc.numero || proc.id}>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold">{proc.numero || "Sem número"}</span>
+                          <span className="text-xs text-default-400">Emitida em {proc.emitidaEm ? DateUtils.formatDate(proc.emitidaEm) : "-"}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </Select>
+
+                  <div className="flex justify-end">
+                    <Button color="primary" isDisabled={!selectedProcuracaoId} isLoading={isLinkingProcuracao} startContent={<Link2 className="h-4 w-4" />} onPress={handleLinkProcuracao}>
+                      Vincular procuração
+                    </Button>
+                  </div>
+
+                  {procuracoesDisponiveisFiltradas.length === 0 && <p className="text-xs text-default-500">Nenhuma procuração ativa disponível para vincular.</p>}
+                </CardBody>
+              </Card>
+            )}
           </div>
         </Tab>
       </Tabs>

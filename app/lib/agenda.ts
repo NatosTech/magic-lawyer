@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+import prisma from "./prisma";
 import { sendEmail, emailTemplates } from "./email";
 import { syncEventWithGoogle } from "./google-calendar";
 
@@ -124,6 +124,7 @@ export const createEvento = async (data: CreateEventoData) => {
     return { success: true, data: evento };
   } catch (error) {
     console.error("Erro ao criar evento:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -197,6 +198,7 @@ export const updateEvento = async (data: UpdateEventoData) => {
     return { success: true, data: evento };
   } catch (error) {
     console.error("Erro ao atualizar evento:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -219,6 +221,7 @@ export const deleteEvento = async (eventoId: string, googleTokens?: { accessToke
     if (evento.googleEventId && googleTokens) {
       try {
         const { deleteCalendarEvent } = await import("./google-calendar");
+
         await deleteCalendarEvent(googleTokens.accessToken, googleTokens.refreshToken, evento.googleEventId);
       } catch (error) {
         console.error("Erro ao deletar evento do Google Calendar:", error);
@@ -233,6 +236,7 @@ export const deleteEvento = async (eventoId: string, googleTokens?: { accessToke
     return { success: true };
   } catch (error) {
     console.error("Erro ao deletar evento:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -265,7 +269,9 @@ export const listEventos = async (
         },
         ...(filtros?.processoId && { processoId: filtros.processoId }),
         ...(filtros?.clienteId && { clienteId: filtros.clienteId }),
-        ...(filtros?.advogadoResponsavelId && { advogadoResponsavelId: filtros.advogadoResponsavelId }),
+        ...(filtros?.advogadoResponsavelId && {
+          advogadoResponsavelId: filtros.advogadoResponsavelId,
+        }),
         ...(filtros?.tipo && { tipo: filtros.tipo }),
         ...(filtros?.status && { status: filtros.status }),
       },
@@ -287,6 +293,7 @@ export const listEventos = async (
     return { success: true, data: eventos };
   } catch (error) {
     console.error("Erro ao listar eventos:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -318,6 +325,7 @@ export const getEventoById = async (eventoId: string) => {
     return { success: true, data: evento };
   } catch (error) {
     console.error("Erro ao obter evento:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -398,6 +406,7 @@ export const enviarLembretesEventos = async () => {
     };
   } catch (error) {
     console.error("Erro ao enviar lembretes:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -418,6 +427,7 @@ export const marcarEventoComoRealizado = async (eventoId: string) => {
     return { success: true, data: evento };
   } catch (error) {
     console.error("Erro ao marcar evento como realizado:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",

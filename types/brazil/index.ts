@@ -1,6 +1,6 @@
 /**
  * Tipagens para APIs brasileiras
- * 
+ *
  * Este módulo centraliza todas as tipagens relacionadas às APIs oficiais do Brasil:
  * - IBGE: Estados, municípios e regiões
  * - ViaCEP: Consulta de CEP
@@ -15,26 +15,20 @@ export type {
   DistritoIBGE,
   EstadosResponse,
   MunicipiosResponse,
-  DistritosResponse
+  DistritosResponse,
 } from "./ibge";
 
-export {
-  RegiaoSigla,
-  RegiaoNome
-} from "./ibge";
+export { RegiaoSigla, RegiaoNome } from "./ibge";
 
 // Re-exportações do ViaCEP
 export type {
   ViaCepResponse,
   ViaCepError,
   ViaCepApiResponse,
-  CepData
+  CepData,
 } from "./viacep";
 
-export {
-  RegiaoBrasil,
-  UfBrasil
-} from "./viacep";
+export { RegiaoBrasil, UfBrasil } from "./viacep";
 
 // Re-exportações do ReceitaWS
 export type {
@@ -44,14 +38,14 @@ export type {
   CnpjData,
   SocioCnpj,
   AtividadeReceitaWS,
-  SocioReceitaWS
+  SocioReceitaWS,
 } from "./receitaws";
 
 export {
   SituacaoCadastral,
   TipoEmpresa,
   PorteEmpresa,
-  QualificacaoSocio
+  QualificacaoSocio,
 } from "./receitaws";
 
 // Tipos comuns para todas as APIs

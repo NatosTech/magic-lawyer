@@ -22,7 +22,9 @@ const breadcrumbLabelMap: Record<string, string> = {
 const toTitleCase = (value: string) =>
   value
     .split(" ")
-    .map((part) => (part.length > 0 ? part[0].toUpperCase() + part.slice(1) : part))
+    .map((part) =>
+      part.length > 0 ? part[0].toUpperCase() + part.slice(1) : part,
+    )
     .join(" ");
 
 export function BreadcrumbNav() {
@@ -33,7 +35,9 @@ export function BreadcrumbNav() {
     const items = segments.map((segment, index) => {
       const href = `/${segments.slice(0, index + 1).join("/")}`;
       const normalized = segment.replace(/-/g, " ");
-      const label = breadcrumbLabelMap[segment] ? breadcrumbLabelMap[segment] : toTitleCase(normalized);
+      const label = breadcrumbLabelMap[segment]
+        ? breadcrumbLabelMap[segment]
+        : toTitleCase(normalized);
 
       return {
         href,
@@ -55,13 +59,22 @@ export function BreadcrumbNav() {
 
   return (
     <div className="px-3 py-2 sm:px-6 sm:py-3 min-w-0 overflow-hidden">
-      <Breadcrumbs variant="light" color="primary" size="sm" className="text-xs sm:text-sm min-w-0">
+      <Breadcrumbs
+        className="text-xs sm:text-sm min-w-0"
+        color="primary"
+        size="sm"
+        variant="light"
+      >
         {breadcrumbItems.map((item, index) => {
           const isLast = index === breadcrumbItems.length - 1;
 
           return (
             <BreadcrumbItem key={item.href} isCurrent={isLast}>
-              {isLast ? item.label : <NextLink href={item.href}>{item.label}</NextLink>}
+              {isLast ? (
+                item.label
+              ) : (
+                <NextLink href={item.href}>{item.label}</NextLink>
+              )}
             </BreadcrumbItem>
           );
         })}

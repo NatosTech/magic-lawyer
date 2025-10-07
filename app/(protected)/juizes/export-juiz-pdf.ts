@@ -1,4 +1,5 @@
 import type { JuizSerializado } from "@/app/actions/juizes";
+
 import jsPDF from "jspdf";
 
 /**
@@ -44,7 +45,15 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
 
       // Borda branca ao redor da foto
       doc.setFillColor(255, 255, 255);
-      doc.roundedRect(fotoX - 2, fotoY - 2, fotoSize + 4, fotoSize + 4, 3, 3, "F");
+      doc.roundedRect(
+        fotoX - 2,
+        fotoY - 2,
+        fotoSize + 4,
+        fotoSize + 4,
+        3,
+        3,
+        "F",
+      );
 
       // Foto
       doc.addImage(juiz.foto, "JPEG", fotoX, fotoY, fotoSize, fotoSize);
@@ -90,7 +99,12 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
   doc.setTextColor(...colors.text);
 
   // Função auxiliar para adicionar campos com estilo melhorado
-  const addField = (label: string, value: string | null | undefined, bold = false, highlight = false) => {
+  const addField = (
+    label: string,
+    value: string | null | undefined,
+    bold = false,
+    highlight = false,
+  ) => {
     if (value) {
       // Verificar se precisa de nova página
       if (y > pageHeight - 40) {
@@ -115,10 +129,12 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
         doc.setFillColor(...colors.lightGray);
         const valueLines = doc.splitTextToSize(value, contentWidth - 6);
         const boxHeight = valueLines.length * lineHeight + 2;
+
         doc.roundedRect(margin, y - 4, contentWidth, boxHeight, 1, 1, "F");
       }
 
       const lines = doc.splitTextToSize(value, contentWidth - 6);
+
       doc.text(lines, margin + 2, y);
       y += lines.length * lineHeight + 3;
     }
@@ -158,7 +174,10 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
 
   addField("Vara", juiz.vara, true, true);
   addField("Comarca", juiz.comarca, true, false);
-  addField("Cidade/Estado", juiz.cidade && juiz.estado ? `${juiz.cidade}, ${juiz.estado}` : null);
+  addField(
+    "Cidade/Estado",
+    juiz.cidade && juiz.estado ? `${juiz.cidade}, ${juiz.estado}` : null,
+  );
   addField("Endereço", juiz.endereco);
   addField("CEP", juiz.cep);
 
@@ -182,13 +201,22 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
 
   // Datas importantes
   if (juiz.dataNascimento) {
-    addField("Data de Nascimento", new Date(juiz.dataNascimento).toLocaleDateString("pt-BR"));
+    addField(
+      "Data de Nascimento",
+      new Date(juiz.dataNascimento).toLocaleDateString("pt-BR"),
+    );
   }
   if (juiz.dataPosse) {
-    addField("Data de Posse", new Date(juiz.dataPosse).toLocaleDateString("pt-BR"));
+    addField(
+      "Data de Posse",
+      new Date(juiz.dataPosse).toLocaleDateString("pt-BR"),
+    );
   }
   if (juiz.dataAposentadoria) {
-    addField("Data de Aposentadoria", new Date(juiz.dataAposentadoria).toLocaleDateString("pt-BR"));
+    addField(
+      "Data de Aposentadoria",
+      new Date(juiz.dataAposentadoria).toLocaleDateString("pt-BR"),
+    );
   }
 
   y += 3;
@@ -198,11 +226,24 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
     addSection("Especialidades Jurídicas");
 
     // Background para especialidades
-    const especialidadesText = juiz.especialidades.map((e) => e.replace(/_/g, " ")).join(" • ");
-    const especialidadesLines = doc.splitTextToSize(especialidadesText, contentWidth - 4);
+    const especialidadesText = juiz.especialidades
+      .map((e) => e.replace(/_/g, " "))
+      .join(" • ");
+    const especialidadesLines = doc.splitTextToSize(
+      especialidadesText,
+      contentWidth - 4,
+    );
 
     doc.setFillColor(...colors.lightGray);
-    doc.roundedRect(margin, y - 3, contentWidth, especialidadesLines.length * lineHeight + 4, 2, 2, "F");
+    doc.roundedRect(
+      margin,
+      y - 3,
+      contentWidth,
+      especialidadesLines.length * lineHeight + 4,
+      2,
+      2,
+      "F",
+    );
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
@@ -218,7 +259,11 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...colors.text);
-    const biografiaLines = doc.splitTextToSize(juiz.biografia, contentWidth - 4);
+    const biografiaLines = doc.splitTextToSize(
+      juiz.biografia,
+      contentWidth - 4,
+    );
+
     doc.text(biografiaLines, margin + 2, y);
     y += biografiaLines.length * lineHeight + 5;
   }
@@ -231,6 +276,7 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...colors.text);
     const formacaoLines = doc.splitTextToSize(juiz.formacao, contentWidth - 4);
+
     doc.text(formacaoLines, margin + 2, y);
     y += formacaoLines.length * lineHeight + 5;
   }
@@ -242,7 +288,11 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...colors.text);
-    const experienciaLines = doc.splitTextToSize(juiz.experiencia, contentWidth - 4);
+    const experienciaLines = doc.splitTextToSize(
+      juiz.experiencia,
+      contentWidth - 4,
+    );
+
     doc.text(experienciaLines, margin + 2, y);
     y += experienciaLines.length * lineHeight + 5;
   }
@@ -255,6 +305,7 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...colors.text);
     const premiosLines = doc.splitTextToSize(juiz.premios, contentWidth - 4);
+
     doc.text(premiosLines, margin + 2, y);
     y += premiosLines.length * lineHeight + 5;
   }
@@ -266,7 +317,11 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...colors.text);
-    const publicacoesLines = doc.splitTextToSize(juiz.publicacoes, contentWidth - 4);
+    const publicacoesLines = doc.splitTextToSize(
+      juiz.publicacoes,
+      contentWidth - 4,
+    );
+
     doc.text(publicacoesLines, margin + 2, y);
     y += publicacoesLines.length * lineHeight + 5;
   }
@@ -289,9 +344,21 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
     addSection("Observações Adicionais");
 
     // Card de observações
-    const observacoesLines = doc.splitTextToSize(juiz.observacoes, contentWidth - 8);
+    const observacoesLines = doc.splitTextToSize(
+      juiz.observacoes,
+      contentWidth - 8,
+    );
+
     doc.setFillColor(255, 252, 240); // Tom amarelo claro
-    doc.roundedRect(margin, y - 3, contentWidth, observacoesLines.length * lineHeight + 6, 2, 2, "F");
+    doc.roundedRect(
+      margin,
+      y - 3,
+      contentWidth,
+      observacoesLines.length * lineHeight + 6,
+      2,
+      2,
+      "F",
+    );
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "italic");
@@ -325,6 +392,7 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
       hour: "2-digit",
       minute: "2-digit",
     });
+
     doc.text(`${dataGeracao} • ${horaGeracao}`, margin, pageHeight - 11);
 
     // Branding
@@ -343,6 +411,7 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
 
   // Adicionar rodapé em todas as páginas
   const totalPages = doc.getNumberOfPages();
+
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     addFooter(i);
@@ -357,5 +426,6 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
     .replace(/^-+|-+$/g, ""); // Remove hífens do início e fim
 
   const filename = `juiz-${nomeArquivo}.pdf`;
+
   doc.save(filename);
 }

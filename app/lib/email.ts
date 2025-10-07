@@ -44,11 +44,17 @@ export const sendEmail = async (options: EmailOptions) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
+
     console.log("Email enviado com sucesso:", result.messageId);
+
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error("Erro ao enviar email:", error);
-    return { success: false, error: error instanceof Error ? error.message : "Erro desconhecido" };
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro desconhecido",
+    };
   }
 };
 
@@ -56,19 +62,30 @@ export const sendEmail = async (options: EmailOptions) => {
 export const verifyEmailConnection = async () => {
   try {
     const transporter = createTransporter();
+
     await transporter.verify();
     console.log("Conexão SMTP verificada com sucesso");
+
     return { success: true };
   } catch (error) {
     console.error("Erro na verificação SMTP:", error);
-    return { success: false, error: error instanceof Error ? error.message : "Erro desconhecido" };
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro desconhecido",
+    };
   }
 };
 
 // Templates de email
 export const emailTemplates = {
   // Template para notificação de novo evento
-  novoEvento: (evento: { titulo: string; dataInicio: string; local?: string; descricao?: string }) => ({
+  novoEvento: (evento: {
+    titulo: string;
+    dataInicio: string;
+    local?: string;
+    descricao?: string;
+  }) => ({
     subject: `Novo evento agendado: ${evento.titulo}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -87,7 +104,12 @@ export const emailTemplates = {
   }),
 
   // Template para lembrete de evento
-  lembreteEvento: (evento: { titulo: string; dataInicio: string; local?: string; minutosRestantes: number }) => ({
+  lembreteEvento: (evento: {
+    titulo: string;
+    dataInicio: string;
+    local?: string;
+    minutosRestantes: number;
+  }) => ({
     subject: `Lembrete: ${evento.titulo} em ${evento.minutosRestantes} minutos`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -108,7 +130,12 @@ export const emailTemplates = {
   }),
 
   // Template para documento para assinatura
-  documentoAssinatura: (documento: { titulo: string; urlAssinatura: string; dataExpiracao?: string; descricao?: string }) => ({
+  documentoAssinatura: (documento: {
+    titulo: string;
+    urlAssinatura: string;
+    dataExpiracao?: string;
+    descricao?: string;
+  }) => ({
     subject: `Documento para assinatura: ${documento.titulo}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -132,7 +159,13 @@ export const emailTemplates = {
   }),
 
   // Template para notificação financeira
-  notificacaoFinanceira: (dados: { tipo: "fatura" | "pagamento" | "vencimento"; titulo: string; valor?: string; dataVencimento?: string; descricao?: string }) => ({
+  notificacaoFinanceira: (dados: {
+    tipo: "fatura" | "pagamento" | "vencimento";
+    titulo: string;
+    valor?: string;
+    dataVencimento?: string;
+    descricao?: string;
+  }) => ({
     subject: `Notificação Financeira: ${dados.titulo}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

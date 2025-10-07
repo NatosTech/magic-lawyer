@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
@@ -9,8 +9,10 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@herou
 import { useDisclosure } from "@heroui/use-disclosure";
 import { Spinner } from "@heroui/spinner";
 import { toast } from "sonner";
-import { Plus, Search, MoreVertical, Edit, Trash2, Eye, FileText, Link, Building2, User } from "lucide-react";
+import { Plus, Search, MoreVertical, Edit, Trash2, Eye, FileText, Link as LinkIcon, Building2, User } from "lucide-react";
+import Link from "next/link";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
+
 import { useClientesParaSelect, useProcuracoesDisponiveis } from "@/app/hooks/use-clientes";
 import { vincularContratoProcuracao } from "@/app/actions/contratos";
 import { DateUtils } from "@/app/lib/date-utils";
@@ -54,6 +56,7 @@ export default function ContratosContent() {
   const handleVincularProcuracao = async () => {
     if (!selectedContrato || !selectedProcuracao) {
       toast.error("Selecione uma procuração");
+
       return;
     }
 
@@ -90,7 +93,7 @@ export default function ContratosContent() {
           <h1 className="text-2xl font-bold">Contratos</h1>
           <p className="text-default-500">Gerencie todos os contratos do escritório</p>
         </div>
-        <Button color="primary" startContent={<Plus className="h-4 w-4" />} href="/contratos/novo">
+        <Button as={Link} color="primary" href="/contratos/novo" startContent={<Plus className="h-4 w-4" />}>
           Novo Contrato
         </Button>
       </div>
@@ -100,11 +103,11 @@ export default function ContratosContent() {
         <CardBody>
           <div className="flex gap-4">
             <Input
+              className="flex-1"
               placeholder="Buscar contratos..."
+              startContent={<Search className="h-4 w-4 text-default-400" />}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              startContent={<Search className="h-4 w-4 text-default-400" />}
-              className="flex-1"
             />
           </div>
         </CardBody>
@@ -128,14 +131,14 @@ export default function ContratosContent() {
                       {contrato.cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
                       <span>{contrato.cliente.nome}</span>
                     </div>
-                    {contrato.valor && <span>R$ {contrato.valor.toLocaleString()}</span>}
+                    {contrato.valor && <span>R$ {contrato.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
                     {contrato.dataInicio && <span>Início: {DateUtils.formatDate(contrato.dataInicio)}</span>}
                   </div>
 
                   <div className="flex items-center gap-4 text-xs text-default-400">
                     {contrato.processo ? (
                       <span className="flex items-center gap-1">
-                        <Link className="h-3 w-3" />
+                        <LinkIcon className="h-3 w-3" />
                         Processo: {contrato.processo.numero}
                       </span>
                     ) : (
@@ -147,7 +150,7 @@ export default function ContratosContent() {
 
                 <Dropdown>
                   <DropdownTrigger>
-                    <Button isIconOnly variant="light" size="sm">
+                    <Button isIconOnly size="sm" variant="light">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownTrigger>
@@ -159,7 +162,7 @@ export default function ContratosContent() {
                       Editar
                     </DropdownItem>
                     {!contrato.procuracao && (
-                      <DropdownItem key="link" startContent={<Link className="h-4 w-4" />} onPress={() => openVincularModal(contrato)}>
+                      <DropdownItem key="link" startContent={<LinkIcon className="h-4 w-4" />} onPress={() => openVincularModal(contrato)}>
                         Vincular Procuração
                       </DropdownItem>
                     )}
@@ -175,7 +178,7 @@ export default function ContratosContent() {
       </div>
 
       {/* Modal Vincular Procuração */}
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="md">
+      <Modal isOpen={isOpen} size="md" onOpenChange={onOpenChange}>
         <ModalContent>
           {(onClose) => (
             <>
@@ -186,7 +189,7 @@ export default function ContratosContent() {
               <ModalBody>
                 {isLoadingProcuracoes ? (
                   <div className="flex justify-center py-8">
-                    <Spinner size="lg" label="Carregando procurações..." />
+                    <Spinner label="Carregando procurações..." size="lg" />
                   </div>
                 ) : procuracoes.length === 0 ? (
                   <div className="text-center py-8">
@@ -199,11 +202,12 @@ export default function ContratosContent() {
                     selectedKeys={selectedProcuracao ? [selectedProcuracao] : []}
                     onSelectionChange={(keys) => {
                       const selectedKey = Array.from(keys)[0] as string;
+
                       setSelectedProcuracao(selectedKey || "");
                     }}
                   >
                     {procuracoes.map((procuracao: any) => (
-                      <SelectItem key={procuracao.id} value={procuracao.id}>
+                      <SelectItem key={procuracao.id}>
                         <div className="flex flex-col">
                           <span className="font-semibold">{procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}</span>
                           <span className="text-xs text-default-400">{procuracao.processos.length} processo(s) vinculado(s)</span>
@@ -217,7 +221,7 @@ export default function ContratosContent() {
                 <Button variant="light" onPress={onClose}>
                   Cancelar
                 </Button>
-                <Button color="primary" onPress={handleVincularProcuracao} isLoading={isLinking} isDisabled={!selectedProcuracao || isLoadingProcuracoes}>
+                <Button color="primary" isDisabled={!selectedProcuracao || isLoadingProcuracoes} isLoading={isLinking} onPress={handleVincularProcuracao}>
                   Vincular
                 </Button>
               </ModalFooter>

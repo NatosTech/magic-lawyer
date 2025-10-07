@@ -15,12 +15,14 @@ export function DynamicFavicon() {
     if (tenantFaviconUrl) {
       // Remove favicon existente
       const existingFavicon = document.querySelector('link[rel="icon"]');
+
       if (existingFavicon) {
         existingFavicon.remove();
       }
 
       // Adiciona novo favicon
       const favicon = document.createElement("link");
+
       favicon.rel = "icon";
       favicon.href = tenantFaviconUrl;
       favicon.type = "image/x-icon";

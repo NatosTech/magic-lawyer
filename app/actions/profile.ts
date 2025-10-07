@@ -1,10 +1,11 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
+
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { UserRole } from "@/app/generated/prisma";
-import { revalidatePath } from "next/cache";
-import bcrypt from "bcryptjs";
 
 export interface UserProfile {
   id: string;
@@ -96,6 +97,7 @@ export async function getCurrentUserProfile(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar perfil:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -121,7 +123,10 @@ export async function updateUserProfile(data: UpdateProfileData): Promise<{
     }
 
     if (data.lastName && data.lastName.trim().length < 2) {
-      return { success: false, error: "Sobrenome deve ter pelo menos 2 caracteres" };
+      return {
+        success: false,
+        error: "Sobrenome deve ter pelo menos 2 caracteres",
+      };
     }
 
     if (data.phone && !/^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(data.phone)) {
@@ -140,9 +145,11 @@ export async function updateUserProfile(data: UpdateProfileData): Promise<{
     });
 
     revalidatePath("/usuario/perfil/editar");
+
     return { success: true };
   } catch (error) {
     console.error("Erro ao atualizar perfil:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -164,11 +171,17 @@ export async function changePassword(data: ChangePasswordData): Promise<{
 
     // Validar dados
     if (data.newPassword !== data.confirmPassword) {
-      return { success: false, error: "Nova senha e confirmação não coincidem" };
+      return {
+        success: false,
+        error: "Nova senha e confirmação não coincidem",
+      };
     }
 
     if (data.newPassword.length < 8) {
-      return { success: false, error: "Nova senha deve ter pelo menos 8 caracteres" };
+      return {
+        success: false,
+        error: "Nova senha deve ter pelo menos 8 caracteres",
+      };
     }
 
     // Verificar se o usuário existe
@@ -197,9 +210,11 @@ export async function changePassword(data: ChangePasswordData): Promise<{
     });
 
     revalidatePath("/usuario/perfil/editar");
+
     return { success: true };
   } catch (error) {
     console.error("Erro ao alterar senha:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -231,7 +246,10 @@ export async function uploadAvatar(formData: FormData): Promise<{
         new URL(url);
         // Verificar se é uma URL de imagem válida
         if (!/\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(url)) {
-          return { success: false, error: "URL deve apontar para uma imagem válida" };
+          return {
+            success: false,
+            error: "URL deve apontar para uma imagem válida",
+          };
         }
         avatarUrl = url;
       } catch {
@@ -239,12 +257,22 @@ export async function uploadAvatar(formData: FormData): Promise<{
       }
     } else if (file) {
       // Se for um arquivo, fazer upload
-      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp",
+      ];
+
       if (!allowedTypes.includes(file.type)) {
-        return { success: false, error: "Tipo de arquivo não permitido. Use JPG, PNG ou WebP." };
+        return {
+          success: false,
+          error: "Tipo de arquivo não permitido. Use JPG, PNG ou WebP.",
+        };
       }
 
       const maxSize = 5 * 1024 * 1024; // 5MB
+
       if (file.size > maxSize) {
         return { success: false, error: "Arquivo muito grande. Máximo 5MB." };
       }
@@ -256,8 +284,16 @@ export async function uploadAvatar(formData: FormData): Promise<{
       // Usar o serviço de upload
       const { UploadService } = await import("@/lib/upload-service");
       const uploadService = UploadService.getInstance();
-      const userName = `${session.user.firstName || ""} ${session.user.lastName || ""}`.trim() || session.user.email;
-      const result = await uploadService.uploadAvatar(buffer, session.user.id, file.name, session.user.tenantSlug, userName);
+      const userName =
+        `${session.user.firstName || ""} ${session.user.lastName || ""}`.trim() ||
+        session.user.email;
+      const result = await uploadService.uploadAvatar(
+        buffer,
+        session.user.id,
+        file.name,
+        session.user.tenantSlug,
+        userName,
+      );
 
       if (!result.success || !result.url) {
         return {
@@ -291,6 +327,7 @@ export async function uploadAvatar(formData: FormData): Promise<{
     };
   } catch (error) {
     console.error("Erro no upload do avatar:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -327,6 +364,7 @@ export async function deleteAvatar(avatarUrl: string): Promise<{
 
       revalidatePath("/usuario/perfil/editar");
       revalidatePath("/"); // Revalidar página principal também
+
       return {
         success: true,
         sessionUpdated: true, // Flag para indicar que a sessão precisa ser atualizada
@@ -339,6 +377,7 @@ export async function deleteAvatar(avatarUrl: string): Promise<{
     }
   } catch (error) {
     console.error("Erro ao deletar avatar:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -379,6 +418,7 @@ export async function getCurrentUserAvatar(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar avatar:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -412,7 +452,10 @@ export async function getUserStats(): Promise<{
       prisma.processo.count({
         where: {
           tenantId,
-          OR: [{ advogadoResponsavel: { usuarioId: userId } }, { cliente: { usuarioId: userId } }],
+          OR: [
+            { advogadoResponsavel: { usuarioId: userId } },
+            { cliente: { usuarioId: userId } },
+          ],
         },
       }),
       prisma.documento.count({
@@ -430,7 +473,11 @@ export async function getUserStats(): Promise<{
       prisma.tarefa.count({
         where: {
           tenantId,
-          OR: [{ criadoPorId: userId }, { responsavelId: userId }, { cliente: { usuarioId: userId } }],
+          OR: [
+            { criadoPorId: userId },
+            { responsavelId: userId },
+            { cliente: { usuarioId: userId } },
+          ],
         },
       }),
     ]);
@@ -446,6 +493,7 @@ export async function getUserStats(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar estatísticas:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",

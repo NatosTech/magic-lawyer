@@ -22,7 +22,9 @@ export type TenantWithBranding = {
 /**
  * Busca dados do tenant com branding por ID
  */
-export async function getTenantWithBranding(tenantId: string): Promise<TenantWithBranding | null> {
+export async function getTenantWithBranding(
+  tenantId: string,
+): Promise<TenantWithBranding | null> {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
     select: {
@@ -53,7 +55,9 @@ export async function getTenantWithBranding(tenantId: string): Promise<TenantWit
 /**
  * Busca dados do tenant com branding por slug
  */
-export async function getTenantBySlugWithBranding(slug: string): Promise<TenantWithBranding | null> {
+export async function getTenantBySlugWithBranding(
+  slug: string,
+): Promise<TenantWithBranding | null> {
   const tenant = await prisma.tenant.findUnique({
     where: { slug },
     select: {
@@ -84,7 +88,9 @@ export async function getTenantBySlugWithBranding(slug: string): Promise<TenantW
 /**
  * Busca dados do tenant com branding por domain
  */
-export async function getTenantByDomainWithBranding(domain: string): Promise<TenantWithBranding | null> {
+export async function getTenantByDomainWithBranding(
+  domain: string,
+): Promise<TenantWithBranding | null> {
   const tenant = await prisma.tenant.findUnique({
     where: { domain },
     select: {

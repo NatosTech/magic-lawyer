@@ -118,25 +118,25 @@ export enum SituacaoCadastral {
   ATIVA = 2,
   SUSPENSA = 3,
   INAPTA = 4,
-  BAIXADA = 8
+  BAIXADA = 8,
 }
 
 export enum TipoEmpresa {
   MATRIZ = "MATRIZ",
-  FILIAL = "FILIAL"
+  FILIAL = "FILIAL",
 }
 
 export enum PorteEmpresa {
   MICROEMPRESA = "MICROEMPRESA",
-  PEQUENO_PORTE = "PEQUENO_PORTE", 
+  PEQUENO_PORTE = "PEQUENO_PORTE",
   MEDIO_PORTE = "MEDIO_PORTE",
   GRANDE_PORTE = "GRANDE_PORTE",
-  DEMAIS = "DEMAIS"
+  DEMAIS = "DEMAIS",
 }
 
 export enum QualificacaoSocio {
   ADMINISTRADOR = 5,
   PRESIDENTE = 8,
   DIRETOR = 16,
-  SOCIO = 49
+  SOCIO = 49,
 }

@@ -2,8 +2,8 @@
 
 import { Select, SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
+
 import { useEstadosBrasil } from "@/hooks/use-brazil-apis";
-import { type EstadoIBGE } from "@/types/brazil";
 
 interface EstadoSelectProps {
   label?: string;
@@ -15,7 +15,15 @@ interface EstadoSelectProps {
   className?: string;
 }
 
-export function EstadoSelect({ label = "Estado", placeholder = "Selecione o estado", selectedKeys, onSelectionChange, isRequired = false, isDisabled = false, className }: EstadoSelectProps) {
+export function EstadoSelect({
+  label = "Estado",
+  placeholder = "Selecione o estado",
+  selectedKeys,
+  onSelectionChange,
+  isRequired = false,
+  isDisabled = false,
+  className,
+}: EstadoSelectProps) {
   const { estados, isLoading, error } = useEstadosBrasil();
 
   if (isLoading) {
@@ -36,7 +44,15 @@ export function EstadoSelect({ label = "Estado", placeholder = "Selecione o esta
   }
 
   return (
-    <Select label={label} placeholder={placeholder} selectedKeys={selectedKeys || []} onSelectionChange={onSelectionChange} isRequired={isRequired} isDisabled={isDisabled} className={className}>
+    <Select
+      className={className}
+      isDisabled={isDisabled}
+      isRequired={isRequired}
+      label={label}
+      placeholder={placeholder}
+      selectedKeys={selectedKeys || []}
+      onSelectionChange={onSelectionChange}
+    >
       {estados?.map((estado) => (
         <SelectItem key={estado.sigla}>
           {estado.nome} ({estado.sigla})

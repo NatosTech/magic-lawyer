@@ -39,6 +39,7 @@ async function ensureSession() {
   }
 
   const userId = (session.user as any)?.id;
+
   if (!userId) {
     throw new Error("Não autenticado");
   }
@@ -54,7 +55,9 @@ async function ensureSession() {
   };
 }
 
-export async function getNotifications(options: GetNotificationsOptions = {}): Promise<NotificationsResponse> {
+export async function getNotifications(
+  options: GetNotificationsOptions = {},
+): Promise<NotificationsResponse> {
   const { tenantId, userId, isSuperAdmin } = await ensureSession();
 
   const take = Math.min(options.limit ?? 50, 100);
@@ -105,7 +108,10 @@ export async function getNotifications(options: GetNotificationsOptions = {}): P
   };
 }
 
-export async function setNotificationStatus(id: string, status: NotificationStatus): Promise<void> {
+export async function setNotificationStatus(
+  id: string,
+  status: NotificationStatus,
+): Promise<void> {
   const { tenantId, userId, isSuperAdmin } = await ensureSession();
 
   // SuperAdmin não tem notificações por enquanto
@@ -129,7 +135,12 @@ export async function setNotificationStatus(id: string, status: NotificationStat
     },
     data: {
       status,
-      lidoEm: status === "LIDA" ? new Date() : status === "NAO_LIDA" ? null : undefined,
+      lidoEm:
+        status === "LIDA"
+          ? new Date()
+          : status === "NAO_LIDA"
+            ? null
+            : undefined,
       reabertoEm: status === "NAO_LIDA" ? new Date() : undefined,
       updatedAt: new Date(),
     },

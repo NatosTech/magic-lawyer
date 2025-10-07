@@ -4,9 +4,17 @@ import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Badge } from "@heroui/badge";
-import { UserRole } from "@/app/generated/prisma";
+import {
+  Scale,
+  Building2,
+  FileText,
+  Shield,
+  Users,
+  DollarSign,
+  Phone,
+} from "lucide-react";
+
 import { UserProfile } from "@/app/actions/profile";
-import { Scale, Building2, FileText, Shield, Users, DollarSign, Phone, Mail, MapPin } from "lucide-react";
 
 interface RoleSpecificInfoProps {
   profile: UserProfile;
@@ -28,7 +36,9 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {profile.advogado.oabNumero && (
               <div>
-                <label className="text-sm font-medium text-default-600">OAB</label>
+                <label className="text-sm font-medium text-default-600">
+                  OAB
+                </label>
                 <p className="text-white">
                   {profile.advogado.oabUf} {profile.advogado.oabNumero}
                 </p>
@@ -37,7 +47,9 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
 
             {profile.advogado.telefone && (
               <div>
-                <label className="text-sm font-medium text-default-600">Telefone Profissional</label>
+                <label className="text-sm font-medium text-default-600">
+                  Telefone Profissional
+                </label>
                 <p className="text-white">{profile.advogado.telefone}</p>
               </div>
             )}
@@ -45,10 +57,17 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
 
           {profile.advogado.especialidades.length > 0 && (
             <div>
-              <label className="text-sm font-medium text-default-600 mb-2 block">Especialidades</label>
+              <label className="text-sm font-medium text-default-600 mb-2 block">
+                Especialidades
+              </label>
               <div className="flex flex-wrap gap-2">
                 {profile.advogado.especialidades.map((especialidade) => (
-                  <Chip key={especialidade} size="sm" color="secondary" variant="flat">
+                  <Chip
+                    key={especialidade}
+                    color="secondary"
+                    size="sm"
+                    variant="flat"
+                  >
                     {especialidade}
                   </Chip>
                 ))}
@@ -58,14 +77,18 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
 
           {profile.advogado.bio && (
             <div>
-              <label className="text-sm font-medium text-default-600">Biografia</label>
+              <label className="text-sm font-medium text-default-600">
+                Biografia
+              </label>
               <p className="text-white text-sm mt-1">{profile.advogado.bio}</p>
             </div>
           )}
 
           {profile.advogado.whatsapp && (
             <div>
-              <label className="text-sm font-medium text-default-600">WhatsApp</label>
+              <label className="text-sm font-medium text-default-600">
+                WhatsApp
+              </label>
               <p className="text-white">{profile.advogado.whatsapp}</p>
             </div>
           )}
@@ -80,26 +103,36 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
         <CardHeader className="flex flex-col gap-2 pb-0">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">Informações Administrativas</h3>
+            <h3 className="text-lg font-semibold">
+              Informações Administrativas
+            </h3>
           </div>
         </CardHeader>
         <CardBody className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-default-600">Escritório</label>
+              <label className="text-sm font-medium text-default-600">
+                Escritório
+              </label>
               <p className="text-white">{profile.tenant?.name || "N/A"}</p>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-default-600">Slug do Escritório</label>
-              <p className="text-white font-mono text-sm">{profile.tenant?.slug || "N/A"}</p>
+              <label className="text-sm font-medium text-default-600">
+                Slug do Escritório
+              </label>
+              <p className="text-white font-mono text-sm">
+                {profile.tenant?.slug || "N/A"}
+              </p>
             </div>
           </div>
 
           <Divider />
 
           <div>
-            <label className="text-sm font-medium text-default-600 mb-2 block">Permissões Administrativas</label>
+            <label className="text-sm font-medium text-default-600 mb-2 block">
+              Permissões Administrativas
+            </label>
             <div className="flex flex-wrap gap-2">
               <Badge color="success" variant="flat">
                 <Shield className="w-3 h-3 mr-1" />
@@ -124,14 +157,18 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
     return (
       <Card className="border border-white/10 bg-gradient-to-br from-background/80 to-background/60 backdrop-blur-xl overflow-hidden">
         <CardHeader className="relative pb-4">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/5 to-primary/10 opacity-50"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/5 to-primary/10 opacity-50" />
           <div className="relative flex items-center gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30">
               <Users className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">Informações do Cliente</h3>
-              <p className="text-sm text-primary-300">Portal de acesso aos seus serviços jurídicos</p>
+              <h3 className="text-xl font-bold text-white">
+                Informações do Cliente
+              </h3>
+              <p className="text-sm text-primary-300">
+                Portal de acesso aos seus serviços jurídicos
+              </p>
             </div>
           </div>
         </CardHeader>
@@ -142,17 +179,28 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
             <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
               <div className="flex items-center gap-3 mb-2">
                 <Building2 className="w-5 h-5 text-primary" />
-                <label className="text-sm font-medium text-primary-300">Escritório Vinculado</label>
+                <label className="text-sm font-medium text-primary-300">
+                  Escritório Vinculado
+                </label>
               </div>
-              <p className="text-white font-semibold text-lg">{profile.tenant?.name || "N/A"}</p>
+              <p className="text-white font-semibold text-lg">
+                {profile.tenant?.name || "N/A"}
+              </p>
             </div>
 
             <div className="p-4 rounded-xl bg-gradient-to-br from-success/10 to-success/5 border border-success/20">
               <div className="flex items-center gap-3 mb-2">
                 <Shield className="w-5 h-5 text-success" />
-                <label className="text-sm font-medium text-success-300">Status da Conta</label>
+                <label className="text-sm font-medium text-success-300">
+                  Status da Conta
+                </label>
               </div>
-              <Badge color={profile.active ? "success" : "danger"} variant="flat" size="lg" className="font-semibold">
+              <Badge
+                className="font-semibold"
+                color={profile.active ? "success" : "danger"}
+                size="lg"
+                variant="flat"
+              >
                 {profile.active ? "✓ Ativo" : "✗ Inativo"}
               </Badge>
             </div>
@@ -161,8 +209,10 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
           {/* Acesso Permitido */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-primary"></div>
-              <h4 className="text-lg font-semibold text-white">Acesso Permitido</h4>
+              <div className="w-2 h-2 rounded-full bg-primary" />
+              <h4 className="text-lg font-semibold text-white">
+                Acesso Permitido
+              </h4>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -173,7 +223,9 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
                   </div>
                   <h5 className="font-semibold text-white">Meus Documentos</h5>
                 </div>
-                <p className="text-sm text-blue-300">Acesse seus contratos, procurações e documentos jurídicos</p>
+                <p className="text-sm text-blue-300">
+                  Acesse seus contratos, procurações e documentos jurídicos
+                </p>
               </div>
 
               <div className="group p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300 cursor-pointer">
@@ -183,7 +235,9 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
                   </div>
                   <h5 className="font-semibold text-white">Meus Processos</h5>
                 </div>
-                <p className="text-sm text-purple-300">Acompanhe o andamento dos seus processos jurídicos</p>
+                <p className="text-sm text-purple-300">
+                  Acompanhe o andamento dos seus processos jurídicos
+                </p>
               </div>
 
               <div className="group p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 hover:border-green-400/40 transition-all duration-300 cursor-pointer">
@@ -193,7 +247,9 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
                   </div>
                   <h5 className="font-semibold text-white">Minhas Faturas</h5>
                 </div>
-                <p className="text-sm text-green-300">Visualize e gerencie suas faturas e pagamentos</p>
+                <p className="text-sm text-green-300">
+                  Visualize e gerencie suas faturas e pagamentos
+                </p>
               </div>
             </div>
           </div>
@@ -204,7 +260,10 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
               <Phone className="w-5 h-5 text-default-400" />
               <h5 className="font-semibold text-white">Contato</h5>
             </div>
-            <p className="text-sm text-default-300">Para dúvidas ou suporte, entre em contato com seu escritório de advocacia.</p>
+            <p className="text-sm text-default-300">
+              Para dúvidas ou suporte, entre em contato com seu escritório de
+              advocacia.
+            </p>
           </div>
         </CardBody>
       </Card>
@@ -217,13 +276,17 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
         <CardHeader className="flex flex-col gap-2 pb-0">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">Informações do Super Administrador</h3>
+            <h3 className="text-lg font-semibold">
+              Informações do Super Administrador
+            </h3>
           </div>
         </CardHeader>
         <CardBody className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-default-600">Nível de Acesso</label>
+              <label className="text-sm font-medium text-default-600">
+                Nível de Acesso
+              </label>
               <Badge color="warning" variant="flat">
                 <Shield className="w-3 h-3 mr-1" />
                 Super Administrador
@@ -231,8 +294,13 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-default-600">Status da Conta</label>
-              <Badge color={profile.active ? "success" : "danger"} variant="flat">
+              <label className="text-sm font-medium text-default-600">
+                Status da Conta
+              </label>
+              <Badge
+                color={profile.active ? "success" : "danger"}
+                variant="flat"
+              >
                 {profile.active ? "Ativo" : "Inativo"}
               </Badge>
             </div>
@@ -241,7 +309,9 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
           <Divider />
 
           <div>
-            <label className="text-sm font-medium text-default-600 mb-2 block">Permissões do Sistema</label>
+            <label className="text-sm font-medium text-default-600 mb-2 block">
+              Permissões do Sistema
+            </label>
             <div className="flex flex-wrap gap-2">
               <Badge color="warning" variant="flat">
                 <Building2 className="w-3 h-3 mr-1" />

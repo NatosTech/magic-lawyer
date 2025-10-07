@@ -2,29 +2,33 @@
 
 import type { ReactNode, SVGProps } from "react";
 
-import { useMemo, useState, useEffect } from "react";
-import { Navbar as HeroUINavbar, NavbarBrand, NavbarContent, NavbarMenu, NavbarMenuItem, NavbarMenuToggle } from "@heroui/navbar";
+import { useMemo, useEffect } from "react";
+import {
+  Navbar as HeroUINavbar,
+  NavbarBrand,
+  NavbarContent,
+} from "@heroui/navbar";
 import { Button } from "@heroui/button";
-import { Chip } from "@heroui/chip";
 import { link as linkStyles } from "@heroui/theme";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
-import { User } from "@heroui/user";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/dropdown";
 import { Avatar } from "@heroui/avatar";
 import { Badge } from "@heroui/badge";
 import clsx from "clsx";
 import NextLink from "next/link";
-import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
-import { useAvatar } from "@/app/hooks/use-avatar";
 
+import { useAvatar } from "@/app/hooks/use-avatar";
 import { siteConfig } from "@/config/site";
 import packageInfo from "@/package.json";
 import { SignInOut } from "@/components/signinout";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { Logo } from "@/components/icons";
 import { NotificationCenter } from "@/components/notifications/notification-center";
-import { SearchBar } from "@/components/searchbar";
 import { CentralizedSearchBar } from "@/components/centralized-search-bar";
 import { TENANT_PERMISSIONS } from "@/types";
 import { UserRole, TenantPermission } from "@/app/generated/prisma";
@@ -50,7 +54,17 @@ type NavbarProps = {
 };
 
 const MenuIcon = ({ className, ...props }: SVGProps<SVGSVGElement>) => (
-  <svg aria-hidden className={clsx("h-5 w-5", className)} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24" {...props}>
+  <svg
+    aria-hidden
+    className={clsx("h-5 w-5", className)}
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={2}
+    viewBox="0 0 24 24"
+    {...props}
+  >
     <line x1="3" x2="21" y1="6" y2="6" />
     <line x1="3" x2="21" y1="12" y2="12" />
     <line x1="3" x2="21" y1="18" y2="18" />
@@ -60,10 +74,16 @@ const MenuIcon = ({ className, ...props }: SVGProps<SVGSVGElement>) => (
 const toTitleCase = (value: string) =>
   value
     .split(" ")
-    .map((part) => (part.length > 0 ? part[0].toUpperCase() + part.slice(1) : part))
+    .map((part) =>
+      part.length > 0 ? part[0].toUpperCase() + part.slice(1) : part,
+    )
     .join(" ");
 
-export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryNav = true }: NavbarProps) => {
+export const Navbar = ({
+  onOpenSidebar,
+  rightExtras,
+  showAuthenticatedSecondaryNav = true,
+}: NavbarProps) => {
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -72,15 +92,27 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
   const tenantLogoUrl = session?.user?.tenantLogoUrl || undefined;
   const tenantName = session?.user?.tenantName || "Magic Lawyer";
   const hasTenantBranding = Boolean(session?.user?.tenantName || tenantLogoUrl);
-  const brandSubtitle = hasTenantBranding ? "Portal do escritório" : "SaaS jurídico white label";
-  const brandTitleClasses = clsx("text-sm font-semibold text-primary", hasTenantBranding ? "tracking-tight" : "uppercase tracking-[0.3em]");
-  const userDisplayName = session?.user?.name || session?.user?.email || "Usuário";
+  const brandSubtitle = hasTenantBranding
+    ? "Portal do escritório"
+    : "SaaS jurídico white label";
+  const brandTitleClasses = clsx(
+    "text-sm font-semibold text-primary",
+    hasTenantBranding ? "tracking-tight" : "uppercase tracking-[0.3em]",
+  );
+  const userDisplayName =
+    session?.user?.name || session?.user?.email || "Usuário";
   const userEmail = session?.user?.email || "Conta Magic Lawyer";
-  const userAvatar = avatarUrl || (session?.user as any)?.avatarUrl || undefined;
+  const userAvatar =
+    avatarUrl || (session?.user as any)?.avatarUrl || undefined;
   const userRole = (session?.user as any)?.role as UserRole | undefined;
-  const userPermissions = ((session?.user as any)?.permissions as TenantPermission[] | undefined) ?? [];
+  const userPermissions =
+    ((session?.user as any)?.permissions as TenantPermission[] | undefined) ??
+    [];
   const isSuperAdmin = userRole === UserRole.SUPER_ADMIN;
-  const hasPermission = (permission?: string) => !permission || isSuperAdmin || userPermissions.includes(permission as TenantPermission);
+  const hasPermission = (permission?: string) =>
+    !permission ||
+    isSuperAdmin ||
+    userPermissions.includes(permission as TenantPermission);
 
   // Escutar evento customizado de atualização do avatar
   useEffect(() => {
@@ -89,16 +121,24 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
       mutateAvatar();
     };
 
-    window.addEventListener("avatarUpdated", handleAvatarUpdate as EventListener);
+    window.addEventListener(
+      "avatarUpdated",
+      handleAvatarUpdate as EventListener,
+    );
 
     return () => {
-      window.removeEventListener("avatarUpdated", handleAvatarUpdate as EventListener);
+      window.removeEventListener(
+        "avatarUpdated",
+        handleAvatarUpdate as EventListener,
+      );
     };
   }, [mutateAvatar]);
 
   const appVersion = packageInfo.version ?? "0.0.0";
 
-  const canManageTenantSettings = hasPermission(TENANT_PERMISSIONS.manageOfficeSettings);
+  const canManageTenantSettings = hasPermission(
+    TENANT_PERMISSIONS.manageOfficeSettings,
+  );
 
   const renderNavLink = (label: string, href: string) => {
     const isActive = pathname === href;
@@ -109,7 +149,9 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
         className={clsx(
           linkStyles({ color: "foreground" }),
           "relative px-4 py-2 text-sm font-medium transition-colors",
-          isActive ? "bg-primary/15 text-primary" : "text-default-500 hover:text-primary"
+          isActive
+            ? "bg-primary/15 text-primary"
+            : "text-default-500 hover:text-primary",
         )}
         href={href}
       >
@@ -126,6 +168,7 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
       } else {
         router.push("/usuario/perfil/editar");
       }
+
       return;
     }
 
@@ -136,6 +179,7 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
       } else {
         router.push("/configuracoes");
       }
+
       return;
     }
 
@@ -149,7 +193,9 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
     const items = segments.map((segment, index) => {
       const href = `/${segments.slice(0, index + 1).join("/")}`;
       const normalized = segment.replace(/-/g, " ");
-      const label = breadcrumbLabelMap[segment] ? breadcrumbLabelMap[segment] : toTitleCase(normalized);
+      const label = breadcrumbLabelMap[segment]
+        ? breadcrumbLabelMap[segment]
+        : toTitleCase(normalized);
 
       return {
         href,
@@ -176,7 +222,12 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
             return (
               <NextLink
                 key={item.href}
-                className={clsx("px-4 py-2 text-sm font-medium transition rounded-md", isActive ? "bg-primary/25 text-primary" : "text-default-500 hover:text-primary hover:bg-default-100")}
+                className={clsx(
+                  "px-4 py-2 text-sm font-medium transition rounded-md",
+                  isActive
+                    ? "bg-primary/25 text-primary"
+                    : "text-default-500 hover:text-primary hover:bg-default-100",
+                )}
                 href={item.href}
               >
                 {item.label}
@@ -190,9 +241,13 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
 
   return (
     <div className="sticky top-0 z-50 flex flex-col">
-      <HeroUINavbar className="border-b border-divider bg-background/95 backdrop-blur-xl py-2" isBordered={false} maxWidth="full">
+      <HeroUINavbar
+        className="border-b border-divider bg-background/95 backdrop-blur-xl py-2"
+        isBordered={false}
+        maxWidth="full"
+      >
         {/* Seção Esquerda - Brand e Menu Mobile */}
-        <NavbarContent justify="start" className="flex-shrink-0 min-w-0">
+        <NavbarContent className="flex-shrink-0 min-w-0" justify="start">
           {onOpenSidebar ? (
             <Button
               isIconOnly
@@ -208,8 +263,12 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
             <NextLink className="flex items-center gap-2" href="/">
               <span className="flex flex-col leading-tight">
                 <span className={brandTitleClasses}>{tenantName}</span>
-                <span className="text-xs text-default-400">{brandSubtitle}</span>
-                <span className="text-[10px] uppercase tracking-wide text-default-600">versão {appVersion}</span>
+                <span className="text-xs text-default-400">
+                  {brandSubtitle}
+                </span>
+                <span className="text-[10px] uppercase tracking-wide text-default-600">
+                  versão {appVersion}
+                </span>
               </span>
             </NextLink>
           </NavbarBrand>
@@ -217,13 +276,13 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
 
         {/* Seção Central - Search Bar */}
         {session?.user && (
-          <NavbarContent justify="center" className="flex-1 min-w-0 px-4">
+          <NavbarContent className="flex-1 min-w-0 px-4" justify="center">
             <CentralizedSearchBar className="w-full max-w-3xl" />
           </NavbarContent>
         )}
 
         {/* Seção Direita - Ações */}
-        <NavbarContent justify="end" className="flex-shrink-0 min-w-0">
+        <NavbarContent className="flex-shrink-0 min-w-0" justify="end">
           {session?.user ? rightExtras : null}
           {session?.user ? (
             <div className="hidden sm:block">
@@ -235,32 +294,70 @@ export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryN
             <div className="hidden sm:block">
               <Dropdown placement="bottom-end">
                 <DropdownTrigger>
-                  <Button variant="light" className="min-w-0 p-2 h-auto gap-2 border border-divider bg-content1 shadow-sm transition hover:border-primary/40 hover:bg-primary/5">
+                  <Button
+                    className="min-w-0 p-2 h-auto gap-2 border border-divider bg-content1 shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+                    variant="light"
+                  >
                     <Badge
+                      color={
+                        userRole === "ADMIN"
+                          ? "danger"
+                          : userRole === "ADVOGADO"
+                            ? "primary"
+                            : "default"
+                      }
                       content={userRole?.replace(/_/g, " ").charAt(0) || "U"}
-                      color={userRole === "ADMIN" ? "danger" : userRole === "ADVOGADO" ? "primary" : "default"}
-                      size="sm"
                       placement="bottom-right"
                       shape="circle"
+                      size="sm"
                     >
-                      <Avatar src={userAvatar} name={userDisplayName} size="sm" className="w-8 h-8 text-xs" isBordered />
+                      <Avatar
+                        isBordered
+                        className="w-8 h-8 text-xs"
+                        name={userDisplayName}
+                        size="sm"
+                        src={userAvatar}
+                      />
                     </Badge>
                     <div className="hidden md:block min-w-0 flex-1 text-left">
-                      <p className="text-sm font-medium truncate">{userDisplayName}</p>
-                      <p className="text-xs text-default-500 truncate">{userRole?.replace(/_/g, " ").toLowerCase()}</p>
+                      <p className="text-sm font-medium truncate">
+                        {userDisplayName}
+                      </p>
+                      <p className="text-xs text-default-500 truncate">
+                        {userRole?.replace(/_/g, " ").toLowerCase()}
+                      </p>
                     </div>
                   </Button>
                 </DropdownTrigger>
-                <DropdownMenu aria-label="Menu do usuário" className="min-w-[220px]" onAction={(key) => handleUserAction(String(key))}>
-                  <DropdownItem key="profile" description={isSuperAdmin ? "Configurações do sistema" : "Gerenciar informações pessoais"}>
+                <DropdownMenu
+                  aria-label="Menu do usuário"
+                  className="min-w-[220px]"
+                  onAction={(key) => handleUserAction(String(key))}
+                >
+                  <DropdownItem
+                    key="profile"
+                    description={
+                      isSuperAdmin
+                        ? "Configurações do sistema"
+                        : "Gerenciar informações pessoais"
+                    }
+                  >
                     {isSuperAdmin ? "Configurações" : "Meu perfil"}
                   </DropdownItem>
                   {!isSuperAdmin && canManageTenantSettings ? (
-                    <DropdownItem key="tenant-settings" description="Branding, domínios e integrações do escritório">
+                    <DropdownItem
+                      key="tenant-settings"
+                      description="Branding, domínios e integrações do escritório"
+                    >
                       Configurações do escritório
                     </DropdownItem>
                   ) : null}
-                  <DropdownItem key="logout" className="text-danger" color="danger" description="Encerrar sessão com segurança">
+                  <DropdownItem
+                    key="logout"
+                    className="text-danger"
+                    color="danger"
+                    description="Encerrar sessão com segurança"
+                  >
                     Sair
                   </DropdownItem>
                 </DropdownMenu>

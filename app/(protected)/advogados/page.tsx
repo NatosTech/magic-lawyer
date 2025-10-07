@@ -1,6 +1,8 @@
-import { getSession } from "@/app/lib/auth";
 import { redirect } from "next/navigation";
+
 import AdvogadosContent from "./advogados-content";
+
+import { getSession } from "@/app/lib/auth";
 
 export default async function AdvogadosPage() {
   const session = await getSession();
@@ -11,6 +13,7 @@ export default async function AdvogadosPage() {
 
   // Verificar se é admin do tenant (não SuperAdmin)
   const user = session.user as any;
+
   if (user.role === "SUPER_ADMIN") {
     redirect("/admin/dashboard");
   }

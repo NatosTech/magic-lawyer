@@ -1,4 +1,7 @@
+import type { Processo } from "@/app/generated/prisma";
+
 import useSWR from "swr";
+
 import {
   getAllProcessos,
   getProcessosDoClienteLogado,
@@ -7,8 +10,6 @@ import {
   getDocumentosProcesso,
   getEventosProcesso,
   getMovimentacoesProcesso,
-  type Processo,
-  type ProcessoDetalhado,
 } from "@/app/actions/processos";
 
 /**
@@ -18,19 +19,21 @@ import {
  * - CLIENTE: Apenas os próprios
  */
 export function useAllProcessos() {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<Processo[]>(
     "all-processos",
     async () => {
       const result = await getAllProcessos();
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar processos");
       }
+
       return result.processos || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -51,15 +54,17 @@ export function useProcessosClienteLogado() {
     "processos-cliente-logado",
     async () => {
       const result = await getProcessosDoClienteLogado();
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar processos");
       }
+
       return result.processos || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -76,20 +81,22 @@ export function useProcessosClienteLogado() {
  * Hook para buscar processos de um cliente específico (para advogados)
  */
 export function useProcessosCliente(clienteId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<Processo[] | null>(
     clienteId ? `processos-cliente-${clienteId}` : null,
     async () => {
       if (!clienteId) return null;
       const result = await getProcessosDoCliente(clienteId);
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar processos");
       }
+
       return result.processos || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -111,9 +118,11 @@ export function useProcessoDetalhado(processoId: string | null) {
     async () => {
       if (!processoId) return null;
       const result = await getProcessoDetalhado(processoId);
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar processo");
       }
+
       return {
         processo: result.processo || null,
         isCliente: result.isCliente || false,
@@ -122,7 +131,7 @@ export function useProcessoDetalhado(processoId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -145,15 +154,17 @@ export function useDocumentosProcesso(processoId: string | null) {
     async () => {
       if (!processoId) return null;
       const result = await getDocumentosProcesso(processoId);
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar documentos");
       }
+
       return result.documentos || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -175,15 +186,17 @@ export function useEventosProcesso(processoId: string | null) {
     async () => {
       if (!processoId) return null;
       const result = await getEventosProcesso(processoId);
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar eventos");
       }
+
       return result.eventos || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -205,15 +218,17 @@ export function useMovimentacoesProcesso(processoId: string | null) {
     async () => {
       if (!processoId) return null;
       const result = await getMovimentacoesProcesso(processoId);
+
       if (!result.success) {
         throw new Error(result.error || "Erro ao carregar movimentações");
       }
+
       return result.movimentacoes || [];
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {

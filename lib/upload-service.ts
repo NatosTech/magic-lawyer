@@ -1,7 +1,8 @@
-import { v2 as cloudinary } from "cloudinary";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+
+import { v2 as cloudinary } from "cloudinary";
 import sharp from "sharp";
 
 // Configurar Cloudinary
@@ -23,25 +24,49 @@ export class UploadService {
 
   constructor() {
     // Verificar se Cloudinary está configurado
-    this.useCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+    this.useCloudinary = !!(
+      process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET
+    );
   }
 
   static getInstance(): UploadService {
     if (!UploadService.instance) {
       UploadService.instance = new UploadService();
     }
+
     return UploadService.instance;
   }
 
-  async uploadAvatar(file: Buffer, userId: string, originalName: string, tenantSlug?: string, userName?: string): Promise<UploadResult> {
+  async uploadAvatar(
+    file: Buffer,
+    userId: string,
+    originalName: string,
+    tenantSlug?: string,
+    userName?: string,
+  ): Promise<UploadResult> {
     try {
       if (this.useCloudinary) {
-        return await this.uploadToCloudinary(file, userId, originalName, tenantSlug, userName);
+        return await this.uploadToCloudinary(
+          file,
+          userId,
+          originalName,
+          tenantSlug,
+          userName,
+        );
       } else {
-        return await this.uploadLocally(file, userId, originalName, tenantSlug, userName);
+        return await this.uploadLocally(
+          file,
+          userId,
+          originalName,
+          tenantSlug,
+          userName,
+        );
       }
     } catch (error) {
       console.error("Erro no upload:", error);
+
       return {
         success: false,
         error: "Erro interno do servidor",
@@ -49,7 +74,13 @@ export class UploadService {
     }
   }
 
-  private async uploadToCloudinary(file: Buffer, userId: string, originalName: string, tenantSlug?: string, userName?: string): Promise<UploadResult> {
+  private async uploadToCloudinary(
+    file: Buffer,
+    userId: string,
+    originalName: string,
+    tenantSlug?: string,
+    userName?: string,
+  ): Promise<UploadResult> {
     try {
       // Otimizar imagem com Sharp
       const optimizedBuffer = await sharp(file)
@@ -71,18 +102,23 @@ export class UploadService {
 
       // Criar estrutura de pastas hierárquica: magiclawyer/tenant/nome-id
       const userFolder = `${cleanUserName}-${userId}`;
-      const folderPath = tenantSlug ? `magiclawyer/${tenantSlug}/${userFolder}` : `magiclawyer/avatars/${userFolder}`;
+      const folderPath = tenantSlug
+        ? `magiclawyer/${tenantSlug}/${userFolder}`
+        : `magiclawyer/avatars/${userFolder}`;
 
       // Upload para Cloudinary
-      const result = await cloudinary.uploader.upload(`data:image/jpeg;base64,${optimizedBuffer.toString("base64")}`, {
-        folder: folderPath,
-        public_id: `avatar_${Date.now()}`,
-        resource_type: "image",
-        transformation: [
-          { width: 200, height: 200, crop: "fill", gravity: "face" },
-          { quality: "auto", fetch_format: "auto" },
-        ],
-      });
+      const result = await cloudinary.uploader.upload(
+        `data:image/jpeg;base64,${optimizedBuffer.toString("base64")}`,
+        {
+          folder: folderPath,
+          public_id: `avatar_${Date.now()}`,
+          resource_type: "image",
+          transformation: [
+            { width: 200, height: 200, crop: "fill", gravity: "face" },
+            { quality: "auto", fetch_format: "auto" },
+          ],
+        },
+      );
 
       return {
         success: true,
@@ -90,6 +126,7 @@ export class UploadService {
       };
     } catch (error) {
       console.error("Erro no upload para Cloudinary:", error);
+
       return {
         success: false,
         error: "Erro ao fazer upload para Cloudinary",
@@ -97,7 +134,13 @@ export class UploadService {
     }
   }
 
-  private async uploadLocally(file: Buffer, userId: string, originalName: string, tenantSlug?: string, userName?: string): Promise<UploadResult> {
+  private async uploadLocally(
+    file: Buffer,
+    userId: string,
+    originalName: string,
+    tenantSlug?: string,
+    userName?: string,
+  ): Promise<UploadResult> {
     try {
       // Criar nome de usuário limpo para pasta
       const cleanUserName = userName
@@ -110,7 +153,23 @@ export class UploadService {
 
       // Criar estrutura de diretórios hierárquica: magiclawyer/tenant/nome-id
       const userFolder = `${cleanUserName}-${userId}`;
-      const uploadDir = tenantSlug ? join(process.cwd(), "public", "uploads", "magiclawyer", tenantSlug, userFolder) : join(process.cwd(), "public", "uploads", "magiclawyer", "avatars", userFolder);
+      const uploadDir = tenantSlug
+        ? join(
+            process.cwd(),
+            "public",
+            "uploads",
+            "magiclawyer",
+            tenantSlug,
+            userFolder,
+          )
+        : join(
+            process.cwd(),
+            "public",
+            "uploads",
+            "magiclawyer",
+            "avatars",
+            userFolder,
+          );
 
       if (!existsSync(uploadDir)) {
         await mkdir(uploadDir, { recursive: true });
@@ -135,7 +194,9 @@ export class UploadService {
       await writeFile(filePath, optimizedBuffer);
 
       // Retornar URL pública
-      const avatarUrl = tenantSlug ? `/uploads/magiclawyer/${tenantSlug}/${userFolder}/${fileName}` : `/uploads/magiclawyer/avatars/${userFolder}/${fileName}`;
+      const avatarUrl = tenantSlug
+        ? `/uploads/magiclawyer/${tenantSlug}/${userFolder}/${fileName}`
+        : `/uploads/magiclawyer/avatars/${userFolder}/${fileName}`;
 
       return {
         success: true,
@@ -143,6 +204,7 @@ export class UploadService {
       };
     } catch (error) {
       console.error("Erro no upload local:", error);
+
       return {
         success: false,
         error: "Erro ao fazer upload local",
@@ -167,7 +229,8 @@ export class UploadService {
           // Se não está usando Cloudinary mas a URL é do Cloudinary, não pode deletar
           return {
             success: false,
-            error: "Não é possível deletar imagem do Cloudinary quando usando armazenamento local",
+            error:
+              "Não é possível deletar imagem do Cloudinary quando usando armazenamento local",
           };
         }
       } else {
@@ -179,6 +242,7 @@ export class UploadService {
       }
     } catch (error) {
       console.error("Erro ao deletar avatar:", error);
+
       return {
         success: false,
         error: "Erro interno do servidor",
@@ -218,6 +282,7 @@ export class UploadService {
       };
     } catch (error) {
       console.error("Erro ao deletar do Cloudinary:", error);
+
       return {
         success: false,
         error: "Erro ao deletar do Cloudinary",
@@ -225,7 +290,10 @@ export class UploadService {
     }
   }
 
-  private async deleteLocally(avatarUrl: string, userId: string): Promise<UploadResult> {
+  private async deleteLocally(
+    avatarUrl: string,
+    userId: string,
+  ): Promise<UploadResult> {
     try {
       // Extrair caminho completo do arquivo da URL
       // URL format: /uploads/magiclawyer/tenant/user/avatar_timestamp.jpg
@@ -240,7 +308,11 @@ export class UploadService {
       }
 
       // Construir caminho completo do arquivo
-      const filePath = join(process.cwd(), "public", ...urlParts.slice(uploadsIndex + 1));
+      const filePath = join(
+        process.cwd(),
+        "public",
+        ...urlParts.slice(uploadsIndex + 1),
+      );
 
       // Verificar se o arquivo existe e pertence ao usuário
       if (!existsSync(filePath)) {
@@ -266,6 +338,7 @@ export class UploadService {
       };
     } catch (error) {
       console.error("Erro ao deletar localmente:", error);
+
       return {
         success: false,
         error: "Erro ao deletar localmente",
@@ -280,7 +353,11 @@ export class UploadService {
   private isCloudinaryUrl(url: string): boolean {
     try {
       const urlObj = new URL(url);
-      return urlObj.hostname.includes("cloudinary.com") || urlObj.hostname.includes("res.cloudinary.com");
+
+      return (
+        urlObj.hostname.includes("cloudinary.com") ||
+        urlObj.hostname.includes("res.cloudinary.com")
+      );
     } catch {
       return false;
     }
@@ -290,7 +367,12 @@ export class UploadService {
    * Upload de foto de juiz para Cloudinary
    * Estrutura: magiclawyer/juizes/{nome-juiz}-{juiz-id}/foto_{timestamp}
    */
-  async uploadJuizFoto(file: Buffer, juizId: string, juizNome: string, originalName: string): Promise<UploadResult> {
+  async uploadJuizFoto(
+    file: Buffer,
+    juizId: string,
+    juizNome: string,
+    originalName: string,
+  ): Promise<UploadResult> {
     try {
       if (!this.useCloudinary) {
         return {
@@ -345,6 +427,7 @@ export class UploadService {
       };
     } catch (error) {
       console.error("Erro ao fazer upload da foto do juiz:", error);
+
       return {
         success: false,
         error: "Erro ao fazer upload",

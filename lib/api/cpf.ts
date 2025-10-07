@@ -29,10 +29,12 @@ export function validarCpf(cpf: string): boolean {
 
   // Valida primeiro dígito verificador
   let soma = 0;
+
   for (let i = 0; i < 9; i++) {
     soma += parseInt(cpfLimpo.charAt(i)) * (10 - i);
   }
   let resto = (soma * 10) % 11;
+
   if (resto === 10 || resto === 11) resto = 0;
   if (resto !== parseInt(cpfLimpo.charAt(9))) {
     return false;
@@ -58,4 +60,3 @@ export function validarCpf(cpf: string): boolean {
 export function limparCpf(cpf: string): string {
   return cpf.replace(/\D/g, "");
 }
-

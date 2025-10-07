@@ -1,6 +1,8 @@
 import { Metadata } from "next";
-import { ProfileDashboard } from "@/components/profile-dashboard";
+
 import { TenantsContent } from "./tenants-content";
+
+import { ProfileDashboard } from "@/components/profile-dashboard";
 
 export const metadata: Metadata = {
   title: "Gerenciar Tenants",

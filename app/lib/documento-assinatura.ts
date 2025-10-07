@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+import prisma from "./prisma";
 import { sendEmail, emailTemplates } from "./email";
 import { sendDocumentForSigning, checkDocumentStatus } from "./clicksign";
 
@@ -72,6 +72,7 @@ export const createDocumentoAssinatura = async (data: CreateDocumentoAssinaturaD
     return { success: true, data: documentoAssinatura };
   } catch (error) {
     console.error("Erro ao criar assinatura de documento:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -95,7 +96,10 @@ export const enviarDocumentoParaAssinatura = async (documentoAssinaturaId: strin
     });
 
     if (!documentoAssinatura) {
-      return { success: false, error: "Documento de assinatura não encontrado" };
+      return {
+        success: false,
+        error: "Documento de assinatura não encontrado",
+      };
     }
 
     if (documentoAssinatura.status !== "PENDENTE") {
@@ -178,6 +182,7 @@ export const enviarDocumentoParaAssinatura = async (documentoAssinaturaId: strin
     };
   } catch (error) {
     console.error("Erro ao enviar documento para assinatura:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -193,11 +198,17 @@ export const verificarStatusAssinatura = async (documentoAssinaturaId: string) =
     });
 
     if (!documentoAssinatura) {
-      return { success: false, error: "Documento de assinatura não encontrado" };
+      return {
+        success: false,
+        error: "Documento de assinatura não encontrado",
+      };
     }
 
     if (!documentoAssinatura.clicksignDocumentId) {
-      return { success: false, error: "Documento não foi enviado para ClickSign" };
+      return {
+        success: false,
+        error: "Documento não foi enviado para ClickSign",
+      };
     }
 
     // Verificar status no ClickSign
@@ -214,6 +225,7 @@ export const verificarStatusAssinatura = async (documentoAssinaturaId: string) =
 
     // Mapear status do ClickSign para nosso enum
     let novoStatus: "PENDENTE" | "ASSINADO" | "REJEITADO" | "EXPIRADO" | "CANCELADO";
+
     switch (status) {
       case "signed":
         novoStatus = "ASSINADO";
@@ -253,6 +265,7 @@ export const verificarStatusAssinatura = async (documentoAssinaturaId: string) =
     };
   } catch (error) {
     console.error("Erro ao verificar status da assinatura:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -276,7 +289,9 @@ export const listDocumentoAssinaturas = async (
         tenantId,
         ...(filtros?.processoId && { processoId: filtros.processoId }),
         ...(filtros?.clienteId && { clienteId: filtros.clienteId }),
-        ...(filtros?.advogadoResponsavelId && { advogadoResponsavelId: filtros.advogadoResponsavelId }),
+        ...(filtros?.advogadoResponsavelId && {
+          advogadoResponsavelId: filtros.advogadoResponsavelId,
+        }),
         ...(filtros?.status && { status: filtros.status }),
       },
       include: {
@@ -298,6 +313,7 @@ export const listDocumentoAssinaturas = async (
     return { success: true, data: assinaturas };
   } catch (error) {
     console.error("Erro ao listar assinaturas de documento:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -324,12 +340,16 @@ export const getDocumentoAssinaturaById = async (id: string) => {
     });
 
     if (!assinatura) {
-      return { success: false, error: "Assinatura de documento não encontrada" };
+      return {
+        success: false,
+        error: "Assinatura de documento não encontrada",
+      };
     }
 
     return { success: true, data: assinatura };
   } catch (error) {
     console.error("Erro ao obter assinatura de documento:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -345,17 +365,24 @@ export const cancelarAssinatura = async (documentoAssinaturaId: string) => {
     });
 
     if (!documentoAssinatura) {
-      return { success: false, error: "Documento de assinatura não encontrado" };
+      return {
+        success: false,
+        error: "Documento de assinatura não encontrado",
+      };
     }
 
     if (documentoAssinatura.status === "ASSINADO") {
-      return { success: false, error: "Não é possível cancelar documento já assinado" };
+      return {
+        success: false,
+        error: "Não é possível cancelar documento já assinado",
+      };
     }
 
     // Cancelar no ClickSign se existir
     if (documentoAssinatura.clicksignDocumentId) {
       try {
         const { cancelDocument } = await import("./clicksign");
+
         await cancelDocument(documentoAssinatura.clicksignDocumentId);
       } catch (error) {
         console.error("Erro ao cancelar documento no ClickSign:", error);
@@ -374,6 +401,7 @@ export const cancelarAssinatura = async (documentoAssinaturaId: string) => {
     return { success: true, data: updatedAssinatura };
   } catch (error) {
     console.error("Erro ao cancelar assinatura:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -392,15 +420,24 @@ export const reenviarLinkAssinatura = async (documentoAssinaturaId: string) => {
     });
 
     if (!documentoAssinatura) {
-      return { success: false, error: "Documento de assinatura não encontrado" };
+      return {
+        success: false,
+        error: "Documento de assinatura não encontrado",
+      };
     }
 
     if (documentoAssinatura.status !== "PENDENTE") {
-      return { success: false, error: "Apenas documentos pendentes podem ter o link reenviado" };
+      return {
+        success: false,
+        error: "Apenas documentos pendentes podem ter o link reenviado",
+      };
     }
 
     if (!documentoAssinatura.clicksignSignerId) {
-      return { success: false, error: "Signatário não encontrado no ClickSign" };
+      return {
+        success: false,
+        error: "Signatário não encontrado no ClickSign",
+      };
     }
 
     // Obter nova URL de assinatura
@@ -431,6 +468,7 @@ export const reenviarLinkAssinatura = async (documentoAssinaturaId: string) => {
         });
       } catch (error) {
         console.error("Erro ao reenviar email de assinatura:", error);
+
         return {
           success: false,
           error: "Erro ao enviar email, mas a URL foi gerada com sucesso",
@@ -446,6 +484,7 @@ export const reenviarLinkAssinatura = async (documentoAssinaturaId: string) => {
     };
   } catch (error) {
     console.error("Erro ao reenviar link de assinatura:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro desconhecido",

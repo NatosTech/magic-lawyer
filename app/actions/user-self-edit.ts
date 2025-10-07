@@ -1,9 +1,11 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/auth";
-import { prisma } from "../lib/prisma";
 import { revalidatePath } from "next/cache";
+
+import prisma from "../lib/prisma";
+
+import { authOptions } from "@/auth";
 import { UserRole } from "@/app/generated/prisma";
 import { getSelfEditPermissions, type SelfEditPermissions } from "@/lib/user-permissions";
 
@@ -51,11 +53,17 @@ export async function updateUserSelfData(data: UserSelfEditData): Promise<{
     }
 
     if (data.lastName && !permissions.canEditBasicInfo) {
-      return { success: false, error: "Não tem permissão para alterar sobrenome" };
+      return {
+        success: false,
+        error: "Não tem permissão para alterar sobrenome",
+      };
     }
 
     if (data.phone && !permissions.canEditPhone) {
-      return { success: false, error: "Não tem permissão para alterar telefone" };
+      return {
+        success: false,
+        error: "Não tem permissão para alterar telefone",
+      };
     }
 
     if (data.avatarUrl && !permissions.canEditAvatar) {
@@ -68,7 +76,10 @@ export async function updateUserSelfData(data: UserSelfEditData): Promise<{
     }
 
     if (data.lastName && data.lastName.trim().length < 2) {
-      return { success: false, error: "Sobrenome deve ter pelo menos 2 caracteres" };
+      return {
+        success: false,
+        error: "Sobrenome deve ter pelo menos 2 caracteres",
+      };
     }
 
     if (data.phone && !/^\(\d{2}\)\s\d{4,5}-\d{4}$/.test(data.phone)) {
@@ -158,9 +169,11 @@ export async function updateUserSelfData(data: UserSelfEditData): Promise<{
     }
 
     revalidatePath("/usuario/perfil/editar");
+
     return { success: true };
   } catch (error) {
     console.error("Erro ao atualizar dados do usuário:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -265,6 +278,7 @@ export async function getUserSelfEditData(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar dados do usuário:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",

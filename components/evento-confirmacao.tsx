@@ -1,10 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Chip, Textarea } from "@heroui/react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Chip,
+  Textarea,
+} from "@heroui/react";
 import { Check, X, HelpCircle, AlertCircle, Users } from "lucide-react";
-import { confirmarParticipacaoEvento } from "@/app/actions/eventos";
 import { toast } from "sonner";
+
+import { confirmarParticipacaoEvento } from "@/app/actions/eventos";
 import { Evento, EventoConfirmacaoStatus } from "@/app/generated/prisma";
 
 interface EventoConfirmacaoProps {
@@ -22,19 +32,32 @@ const statusConfirmacao = {
   TALVEZ: { label: "Talvez", color: "secondary" as const, icon: HelpCircle },
 };
 
-export default function EventoConfirmacao({ isOpen, onClose, evento, participanteEmail, onSuccess }: EventoConfirmacaoProps) {
+export default function EventoConfirmacao({
+  isOpen,
+  onClose,
+  evento,
+  participanteEmail,
+  onSuccess,
+}: EventoConfirmacaoProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [observacoes, setObservacoes] = useState("");
 
   // Encontrar a confirmação atual do participante
-  const confirmacaoAtual = evento.confirmacoes?.find((c) => c.participanteEmail === participanteEmail);
+  const confirmacaoAtual = evento.confirmacoes?.find(
+    (c) => c.participanteEmail === participanteEmail,
+  );
   const statusAtual = confirmacaoAtual?.status || "PENDENTE";
 
   const handleConfirmar = async (status: EventoConfirmacaoStatus) => {
     setIsLoading(true);
 
     try {
-      const result = await confirmarParticipacaoEvento(evento.id, participanteEmail, status, observacoes || undefined);
+      const result = await confirmarParticipacaoEvento(
+        evento.id,
+        participanteEmail,
+        status,
+        observacoes || undefined,
+      );
 
       if (result.success) {
         toast.success("Confirmação atualizada com sucesso!");
@@ -63,14 +86,14 @@ export default function EventoConfirmacao({ isOpen, onClose, evento, participant
 
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="md"
       classNames={{
         base: "max-h-[90vh]",
         body: "max-h-[65vh] overflow-y-auto py-6",
         footer: "border-t border-default-200 mt-4",
       }}
+      isOpen={isOpen}
+      size="md"
+      onClose={onClose}
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
@@ -78,14 +101,17 @@ export default function EventoConfirmacao({ isOpen, onClose, evento, participant
             <Users className="w-5 h-5" />
             Confirmar Participação
           </div>
-          <div className="text-sm text-default-500">Evento: {evento.titulo}</div>
+          <div className="text-sm text-default-500">
+            Evento: {evento.titulo}
+          </div>
         </ModalHeader>
 
         <ModalBody className="gap-4">
           {/* Informações do Evento */}
           <div className="space-y-2">
             <div className="text-sm">
-              <strong>Data:</strong> {formatarData(evento.dataInicio.toString())}
+              <strong>Data:</strong>{" "}
+              {formatarData(evento.dataInicio.toString())}
             </div>
             {evento.local && (
               <div className="text-sm">
@@ -103,11 +129,18 @@ export default function EventoConfirmacao({ isOpen, onClose, evento, participant
           <div>
             <div className="text-sm font-medium mb-2">Status Atual:</div>
             {(() => {
-              const statusInfo = statusConfirmacao[statusAtual as keyof typeof statusConfirmacao];
+              const statusInfo =
+                statusConfirmacao[
+                  statusAtual as keyof typeof statusConfirmacao
+                ];
               const IconComponent = statusInfo?.icon || AlertCircle;
 
               return (
-                <Chip color={statusInfo?.color || "default"} variant="flat" startContent={<IconComponent className="w-4 h-4" />}>
+                <Chip
+                  color={statusInfo?.color || "default"}
+                  startContent={<IconComponent className="w-4 h-4" />}
+                  variant="flat"
+                >
                   {statusInfo?.label || statusAtual}
                 </Chip>
               );
@@ -117,33 +150,50 @@ export default function EventoConfirmacao({ isOpen, onClose, evento, participant
           {/* Observações */}
           <div>
             <Textarea
+              color="default"
               label="Observações (opcional)"
+              maxRows={4}
+              minRows={2}
               placeholder="Adicione observações sobre sua participação..."
               value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
-              minRows={2}
-              maxRows={4}
-              color="default"
               variant="bordered"
+              onChange={(e) => setObservacoes(e.target.value)}
             />
           </div>
         </ModalBody>
 
         <ModalFooter className="gap-3 px-6 py-4">
-          <Button variant="light" onPress={onClose} isDisabled={isLoading}>
+          <Button isDisabled={isLoading} variant="light" onPress={onClose}>
             Cancelar
           </Button>
 
           <div className="flex gap-2">
-            <Button color="danger" variant="flat" startContent={<X className="w-4 h-4" />} onPress={() => handleConfirmar("RECUSADO")} isLoading={isLoading}>
+            <Button
+              color="danger"
+              isLoading={isLoading}
+              startContent={<X className="w-4 h-4" />}
+              variant="flat"
+              onPress={() => handleConfirmar("RECUSADO")}
+            >
               Recusar
             </Button>
 
-            <Button color="secondary" variant="flat" startContent={<HelpCircle className="w-4 h-4" />} onPress={() => handleConfirmar("TALVEZ")} isLoading={isLoading}>
+            <Button
+              color="secondary"
+              isLoading={isLoading}
+              startContent={<HelpCircle className="w-4 h-4" />}
+              variant="flat"
+              onPress={() => handleConfirmar("TALVEZ")}
+            >
               Talvez
             </Button>
 
-            <Button color="success" startContent={<Check className="w-4 h-4" />} onPress={() => handleConfirmar("CONFIRMADO")} isLoading={isLoading}>
+            <Button
+              color="success"
+              isLoading={isLoading}
+              startContent={<Check className="w-4 h-4" />}
+              onPress={() => handleConfirmar("CONFIRMADO")}
+            >
               Confirmar
             </Button>
           </div>

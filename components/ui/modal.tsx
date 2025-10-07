@@ -1,7 +1,14 @@
 "use client";
 
 import React from "react";
-import { Modal as HeroUIModal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
+import {
+  Modal as HeroUIModal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+} from "@heroui/react";
 import clsx from "clsx";
 
 interface ModalProps {
@@ -45,7 +52,8 @@ export function Modal({
 }: ModalProps) {
   // Usar footer ou footerContent
   const actualFooter = footer || footerContent;
-  const shouldShowFooter = showFooter !== undefined ? showFooter : !!actualFooter;
+  const shouldShowFooter =
+    showFooter !== undefined ? showFooter : !!actualFooter;
 
   // Handler para mudança de estado
   const handleOpenChange = (open: boolean) => {
@@ -59,20 +67,20 @@ export function Modal({
 
   return (
     <HeroUIModal
-      isOpen={isOpen}
-      onOpenChange={handleOpenChange}
-      size={size}
       backdrop={backdrop}
-      hideCloseButton={!showCloseButton}
-      isDismissable={closeOnOverlayClick}
-      isKeyboardDismissDisabled={!closeOnEscape}
-      scrollBehavior="inside"
       classNames={{
         base: clsx("border border-default-200 shadow-2xl", className),
         header: clsx("flex flex-col gap-1", headerClassName),
         body: clsx(bodyClassName),
         footer: clsx(footerClassName),
       }}
+      hideCloseButton={!showCloseButton}
+      isDismissable={closeOnOverlayClick}
+      isKeyboardDismissDisabled={!closeOnEscape}
+      isOpen={isOpen}
+      scrollBehavior="inside"
+      size={size}
+      onOpenChange={handleOpenChange}
     >
       <ModalContent>
         {(onClose) => (
