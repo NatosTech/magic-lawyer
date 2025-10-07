@@ -1,71 +1,85 @@
 import { PrismaClient } from "../generated/prisma";
-import { Decimal } from "@prisma/client/runtime/library";
 
 // Evita criar múltiplas instâncias no hot-reload do Next.js (dev)
 const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient;
+  prisma?: ReturnType<typeof createPrismaClient>;
 };
 
-// Função recursiva para sanitizar objetos para serialização
-function sanitizeForSerialization<T>(obj: T): T {
-  if (obj === null || obj === undefined) {
-    return obj;
-  }
-
-  if (obj instanceof Decimal) {
-    return Number(obj.toString()) as T;
-  }
-
-  if (obj instanceof Date) {
-    return obj as T;
-  }
-
-  if (typeof obj === "function") {
-    // Remover funções - não podem ser serializadas
-    return undefined as T;
-  }
-
-  if (Array.isArray(obj)) {
-    return obj.map(sanitizeForSerialization).filter((item) => item !== undefined) as T;
-  }
-
-  if (typeof obj === "object") {
-    const sanitized: Record<string, unknown> = {};
-
-    // Usar Object.getOwnPropertyNames para evitar propriedades de símbolo
-    const keys = Object.getOwnPropertyNames(obj);
-
-    for (const key of keys) {
-      const value = (obj as Record<string, unknown>)[key];
-      const sanitizedValue = sanitizeForSerialization(value);
-
-      // Só incluir se não for undefined (funções removidas)
-      if (sanitizedValue !== undefined) {
-        sanitized[key] = sanitizedValue;
-      }
-    }
-
-    return sanitized as T;
-  }
-
-  return obj;
-}
-
-// Criar Prisma Client básico
-const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+// Função para criar o Prisma Client com extensões type-safe
+function createPrismaClient() {
+  const basePrisma = new PrismaClient({
     log: [
       { level: "error", emit: "stdout" },
       { level: "warn", emit: "stdout" },
     ],
   });
 
+  // Extensão que converte campos Decimal automaticamente com type safety
+  return basePrisma.$extends({
+    result: {
+      advogado: {
+        comissaoPadrao: {
+          needs: { comissaoPadrao: true },
+          compute(advogado) {
+            return advogado.comissaoPadrao ? Number(advogado.comissaoPadrao.toString()) : null;
+          },
+        },
+        comissaoAcaoGanha: {
+          needs: { comissaoAcaoGanha: true },
+          compute(advogado) {
+            return advogado.comissaoAcaoGanha ? Number(advogado.comissaoAcaoGanha.toString()) : null;
+          },
+        },
+        comissaoHonorarios: {
+          needs: { comissaoHonorarios: true },
+          compute(advogado) {
+            return advogado.comissaoHonorarios ? Number(advogado.comissaoHonorarios.toString()) : null;
+          },
+        },
+      },
+      processo: {
+        valorCausa: {
+          needs: { valorCausa: true },
+          compute(processo) {
+            return processo.valorCausa ? Number(processo.valorCausa.toString()) : null;
+          },
+        },
+      },
+      contrato: {
+        valor: {
+          needs: { valor: true },
+          compute(contrato) {
+            return contrato.valor ? Number(contrato.valor.toString()) : null;
+          },
+        },
+        comissaoAdvogado: {
+          needs: { comissaoAdvogado: true },
+          compute(contrato) {
+            return contrato.comissaoAdvogado ? Number(contrato.comissaoAdvogado.toString()) : null;
+          },
+        },
+        percentualAcaoGanha: {
+          needs: { percentualAcaoGanha: true },
+          compute(contrato) {
+            return contrato.percentualAcaoGanha ? Number(contrato.percentualAcaoGanha.toString()) : null;
+          },
+        },
+        valorAcaoGanha: {
+          needs: { valorAcaoGanha: true },
+          compute(contrato) {
+            return contrato.valorAcaoGanha ? Number(contrato.valorAcaoGanha.toString()) : null;
+          },
+        },
+      },
+    },
+  });
+}
+
+// Exportar o Prisma Client com conversão automática de Decimal
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
 
 export default prisma;
-
-// Exportar função utilitária para sanitização manual quando necessário
-export { sanitizeForSerialization };
