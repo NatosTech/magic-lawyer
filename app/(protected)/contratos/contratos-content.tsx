@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
@@ -8,8 +8,9 @@ import { Select, SelectItem } from "@heroui/select";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { useDisclosure } from "@heroui/use-disclosure";
 import { Spinner } from "@heroui/spinner";
+import { Chip } from "@heroui/chip";
 import { toast } from "sonner";
-import { Plus, Search, MoreVertical, Edit, Trash2, Eye, FileText, Link as LinkIcon, Building2, User } from "lucide-react";
+import { Plus, Search, MoreVertical, Edit, Trash2, Eye, FileText, Link as LinkIcon, Building2, User, Filter, X, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import Link from "next/link";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 
@@ -18,11 +19,35 @@ import { useAllContratos } from "@/app/hooks/use-contratos";
 import { vincularContratoProcuracao } from "@/app/actions/contratos";
 import { DateUtils } from "@/app/lib/date-utils";
 
+const STATUS_OPTIONS = [
+  { key: "ATIVO", label: "Ativo", color: "success" as const },
+  { key: "RASCUNHO", label: "Rascunho", color: "warning" as const },
+  { key: "SUSPENSO", label: "Suspenso", color: "default" as const },
+  { key: "CANCELADO", label: "Cancelado", color: "danger" as const },
+  { key: "ENCERRADO", label: "Encerrado", color: "default" as const },
+];
+
+const ORDENACAO_OPTIONS = [
+  { key: "recente", label: "Mais recentes" },
+  { key: "antigo", label: "Mais antigos" },
+  { key: "valor-desc", label: "Maior valor" },
+  { key: "valor-asc", label: "Menor valor" },
+  { key: "titulo", label: "Título (A-Z)" },
+];
+
 export default function ContratosContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContrato, setSelectedContrato] = useState<any>(null);
   const [selectedProcuracao, setSelectedProcuracao] = useState<string>("");
   const [isLinking, setIsLinking] = useState(false);
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
+
+  // Filtros
+  const [filtroStatus, setFiltroStatus] = useState<string>("todos");
+  const [filtroCliente, setFiltroCliente] = useState<string>("todos");
+  const [filtroValorMin, setFiltroValorMin] = useState<string>("");
+  const [filtroValorMax, setFiltroValorMax] = useState<string>("");
+  const [ordenacao, setOrdenacao] = useState<string>("recente");
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { clientes } = useClientesParaSelect();
@@ -58,8 +83,83 @@ export default function ContratosContent() {
     onOpen();
   };
 
-  const contratosFiltrados =
-    contratos?.filter((contrato) => contrato.titulo.toLowerCase().includes(searchTerm.toLowerCase()) || contrato.cliente?.nome.toLowerCase().includes(searchTerm.toLowerCase())) || [];
+  const limparFiltros = () => {
+    setSearchTerm("");
+    setFiltroStatus("todos");
+    setFiltroCliente("todos");
+    setFiltroValorMin("");
+    setFiltroValorMax("");
+    setOrdenacao("recente");
+  };
+
+  const temFiltrosAtivos = useMemo(() => {
+    return searchTerm !== "" || filtroStatus !== "todos" || filtroCliente !== "todos" || filtroValorMin !== "" || filtroValorMax !== "";
+  }, [searchTerm, filtroStatus, filtroCliente, filtroValorMin, filtroValorMax]);
+
+  const contratosFiltrados = useMemo(() => {
+    if (!contratos) return [];
+
+    let resultado = [...contratos];
+
+    // Filtro de busca por texto
+    if (searchTerm) {
+      resultado = resultado.filter(
+        (contrato) =>
+          contrato.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          contrato.cliente?.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          contrato.resumo?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filtro por status
+    if (filtroStatus !== "todos") {
+      resultado = resultado.filter((contrato) => contrato.status === filtroStatus);
+    }
+
+    // Filtro por cliente
+    if (filtroCliente !== "todos") {
+      resultado = resultado.filter((contrato) => contrato.clienteId === filtroCliente);
+    }
+
+    // Filtro por valor mínimo
+    if (filtroValorMin) {
+      const valorMin = parseFloat(filtroValorMin);
+
+      if (!isNaN(valorMin)) {
+        resultado = resultado.filter((contrato) => (contrato.valor || 0) >= valorMin);
+      }
+    }
+
+    // Filtro por valor máximo
+    if (filtroValorMax) {
+      const valorMax = parseFloat(filtroValorMax);
+
+      if (!isNaN(valorMax)) {
+        resultado = resultado.filter((contrato) => (contrato.valor || 0) <= valorMax);
+      }
+    }
+
+    // Ordenação
+    switch (ordenacao) {
+      case "recente":
+        resultado.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case "antigo":
+        resultado.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      case "valor-desc":
+        resultado.sort((a, b) => (b.valor || 0) - (a.valor || 0));
+        break;
+      case "valor-asc":
+        resultado.sort((a, b) => (a.valor || 0) - (b.valor || 0));
+        break;
+      case "titulo":
+        resultado.sort((a, b) => a.titulo.localeCompare(b.titulo));
+        break;
+    }
+
+    return resultado;
+  }, [contratos, searchTerm, filtroStatus, filtroCliente, filtroValorMin, filtroValorMax, ordenacao]);
 
   if (isLoading) {
     return (
@@ -96,15 +196,94 @@ export default function ContratosContent() {
 
       {/* Filtros */}
       <Card>
-        <CardBody>
-          <div className="flex gap-4">
+        <CardBody className="gap-4">
+          {/* Barra de busca e controles principais */}
+          <div className="flex flex-col sm:flex-row gap-3">
             <Input
               className="flex-1"
-              placeholder="Buscar contratos..."
+              placeholder="Buscar por título, cliente ou resumo..."
               startContent={<Search className="h-4 w-4 text-default-400" />}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            <div className="flex gap-2">
+              <Button startContent={<SlidersHorizontal className="h-4 w-4" />} variant={mostrarFiltros ? "solid" : "bordered"} onPress={() => setMostrarFiltros(!mostrarFiltros)}>
+                Filtros
+              </Button>
+              <Select
+                className="w-48"
+                placeholder="Ordenar por"
+                selectedKeys={[ordenacao]}
+                startContent={<ArrowUpDown className="h-4 w-4 text-default-400" />}
+                onChange={(e) => setOrdenacao(e.target.value)}
+              >
+                {ORDENACAO_OPTIONS.map((option) => (
+                  <SelectItem key={option.key}>{option.label}</SelectItem>
+                ))}
+              </Select>
+            </div>
+          </div>
+
+          {/* Filtros avançados (expansível) */}
+          {mostrarFiltros && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 pt-2 border-t border-default-200">
+              <Select label="Status" placeholder="Todos os status" selectedKeys={filtroStatus !== "todos" ? [filtroStatus] : []} onChange={(e) => setFiltroStatus(e.target.value || "todos")}>
+                {[{ key: "todos", label: "Todos" }, ...STATUS_OPTIONS].map((option) => (
+                  <SelectItem key={option.key}>{option.label}</SelectItem>
+                ))}
+              </Select>
+
+              <Select label="Cliente" placeholder="Todos os clientes" selectedKeys={filtroCliente !== "todos" ? [filtroCliente] : []} onChange={(e) => setFiltroCliente(e.target.value || "todos")}>
+                {[{ id: "todos", nome: "Todos" }, ...(clientes || [])].map((cliente) => (
+                  <SelectItem key={cliente.id}>{cliente.nome}</SelectItem>
+                ))}
+              </Select>
+
+              <Input label="Valor mínimo" placeholder="R$ 0,00" type="number" value={filtroValorMin} onChange={(e) => setFiltroValorMin(e.target.value)} />
+
+              <Input label="Valor máximo" placeholder="R$ 0,00" type="number" value={filtroValorMax} onChange={(e) => setFiltroValorMax(e.target.value)} />
+            </div>
+          )}
+
+          {/* Chips de filtros ativos */}
+          {temFiltrosAtivos && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-default-500">Filtros ativos:</span>
+              {searchTerm && (
+                <Chip size="sm" variant="flat" onClose={() => setSearchTerm("")} endContent={<X className="h-3 w-3" />}>
+                  Busca: "{searchTerm}"
+                </Chip>
+              )}
+              {filtroStatus !== "todos" && (
+                <Chip size="sm" color={STATUS_OPTIONS.find((s) => s.key === filtroStatus)?.color} variant="flat" onClose={() => setFiltroStatus("todos")} endContent={<X className="h-3 w-3" />}>
+                  Status: {STATUS_OPTIONS.find((s) => s.key === filtroStatus)?.label}
+                </Chip>
+              )}
+              {filtroCliente !== "todos" && (
+                <Chip size="sm" variant="flat" onClose={() => setFiltroCliente("todos")} endContent={<X className="h-3 w-3" />}>
+                  Cliente: {clientes?.find((c) => c.id === filtroCliente)?.nome}
+                </Chip>
+              )}
+              {filtroValorMin && (
+                <Chip size="sm" variant="flat" onClose={() => setFiltroValorMin("")} endContent={<X className="h-3 w-3" />}>
+                  Valor mín: R$ {parseFloat(filtroValorMin).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </Chip>
+              )}
+              {filtroValorMax && (
+                <Chip size="sm" variant="flat" onClose={() => setFiltroValorMax("")} endContent={<X className="h-3 w-3" />}>
+                  Valor máx: R$ {parseFloat(filtroValorMax).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </Chip>
+              )}
+              <Button size="sm" variant="light" color="danger" startContent={<X className="h-3 w-3" />} onPress={limparFiltros}>
+                Limpar todos
+              </Button>
+            </div>
+          )}
+
+          {/* Contador de resultados */}
+          <div className="text-xs text-default-500">
+            {contratosFiltrados.length} {contratosFiltrados.length === 1 ? "contrato encontrado" : "contratos encontrados"}
+            {contratos && contratos.length !== contratosFiltrados.length && ` de ${contratos.length} total`}
           </div>
         </CardBody>
       </Card>
