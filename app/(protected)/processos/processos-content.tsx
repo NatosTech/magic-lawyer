@@ -535,103 +535,80 @@ export function ProcessosContent() {
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {processosFiltrados.map((processo: any) => {
-              // Debug temporário para verificar valorCausa
-              if (processo.valorCausa !== null && processo.valorCausa !== undefined) {
-                console.log(
-                  "Processo:",
-                  processo.numero,
-                  "valorCausa:",
-                  processo.valorCausa,
-                  "type:",
-                  typeof processo.valorCausa,
-                  "constructor:",
-                  processo.valorCausa.constructor?.name,
-                  "isNumber:",
-                  !isNaN(Number(processo.valorCausa))
-                );
-              }
-              return (
-                <Card
-                  key={processo.id}
-                  className="border border-default-200 hover:border-primary transition-all hover:shadow-lg cursor-pointer"
-                  isPressable
-                  as={Link}
-                  href={`/processos/${processo.id}`}
-                >
-                  <CardHeader className="flex flex-col items-start gap-2 pb-2">
-                    <div className="flex w-full items-start justify-between">
-                      <Chip size="sm" variant="flat" color={getStatusColor(processo.status)} startContent={getStatusIcon(processo.status)}>
-                        {getStatusLabel(processo.status)}
-                      </Chip>
-                      {processo.segredoJustica && <Shield className="h-4 w-4 text-warning" />}
+            {processosFiltrados.map((processo: any) => (
+              <Card key={processo.id} className="border border-default-200 hover:border-primary transition-all hover:shadow-lg cursor-pointer" isPressable as={Link} href={`/processos/${processo.id}`}>
+                <CardHeader className="flex flex-col items-start gap-2 pb-2">
+                  <div className="flex w-full items-start justify-between">
+                    <Chip size="sm" variant="flat" color={getStatusColor(processo.status)} startContent={getStatusIcon(processo.status)}>
+                      {getStatusLabel(processo.status)}
+                    </Chip>
+                    {processo.segredoJustica && <Shield className="h-4 w-4 text-warning" />}
+                  </div>
+                  <div className="w-full">
+                    <p className="text-sm font-semibold text-default-700">{processo.numero}</p>
+                    {processo.titulo && <p className="mt-1 text-xs text-default-500 line-clamp-2">{processo.titulo}</p>}
+                  </div>
+                </CardHeader>
+                <Divider />
+                <CardBody className="gap-3 pt-3">
+                  {processo.area && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <Briefcase className="h-3 w-3 text-default-400" />
+                      <span className="text-default-600">{processo.area.nome}</span>
                     </div>
-                    <div className="w-full">
-                      <p className="text-sm font-semibold text-default-700">{processo.numero}</p>
-                      {processo.titulo && <p className="mt-1 text-xs text-default-500 line-clamp-2">{processo.titulo}</p>}
+                  )}
+                  {processo.advogadoResponsavel && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <User className="h-3 w-3 text-default-400" />
+                      <span className="text-default-600">
+                        {processo.advogadoResponsavel.usuario.firstName} {processo.advogadoResponsavel.usuario.lastName}
+                      </span>
                     </div>
-                  </CardHeader>
-                  <Divider />
-                  <CardBody className="gap-3 pt-3">
-                    {processo.area && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <Briefcase className="h-3 w-3 text-default-400" />
-                        <span className="text-default-600">{processo.area.nome}</span>
-                      </div>
-                    )}
-                    {processo.advogadoResponsavel && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <User className="h-3 w-3 text-default-400" />
-                        <span className="text-default-600">
-                          {processo.advogadoResponsavel.usuario.firstName} {processo.advogadoResponsavel.usuario.lastName}
-                        </span>
-                      </div>
-                    )}
-                    {processo.cliente && (
-                      <div className="flex items-center gap-2 text-xs">
-                        {processo.cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-3 w-3 text-default-400" /> : <User className="h-3 w-3 text-default-400" />}
-                        <span className="text-default-600">{processo.cliente.nome}</span>
-                      </div>
-                    )}
-                    {processo.comarca && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <MapPin className="h-3 w-3 text-default-400" />
-                        <span className="text-default-600">{processo.comarca}</span>
-                      </div>
-                    )}
-                    {processo.dataDistribuicao && DateUtils.isValid(processo.dataDistribuicao) && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <Calendar className="h-3 w-3 text-default-400" />
-                        <span className="text-default-600">{DateUtils.formatDate(processo.dataDistribuicao)}</span>
-                      </div>
-                    )}
-                    {processo.prazoPrincipal && DateUtils.isValid(processo.prazoPrincipal) && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <Clock className="h-3 w-3 text-warning" />
-                        <span className="text-warning-600">Prazo: {DateUtils.formatDate(processo.prazoPrincipal)}</span>
-                      </div>
-                    )}
-                    {processo.valorCausa !== null && processo.valorCausa !== undefined && !isNaN(Number(processo.valorCausa)) && Number(processo.valorCausa) > 0 && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <DollarSign className="h-3 w-3 text-success" />
-                        <span className="text-success-600">R$ {Number(processo.valorCausa).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    )}
+                  )}
+                  {processo.cliente && (
+                    <div className="flex items-center gap-2 text-xs">
+                      {processo.cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-3 w-3 text-default-400" /> : <User className="h-3 w-3 text-default-400" />}
+                      <span className="text-default-600">{processo.cliente.nome}</span>
+                    </div>
+                  )}
+                  {processo.comarca && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <MapPin className="h-3 w-3 text-default-400" />
+                      <span className="text-default-600">{processo.comarca}</span>
+                    </div>
+                  )}
+                  {processo.dataDistribuicao && DateUtils.isValid(processo.dataDistribuicao) && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <Calendar className="h-3 w-3 text-default-400" />
+                      <span className="text-default-600">{DateUtils.formatDate(processo.dataDistribuicao)}</span>
+                    </div>
+                  )}
+                  {processo.prazoPrincipal && DateUtils.isValid(processo.prazoPrincipal) && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <Clock className="h-3 w-3 text-warning" />
+                      <span className="text-warning-600">Prazo: {DateUtils.formatDate(processo.prazoPrincipal)}</span>
+                    </div>
+                  )}
+                  {processo.valorCausa !== null && processo.valorCausa !== undefined && !isNaN(Number(processo.valorCausa)) && Number(processo.valorCausa) > 0 && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <DollarSign className="h-3 w-3 text-success" />
+                      <span className="text-success-600">R$ {Number(processo.valorCausa).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
 
-                    <Divider className="my-2" />
+                  <Divider className="my-2" />
 
-                    <div className="flex flex-wrap gap-2">
-                      <Chip size="sm" variant="flat">
-                        {processo._count.documentos} docs
-                      </Chip>
-                      <Chip size="sm" variant="flat">
-                        {processo._count.eventos} eventos
-                      </Chip>
-                    </div>
-                  </CardBody>
-                </Card>
-              );
-            })}
+                  <div className="flex flex-wrap gap-2">
+                    <Chip size="sm" variant="flat">
+                      {processo._count.documentos} docs
+                    </Chip>
+                    <Chip size="sm" variant="flat">
+                      {processo._count.eventos} eventos
+                    </Chip>
+                  </div>
+                </CardBody>
+              </Card>
+            ))}
           </div>
         )}
       </div>
