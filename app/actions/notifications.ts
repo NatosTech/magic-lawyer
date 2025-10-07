@@ -2,7 +2,7 @@
 
 import { getServerSession } from "next-auth/next";
 
-import { prisma } from "@/app/lib/prisma";
+import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
 
 export type NotificationStatus = "NAO_LIDA" | "LIDA" | "ARQUIVADA";

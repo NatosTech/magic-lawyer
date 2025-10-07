@@ -81,9 +81,9 @@ export async function getAdvogadosDoTenant(): Promise<{
     // Converter Decimal para number para serialização
     const advogados: Advogado[] = advogadosRaw.map((advogado) => ({
       ...advogado,
-      comissaoPadrao: Number(advogado.comissaoPadrao),
-      comissaoAcaoGanha: Number(advogado.comissaoAcaoGanha),
-      comissaoHonorarios: Number(advogado.comissaoHonorarios),
+      comissaoPadrao: advogado.comissaoPadrao,
+      comissaoAcaoGanha: advogado.comissaoAcaoGanha,
+      comissaoHonorarios: advogado.comissaoHonorarios,
     }));
 
     return {

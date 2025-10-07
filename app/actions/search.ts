@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/app/lib/prisma";
+import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
 import type { SearchResult } from "@/components/searchbar";
 

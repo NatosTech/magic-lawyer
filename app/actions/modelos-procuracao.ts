@@ -23,7 +23,7 @@ export interface ModeloProcuracaoFormData {
 async function getAdvogadoIdFromSession(session: { user: any }): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
-  const advogado = await (prisma as any).advogado.findFirst({
+  const advogado = await prisma.advogado.findFirst({
     where: {
       usuarioId: session.user.id,
       tenantId: session.user.tenantId,
@@ -59,7 +59,7 @@ export async function getAllModelosProcuracao(): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    const modelos = await (prisma as any).modeloProcuracao.findMany({
+    const modelos = await prisma.modeloProcuracao.findMany({
       where: {
         tenantId: user.tenantId,
         deletedAt: null,
@@ -108,7 +108,7 @@ export async function getModeloProcuracaoById(modeloId: string): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    const modelo = await (prisma as any).modeloProcuracao.findFirst({
+    const modelo = await prisma.modeloProcuracao.findFirst({
       where: {
         id: modeloId,
         tenantId: user.tenantId,
@@ -164,7 +164,7 @@ export async function createModeloProcuracao(data: ModeloProcuracaoFormData): Pr
       return { success: false, error: "Acesso negado" };
     }
 
-    const modelo = await (prisma as any).modeloProcuracao.create({
+    const modelo = await prisma.modeloProcuracao.create({
       data: {
         tenantId: user.tenantId,
         nome: data.nome,
@@ -223,7 +223,7 @@ export async function updateModeloProcuracao(
     }
 
     // Verificar se o modelo existe e pertence ao tenant
-    const modeloExistente = await (prisma as any).modeloProcuracao.findFirst({
+    const modeloExistente = await prisma.modeloProcuracao.findFirst({
       where: {
         id: modeloId,
         tenantId: user.tenantId,
@@ -237,7 +237,7 @@ export async function updateModeloProcuracao(
 
     const updateData: Prisma.ModeloProcuracaoUpdateInput = { ...data };
 
-    const modelo = await (prisma as any).modeloProcuracao.update({
+    const modelo = await prisma.modeloProcuracao.update({
       where: {
         id: modeloId,
       },
@@ -288,7 +288,7 @@ export async function deleteModeloProcuracao(modeloId: string): Promise<{
     }
 
     // Verificar se o modelo existe e pertence ao tenant
-    const modeloExistente = await (prisma as any).modeloProcuracao.findFirst({
+    const modeloExistente = await prisma.modeloProcuracao.findFirst({
       where: {
         id: modeloId,
         tenantId: user.tenantId,
@@ -301,10 +301,9 @@ export async function deleteModeloProcuracao(modeloId: string): Promise<{
     }
 
     // Verificar se há procurações usando este modelo
-    const procuracoesCount = await (prisma as any).procuracao.count({
+    const procuracoesCount = await prisma.procuracao.count({
       where: {
         modeloId: modeloId,
-        deletedAt: null,
       },
     });
 
@@ -315,7 +314,7 @@ export async function deleteModeloProcuracao(modeloId: string): Promise<{
       };
     }
 
-    await (prisma as any).modeloProcuracao.update({
+    await prisma.modeloProcuracao.update({
       where: {
         id: modeloId,
       },
@@ -342,7 +341,7 @@ export async function deleteModeloProcuracao(modeloId: string): Promise<{
  */
 export async function getModelosProcuracaoParaSelect(): Promise<{
   success: boolean;
-  modelos?: { id: string; nome: string; categoria?: string }[];
+  modelos?: { id: string; nome: string; categoria?: string | null }[];
   error?: string;
 }> {
   try {
@@ -356,7 +355,7 @@ export async function getModelosProcuracaoParaSelect(): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    const modelos = await (prisma as any).modeloProcuracao.findMany({
+    const modelos = await prisma.modeloProcuracao.findMany({
       where: {
         tenantId: user.tenantId,
         deletedAt: null,
@@ -408,11 +407,10 @@ export async function gerarPdfProcuracao(
     }
 
     // Buscar a procuração com o modelo
-    const procuracao = await (prisma as any).procuracao.findFirst({
+    const procuracao = await prisma.procuracao.findFirst({
       where: {
         id: procuracaoId,
         tenantId: user.tenantId,
-        deletedAt: null,
       },
       include: {
         modelo: true,

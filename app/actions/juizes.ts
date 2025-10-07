@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/app/lib/prisma";
+import prisma from "@/app/lib/prisma";
 import { EspecialidadeJuridica, JuizStatus, JuizNivel, Juiz } from "@/app/generated/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
 

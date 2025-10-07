@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/app/lib/prisma";
+import prisma from "@/app/lib/prisma";
 import { getTenantWithBranding } from "@/app/lib/tenant";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";

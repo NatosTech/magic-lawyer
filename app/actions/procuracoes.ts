@@ -27,7 +27,7 @@ export interface ProcuracaoFormData {
 async function getAdvogadoIdFromSession(session: { user: any }): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
-  const advogado = await (prisma as any).advogado.findFirst({
+  const advogado = await prisma.advogado.findFirst({
     where: {
       usuarioId: session.user.id,
       tenantId: session.user.tenantId,
@@ -43,7 +43,7 @@ async function getAdvogadoIdFromSession(session: { user: any }): Promise<string 
 async function getClienteIdFromSession(session: { user: any }): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
-  const cliente = await (prisma as any).cliente.findFirst({
+  const cliente = await prisma.cliente.findFirst({
     where: {
       usuarioId: session.user.id,
       tenantId: session.user.tenantId,
@@ -96,7 +96,7 @@ export async function getAllProcuracoes(): Promise<{
       }
 
       // 1. Buscar IDs dos clientes que o advogado criou
-      const clientesCriados = await (prisma as any).cliente.findMany({
+      const clientesCriados = await prisma.cliente.findMany({
         where: {
           tenantId: user.tenantId,
           deletedAt: null,
@@ -110,7 +110,7 @@ export async function getAllProcuracoes(): Promise<{
       });
 
       // 2. Buscar procurações onde o advogado está habilitado
-      const procuracoesComAcesso = await (prisma as any).procuracao.findMany({
+      const procuracoesComAcesso = await prisma.procuracao.findMany({
         where: {
           tenantId: user.tenantId,
           outorgados: {
@@ -158,7 +158,7 @@ export async function getAllProcuracoes(): Promise<{
     }
     // ADMIN ou SUPER_ADMIN: Todas do tenant
 
-    const procuracoes = await (prisma as any).procuracao.findMany({
+    const procuracoes = await prisma.procuracao.findMany({
       where: whereClause,
       include: {
         cliente: {
@@ -290,7 +290,7 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
       whereClause.OR = whereConditions;
     }
 
-    const procuracao = await (prisma as any).procuracao.findFirst({
+    const procuracao = await prisma.procuracao.findFirst({
       where: whereClause,
       include: {
         cliente: {
@@ -405,7 +405,7 @@ export async function getProcuracoesCliente(clienteId: string): Promise<{
     }
 
     // Verificar se cliente existe e está acessível
-    const cliente = await (prisma as any).cliente.findFirst({
+    const cliente = await prisma.cliente.findFirst({
       where: whereCliente,
     });
 
@@ -413,7 +413,7 @@ export async function getProcuracoesCliente(clienteId: string): Promise<{
       return { success: false, error: "Cliente não encontrado ou sem acesso" };
     }
 
-    const procuracoes = await (prisma as any).procuracao.findMany({
+    const procuracoes = await prisma.procuracao.findMany({
       where: {
         clienteId: clienteId,
         tenantId: user.tenantId,
@@ -508,7 +508,7 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
     }
 
     // Verificar se o cliente existe e está acessível
-    const cliente = await (prisma as any).cliente.findFirst({
+    const cliente = await prisma.cliente.findFirst({
       where: {
         id: data.clienteId,
         tenantId: user.tenantId,
@@ -522,7 +522,7 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
 
     // Verificar se o modelo existe (se fornecido)
     if (data.modeloId) {
-      const modelo = await (prisma as any).modeloProcuracao.findFirst({
+      const modelo = await prisma.modeloProcuracao.findFirst({
         where: {
           id: data.modeloId,
           tenantId: user.tenantId,
@@ -538,7 +538,7 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
 
     // Verificar se os advogados existem
     if (data.advogadoIds.length > 0) {
-      const advogados = await (prisma as any).advogado.findMany({
+      const advogados = await prisma.advogado.findMany({
         where: {
           id: {
             in: data.advogadoIds,
@@ -554,7 +554,7 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
 
     // Verificar se os processos existem (se fornecidos)
     if (data.processoIds && data.processoIds.length > 0) {
-      const processos = await (prisma as any).processo.findMany({
+      const processos = await prisma.processo.findMany({
         where: {
           id: {
             in: data.processoIds,
@@ -570,7 +570,7 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
     }
 
     // Criar a procuração
-    const procuracao = await (prisma as any).procuracao.create({
+    const procuracao = await prisma.procuracao.create({
       data: {
         tenantId: user.tenantId,
         clienteId: data.clienteId,
@@ -634,7 +634,7 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
 
     // Vincular advogados
     if (data.advogadoIds.length > 0) {
-      await (prisma as any).procuracaoAdvogado.createMany({
+      await prisma.procuracaoAdvogado.createMany({
         data: data.advogadoIds.map((advogadoId) => ({
           tenantId: user.tenantId,
           procuracaoId: procuracao.id,
@@ -645,7 +645,7 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
 
     // Vincular processos
     if (data.processoIds && data.processoIds.length > 0) {
-      await (prisma as any).procuracaoProcesso.createMany({
+      await prisma.procuracaoProcesso.createMany({
         data: data.processoIds.map((processoId) => ({
           tenantId: user.tenantId,
           procuracaoId: procuracao.id,

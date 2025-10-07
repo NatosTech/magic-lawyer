@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "@/app/lib/auth";
-import prisma from "@/app/lib/prisma";
+import prisma, { sanitizeForSerialization } from "@/app/lib/prisma";
 import { ProcessoStatus, Prisma } from "@/app/generated/prisma";
 
 // ============================================
@@ -279,7 +279,7 @@ export async function getAllProcessos(): Promise<{
         },
         _count: {
           select: {
-            documentos: { where: { deletedAt: null } },
+            documentos: true,
             eventos: true,
             movimentacoes: true,
             tarefas: true,
@@ -292,15 +292,9 @@ export async function getAllProcessos(): Promise<{
       take: 100,
     });
 
-    // Converter Decimal para number
-    const processosFormatted = processos.map((p) => ({
-      ...p,
-      valorCausa: p.valorCausa ? Number(p.valorCausa) : null,
-    }));
-
     return {
       success: true,
-      processos: processosFormatted as any,
+      processos: sanitizeForSerialization(processos) as Processo[],
     };
   } catch (error) {
     console.error("Erro ao buscar processos:", error);
@@ -377,15 +371,9 @@ export async function getProcessosDoClienteLogado(): Promise<{
       },
     });
 
-    // Converter Decimal para number
-    const processosFormatted = processos.map((p) => ({
-      ...p,
-      valorCausa: p.valorCausa ? Number(p.valorCausa) : null,
-    }));
-
     return {
       success: true,
-      processos: processosFormatted as any,
+      processos: sanitizeForSerialization(processos) as Processo[],
     };
   } catch (error) {
     console.error("Erro ao buscar processos do cliente:", error);
@@ -476,7 +464,7 @@ export async function getProcessosDoCliente(clienteId: string): Promise<{
         },
         _count: {
           select: {
-            documentos: { where: { deletedAt: null } },
+            documentos: true,
             eventos: true,
             movimentacoes: true,
             tarefas: true,
@@ -488,15 +476,9 @@ export async function getProcessosDoCliente(clienteId: string): Promise<{
       },
     });
 
-    // Converter Decimal para number
-    const processosFormatted = processos.map((p) => ({
-      ...p,
-      valorCausa: p.valorCausa ? Number(p.valorCausa) : null,
-    }));
-
     return {
       success: true,
-      processos: processosFormatted as any,
+      processos: sanitizeForSerialization(processos) as Processo[],
     };
   } catch (error) {
     console.error("Erro ao buscar processos do cliente:", error);
@@ -667,15 +649,9 @@ export async function getProcessoDetalhado(processoId: string): Promise<{
       return { success: false, error: "Processo não encontrado ou sem acesso" };
     }
 
-    // Converter Decimal para number
-    const processoFormatted: ProcessoDetalhado = {
-      ...processo,
-      valorCausa: processo.valorCausa ? Number(processo.valorCausa) : null,
-    } as ProcessoDetalhado;
-
     return {
       success: true,
-      processo: processoFormatted,
+      processo: sanitizeForSerialization(processo) as unknown as ProcessoDetalhado,
       isCliente,
     };
   } catch (error) {
@@ -757,7 +733,7 @@ export async function getDocumentosProcesso(processoId: string): Promise<{
 
     return {
       success: true,
-      documentos,
+      documentos: sanitizeForSerialization(documentos),
     };
   } catch (error) {
     console.error("Erro ao buscar documentos do processo:", error);
@@ -833,7 +809,7 @@ export async function getEventosProcesso(processoId: string): Promise<{
 
     return {
       success: true,
-      eventos,
+      eventos: sanitizeForSerialization(eventos),
     };
   } catch (error) {
     console.error("Erro ao buscar eventos do processo:", error);
@@ -889,14 +865,7 @@ export async function getMovimentacoesProcesso(processoId: string): Promise<{
       where: {
         processoId: processoId,
       },
-      include: {
-        createdBy: {
-          select: {
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
+      include: { criadoPor: true },
       orderBy: {
         dataMovimentacao: "desc",
       },
@@ -904,7 +873,7 @@ export async function getMovimentacoesProcesso(processoId: string): Promise<{
 
     return {
       success: true,
-      movimentacoes,
+      movimentacoes: sanitizeForSerialization(movimentacoes),
     };
   } catch (error) {
     console.error("Erro ao buscar movimentações do processo:", error);
@@ -1039,7 +1008,7 @@ export async function createProcesso(data: ProcessoCreateInput) {
 
     return {
       success: true,
-      processo,
+      processo: sanitizeForSerialization(processo) as unknown as ProcessoDetalhado,
     };
   } catch (error) {
     console.error("Erro ao criar processo:", error);
