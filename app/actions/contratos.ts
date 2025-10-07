@@ -113,11 +113,19 @@ export async function getProcuracoesDisponiveis(clienteId: string) {
   }
 }
 
+/**
+ * Vincula uma procuração a um contrato através do processo
+ *
+ * Lógica:
+ * - Se o contrato JÁ tem um processo: valida se a procuração está vinculada a esse processo
+ * - Se o contrato NÃO tem processo: vincula o contrato ao primeiro processo da procuração
+ * - Se a procuração não tem processos: retorna erro
+ */
 export async function vincularContratoProcuracao(contratoId: string, procuracaoId: string) {
   const session = await getSession();
 
   if (!session?.user?.id) {
-    throw new Error("Não autorizado");
+    return { success: false, error: "Não autorizado" };
   }
 
   const user = session.user;
@@ -132,12 +140,17 @@ export async function vincularContratoProcuracao(contratoId: string, procuracaoI
         deletedAt: null,
       },
       include: {
-        processo: true,
+        processo: {
+          select: {
+            id: true,
+            numero: true,
+          },
+        },
       },
     });
 
     if (!contrato) {
-      throw new Error("Contrato não encontrado");
+      return { success: false, error: "Contrato não encontrado" };
     }
 
     // Verificar se a procuração existe e está ativa
@@ -150,42 +163,68 @@ export async function vincularContratoProcuracao(contratoId: string, procuracaoI
       include: {
         processos: {
           include: {
-            processo: true,
+            processo: {
+              select: {
+                id: true,
+                numero: true,
+              },
+            },
           },
         },
       },
     });
 
     if (!procuracao) {
-      throw new Error("Procuração não encontrada ou inativa");
+      return { success: false, error: "Procuração não encontrada ou inativa" };
     }
 
-    // Se o contrato já tem um processo vinculado, verificar se é compatível
+    // Caso 1: Contrato JÁ tem um processo vinculado
     if (contrato.processoId) {
       const processoVinculado = procuracao.processos.find((pp) => pp.processoId === contrato.processoId);
 
       if (!processoVinculado) {
-        throw new Error("A procuração não está vinculada ao processo do contrato");
+        return {
+          success: false,
+          error: `Este contrato está vinculado ao processo ${contrato.processo?.numero}, mas a procuração selecionada não está vinculada a este processo. Primeiro vincule a procuração ao processo.`,
+        };
       }
-    } else {
-      // Se o contrato não tem processo, vincular ao primeiro processo da procuração
-      if (procuracao.processos.length > 0) {
-        await prisma.contrato.update({
-          where: { id: contratoId },
-          data: {
-            processoId: procuracao.processos[0].processoId,
-          },
-        });
-      }
+
+      // Processo já está vinculado e procuração também está nesse processo
+      return {
+        success: true,
+        message: `Vinculação confirmada! O contrato e a procuração já estão conectados através do processo ${contrato.processo?.numero}`,
+      };
     }
+
+    // Caso 2: Contrato NÃO tem processo - vamos vincular ao primeiro processo da procuração
+    if (procuracao.processos.length === 0) {
+      return {
+        success: false,
+        error: "Esta procuração não está vinculada a nenhum processo. Primeiro vincule a procuração a um processo.",
+      };
+    }
+
+    // Vincular o contrato ao primeiro processo da procuração
+    const processoParaVincular = procuracao.processos[0];
+
+    await prisma.contrato.update({
+      where: { id: contratoId },
+      data: {
+        processoId: processoParaVincular.processoId,
+      },
+    });
 
     return {
       success: true,
-      message: "Contrato vinculado à procuração com sucesso",
+      message: `Contrato vinculado com sucesso ao processo ${processoParaVincular.processo.numero}! Agora o contrato e a procuração estão conectados.`,
     };
   } catch (error) {
     console.error("Erro ao vincular contrato à procuração:", error);
-    throw error;
+
+    return {
+      success: false,
+      error: "Erro ao processar vinculação",
+    };
   }
 }
 
@@ -407,6 +446,17 @@ export async function getAllContratos(): Promise<{
             id: true,
             numero: true,
             titulo: true,
+            procuracoesVinculadas: {
+              select: {
+                procuracao: {
+                  select: {
+                    id: true,
+                    numero: true,
+                    ativa: true,
+                  },
+                },
+              },
+            },
           },
         },
       },

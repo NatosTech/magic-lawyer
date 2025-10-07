@@ -63,15 +63,20 @@ export default function ContratosContent() {
 
     setIsLinking(true);
     try {
-      await vincularContratoProcuracao(selectedContrato.id, selectedProcuracao);
-      toast.success("Contrato vinculado à procuração com sucesso!");
-      mutate(); // Atualizar lista de contratos
-      onOpenChange();
-      setSelectedContrato(null);
-      setSelectedProcuracao("");
+      const result = await vincularContratoProcuracao(selectedContrato.id, selectedProcuracao);
+
+      if (result.success) {
+        toast.success(result.message || "Contrato vinculado à procuração com sucesso!");
+        mutate(); // Atualizar lista de contratos
+        onOpenChange();
+        setSelectedContrato(null);
+        setSelectedProcuracao("");
+      } else {
+        toast.error(result.error || "Erro ao vincular procuração");
+      }
     } catch (error) {
       console.error("Erro ao vincular procuração:", error);
-      toast.error("Erro ao vincular procuração");
+      toast.error("Erro ao processar vinculação");
     } finally {
       setIsLinking(false);
     }
@@ -328,7 +333,14 @@ export default function ContratosContent() {
                       ) : (
                         <span className="text-warning">Sem processo vinculado</span>
                       )}
-                      {contrato.procuracao ? <span className="text-success">✓ Procuração vinculada</span> : <span className="text-default-400">Sem procuração</span>}
+                      {contrato.processo?.procuracoesVinculadas && contrato.processo.procuracoesVinculadas.length > 0 ? (
+                        <span className="text-success flex items-center gap-1">
+                          <FileText className="h-3 w-3" />
+                          {contrato.processo.procuracoesVinculadas.length} procuração(ões)
+                        </span>
+                      ) : (
+                        <span className="text-default-400">Sem procuração</span>
+                      )}
                     </div>
                   </div>
 
@@ -345,7 +357,7 @@ export default function ContratosContent() {
                       <DropdownItem key="edit" as={Link} href={`/contratos/${contrato.id}/editar`} startContent={<Edit className="h-4 w-4" />}>
                         Editar
                       </DropdownItem>
-                      {!contrato.procuracao ? (
+                      {!contrato.processo?.procuracoesVinculadas || contrato.processo.procuracoesVinculadas.length === 0 ? (
                         <DropdownItem key="link" startContent={<LinkIcon className="h-4 w-4" />} onPress={() => openVincularModal(contrato)}>
                           Vincular Procuração
                         </DropdownItem>
@@ -369,7 +381,15 @@ export default function ContratosContent() {
             <>
               <ModalHeader className="flex flex-col gap-1">
                 <h3 className="text-lg font-semibold">Vincular Procuração</h3>
-                <p className="text-sm text-default-500">Vincule o contrato "{selectedContrato?.titulo}" a uma procuração</p>
+                <p className="text-sm text-default-500">
+                  {selectedContrato?.processo ? (
+                    <>
+                      Verificar vinculação da procuração ao processo <strong>{selectedContrato.processo.numero}</strong>
+                    </>
+                  ) : (
+                    <>Selecione uma procuração para vincular ao contrato através de um processo</>
+                  )}
+                </p>
               </ModalHeader>
               <ModalBody>
                 {isLoadingProcuracoes ? (
