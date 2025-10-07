@@ -70,11 +70,11 @@ export interface ClienteComProcessos extends Cliente {
 // HELPER FUNCTIONS
 // ============================================
 
-async function getAdvogadoIdFromSession(session: any): Promise<string | null> {
+async function getAdvogadoIdFromSession(session: { user: any }): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   // Buscar advogado vinculado ao usuário
-  const advogado = await prisma.advogado.findFirst({
+  const advogado = await (prisma as any).advogado.findFirst({
     where: {
       usuarioId: session.user.id,
       tenantId: session.user.tenantId,
@@ -85,11 +85,11 @@ async function getAdvogadoIdFromSession(session: any): Promise<string | null> {
   return advogado?.id || null;
 }
 
-async function getClienteIdFromSession(session: any): Promise<string | null> {
+async function getClienteIdFromSession(session: { user: any }): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   // Buscar cliente vinculado ao usuário
-  const cliente = await prisma.cliente.findFirst({
+  const cliente = await (prisma as any).cliente.findFirst({
     where: {
       usuarioId: session.user.id,
       tenantId: session.user.tenantId,
@@ -130,15 +130,14 @@ export async function getClientesAdvogado(): Promise<{
       return { success: false, error: "Advogado não encontrado" };
     }
 
-    // Buscar clientes vinculados ao advogado
-    const clientesRaw = await prisma.cliente.findMany({
+    // Buscar clientes que o advogado criou (relacionamento direto)
+    const clientesRaw = await (prisma as any).cliente.findMany({
       where: {
         tenantId: user.tenantId,
         deletedAt: null,
-        advogadoClientes: {
-          some: {
-            advogadoId: advogadoId,
-          },
+        // Cliente criado pelo advogado (através do usuário criado)
+        usuario: {
+          createdById: user.id,
         },
       },
       include: {
@@ -193,7 +192,7 @@ export async function getAllClientesTenant(): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    const clientesRaw = await prisma.cliente.findMany({
+    const clientesRaw = await (prisma as any).cliente.findMany({
       where: {
         tenantId: user.tenantId,
         deletedAt: null,
@@ -249,7 +248,7 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
     }
 
     // Se não for ADMIN, verificar se é advogado vinculado ao cliente
-    let whereClause: any = {
+    let whereClause: Prisma.ClienteWhereInput = {
       id: clienteId,
       tenantId: user.tenantId,
       deletedAt: null,
@@ -268,7 +267,7 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
       };
     }
 
-    const clienteRaw = await prisma.cliente.findFirst({
+    const clienteRaw = await (prisma as any).cliente.findFirst({
       where: whereClause,
       include: {
         _count: {
@@ -323,7 +322,7 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
     // Converter Decimal para number
     const cliente: ClienteComProcessos = {
       ...clienteRaw,
-      processos: clienteRaw.processos.map((p) => ({
+      processos: clienteRaw.processos.map((p: any) => ({
         ...p,
         valorCausa: p.valorCausa ? Number(p.valorCausa) : null,
       })),
@@ -361,7 +360,7 @@ export async function getClienteById(clienteId: string): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    let whereClause: any = {
+    let whereClause: Prisma.ClienteWhereInput = {
       id: clienteId,
       tenantId: user.tenantId,
       deletedAt: null,
@@ -381,7 +380,7 @@ export async function getClienteById(clienteId: string): Promise<{
       };
     }
 
-    const cliente = await prisma.cliente.findFirst({
+    const cliente = await (prisma as any).cliente.findFirst({
       where: whereClause,
       include: {
         _count: {
@@ -496,7 +495,7 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
     // Criar usuário se solicitado
     if (criarUsuario && clienteData.email) {
       // Verificar se email já existe como SuperAdmin
-      const superAdminExistente = await prisma.superAdmin.findUnique({
+      const superAdminExistente = await (prisma as any).superAdmin.findUnique({
         where: {
           email: clienteData.email,
         },
@@ -507,7 +506,7 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
       }
 
       // Verificar se já existe usuário com esse email no tenant
-      const usuarioExistente = await prisma.usuario.findFirst({
+      const usuarioExistente = await (prisma as any).usuario.findFirst({
         where: {
           email: clienteData.email,
           tenantId: user.tenantId,
@@ -528,7 +527,7 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
       const lastName = nomePartes.slice(1).join(" ") || "";
 
       // Criar usuário
-      const novoUsuario = await prisma.usuario.create({
+      const novoUsuario = await (prisma as any).usuario.create({
         data: {
           email: clienteData.email,
           passwordHash,
@@ -550,7 +549,7 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
     }
 
     // Criar cliente com relacionamentos
-    const cliente = await prisma.cliente.create({
+    const cliente = await (prisma as any).cliente.create({
       data: {
         ...clienteData,
         tenantId: user.tenantId,
@@ -628,7 +627,7 @@ export async function updateCliente(
     }
 
     // Verificar se cliente existe e pertence ao tenant
-    const existingCliente = await prisma.cliente.findFirst({
+    const existingCliente = await (prisma as any).cliente.findFirst({
       where: {
         id: clienteId,
         tenantId: user.tenantId,
@@ -643,7 +642,7 @@ export async function updateCliente(
     const { advogadosIds, ...clienteData } = data;
 
     // Atualizar cliente
-    const updateData: any = { ...clienteData };
+    const updateData: Prisma.ClienteUpdateInput = { ...clienteData };
 
     // Se advogadosIds foi fornecido, atualizar relacionamentos
     if (advogadosIds !== undefined) {
@@ -656,7 +655,7 @@ export async function updateCliente(
       };
     }
 
-    const cliente = await prisma.cliente.update({
+    const cliente = await (prisma as any).cliente.update({
       where: { id: clienteId },
       data: updateData,
       include: {
@@ -707,7 +706,7 @@ export async function deleteCliente(clienteId: string): Promise<{
     }
 
     // Verificar se cliente existe
-    const existingCliente = await prisma.cliente.findFirst({
+    const existingCliente = await (prisma as any).cliente.findFirst({
       where: {
         id: clienteId,
         tenantId: user.tenantId,
@@ -720,7 +719,7 @@ export async function deleteCliente(clienteId: string): Promise<{
     }
 
     // Soft delete
-    await prisma.cliente.update({
+    await (prisma as any).cliente.update({
       where: { id: clienteId },
       data: { deletedAt: new Date() },
     });
@@ -764,7 +763,7 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    const whereClause: any = {
+    const whereClause: Prisma.ClienteWhereInput = {
       tenantId: user.tenantId,
       deletedAt: null,
     };
@@ -810,7 +809,7 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
       }
     }
 
-    const clientes = await prisma.cliente.findMany({
+    const clientes = await (prisma as any).cliente.findMany({
       where: whereClause,
       include: {
         _count: {
@@ -860,7 +859,7 @@ export async function getClientesParaSelect() {
       return { success: false, error: "Tenant não encontrado", clientes: [] };
     }
 
-    let whereClause: any = {
+    let whereClause: Prisma.ClienteWhereInput = {
       tenantId: user.tenantId,
       deletedAt: null,
     };
@@ -880,7 +879,7 @@ export async function getClientesParaSelect() {
     }
     // ADMIN vê todos os clientes
 
-    const clientes = await prisma.cliente.findMany({
+    const clientes = await (prisma as any).cliente.findMany({
       where: whereClause,
       select: {
         id: true,
@@ -937,7 +936,7 @@ export async function anexarDocumentoCliente(clienteId: string, formData: FormDa
     }
 
     // Validar acesso ao cliente
-    const cliente = await prisma.cliente.findFirst({
+    const cliente = await (prisma as any).cliente.findFirst({
       where: {
         id: clienteId,
         tenantId: user.tenantId,
@@ -956,7 +955,7 @@ export async function anexarDocumentoCliente(clienteId: string, formData: FormDa
         return { success: false, error: "Acesso negado" };
       }
 
-      const vinculo = await prisma.advogadoCliente.findFirst({
+      const vinculo = await (prisma as any).advogadoCliente.findFirst({
         where: {
           advogadoId,
           clienteId: cliente.id,
@@ -1011,7 +1010,7 @@ export async function anexarDocumentoCliente(clienteId: string, formData: FormDa
     });
 
     // Criar documento no banco
-    const documento = await prisma.documento.create({
+    const documento = await (prisma as any).documento.create({
       data: {
         tenantId: user.tenantId,
         nome,
@@ -1066,7 +1065,7 @@ export async function getProcuracoesCliente(clienteId: string) {
     }
 
     // Buscar cliente para verificar tenantId
-    const cliente = await prisma.cliente.findFirst({
+    const cliente = await (prisma as any).cliente.findFirst({
       where: {
         id: clienteId,
         tenantId: user.tenantId,
@@ -1081,7 +1080,7 @@ export async function getProcuracoesCliente(clienteId: string) {
     // Se não for ADMIN, verificar se é ADVOGADO vinculado
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
       if (user.role === "ADVOGADO") {
-        const advogado = await prisma.advogado.findFirst({
+        const advogado = await (prisma as any).advogado.findFirst({
           where: {
             usuarioId: user.id,
             tenantId: user.tenantId,
@@ -1093,7 +1092,7 @@ export async function getProcuracoesCliente(clienteId: string) {
         }
 
         // Verificar vínculo
-        const vinculo = await prisma.advogadoCliente.findFirst({
+        const vinculo = await (prisma as any).advogadoCliente.findFirst({
           where: {
             advogadoId: advogado.id,
             clienteId: cliente.id,
@@ -1106,7 +1105,7 @@ export async function getProcuracoesCliente(clienteId: string) {
         }
       } else {
         // CLIENTE só vê suas próprias procurações
-        const clienteUsuario = await prisma.cliente.findFirst({
+        const clienteUsuario = await (prisma as any).cliente.findFirst({
           where: {
             usuarioId: user.id,
             tenantId: user.tenantId,
@@ -1121,7 +1120,7 @@ export async function getProcuracoesCliente(clienteId: string) {
     }
 
     // Buscar procurações
-    const procuracoes = await prisma.procuracao.findMany({
+    const procuracoes = await (prisma as any).procuracao.findMany({
       where: {
         clienteId: cliente.id,
         tenantId: user.tenantId,
@@ -1199,7 +1198,7 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
     }
 
     // Buscar cliente
-    let whereClause: any = {
+    let whereClause: Prisma.ClienteWhereInput = {
       id: clienteId,
       tenantId: user.tenantId,
       deletedAt: null,
@@ -1219,7 +1218,7 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
       };
     }
 
-    const cliente = await prisma.cliente.findFirst({
+    const cliente = await (prisma as any).cliente.findFirst({
       where: whereClause,
       include: {
         usuario: {
@@ -1246,7 +1245,7 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
     const passwordHash = await bcrypt.hash(novaSenha, 10);
 
     // Atualizar senha do usuário
-    await prisma.usuario.update({
+    await (prisma as any).usuario.update({
       where: { id: cliente.usuarioId },
       data: { passwordHash },
     });
@@ -1254,7 +1253,7 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
     // Registrar no log de auditoria
     const nomeCompleto = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : user.email;
 
-    await prisma.auditLog.create({
+    await (prisma as any).auditLog.create({
       data: {
         tenantId: user.tenantId,
         usuarioId: user.id,
@@ -1314,7 +1313,7 @@ export async function getContratosCliente(clienteId: string): Promise<{
     }
 
     // Verificar acesso ao cliente
-    let whereCliente: any = {
+    let whereCliente: Prisma.ClienteWhereInput = {
       id: clienteId,
       tenantId: user.tenantId,
       deletedAt: null,
@@ -1335,7 +1334,7 @@ export async function getContratosCliente(clienteId: string): Promise<{
     }
 
     // Verificar se cliente existe e está acessível
-    const cliente = await prisma.cliente.findFirst({
+    const cliente = await (prisma as any).cliente.findFirst({
       where: whereCliente,
     });
 
@@ -1344,7 +1343,7 @@ export async function getContratosCliente(clienteId: string): Promise<{
     }
 
     // Buscar contratos
-    const contratos = await prisma.contrato.findMany({
+    const contratos = await (prisma as any).contrato.findMany({
       where: {
         tenantId: user.tenantId,
         clienteId: clienteId,
@@ -1372,7 +1371,7 @@ export async function getContratosCliente(clienteId: string): Promise<{
     });
 
     // Converter Decimal para number
-    const contratosFormatted = contratos.map((c) => ({
+    const contratosFormatted = contratos.map((c: any) => ({
       ...c,
       valor: c.valor ? Number(c.valor) : null,
       comissaoAdvogado: Number(c.comissaoAdvogado),
@@ -1413,7 +1412,7 @@ export async function getDocumentosCliente(clienteId: string): Promise<{
     }
 
     // Verificar acesso ao cliente
-    let whereCliente: any = {
+    let whereCliente: Prisma.ClienteWhereInput = {
       id: clienteId,
       tenantId: user.tenantId,
       deletedAt: null,
@@ -1434,7 +1433,7 @@ export async function getDocumentosCliente(clienteId: string): Promise<{
     }
 
     // Verificar se cliente existe e está acessível
-    const cliente = await prisma.cliente.findFirst({
+    const cliente = await (prisma as any).cliente.findFirst({
       where: whereCliente,
     });
 
@@ -1443,7 +1442,7 @@ export async function getDocumentosCliente(clienteId: string): Promise<{
     }
 
     // Buscar todos os documentos do cliente
-    const documentos = await prisma.documento.findMany({
+    const documentos = await (prisma as any).documento.findMany({
       where: {
         tenantId: user.tenantId,
         clienteId: clienteId,

@@ -75,27 +75,38 @@ export function useProfileNavigation() {
     }
 
     // ===== SEÇÃO: ATIVIDADES JURÍDICAS =====
-    // Processos com accordion - Baseado em permissões
+    // Processos - Baseado em permissões
     if (permissions.canViewAllProcesses || permissions.canViewAllClients) {
       items.push({
         label: "Processos",
         href: "/processos",
         icon: "FileText",
         description: isCliente ? "Meu processo" : "Gestão de processos",
+        section: "Atividades Jurídicas",
+      });
+    }
+
+    // Procurações - Baseado em permissões
+    if (permissions.canViewAllClients || isAdvogado) {
+      items.push({
+        label: "Procurações",
+        href: "/procuracoes",
+        icon: "Shield",
+        description: "Gestão de procurações e poderes",
         isAccordion: true,
         section: "Atividades Jurídicas",
         children: [
           {
-            label: "Processos",
-            href: "/processos",
-            icon: "FileText",
-            description: "Gestão de processos jurídicos",
+            label: "Procurações",
+            href: "/procuracoes",
+            icon: "Shield",
+            description: "Gestão de procurações ativas",
           },
           {
-            label: "Procurações",
-            href: "/processos/procuracoes",
-            icon: "Shield",
-            description: "Gestão de procurações e poderes",
+            label: "Modelos",
+            href: "/modelos-procuracao",
+            icon: "FileTemplate",
+            description: "Modelos de procuração",
           },
         ],
       });

@@ -104,6 +104,7 @@ model Tenant {
   favoritosJuiz         FavoritoJuiz[]
   julgamentos           Julgamento[]
   modelosContrato       ModeloContrato[]
+  modelosProcuracao     ModeloProcuracao[]
   movimentacoes         MovimentacaoProcesso[]
   notificacoes          Notificacao[]
   notificacoesUsuarios  NotificacaoUsuario[]
@@ -579,6 +580,7 @@ model Procuracao {
   id                    String               @id @default(cuid())
   tenantId              String
   clienteId             String
+  modeloId              String?              // Referência ao modelo usado
   numero                String?
   arquivoUrl            String?
   observacoes           String?
@@ -593,6 +595,7 @@ model Procuracao {
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   cliente               Cliente              @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  modelo                ModeloProcuracao?    @relation(fields: [modeloId], references: [id])
   createdBy             Usuario?             @relation("ProcuracaoCriador", fields: [createdById], references: [id])
   tenant                Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   outorgados            ProcuracaoAdvogado[]
@@ -600,6 +603,7 @@ model Procuracao {
 
   @@index([tenantId, clienteId])
   @@index([tenantId, ativa])
+  @@index([tenantId, modeloId])
   @@schema("magiclawyer")
 }
 
@@ -1613,5 +1617,30 @@ enum StatusPacoteJuiz {
   INATIVO
   PROMOCIONAL
 
+  @@schema("magiclawyer")
+}
+
+// ============================================
+// MODELOS DE PROCURAÇÃO
+// ============================================
+
+model ModeloProcuracao {
+  id          String   @id @default(cuid())
+  tenantId    String
+  nome        String
+  descricao   String?
+  conteudo    String   // Template HTML com placeholders
+  categoria   String?  // Ex: "PREFERITURA", "PESSOA_FISICA", "CRIMINAL"
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  // Relacionamentos
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  procuracoes Procuracao[]
+
+  @@index([tenantId, ativo])
+  @@index([tenantId, categoria])
   @@schema("magiclawyer")
 }

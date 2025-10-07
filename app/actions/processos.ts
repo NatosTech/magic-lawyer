@@ -104,7 +104,7 @@ export interface ProcessoDetalhado extends Processo {
 // HELPER FUNCTIONS
 // ============================================
 
-async function getAdvogadoIdFromSession(session: any): Promise<string | null> {
+async function getAdvogadoIdFromSession(session: { user: any }): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   const advogado = await prisma.advogado.findFirst({
@@ -118,7 +118,7 @@ async function getAdvogadoIdFromSession(session: any): Promise<string | null> {
   return advogado?.id || null;
 }
 
-async function getClienteIdFromSession(session: any): Promise<string | null> {
+async function getClienteIdFromSession(session: { user: any }): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   const cliente = await prisma.cliente.findFirst({
@@ -159,7 +159,7 @@ export async function getAllProcessos(): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    let whereClause: any = {
+    let whereClause: Prisma.ProcessoWhereInput = {
       tenantId: user.tenantId,
       deletedAt: null,
     };
@@ -169,32 +169,80 @@ export async function getAllProcessos(): Promise<{
     if (clienteId) {
       whereClause.clienteId = clienteId;
     }
-    // ADVOGADO: Processos dos clientes vinculados
+    // ADVOGADO: Processos onde ele está habilitado na procuração OU dos clientes que ele criou
     else if (user.role === "ADVOGADO") {
       const advogadoId = await getAdvogadoIdFromSession(session);
       if (!advogadoId) {
         return { success: false, error: "Advogado não encontrado" };
       }
 
-      // Buscar IDs dos clientes vinculados ao advogado
-      const vinculos = await prisma.advogadoCliente.findMany({
+      // 1. Buscar IDs dos clientes que o advogado criou (relacionamento direto)
+      const clientesCriados = await prisma.cliente.findMany({
         where: {
-          advogadoId,
           tenantId: user.tenantId,
+          deletedAt: null,
+          // Cliente criado pelo advogado (através do usuário criado)
+          usuario: {
+            createdById: user.id,
+          },
         },
         select: {
-          clienteId: true,
+          id: true,
         },
       });
 
-      const clientesIds = vinculos.map((v) => v.clienteId);
+      // 2. Buscar processos onde o advogado está habilitado na procuração
+      const processosComProcuracao = await prisma.processo.findMany({
+        where: {
+          tenantId: user.tenantId,
+          deletedAt: null,
+          procuracoesVinculadas: {
+            some: {
+              procuracao: {
+                outorgados: {
+                  some: {
+                    advogadoId,
+                  },
+                },
+              },
+            },
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
 
-      if (clientesIds.length === 0) {
+      const clientesIds = clientesCriados.map((c) => c.id);
+      const processosIds = processosComProcuracao.map((p) => p.id);
+
+      // Se não tem acesso a nenhum processo, retornar vazio
+      if (clientesIds.length === 0 && processosIds.length === 0) {
         return { success: true, processos: [] };
       }
 
-      whereClause.clienteId = {
-        in: clientesIds,
+      // Construir where clause: processos dos clientes criados OU processos com procuração
+      const whereConditions = [];
+
+      if (clientesIds.length > 0) {
+        whereConditions.push({
+          clienteId: {
+            in: clientesIds,
+          },
+        });
+      }
+
+      if (processosIds.length > 0) {
+        whereConditions.push({
+          id: {
+            in: processosIds,
+          },
+        });
+      }
+
+      whereClause = {
+        ...whereClause,
+        OR: whereConditions,
       };
     }
     // ADMIN ou SUPER_ADMIN: Todos do tenant (whereClause já tem apenas tenantId)
@@ -370,7 +418,7 @@ export async function getProcessosDoCliente(clienteId: string): Promise<{
     // Verificar acesso ao cliente
     const advogadoId = await getAdvogadoIdFromSession(session);
 
-    let clienteWhereClause: any = {
+    let clienteWhereClause: Prisma.ClienteWhereInput = {
       id: clienteId,
       tenantId: user.tenantId,
       deletedAt: null,
@@ -487,7 +535,7 @@ export async function getProcessoDetalhado(processoId: string): Promise<{
     const clienteId = await getClienteIdFromSession(session);
     const isCliente = !!clienteId;
 
-    let whereClause: any = {
+    let whereClause: Prisma.ProcessoWhereInput = {
       id: processoId,
       tenantId: user.tenantId,
       deletedAt: null,
@@ -504,14 +552,36 @@ export async function getProcessoDetalhado(processoId: string): Promise<{
         return { success: false, error: "Acesso negado" };
       }
 
-      // Verificar se advogado está vinculado ao cliente do processo
-      whereClause.cliente = {
-        advogadoClientes: {
-          some: {
-            advogadoId: advogadoId,
+      // Verificar se advogado tem acesso ao processo:
+      // 1. Cliente criado pelo advogado OU
+      // 2. Advogado habilitado na procuração do processo
+      const whereConditions = [];
+
+      // 1. Cliente criado pelo advogado
+      whereConditions.push({
+        cliente: {
+          usuario: {
+            createdById: user.id,
           },
         },
-      };
+      });
+
+      // 2. Advogado habilitado na procuração
+      whereConditions.push({
+        procuracoesVinculadas: {
+          some: {
+            procuracao: {
+              outorgados: {
+                some: {
+                  advogadoId: advogadoId,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      whereClause.OR = whereConditions;
     }
 
     const processo = await prisma.processo.findFirst({
@@ -641,7 +711,7 @@ export async function getDocumentosProcesso(processoId: string): Promise<{
     const isCliente = !!clienteId;
 
     // Verificar acesso ao processo
-    let whereProcesso: any = {
+    let whereProcesso: Prisma.ProcessoWhereInput = {
       id: processoId,
       tenantId: user.tenantId,
       deletedAt: null,
@@ -660,7 +730,7 @@ export async function getDocumentosProcesso(processoId: string): Promise<{
     }
 
     // Buscar documentos
-    const whereDocumentos: any = {
+    const whereDocumentos: Prisma.DocumentoWhereInput = {
       processoId: processoId,
       deletedAt: null,
     };
@@ -721,7 +791,7 @@ export async function getEventosProcesso(processoId: string): Promise<{
     const clienteId = await getClienteIdFromSession(session);
     const isCliente = !!clienteId;
 
-    let whereProcesso: any = {
+    let whereProcesso: Prisma.ProcessoWhereInput = {
       id: processoId,
       tenantId: user.tenantId,
       deletedAt: null,
@@ -744,7 +814,7 @@ export async function getEventosProcesso(processoId: string): Promise<{
         processoId: processoId,
       },
       include: {
-        advogado: {
+        advogadoResponsavel: {
           select: {
             id: true,
             usuario: {
@@ -797,7 +867,7 @@ export async function getMovimentacoesProcesso(processoId: string): Promise<{
     const clienteId = await getClienteIdFromSession(session);
     const isCliente = !!clienteId;
 
-    let whereProcesso: any = {
+    let whereProcesso: Prisma.ProcessoWhereInput = {
       id: processoId,
       tenantId: user.tenantId,
       deletedAt: null,

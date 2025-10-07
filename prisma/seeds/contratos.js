@@ -243,15 +243,19 @@ async function seedContratos(prisma, Prisma) {
           },
         });
 
-        // Vincular advogados à procuração
-        const advogado = advogados[Math.floor(Math.random() * advogados.length)];
-        await prisma.procuracaoAdvogado.create({
-          data: {
-            tenantId: tenant.id,
-            procuracaoId: procuracao.id,
-            advogadoId: advogado.id,
-          },
-        });
+        // Vincular advogados à procuração (múltiplos advogados por procuração)
+        const numAdvogados = Math.floor(Math.random() * 3) + 1; // 1-3 advogados por procuração
+        const advogadosSelecionados = advogados.sort(() => 0.5 - Math.random()).slice(0, numAdvogados);
+
+        for (const advogado of advogadosSelecionados) {
+          await prisma.procuracaoAdvogado.create({
+            data: {
+              tenantId: tenant.id,
+              procuracaoId: procuracao.id,
+              advogadoId: advogado.id,
+            },
+          });
+        }
       }
     }
 
