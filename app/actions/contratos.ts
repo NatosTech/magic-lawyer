@@ -333,3 +333,107 @@ export async function createContrato(data: ContratoCreateInput) {
     };
   }
 }
+
+// ============================================
+// ACTIONS - LISTAR CONTRATOS
+// ============================================
+
+/**
+ * Busca todos os contratos do tenant
+ */
+export async function getAllContratos(): Promise<{
+  success: boolean;
+  contratos?: any[];
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Se for ADVOGADO, buscar apenas contratos onde ele é responsável
+    let whereClause: any = {
+      tenantId: user.tenantId,
+      deletedAt: null,
+    };
+
+    if (user.role === "ADVOGADO") {
+      const advogadoId = await getAdvogadoIdFromSession(session);
+
+      if (advogadoId) {
+        whereClause.advogadoResponsavelId = advogadoId;
+      }
+    }
+
+    const contratos = await prisma.contrato.findMany({
+      where: whereClause,
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            nome: true,
+            tipoPessoa: true,
+            documento: true,
+          },
+        },
+        tipo: {
+          select: {
+            nome: true,
+          },
+        },
+        advogadoResponsavel: {
+          select: {
+            id: true,
+            oabNumero: true,
+            oabUf: true,
+            usuario: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+        processo: {
+          select: {
+            id: true,
+            numero: true,
+            titulo: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // Converter Decimal para number
+    const contratosFormatted = contratos.map((c: any) => ({
+      ...c,
+      valor: toNumber(c.valor),
+      comissaoAdvogado: toNumber(c.comissaoAdvogado),
+      percentualAcaoGanha: toNumber(c.percentualAcaoGanha),
+      valorAcaoGanha: toNumber(c.valorAcaoGanha),
+    }));
+
+    return {
+      success: true,
+      contratos: contratosFormatted,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar contratos:", error);
+
+    return {
+      success: false,
+      error: "Erro ao buscar contratos",
+    };
+  }
+}

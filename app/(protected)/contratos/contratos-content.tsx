@@ -14,34 +14,9 @@ import Link from "next/link";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 
 import { useClientesParaSelect, useProcuracoesDisponiveis } from "@/app/hooks/use-clientes";
+import { useAllContratos } from "@/app/hooks/use-contratos";
 import { vincularContratoProcuracao } from "@/app/actions/contratos";
 import { DateUtils } from "@/app/lib/date-utils";
-
-// Mock data - substituir por dados reais quando implementar
-const mockContratos = [
-  {
-    id: "1",
-    titulo: "Contrato de Prestação de Serviços Jurídicos",
-    cliente: { nome: "João Silva", tipoPessoa: "FISICA" },
-    status: "ATIVO",
-    valor: 5000,
-    dataInicio: new Date("2024-01-01"),
-    dataFim: new Date("2024-12-31"),
-    processo: { numero: "1234567-89.2024.8.26.0100" },
-    procuracao: null,
-  },
-  {
-    id: "2",
-    titulo: "Contrato de Consultoria Empresarial",
-    cliente: { nome: "Empresa ABC Ltda", tipoPessoa: "JURIDICA" },
-    status: "RASCUNHO",
-    valor: 10000,
-    dataInicio: new Date("2024-02-01"),
-    dataFim: new Date("2024-12-31"),
-    processo: null,
-    procuracao: null,
-  },
-];
 
 export default function ContratosContent() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,6 +26,7 @@ export default function ContratosContent() {
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { clientes } = useClientesParaSelect();
+  const { contratos, isLoading, isError, mutate } = useAllContratos();
   const { procuracoes, isLoading: isLoadingProcuracoes } = useProcuracoesDisponiveis(selectedContrato?.cliente?.id || null);
 
   const handleVincularProcuracao = async () => {
@@ -64,6 +40,7 @@ export default function ContratosContent() {
     try {
       await vincularContratoProcuracao(selectedContrato.id, selectedProcuracao);
       toast.success("Contrato vinculado à procuração com sucesso!");
+      mutate(); // Atualizar lista de contratos
       onOpenChange();
       setSelectedContrato(null);
       setSelectedProcuracao("");
@@ -81,9 +58,28 @@ export default function ContratosContent() {
     onOpen();
   };
 
-  const contratosFiltrados = mockContratos.filter(
-    (contrato) => contrato.titulo.toLowerCase().includes(searchTerm.toLowerCase()) || contrato.cliente.nome.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const contratosFiltrados =
+    contratos?.filter((contrato) => contrato.titulo.toLowerCase().includes(searchTerm.toLowerCase()) || contrato.cliente?.nome.toLowerCase().includes(searchTerm.toLowerCase())) || [];
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <Spinner label="Carregando contratos..." size="lg" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <FileText className="h-12 w-12 text-danger" />
+        <p className="text-lg font-semibold text-danger">Erro ao carregar contratos</p>
+        <Button color="primary" onPress={() => mutate()}>
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -114,68 +110,78 @@ export default function ContratosContent() {
       </Card>
 
       {/* Lista de Contratos */}
-      <div className="grid gap-4">
-        {contratosFiltrados.map((contrato) => (
-          <Card key={contrato.id} className="border border-default-200">
-            <CardBody>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <h3 className="font-semibold">{contrato.titulo}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs ${contrato.status === "ATIVO" ? "bg-success/20 text-success" : "bg-warning/20 text-warning"}`}>{contrato.status}</span>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-sm text-default-500 mb-2">
-                    <div className="flex items-center gap-1">
-                      {contrato.cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
-                      <span>{contrato.cliente.nome}</span>
+      {contratosFiltrados.length === 0 ? (
+        <Card>
+          <CardBody className="py-12 text-center">
+            <FileText className="mx-auto h-12 w-12 text-default-300" />
+            <p className="mt-4 text-lg font-semibold text-default-600">{searchTerm ? "Nenhum contrato encontrado" : "Nenhum contrato cadastrado"}</p>
+            <p className="mt-2 text-sm text-default-400">{searchTerm ? "Tente ajustar os filtros de busca" : "Comece criando seu primeiro contrato"}</p>
+          </CardBody>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {contratosFiltrados.map((contrato) => (
+            <Card key={contrato.id} className="border border-default-200">
+              <CardBody>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold">{contrato.titulo}</h3>
+                      <span className={`px-2 py-1 rounded-full text-xs ${contrato.status === "ATIVO" ? "bg-success/20 text-success" : "bg-warning/20 text-warning"}`}>{contrato.status}</span>
                     </div>
-                    {contrato.valor && <span>R$ {contrato.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
-                    {contrato.dataInicio && <span>Início: {DateUtils.formatDate(contrato.dataInicio)}</span>}
+
+                    <div className="flex items-center gap-4 text-sm text-default-500 mb-2">
+                      <div className="flex items-center gap-1">
+                        {contrato.cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                        <span>{contrato.cliente.nome}</span>
+                      </div>
+                      {contrato.valor && <span>R$ {contrato.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
+                      {contrato.dataInicio && <span>Início: {DateUtils.formatDate(contrato.dataInicio)}</span>}
+                    </div>
+
+                    <div className="flex items-center gap-4 text-xs text-default-400">
+                      {contrato.processo ? (
+                        <span className="flex items-center gap-1">
+                          <LinkIcon className="h-3 w-3" />
+                          Processo: {contrato.processo.numero}
+                        </span>
+                      ) : (
+                        <span className="text-warning">Sem processo vinculado</span>
+                      )}
+                      {contrato.procuracao ? <span className="text-success">✓ Procuração vinculada</span> : <span className="text-default-400">Sem procuração</span>}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-xs text-default-400">
-                    {contrato.processo ? (
-                      <span className="flex items-center gap-1">
-                        <LinkIcon className="h-3 w-3" />
-                        Processo: {contrato.processo.numero}
-                      </span>
-                    ) : (
-                      <span className="text-warning">Sem processo vinculado</span>
-                    )}
-                    {contrato.procuracao ? <span className="text-success">✓ Procuração vinculada</span> : <span className="text-default-400">Sem procuração</span>}
-                  </div>
-                </div>
-
-                <Dropdown>
-                  <DropdownTrigger>
-                    <Button isIconOnly size="sm" variant="light">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu>
-                    <DropdownItem key="view" startContent={<Eye className="h-4 w-4" />}>
-                      Visualizar
-                    </DropdownItem>
-                    <DropdownItem key="edit" startContent={<Edit className="h-4 w-4" />}>
-                      Editar
-                    </DropdownItem>
-                    {!contrato.procuracao && (
-                      <DropdownItem key="link" startContent={<LinkIcon className="h-4 w-4" />} onPress={() => openVincularModal(contrato)}>
-                        Vincular Procuração
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button isIconOnly size="sm" variant="light">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu>
+                      <DropdownItem key="view" startContent={<Eye className="h-4 w-4" />}>
+                        Visualizar
                       </DropdownItem>
-                    )}
-                    <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="h-4 w-4" />}>
-                      Excluir
-                    </DropdownItem>
-                  </DropdownMenu>
-                </Dropdown>
-              </div>
-            </CardBody>
-          </Card>
-        ))}
-      </div>
+                      <DropdownItem key="edit" startContent={<Edit className="h-4 w-4" />}>
+                        Editar
+                      </DropdownItem>
+                      {!contrato.procuracao ? (
+                        <DropdownItem key="link" startContent={<LinkIcon className="h-4 w-4" />} onPress={() => openVincularModal(contrato)}>
+                          Vincular Procuração
+                        </DropdownItem>
+                      ) : null}
+                      <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="h-4 w-4" />}>
+                        Excluir
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
+                </div>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Modal Vincular Procuração */}
       <Modal isOpen={isOpen} size="md" onOpenChange={onOpenChange}>
