@@ -437,3 +437,240 @@ export async function getAllContratos(): Promise<{
     };
   }
 }
+
+/**
+ * Busca um contrato específico por ID
+ */
+export async function getContratoById(contratoId: string): Promise<{
+  success: boolean;
+  contrato?: any;
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Se for ADVOGADO, buscar apenas contratos onde ele é responsável
+    let whereClause: any = {
+      id: contratoId,
+      tenantId: user.tenantId,
+      deletedAt: null,
+    };
+
+    if (user.role === "ADVOGADO") {
+      const advogadoId = await getAdvogadoIdFromSession(session);
+
+      if (advogadoId) {
+        whereClause.advogadoResponsavelId = advogadoId;
+      }
+    }
+
+    const contrato = await prisma.contrato.findFirst({
+      where: whereClause,
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            nome: true,
+            tipoPessoa: true,
+            documento: true,
+            email: true,
+          },
+        },
+        tipo: {
+          select: {
+            id: true,
+            nome: true,
+          },
+        },
+        advogadoResponsavel: {
+          select: {
+            id: true,
+            oabNumero: true,
+            oabUf: true,
+            usuario: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+        },
+        processo: {
+          select: {
+            id: true,
+            numero: true,
+            titulo: true,
+            status: true,
+          },
+        },
+        faturas: {
+          select: {
+            id: true,
+            numero: true,
+            valor: true,
+            vencimento: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!contrato) {
+      return { success: false, error: "Contrato não encontrado" };
+    }
+
+    // Converter Decimal para number
+    const contratoFormatted = {
+      ...contrato,
+      valor: toNumber(contrato.valor),
+      comissaoAdvogado: toNumber(contrato.comissaoAdvogado),
+      percentualAcaoGanha: toNumber(contrato.percentualAcaoGanha),
+      valorAcaoGanha: toNumber(contrato.valorAcaoGanha),
+      faturas: contrato.faturas.map((f: any) => ({
+        ...f,
+        valor: toNumber(f.valor),
+      })),
+    };
+
+    return {
+      success: true,
+      contrato: contratoFormatted,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar contrato:", error);
+
+    return {
+      success: false,
+      error: "Erro ao buscar contrato",
+    };
+  }
+}
+
+// ============================================
+// ACTIONS - ATUALIZAR CONTRATO
+// ============================================
+
+export interface ContratoUpdateInput extends Partial<ContratoCreateInput> {
+  id: string;
+}
+
+/**
+ * Atualiza um contrato existente
+ */
+export async function updateContrato(
+  contratoId: string,
+  data: Partial<ContratoCreateInput>
+): Promise<{
+  success: boolean;
+  contrato?: any;
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Verificar se o contrato existe e o usuário tem permissão
+    const contratoExistente = await prisma.contrato.findFirst({
+      where: {
+        id: contratoId,
+        tenantId: user.tenantId,
+        deletedAt: null,
+      },
+    });
+
+    if (!contratoExistente) {
+      return { success: false, error: "Contrato não encontrado" };
+    }
+
+    // Preparar dados para atualização
+    const updateData: any = {};
+
+    if (data.titulo !== undefined) updateData.titulo = data.titulo;
+    if (data.resumo !== undefined) updateData.resumo = data.resumo;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.valor !== undefined) updateData.valor = data.valor;
+    if (data.dataInicio !== undefined) {
+      updateData.dataInicio = data.dataInicio instanceof Date ? data.dataInicio : new Date(data.dataInicio);
+    }
+    if (data.dataFim !== undefined) {
+      updateData.dataFim = data.dataFim instanceof Date ? data.dataFim : new Date(data.dataFim);
+    }
+    if (data.observacoes !== undefined) updateData.observacoes = data.observacoes;
+    if (data.clienteId !== undefined) updateData.clienteId = data.clienteId;
+    if (data.advogadoId !== undefined) updateData.advogadoResponsavelId = data.advogadoId;
+    if (data.processoId !== undefined) updateData.processoId = data.processoId;
+    if (data.tipoContratoId !== undefined) updateData.tipoId = data.tipoContratoId;
+
+    // Atualizar contrato
+    const contratoAtualizado = await prisma.contrato.update({
+      where: { id: contratoId },
+      data: updateData,
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            nome: true,
+            tipoPessoa: true,
+          },
+        },
+        tipo: {
+          select: {
+            nome: true,
+          },
+        },
+        advogadoResponsavel: {
+          select: {
+            id: true,
+            usuario: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Converter Decimal para number
+    const contratoSerializado = {
+      ...contratoAtualizado,
+      valor: toNumber(contratoAtualizado.valor),
+      comissaoAdvogado: toNumber(contratoAtualizado.comissaoAdvogado),
+      percentualAcaoGanha: toNumber(contratoAtualizado.percentualAcaoGanha),
+      valorAcaoGanha: toNumber(contratoAtualizado.valorAcaoGanha),
+    };
+
+    return {
+      success: true,
+      contrato: contratoSerializado,
+    };
+  } catch (error) {
+    console.error("Erro ao atualizar contrato:", error);
+
+    return {
+      success: false,
+      error: "Erro ao atualizar contrato",
+    };
+  }
+}

@@ -339,10 +339,10 @@ export default function ContratosContent() {
                       </Button>
                     </DropdownTrigger>
                     <DropdownMenu>
-                      <DropdownItem key="view" startContent={<Eye className="h-4 w-4" />}>
+                      <DropdownItem key="view" as={Link} href={`/contratos/${contrato.id}`} startContent={<Eye className="h-4 w-4" />}>
                         Visualizar
                       </DropdownItem>
-                      <DropdownItem key="edit" startContent={<Edit className="h-4 w-4" />}>
+                      <DropdownItem key="edit" as={Link} href={`/contratos/${contrato.id}/editar`} startContent={<Edit className="h-4 w-4" />}>
                         Editar
                       </DropdownItem>
                       {!contrato.procuracao ? (
