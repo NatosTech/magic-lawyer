@@ -9,8 +9,7 @@ import Link from "next/link";
 import { useProcessosClienteLogado } from "@/app/hooks/use-processos";
 import { title } from "@/components/primitives";
 import { ProcessoStatus } from "@/app/generated/prisma";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { DateUtils } from "@/app/lib/date-utils";
 
 export function ProcessosContent() {
   const { processos, isLoading, isError } = useProcessosClienteLogado();
@@ -132,22 +131,13 @@ export function ProcessosContent() {
                 {processo.dataDistribuicao && (
                   <div className="flex items-center gap-2 text-xs">
                     <Calendar className="h-3 w-3 text-default-400" />
-                    <span className="text-default-600">
-                      {format(new Date(processo.dataDistribuicao), "dd/MM/yyyy", {
-                        locale: ptBR,
-                      })}
-                    </span>
+                    <span className="text-default-600">{DateUtils.formatDate(processo.dataDistribuicao)}</span>
                   </div>
                 )}
                 {processo.prazoPrincipal && (
                   <div className="flex items-center gap-2 text-xs">
                     <Clock className="h-3 w-3 text-warning" />
-                    <span className="text-warning-600">
-                      Prazo:{" "}
-                      {format(new Date(processo.prazoPrincipal), "dd/MM/yyyy", {
-                        locale: ptBR,
-                      })}
-                    </span>
+                    <span className="text-warning-600">Prazo: {DateUtils.formatDate(processo.prazoPrincipal)}</span>
                   </div>
                 )}
 

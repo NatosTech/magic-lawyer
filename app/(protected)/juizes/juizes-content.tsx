@@ -17,6 +17,7 @@ import { title, subtitle } from "@/components/primitives";
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { PermissionGuard } from "@/components/permission-guard";
 import { Plus, Search, MoreVertical, Edit, Trash2, Eye, Star, MapPin, Scale, User, Award, Briefcase, Calendar, Filter, Sparkles, AlertCircle, Download, Upload, Copy, Check } from "lucide-react";
+import { CpfInput } from "@/components/cpf-input";
 import { Spinner } from "@heroui/spinner";
 import { useJuizes, useJuizFormData } from "@/app/hooks/use-juizes";
 import { deleteJuizTenant, createJuizTenant, updateJuizTenant } from "@/app/actions/juizes";
@@ -1110,7 +1111,7 @@ export function JuizesContent() {
                   value={formState.nomeCompleto || ""}
                   onValueChange={(value) => setFormState({ ...formState, nomeCompleto: value })}
                 />
-                <Input label="CPF" placeholder="000.000.000-00" variant="bordered" size="lg" value={formState.cpf || ""} onValueChange={(value) => setFormState({ ...formState, cpf: value })} />
+                <CpfInput value={formState.cpf || ""} onChange={(value) => setFormState({ ...formState, cpf: value })} />
                 <Input label="OAB" placeholder="Número da OAB" variant="bordered" size="lg" value={formState.oab || ""} onValueChange={(value) => setFormState({ ...formState, oab: value })} />
               </div>
             </div>

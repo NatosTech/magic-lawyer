@@ -34,8 +34,7 @@ import Link from "next/link";
 import { useProcessoDetalhado, useDocumentosProcesso, useEventosProcesso } from "@/app/hooks/use-processos";
 import { title } from "@/components/primitives";
 import { ProcessoStatus } from "@/app/generated/prisma";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { DateUtils } from "@/app/lib/date-utils";
 
 export default function ProcessoDetalhesPage() {
   const params = useParams();
@@ -204,7 +203,7 @@ export default function ProcessoDetalhesPage() {
               {processo.dataDistribuicao && (
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-default-400" />
-                  <span className="text-default-600">Distribuído em {format(new Date(processo.dataDistribuicao), "dd/MM/yyyy", { locale: ptBR })}</span>
+                  <span className="text-default-600">Distribuído em {DateUtils.formatDate(processo.dataDistribuicao)}</span>
                 </div>
               )}
             </div>
@@ -267,14 +266,7 @@ export default function ProcessoDetalhesPage() {
                     <div className="flex w-full items-start justify-between">
                       <div>
                         <p className="text-sm font-semibold">Procuração {procuracao.numero || "S/N"}</p>
-                        {procuracao.emitidaEm && (
-                          <p className="text-xs text-default-400">
-                            Emitida em{" "}
-                            {format(new Date(procuracao.emitidaEm), "dd/MM/yyyy", {
-                              locale: ptBR,
-                            })}
-                          </p>
-                        )}
+                        {procuracao.emitidaEm && <p className="text-xs text-default-400">Emitida em {DateUtils.formatDate(procuracao.emitidaEm)}</p>}
                       </div>
                       <Chip size="sm" variant="flat" color={getProcuracaoStatusColor(procuracao.status)}>
                         {getProcuracaoStatusLabel(procuracao.status)}
@@ -288,12 +280,7 @@ export default function ProcessoDetalhesPage() {
                     {procuracao.validaAte && (
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="h-4 w-4 text-default-400" />
-                        <span className="text-default-600">
-                          Válida até{" "}
-                          {format(new Date(procuracao.validaAte), "dd/MM/yyyy", {
-                            locale: ptBR,
-                          })}
-                        </span>
+                        <span className="text-default-600">Válida até {DateUtils.formatDate(procuracao.validaAte)}</span>
                       </div>
                     )}
 
@@ -367,7 +354,7 @@ export default function ProcessoDetalhesPage() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <p className="text-sm font-semibold">{doc.titulo || doc.nomeArquivo}</p>
-                          <p className="text-xs text-default-400">{format(new Date(doc.createdAt), "dd/MM/yyyy", { locale: ptBR })}</p>
+                          <p className="text-xs text-default-400">{DateUtils.formatDate(doc.createdAt)}</p>
                         </div>
                         {doc.tamanho && (
                           <Chip size="sm" variant="flat">
@@ -424,11 +411,7 @@ export default function ProcessoDetalhesPage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-sm font-semibold">{evento.titulo}</p>
-                          <p className="text-xs text-default-400">
-                            {format(new Date(evento.dataInicio), "dd/MM/yyyy 'às' HH:mm", {
-                              locale: ptBR,
-                            })}
-                          </p>
+                          <p className="text-xs text-default-400">{DateUtils.formatDateTime(evento.dataInicio)}</p>
                         </div>
                         {evento.status && (
                           <Chip size="sm" variant="flat" color={evento.status === "CONFIRMADO" ? "success" : "default"}>

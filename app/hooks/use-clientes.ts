@@ -1,5 +1,15 @@
 import useSWR from "swr";
-import { getClientesAdvogado, getAllClientesTenant, getClienteComProcessos, searchClientes, type Cliente, type ClienteComProcessos, type ClientesFiltros } from "@/app/actions/clientes";
+import {
+  getClientesAdvogado,
+  getAllClientesTenant,
+  getClienteComProcessos,
+  searchClientes,
+  getContratosCliente,
+  getDocumentosCliente,
+  type Cliente,
+  type ClienteComProcessos,
+  type ClientesFiltros,
+} from "@/app/actions/clientes";
 
 /**
  * Hook para buscar clientes do advogado logado
@@ -113,6 +123,66 @@ export function useClientesFiltrados(filtros: ClientesFiltros) {
 
   return {
     clientes: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar contratos de um cliente
+ */
+export function useContratosCliente(clienteId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    clienteId ? `contratos-cliente-${clienteId}` : null,
+    async () => {
+      if (!clienteId) return null;
+      const result = await getContratosCliente(clienteId);
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar contratos");
+      }
+      return result.contratos || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    contratos: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar documentos de um cliente
+ */
+export function useDocumentosCliente(clienteId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    clienteId ? `documentos-cliente-${clienteId}` : null,
+    async () => {
+      if (!clienteId) return null;
+      const result = await getDocumentosCliente(clienteId);
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar documentos");
+      }
+      return result.documentos || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    documentos: data,
     isLoading,
     isError: !!error,
     error,
