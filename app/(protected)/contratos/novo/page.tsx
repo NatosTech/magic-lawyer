@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { title } from "@/components/primitives";
 import { createContrato, type ContratoCreateInput } from "@/app/actions/contratos";
 import { ContratoStatus } from "@/app/generated/prisma";
-import { useClientesParaSelect } from "@/app/hooks/use-clientes";
+import { useClientesParaSelect, useProcuracoesDisponiveis } from "@/app/hooks/use-clientes";
 import { Spinner } from "@heroui/spinner";
 
 export default function NovoContratoPage() {
@@ -28,11 +28,13 @@ export default function NovoContratoPage() {
     descricao: "",
     status: ContratoStatus.RASCUNHO,
     clienteId: clienteIdParam || "",
+    procuracaoId: undefined,
     observacoes: "",
   });
 
   // Buscar clientes para o select (apenas se não veio de um cliente)
   const { clientes, isLoading: isLoadingClientes } = useClientesParaSelect();
+  const { procuracoes, isLoading: isLoadingProcuracoes } = useProcuracoesDisponiveis(formData.clienteId || null);
 
   if (isLoadingClientes && !clienteIdParam) {
     return (
@@ -147,6 +149,32 @@ export default function NovoContratoPage() {
               onValueChange={(value) => setFormData((prev) => ({ ...prev, titulo: value }))}
               isRequired
             />
+
+            {/* Select de Procuração (se cliente foi selecionado) */}
+            {formData.clienteId && (
+              <Select
+                label="Vincular a Procuração (Opcional)"
+                placeholder="Selecione uma procuração"
+                selectedKeys={formData.procuracaoId ? [formData.procuracaoId] : []}
+                onSelectionChange={(keys) => {
+                  const selectedKey = Array.from(keys)[0] as string;
+                  setFormData((prev) => ({ ...prev, procuracaoId: selectedKey || undefined }));
+                }}
+                isLoading={isLoadingProcuracoes}
+                isDisabled={!formData.clienteId}
+                description="Selecione uma procuração para vincular automaticamente ao processo"
+                startContent={<FileText className="h-4 w-4 text-default-400" />}
+              >
+                {procuracoes.map((procuracao: any) => (
+                  <SelectItem key={procuracao.id} value={procuracao.id} textValue={procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold">{procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}</span>
+                      <span className="text-xs text-default-400">{procuracao.processos.length} processo(s) vinculado(s)</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </Select>
+            )}
 
             <Textarea
               label="Descrição"

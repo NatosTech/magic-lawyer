@@ -12,6 +12,7 @@ import {
   type ClienteComProcessos,
   type ClientesFiltros,
 } from "@/app/actions/clientes";
+import { getProcuracoesDisponiveis } from "@/app/actions/contratos";
 
 /**
  * Hook para buscar clientes do advogado logado
@@ -251,5 +252,20 @@ export function useClientesParaSelect() {
     error,
     mutate,
     refresh: mutate,
+  };
+}
+
+// Hook para buscar procurações disponíveis de um cliente
+export function useProcuracoesDisponiveis(clienteId: string | null) {
+  const { data, error, isLoading } = useSWR(clienteId ? `procuracoes-disponiveis-${clienteId}` : null, () => (clienteId ? getProcuracoesDisponiveis(clienteId) : null), {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+  });
+
+  return {
+    procuracoes: data || [],
+    isLoading,
+    isError: !!error,
+    error,
   };
 }

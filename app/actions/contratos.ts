@@ -21,6 +21,7 @@ export interface ContratoCreateInput {
   clienteId: string;
   advogadoId?: string;
   processoId?: string;
+  procuracaoId?: string; // Nova opção para vincular diretamente a uma procuração
   observacoes?: string;
 }
 
@@ -44,6 +45,136 @@ async function getAdvogadoIdFromSession(session: any) {
   });
 
   return advogado?.id || null;
+}
+
+// ============================================
+// ACTIONS - BUSCAR PROCURAÇÕES
+// ============================================
+
+export async function getProcuracoesDisponiveis(clienteId: string) {
+  const session = await getSession();
+  if (!session?.user?.id) {
+    throw new Error("Não autorizado");
+  }
+
+  const user = session.user;
+  const tenantId = user.tenantId;
+
+  try {
+    // Buscar procurações ativas do cliente
+    const procuracoes = await prisma.procuracao.findMany({
+      where: {
+        tenantId,
+        clienteId,
+        ativa: true,
+        status: "ATIVA", // Apenas procurações ativas
+      },
+      include: {
+        processos: {
+          include: {
+            processo: {
+              select: {
+                id: true,
+                numero: true,
+                titulo: true,
+              },
+            },
+          },
+        },
+        outorgados: {
+          include: {
+            advogado: {
+              select: {
+                id: true,
+                nome: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return procuracoes;
+  } catch (error) {
+    console.error("Erro ao buscar procurações:", error);
+    throw new Error("Erro ao buscar procurações disponíveis");
+  }
+}
+
+export async function vincularContratoProcuracao(contratoId: string, procuracaoId: string) {
+  const session = await getSession();
+  if (!session?.user?.id) {
+    throw new Error("Não autorizado");
+  }
+
+  const user = session.user;
+  const tenantId = user.tenantId;
+
+  try {
+    // Verificar se o contrato existe e pertence ao tenant
+    const contrato = await prisma.contrato.findFirst({
+      where: {
+        id: contratoId,
+        tenantId,
+        deletedAt: null,
+      },
+      include: {
+        processo: true,
+      },
+    });
+
+    if (!contrato) {
+      throw new Error("Contrato não encontrado");
+    }
+
+    // Verificar se a procuração existe e está ativa
+    const procuracao = await prisma.procuracao.findFirst({
+      where: {
+        id: procuracaoId,
+        tenantId,
+        ativa: true,
+        status: "ATIVA",
+      },
+      include: {
+        processos: {
+          include: {
+            processo: true,
+          },
+        },
+      },
+    });
+
+    if (!procuracao) {
+      throw new Error("Procuração não encontrada ou inativa");
+    }
+
+    // Se o contrato já tem um processo vinculado, verificar se é compatível
+    if (contrato.processoId) {
+      const processoVinculado = procuracao.processos.find((pp) => pp.processoId === contrato.processoId);
+
+      if (!processoVinculado) {
+        throw new Error("A procuração não está vinculada ao processo do contrato");
+      }
+    } else {
+      // Se o contrato não tem processo, vincular ao primeiro processo da procuração
+      if (procuracao.processos.length > 0) {
+        await prisma.contrato.update({
+          where: { id: contratoId },
+          data: {
+            processoId: procuracao.processos[0].processoId,
+          },
+        });
+      }
+    }
+
+    return { success: true, message: "Contrato vinculado à procuração com sucesso" };
+  } catch (error) {
+    console.error("Erro ao vincular contrato à procuração:", error);
+    throw error;
+  }
 }
 
 // ============================================
@@ -105,6 +236,27 @@ export async function createContrato(data: ContratoCreateInput) {
       }
     }
 
+    // Se foi especificada uma procuração, buscar o processo vinculado
+    let processoId = data.processoId;
+    if (data.procuracaoId && !processoId) {
+      const procuracao = await prisma.procuracao.findFirst({
+        where: {
+          id: data.procuracaoId,
+          tenantId: user.tenantId,
+          ativa: true,
+        },
+        include: {
+          processos: {
+            take: 1, // Pegar o primeiro processo
+          },
+        },
+      });
+
+      if (procuracao?.processos.length > 0) {
+        processoId = procuracao.processos[0].processoId;
+      }
+    }
+
     // Criar contrato
     const contrato = await prisma.contrato.create({
       data: {
@@ -119,7 +271,7 @@ export async function createContrato(data: ContratoCreateInput) {
         dataFim: data.dataFim ? new Date(data.dataFim) : null,
         clienteId: data.clienteId,
         advogadoId: data.advogadoId,
-        processoId: data.processoId,
+        processoId,
         observacoes: data.observacoes,
         createdById: user.id,
       },

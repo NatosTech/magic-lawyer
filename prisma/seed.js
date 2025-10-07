@@ -12,6 +12,7 @@ const { seedSuperAdmin } = require("./seeds/superAdmin");
 const { seedConfiguracoesPreco } = require("./seeds/configuracoesPreco");
 const { seedPacotesJuiz } = require("./seeds/pacotesJuiz");
 const { seedDadosFinanceiros } = require("./seeds/dadosFinanceiros");
+const { seedContratos } = require("./seeds/contratos");
 
 const prisma = new PrismaClient();
 
@@ -74,6 +75,11 @@ async function main() {
 
   // Seed de dados financeiros
   await seedDadosFinanceiros(prisma);
+
+  console.log("\n📄 Criando contratos, processos e procurações...\n");
+
+  // Seed de contratos, processos e procurações
+  await seedContratos(prisma, Prisma);
 
   console.log("\n🚀 Aplicando otimizações enterprise...\n");
 
