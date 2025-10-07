@@ -12,6 +12,7 @@ Bem-vindo à documentação completa do **Magic Lawyer** - Sistema de Gestão Ju
 ### 🏗️ **Arquitetura e Estrutura**
 - [**BUSINESS_RULES.md**](./BUSINESS_RULES.md) - Regras de negócio do sistema
 - [**CORREÇÕES_ROTAS.md**](./CORREÇÕES_ROTAS.md) - Correções de rotas implementadas
+- [**CLIENTES_ACOES_RAPIDAS.md**](./CLIENTES_ACOES_RAPIDAS.md) - Ações rápidas na página do cliente
 
 ### 🔧 **Funcionalidades Técnicas**
 - [**AVATAR_EDITOR.md**](./AVATAR_EDITOR.md) - Sistema de edição de avatares

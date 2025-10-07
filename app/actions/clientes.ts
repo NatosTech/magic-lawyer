@@ -840,6 +840,270 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
 }
 
 // ============================================
+// ACTIONS - ANEXAR DOCUMENTO
+// ============================================
+
+export interface DocumentoCreateInput {
+  nome: string;
+  tipo?: string;
+  descricao?: string;
+  arquivo: File;
+  processoId?: string;
+  visivelParaCliente?: boolean;
+}
+
+/**
+ * Anexa um documento a um cliente
+ */
+export async function anexarDocumentoCliente(clienteId: string, formData: FormData) {
+  try {
+    const session = await getSession();
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Validar acesso ao cliente
+    const cliente = await prisma.cliente.findFirst({
+      where: {
+        id: clienteId,
+        tenantId: user.tenantId,
+        deletedAt: null,
+      },
+    });
+
+    if (!cliente) {
+      return { success: false, error: "Cliente não encontrado" };
+    }
+
+    // Se não for ADMIN, verificar se é advogado vinculado
+    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+      const advogadoId = await getAdvogadoIdFromSession(session);
+      if (!advogadoId) {
+        return { success: false, error: "Acesso negado" };
+      }
+
+      const vinculo = await prisma.advogadoCliente.findFirst({
+        where: {
+          advogadoId,
+          clienteId: cliente.id,
+          tenantId: user.tenantId,
+        },
+      });
+
+      if (!vinculo) {
+        return { success: false, error: "Acesso negado" };
+      }
+    }
+
+    // Extrair dados do FormData
+    const nome = formData.get("nome") as string;
+    const tipo = formData.get("tipo") as string;
+    const descricao = formData.get("descricao") as string;
+    const processoId = formData.get("processoId") as string;
+    const visivelParaCliente = formData.get("visivelParaCliente") === "true";
+    const arquivo = formData.get("arquivo") as File;
+
+    if (!nome || !arquivo) {
+      return { success: false, error: "Nome e arquivo são obrigatórios" };
+    }
+
+    // Converter arquivo para buffer
+    const bytes = await arquivo.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Upload para Cloudinary
+    const { UploadService } = await import("@/lib/upload-service");
+    const uploadService = UploadService.getInstance();
+
+    // Criar nome limpo para pasta
+    const cleanClienteNome = cliente.nome
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    const folderPath = `magiclawyer/clientes/${cleanClienteNome}-${cliente.id}/documentos`;
+
+    // Upload arquivo (vou criar método genérico no UploadService)
+    const v2 = await import("cloudinary");
+    const cloudinary = v2.v2;
+
+    const uploadResult = await cloudinary.uploader.upload(`data:${arquivo.type};base64,${buffer.toString("base64")}`, {
+      folder: folderPath,
+      resource_type: "auto",
+      public_id: `${Date.now()}_${arquivo.name.replace(/[^a-z0-9.]/gi, "_")}`,
+      tags: ["cliente", "documento", cliente.id],
+    });
+
+    // Criar documento no banco
+    const documento = await prisma.documento.create({
+      data: {
+        tenantId: user.tenantId,
+        nome,
+        tipo: tipo || arquivo.type,
+        descricao,
+        url: uploadResult.secure_url,
+        tamanhoBytes: arquivo.size,
+        contentType: arquivo.type,
+        clienteId: cliente.id,
+        processoId: processoId || null,
+        uploadedById: user.id,
+        visivelParaCliente,
+        visivelParaEquipe: true,
+        metadados: {
+          fileName: arquivo.name,
+          cloudinaryPublicId: uploadResult.public_id,
+          uploadedAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    return {
+      success: true,
+      documento,
+    };
+  } catch (error) {
+    console.error("Erro ao anexar documento:", error);
+    return {
+      success: false,
+      error: "Erro ao anexar documento",
+    };
+  }
+}
+
+// ============================================
+// ACTIONS - PROCURAÇÕES DO CLIENTE
+// ============================================
+
+/**
+ * Busca todas as procurações de um cliente
+ */
+export async function getProcuracoesCliente(clienteId: string) {
+  try {
+    const session = await getSession();
+    if (!session?.user) {
+      return { success: false, error: "Não autenticado", procuracoes: [] };
+    }
+
+    const user = session.user as any;
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado", procuracoes: [] };
+    }
+
+    // Buscar cliente para verificar tenantId
+    const cliente = await prisma.cliente.findFirst({
+      where: {
+        id: clienteId,
+        tenantId: user.tenantId,
+        deletedAt: null,
+      },
+    });
+
+    if (!cliente) {
+      return { success: false, error: "Cliente não encontrado", procuracoes: [] };
+    }
+
+    // Se não for ADMIN, verificar se é ADVOGADO vinculado
+    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+      if (user.role === "ADVOGADO") {
+        const advogado = await prisma.advogado.findFirst({
+          where: {
+            usuarioId: user.id,
+            tenantId: user.tenantId,
+          },
+        });
+
+        if (!advogado) {
+          return { success: false, error: "Advogado não encontrado", procuracoes: [] };
+        }
+
+        // Verificar vínculo
+        const vinculo = await prisma.advogadoCliente.findFirst({
+          where: {
+            advogadoId: advogado.id,
+            clienteId: cliente.id,
+            tenantId: user.tenantId,
+          },
+        });
+
+        if (!vinculo) {
+          return { success: false, error: "Acesso negado", procuracoes: [] };
+        }
+      } else {
+        // CLIENTE só vê suas próprias procurações
+        const clienteUsuario = await prisma.cliente.findFirst({
+          where: {
+            usuarioId: user.id,
+            tenantId: user.tenantId,
+            deletedAt: null,
+          },
+        });
+
+        if (!clienteUsuario || clienteUsuario.id !== clienteId) {
+          return { success: false, error: "Acesso negado", procuracoes: [] };
+        }
+      }
+    }
+
+    // Buscar procurações
+    const procuracoes = await prisma.procuracao.findMany({
+      where: {
+        clienteId: cliente.id,
+        tenantId: user.tenantId,
+      },
+      include: {
+        outorgados: {
+          include: {
+            advogado: {
+              include: {
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        processos: {
+          include: {
+            processo: {
+              select: {
+                numero: true,
+                titulo: true,
+              },
+            },
+          },
+        },
+        createdBy: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return { success: true, procuracoes };
+  } catch (error) {
+    console.error("Erro ao buscar procurações:", error);
+    return { success: false, error: "Erro ao buscar procurações", procuracoes: [] };
+  }
+}
+
+// ============================================
 // ACTIONS - RESET DE SENHA
 // ============================================
 

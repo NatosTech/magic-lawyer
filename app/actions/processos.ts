@@ -138,6 +138,132 @@ async function getClienteIdFromSession(session: any): Promise<string | null> {
 // ============================================
 
 /**
+ * Busca todos os processos que o usuário pode ver
+ * - ADMIN: Todos do tenant
+ * - ADVOGADO: Dos clientes vinculados
+ * - CLIENTE: Apenas os próprios
+ */
+export async function getAllProcessos(): Promise<{
+  success: boolean;
+  processos?: Processo[];
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    let whereClause: any = {
+      tenantId: user.tenantId,
+      deletedAt: null,
+    };
+
+    // CLIENTE: Apenas seus processos
+    const clienteId = await getClienteIdFromSession(session);
+    if (clienteId) {
+      whereClause.clienteId = clienteId;
+    }
+    // ADVOGADO: Processos dos clientes vinculados
+    else if (user.role === "ADVOGADO") {
+      const advogadoId = await getAdvogadoIdFromSession(session);
+      if (!advogadoId) {
+        return { success: false, error: "Advogado não encontrado" };
+      }
+
+      // Buscar IDs dos clientes vinculados ao advogado
+      const vinculos = await prisma.advogadoCliente.findMany({
+        where: {
+          advogadoId,
+          tenantId: user.tenantId,
+        },
+        select: {
+          clienteId: true,
+        },
+      });
+
+      const clientesIds = vinculos.map((v) => v.clienteId);
+
+      if (clientesIds.length === 0) {
+        return { success: true, processos: [] };
+      }
+
+      whereClause.clienteId = {
+        in: clientesIds,
+      };
+    }
+    // ADMIN ou SUPER_ADMIN: Todos do tenant (whereClause já tem apenas tenantId)
+
+    const processos = await prisma.processo.findMany({
+      where: whereClause,
+      include: {
+        area: {
+          select: {
+            id: true,
+            nome: true,
+            slug: true,
+          },
+        },
+        cliente: {
+          select: {
+            id: true,
+            nome: true,
+            tipoPessoa: true,
+          },
+        },
+        advogadoResponsavel: {
+          select: {
+            id: true,
+            oabNumero: true,
+            oabUf: true,
+            usuario: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            documentos: { where: { deletedAt: null } },
+            eventos: true,
+            movimentacoes: true,
+            tarefas: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 100,
+    });
+
+    // Converter Decimal para number
+    const processosFormatted = processos.map((p) => ({
+      ...p,
+      valorCausa: p.valorCausa ? Number(p.valorCausa) : null,
+    }));
+
+    return {
+      success: true,
+      processos: processosFormatted as any,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar processos:", error);
+    return {
+      success: false,
+      error: "Erro ao buscar processos",
+    };
+  }
+}
+
+/**
  * Busca processos do cliente logado (para quando usuário É um cliente)
  */
 export async function getProcessosDoClienteLogado(): Promise<{
@@ -715,6 +841,141 @@ export async function getMovimentacoesProcesso(processoId: string): Promise<{
     return {
       success: false,
       error: "Erro ao buscar movimentações",
+    };
+  }
+}
+
+// ============================================
+// ACTIONS - CRIAR PROCESSO
+// ============================================
+
+export interface ProcessoCreateInput {
+  numero: string;
+  titulo?: string;
+  descricao?: string;
+  status?: ProcessoStatus;
+  areaId?: string;
+  classeProcessual?: string;
+  vara?: string;
+  comarca?: string;
+  foro?: string;
+  dataDistribuicao?: Date | string;
+  segredoJustica?: boolean;
+  valorCausa?: number;
+  rito?: string;
+  clienteId: string;
+  advogadoResponsavelId?: string;
+  numeroInterno?: string;
+}
+
+export async function createProcesso(data: ProcessoCreateInput) {
+  try {
+    const session = await getSession();
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Validar campos obrigatórios
+    if (!data.numero || !data.clienteId) {
+      return { success: false, error: "Número do processo e cliente são obrigatórios" };
+    }
+
+    // Validar acesso ao cliente
+    const cliente = await prisma.cliente.findFirst({
+      where: {
+        id: data.clienteId,
+        tenantId: user.tenantId,
+        deletedAt: null,
+      },
+    });
+
+    if (!cliente) {
+      return { success: false, error: "Cliente não encontrado" };
+    }
+
+    // Se for ADVOGADO, validar vínculo com o cliente
+    if (user.role === "ADVOGADO") {
+      const advogadoId = await getAdvogadoIdFromSession(session);
+      if (!advogadoId) {
+        return { success: false, error: "Advogado não encontrado" };
+      }
+
+      const vinculo = await prisma.advogadoCliente.findFirst({
+        where: {
+          advogadoId,
+          clienteId: cliente.id,
+          tenantId: user.tenantId,
+        },
+      });
+
+      if (!vinculo) {
+        return { success: false, error: "Você não tem acesso a este cliente" };
+      }
+
+      // Se não informou advogado responsável, usar o próprio
+      if (!data.advogadoResponsavelId) {
+        data.advogadoResponsavelId = advogadoId;
+      }
+    }
+
+    // Verificar se número do processo já existe
+    const processoExistente = await prisma.processo.findFirst({
+      where: {
+        numero: data.numero,
+        tenantId: user.tenantId,
+      },
+    });
+
+    if (processoExistente) {
+      return { success: false, error: "Já existe um processo com este número" };
+    }
+
+    // Criar processo
+    const processo = await prisma.processo.create({
+      data: {
+        tenantId: user.tenantId,
+        numero: data.numero,
+        titulo: data.titulo,
+        descricao: data.descricao,
+        status: data.status || ProcessoStatus.RASCUNHO,
+        areaId: data.areaId,
+        classeProcessual: data.classeProcessual,
+        vara: data.vara,
+        comarca: data.comarca,
+        foro: data.foro,
+        dataDistribuicao: data.dataDistribuicao ? new Date(data.dataDistribuicao) : null,
+        segredoJustica: data.segredoJustica || false,
+        valorCausa: data.valorCausa,
+        rito: data.rito,
+        clienteId: data.clienteId,
+        advogadoResponsavelId: data.advogadoResponsavelId,
+        numeroInterno: data.numeroInterno,
+      },
+      include: {
+        cliente: true,
+        area: true,
+        advogadoResponsavel: {
+          include: {
+            usuario: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      processo,
+    };
+  } catch (error) {
+    console.error("Erro ao criar processo:", error);
+    return {
+      success: false,
+      error: "Erro ao criar processo",
     };
   }
 }

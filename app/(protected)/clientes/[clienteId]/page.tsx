@@ -8,23 +8,62 @@ import { Divider } from "@heroui/divider";
 import { Avatar } from "@heroui/avatar";
 import { Spinner } from "@heroui/spinner";
 import { Tabs, Tab } from "@heroui/tabs";
-import { ArrowLeft, User, Mail, Phone, FileText, Building2, Briefcase, Calendar, Scale, Clock, AlertCircle, CheckCircle, XCircle, FileStack, FileSignature, Eye } from "lucide-react";
+import { Input } from "@heroui/input";
+import { Textarea } from "@heroui/input";
+import { Checkbox } from "@heroui/checkbox";
+import { Select, SelectItem } from "@heroui/select";
+import {
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  FileText,
+  Building2,
+  Briefcase,
+  Calendar,
+  Scale,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  FileStack,
+  FileSignature,
+  Eye,
+  Upload,
+  Plus,
+  FilePlus,
+} from "lucide-react";
 import Link from "next/link";
-import { useClienteComProcessos, useContratosCliente, useDocumentosCliente } from "@/app/hooks/use-clientes";
+import { useClienteComProcessos, useContratosCliente, useDocumentosCliente, useProcuracoesCliente } from "@/app/hooks/use-clientes";
 import { title } from "@/components/primitives";
 import { ProcessoStatus } from "@/app/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Modal } from "@/components/ui/modal";
+import { anexarDocumentoCliente } from "@/app/actions/clientes";
 
 export default function ClienteDetalhesPage() {
   const params = useParams();
   const router = useRouter();
   const clienteId = params.clienteId as string;
 
-  const { cliente, isLoading, isError, error } = useClienteComProcessos(clienteId);
+  const { cliente, isLoading, isError, error, mutate: mutateCliente } = useClienteComProcessos(clienteId);
   const { contratos, isLoading: isLoadingContratos } = useContratosCliente(clienteId);
-  const { documentos, isLoading: isLoadingDocumentos } = useDocumentosCliente(clienteId);
+  const { documentos, isLoading: isLoadingDocumentos, mutate: mutateDocumentos } = useDocumentosCliente(clienteId);
+  const { procuracoes, isLoading: isLoadingProcuracoes } = useProcuracoesCliente(clienteId);
+
+  // Estados do modal de anexar documento
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadFormData, setUploadFormData] = useState({
+    nome: "",
+    tipo: "",
+    descricao: "",
+    processoId: "",
+    visivelParaCliente: false,
+  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Proteção: Redirecionar se não autorizado
   useEffect(() => {
@@ -33,6 +72,65 @@ export default function ClienteDetalhesPage() {
       router.push("/clientes");
     }
   }, [isError, router]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      // Preencher nome automaticamente
+      if (!uploadFormData.nome) {
+        setUploadFormData((prev) => ({ ...prev, nome: file.name }));
+      }
+    }
+  };
+
+  const handleAnexarDocumento = async () => {
+    if (!selectedFile) {
+      toast.error("Selecione um arquivo");
+      return;
+    }
+
+    if (!uploadFormData.nome.trim()) {
+      toast.error("Nome do documento é obrigatório");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("nome", uploadFormData.nome);
+      formData.append("tipo", uploadFormData.tipo);
+      formData.append("descricao", uploadFormData.descricao);
+      formData.append("processoId", uploadFormData.processoId);
+      formData.append("visivelParaCliente", uploadFormData.visivelParaCliente.toString());
+      formData.append("arquivo", selectedFile);
+
+      const result = await anexarDocumentoCliente(clienteId, formData);
+
+      if (result.success) {
+        toast.success("Documento anexado com sucesso!");
+        setIsUploadModalOpen(false);
+        setUploadFormData({
+          nome: "",
+          tipo: "",
+          descricao: "",
+          processoId: "",
+          visivelParaCliente: false,
+        });
+        setSelectedFile(null);
+        mutateDocumentos();
+        mutateCliente();
+      } else {
+        toast.error(result.error || "Erro ao anexar documento");
+      }
+    } catch (error) {
+      console.error("Erro ao anexar documento:", error);
+      toast.error("Erro ao anexar documento");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -113,10 +211,27 @@ export default function ClienteDetalhesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Botão Voltar */}
-      <Button as={Link} href="/clientes" variant="light" startContent={<ArrowLeft className="h-4 w-4" />}>
-        Voltar para Clientes
-      </Button>
+      {/* Header com Botões */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Button as={Link} href="/clientes" variant="light" startContent={<ArrowLeft className="h-4 w-4" />}>
+          Voltar para Clientes
+        </Button>
+
+        <div className="flex flex-wrap gap-2">
+          <Button color="primary" variant="flat" startContent={<Upload className="h-4 w-4" />} onPress={() => setIsUploadModalOpen(true)}>
+            Anexar Documento
+          </Button>
+          <Button color="primary" variant="bordered" startContent={<Scale className="h-4 w-4" />} as={Link} href={`/processos/novo?clienteId=${clienteId}`}>
+            Novo Processo
+          </Button>
+          <Button color="secondary" variant="bordered" startContent={<FileText className="h-4 w-4" />} as={Link} href={`/contratos/novo?clienteId=${clienteId}`}>
+            Novo Contrato
+          </Button>
+          <Button color="success" variant="bordered" startContent={<FileSignature className="h-4 w-4" />} as={Link} href={`/procuracoes/novo?clienteId=${clienteId}`}>
+            Nova Procuração
+          </Button>
+        </div>
+      </div>
 
       {/* Header do Cliente */}
       <Card className="border border-default-200">
@@ -161,7 +276,7 @@ export default function ClienteDetalhesPage() {
                 </div>
               )}
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Chip size="sm" variant="flat" color="primary">
                   {cliente._count?.processos || 0} processos
                 </Chip>
@@ -169,6 +284,9 @@ export default function ClienteDetalhesPage() {
                   {cliente._count?.contratos || 0} contratos
                 </Chip>
                 <Chip size="sm" variant="flat" color="success">
+                  {cliente._count?.procuracoes || 0} procurações
+                </Chip>
+                <Chip size="sm" variant="flat" color="warning">
                   {cliente._count?.documentos || 0} documentos
                 </Chip>
               </div>
@@ -341,6 +459,121 @@ export default function ClienteDetalhesPage() {
           </div>
         </Tab>
 
+        {/* Tab de Procurações */}
+        <Tab
+          key="procuracoes"
+          title={
+            <div className="flex items-center gap-2">
+              <FileSignature className="h-4 w-4" />
+              <span>Procurações</span>
+              {procuracoes.length > 0 && (
+                <Chip size="sm" variant="flat" color="success">
+                  {procuracoes.length}
+                </Chip>
+              )}
+            </div>
+          }
+        >
+          <div className="mt-4">
+            {isLoadingProcuracoes ? (
+              <div className="flex min-h-[200px] items-center justify-center">
+                <Spinner size="lg" />
+              </div>
+            ) : procuracoes.length === 0 ? (
+              <Card className="border border-default-200">
+                <CardBody className="py-12 text-center">
+                  <FileSignature className="mx-auto h-12 w-12 text-default-300" />
+                  <p className="mt-4 text-lg font-semibold text-default-600">Nenhuma procuração cadastrada</p>
+                  <p className="mt-2 text-sm text-default-400">Este cliente ainda não possui procurações associadas.</p>
+                </CardBody>
+              </Card>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {procuracoes.map((procuracao: any) => (
+                  <Card key={procuracao.id} className="border border-default-200 hover:border-success transition-all hover:shadow-lg">
+                    <CardHeader className="flex flex-col items-start gap-2 pb-2">
+                      <div className="flex w-full items-start justify-between">
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                          color={procuracao.ativa ? "success" : "default"}
+                          startContent={procuracao.ativa ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                        >
+                          {procuracao.ativa ? "Ativa" : "Inativa"}
+                        </Chip>
+                        <Chip size="sm" variant="flat" color={procuracao.status === "VIGENTE" ? "success" : procuracao.status === "REVOGADA" ? "danger" : "warning"}>
+                          {procuracao.status}
+                        </Chip>
+                      </div>
+                      {procuracao.numero && (
+                        <div className="w-full">
+                          <p className="text-sm font-semibold text-default-700">#{procuracao.numero}</p>
+                        </div>
+                      )}
+                    </CardHeader>
+                    <Divider />
+                    <CardBody className="gap-3 pt-3">
+                      {procuracao.outorgados && procuracao.outorgados.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-default-500">Outorgados:</p>
+                          {procuracao.outorgados.slice(0, 2).map((outorgado: any) => (
+                            <div key={outorgado.id} className="flex items-center gap-2 text-xs">
+                              <User className="h-3 w-3 text-default-400" />
+                              <span className="text-default-600">
+                                {outorgado.advogado.usuario.firstName} {outorgado.advogado.usuario.lastName}
+                              </span>
+                            </div>
+                          ))}
+                          {procuracao.outorgados.length > 2 && <p className="text-xs text-default-400">+{procuracao.outorgados.length - 2} mais</p>}
+                        </div>
+                      )}
+                      {procuracao.processos && procuracao.processos.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-default-500">Processos vinculados:</p>
+                          {procuracao.processos.slice(0, 2).map((proc: any) => (
+                            <div key={proc.id} className="flex items-center gap-2 text-xs">
+                              <Scale className="h-3 w-3 text-default-400" />
+                              <span className="text-default-600 truncate">{proc.processo.numero}</span>
+                            </div>
+                          ))}
+                          {procuracao.processos.length > 2 && <p className="text-xs text-default-400">+{procuracao.processos.length - 2} mais</p>}
+                        </div>
+                      )}
+                      {procuracao.emitidaEm && (
+                        <div className="flex items-center gap-2 text-xs">
+                          <Calendar className="h-3 w-3 text-default-400" />
+                          <span className="text-default-600">Emitida: {DateUtils.formatDate(procuracao.emitidaEm)}</span>
+                        </div>
+                      )}
+                      {procuracao.validaAte && (
+                        <div className="flex items-center gap-2 text-xs">
+                          <Clock className="h-3 w-3 text-default-400" />
+                          <span className="text-default-600">Válida até: {DateUtils.formatDate(procuracao.validaAte)}</span>
+                        </div>
+                      )}
+                      {procuracao.arquivoUrl && (
+                        <Button
+                          size="sm"
+                          color="success"
+                          variant="flat"
+                          startContent={<Eye className="h-3 w-3" />}
+                          as="a"
+                          href={procuracao.arquivoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2"
+                        >
+                          Visualizar
+                        </Button>
+                      )}
+                    </CardBody>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </Tab>
+
         {/* Tab de Documentos (TODOS) */}
         <Tab
           key="documentos"
@@ -405,6 +638,99 @@ export default function ClienteDetalhesPage() {
           </div>
         </Tab>
       </Tabs>
+
+      {/* Modal de Anexar Documento */}
+      <Modal
+        isOpen={isUploadModalOpen}
+        onOpenChange={setIsUploadModalOpen}
+        title="📎 Anexar Documento"
+        size="2xl"
+        footer={
+          <div className="flex gap-2">
+            <Button variant="light" onPress={() => setIsUploadModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button color="primary" onPress={handleAnexarDocumento} isLoading={isUploading} startContent={!isUploading ? <Upload className="h-4 w-4" /> : undefined}>
+              Anexar Documento
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          {/* Upload de Arquivo */}
+          <div className="rounded-lg border-2 border-dashed border-default-300 p-6 text-center hover:border-primary transition-colors">
+            <input type="file" id="file-upload" className="hidden" onChange={handleFileChange} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx" />
+            <label htmlFor="file-upload" className="cursor-pointer">
+              {selectedFile ? (
+                <div className="space-y-2">
+                  <FileText className="mx-auto h-12 w-12 text-success" />
+                  <p className="text-sm font-semibold text-success">{selectedFile.name}</p>
+                  <p className="text-xs text-default-400">{(selectedFile.size / 1024).toFixed(2)} KB</p>
+                  <Button size="sm" variant="flat" onPress={() => setSelectedFile(null)}>
+                    Trocar Arquivo
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Upload className="mx-auto h-12 w-12 text-default-300" />
+                  <p className="text-sm font-semibold">Clique para selecionar um arquivo</p>
+                  <p className="text-xs text-default-400">PDF, DOC, DOCX, JPG, PNG, XLS, XLSX</p>
+                </div>
+              )}
+            </label>
+          </div>
+
+          {/* Formulário */}
+          <Input
+            label="Nome do Documento *"
+            placeholder="Ex: Contrato Social, RG, CPF..."
+            value={uploadFormData.nome}
+            onValueChange={(value) => setUploadFormData((prev) => ({ ...prev, nome: value }))}
+            isRequired
+          />
+
+          <Input label="Tipo" placeholder="Ex: Contrato, Identidade, Comprovante..." value={uploadFormData.tipo} onValueChange={(value) => setUploadFormData((prev) => ({ ...prev, tipo: value }))} />
+
+          <Textarea
+            label="Descrição"
+            placeholder="Observações sobre o documento..."
+            value={uploadFormData.descricao}
+            onValueChange={(value) => setUploadFormData((prev) => ({ ...prev, descricao: value }))}
+            minRows={2}
+            maxRows={4}
+          />
+
+          {/* Vincular a Processo (opcional) */}
+          {cliente?.processos && cliente.processos.length > 0 && (
+            <Select
+              label="Vincular a Processo (opcional)"
+              placeholder="Selecione um processo"
+              selectedKeys={uploadFormData.processoId ? [uploadFormData.processoId] : []}
+              onSelectionChange={(keys) => setUploadFormData((prev) => ({ ...prev, processoId: Array.from(keys)[0] as string }))}
+            >
+              {cliente.processos.map((processo) => (
+                <SelectItem key={processo.id} value={processo.id}>
+                  {processo.numero}
+                </SelectItem>
+              ))}
+            </Select>
+          )}
+
+          <Checkbox isSelected={uploadFormData.visivelParaCliente} onValueChange={(checked) => setUploadFormData((prev) => ({ ...prev, visivelParaCliente: checked }))}>
+            <div className="flex flex-col">
+              <span className="text-sm">Visível para o cliente</span>
+              <span className="text-xs text-default-400">O cliente poderá visualizar este documento na área dele</span>
+            </div>
+          </Checkbox>
+
+          {/* Informações */}
+          <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
+            <p className="text-xs text-primary-600">
+              💡 O documento será anexado a {cliente.nome}. {uploadFormData.processoId && "Será vinculado ao processo selecionado."}
+            </p>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -6,13 +6,13 @@ import { Divider } from "@heroui/divider";
 import { Spinner } from "@heroui/spinner";
 import { Scale, Briefcase, Calendar, Clock, AlertCircle, CheckCircle, XCircle, User, FileText } from "lucide-react";
 import Link from "next/link";
-import { useProcessosClienteLogado } from "@/app/hooks/use-processos";
+import { useAllProcessos } from "@/app/hooks/use-processos";
 import { title } from "@/components/primitives";
 import { ProcessoStatus } from "@/app/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
 
 export function ProcessosContent() {
-  const { processos, isLoading, isError } = useProcessosClienteLogado();
+  const { processos, isLoading, isError } = useAllProcessos();
 
   const getStatusColor = (status: ProcessoStatus) => {
     switch (status) {

@@ -1,5 +1,6 @@
 import useSWR from "swr";
 import {
+  getAllProcessos,
   getProcessosDoClienteLogado,
   getProcessosDoCliente,
   getProcessoDetalhado,
@@ -9,6 +10,38 @@ import {
   type Processo,
   type ProcessoDetalhado,
 } from "@/app/actions/processos";
+
+/**
+ * Hook para buscar todos os processos que o usuário pode ver
+ * - ADMIN: Todos do tenant
+ * - ADVOGADO: Dos clientes vinculados
+ * - CLIENTE: Apenas os próprios
+ */
+export function useAllProcessos() {
+  const { data, error, isLoading, mutate } = useSWR(
+    "all-processos",
+    async () => {
+      const result = await getAllProcessos();
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar processos");
+      }
+      return result.processos || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    processos: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
 
 /**
  * Hook para buscar processos do cliente logado (quando usuário É um cliente)

@@ -6,6 +6,7 @@ import {
   searchClientes,
   getContratosCliente,
   getDocumentosCliente,
+  getProcuracoesCliente,
   type Cliente,
   type ClienteComProcessos,
   type ClientesFiltros,
@@ -183,6 +184,36 @@ export function useDocumentosCliente(clienteId: string | null) {
 
   return {
     documentos: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar procurações de um cliente
+ */
+export function useProcuracoesCliente(clienteId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    clienteId ? `procuracoes-cliente-${clienteId}` : null,
+    async () => {
+      if (!clienteId) return null;
+      const result = await getProcuracoesCliente(clienteId);
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar procurações");
+      }
+      return result.procuracoes || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    procuracoes: data || [],
     isLoading,
     isError: !!error,
     error,
