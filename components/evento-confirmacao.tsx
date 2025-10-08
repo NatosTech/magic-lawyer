@@ -1,16 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Chip,
-  Textarea,
-} from "@heroui/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Chip, Textarea } from "@heroui/react";
 import { Check, X, HelpCircle, AlertCircle, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,7 +11,12 @@ import { Evento, EventoConfirmacaoStatus } from "@/app/generated/prisma";
 interface EventoConfirmacaoProps {
   isOpen: boolean;
   onClose: () => void;
-  evento: Evento;
+  evento: Evento & {
+    confirmacoes?: Array<{
+      participanteEmail: string;
+      status: EventoConfirmacaoStatus;
+    }>;
+  };
   participanteEmail: string;
   onSuccess?: () => void;
 }
@@ -32,32 +28,19 @@ const statusConfirmacao = {
   TALVEZ: { label: "Talvez", color: "secondary" as const, icon: HelpCircle },
 };
 
-export default function EventoConfirmacao({
-  isOpen,
-  onClose,
-  evento,
-  participanteEmail,
-  onSuccess,
-}: EventoConfirmacaoProps) {
+export default function EventoConfirmacao({ isOpen, onClose, evento, participanteEmail, onSuccess }: EventoConfirmacaoProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [observacoes, setObservacoes] = useState("");
 
   // Encontrar a confirmação atual do participante
-  const confirmacaoAtual = evento.confirmacoes?.find(
-    (c) => c.participanteEmail === participanteEmail,
-  );
+  const confirmacaoAtual = evento.confirmacoes?.find((c) => c.participanteEmail === participanteEmail);
   const statusAtual = confirmacaoAtual?.status || "PENDENTE";
 
   const handleConfirmar = async (status: EventoConfirmacaoStatus) => {
     setIsLoading(true);
 
     try {
-      const result = await confirmarParticipacaoEvento(
-        evento.id,
-        participanteEmail,
-        status,
-        observacoes || undefined,
-      );
+      const result = await confirmarParticipacaoEvento(evento.id, participanteEmail, status, observacoes || undefined);
 
       if (result.success) {
         toast.success("Confirmação atualizada com sucesso!");
@@ -101,17 +84,14 @@ export default function EventoConfirmacao({
             <Users className="w-5 h-5" />
             Confirmar Participação
           </div>
-          <div className="text-sm text-default-500">
-            Evento: {evento.titulo}
-          </div>
+          <div className="text-sm text-default-500">Evento: {evento.titulo}</div>
         </ModalHeader>
 
         <ModalBody className="gap-4">
           {/* Informações do Evento */}
           <div className="space-y-2">
             <div className="text-sm">
-              <strong>Data:</strong>{" "}
-              {formatarData(evento.dataInicio.toString())}
+              <strong>Data:</strong> {formatarData(evento.dataInicio.toString())}
             </div>
             {evento.local && (
               <div className="text-sm">
@@ -129,18 +109,11 @@ export default function EventoConfirmacao({
           <div>
             <div className="text-sm font-medium mb-2">Status Atual:</div>
             {(() => {
-              const statusInfo =
-                statusConfirmacao[
-                  statusAtual as keyof typeof statusConfirmacao
-                ];
+              const statusInfo = statusConfirmacao[statusAtual as keyof typeof statusConfirmacao];
               const IconComponent = statusInfo?.icon || AlertCircle;
 
               return (
-                <Chip
-                  color={statusInfo?.color || "default"}
-                  startContent={<IconComponent className="w-4 h-4" />}
-                  variant="flat"
-                >
+                <Chip color={statusInfo?.color || "default"} startContent={<IconComponent className="w-4 h-4" />} variant="flat">
                   {statusInfo?.label || statusAtual}
                 </Chip>
               );
@@ -168,32 +141,15 @@ export default function EventoConfirmacao({
           </Button>
 
           <div className="flex gap-2">
-            <Button
-              color="danger"
-              isLoading={isLoading}
-              startContent={<X className="w-4 h-4" />}
-              variant="flat"
-              onPress={() => handleConfirmar("RECUSADO")}
-            >
+            <Button color="danger" isLoading={isLoading} startContent={<X className="w-4 h-4" />} variant="flat" onPress={() => handleConfirmar("RECUSADO")}>
               Recusar
             </Button>
 
-            <Button
-              color="secondary"
-              isLoading={isLoading}
-              startContent={<HelpCircle className="w-4 h-4" />}
-              variant="flat"
-              onPress={() => handleConfirmar("TALVEZ")}
-            >
+            <Button color="secondary" isLoading={isLoading} startContent={<HelpCircle className="w-4 h-4" />} variant="flat" onPress={() => handleConfirmar("TALVEZ")}>
               Talvez
             </Button>
 
-            <Button
-              color="success"
-              isLoading={isLoading}
-              startContent={<Check className="w-4 h-4" />}
-              onPress={() => handleConfirmar("CONFIRMADO")}
-            >
+            <Button color="success" isLoading={isLoading} startContent={<Check className="w-4 h-4" />} onPress={() => handleConfirmar("CONFIRMADO")}>
               Confirmar
             </Button>
           </div>

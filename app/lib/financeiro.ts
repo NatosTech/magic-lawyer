@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 import { sendEmail, emailTemplates } from "./email";
 
@@ -387,7 +388,7 @@ export const listFaturasPorPeriodo = async (
   filtros?: {
     clienteId?: string;
     advogadoId?: string;
-    status?: string;
+    status?: "RASCUNHO" | "ABERTA" | "PAGA" | "VENCIDA" | "CANCELADA";
   }
 ) => {
   try {
@@ -471,7 +472,10 @@ export const enviarLembretesVencimento = async () => {
     const lembretesEnviados = [];
 
     for (const fatura of faturas) {
-      if (fatura.contrato.cliente.email) {
+      const contrato = fatura.contrato;
+      const clienteEmail = contrato?.cliente?.email;
+
+      if (clienteEmail) {
         try {
           const diasParaVencimento = Math.ceil((fatura.vencimento!.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -480,11 +484,11 @@ export const enviarLembretesVencimento = async () => {
             titulo: `Fatura vence em ${diasParaVencimento} dias`,
             valor: `R$ ${Number(fatura.valor).toFixed(2)}`,
             dataVencimento: fatura.vencimento!.toLocaleDateString("pt-BR"),
-            descricao: `Fatura ${fatura.numero || fatura.id} do contrato ${fatura.contrato.titulo}`,
+            descricao: `Fatura ${fatura.numero || fatura.id} do contrato ${contrato?.titulo ?? ""}`,
           });
 
           await sendEmail({
-            to: fatura.contrato.cliente.email,
+            to: clienteEmail,
             subject: template.subject,
             html: template.html,
           });

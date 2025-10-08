@@ -33,6 +33,23 @@ export interface TenantResponse {
   error?: string;
 }
 
+type EspecialidadeJuridica =
+  | "CIVIL"
+  | "CRIMINAL"
+  | "TRABALHISTA"
+  | "FAMILIA"
+  | "TRIBUTARIO"
+  | "ADMINISTRATIVO"
+  | "EMPRESARIAL"
+  | "CONSUMIDOR"
+  | "AMBIENTAL"
+  | "ELETORAL"
+  | "MILITAR"
+  | "PREVIDENCIARIO"
+  | "CONSTITUCIONAL"
+  | "INTERNACIONAL"
+  | "OUTROS";
+
 // Criar novo tenant
 export async function createTenant(
   data: CreateTenantData,
@@ -251,7 +268,7 @@ export interface CreateJuizData {
     | "DESEMBARGADOR"
     | "MINISTRO"
     | "OUTROS";
-  especialidades: string[];
+  especialidades: EspecialidadeJuridica[];
   vara?: string;
   comarca?: string;
   biografia?: string;
@@ -277,11 +294,13 @@ export async function createJuizGlobal(
   superAdminId: string,
 ): Promise<TenantResponse> {
   try {
+    const { especialidades, tribunalId, ...rest } = data;
     const juiz = await prisma.juiz.create({
       data: {
-        ...data,
+        ...rest,
+        especialidades: { set: especialidades },
         superAdminId, // Controlado pelo super admin
-        tribunalId: data.tribunalId || null,
+        tribunalId: tribunalId ?? null,
       },
     });
 
@@ -378,9 +397,15 @@ export async function updateJuizGlobal(
       };
     }
 
+    const { especialidades, tribunalId, ...rest } = data;
+
     const juiz = await prisma.juiz.update({
       where: { id: juizId },
-      data,
+      data: {
+        ...rest,
+        ...(especialidades ? { especialidades: { set: especialidades } } : {}),
+        ...(tribunalId !== undefined ? { tribunalId: tribunalId ?? null } : {}),
+      },
     });
 
     // Log de auditoria

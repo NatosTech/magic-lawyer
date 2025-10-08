@@ -2,6 +2,7 @@
 
 import type { Selection } from "@react-types/shared";
 import type { ProcuracaoListItem } from "@/app/actions/procuracoes";
+import type { Processo as ProcessoDTO } from "@/app/actions/processos";
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -22,7 +23,7 @@ import { useClientesParaSelect } from "@/app/hooks/use-clientes";
 import { useProcessosCliente } from "@/app/hooks/use-processos";
 import { DateUtils } from "@/app/lib/date-utils";
 import { linkProcuracaoAoProcesso } from "@/app/actions/processos";
-import { Processo, ProcuracaoEmitidaPor, ProcuracaoStatus } from "@/app/generated/prisma";
+import { ProcuracaoEmitidaPor, ProcuracaoStatus } from "@/app/generated/prisma";
 
 type ProcuracaoFiltroValue<T extends string> = T | "";
 
@@ -61,12 +62,10 @@ export function ProcuracoesContent() {
 
   const { processos: processosParaNovaProcuracao, isLoading: isLoadingProcessosNovaProcuracao } = useProcessosCliente(clienteNovaProcuracaoId || null);
 
-  const processosDisponiveis = useMemo<Processo[]>(() => {
-    if (!processosClienteSelecionado) return [];
-
+  const processosDisponiveis = useMemo<ProcessoDTO[]>(() => {
     const vinculados = new Set((selectedProcuracao?.processos || []).map((procuracaoProcesso) => procuracaoProcesso.processoId));
 
-    return processosClienteSelecionado.filter((processo) => !vinculados.has(processo.id));
+    return (processosClienteSelecionado ?? []).filter((processo) => !vinculados.has(processo.id));
   }, [processosClienteSelecionado, selectedProcuracao]);
 
   // Filtros únicos para selects

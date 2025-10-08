@@ -2,6 +2,8 @@
 
 import type { Selection } from "@react-types/shared";
 import type { AdvogadoSelectItem } from "@/app/actions/advogados";
+import type { Cliente as ClienteDTO } from "@/app/actions/clientes";
+import type { Processo as ProcessoDTO } from "@/app/actions/processos";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -21,10 +23,10 @@ import { useClientesParaSelect } from "@/app/hooks/use-clientes";
 import { useProcessosCliente } from "@/app/hooks/use-processos";
 import { useModelosProcuracaoParaSelect } from "@/app/hooks/use-modelos-procuracao";
 import { useAdvogadosDisponiveis } from "@/app/hooks/use-advogados";
-import { Cliente, Processo, ProcuracaoEmitidaPor, ProcuracaoStatus, TipoPessoa } from "@/app/generated/prisma";
+import { ProcuracaoEmitidaPor, ProcuracaoStatus, TipoPessoa } from "@/app/generated/prisma";
 import { title } from "@/components/primitives";
 
-type ClienteSelectItem = Pick<Cliente, "id" | "nome" | "tipoPessoa" | "email" | "documento">;
+type ClienteSelectItem = Pick<ClienteDTO, "id" | "nome" | "tipoPessoa" | "email" | "documento">;
 type ModeloSelectItem = { id: string; nome: string; categoria?: string | null };
 
 const emptyPoder = { titulo: "", descricao: "" };
@@ -351,7 +353,7 @@ export default function NovaProcuracaoPage() {
               selectionMode="multiple"
               onSelectionChange={handleProcessoSelectionChange}
             >
-              {(processosDoCliente ?? []).map((processo: Processo) => (
+              {(processosDoCliente ?? []).map((processo: ProcessoDTO) => (
                 <SelectItem key={processo.id}>
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-default-700">{processo.numero}</span>

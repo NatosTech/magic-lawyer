@@ -11,13 +11,13 @@ export type Plano = {
   id: string;
   nome: string;
   slug: string;
-  descricao?: string;
-  valorMensal?: number;
-  valorAnual?: number;
+  descricao?: string | null;
+  valorMensal?: number | null;
+  valorAnual?: number | null;
   moeda: string;
-  limiteUsuarios?: number;
-  limiteProcessos?: number;
-  limiteStorageMb?: number;
+  limiteUsuarios?: number | null;
+  limiteProcessos?: number | null;
+  limiteStorageMb?: number | null;
   recursos?: any;
   ativo: boolean;
   createdAt: Date;
@@ -30,11 +30,11 @@ export type TenantSubscription = {
   planoId?: string;
   status: string;
   dataInicio: Date;
-  dataFim?: Date;
-  renovaEm?: Date;
-  trialEndsAt?: Date;
-  externalCustomerId?: string;
-  externalSubscriptionId?: string;
+  dataFim?: Date | null;
+  renovaEm?: Date | null;
+  trialEndsAt?: Date | null;
+  externalCustomerId?: string | null;
+  externalSubscriptionId?: string | null;
   metadata?: any;
   createdAt: Date;
   updatedAt: Date;
@@ -233,13 +233,13 @@ export async function getEstatisticasPlanos(): Promise<GetEstatisticasPlanosResp
       prisma.tenantSubscription.count(),
       prisma.tenantSubscription.count({
         where: {
-          status: "ACTIVE",
+          status: "ATIVA",
           planoId: { not: null },
         },
       }),
       prisma.fatura.aggregate({
         where: {
-          status: "PAGO",
+          status: "PAGA",
           pagoEm: {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
           },
@@ -257,7 +257,7 @@ export async function getEstatisticasPlanos(): Promise<GetEstatisticasPlanosResp
         planosAtivos,
         totalAssinaturas,
         assinaturasAtivas,
-        faturamentoMensal: Number(faturamentoMensal._sum.valor || 0),
+        faturamentoMensal: Number(faturamentoMensal._sum?.valor ?? 0),
       },
     };
   } catch (error) {

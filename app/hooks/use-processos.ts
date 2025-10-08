@@ -1,5 +1,3 @@
-import type { Processo } from "@/app/generated/prisma";
-
 import useSWR from "swr";
 
 import {
@@ -11,6 +9,13 @@ import {
   getEventosProcesso,
   getMovimentacoesProcesso,
 } from "@/app/actions/processos";
+import type {
+  Processo as ProcessoDTO,
+  ProcessoDetalhado,
+  ProcessoDocumento,
+  ProcessoEvento,
+  ProcessoMovimentacao,
+} from "@/app/actions/processos";
 
 /**
  * Hook para buscar todos os processos que o usuário pode ver
@@ -19,7 +24,7 @@ import {
  * - CLIENTE: Apenas os próprios
  */
 export function useAllProcessos() {
-  const { data, error, isLoading, mutate } = useSWR<Processo[]>(
+  const { data, error, isLoading, mutate } = useSWR<ProcessoDTO[]>(
     "all-processos",
     async () => {
       const result = await getAllProcessos();
@@ -37,7 +42,7 @@ export function useAllProcessos() {
   );
 
   return {
-    processos: data,
+    processos: data ?? [],
     isLoading,
     isError: !!error,
     error,
@@ -50,7 +55,7 @@ export function useAllProcessos() {
  * Hook para buscar processos do cliente logado (quando usuário É um cliente)
  */
 export function useProcessosClienteLogado() {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<ProcessoDTO[]>(
     "processos-cliente-logado",
     async () => {
       const result = await getProcessosDoClienteLogado();
@@ -68,7 +73,7 @@ export function useProcessosClienteLogado() {
   );
 
   return {
-    processos: data,
+    processos: data ?? [],
     isLoading,
     isError: !!error,
     error,
@@ -81,7 +86,7 @@ export function useProcessosClienteLogado() {
  * Hook para buscar processos de um cliente específico (para advogados)
  */
 export function useProcessosCliente(clienteId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR<Processo[] | null>(
+  const { data, error, isLoading, mutate } = useSWR<ProcessoDTO[] | null>(
     clienteId ? `processos-cliente-${clienteId}` : null,
     async () => {
       if (!clienteId) return null;
@@ -100,7 +105,7 @@ export function useProcessosCliente(clienteId: string | null) {
   );
 
   return {
-    processos: data,
+    processos: data ?? [],
     isLoading,
     isError: !!error,
     error,
@@ -113,7 +118,12 @@ export function useProcessosCliente(clienteId: string | null) {
  * Hook para buscar detalhes completos de um processo
  */
 export function useProcessoDetalhado(processoId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR(
+  type ProcessoDetalhadoResponse = {
+    processo: ProcessoDetalhado | null;
+    isCliente: boolean;
+  };
+
+  const { data, error, isLoading, mutate } = useSWR<ProcessoDetalhadoResponse | null>(
     processoId ? `processo-${processoId}` : null,
     async () => {
       if (!processoId) return null;
@@ -135,8 +145,8 @@ export function useProcessoDetalhado(processoId: string | null) {
   );
 
   return {
-    processo: data?.processo,
-    isCliente: data?.isCliente,
+    processo: data?.processo ?? null,
+    isCliente: data?.isCliente ?? false,
     isLoading,
     isError: !!error,
     error,
@@ -149,7 +159,7 @@ export function useProcessoDetalhado(processoId: string | null) {
  * Hook para buscar documentos de um processo
  */
 export function useDocumentosProcesso(processoId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<ProcessoDocumento[] | null>(
     processoId ? `documentos-processo-${processoId}` : null,
     async () => {
       if (!processoId) return null;
@@ -168,7 +178,7 @@ export function useDocumentosProcesso(processoId: string | null) {
   );
 
   return {
-    documentos: data,
+    documentos: data ?? [],
     isLoading,
     isError: !!error,
     error,
@@ -181,7 +191,7 @@ export function useDocumentosProcesso(processoId: string | null) {
  * Hook para buscar eventos de um processo
  */
 export function useEventosProcesso(processoId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<ProcessoEvento[] | null>(
     processoId ? `eventos-processo-${processoId}` : null,
     async () => {
       if (!processoId) return null;
@@ -200,7 +210,7 @@ export function useEventosProcesso(processoId: string | null) {
   );
 
   return {
-    eventos: data,
+    eventos: data ?? [],
     isLoading,
     isError: !!error,
     error,
@@ -213,7 +223,7 @@ export function useEventosProcesso(processoId: string | null) {
  * Hook para buscar movimentações de um processo
  */
 export function useMovimentacoesProcesso(processoId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<ProcessoMovimentacao[] | null>(
     processoId ? `movimentacoes-processo-${processoId}` : null,
     async () => {
       if (!processoId) return null;
@@ -232,7 +242,7 @@ export function useMovimentacoesProcesso(processoId: string | null) {
   );
 
   return {
-    movimentacoes: data,
+    movimentacoes: data ?? [],
     isLoading,
     isError: !!error,
     error,

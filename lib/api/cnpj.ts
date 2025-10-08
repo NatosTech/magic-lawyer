@@ -15,9 +15,7 @@ export async function buscarCnpj(cnpj: string): Promise<CnpjData | null> {
   }
 
   try {
-    const response = await fetch(
-      `https://www.receitaws.com.br/v1/cnpj/${cnpjLimpo}`,
-    );
+    const response = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cnpjLimpo}`);
 
     if (!response.ok) {
       throw new Error(`Erro ao buscar CNPJ: ${response.status}`);
@@ -48,19 +46,17 @@ export async function buscarCnpj(cnpj: string): Promise<CnpjData | null> {
       descricao_tipo_logradouro: "",
       logradouro: data.logradouro,
       numero: data.numero,
-      complemento: data.complemento || "",
+      complemento: "",
       bairro: data.bairro,
       cep: data.cep,
       uf: data.uf,
       codigo_municipio: 0,
       municipio: data.municipio,
-      ddd_telefone_1: data.telefone,
+      ddd_telefone_1: data.telefone ?? "",
       ddd_telefone_2: "",
       ddd_fax: "",
       qualificacao_do_responsavel: 0,
-      capital_social: parseFloat(
-        data.capital_social?.replace(/[^\d,]/g, "").replace(",", ".") || "0",
-      ),
+      capital_social: parseFloat(data.capital_social?.replace(/[^\d,]/g, "").replace(",", ".") || "0"),
       porte: data.porte,
       descricao_porte: data.porte,
       opcao_pelo_simples: false,

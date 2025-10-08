@@ -11,9 +11,9 @@ export type ConfiguracaoPreco = {
   id: string;
   chave: string;
   valor: string;
-  tipo: "DECIMAL" | "INTEGER" | "BOOLEAN" | "STRING";
-  descricao?: string;
-  categoria: "SISTEMA" | "JUIZES" | "PACOTES" | "TAXAS";
+  tipo: string;
+  descricao: string | null;
+  categoria: string;
   isAtivo: boolean;
   createdAt: Date;
   updatedAt: Date;

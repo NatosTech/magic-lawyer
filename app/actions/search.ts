@@ -24,17 +24,19 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     const processos = await prisma.processo.findMany({
       where: {
         tenantId: session.user.tenantId,
+        deletedAt: null,
         OR: [
           { numero: { contains: searchTerm, mode: "insensitive" } },
-          { assunto: { contains: searchTerm, mode: "insensitive" } },
-          { observacoes: { contains: searchTerm, mode: "insensitive" } },
+          { titulo: { contains: searchTerm, mode: "insensitive" } },
+          { descricao: { contains: searchTerm, mode: "insensitive" } },
         ],
       },
       take: 5,
       select: {
         id: true,
         numero: true,
-        assunto: true,
+        titulo: true,
+        descricao: true,
         status: true,
         cliente: {
           select: {
@@ -45,11 +47,14 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     });
 
     processos.forEach((processo) => {
+      const resumo = processo.titulo ?? processo.descricao ?? "";
+      const clienteNome = processo.cliente?.nome ?? "Cliente não informado";
+
       results.push({
         id: `processo-${processo.id}`,
         type: "processo",
         title: processo.numero,
-        description: `${processo.assunto} - ${processo.cliente.nome}`,
+        description: resumo ? `${resumo} - ${clienteNome}` : clienteNome,
         href: `/processos/${processo.id}`,
         status: processo.status,
         statusColor: getStatusColor(processo.status),
@@ -63,8 +68,7 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
         OR: [
           { nome: { contains: searchTerm, mode: "insensitive" } },
           { email: { contains: searchTerm, mode: "insensitive" } },
-          { cpf: { contains: searchTerm, mode: "insensitive" } },
-          { cnpj: { contains: searchTerm, mode: "insensitive" } },
+          { documento: { contains: searchTerm, mode: "insensitive" } },
         ],
       },
       take: 5,
@@ -72,21 +76,21 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
         id: true,
         nome: true,
         email: true,
-        tipo: true,
+        tipoPessoa: true,
       },
     });
 
     clientes.forEach((cliente) => {
+      const tipoLabel = cliente.tipoPessoa === "FISICA" ? "Pessoa Física" : "Pessoa Jurídica";
       results.push({
         id: `cliente-${cliente.id}`,
         type: "cliente",
         title: cliente.nome,
         description:
-          cliente.email ||
-          `${cliente.tipo === "PESSOA_FISICA" ? "Pessoa Física" : "Pessoa Jurídica"}`,
+          cliente.email || tipoLabel,
         href: `/clientes/${cliente.id}`,
-        status: cliente.tipo === "PESSOA_FISICA" ? "PF" : "PJ",
-        statusColor: cliente.tipo === "PESSOA_FISICA" ? "primary" : "secondary",
+        status: cliente.tipoPessoa === "FISICA" ? "PF" : "PJ",
+        statusColor: cliente.tipoPessoa === "FISICA" ? "primary" : "secondary",
       });
     });
 
@@ -95,16 +99,15 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
       where: {
         tenantId: session.user.tenantId,
         OR: [
-          { titulo: { contains: searchTerm, mode: "insensitive" } },
+          { nome: { contains: searchTerm, mode: "insensitive" } },
           { descricao: { contains: searchTerm, mode: "insensitive" } },
-          { nomeArquivo: { contains: searchTerm, mode: "insensitive" } },
         ],
       },
       take: 5,
       select: {
         id: true,
-        titulo: true,
-        nomeArquivo: true,
+        nome: true,
+        descricao: true,
         tipo: true,
         processo: {
           select: {
@@ -115,13 +118,18 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     });
 
     documentos.forEach((documento) => {
+      const descriptionParts = [
+        documento.descricao?.trim() || null,
+        documento.processo?.numero ? `Processo: ${documento.processo.numero}` : null,
+      ].filter(Boolean) as string[];
+      const description = descriptionParts.join(" - ") || "Documento cadastrado";
       results.push({
         id: `documento-${documento.id}`,
         type: "documento",
-        title: documento.titulo,
-        description: `${documento.nomeArquivo} - Processo: ${documento.processo.numero}`,
+        title: documento.nome,
+        description,
         href: `/documentos/${documento.id}`,
-        status: documento.tipo,
+        status: documento.tipo ?? "Documento",
         statusColor: "default",
       });
     });
@@ -168,24 +176,27 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
       where: {
         tenantId: session.user.tenantId,
         OR: [
-          { nome: { contains: searchTerm, mode: "insensitive" } },
+          { firstName: { contains: searchTerm, mode: "insensitive" } },
+          { lastName: { contains: searchTerm, mode: "insensitive" } },
           { email: { contains: searchTerm, mode: "insensitive" } },
         ],
       },
       take: 3,
       select: {
         id: true,
-        nome: true,
+        firstName: true,
+        lastName: true,
         email: true,
         role: true,
       },
     });
 
     usuarios.forEach((usuario) => {
+      const fullName = `${usuario.firstName ?? ""} ${usuario.lastName ?? ""}`.trim();
       results.push({
         id: `usuario-${usuario.id}`,
         type: "usuario",
-        title: usuario.nome,
+        title: fullName || usuario.email,
         description: usuario.email,
         href: `/equipe/${usuario.id}`,
         status: usuario.role,

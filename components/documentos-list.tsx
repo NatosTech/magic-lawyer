@@ -168,11 +168,11 @@ export default function DocumentosList({ procuracaoId, onEdit, onCountChange }: 
                         <DropdownItem key="download" startContent={<FileDown className="h-4 w-4" />} onPress={() => handleDownload(documento.url, documento.fileName)}>
                           Baixar
                         </DropdownItem>
-                        {onEdit && (
+                        {onEdit ? (
                           <DropdownItem key="edit" startContent={<Edit className="h-4 w-4" />} onPress={() => onEdit(documento.id)}>
                             Editar
                           </DropdownItem>
-                        )}
+                        ) : null}
                         <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="h-4 w-4" />} onPress={() => handleDelete(documento.id, documento.fileName)}>
                           Excluir
                         </DropdownItem>

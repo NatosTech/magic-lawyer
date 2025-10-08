@@ -10,17 +10,17 @@ import { authOptions } from "@/auth";
 export type PacoteJuiz = {
   id: string;
   nome: string;
-  descricao?: string;
+  descricao?: string | null;
   preco: number;
   moeda: string;
-  duracaoDias?: number;
-  limiteUsuarios?: number;
-  limiteConsultas?: number;
+  duracaoDias?: number | null;
+  limiteUsuarios?: number | null;
+  limiteConsultas?: number | null;
   isPublico: boolean;
   status: "ATIVO" | "INATIVO" | "PROMOCIONAL";
   ordemExibicao: number;
   cor: string;
-  icone?: string;
+  icone?: string | null;
   createdAt: Date;
   updatedAt: Date;
   _count?: {
@@ -38,9 +38,9 @@ export type PacoteJuizItem = {
   juiz?: {
     id: string;
     nome: string;
-    nomeCompleto?: string;
-    comarca?: string;
-    vara?: string;
+    nomeCompleto?: string | null;
+    comarca?: string | null;
+    vara?: string | null;
     especialidades: string[];
   };
 };
@@ -51,11 +51,11 @@ export type AssinaturaPacoteJuiz = {
   pacoteId: string;
   status: string;
   dataInicio: Date;
-  dataFim?: Date;
+  dataFim?: Date | null;
   renovacaoAutomatica: boolean;
   precoPago: number;
-  formaPagamento?: string;
-  observacoes?: string;
+  formaPagamento?: string | null;
+  observacoes?: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -200,6 +200,11 @@ export async function getPacoteJuizById(
       data: {
         ...pacote,
         preco: Number(pacote.preco),
+        juizes: pacote.juizes,
+        assinaturas: pacote.assinaturas.map((assinatura) => ({
+          ...assinatura,
+          precoPago: Number(assinatura.precoPago),
+        })),
       },
     };
   } catch (error) {

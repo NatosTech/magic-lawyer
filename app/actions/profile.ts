@@ -7,6 +7,15 @@ import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { UserRole } from "@/app/generated/prisma";
 
+type SessionUser = {
+  id: string;
+  email: string;
+  tenantId?: string | null;
+  tenantSlug?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+};
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -227,6 +236,7 @@ export async function uploadAvatar(formData: FormData): Promise<{
   success: boolean;
   avatarUrl?: string;
   error?: string;
+  sessionUpdated?: boolean;
 }> {
   try {
     const session = await getSession();
@@ -234,6 +244,8 @@ export async function uploadAvatar(formData: FormData): Promise<{
     if (!session?.user?.id) {
       return { success: false, error: "Não autorizado" };
     }
+
+    const user = session.user as SessionUser;
 
     const file = formData.get("file") as File;
     const url = formData.get("url") as string;
@@ -284,14 +296,12 @@ export async function uploadAvatar(formData: FormData): Promise<{
       // Usar o serviço de upload
       const { UploadService } = await import("@/lib/upload-service");
       const uploadService = UploadService.getInstance();
-      const userName =
-        `${session.user.firstName || ""} ${session.user.lastName || ""}`.trim() ||
-        session.user.email;
+      const userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email;
       const result = await uploadService.uploadAvatar(
         buffer,
-        session.user.id,
+        user.id,
         file.name,
-        session.user.tenantSlug,
+        user.tenantSlug ?? undefined,
         userName,
       );
 
@@ -309,7 +319,7 @@ export async function uploadAvatar(formData: FormData): Promise<{
 
     // Atualizar no banco de dados
     await prisma.usuario.update({
-      where: { id: session.user.id },
+      where: { id: user.id },
       data: {
         avatarUrl,
         updatedAt: new Date(),
@@ -339,6 +349,7 @@ export async function uploadAvatar(formData: FormData): Promise<{
 export async function deleteAvatar(avatarUrl: string): Promise<{
   success: boolean;
   error?: string;
+  sessionUpdated?: boolean;
 }> {
   try {
     const session = await getSession();
@@ -347,15 +358,17 @@ export async function deleteAvatar(avatarUrl: string): Promise<{
       return { success: false, error: "Não autorizado" };
     }
 
+    const user = session.user as SessionUser;
+
     // Usar o serviço de upload para deletar
     const { UploadService } = await import("@/lib/upload-service");
     const uploadService = UploadService.getInstance();
-    const result = await uploadService.deleteAvatar(avatarUrl, session.user.id);
+    const result = await uploadService.deleteAvatar(avatarUrl, user.id);
 
     if (result.success) {
       // Atualizar no banco de dados
       await prisma.usuario.update({
-        where: { id: session.user.id },
+        where: { id: user.id },
         data: {
           avatarUrl: null,
           updatedAt: new Date(),

@@ -103,8 +103,8 @@ export const createEvento = async (data: CreateEventoData) => {
           const template = emailTemplates.novoEvento({
             titulo: evento.titulo,
             dataInicio: evento.dataInicio.toLocaleString("pt-BR"),
-            local: evento.local,
-            descricao: evento.descricao,
+            local: evento.local || undefined,
+            descricao: evento.descricao || undefined,
           });
 
           return sendEmail({
@@ -272,8 +272,8 @@ export const listEventos = async (
         ...(filtros?.advogadoResponsavelId && {
           advogadoResponsavelId: filtros.advogadoResponsavelId,
         }),
-        ...(filtros?.tipo && { tipo: filtros.tipo }),
-        ...(filtros?.status && { status: filtros.status }),
+        ...(filtros?.tipo && { tipo: filtros.tipo as "AUDIENCIA" | "REUNIAO" | "CONSULTA" | "PRAZO" | "LEMBRETE" | "OUTRO" }),
+        ...(filtros?.status && { status: filtros.status as "AGENDADO" | "CONFIRMADO" | "REALIZADO" | "CANCELADO" }),
       },
       include: {
         processo: true,
@@ -376,7 +376,7 @@ export const enviarLembretesEventos = async () => {
           const template = emailTemplates.lembreteEvento({
             titulo: evento.titulo,
             dataInicio: evento.dataInicio.toLocaleString("pt-BR"),
-            local: evento.local,
+            local: evento.local ?? undefined,
             minutosRestantes,
           });
 

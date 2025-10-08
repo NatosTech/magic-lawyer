@@ -471,7 +471,7 @@ export function PacotesContent() {
                     <TableCell>
                       <Badge
                         color={
-                          assinatura.status === "ACTIVE" ? "success" : "warning"
+                          assinatura.status === "ATIVA" ? "success" : "warning"
                         }
                         variant="flat"
                       >

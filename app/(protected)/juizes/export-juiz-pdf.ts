@@ -25,7 +25,7 @@ export async function exportJuizToPDF(juiz: JuizSerializado): Promise<void> {
     lightGray: [248, 250, 252], // Cinza muito claro
     text: [51, 51, 51], // Texto escuro
     textLight: [107, 114, 128], // Texto secundário
-  };
+  } as const;
 
   // ========== CABEÇALHO ELEGANTE ==========
   // Background escuro sofisticado

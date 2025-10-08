@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 import { sendEmail, emailTemplates } from "./email";
 import { sendDocumentForSigning, checkDocumentStatus } from "./clicksign";
@@ -115,10 +116,10 @@ export const enviarDocumentoParaAssinatura = async (documentoAssinaturaId: strin
         name: documentoAssinatura.cliente.nome,
         document: documentoAssinatura.cliente.documento || "",
         birthday: "1990-01-01", // Data padrão, deveria ser coletada do cliente
-        phone: documentoAssinatura.cliente.telefone,
+        phone: documentoAssinatura.cliente.telefone || undefined,
       },
-      deadlineAt: documentoAssinatura.dataExpiracao,
-      message: documentoAssinatura.observacoes,
+      deadlineAt: documentoAssinatura.dataExpiracao ?? undefined,
+      message: documentoAssinatura.observacoes ?? undefined,
     });
 
     if (!clicksignResult.success || !clicksignResult.data) {
@@ -159,7 +160,7 @@ export const enviarDocumentoParaAssinatura = async (documentoAssinaturaId: strin
           titulo: documentoAssinatura.titulo,
           urlAssinatura: signingUrl,
           dataExpiracao: documentoAssinatura.dataExpiracao?.toLocaleDateString("pt-BR"),
-          descricao: documentoAssinatura.descricao,
+          descricao: documentoAssinatura.descricao ?? undefined,
         });
 
         await sendEmail({
@@ -280,7 +281,7 @@ export const listDocumentoAssinaturas = async (
     processoId?: string;
     clienteId?: string;
     advogadoResponsavelId?: string;
-    status?: string;
+    status?: "PENDENTE" | "ASSINADO" | "REJEITADO" | "EXPIRADO" | "CANCELADO";
   }
 ) => {
   try {
@@ -458,7 +459,7 @@ export const reenviarLinkAssinatura = async (documentoAssinaturaId: string) => {
           titulo: documentoAssinatura.titulo,
           urlAssinatura: urlResult.data.url,
           dataExpiracao: documentoAssinatura.dataExpiracao?.toLocaleDateString("pt-BR"),
-          descricao: documentoAssinatura.descricao,
+          descricao: documentoAssinatura.descricao ?? undefined,
         });
 
         await sendEmail({

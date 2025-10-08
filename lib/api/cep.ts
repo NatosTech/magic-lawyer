@@ -35,6 +35,8 @@ export async function buscarCep(cep: string): Promise<CepData | null> {
       bairro: data.bairro,
       localidade: data.localidade,
       uf: data.uf,
+      estado: data.uf, // Mapear UF para estado
+      regiao: "", // ViaCEP não fornece região, deixar vazio
       ibge: data.ibge,
       gia: data.gia,
       ddd: data.ddd,

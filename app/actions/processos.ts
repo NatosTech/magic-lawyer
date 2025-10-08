@@ -39,7 +39,7 @@ export interface Processo {
   advogadoResponsavelId: string | null;
   juizId: string | null;
   tribunalId: string | null;
-  tags: any;
+  tags: Prisma.JsonValue | null;
   prazoPrincipal: Date | null;
   numeroInterno: string | null;
   pastaCompartilhadaUrl: string | null;
@@ -243,6 +243,7 @@ async function ensureProcessMutationAccess(
       tenantId: true,
       clienteId: true,
       advogadoResponsavelId: true,
+      numero: true,
     },
   });
 
@@ -1254,9 +1255,38 @@ export async function getProcessoDetalhado(processoId: string): Promise<{
 /**
  * Busca documentos de um processo (respeitando visibilidade para cliente)
  */
+export type ProcessoDocumento = Prisma.DocumentoGetPayload<{
+  include: {
+    uploadedBy: {
+      select: {
+        firstName: true;
+        lastName: true;
+      };
+    };
+    versoes: {
+      include: {
+        uploadedBy: {
+          select: {
+            firstName: true;
+            lastName: true;
+            email: true;
+          };
+        };
+        assinadaPor: {
+          select: {
+            firstName: true;
+            lastName: true;
+            email: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
 export async function getDocumentosProcesso(processoId: string): Promise<{
   success: boolean;
-  documentos?: any[];
+  documentos?: ProcessoDocumento[];
   error?: string;
 }> {
   try {
@@ -1359,9 +1389,25 @@ export async function getDocumentosProcesso(processoId: string): Promise<{
 /**
  * Busca eventos/audiências de um processo
  */
+export type ProcessoEvento = Prisma.EventoGetPayload<{
+  include: {
+    advogadoResponsavel: {
+      select: {
+        id: true;
+        usuario: {
+          select: {
+            firstName: true;
+            lastName: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
 export async function getEventosProcesso(processoId: string): Promise<{
   success: boolean;
-  eventos?: any[];
+  eventos?: ProcessoEvento[];
   error?: string;
 }> {
   try {
@@ -1438,9 +1484,13 @@ export async function getEventosProcesso(processoId: string): Promise<{
 /**
  * Busca movimentações de um processo
  */
+export type ProcessoMovimentacao = Prisma.MovimentacaoProcessoGetPayload<{
+  include: { criadoPor: true };
+}>;
+
 export async function getMovimentacoesProcesso(processoId: string): Promise<{
   success: boolean;
-  movimentacoes?: any[];
+  movimentacoes?: ProcessoMovimentacao[];
   error?: string;
 }> {
   try {
@@ -1877,7 +1927,7 @@ export async function updateProcesso(
       }
     }
 
-    const updatePayload: Prisma.ProcessoUpdateInput = {};
+    const updatePayload: Prisma.ProcessoUncheckedUpdateInput = {};
 
     if (data.numero !== undefined) updatePayload.numero = data.numero;
     if (data.numeroCnj !== undefined)
@@ -2265,17 +2315,17 @@ export async function updateProcessoParte(
     }
 
     if (input.tipoPolo !== undefined) updateData.tipoPolo = input.tipoPolo;
-    if (input.nome !== undefined) updateData.nome = input.nome || null;
+    if (input.nome !== undefined) updateData.nome = input.nome;
     if (input.documento !== undefined)
-      updateData.documento = input.documento || cliente?.documento || null;
+      updateData.documento = input.documento ?? cliente?.documento ?? null;
     if (input.email !== undefined)
-      updateData.email = input.email || cliente?.email || advogadoEmail || null;
+      updateData.email = input.email ?? cliente?.email ?? advogadoEmail ?? null;
     if (input.telefone !== undefined)
       updateData.telefone =
-        input.telefone || cliente?.telefone || cliente?.celular || null;
-    if (input.papel !== undefined) updateData.papel = input.papel || null;
+        input.telefone ?? cliente?.telefone ?? cliente?.celular ?? null;
+    if (input.papel !== undefined) updateData.papel = input.papel ?? null;
     if (input.observacoes !== undefined)
-      updateData.observacoes = input.observacoes || null;
+      updateData.observacoes = input.observacoes ?? null;
 
     const atualizada = await prisma.processoParte.update({
       where: { id: parteId },
@@ -2419,11 +2469,11 @@ export async function updateProcessoPrazo(
 
     const updateData: Prisma.ProcessoPrazoUpdateInput = {};
 
-    if (input.titulo !== undefined) updateData.titulo = input.titulo || null;
+    if (input.titulo !== undefined) updateData.titulo = input.titulo;
     if (input.descricao !== undefined)
-      updateData.descricao = input.descricao || null;
+      updateData.descricao = input.descricao ?? null;
     if (input.fundamentoLegal !== undefined)
-      updateData.fundamentoLegal = input.fundamentoLegal || null;
+      updateData.fundamentoLegal = input.fundamentoLegal ?? null;
     if (input.status !== undefined) updateData.status = input.status;
     if (input.dataVencimento !== undefined)
       updateData.dataVencimento = new Date(input.dataVencimento);
