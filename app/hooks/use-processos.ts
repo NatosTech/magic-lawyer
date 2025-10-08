@@ -9,13 +9,7 @@ import {
   getEventosProcesso,
   getMovimentacoesProcesso,
 } from "@/app/actions/processos";
-import type {
-  Processo as ProcessoDTO,
-  ProcessoDetalhado,
-  ProcessoDocumento,
-  ProcessoEvento,
-  ProcessoMovimentacao,
-} from "@/app/actions/processos";
+import type { Processo as ProcessoDTO, ProcessoDetalhado, ProcessoDocumento, ProcessoEvento, ProcessoMovimentacao } from "@/app/actions/processos";
 
 /**
  * Hook para buscar todos os processos que o usuário pode ver
@@ -38,7 +32,7 @@ export function useAllProcessos() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    },
+    }
   );
 
   return {
@@ -69,7 +63,7 @@ export function useProcessosClienteLogado() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    },
+    }
   );
 
   return {
@@ -101,7 +95,7 @@ export function useProcessosCliente(clienteId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    },
+    }
   );
 
   return {
@@ -141,7 +135,7 @@ export function useProcessoDetalhado(processoId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    },
+    }
   );
 
   return {
@@ -174,7 +168,7 @@ export function useDocumentosProcesso(processoId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    },
+    }
   );
 
   return {
@@ -206,7 +200,7 @@ export function useEventosProcesso(processoId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    },
+    }
   );
 
   return {
@@ -238,7 +232,7 @@ export function useMovimentacoesProcesso(processoId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    },
+    }
   );
 
   return {
