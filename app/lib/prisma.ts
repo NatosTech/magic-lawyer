@@ -30,6 +30,7 @@ if (!globalForPrisma.consolePatched) {
 
   console.warn = (...args: any[]) => {
     const str = args.join(" ");
+
     if (str.includes("checkPlatformCaching")) {
       return;
     }
@@ -71,7 +72,9 @@ export function toNumber(value: Decimal | null | undefined): number | null {
       num = Number(value.toString());
     } else if (value.d && value.e !== undefined && value.s !== undefined) {
       // Handle Decimal internal structure: {d: [digits], e: exponent, s: sign}
-      const digits = Array.isArray(value.d) ? value.d.join("") : String(value.d);
+      const digits = Array.isArray(value.d)
+        ? value.d.join("")
+        : String(value.d);
       const exponent = value.e || 0;
       const sign = value.s || 1;
       const numStr = sign === -1 ? "-" : "";
@@ -102,7 +105,10 @@ export function toNumber(value: Decimal | null | undefined): number | null {
  * Use este helper nos Server Actions antes de retornar dados para Client Components
  * Suporta objetos aninhados e arrays
  */
-export function convertDecimalFields<T extends Record<string, any>>(obj: T, fields: (keyof T)[]): T {
+export function convertDecimalFields<T extends Record<string, any>>(
+  obj: T,
+  fields: (keyof T)[],
+): T {
   if (!obj || typeof obj !== "object") return obj;
 
   const result = { ...obj } as any;
@@ -125,7 +131,13 @@ export function convertDecimalFields<T extends Record<string, any>>(obj: T, fiel
       result[key] = toNumber(value);
     } else if (Array.isArray(value)) {
       // Converter arrays recursivamente
-      result[key] = value.map((item) => (typeof item === "object" && item !== null ? convertDecimalFields(item, fields) : item instanceof Decimal ? toNumber(item) : item));
+      result[key] = value.map((item) =>
+        typeof item === "object" && item !== null
+          ? convertDecimalFields(item, fields)
+          : item instanceof Decimal
+            ? toNumber(item)
+            : item,
+      );
     } else if (typeof value === "object" && value !== null) {
       // Converter objetos aninhados recursivamente
       result[key] = convertDecimalFields(value, fields);
@@ -140,7 +152,9 @@ export function convertDecimalFields<T extends Record<string, any>>(obj: T, fiel
  * e Date objects para strings ISO
  * Use este helper quando quiser converter todos os Decimals sem especificar campos
  */
-export function convertAllDecimalFields<T extends Record<string, any>>(obj: T): T {
+export function convertAllDecimalFields<T extends Record<string, any>>(
+  obj: T,
+): T {
   if (!obj || typeof obj !== "object") return obj;
 
   const result = { ...obj } as any;
@@ -152,7 +166,9 @@ export function convertAllDecimalFields<T extends Record<string, any>>(obj: T): 
     if (
       value &&
       typeof value === "object" &&
-      (value instanceof Decimal || (value.constructor && value.constructor.name === "Decimal") || (value.d && value.e !== undefined && value.s !== undefined)) // Decimal internal structure
+      (value instanceof Decimal ||
+        (value.constructor && value.constructor.name === "Decimal") ||
+        (value.d && value.e !== undefined && value.s !== undefined)) // Decimal internal structure
     ) {
       result[key] = toNumber(value);
     } else if (value instanceof Date) {
@@ -164,7 +180,9 @@ export function convertAllDecimalFields<T extends Record<string, any>>(obj: T): 
         } else if (
           item &&
           typeof item === "object" &&
-          (item instanceof Decimal || (item.constructor && item.constructor.name === "Decimal") || (item.d && item.e !== undefined && item.s !== undefined))
+          (item instanceof Decimal ||
+            (item.constructor && item.constructor.name === "Decimal") ||
+            (item.d && item.e !== undefined && item.s !== undefined))
         ) {
           return toNumber(item);
         } else if (item instanceof Date) {

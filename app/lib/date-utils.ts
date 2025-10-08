@@ -77,8 +77,13 @@ export class DateUtils {
   /**
    * Verificar se duas datas são do mesmo dia
    */
-  static isSameDay(date1: string | Date | dayjs.Dayjs, date2: string | Date | dayjs.Dayjs): boolean {
-    return dayjs(date1).format("YYYY-MM-DD") === dayjs(date2).format("YYYY-MM-DD");
+  static isSameDay(
+    date1: string | Date | dayjs.Dayjs,
+    date2: string | Date | dayjs.Dayjs,
+  ): boolean {
+    return (
+      dayjs(date1).format("YYYY-MM-DD") === dayjs(date2).format("YYYY-MM-DD")
+    );
   }
 
   /**
@@ -92,14 +97,20 @@ export class DateUtils {
    * Verificar se uma data é amanhã
    */
   static isTomorrow(date: string | Date | dayjs.Dayjs): boolean {
-    return dayjs(date).format("YYYY-MM-DD") === dayjs().add(1, "day").format("YYYY-MM-DD");
+    return (
+      dayjs(date).format("YYYY-MM-DD") ===
+      dayjs().add(1, "day").format("YYYY-MM-DD")
+    );
   }
 
   /**
    * Verificar se uma data é ontem
    */
   static isYesterday(date: string | Date | dayjs.Dayjs): boolean {
-    return dayjs(date).format("YYYY-MM-DD") === dayjs().subtract(1, "day").format("YYYY-MM-DD");
+    return (
+      dayjs(date).format("YYYY-MM-DD") ===
+      dayjs().subtract(1, "day").format("YYYY-MM-DD")
+    );
   }
 
   /**
@@ -154,28 +165,41 @@ export class DateUtils {
   /**
    * Subtrair dias de uma data
    */
-  static subtractDays(date: string | Date | dayjs.Dayjs, days: number): dayjs.Dayjs {
+  static subtractDays(
+    date: string | Date | dayjs.Dayjs,
+    days: number,
+  ): dayjs.Dayjs {
     return dayjs(date).subtract(days, "day");
   }
 
   /**
    * Adicionar meses a uma data
    */
-  static addMonths(date: string | Date | dayjs.Dayjs, months: number): dayjs.Dayjs {
+  static addMonths(
+    date: string | Date | dayjs.Dayjs,
+    months: number,
+  ): dayjs.Dayjs {
     return dayjs(date).add(months, "month");
   }
 
   /**
    * Subtrair meses de uma data
    */
-  static subtractMonths(date: string | Date | dayjs.Dayjs, months: number): dayjs.Dayjs {
+  static subtractMonths(
+    date: string | Date | dayjs.Dayjs,
+    months: number,
+  ): dayjs.Dayjs {
     return dayjs(date).subtract(months, "month");
   }
 
   /**
    * Verificar se uma data está entre duas datas
    */
-  static isBetween(date: string | Date | dayjs.Dayjs, start: string | Date | dayjs.Dayjs, end: string | Date | dayjs.Dayjs): boolean {
+  static isBetween(
+    date: string | Date | dayjs.Dayjs,
+    start: string | Date | dayjs.Dayjs,
+    end: string | Date | dayjs.Dayjs,
+  ): boolean {
     const d = dayjs(date);
 
     return d.isSameOrAfter(start) && d.isSameOrBefore(end);
@@ -184,21 +208,30 @@ export class DateUtils {
   /**
    * Obter diferença em dias entre duas datas
    */
-  static diffInDays(date1: string | Date | dayjs.Dayjs, date2: string | Date | dayjs.Dayjs): number {
+  static diffInDays(
+    date1: string | Date | dayjs.Dayjs,
+    date2: string | Date | dayjs.Dayjs,
+  ): number {
     return dayjs(date1).diff(dayjs(date2), "day");
   }
 
   /**
    * Obter diferença em horas entre duas datas
    */
-  static diffInHours(date1: string | Date | dayjs.Dayjs, date2: string | Date | dayjs.Dayjs): number {
+  static diffInHours(
+    date1: string | Date | dayjs.Dayjs,
+    date2: string | Date | dayjs.Dayjs,
+  ): number {
     return dayjs(date1).diff(dayjs(date2), "hour");
   }
 
   /**
    * Obter diferença em minutos entre duas datas
    */
-  static diffInMinutes(date1: string | Date | dayjs.Dayjs, date2: string | Date | dayjs.Dayjs): number {
+  static diffInMinutes(
+    date1: string | Date | dayjs.Dayjs,
+    date2: string | Date | dayjs.Dayjs,
+  ): number {
     return dayjs(date1).diff(dayjs(date2), "minute");
   }
 

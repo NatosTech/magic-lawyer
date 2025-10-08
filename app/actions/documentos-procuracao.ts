@@ -17,7 +17,12 @@ export interface DocumentoProcuracaoCreateInput {
   procuracaoId: string;
   fileName: string;
   description?: string;
-  tipo: "documento_original" | "procuracao_assinada" | "comprovante_envio" | "certidao_cartorio" | "outros";
+  tipo:
+    | "documento_original"
+    | "procuracao_assinada"
+    | "comprovante_envio"
+    | "certidao_cartorio"
+    | "outros";
 }
 
 // ============================================
@@ -42,7 +47,7 @@ export async function uploadDocumentoProcuracao(
     fileName: string;
     description?: string;
     tipo: DocumentoProcuracaoCreateInput["tipo"];
-  }
+  },
 ) {
   try {
     const session = await getSession();
@@ -72,6 +77,7 @@ export async function uploadDocumentoProcuracao(
 
     // Obter arquivo do FormData
     const file = formData.get("file") as File;
+
     if (!file) {
       return { success: false, error: "Arquivo não fornecido" };
     }
@@ -83,8 +89,12 @@ export async function uploadDocumentoProcuracao(
 
     // Validar tamanho do arquivo (máximo 10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
+
     if (file.size > maxSize) {
-      return { success: false, error: "Arquivo muito grande. Máximo permitido: 10MB" };
+      return {
+        success: false,
+        error: "Arquivo muito grande. Máximo permitido: 10MB",
+      };
     }
 
     // Converter arquivo para Buffer
@@ -110,7 +120,13 @@ export async function uploadDocumentoProcuracao(
     };
 
     // Fazer upload
-    const uploadResult = await uploadService.uploadDocumento(buffer, user.id, file.name, user.tenantSlug || "default", uploadOptions);
+    const uploadResult = await uploadService.uploadDocumento(
+      buffer,
+      user.id,
+      file.name,
+      user.tenantSlug || "default",
+      uploadOptions,
+    );
 
     if (!uploadResult.success) {
       return { success: false, error: uploadResult.error || "Erro no upload" };
@@ -143,6 +159,7 @@ export async function uploadDocumentoProcuracao(
     };
   } catch (error) {
     console.error("Erro ao fazer upload do documento:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -196,6 +213,7 @@ export async function getDocumentosProcuracao(procuracaoId: string) {
     };
   } catch (error) {
     console.error("Erro ao buscar documentos:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -238,7 +256,10 @@ export async function deleteDocumentoProcuracao(documentoId: string) {
 
     // Verificar permissão (apenas quem fez upload ou admin pode deletar)
     if (documento.uploadedBy !== user.id && user.role !== "ADMIN") {
-      return { success: false, error: "Sem permissão para deletar este documento" };
+      return {
+        success: false,
+        error: "Sem permissão para deletar este documento",
+      };
     }
 
     // Buscar dados completos para auditoria
@@ -253,7 +274,10 @@ export async function deleteDocumentoProcuracao(documentoId: string) {
 
     // Deletar do Cloudinary
     const uploadService = UploadService.getInstance();
-    const deleteResult = await uploadService.deleteDocumento(documento.url, user.id);
+    const deleteResult = await uploadService.deleteDocumento(
+      documento.url,
+      user.id,
+    );
 
     if (!deleteResult.success) {
       console.warn("Erro ao deletar do Cloudinary:", deleteResult.error);
@@ -261,7 +285,9 @@ export async function deleteDocumentoProcuracao(documentoId: string) {
     }
 
     // TODO: Implementar log de auditoria quando modelo estiver disponível
-    console.log(`🗑️ Documento deletado: ${documentoCompleto?.fileName} por usuário ${user.id}`);
+    console.log(
+      `🗑️ Documento deletado: ${documentoCompleto?.fileName} por usuário ${user.id}`,
+    );
 
     // Deletar registro do banco
     await prisma.documentoProcuracao.delete({
@@ -279,6 +305,7 @@ export async function deleteDocumentoProcuracao(documentoId: string) {
     };
   } catch (error) {
     console.error("Erro ao deletar documento:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -321,7 +348,9 @@ export async function cleanupOrphanedDocuments() {
         const existsResult = await uploadService.checkFileExists(documento.url);
 
         if (!existsResult.success || !existsResult.exists) {
-          console.log(`🗑️  Documento órfão encontrado: ${documento.fileName} (${documento.id})`);
+          console.log(
+            `🗑️  Documento órfão encontrado: ${documento.fileName} (${documento.id})`,
+          );
 
           // Deletar do banco
           await prisma.documentoProcuracao.delete({
@@ -351,14 +380,17 @@ export async function cleanupOrphanedDocuments() {
     console.log("✅ Limpeza concluída:", result);
 
     // TODO: Implementar log de auditoria quando modelo estiver disponível
-    console.log(`📊 Resumo da limpeza: ${totalProcessed} processados, ${totalDeleted} deletados, ${totalErrors} erros`);
+    console.log(
+      `📊 Resumo da limpeza: ${totalProcessed} processados, ${totalDeleted} deletados, ${totalErrors} erros`,
+    );
 
     return result;
   } catch (error) {
     console.error("❌ Erro na limpeza de documentos órfãos:", error);
 
     // TODO: Implementar log de auditoria quando modelo estiver disponível
-    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    const errorMessage =
+      error instanceof Error ? error.message : "Erro desconhecido";
 
     return {
       success: false,
@@ -376,7 +408,7 @@ export async function updateDocumentoProcuracao(
     fileName?: string;
     description?: string;
     tipo?: DocumentoProcuracaoCreateInput["tipo"];
-  }
+  },
 ) {
   try {
     const session = await getSession();
@@ -407,7 +439,10 @@ export async function updateDocumentoProcuracao(
 
     // Verificar permissão (apenas quem fez upload ou admin pode editar)
     if (documento.uploadedBy !== user.id && user.role !== "ADMIN") {
-      return { success: false, error: "Sem permissão para editar este documento" };
+      return {
+        success: false,
+        error: "Sem permissão para editar este documento",
+      };
     }
 
     // Atualizar documento
@@ -433,6 +468,7 @@ export async function updateDocumentoProcuracao(
     };
   } catch (error) {
     console.error("Erro ao atualizar documento:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",

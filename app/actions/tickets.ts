@@ -4,7 +4,11 @@ import { getServerSession } from "next-auth/next";
 
 import { authOptions } from "@/auth";
 import prisma from "@/app/lib/prisma";
-import { TicketStatus, TicketPriority, TicketCategory } from "@/app/generated/prisma";
+import {
+  TicketStatus,
+  TicketPriority,
+  TicketCategory,
+} from "@/app/generated/prisma";
 
 export interface CreateTicketData {
   title: string;
@@ -60,7 +64,9 @@ export interface CreateMessageData {
   isInternal?: boolean;
 }
 
-export async function createTicket(data: CreateTicketData): Promise<TicketWithDetails> {
+export async function createTicket(
+  data: CreateTicketData,
+): Promise<TicketWithDetails> {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session?.user?.tenantId) {
@@ -175,7 +181,9 @@ export async function getTicketsForTenant(): Promise<TicketWithDetails[]> {
   return tickets as TicketWithDetails[];
 }
 
-export async function getTicketById(ticketId: string): Promise<TicketWithDetails | null> {
+export async function getTicketById(
+  ticketId: string,
+): Promise<TicketWithDetails | null> {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session?.user?.tenantId) {
@@ -231,7 +239,10 @@ export async function getTicketById(ticketId: string): Promise<TicketWithDetails
   return ticket as TicketWithDetails | null;
 }
 
-export async function addMessageToTicket(ticketId: string, data: CreateMessageData): Promise<{ success: boolean; messageId?: string }> {
+export async function addMessageToTicket(
+  ticketId: string,
+  data: CreateMessageData,
+): Promise<{ success: boolean; messageId?: string }> {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session?.user?.tenantId) {
@@ -255,7 +266,9 @@ export async function addMessageToTicket(ticketId: string, data: CreateMessageDa
 
   // Se não for admin, só pode adicionar mensagem aos seus próprios tickets
   if (!canViewAllTickets && ticket.userId !== session.user.id) {
-    throw new Error("Você não tem permissão para adicionar mensagens a este ticket");
+    throw new Error(
+      "Você não tem permissão para adicionar mensagens a este ticket",
+    );
   }
 
   const message = await prisma.ticketMessage.create({
@@ -281,7 +294,10 @@ export async function addMessageToTicket(ticketId: string, data: CreateMessageDa
   return { success: true, messageId: message.id };
 }
 
-export async function updateTicketStatus(ticketId: string, status: TicketStatus): Promise<{ success: boolean }> {
+export async function updateTicketStatus(
+  ticketId: string,
+  status: TicketStatus,
+): Promise<{ success: boolean }> {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session?.user?.tenantId) {
@@ -302,7 +318,9 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
     },
     data: {
       status,
-      ...(status === TicketStatus.CLOSED ? { closedAt: new Date() } : { closedAt: null }),
+      ...(status === TicketStatus.CLOSED
+        ? { closedAt: new Date() }
+        : { closedAt: null }),
     },
   });
 

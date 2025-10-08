@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { cleanupOrphanedDocuments } from "@/app/actions/documentos-procuracao";
 
 /**
@@ -21,30 +22,35 @@ export async function GET(request: NextRequest) {
 
     if (result.success) {
       console.log("✅ Cron job concluído com sucesso:", result);
+
       return NextResponse.json({
         success: true,
         message: "Limpeza de documentos concluída",
         data: result,
       });
     } else {
-      const errorMessage = "error" in result ? result.error : "Erro desconhecido";
+      const errorMessage =
+        "error" in result ? result.error : "Erro desconhecido";
+
       console.error("❌ Cron job falhou:", errorMessage);
+
       return NextResponse.json(
         {
           success: false,
           error: errorMessage,
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
   } catch (error) {
     console.error("❌ Erro no cron job de limpeza:", error);
+
     return NextResponse.json(
       {
         success: false,
         error: "Erro interno do servidor",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

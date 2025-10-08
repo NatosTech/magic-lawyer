@@ -1,3 +1,11 @@
+import type {
+  Processo as ProcessoDTO,
+  ProcessoDetalhado,
+  ProcessoDocumento,
+  ProcessoEvento,
+  ProcessoMovimentacao,
+} from "@/app/actions/processos";
+
 import useSWR from "swr";
 
 import {
@@ -9,7 +17,6 @@ import {
   getEventosProcesso,
   getMovimentacoesProcesso,
 } from "@/app/actions/processos";
-import type { Processo as ProcessoDTO, ProcessoDetalhado, ProcessoDocumento, ProcessoEvento, ProcessoMovimentacao } from "@/app/actions/processos";
 
 /**
  * Hook para buscar todos os processos que o usuário pode ver
@@ -32,7 +39,7 @@ export function useAllProcessos() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -63,7 +70,7 @@ export function useProcessosClienteLogado() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -95,7 +102,7 @@ export function useProcessosCliente(clienteId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -117,26 +124,27 @@ export function useProcessoDetalhado(processoId: string | null) {
     isCliente: boolean;
   };
 
-  const { data, error, isLoading, mutate } = useSWR<ProcessoDetalhadoResponse | null>(
-    processoId ? `processo-${processoId}` : null,
-    async () => {
-      if (!processoId) return null;
-      const result = await getProcessoDetalhado(processoId);
+  const { data, error, isLoading, mutate } =
+    useSWR<ProcessoDetalhadoResponse | null>(
+      processoId ? `processo-${processoId}` : null,
+      async () => {
+        if (!processoId) return null;
+        const result = await getProcessoDetalhado(processoId);
 
-      if (!result.success) {
-        throw new Error(result.error || "Erro ao carregar processo");
-      }
+        if (!result.success) {
+          throw new Error(result.error || "Erro ao carregar processo");
+        }
 
-      return {
-        processo: result.processo || null,
-        isCliente: result.isCliente || false,
-      };
-    },
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    }
-  );
+        return {
+          processo: result.processo || null,
+          isCliente: result.isCliente || false,
+        };
+      },
+      {
+        revalidateOnFocus: false,
+        revalidateOnReconnect: true,
+      },
+    );
 
   return {
     processo: data?.processo ?? null,
@@ -168,7 +176,7 @@ export function useDocumentosProcesso(processoId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -200,7 +208,7 @@ export function useEventosProcesso(processoId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -217,7 +225,9 @@ export function useEventosProcesso(processoId: string | null) {
  * Hook para buscar movimentações de um processo
  */
 export function useMovimentacoesProcesso(processoId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR<ProcessoMovimentacao[] | null>(
+  const { data, error, isLoading, mutate } = useSWR<
+    ProcessoMovimentacao[] | null
+  >(
     processoId ? `movimentacoes-processo-${processoId}` : null,
     async () => {
       if (!processoId) return null;
@@ -232,7 +242,7 @@ export function useMovimentacoesProcesso(processoId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {

@@ -296,7 +296,8 @@ export async function uploadAvatar(formData: FormData): Promise<{
       // Usar o serviço de upload
       const { UploadService } = await import("@/lib/upload-service");
       const uploadService = UploadService.getInstance();
-      const userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email;
+      const userName =
+        `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email;
       const result = await uploadService.uploadAvatar(
         buffer,
         user.id,

@@ -4,12 +4,31 @@ import React, { useEffect } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/dropdown";
 import { Spinner } from "@heroui/spinner";
-import { FileText, Download, MoreVertical, Edit, Trash2, Calendar, User, FileDown, Paperclip } from "lucide-react";
+import {
+  FileText,
+  Download,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Calendar,
+  FileDown,
+  Paperclip,
+} from "lucide-react";
 import { toast } from "sonner";
 
-import { useDocumentosProcuracao, useDeleteDocumentoProcuracao, getDocumentIcon, formatFileSize } from "@/app/hooks/use-documentos-procuracao";
+import {
+  useDocumentosProcuracao,
+  useDeleteDocumentoProcuracao,
+  getDocumentIcon,
+  formatFileSize,
+} from "@/app/hooks/use-documentos-procuracao";
 
 interface DocumentosListProps {
   procuracaoId: string;
@@ -17,8 +36,13 @@ interface DocumentosListProps {
   onCountChange?: (count: number) => void;
 }
 
-export default function DocumentosList({ procuracaoId, onEdit, onCountChange }: DocumentosListProps) {
-  const { documentos, isLoading, isError, error, refresh, mutate } = useDocumentosProcuracao(procuracaoId);
+export default function DocumentosList({
+  procuracaoId,
+  onEdit,
+  onCountChange,
+}: DocumentosListProps) {
+  const { documentos, isLoading, isError, error, refresh, mutate } =
+    useDocumentosProcuracao(procuracaoId);
   const { deleteDocumento, isDeleting } = useDeleteDocumentoProcuracao();
 
   // Notificar mudança na contagem de documentos
@@ -54,7 +78,9 @@ export default function DocumentosList({ procuracaoId, onEdit, onCountChange }: 
       refresh();
     } catch (error) {
       console.error("Erro ao deletar documento:", error);
-      toast.error(error instanceof Error ? error.message : "Erro ao deletar documento");
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao deletar documento",
+      );
     }
   };
 
@@ -81,8 +107,16 @@ export default function DocumentosList({ procuracaoId, onEdit, onCountChange }: 
       <div className="text-center py-12">
         <FileText className="h-12 w-12 text-danger mx-auto mb-4" />
         <p className="text-danger font-medium">Erro ao carregar documentos</p>
-        <p className="text-default-500 text-sm mt-2">{error instanceof Error ? error.message : "Erro desconhecido"}</p>
-        <Button color="primary" variant="flat" size="sm" onPress={() => refresh()} className="mt-4">
+        <p className="text-default-500 text-sm mt-2">
+          {error instanceof Error ? error.message : "Erro desconhecido"}
+        </p>
+        <Button
+          className="mt-4"
+          color="primary"
+          size="sm"
+          variant="flat"
+          onPress={() => refresh()}
+        >
           Tentar Novamente
         </Button>
       </div>
@@ -97,8 +131,12 @@ export default function DocumentosList({ procuracaoId, onEdit, onCountChange }: 
             <Paperclip className="h-8 w-8 text-default-400" />
           </div>
           <div>
-            <p className="text-default-700 font-medium text-lg">Nenhum documento anexado</p>
-            <p className="text-default-500 text-sm mt-1">Faça upload de documentos para esta procuração</p>
+            <p className="text-default-700 font-medium text-lg">
+              Nenhum documento anexado
+            </p>
+            <p className="text-default-500 text-sm mt-1">
+              Faça upload de documentos para esta procuração
+            </p>
           </div>
         </div>
       </div>
@@ -111,10 +149,11 @@ export default function DocumentosList({ procuracaoId, onEdit, onCountChange }: 
         <div>
           <h3 className="text-lg font-semibold">Documentos Anexados</h3>
           <p className="text-sm text-default-500">
-            {documentos.length} documento{documentos.length !== 1 ? "s" : ""} anexado{documentos.length !== 1 ? "s" : ""}
+            {documentos.length} documento{documentos.length !== 1 ? "s" : ""}{" "}
+            anexado{documentos.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Chip size="sm" variant="flat" color="primary">
+        <Chip color="primary" size="sm" variant="flat">
           {documentos.length}
         </Chip>
       </div>
@@ -122,14 +161,21 @@ export default function DocumentosList({ procuracaoId, onEdit, onCountChange }: 
       <div className="p-6">
         <div className="space-y-3">
           {documentos.map((documento: any) => (
-            <Card key={documento.id} className="border border-default-200 hover:shadow-sm transition-shadow">
+            <Card
+              key={documento.id}
+              className="border border-default-200 hover:shadow-sm transition-shadow"
+            >
               <CardBody className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3 flex-1">
-                    <div className="text-2xl">{getDocumentIcon(documento.tipo)}</div>
+                    <div className="text-2xl">
+                      {getDocumentIcon(documento.tipo)}
+                    </div>
 
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-default-900 truncate">{documento.fileName}</h4>
+                      <h4 className="font-semibold text-default-900 truncate">
+                        {documento.fileName}
+                      </h4>
 
                       <div className="flex items-center gap-4 text-sm text-default-500 mt-1">
                         <div className="flex items-center gap-1">
@@ -143,10 +189,14 @@ export default function DocumentosList({ procuracaoId, onEdit, onCountChange }: 
                         </div>
                       </div>
 
-                      {documento.description && <p className="text-sm text-default-600 mt-2">{documento.description}</p>}
+                      {documento.description && (
+                        <p className="text-sm text-default-600 mt-2">
+                          {documento.description}
+                        </p>
+                      )}
 
                       <div className="flex items-center gap-2 mt-2">
-                        <Chip size="sm" variant="flat" color="primary">
+                        <Chip color="primary" size="sm" variant="flat">
                           {documento.tipo.replace(/_/g, " ")}
                         </Chip>
                       </div>
@@ -154,7 +204,15 @@ export default function DocumentosList({ procuracaoId, onEdit, onCountChange }: 
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Button isIconOnly size="sm" variant="light" onPress={() => handleDownload(documento.url, documento.fileName)} title="Baixar documento">
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      title="Baixar documento"
+                      variant="light"
+                      onPress={() =>
+                        handleDownload(documento.url, documento.fileName)
+                      }
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
 
@@ -165,15 +223,33 @@ export default function DocumentosList({ procuracaoId, onEdit, onCountChange }: 
                         </Button>
                       </DropdownTrigger>
                       <DropdownMenu>
-                        <DropdownItem key="download" startContent={<FileDown className="h-4 w-4" />} onPress={() => handleDownload(documento.url, documento.fileName)}>
+                        <DropdownItem
+                          key="download"
+                          startContent={<FileDown className="h-4 w-4" />}
+                          onPress={() =>
+                            handleDownload(documento.url, documento.fileName)
+                          }
+                        >
                           Baixar
                         </DropdownItem>
                         {onEdit ? (
-                          <DropdownItem key="edit" startContent={<Edit className="h-4 w-4" />} onPress={() => onEdit(documento.id)}>
+                          <DropdownItem
+                            key="edit"
+                            startContent={<Edit className="h-4 w-4" />}
+                            onPress={() => onEdit(documento.id)}
+                          >
                             Editar
                           </DropdownItem>
                         ) : null}
-                        <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="h-4 w-4" />} onPress={() => handleDelete(documento.id, documento.fileName)}>
+                        <DropdownItem
+                          key="delete"
+                          className="text-danger"
+                          color="danger"
+                          startContent={<Trash2 className="h-4 w-4" />}
+                          onPress={() =>
+                            handleDelete(documento.id, documento.fileName)
+                          }
+                        >
                           Excluir
                         </DropdownItem>
                       </DropdownMenu>

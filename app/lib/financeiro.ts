@@ -1,4 +1,3 @@
-import type { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 import { sendEmail, emailTemplates } from "./email";
 
@@ -53,7 +52,7 @@ export interface ResumoFinanceiroEscritorio {
 
 // Função para obter resumo financeiro do cliente
 export const getResumoFinanceiroCliente = async (
-  clienteId: string
+  clienteId: string,
 ): Promise<{
   success: boolean;
   data?: ResumoFinanceiroCliente;
@@ -131,7 +130,9 @@ export const getResumoFinanceiroCliente = async (
       }
     }
 
-    const contratosAtivos = cliente.contratos.filter((c) => c.status === "ATIVO").length;
+    const contratosAtivos = cliente.contratos.filter(
+      (c) => c.status === "ATIVO",
+    ).length;
 
     const resumo: ResumoFinanceiroCliente = {
       clienteId: cliente.id,
@@ -160,7 +161,7 @@ export const getResumoFinanceiroCliente = async (
 
 // Função para obter resumo financeiro do advogado
 export const getResumoFinanceiroAdvogado = async (
-  advogadoId: string
+  advogadoId: string,
 ): Promise<{
   success: boolean;
   data?: ResumoFinanceiroAdvogado;
@@ -232,12 +233,17 @@ export const getResumoFinanceiroAdvogado = async (
     }
 
     const clientesAtivos = advogado.clientes.length;
-    const processosAtivos = advogado.processos.filter((p) => p.status === "EM_ANDAMENTO").length;
-    const contratosAtivos = advogado.contratos.filter((c) => c.status === "ATIVO").length;
+    const processosAtivos = advogado.processos.filter(
+      (p) => p.status === "EM_ANDAMENTO",
+    ).length;
+    const contratosAtivos = advogado.contratos.filter(
+      (c) => c.status === "ATIVO",
+    ).length;
 
     const resumo: ResumoFinanceiroAdvogado = {
       advogadoId: advogado.id,
-      advogadoNome: advogado.usuario.firstName + " " + advogado.usuario.lastName,
+      advogadoNome:
+        advogado.usuario.firstName + " " + advogado.usuario.lastName,
       totalAReceber,
       totalRecebido,
       totalPendente,
@@ -262,7 +268,7 @@ export const getResumoFinanceiroAdvogado = async (
 
 // Função para obter resumo financeiro do escritório
 export const getResumoFinanceiroEscritorio = async (
-  tenantId: string
+  tenantId: string,
 ): Promise<{
   success: boolean;
   data?: ResumoFinanceiroEscritorio;
@@ -349,7 +355,10 @@ export const getResumoFinanceiroEscritorio = async (
 
     const receitaAtual = Number(receitaMesAtual._sum.valor || 0);
     const receitaAnterior = Number(receitaMesAnterior._sum.valor || 0);
-    const crescimentoMensal = receitaAnterior > 0 ? ((receitaAtual - receitaAnterior) / receitaAnterior) * 100 : 0;
+    const crescimentoMensal =
+      receitaAnterior > 0
+        ? ((receitaAtual - receitaAnterior) / receitaAnterior) * 100
+        : 0;
 
     const resumo: ResumoFinanceiroEscritorio = {
       tenantId,
@@ -389,7 +398,7 @@ export const listFaturasPorPeriodo = async (
     clienteId?: string;
     advogadoId?: string;
     status?: "RASCUNHO" | "ABERTA" | "PAGA" | "VENCIDA" | "CANCELADA";
-  }
+  },
 ) => {
   try {
     const faturas = await prisma.fatura.findMany({
@@ -477,7 +486,10 @@ export const enviarLembretesVencimento = async () => {
 
       if (clienteEmail) {
         try {
-          const diasParaVencimento = Math.ceil((fatura.vencimento!.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+          const diasParaVencimento = Math.ceil(
+            (fatura.vencimento!.getTime() - hoje.getTime()) /
+              (1000 * 60 * 60 * 24),
+          );
 
           const template = emailTemplates.notificacaoFinanceira({
             tipo: "vencimento",
@@ -495,7 +507,10 @@ export const enviarLembretesVencimento = async () => {
 
           lembretesEnviados.push(fatura.id);
         } catch (error) {
-          console.error(`Erro ao enviar lembrete para fatura ${fatura.id}:`, error);
+          console.error(
+            `Erro ao enviar lembrete para fatura ${fatura.id}:`,
+            error,
+          );
         }
       }
     }
@@ -518,7 +533,11 @@ export const enviarLembretesVencimento = async () => {
 };
 
 // Função para marcar fatura como paga
-export const marcarFaturaComoPaga = async (faturaId: string, valorPago: number, metodoPagamento?: string) => {
+export const marcarFaturaComoPaga = async (
+  faturaId: string,
+  valorPago: number,
+  metodoPagamento?: string,
+) => {
   try {
     const fatura = await prisma.fatura.findUnique({
       where: { id: faturaId },
@@ -567,7 +586,12 @@ export const marcarFaturaComoPaga = async (faturaId: string, valorPago: number, 
 };
 
 // Função para gerar relatório financeiro
-export const gerarRelatorioFinanceiro = async (tenantId: string, dataInicio: Date, dataFim: Date, tipo: "cliente" | "advogado" | "escritorio") => {
+export const gerarRelatorioFinanceiro = async (
+  tenantId: string,
+  dataInicio: Date,
+  dataFim: Date,
+  tipo: "cliente" | "advogado" | "escritorio",
+) => {
   try {
     let relatorio: any = {};
 
@@ -603,7 +627,10 @@ export const gerarRelatorioFinanceiro = async (tenantId: string, dataInicio: Dat
           for (const contrato of cliente.contratos) {
             for (const fatura of contrato.faturas) {
               totalFaturado += Number(fatura.valor);
-              const pago = fatura.pagamentos.reduce((sum, p) => (p.status === "PAGO" ? sum + Number(p.valor) : sum), 0);
+              const pago = fatura.pagamentos.reduce(
+                (sum, p) => (p.status === "PAGO" ? sum + Number(p.valor) : sum),
+                0,
+              );
 
               totalPago += pago;
               totalPendente += Number(fatura.valor) - pago;
@@ -653,7 +680,10 @@ export const gerarRelatorioFinanceiro = async (tenantId: string, dataInicio: Dat
           for (const contrato of advogado.contratos) {
             for (const fatura of contrato.faturas) {
               totalFaturado += Number(fatura.valor);
-              const pago = fatura.pagamentos.reduce((sum, p) => (p.status === "PAGO" ? sum + Number(p.valor) : sum), 0);
+              const pago = fatura.pagamentos.reduce(
+                (sum, p) => (p.status === "PAGO" ? sum + Number(p.valor) : sum),
+                0,
+              );
 
               totalPago += pago;
               totalPendente += Number(fatura.valor) - pago;
@@ -708,7 +738,10 @@ export const gerarRelatorioFinanceiro = async (tenantId: string, dataInicio: Dat
 
         for (const fatura of faturas) {
           totalFaturado += Number(fatura.valor);
-          const pago = fatura.pagamentos.reduce((sum, p) => (p.status === "PAGO" ? sum + Number(p.valor) : sum), 0);
+          const pago = fatura.pagamentos.reduce(
+            (sum, p) => (p.status === "PAGO" ? sum + Number(p.valor) : sum),
+            0,
+          );
 
           totalPago += pago;
           totalPendente += Number(fatura.valor) - pago;

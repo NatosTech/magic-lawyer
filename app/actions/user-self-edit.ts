@@ -7,7 +7,10 @@ import prisma from "../lib/prisma";
 
 import { authOptions } from "@/auth";
 import { UserRole } from "@/app/generated/prisma";
-import { getSelfEditPermissions, type SelfEditPermissions } from "@/lib/user-permissions";
+import {
+  getSelfEditPermissions,
+  type SelfEditPermissions,
+} from "@/lib/user-permissions";
 
 // Interface para dados que o usuário pode editar de si mesmo
 export interface UserSelfEditData {

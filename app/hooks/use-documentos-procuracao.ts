@@ -3,7 +3,13 @@
 import useSWR from "swr";
 import useSWRMutation from "swr/mutation";
 
-import { getDocumentosProcuracao, uploadDocumentoProcuracao, deleteDocumentoProcuracao, updateDocumentoProcuracao, type DocumentoProcuracaoCreateInput } from "@/app/actions/documentos-procuracao";
+import {
+  getDocumentosProcuracao,
+  uploadDocumentoProcuracao,
+  deleteDocumentoProcuracao,
+  updateDocumentoProcuracao,
+  type DocumentoProcuracaoCreateInput,
+} from "@/app/actions/documentos-procuracao";
 
 /**
  * Hook para buscar documentos de uma procuração
@@ -27,7 +33,7 @@ export function useDocumentosProcuracao(procuracaoId: string | null) {
       revalidateOnReconnect: true,
       refreshInterval: 0, // Não fazer refresh automático
       dedupingInterval: 2000, // Cache por 2 segundos
-    }
+    },
   );
 
   return {
@@ -46,15 +52,34 @@ export function useDocumentosProcuracao(procuracaoId: string | null) {
 export function useUploadDocumentoProcuracao() {
   const { trigger, isMutating } = useSWRMutation(
     "upload-documento-procuracao",
-    async (url: string, { arg }: { arg: { procuracaoId: string; formData: FormData; options: { fileName: string; description?: string; tipo: DocumentoProcuracaoCreateInput["tipo"] } } }) => {
-      const result = await uploadDocumentoProcuracao(arg.procuracaoId, arg.formData, arg.options);
+    async (
+      url: string,
+      {
+        arg,
+      }: {
+        arg: {
+          procuracaoId: string;
+          formData: FormData;
+          options: {
+            fileName: string;
+            description?: string;
+            tipo: DocumentoProcuracaoCreateInput["tipo"];
+          };
+        };
+      },
+    ) => {
+      const result = await uploadDocumentoProcuracao(
+        arg.procuracaoId,
+        arg.formData,
+        arg.options,
+      );
 
       if (!result.success) {
         throw new Error(result.error || "Erro ao fazer upload");
       }
 
       return result;
-    }
+    },
   );
 
   return {
@@ -67,15 +92,18 @@ export function useUploadDocumentoProcuracao() {
  * Hook para deletar documento
  */
 export function useDeleteDocumentoProcuracao() {
-  const { trigger, isMutating } = useSWRMutation("delete-documento-procuracao", async (url: string, { arg }: { arg: string }) => {
-    const result = await deleteDocumentoProcuracao(arg);
+  const { trigger, isMutating } = useSWRMutation(
+    "delete-documento-procuracao",
+    async (url: string, { arg }: { arg: string }) => {
+      const result = await deleteDocumentoProcuracao(arg);
 
-    if (!result.success) {
-      throw new Error(result.error || "Erro ao deletar documento");
-    }
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao deletar documento");
+      }
 
-    return result;
-  });
+      return result;
+    },
+  );
 
   return {
     deleteDocumento: trigger,
@@ -89,7 +117,21 @@ export function useDeleteDocumentoProcuracao() {
 export function useUpdateDocumentoProcuracao() {
   const { trigger, isMutating } = useSWRMutation(
     "update-documento-procuracao",
-    async (url: string, { arg }: { arg: { documentoId: string; data: { fileName?: string; description?: string; tipo?: DocumentoProcuracaoCreateInput["tipo"] } } }) => {
+    async (
+      url: string,
+      {
+        arg,
+      }: {
+        arg: {
+          documentoId: string;
+          data: {
+            fileName?: string;
+            description?: string;
+            tipo?: DocumentoProcuracaoCreateInput["tipo"];
+          };
+        };
+      },
+    ) => {
       const result = await updateDocumentoProcuracao(arg.documentoId, arg.data);
 
       if (!result.success) {
@@ -97,7 +139,7 @@ export function useUpdateDocumentoProcuracao() {
       }
 
       return result;
-    }
+    },
   );
 
   return {
@@ -110,11 +152,31 @@ export function useUpdateDocumentoProcuracao() {
  * Tipos de documentos disponíveis
  */
 export const TIPOS_DOCUMENTO = [
-  { value: "documento_original", label: "Documento Original", description: "Documento original da procuração" },
-  { value: "procuracao_assinada", label: "Procuração Assinada", description: "Procuração com assinaturas" },
-  { value: "comprovante_envio", label: "Comprovante de Envio", description: "Comprovante de envio/entrega" },
-  { value: "certidao_cartorio", label: "Certidão do Cartório", description: "Certidão do cartório" },
-  { value: "outros", label: "Outros", description: "Outros documentos relacionados" },
+  {
+    value: "documento_original",
+    label: "Documento Original",
+    description: "Documento original da procuração",
+  },
+  {
+    value: "procuracao_assinada",
+    label: "Procuração Assinada",
+    description: "Procuração com assinaturas",
+  },
+  {
+    value: "comprovante_envio",
+    label: "Comprovante de Envio",
+    description: "Comprovante de envio/entrega",
+  },
+  {
+    value: "certidao_cartorio",
+    label: "Certidão do Cartório",
+    description: "Certidão do cartório",
+  },
+  {
+    value: "outros",
+    label: "Outros",
+    description: "Outros documentos relacionados",
+  },
 ] as const;
 
 /**

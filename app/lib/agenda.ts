@@ -79,7 +79,7 @@ export const createEvento = async (data: CreateEventoData) => {
             participantes: evento.participantes,
             lembreteMinutos: evento.lembreteMinutos || undefined,
           },
-          data.googleTokens
+          data.googleTokens,
         );
 
         if (googleResult.success && googleResult.data) {
@@ -188,7 +188,7 @@ export const updateEvento = async (data: UpdateEventoData) => {
             lembreteMinutos: evento.lembreteMinutos || undefined,
           },
           data.googleTokens,
-          eventoExistente.googleEventId
+          eventoExistente.googleEventId,
         );
       } catch (error) {
         console.error("Erro ao atualizar evento no Google Calendar:", error);
@@ -207,7 +207,10 @@ export const updateEvento = async (data: UpdateEventoData) => {
 };
 
 // Função para deletar evento
-export const deleteEvento = async (eventoId: string, googleTokens?: { accessToken: string; refreshToken: string }) => {
+export const deleteEvento = async (
+  eventoId: string,
+  googleTokens?: { accessToken: string; refreshToken: string },
+) => {
   try {
     const evento = await prisma.evento.findUnique({
       where: { id: eventoId },
@@ -222,7 +225,11 @@ export const deleteEvento = async (eventoId: string, googleTokens?: { accessToke
       try {
         const { deleteCalendarEvent } = await import("./google-calendar");
 
-        await deleteCalendarEvent(googleTokens.accessToken, googleTokens.refreshToken, evento.googleEventId);
+        await deleteCalendarEvent(
+          googleTokens.accessToken,
+          googleTokens.refreshToken,
+          evento.googleEventId,
+        );
       } catch (error) {
         console.error("Erro ao deletar evento do Google Calendar:", error);
         // Continua com a deleção local mesmo se falhar no Google
@@ -255,7 +262,7 @@ export const listEventos = async (
     advogadoResponsavelId?: string;
     tipo?: string;
     status?: string;
-  }
+  },
 ) => {
   try {
     const eventos = await prisma.evento.findMany({
@@ -272,8 +279,22 @@ export const listEventos = async (
         ...(filtros?.advogadoResponsavelId && {
           advogadoResponsavelId: filtros.advogadoResponsavelId,
         }),
-        ...(filtros?.tipo && { tipo: filtros.tipo as "AUDIENCIA" | "REUNIAO" | "CONSULTA" | "PRAZO" | "LEMBRETE" | "OUTRO" }),
-        ...(filtros?.status && { status: filtros.status as "AGENDADO" | "CONFIRMADO" | "REALIZADO" | "CANCELADO" }),
+        ...(filtros?.tipo && {
+          tipo: filtros.tipo as
+            | "AUDIENCIA"
+            | "REUNIAO"
+            | "CONSULTA"
+            | "PRAZO"
+            | "LEMBRETE"
+            | "OUTRO",
+        }),
+        ...(filtros?.status && {
+          status: filtros.status as
+            | "AGENDADO"
+            | "CONFIRMADO"
+            | "REALIZADO"
+            | "CANCELADO",
+        }),
       },
       include: {
         processo: true,
@@ -368,10 +389,15 @@ export const enviarLembretesEventos = async () => {
     const lembretesEnviados = [];
 
     for (const evento of eventos) {
-      const minutosRestantes = Math.round((evento.dataInicio.getTime() - agora.getTime()) / (1000 * 60));
+      const minutosRestantes = Math.round(
+        (evento.dataInicio.getTime() - agora.getTime()) / (1000 * 60),
+      );
 
       // Verificar se está na hora de enviar o lembrete
-      if (evento.lembreteMinutos && minutosRestantes <= evento.lembreteMinutos) {
+      if (
+        evento.lembreteMinutos &&
+        minutosRestantes <= evento.lembreteMinutos
+      ) {
         try {
           const template = emailTemplates.lembreteEvento({
             titulo: evento.titulo,
@@ -392,7 +418,10 @@ export const enviarLembretesEventos = async () => {
           await Promise.all(emailPromises);
           lembretesEnviados.push(evento.id);
         } catch (error) {
-          console.error(`Erro ao enviar lembrete para evento ${evento.id}:`, error);
+          console.error(
+            `Erro ao enviar lembrete para evento ${evento.id}:`,
+            error,
+          );
         }
       }
     }

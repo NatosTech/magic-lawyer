@@ -8,15 +8,36 @@ import { Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Checkbox } from "@heroui/checkbox";
 import { Divider } from "@heroui/divider";
-import { ArrowLeft, Save, Scale, User, Building2, MapPin, Calendar, DollarSign, Flag, Layers, Landmark, Link2, Clock } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  Scale,
+  User,
+  Building2,
+  MapPin,
+  Calendar,
+  DollarSign,
+  Flag,
+  Layers,
+  Landmark,
+  Link2,
+  Clock,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Spinner } from "@heroui/spinner";
 
 import { title } from "@/components/primitives";
-import { createProcesso, type ProcessoCreateInput } from "@/app/actions/processos";
-import { ProcessoStatus, ProcessoFase, ProcessoGrau } from "@/app/generated/prisma";
+import {
+  createProcesso,
+  type ProcessoCreateInput,
+} from "@/app/actions/processos";
+import {
+  ProcessoStatus,
+  ProcessoFase,
+  ProcessoGrau,
+} from "@/app/generated/prisma";
 import { useClientesParaSelect } from "@/app/hooks/use-clientes";
 
 export default function NovoProcessoPage() {
@@ -104,20 +125,32 @@ export default function NovoProcessoPage() {
         segredoJustica: formData.segredoJustica,
       };
 
-      if (formData.numeroCnj?.trim()) payload.numeroCnj = formData.numeroCnj.trim();
+      if (formData.numeroCnj?.trim())
+        payload.numeroCnj = formData.numeroCnj.trim();
       if (formData.titulo?.trim()) payload.titulo = formData.titulo.trim();
-      if (formData.descricao?.trim()) payload.descricao = formData.descricao.trim();
-      if (formData.classeProcessual?.trim()) payload.classeProcessual = formData.classeProcessual.trim();
+      if (formData.descricao?.trim())
+        payload.descricao = formData.descricao.trim();
+      if (formData.classeProcessual?.trim())
+        payload.classeProcessual = formData.classeProcessual.trim();
       if (formData.rito?.trim()) payload.rito = formData.rito.trim();
       if (formData.vara?.trim()) payload.vara = formData.vara.trim();
       if (formData.comarca?.trim()) payload.comarca = formData.comarca.trim();
       if (formData.foro?.trim()) payload.foro = formData.foro.trim();
-      if (formData.orgaoJulgador?.trim()) payload.orgaoJulgador = formData.orgaoJulgador.trim();
-      if (formData.numeroInterno?.trim()) payload.numeroInterno = formData.numeroInterno.trim();
-      if (formData.pastaCompartilhadaUrl?.trim()) payload.pastaCompartilhadaUrl = formData.pastaCompartilhadaUrl.trim();
-      if (formData.dataDistribuicao) payload.dataDistribuicao = formData.dataDistribuicao;
-      if (formData.prazoPrincipal) payload.prazoPrincipal = formData.prazoPrincipal;
-      if (formData.valorCausa !== undefined && !Number.isNaN(formData.valorCausa)) payload.valorCausa = formData.valorCausa;
+      if (formData.orgaoJulgador?.trim())
+        payload.orgaoJulgador = formData.orgaoJulgador.trim();
+      if (formData.numeroInterno?.trim())
+        payload.numeroInterno = formData.numeroInterno.trim();
+      if (formData.pastaCompartilhadaUrl?.trim())
+        payload.pastaCompartilhadaUrl = formData.pastaCompartilhadaUrl.trim();
+      if (formData.dataDistribuicao)
+        payload.dataDistribuicao = formData.dataDistribuicao;
+      if (formData.prazoPrincipal)
+        payload.prazoPrincipal = formData.prazoPrincipal;
+      if (
+        formData.valorCausa !== undefined &&
+        !Number.isNaN(formData.valorCausa)
+      )
+        payload.valorCausa = formData.valorCausa;
       if (formData.areaId) payload.areaId = formData.areaId;
       if (formData.fase) payload.fase = formData.fase;
       if (formData.grau) payload.grau = formData.grau;
@@ -158,9 +191,16 @@ export default function NovoProcessoPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className={title()}>Novo Processo</h1>
-          <p className="text-sm text-default-500 mt-1">Cadastrar novo processo jurídico</p>
+          <p className="text-sm text-default-500 mt-1">
+            Cadastrar novo processo jurídico
+          </p>
         </div>
-        <Button as={Link} href={clienteIdParam ? `/clientes/${clienteIdParam}` : "/processos"} startContent={<ArrowLeft className="h-4 w-4" />} variant="light">
+        <Button
+          as={Link}
+          href={clienteIdParam ? `/clientes/${clienteIdParam}` : "/processos"}
+          startContent={<ArrowLeft className="h-4 w-4" />}
+          variant="light"
+        >
           Voltar
         </Button>
       </div>
@@ -170,7 +210,9 @@ export default function NovoProcessoPage() {
         <Card className="border border-primary/20 bg-primary/5">
           <CardBody className="flex flex-row items-center gap-2">
             <User className="h-5 w-5 text-primary" />
-            <p className="text-sm text-primary">Este processo será vinculado ao cliente selecionado</p>
+            <p className="text-sm text-primary">
+              Este processo será vinculado ao cliente selecionado
+            </p>
           </CardBody>
         </Card>
       )}
@@ -187,7 +229,9 @@ export default function NovoProcessoPage() {
         <CardBody className="gap-6">
           {/* Seção: Dados Básicos */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-default-600">📋 Dados Básicos</h3>
+            <h3 className="text-sm font-semibold text-default-600">
+              📋 Dados Básicos
+            </h3>
 
             {/* Select de Cliente (se não veio de um cliente) */}
             {!clienteIdParam && (
@@ -208,10 +252,20 @@ export default function NovoProcessoPage() {
                 {clientes.map((cliente) => (
                   <SelectItem key={cliente.id} textValue={cliente.nome}>
                     <div className="flex items-center gap-2">
-                      {cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-4 w-4 text-default-400" /> : <User className="h-4 w-4 text-default-400" />}
+                      {cliente.tipoPessoa === "JURIDICA" ? (
+                        <Building2 className="h-4 w-4 text-default-400" />
+                      ) : (
+                        <User className="h-4 w-4 text-default-400" />
+                      )}
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold">{cliente.nome}</span>
-                        {cliente.email && <span className="text-xs text-default-400">{cliente.email}</span>}
+                        <span className="text-sm font-semibold">
+                          {cliente.nome}
+                        </span>
+                        {cliente.email && (
+                          <span className="text-xs text-default-400">
+                            {cliente.email}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </SelectItem>
@@ -226,7 +280,9 @@ export default function NovoProcessoPage() {
                 label="Número do Processo *"
                 placeholder="0000000-00.0000.0.00.0000"
                 value={formData.numero}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, numero: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, numero: value }))
+                }
               />
 
               <Input
@@ -234,7 +290,9 @@ export default function NovoProcessoPage() {
                 label="Número CNJ (oficial)"
                 placeholder="0000000-00.0000.0.00.0000"
                 value={formData.numeroCnj || ""}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, numeroCnj: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, numeroCnj: value }))
+                }
               />
 
               <Input
@@ -242,18 +300,29 @@ export default function NovoProcessoPage() {
                 label="Número Interno"
                 placeholder="Ex: 2024/001"
                 value={formData.numeroInterno || ""}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, numeroInterno: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, numeroInterno: value }))
+                }
               />
             </div>
 
-            <Input label="Título" placeholder="Ex: Ação de Despejo, Divórcio, etc." value={formData.titulo || ""} onValueChange={(value) => setFormData((prev) => ({ ...prev, titulo: value }))} />
+            <Input
+              label="Título"
+              placeholder="Ex: Ação de Despejo, Divórcio, etc."
+              value={formData.titulo || ""}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, titulo: value }))
+              }
+            />
 
             <Textarea
               label="Descrição"
               minRows={3}
               placeholder="Resumo do caso..."
               value={formData.descricao || ""}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, descricao: value }))}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, descricao: value }))
+              }
             />
           </div>
 
@@ -261,7 +330,9 @@ export default function NovoProcessoPage() {
 
           {/* Seção: Classificação */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-default-600">⚖️ Classificação e Status</h3>
+            <h3 className="text-sm font-semibold text-default-600">
+              ⚖️ Classificação e Status
+            </h3>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Select
@@ -276,17 +347,25 @@ export default function NovoProcessoPage() {
                 }
               >
                 <SelectItem key={ProcessoStatus.RASCUNHO}>Rascunho</SelectItem>
-                <SelectItem key={ProcessoStatus.EM_ANDAMENTO}>Em Andamento</SelectItem>
+                <SelectItem key={ProcessoStatus.EM_ANDAMENTO}>
+                  Em Andamento
+                </SelectItem>
                 <SelectItem key={ProcessoStatus.SUSPENSO}>Suspenso</SelectItem>
-                <SelectItem key={ProcessoStatus.ENCERRADO}>Encerrado</SelectItem>
-                <SelectItem key={ProcessoStatus.ARQUIVADO}>Arquivado</SelectItem>
+                <SelectItem key={ProcessoStatus.ENCERRADO}>
+                  Encerrado
+                </SelectItem>
+                <SelectItem key={ProcessoStatus.ARQUIVADO}>
+                  Arquivado
+                </SelectItem>
               </Select>
 
               <Input
                 label="Classe Processual"
                 placeholder="Ex: Procedimento Comum"
                 value={formData.classeProcessual || ""}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, classeProcessual: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, classeProcessual: value }))
+                }
               />
             </div>
 
@@ -335,25 +414,45 @@ export default function NovoProcessoPage() {
               placeholder="Ex: 2ª Câmara de Direito Público"
               startContent={<Landmark className="h-4 w-4 text-default-400" />}
               value={formData.orgaoJulgador || ""}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, orgaoJulgador: value }))}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, orgaoJulgador: value }))
+              }
             />
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Rito" placeholder="Ex: Ordinário, Sumário" value={formData.rito || ""} onValueChange={(value) => setFormData((prev) => ({ ...prev, rito: value }))} />
+              <Input
+                label="Rito"
+                placeholder="Ex: Ordinário, Sumário"
+                value={formData.rito || ""}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, rito: value }))
+                }
+              />
 
               <Input
                 label="Valor da Causa (R$)"
                 placeholder="0,00"
-                startContent={<DollarSign className="h-4 w-4 text-default-400" />}
+                startContent={
+                  <DollarSign className="h-4 w-4 text-default-400" />
+                }
                 type="number"
-                value={formData.valorCausa !== undefined && !Number.isNaN(formData.valorCausa) ? String(formData.valorCausa) : ""}
+                value={
+                  formData.valorCausa !== undefined &&
+                  !Number.isNaN(formData.valorCausa)
+                    ? String(formData.valorCausa)
+                    : ""
+                }
                 onValueChange={(value) => {
                   const normalized = value.replace(/,/g, ".");
-                  const numericValue = normalized.trim() === "" ? undefined : Number(normalized);
+                  const numericValue =
+                    normalized.trim() === "" ? undefined : Number(normalized);
 
                   setFormData((prev) => ({
                     ...prev,
-                    valorCausa: numericValue !== undefined && !Number.isNaN(numericValue) ? numericValue : undefined,
+                    valorCausa:
+                      numericValue !== undefined && !Number.isNaN(numericValue)
+                        ? numericValue
+                        : undefined,
                   }));
                 }}
               />
@@ -364,7 +463,9 @@ export default function NovoProcessoPage() {
 
           {/* Seção: Localização */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-default-600">📍 Localização</h3>
+            <h3 className="text-sm font-semibold text-default-600">
+              📍 Localização
+            </h3>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
@@ -372,27 +473,51 @@ export default function NovoProcessoPage() {
                 placeholder="Ex: São Paulo"
                 startContent={<MapPin className="h-4 w-4 text-default-400" />}
                 value={formData.comarca || ""}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, comarca: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, comarca: value }))
+                }
               />
 
-              <Input label="Foro" placeholder="Ex: Foro Central" value={formData.foro || ""} onValueChange={(value) => setFormData((prev) => ({ ...prev, foro: value }))} />
+              <Input
+                label="Foro"
+                placeholder="Ex: Foro Central"
+                value={formData.foro || ""}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, foro: value }))
+                }
+              />
             </div>
 
-            <Input label="Vara" placeholder="Ex: 1ª Vara Cível" value={formData.vara || ""} onValueChange={(value) => setFormData((prev) => ({ ...prev, vara: value }))} />
+            <Input
+              label="Vara"
+              placeholder="Ex: 1ª Vara Cível"
+              value={formData.vara || ""}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, vara: value }))
+              }
+            />
           </div>
 
           <Divider />
 
           {/* Seção: Outras Informações */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-default-600">📅 Outras Informações</h3>
+            <h3 className="text-sm font-semibold text-default-600">
+              📅 Outras Informações
+            </h3>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
                 label="Data de Distribuição"
                 startContent={<Calendar className="h-4 w-4 text-default-400" />}
                 type="date"
-                value={formData.dataDistribuicao ? new Date(formData.dataDistribuicao).toISOString().split("T")[0] : ""}
+                value={
+                  formData.dataDistribuicao
+                    ? new Date(formData.dataDistribuicao)
+                        .toISOString()
+                        .split("T")[0]
+                    : ""
+                }
                 onValueChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
@@ -405,7 +530,13 @@ export default function NovoProcessoPage() {
                 label="Prazo Principal"
                 startContent={<Clock className="h-4 w-4 text-default-400" />}
                 type="date"
-                value={formData.prazoPrincipal ? new Date(formData.prazoPrincipal).toISOString().split("T")[0] : ""}
+                value={
+                  formData.prazoPrincipal
+                    ? new Date(formData.prazoPrincipal)
+                        .toISOString()
+                        .split("T")[0]
+                    : ""
+                }
                 onValueChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
@@ -428,25 +559,51 @@ export default function NovoProcessoPage() {
               }
             />
 
-            <Checkbox isSelected={formData.segredoJustica} onValueChange={(checked) => setFormData((prev) => ({ ...prev, segredoJustica: checked }))}>
+            <Checkbox
+              isSelected={formData.segredoJustica}
+              onValueChange={(checked) =>
+                setFormData((prev) => ({ ...prev, segredoJustica: checked }))
+              }
+            >
               <div className="flex flex-col">
-                <span className="text-sm font-semibold">Segredo de Justiça</span>
-                <span className="text-xs text-default-400">Marque se este processo corre em segredo de justiça</span>
+                <span className="text-sm font-semibold">
+                  Segredo de Justiça
+                </span>
+                <span className="text-xs text-default-400">
+                  Marque se este processo corre em segredo de justiça
+                </span>
               </div>
             </Checkbox>
           </div>
 
           {/* Informação */}
           <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
-            <p className="text-xs text-primary-600">💡 Após criar o processo, você poderá adicionar documentos, eventos, movimentações e vincular procurações.</p>
+            <p className="text-xs text-primary-600">
+              💡 Após criar o processo, você poderá adicionar documentos,
+              eventos, movimentações e vincular procurações.
+            </p>
           </div>
 
           {/* Botões de Ação */}
           <div className="flex gap-3 justify-end">
-            <Button variant="light" onPress={() => router.push(clienteIdParam ? `/clientes/${clienteIdParam}` : "/processos")}>
+            <Button
+              variant="light"
+              onPress={() =>
+                router.push(
+                  clienteIdParam ? `/clientes/${clienteIdParam}` : "/processos",
+                )
+              }
+            >
               Cancelar
             </Button>
-            <Button color="primary" isLoading={isSaving} startContent={!isSaving ? <Save className="h-4 w-4" /> : undefined} onPress={handleSubmit}>
+            <Button
+              color="primary"
+              isLoading={isSaving}
+              startContent={
+                !isSaving ? <Save className="h-4 w-4" /> : undefined
+              }
+              onPress={handleSubmit}
+            >
               Criar Processo
             </Button>
           </div>

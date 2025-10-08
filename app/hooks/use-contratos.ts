@@ -20,7 +20,7 @@ export function useAllContratos() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -53,7 +53,7 @@ export function useContratoDetalhado(contratoId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {

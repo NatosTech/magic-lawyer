@@ -1,4 +1,3 @@
-import type { Prisma } from "@prisma/client";
 import prisma from "./prisma";
 import { sendEmail, emailTemplates } from "./email";
 import { sendDocumentForSigning, checkDocumentStatus } from "./clicksign";
@@ -18,12 +17,15 @@ export interface CreateDocumentoAssinaturaData {
 }
 
 // Interface para atualizar assinatura
-export interface UpdateDocumentoAssinaturaData extends Partial<CreateDocumentoAssinaturaData> {
+export interface UpdateDocumentoAssinaturaData
+  extends Partial<CreateDocumentoAssinaturaData> {
   id: string;
 }
 
 // Função para criar assinatura de documento
-export const createDocumentoAssinatura = async (data: CreateDocumentoAssinaturaData) => {
+export const createDocumentoAssinatura = async (
+  data: CreateDocumentoAssinaturaData,
+) => {
   try {
     // Verificar se o documento existe
     const documento = await prisma.documento.findUnique({
@@ -82,7 +84,11 @@ export const createDocumentoAssinatura = async (data: CreateDocumentoAssinaturaD
 };
 
 // Função para enviar documento para assinatura via ClickSign
-export const enviarDocumentoParaAssinatura = async (documentoAssinaturaId: string, fileContent: Buffer, filename: string) => {
+export const enviarDocumentoParaAssinatura = async (
+  documentoAssinaturaId: string,
+  fileContent: Buffer,
+  filename: string,
+) => {
   try {
     const documentoAssinatura = await prisma.documentoAssinatura.findUnique({
       where: { id: documentoAssinaturaId },
@@ -125,7 +131,8 @@ export const enviarDocumentoParaAssinatura = async (documentoAssinaturaId: strin
     if (!clicksignResult.success || !clicksignResult.data) {
       return {
         success: false,
-        error: clicksignResult.error || "Erro ao enviar documento para ClickSign",
+        error:
+          clicksignResult.error || "Erro ao enviar documento para ClickSign",
       };
     }
 
@@ -159,7 +166,8 @@ export const enviarDocumentoParaAssinatura = async (documentoAssinaturaId: strin
         const template = emailTemplates.documentoAssinatura({
           titulo: documentoAssinatura.titulo,
           urlAssinatura: signingUrl,
-          dataExpiracao: documentoAssinatura.dataExpiracao?.toLocaleDateString("pt-BR"),
+          dataExpiracao:
+            documentoAssinatura.dataExpiracao?.toLocaleDateString("pt-BR"),
           descricao: documentoAssinatura.descricao ?? undefined,
         });
 
@@ -192,7 +200,9 @@ export const enviarDocumentoParaAssinatura = async (documentoAssinaturaId: strin
 };
 
 // Função para verificar status da assinatura
-export const verificarStatusAssinatura = async (documentoAssinaturaId: string) => {
+export const verificarStatusAssinatura = async (
+  documentoAssinaturaId: string,
+) => {
   try {
     const documentoAssinatura = await prisma.documentoAssinatura.findUnique({
       where: { id: documentoAssinaturaId },
@@ -213,7 +223,9 @@ export const verificarStatusAssinatura = async (documentoAssinaturaId: string) =
     }
 
     // Verificar status no ClickSign
-    const statusResult = await checkDocumentStatus(documentoAssinatura.clicksignDocumentId);
+    const statusResult = await checkDocumentStatus(
+      documentoAssinatura.clicksignDocumentId,
+    );
 
     if (!statusResult.success || !statusResult.data) {
       return {
@@ -225,7 +237,12 @@ export const verificarStatusAssinatura = async (documentoAssinaturaId: string) =
     const { status, signedAt, downloadUrl } = statusResult.data;
 
     // Mapear status do ClickSign para nosso enum
-    let novoStatus: "PENDENTE" | "ASSINADO" | "REJEITADO" | "EXPIRADO" | "CANCELADO";
+    let novoStatus:
+      | "PENDENTE"
+      | "ASSINADO"
+      | "REJEITADO"
+      | "EXPIRADO"
+      | "CANCELADO";
 
     switch (status) {
       case "signed":
@@ -282,7 +299,7 @@ export const listDocumentoAssinaturas = async (
     clienteId?: string;
     advogadoResponsavelId?: string;
     status?: "PENDENTE" | "ASSINADO" | "REJEITADO" | "EXPIRADO" | "CANCELADO";
-  }
+  },
 ) => {
   try {
     const assinaturas = await prisma.documentoAssinatura.findMany({
@@ -443,7 +460,10 @@ export const reenviarLinkAssinatura = async (documentoAssinaturaId: string) => {
 
     // Obter nova URL de assinatura
     const { getSigningUrl } = await import("./clicksign");
-    const urlResult = await getSigningUrl(documentoAssinatura.clicksignDocumentId!, documentoAssinatura.clicksignSignerId);
+    const urlResult = await getSigningUrl(
+      documentoAssinatura.clicksignDocumentId!,
+      documentoAssinatura.clicksignSignerId,
+    );
 
     if (!urlResult.success || !urlResult.data) {
       return {
@@ -458,7 +478,8 @@ export const reenviarLinkAssinatura = async (documentoAssinaturaId: string) => {
         const template = emailTemplates.documentoAssinatura({
           titulo: documentoAssinatura.titulo,
           urlAssinatura: urlResult.data.url,
-          dataExpiracao: documentoAssinatura.dataExpiracao?.toLocaleDateString("pt-BR"),
+          dataExpiracao:
+            documentoAssinatura.dataExpiracao?.toLocaleDateString("pt-BR"),
           descricao: documentoAssinatura.descricao ?? undefined,
         });
 

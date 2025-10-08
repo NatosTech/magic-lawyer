@@ -2,7 +2,11 @@
 
 import { getSession } from "@/app/lib/auth";
 import prisma, { toNumber } from "@/app/lib/prisma";
-import { Prisma, ProcuracaoEmitidaPor, ProcuracaoStatus } from "@/app/generated/prisma";
+import {
+  Prisma,
+  ProcuracaoEmitidaPor,
+  ProcuracaoStatus,
+} from "@/app/generated/prisma";
 
 // ============================================
 // TYPES
@@ -98,7 +102,9 @@ export type ProcuracaoListItem = Prisma.ProcuracaoGetPayload<{
   include: typeof procuracaoListInclude;
 }>;
 
-async function getAdvogadoIdFromSession(session: { user: any }): Promise<string | null> {
+async function getAdvogadoIdFromSession(session: {
+  user: any;
+}): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   const advogado = await prisma.advogado.findFirst({
@@ -114,7 +120,9 @@ async function getAdvogadoIdFromSession(session: { user: any }): Promise<string 
   return advogado?.id || null;
 }
 
-async function getClienteIdFromSession(session: { user: any }): Promise<string | null> {
+async function getClienteIdFromSession(session: {
+  user: any;
+}): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   const cliente = await prisma.cliente.findFirst({
@@ -391,8 +399,10 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
         advogado: {
           ...outorgado.advogado,
           comissaoPadrao: toNumber(outorgado.advogado.comissaoPadrao) || 0,
-          comissaoAcaoGanha: toNumber(outorgado.advogado.comissaoAcaoGanha) || 0,
-          comissaoHonorarios: toNumber(outorgado.advogado.comissaoHonorarios) || 0,
+          comissaoAcaoGanha:
+            toNumber(outorgado.advogado.comissaoAcaoGanha) || 0,
+          comissaoHonorarios:
+            toNumber(outorgado.advogado.comissaoHonorarios) || 0,
         },
       })),
     };
@@ -556,7 +566,11 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
     }
 
     // Verificar se é ADMIN ou ADVOGADO
-    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADVOGADO") {
+    if (
+      user.role !== "ADMIN" &&
+      user.role !== "SUPER_ADMIN" &&
+      user.role !== "ADVOGADO"
+    ) {
       return { success: false, error: "Acesso negado" };
     }
 
@@ -641,7 +655,10 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
         validaAte: data.validaAte,
         revogadaEm: data.revogadaEm,
         assinadaPeloClienteEm: data.assinadaPeloClienteEm,
-        emitidaPor: data.emitidaPor === "ADVOGADO" ? ProcuracaoEmitidaPor.ADVOGADO : ProcuracaoEmitidaPor.ESCRITORIO,
+        emitidaPor:
+          data.emitidaPor === "ADVOGADO"
+            ? ProcuracaoEmitidaPor.ADVOGADO
+            : ProcuracaoEmitidaPor.ESCRITORIO,
         status: data.status ?? ProcuracaoStatus.RASCUNHO,
         ativa: data.ativa ?? true,
         createdById: user.id,
@@ -720,7 +737,7 @@ export interface ProcuracaoUpdateInput {
 
 export async function updateProcuracao(
   procuracaoId: string,
-  data: ProcuracaoUpdateInput
+  data: ProcuracaoUpdateInput,
 ): Promise<{
   success: boolean;
   procuracao?: any;
@@ -843,7 +860,7 @@ export async function deleteProcuracao(procuracaoId: string): Promise<{
 
 export async function adicionarAdvogadoNaProcuracao(
   procuracaoId: string,
-  advogadoId: string
+  advogadoId: string,
 ): Promise<{
   success: boolean;
   error?: string;
@@ -921,7 +938,7 @@ export async function adicionarAdvogadoNaProcuracao(
 
 export async function removerAdvogadoDaProcuracao(
   procuracaoId: string,
-  advogadoId: string
+  advogadoId: string,
 ): Promise<{
   success: boolean;
   error?: string;
@@ -971,7 +988,7 @@ export async function removerAdvogadoDaProcuracao(
 
 export async function vincularProcesso(
   procuracaoId: string,
-  processoId: string
+  processoId: string,
 ): Promise<{
   success: boolean;
   error?: string;
@@ -1049,7 +1066,7 @@ export async function vincularProcesso(
 
 export async function desvincularProcesso(
   procuracaoId: string,
-  processoId: string
+  processoId: string,
 ): Promise<{
   success: boolean;
   error?: string;

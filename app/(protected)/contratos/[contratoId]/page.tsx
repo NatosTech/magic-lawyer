@@ -7,7 +7,16 @@ import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Spinner } from "@heroui/spinner";
-import { ArrowLeft, Edit, FileText, User, Building2, Calendar, DollarSign, AlertCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit,
+  FileText,
+  User,
+  Building2,
+  Calendar,
+  DollarSign,
+  AlertCircle,
+} from "lucide-react";
 import Link from "next/link";
 
 import { getContratoById } from "@/app/actions/contratos";
@@ -22,7 +31,11 @@ const STATUS_CONFIG = {
   ENCERRADO: { label: "Encerrado", color: "default" as const },
 };
 
-export default function ContratoPage({ params }: { params: Promise<{ contratoId: string }> }) {
+export default function ContratoPage({
+  params,
+}: {
+  params: Promise<{ contratoId: string }>;
+}) {
   const router = useRouter();
   const resolvedParams = use(params);
   const contratoId = resolvedParams.contratoId;
@@ -64,7 +77,9 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <AlertCircle className="h-12 w-12 text-danger" />
-        <p className="text-lg font-semibold text-danger">{error || "Contrato não encontrado"}</p>
+        <p className="text-lg font-semibold text-danger">
+          {error || "Contrato não encontrado"}
+        </p>
         <Button color="primary" onPress={() => router.push("/contratos")}>
           Voltar para Contratos
         </Button>
@@ -72,21 +87,36 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
     );
   }
 
-  const statusConfig = STATUS_CONFIG[contrato.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.RASCUNHO;
+  const statusConfig =
+    STATUS_CONFIG[contrato.status as keyof typeof STATUS_CONFIG] ||
+    STATUS_CONFIG.RASCUNHO;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button as={Link} href="/contratos" isIconOnly variant="light" startContent={<ArrowLeft className="h-4 w-4" />} />
+          <Button
+            isIconOnly
+            as={Link}
+            href="/contratos"
+            startContent={<ArrowLeft className="h-4 w-4" />}
+            variant="light"
+          />
           <div>
             <h1 className={title()}>{contrato.titulo}</h1>
-            <p className="text-sm text-default-500 mt-1">Visualização do contrato</p>
+            <p className="text-sm text-default-500 mt-1">
+              Visualização do contrato
+            </p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button as={Link} href={`/contratos/${contratoId}/editar`} color="primary" startContent={<Edit className="h-4 w-4" />}>
+          <Button
+            as={Link}
+            color="primary"
+            href={`/contratos/${contratoId}/editar`}
+            startContent={<Edit className="h-4 w-4" />}
+          >
             Editar Contrato
           </Button>
         </div>
@@ -107,14 +137,32 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
         <CardBody className="gap-6">
           {/* Informações do Cliente */}
           <div>
-            <h3 className="text-sm font-semibold text-default-600 mb-3">👤 Cliente</h3>
+            <h3 className="text-sm font-semibold text-default-600 mb-3">
+              👤 Cliente
+            </h3>
             <div className="flex items-center gap-3 p-3 rounded-lg bg-default-100">
-              {contrato.cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-5 w-5 text-default-500" /> : <User className="h-5 w-5 text-default-500" />}
+              {contrato.cliente.tipoPessoa === "JURIDICA" ? (
+                <Building2 className="h-5 w-5 text-default-500" />
+              ) : (
+                <User className="h-5 w-5 text-default-500" />
+              )}
               <div className="flex-1">
                 <p className="font-semibold">{contrato.cliente.nome}</p>
-                <p className="text-xs text-default-500">{contrato.cliente.tipoPessoa === "JURIDICA" ? "Pessoa Jurídica" : "Pessoa Física"}</p>
-                {contrato.cliente.documento && <p className="text-xs text-default-500 mt-1">Doc: {contrato.cliente.documento}</p>}
-                {contrato.cliente.email && <p className="text-xs text-default-500">Email: {contrato.cliente.email}</p>}
+                <p className="text-xs text-default-500">
+                  {contrato.cliente.tipoPessoa === "JURIDICA"
+                    ? "Pessoa Jurídica"
+                    : "Pessoa Física"}
+                </p>
+                {contrato.cliente.documento && (
+                  <p className="text-xs text-default-500 mt-1">
+                    Doc: {contrato.cliente.documento}
+                  </p>
+                )}
+                {contrato.cliente.email && (
+                  <p className="text-xs text-default-500">
+                    Email: {contrato.cliente.email}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -123,14 +171,22 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
 
           {/* Informações do Contrato */}
           <div>
-            <h3 className="text-sm font-semibold text-default-600 mb-3">📄 Informações do Contrato</h3>
+            <h3 className="text-sm font-semibold text-default-600 mb-3">
+              📄 Informações do Contrato
+            </h3>
             <div className="grid gap-4 sm:grid-cols-2">
               {contrato.valor && (
                 <div className="flex items-start gap-2">
                   <DollarSign className="h-4 w-4 text-default-400 mt-0.5" />
                   <div>
                     <p className="text-xs text-default-500">Valor</p>
-                    <p className="font-semibold">R$ {contrato.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p className="font-semibold">
+                      R${" "}
+                      {contrato.valor.toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
                   </div>
                 </div>
               )}
@@ -150,7 +206,9 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
                   <Calendar className="h-4 w-4 text-default-400 mt-0.5" />
                   <div>
                     <p className="text-xs text-default-500">Data de Início</p>
-                    <p className="font-semibold">{DateUtils.formatDate(contrato.dataInicio)}</p>
+                    <p className="font-semibold">
+                      {DateUtils.formatDate(contrato.dataInicio)}
+                    </p>
                   </div>
                 </div>
               )}
@@ -160,7 +218,9 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
                   <Calendar className="h-4 w-4 text-default-400 mt-0.5" />
                   <div>
                     <p className="text-xs text-default-500">Data de Término</p>
-                    <p className="font-semibold">{DateUtils.formatDate(contrato.dataFim)}</p>
+                    <p className="font-semibold">
+                      {DateUtils.formatDate(contrato.dataFim)}
+                    </p>
                   </div>
                 </div>
               )}
@@ -172,8 +232,12 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
             <>
               <Divider />
               <div>
-                <h3 className="text-sm font-semibold text-default-600 mb-2">📝 Resumo</h3>
-                <p className="text-sm text-default-700 whitespace-pre-wrap">{contrato.resumo}</p>
+                <h3 className="text-sm font-semibold text-default-600 mb-2">
+                  📝 Resumo
+                </h3>
+                <p className="text-sm text-default-700 whitespace-pre-wrap">
+                  {contrato.resumo}
+                </p>
               </div>
             </>
           )}
@@ -183,16 +247,20 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
             <>
               <Divider />
               <div>
-                <h3 className="text-sm font-semibold text-default-600 mb-3">⚖️ Advogado Responsável</h3>
+                <h3 className="text-sm font-semibold text-default-600 mb-3">
+                  ⚖️ Advogado Responsável
+                </h3>
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-default-100">
                   <User className="h-5 w-5 text-default-500" />
                   <div>
                     <p className="font-semibold">
-                      {contrato.advogadoResponsavel.usuario.firstName} {contrato.advogadoResponsavel.usuario.lastName}
+                      {contrato.advogadoResponsavel.usuario.firstName}{" "}
+                      {contrato.advogadoResponsavel.usuario.lastName}
                     </p>
                     {contrato.advogadoResponsavel.oabNumero && (
                       <p className="text-xs text-default-500">
-                        OAB: {contrato.advogadoResponsavel.oabNumero}/{contrato.advogadoResponsavel.oabUf}
+                        OAB: {contrato.advogadoResponsavel.oabNumero}/
+                        {contrato.advogadoResponsavel.oabUf}
                       </p>
                     )}
                   </div>
@@ -206,13 +274,21 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
             <>
               <Divider />
               <div>
-                <h3 className="text-sm font-semibold text-default-600 mb-3">📋 Processo e Procuração</h3>
+                <h3 className="text-sm font-semibold text-default-600 mb-3">
+                  📋 Processo e Procuração
+                </h3>
                 <div className="space-y-3">
                   {/* Processo */}
                   <div className="p-3 rounded-lg bg-default-100">
-                    <p className="text-xs text-default-500 mb-1">Processo vinculado</p>
+                    <p className="text-xs text-default-500 mb-1">
+                      Processo vinculado
+                    </p>
                     <p className="font-semibold">{contrato.processo.numero}</p>
-                    {contrato.processo.titulo && <p className="text-xs text-default-500 mt-1">{contrato.processo.titulo}</p>}
+                    {contrato.processo.titulo && (
+                      <p className="text-xs text-default-500 mt-1">
+                        {contrato.processo.titulo}
+                      </p>
+                    )}
                     <Chip className="mt-2" size="sm" variant="flat">
                       {contrato.processo.status}
                     </Chip>
@@ -220,15 +296,26 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
 
                   {/* Procurações */}
                   <div className="p-3 rounded-lg bg-default-50 border border-default-200">
-                    <p className="text-xs text-default-500 mb-2">Procurações vinculadas a este processo</p>
-                    {contrato.processo.procuracoesVinculadas && contrato.processo.procuracoesVinculadas.length > 0 ? (
+                    <p className="text-xs text-default-500 mb-2">
+                      Procurações vinculadas a este processo
+                    </p>
+                    {contrato.processo.procuracoesVinculadas &&
+                    contrato.processo.procuracoesVinculadas.length > 0 ? (
                       <div className="flex items-center gap-2 text-success">
-                        <span className="text-sm font-medium">✓ {contrato.processo.procuracoesVinculadas.length} procuração(ões) vinculada(s)</span>
+                        <span className="text-sm font-medium">
+                          ✓ {contrato.processo.procuracoesVinculadas.length}{" "}
+                          procuração(ões) vinculada(s)
+                        </span>
                       </div>
                     ) : (
                       <div className="text-warning">
-                        <p className="text-sm font-medium">⚠️ Este processo ainda não possui procurações vinculadas</p>
-                        <p className="text-xs text-default-500 mt-1">É recomendado vincular uma procuração ao processo</p>
+                        <p className="text-sm font-medium">
+                          ⚠️ Este processo ainda não possui procurações
+                          vinculadas
+                        </p>
+                        <p className="text-xs text-default-500 mt-1">
+                          É recomendado vincular uma procuração ao processo
+                        </p>
                       </div>
                     )}
                   </div>
@@ -242,8 +329,12 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
             <>
               <Divider />
               <div>
-                <h3 className="text-sm font-semibold text-default-600 mb-2">💬 Observações</h3>
-                <p className="text-sm text-default-700 whitespace-pre-wrap">{contrato.observacoes}</p>
+                <h3 className="text-sm font-semibold text-default-600 mb-2">
+                  💬 Observações
+                </h3>
+                <p className="text-sm text-default-700 whitespace-pre-wrap">
+                  {contrato.observacoes}
+                </p>
               </div>
             </>
           )}
@@ -253,17 +344,35 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
             <>
               <Divider />
               <div>
-                <h3 className="text-sm font-semibold text-default-600 mb-3">💰 Faturas ({contrato.faturas.length})</h3>
+                <h3 className="text-sm font-semibold text-default-600 mb-3">
+                  💰 Faturas ({contrato.faturas.length})
+                </h3>
                 <div className="grid gap-2">
                   {contrato.faturas.map((fatura: any) => (
-                    <div key={fatura.id} className="p-3 rounded-lg bg-default-100 flex items-center justify-between">
+                    <div
+                      key={fatura.id}
+                      className="p-3 rounded-lg bg-default-100 flex items-center justify-between"
+                    >
                       <div>
                         <p className="text-sm font-semibold">{fatura.numero}</p>
-                        <p className="text-xs text-default-500">Vencimento: {DateUtils.formatDate(fatura.vencimento)}</p>
+                        <p className="text-xs text-default-500">
+                          Vencimento: {DateUtils.formatDate(fatura.vencimento)}
+                        </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">R$ {fatura.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
-                        <Chip size="sm" variant="flat" color={fatura.status === "PAGO" ? "success" : "warning"}>
+                        <p className="font-semibold">
+                          R${" "}
+                          {fatura.valor.toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </p>
+                        <Chip
+                          color={
+                            fatura.status === "PAGO" ? "success" : "warning"
+                          }
+                          size="sm"
+                          variant="flat"
+                        >
                           {fatura.status}
                         </Chip>
                       </div>

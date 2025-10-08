@@ -81,13 +81,14 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     });
 
     clientes.forEach((cliente) => {
-      const tipoLabel = cliente.tipoPessoa === "FISICA" ? "Pessoa Física" : "Pessoa Jurídica";
+      const tipoLabel =
+        cliente.tipoPessoa === "FISICA" ? "Pessoa Física" : "Pessoa Jurídica";
+
       results.push({
         id: `cliente-${cliente.id}`,
         type: "cliente",
         title: cliente.nome,
-        description:
-          cliente.email || tipoLabel,
+        description: cliente.email || tipoLabel,
         href: `/clientes/${cliente.id}`,
         status: cliente.tipoPessoa === "FISICA" ? "PF" : "PJ",
         statusColor: cliente.tipoPessoa === "FISICA" ? "primary" : "secondary",
@@ -120,9 +121,13 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     documentos.forEach((documento) => {
       const descriptionParts = [
         documento.descricao?.trim() || null,
-        documento.processo?.numero ? `Processo: ${documento.processo.numero}` : null,
+        documento.processo?.numero
+          ? `Processo: ${documento.processo.numero}`
+          : null,
       ].filter(Boolean) as string[];
-      const description = descriptionParts.join(" - ") || "Documento cadastrado";
+      const description =
+        descriptionParts.join(" - ") || "Documento cadastrado";
+
       results.push({
         id: `documento-${documento.id}`,
         type: "documento",
@@ -192,7 +197,9 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     });
 
     usuarios.forEach((usuario) => {
-      const fullName = `${usuario.firstName ?? ""} ${usuario.lastName ?? ""}`.trim();
+      const fullName =
+        `${usuario.firstName ?? ""} ${usuario.lastName ?? ""}`.trim();
+
       results.push({
         id: `usuario-${usuario.id}`,
         type: "usuario",

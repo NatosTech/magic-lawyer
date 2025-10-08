@@ -7,16 +7,30 @@ import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Divider } from "@heroui/divider";
-import { ArrowLeft, Save, FileText, User, DollarSign, Calendar, Building2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  FileText,
+  User,
+  DollarSign,
+  Calendar,
+  Building2,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Spinner } from "@heroui/spinner";
 
 import { title } from "@/components/primitives";
-import { createContrato, type ContratoCreateInput } from "@/app/actions/contratos";
+import {
+  createContrato,
+  type ContratoCreateInput,
+} from "@/app/actions/contratos";
 import { ContratoStatus } from "@/app/generated/prisma";
-import { useClientesParaSelect, useProcuracoesDisponiveis } from "@/app/hooks/use-clientes";
+import {
+  useClientesParaSelect,
+  useProcuracoesDisponiveis,
+} from "@/app/hooks/use-clientes";
 
 export default function NovoContratoPage() {
   const router = useRouter();
@@ -34,7 +48,8 @@ export default function NovoContratoPage() {
 
   // Buscar clientes para o select (apenas se não veio de um cliente)
   const { clientes, isLoading: isLoadingClientes } = useClientesParaSelect();
-  const { procuracoes, isLoading: isLoadingProcuracoes } = useProcuracoesDisponiveis(formData.clienteId || null);
+  const { procuracoes, isLoading: isLoadingProcuracoes } =
+    useProcuracoesDisponiveis(formData.clienteId || null);
 
   if (isLoadingClientes && !clienteIdParam) {
     return (
@@ -88,9 +103,16 @@ export default function NovoContratoPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className={title()}>Novo Contrato</h1>
-          <p className="text-sm text-default-500 mt-1">Cadastrar novo contrato</p>
+          <p className="text-sm text-default-500 mt-1">
+            Cadastrar novo contrato
+          </p>
         </div>
-        <Button as={Link} href={clienteIdParam ? `/clientes/${clienteIdParam}` : "/contratos"} startContent={<ArrowLeft className="h-4 w-4" />} variant="light">
+        <Button
+          as={Link}
+          href={clienteIdParam ? `/clientes/${clienteIdParam}` : "/contratos"}
+          startContent={<ArrowLeft className="h-4 w-4" />}
+          variant="light"
+        >
           Voltar
         </Button>
       </div>
@@ -100,7 +122,9 @@ export default function NovoContratoPage() {
         <Card className="border border-secondary/20 bg-secondary/5">
           <CardBody className="flex flex-row items-center gap-2">
             <User className="h-5 w-5 text-secondary" />
-            <p className="text-sm text-secondary">Este contrato será vinculado ao cliente selecionado</p>
+            <p className="text-sm text-secondary">
+              Este contrato será vinculado ao cliente selecionado
+            </p>
           </CardBody>
         </Card>
       )}
@@ -117,7 +141,9 @@ export default function NovoContratoPage() {
         <CardBody className="gap-6">
           {/* Dados Básicos */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-default-600">📋 Dados Básicos</h3>
+            <h3 className="text-sm font-semibold text-default-600">
+              📋 Dados Básicos
+            </h3>
 
             {/* Select de Cliente (se não veio de um cliente) */}
             {!clienteIdParam && (
@@ -138,10 +164,20 @@ export default function NovoContratoPage() {
                 {clientes.map((cliente: any) => (
                   <SelectItem key={cliente.id} textValue={cliente.nome}>
                     <div className="flex items-center gap-2">
-                      {cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-4 w-4 text-default-400" /> : <User className="h-4 w-4 text-default-400" />}
+                      {cliente.tipoPessoa === "JURIDICA" ? (
+                        <Building2 className="h-4 w-4 text-default-400" />
+                      ) : (
+                        <User className="h-4 w-4 text-default-400" />
+                      )}
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold">{cliente.nome}</span>
-                        {cliente.email && <span className="text-xs text-default-400">{cliente.email}</span>}
+                        <span className="text-sm font-semibold">
+                          {cliente.nome}
+                        </span>
+                        {cliente.email && (
+                          <span className="text-xs text-default-400">
+                            {cliente.email}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </SelectItem>
@@ -154,14 +190,17 @@ export default function NovoContratoPage() {
               label="Título do Contrato *"
               placeholder="Ex: Contrato de Prestação de Serviços Jurídicos"
               value={formData.titulo}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, titulo: value }))}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, titulo: value }))
+              }
             />
 
             {/* Nota sobre vinculação de procuração */}
             {formData.clienteId && (
               <div className="p-4 rounded-lg border border-default-200 bg-default-50">
                 <p className="text-sm text-default-600">
-                  💡 <strong>Dica:</strong> Após criar o contrato, você poderá vincular uma procuração através da lista de contratos.
+                  💡 <strong>Dica:</strong> Após criar o contrato, você poderá
+                  vincular uma procuração através da lista de contratos.
                 </p>
               </div>
             )}
@@ -171,7 +210,9 @@ export default function NovoContratoPage() {
               minRows={3}
               placeholder="Resumo do objeto do contrato..."
               value={formData.resumo || ""}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, resumo: value }))}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, resumo: value }))
+              }
             />
           </div>
 
@@ -179,7 +220,9 @@ export default function NovoContratoPage() {
 
           {/* Status e Valores */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-default-600">💰 Valores e Status</h3>
+            <h3 className="text-sm font-semibold text-default-600">
+              💰 Valores e Status
+            </h3>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Select
@@ -196,14 +239,20 @@ export default function NovoContratoPage() {
                 <SelectItem key={ContratoStatus.RASCUNHO}>Rascunho</SelectItem>
                 <SelectItem key={ContratoStatus.ATIVO}>Ativo</SelectItem>
                 <SelectItem key={ContratoStatus.SUSPENSO}>Suspenso</SelectItem>
-                <SelectItem key={ContratoStatus.CANCELADO}>Cancelado</SelectItem>
-                <SelectItem key={ContratoStatus.ENCERRADO}>Encerrado</SelectItem>
+                <SelectItem key={ContratoStatus.CANCELADO}>
+                  Cancelado
+                </SelectItem>
+                <SelectItem key={ContratoStatus.ENCERRADO}>
+                  Encerrado
+                </SelectItem>
               </Select>
 
               <Input
                 label="Valor (R$)"
                 placeholder="0,00"
-                startContent={<DollarSign className="h-4 w-4 text-default-400" />}
+                startContent={
+                  <DollarSign className="h-4 w-4 text-default-400" />
+                }
                 type="number"
                 value={formData.valor?.toString() || ""}
                 onValueChange={(value) =>
@@ -220,7 +269,15 @@ export default function NovoContratoPage() {
                 label="Data de Início"
                 startContent={<Calendar className="h-4 w-4 text-default-400" />}
                 type="date"
-                value={formData.dataInicio ? (typeof formData.dataInicio === "string" ? formData.dataInicio.split("T")[0] : new Date(formData.dataInicio).toISOString().split("T")[0]) : ""}
+                value={
+                  formData.dataInicio
+                    ? typeof formData.dataInicio === "string"
+                      ? formData.dataInicio.split("T")[0]
+                      : new Date(formData.dataInicio)
+                          .toISOString()
+                          .split("T")[0]
+                    : ""
+                }
                 onValueChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
@@ -233,7 +290,13 @@ export default function NovoContratoPage() {
                 label="Data de Término"
                 startContent={<Calendar className="h-4 w-4 text-default-400" />}
                 type="date"
-                value={formData.dataFim ? (typeof formData.dataFim === "string" ? formData.dataFim.split("T")[0] : new Date(formData.dataFim).toISOString().split("T")[0]) : ""}
+                value={
+                  formData.dataFim
+                    ? typeof formData.dataFim === "string"
+                      ? formData.dataFim.split("T")[0]
+                      : new Date(formData.dataFim).toISOString().split("T")[0]
+                    : ""
+                }
                 onValueChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
@@ -248,28 +311,49 @@ export default function NovoContratoPage() {
 
           {/* Observações */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-default-600">📝 Observações</h3>
+            <h3 className="text-sm font-semibold text-default-600">
+              📝 Observações
+            </h3>
 
             <Textarea
               label="Observações"
               minRows={3}
               placeholder="Informações adicionais..."
               value={formData.observacoes || ""}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, observacoes: value }))}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, observacoes: value }))
+              }
             />
           </div>
 
           {/* Informação */}
           <div className="rounded-lg bg-secondary/5 border border-secondary/20 p-4">
-            <p className="text-xs text-secondary-600">💡 Após criar o contrato, você poderá anexar documentos e enviar para assinatura digital.</p>
+            <p className="text-xs text-secondary-600">
+              💡 Após criar o contrato, você poderá anexar documentos e enviar
+              para assinatura digital.
+            </p>
           </div>
 
           {/* Botões de Ação */}
           <div className="flex gap-3 justify-end">
-            <Button variant="light" onPress={() => router.push(clienteIdParam ? `/clientes/${clienteIdParam}` : "/contratos")}>
+            <Button
+              variant="light"
+              onPress={() =>
+                router.push(
+                  clienteIdParam ? `/clientes/${clienteIdParam}` : "/contratos",
+                )
+              }
+            >
               Cancelar
             </Button>
-            <Button color="secondary" isLoading={isSaving} startContent={!isSaving ? <Save className="h-4 w-4" /> : undefined} onPress={handleSubmit}>
+            <Button
+              color="secondary"
+              isLoading={isSaving}
+              startContent={
+                !isSaving ? <Save className="h-4 w-4" /> : undefined
+              }
+              onPress={handleSubmit}
+            >
               Criar Contrato
             </Button>
           </div>

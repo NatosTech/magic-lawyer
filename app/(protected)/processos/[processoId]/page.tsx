@@ -44,12 +44,30 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 
-import { useProcessoDetalhado, useDocumentosProcesso, useEventosProcesso } from "@/app/hooks/use-processos";
+import {
+  useProcessoDetalhado,
+  useDocumentosProcesso,
+  useEventosProcesso,
+} from "@/app/hooks/use-processos";
 import { useProcuracoesDisponiveis } from "@/app/hooks/use-clientes";
 import { title } from "@/components/primitives";
-import { ProcessoStatus, ProcessoPolo, ProcessoPrazoStatus, ProcessoFase, ProcessoGrau } from "@/app/generated/prisma";
+import {
+  ProcessoStatus,
+  ProcessoPolo,
+  ProcessoPrazoStatus,
+  ProcessoFase,
+  ProcessoGrau,
+} from "@/app/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
-import { createProcessoParte, deleteProcessoParte, createProcessoPrazo, updateProcessoPrazo, deleteProcessoPrazo, linkProcuracaoAoProcesso, unlinkProcuracaoDoProcesso } from "@/app/actions/processos";
+import {
+  createProcessoParte,
+  deleteProcessoParte,
+  createProcessoPrazo,
+  updateProcessoPrazo,
+  deleteProcessoPrazo,
+  linkProcuracaoAoProcesso,
+  unlinkProcuracaoDoProcesso,
+} from "@/app/actions/processos";
 
 const parteFormInitial: {
   tipoPolo: ProcessoPolo;
@@ -191,10 +209,15 @@ export default function ProcessoDetalhesPage() {
   const router = useRouter();
   const processoId = params.processoId as string;
 
-  const { processo, isCliente, isLoading, isError, mutate } = useProcessoDetalhado(processoId);
-  const { documentos, isLoading: isLoadingDocs } = useDocumentosProcesso(processoId);
-  const { eventos, isLoading: isLoadingEventos } = useEventosProcesso(processoId);
-  const { procuracoes: procuracoesDisponiveis } = useProcuracoesDisponiveis(processo?.cliente?.id ?? null);
+  const { processo, isCliente, isLoading, isError, mutate } =
+    useProcessoDetalhado(processoId);
+  const { documentos, isLoading: isLoadingDocs } =
+    useDocumentosProcesso(processoId);
+  const { eventos, isLoading: isLoadingEventos } =
+    useEventosProcesso(processoId);
+  const { procuracoes: procuracoesDisponiveis } = useProcuracoesDisponiveis(
+    processo?.cliente?.id ?? null,
+  );
 
   const polos = useMemo(() => Object.values(ProcessoPolo), []);
   const fases = useMemo(() => Object.values(ProcessoFase), []);
@@ -205,7 +228,9 @@ export default function ProcessoDetalhesPage() {
   const [selectedProcuracaoId, setSelectedProcuracaoId] = useState<string>("");
   const [parteActionId, setParteActionId] = useState<string | null>(null);
   const [prazoActionId, setPrazoActionId] = useState<string | null>(null);
-  const [procuracaoActionId, setProcuracaoActionId] = useState<string | null>(null);
+  const [procuracaoActionId, setProcuracaoActionId] = useState<string | null>(
+    null,
+  );
   const [isCreatingParte, setIsCreatingParte] = useState(false);
   const [isCreatingPrazo, setIsCreatingPrazo] = useState(false);
   const [isLinkingProcuracao, setIsLinkingProcuracao] = useState(false);
@@ -215,7 +240,9 @@ export default function ProcessoDetalhesPage() {
     if (!processo?.prazos) return [];
 
     return [...processo.prazos].sort((a, b) => {
-      const diff = new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime();
+      const diff =
+        new Date(a.dataVencimento).getTime() -
+        new Date(b.dataVencimento).getTime();
 
       return diff;
     });
@@ -244,7 +271,9 @@ export default function ProcessoDetalhesPage() {
 
     if (vinculoIds.length === 0) return procuracoesDisponiveis;
 
-    return procuracoesDisponiveis.filter((proc: any) => !vinculoIds.includes(proc.id));
+    return procuracoesDisponiveis.filter(
+      (proc: any) => !vinculoIds.includes(proc.id),
+    );
   }, [procuracoesDisponiveis, vinculoIds]);
 
   if (isLoading) {
@@ -259,7 +288,9 @@ export default function ProcessoDetalhesPage() {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
         <AlertCircle className="h-12 w-12 text-danger" />
-        <p className="text-lg font-semibold text-danger">Erro ao carregar processo</p>
+        <p className="text-lg font-semibold text-danger">
+          Erro ao carregar processo
+        </p>
         <Button color="primary" onPress={() => router.back()}>
           Voltar
         </Button>
@@ -366,12 +397,16 @@ export default function ProcessoDetalhesPage() {
     }
   };
 
-  const handlePrazoStatus = async (prazoId: string, status: ProcessoPrazoStatus) => {
+  const handlePrazoStatus = async (
+    prazoId: string,
+    status: ProcessoPrazoStatus,
+  ) => {
     setPrazoActionId(prazoId);
     try {
       const result = await updateProcessoPrazo(prazoId, {
         status,
-        dataCumprimento: status === ProcessoPrazoStatus.CONCLUIDO ? new Date() : null,
+        dataCumprimento:
+          status === ProcessoPrazoStatus.CONCLUIDO ? new Date() : null,
       });
 
       if (result.success) {
@@ -416,7 +451,10 @@ export default function ProcessoDetalhesPage() {
 
     setIsLinkingProcuracao(true);
     try {
-      const result = await linkProcuracaoAoProcesso(processoId, selectedProcuracaoId);
+      const result = await linkProcuracaoAoProcesso(
+        processoId,
+        selectedProcuracaoId,
+      );
 
       if (result.success) {
         toast.success("Procuração vinculada");
@@ -455,12 +493,21 @@ export default function ProcessoDetalhesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <Button startContent={<ArrowLeft className="h-4 w-4" />} variant="light" onPress={() => router.back()}>
+        <Button
+          startContent={<ArrowLeft className="h-4 w-4" />}
+          variant="light"
+          onPress={() => router.back()}
+        >
           Voltar
         </Button>
         {!isCliente && (
           <div className="flex gap-2">
-            <Button as={Link} href={`/processos/${processoId}/editar`} startContent={<Edit className="h-4 w-4" />} variant="bordered">
+            <Button
+              as={Link}
+              href={`/processos/${processoId}/editar`}
+              startContent={<Edit className="h-4 w-4" />}
+              variant="bordered"
+            >
               Editar Processo
             </Button>
           </div>
@@ -475,22 +522,46 @@ export default function ProcessoDetalhesPage() {
                 <Scale className="h-8 w-8 text-primary" />
                 <div>
                   <h1 className={title({ size: "md" })}>{processo.numero}</h1>
-                  {processo.numeroCnj && processo.numeroCnj !== processo.numero && <p className="text-xs text-default-500">CNJ: {processo.numeroCnj}</p>}
-                  {processo.titulo && <p className="mt-1 text-sm text-default-500">{processo.titulo}</p>}
+                  {processo.numeroCnj &&
+                    processo.numeroCnj !== processo.numero && (
+                      <p className="text-xs text-default-500">
+                        CNJ: {processo.numeroCnj}
+                      </p>
+                    )}
+                  {processo.titulo && (
+                    <p className="mt-1 text-sm text-default-500">
+                      {processo.titulo}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Chip color={getStatusColor(processo.status)} size="lg" startContent={getStatusIcon(processo.status)} variant="flat">
+              <Chip
+                color={getStatusColor(processo.status)}
+                size="lg"
+                startContent={getStatusIcon(processo.status)}
+                variant="flat"
+              >
                 {getStatusLabel(processo.status)}
               </Chip>
               {faseLabel && (
-                <Chip color="secondary" size="lg" startContent={<Flag className="h-3 w-3" />} variant="flat">
+                <Chip
+                  color="secondary"
+                  size="lg"
+                  startContent={<Flag className="h-3 w-3" />}
+                  variant="flat"
+                >
                   {faseLabel}
                 </Chip>
               )}
               {grauLabel && (
-                <Chip color="default" size="lg" startContent={<Layers className="h-3 w-3" />} variant="flat">
+                <Chip
+                  color="default"
+                  size="lg"
+                  startContent={<Layers className="h-3 w-3" />}
+                  variant="flat"
+                >
                   {grauLabel}
                 </Chip>
               )}
@@ -513,15 +584,22 @@ export default function ProcessoDetalhesPage() {
             )}
             {processo.cliente && (
               <div className="flex items-center gap-2 text-sm">
-                {processo.cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-4 w-4 text-default-400" /> : <User className="h-4 w-4 text-default-400" />}
-                <span className="text-default-600">{processo.cliente.nome}</span>
+                {processo.cliente.tipoPessoa === "JURIDICA" ? (
+                  <Building2 className="h-4 w-4 text-default-400" />
+                ) : (
+                  <User className="h-4 w-4 text-default-400" />
+                )}
+                <span className="text-default-600">
+                  {processo.cliente.nome}
+                </span>
               </div>
             )}
             {processo.advogadoResponsavel && (
               <div className="flex items-center gap-2 text-sm">
                 <Briefcase className="h-4 w-4 text-default-400" />
                 <span className="text-default-600">
-                  {processo.advogadoResponsavel.usuario.firstName} {processo.advogadoResponsavel.usuario.lastName}
+                  {processo.advogadoResponsavel.usuario.firstName}{" "}
+                  {processo.advogadoResponsavel.usuario.lastName}
                 </span>
               </div>
             )}
@@ -551,25 +629,38 @@ export default function ProcessoDetalhesPage() {
             {processo.dataDistribuicao && (
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-default-400" />
-                <span className="text-default-600">Distribuído em {DateUtils.formatDate(processo.dataDistribuicao)}</span>
+                <span className="text-default-600">
+                  Distribuído em{" "}
+                  {DateUtils.formatDate(processo.dataDistribuicao)}
+                </span>
               </div>
             )}
             {processo.prazoPrincipal && (
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4 text-warning" />
-                <span className="text-warning-600">Prazo principal: {DateUtils.formatDate(processo.prazoPrincipal)}</span>
+                <span className="text-warning-600">
+                  Prazo principal:{" "}
+                  {DateUtils.formatDate(processo.prazoPrincipal)}
+                </span>
               </div>
             )}
             {processo.orgaoJulgador && (
               <div className="flex items-center gap-2 text-sm">
                 <Landmark className="h-4 w-4 text-default-400" />
-                <span className="text-default-600">{processo.orgaoJulgador}</span>
+                <span className="text-default-600">
+                  {processo.orgaoJulgador}
+                </span>
               </div>
             )}
             {pastaUrl && (
               <div className="flex items-center gap-2 text-sm">
                 <Link2 className="h-4 w-4 text-default-400" />
-                <a className="text-primary underline" href={pastaUrl} rel="noopener noreferrer" target="_blank">
+                <a
+                  className="text-primary underline"
+                  href={pastaUrl}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
                   Pasta compartilhada
                 </a>
               </div>
@@ -578,7 +669,11 @@ export default function ProcessoDetalhesPage() {
         </CardBody>
       </Card>
 
-      <Tabs aria-label="Informações do Processo" color="primary" variant="underlined">
+      <Tabs
+        aria-label="Informações do Processo"
+        color="primary"
+        variant="underlined"
+      >
         <Tab
           key="informacoes"
           title={
@@ -591,7 +686,13 @@ export default function ProcessoDetalhesPage() {
           <div className="mt-4 space-y-4">
             {!isCliente && (
               <div className="flex justify-end">
-                <Button as={Link} color="primary" href={`/procuracoes/novo?clienteId=${processo.cliente.id}`} size="sm" startContent={<Plus className="h-3 w-3" />}>
+                <Button
+                  as={Link}
+                  color="primary"
+                  href={`/procuracoes/novo?clienteId=${processo.cliente.id}`}
+                  size="sm"
+                  startContent={<Plus className="h-3 w-3" />}
+                >
                   Nova procuração
                 </Button>
               </div>
@@ -605,26 +706,42 @@ export default function ProcessoDetalhesPage() {
               <CardBody className="space-y-3">
                 {processo.descricao && (
                   <div>
-                    <p className="text-xs font-semibold uppercase text-default-400">Descrição</p>
-                    <p className="mt-1 text-sm text-default-600">{processo.descricao}</p>
+                    <p className="text-xs font-semibold uppercase text-default-400">
+                      Descrição
+                    </p>
+                    <p className="mt-1 text-sm text-default-600">
+                      {processo.descricao}
+                    </p>
                   </div>
                 )}
                 {processo.classeProcessual && (
                   <div>
-                    <p className="text-xs font-semibold uppercase text-default-400">Classe Processual</p>
-                    <p className="mt-1 text-sm text-default-600">{processo.classeProcessual}</p>
+                    <p className="text-xs font-semibold uppercase text-default-400">
+                      Classe Processual
+                    </p>
+                    <p className="mt-1 text-sm text-default-600">
+                      {processo.classeProcessual}
+                    </p>
                   </div>
                 )}
                 {processo.rito && (
                   <div>
-                    <p className="text-xs font-semibold uppercase text-default-400">Rito</p>
-                    <p className="mt-1 text-sm text-default-600">{processo.rito}</p>
+                    <p className="text-xs font-semibold uppercase text-default-400">
+                      Rito
+                    </p>
+                    <p className="mt-1 text-sm text-default-600">
+                      {processo.rito}
+                    </p>
                   </div>
                 )}
                 {processo.numeroInterno && (
                   <div>
-                    <p className="text-xs font-semibold uppercase text-default-400">Número interno</p>
-                    <p className="mt-1 text-sm text-default-600">{processo.numeroInterno}</p>
+                    <p className="text-xs font-semibold uppercase text-default-400">
+                      Número interno
+                    </p>
+                    <p className="mt-1 text-sm text-default-600">
+                      {processo.numeroInterno}
+                    </p>
                   </div>
                 )}
               </CardBody>
@@ -657,7 +774,9 @@ export default function ProcessoDetalhesPage() {
               <Divider />
               <CardBody className="space-y-3">
                 {partesOrdenadas.length === 0 ? (
-                  <p className="text-sm text-default-500">Nenhuma parte cadastrada.</p>
+                  <p className="text-sm text-default-500">
+                    Nenhuma parte cadastrada.
+                  </p>
                 ) : (
                   partesOrdenadas.map((parte) => (
                     <Card key={parte.id} className="border border-default-200">
@@ -668,8 +787,14 @@ export default function ProcessoDetalhesPage() {
                               <Chip size="sm" variant="flat">
                                 {parte.tipoPolo}
                               </Chip>
-                              <span className="text-sm font-semibold text-default-700">{parte.nome}</span>
-                              {parte.papel && <span className="text-xs text-default-400">{parte.papel}</span>}
+                              <span className="text-sm font-semibold text-default-700">
+                                {parte.nome}
+                              </span>
+                              {parte.papel && (
+                                <span className="text-xs text-default-400">
+                                  {parte.papel}
+                                </span>
+                              )}
                             </div>
                             <div className="flex flex-wrap gap-3 text-xs text-default-500">
                               {parte.documento && (
@@ -691,10 +816,21 @@ export default function ProcessoDetalhesPage() {
                                 </span>
                               )}
                             </div>
-                            {parte.observacoes && <p className="text-xs text-default-500">{parte.observacoes}</p>}
+                            {parte.observacoes && (
+                              <p className="text-xs text-default-500">
+                                {parte.observacoes}
+                              </p>
+                            )}
                           </div>
                           {!isCliente && (
-                            <Button isIconOnly color="danger" disabled={parteActionId === parte.id} isLoading={parteActionId === parte.id} variant="light" onPress={() => handleDeleteParte(parte.id)}>
+                            <Button
+                              isIconOnly
+                              color="danger"
+                              disabled={parteActionId === parte.id}
+                              isLoading={parteActionId === parte.id}
+                              variant="light"
+                              onPress={() => handleDeleteParte(parte.id)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
@@ -719,7 +855,9 @@ export default function ProcessoDetalhesPage() {
                     label="Tipo de polo"
                     selectedKeys={[parteForm.tipoPolo]}
                     onSelectionChange={(keys) => {
-                      const key = Array.from(keys)[0] as ProcessoPolo | undefined;
+                      const key = Array.from(keys)[0] as
+                        | ProcessoPolo
+                        | undefined;
 
                       setParteForm((prev) => ({
                         ...prev,
@@ -732,19 +870,62 @@ export default function ProcessoDetalhesPage() {
                     ))}
                   </Select>
 
-                  <Input label="Nome" placeholder="Nome completo da parte" value={parteForm.nome} onValueChange={(value) => setParteForm((prev) => ({ ...prev, nome: value }))} />
+                  <Input
+                    label="Nome"
+                    placeholder="Nome completo da parte"
+                    value={parteForm.nome}
+                    onValueChange={(value) =>
+                      setParteForm((prev) => ({ ...prev, nome: value }))
+                    }
+                  />
 
                   <div className="grid gap-4 md:grid-cols-2">
-                    <Input label="Documento" value={parteForm.documento} onValueChange={(value) => setParteForm((prev) => ({ ...prev, documento: value }))} />
-                    <Input label="Telefone" value={parteForm.telefone} onValueChange={(value) => setParteForm((prev) => ({ ...prev, telefone: value }))} />
+                    <Input
+                      label="Documento"
+                      value={parteForm.documento}
+                      onValueChange={(value) =>
+                        setParteForm((prev) => ({ ...prev, documento: value }))
+                      }
+                    />
+                    <Input
+                      label="Telefone"
+                      value={parteForm.telefone}
+                      onValueChange={(value) =>
+                        setParteForm((prev) => ({ ...prev, telefone: value }))
+                      }
+                    />
                   </div>
 
-                  <Input label="E-mail" value={parteForm.email} onValueChange={(value) => setParteForm((prev) => ({ ...prev, email: value }))} />
-                  <Input label="Papel no processo" value={parteForm.papel} onValueChange={(value) => setParteForm((prev) => ({ ...prev, papel: value }))} />
-                  <Textarea label="Observações" minRows={2} value={parteForm.observacoes} onValueChange={(value) => setParteForm((prev) => ({ ...prev, observacoes: value }))} />
+                  <Input
+                    label="E-mail"
+                    value={parteForm.email}
+                    onValueChange={(value) =>
+                      setParteForm((prev) => ({ ...prev, email: value }))
+                    }
+                  />
+                  <Input
+                    label="Papel no processo"
+                    value={parteForm.papel}
+                    onValueChange={(value) =>
+                      setParteForm((prev) => ({ ...prev, papel: value }))
+                    }
+                  />
+                  <Textarea
+                    label="Observações"
+                    minRows={2}
+                    value={parteForm.observacoes}
+                    onValueChange={(value) =>
+                      setParteForm((prev) => ({ ...prev, observacoes: value }))
+                    }
+                  />
 
                   <div className="flex justify-end">
-                    <Button color="primary" isLoading={isCreatingParte} startContent={<Plus className="h-4 w-4" />} onPress={handleCreateParte}>
+                    <Button
+                      color="primary"
+                      isLoading={isCreatingParte}
+                      startContent={<Plus className="h-4 w-4" />}
+                      onPress={handleCreateParte}
+                    >
                       Adicionar parte
                     </Button>
                   </div>
@@ -779,69 +960,119 @@ export default function ProcessoDetalhesPage() {
               <Divider />
               <CardBody className="space-y-3">
                 {prazosOrdenados.length === 0 ? (
-                  <p className="text-sm text-default-500">Nenhum prazo cadastrado.</p>
+                  <p className="text-sm text-default-500">
+                    Nenhum prazo cadastrado.
+                  </p>
                 ) : (
                   prazosOrdenados.map((prazo) => {
-                    const vencimento = DateUtils.formatDate(prazo.dataVencimento);
-                    const diasRestantes = DateUtils.diffInDays(prazo.dataVencimento, new Date());
-                    const isVencido = diasRestantes < 0 && prazo.status !== ProcessoPrazoStatus.CONCLUIDO;
+                    const vencimento = DateUtils.formatDate(
+                      prazo.dataVencimento,
+                    );
+                    const diasRestantes = DateUtils.diffInDays(
+                      prazo.dataVencimento,
+                      new Date(),
+                    );
+                    const isVencido =
+                      diasRestantes < 0 &&
+                      prazo.status !== ProcessoPrazoStatus.CONCLUIDO;
 
                     return (
-                      <Card key={prazo.id} className="border border-default-200">
+                      <Card
+                        key={prazo.id}
+                        className="border border-default-200"
+                      >
                         <CardBody className="gap-3">
                           <div className="flex items-start justify-between gap-3">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <Chip color={getPrazoStatusColor(prazo.status)} size="sm" variant="flat">
+                                <Chip
+                                  color={getPrazoStatusColor(prazo.status)}
+                                  size="sm"
+                                  variant="flat"
+                                >
                                   {getPrazoStatusLabel(prazo.status)}
                                 </Chip>
-                                <span className="text-sm font-semibold text-default-700">{prazo.titulo}</span>
-                                <span className={`text-xs ${isVencido ? "text-danger" : "text-default-400"}`}>
+                                <span className="text-sm font-semibold text-default-700">
+                                  {prazo.titulo}
+                                </span>
+                                <span
+                                  className={`text-xs ${isVencido ? "text-danger" : "text-default-400"}`}
+                                >
                                   Vencimento: {vencimento}
                                   {diasRestantes === 0 && " (vence hoje)"}
-                                  {diasRestantes > 0 && ` (em ${diasRestantes} dia${diasRestantes === 1 ? "" : "s"})`}
-                                  {diasRestantes < 0 && ` (${Math.abs(diasRestantes)} dia${Math.abs(diasRestantes) === 1 ? "" : "s"} em atraso)`}
+                                  {diasRestantes > 0 &&
+                                    ` (em ${diasRestantes} dia${diasRestantes === 1 ? "" : "s"})`}
+                                  {diasRestantes < 0 &&
+                                    ` (${Math.abs(diasRestantes)} dia${Math.abs(diasRestantes) === 1 ? "" : "s"} em atraso)`}
                                 </span>
                               </div>
-                              {prazo.descricao && <p className="text-xs text-default-500">{prazo.descricao}</p>}
+                              {prazo.descricao && (
+                                <p className="text-xs text-default-500">
+                                  {prazo.descricao}
+                                </p>
+                              )}
                               {prazo.fundamentoLegal && (
                                 <p className="text-xs text-default-500">
-                                  <strong>Fundamento:</strong> {prazo.fundamentoLegal}
+                                  <strong>Fundamento:</strong>{" "}
+                                  {prazo.fundamentoLegal}
                                 </p>
                               )}
                               {prazo.responsavel && (
                                 <p className="text-xs text-default-500">
-                                  <strong>Responsável:</strong> {prazo.responsavel.firstName} {prazo.responsavel.lastName}
+                                  <strong>Responsável:</strong>{" "}
+                                  {prazo.responsavel.firstName}{" "}
+                                  {prazo.responsavel.lastName}
                                 </p>
                               )}
                             </div>
                             {!isCliente && (
                               <div className="flex gap-2">
-                                {prazo.status !== ProcessoPrazoStatus.CONCLUIDO && (
+                                {prazo.status !==
+                                  ProcessoPrazoStatus.CONCLUIDO && (
                                   <Button
                                     color="success"
                                     isLoading={prazoActionId === prazo.id}
                                     size="sm"
-                                    startContent={<CheckCircle className="h-3 w-3" />}
+                                    startContent={
+                                      <CheckCircle className="h-3 w-3" />
+                                    }
                                     variant="flat"
-                                    onPress={() => handlePrazoStatus(prazo.id, ProcessoPrazoStatus.CONCLUIDO)}
+                                    onPress={() =>
+                                      handlePrazoStatus(
+                                        prazo.id,
+                                        ProcessoPrazoStatus.CONCLUIDO,
+                                      )
+                                    }
                                   >
                                     Concluir
                                   </Button>
                                 )}
-                                {prazo.status === ProcessoPrazoStatus.CONCLUIDO && (
+                                {prazo.status ===
+                                  ProcessoPrazoStatus.CONCLUIDO && (
                                   <Button
                                     color="warning"
                                     isLoading={prazoActionId === prazo.id}
                                     size="sm"
                                     startContent={<Clock className="h-3 w-3" />}
                                     variant="flat"
-                                    onPress={() => handlePrazoStatus(prazo.id, ProcessoPrazoStatus.ABERTO)}
+                                    onPress={() =>
+                                      handlePrazoStatus(
+                                        prazo.id,
+                                        ProcessoPrazoStatus.ABERTO,
+                                      )
+                                    }
                                   >
                                     Reabrir
                                   </Button>
                                 )}
-                                <Button isIconOnly color="danger" isLoading={prazoActionId === prazo.id} size="sm" variant="light" onPress={() => handleDeletePrazo(prazo.id)}>
+                                <Button
+                                  isIconOnly
+                                  color="danger"
+                                  isLoading={prazoActionId === prazo.id}
+                                  size="sm"
+                                  variant="light"
+                                  onPress={() => handleDeletePrazo(prazo.id)}
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -864,11 +1095,20 @@ export default function ProcessoDetalhesPage() {
                 </CardHeader>
                 <Divider />
                 <CardBody className="space-y-4">
-                  <Input label="Título do prazo" placeholder="Ex: Apresentar contestação" value={prazoForm.titulo} onValueChange={(value) => setPrazoForm((prev) => ({ ...prev, titulo: value }))} />
+                  <Input
+                    label="Título do prazo"
+                    placeholder="Ex: Apresentar contestação"
+                    value={prazoForm.titulo}
+                    onValueChange={(value) =>
+                      setPrazoForm((prev) => ({ ...prev, titulo: value }))
+                    }
+                  />
 
                   <Input
                     label="Data de vencimento"
-                    startContent={<Calendar className="h-4 w-4 text-default-400" />}
+                    startContent={
+                      <Calendar className="h-4 w-4 text-default-400" />
+                    }
                     type="date"
                     value={prazoForm.dataVencimento}
                     onValueChange={(value) =>
@@ -879,7 +1119,14 @@ export default function ProcessoDetalhesPage() {
                     }
                   />
 
-                  <Textarea label="Descrição" minRows={2} value={prazoForm.descricao} onValueChange={(value) => setPrazoForm((prev) => ({ ...prev, descricao: value }))} />
+                  <Textarea
+                    label="Descrição"
+                    minRows={2}
+                    value={prazoForm.descricao}
+                    onValueChange={(value) =>
+                      setPrazoForm((prev) => ({ ...prev, descricao: value }))
+                    }
+                  />
 
                   <Textarea
                     label="Fundamento legal"
@@ -894,7 +1141,12 @@ export default function ProcessoDetalhesPage() {
                   />
 
                   <div className="flex justify-end">
-                    <Button color="primary" isLoading={isCreatingPrazo} startContent={<Plus className="h-4 w-4" />} onPress={handleCreatePrazo}>
+                    <Button
+                      color="primary"
+                      isLoading={isCreatingPrazo}
+                      startContent={<Plus className="h-4 w-4" />}
+                      onPress={handleCreatePrazo}
+                    >
                       Adicionar prazo
                     </Button>
                   </div>
@@ -927,7 +1179,9 @@ export default function ProcessoDetalhesPage() {
               <Card className="border border-default-200">
                 <CardBody className="py-12 text-center">
                   <FileText className="mx-auto h-12 w-12 text-default-300" />
-                  <p className="mt-4 text-lg font-semibold text-default-600">Nenhum documento disponível</p>
+                  <p className="mt-4 text-lg font-semibold text-default-600">
+                    Nenhum documento disponível
+                  </p>
                 </CardBody>
               </Card>
             ) : (
@@ -937,8 +1191,12 @@ export default function ProcessoDetalhesPage() {
                     <CardBody className="gap-2">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <p className="text-sm font-semibold">{doc.titulo || doc.nomeArquivo}</p>
-                          <p className="text-xs text-default-400">{DateUtils.formatDate(doc.createdAt)}</p>
+                          <p className="text-sm font-semibold">
+                            {doc.titulo || doc.nomeArquivo}
+                          </p>
+                          <p className="text-xs text-default-400">
+                            {DateUtils.formatDate(doc.createdAt)}
+                          </p>
                         </div>
                         {doc.tamanho && (
                           <Chip size="sm" variant="flat">
@@ -946,9 +1204,22 @@ export default function ProcessoDetalhesPage() {
                           </Chip>
                         )}
                       </div>
-                      {doc.descricao && <p className="text-xs text-default-500">{doc.descricao}</p>}
+                      {doc.descricao && (
+                        <p className="text-xs text-default-500">
+                          {doc.descricao}
+                        </p>
+                      )}
                       {doc.url && (
-                        <Button as="a" color="primary" href={doc.url} rel="noopener noreferrer" size="sm" startContent={<Eye className="h-3 w-3" />} target="_blank" variant="flat">
+                        <Button
+                          as="a"
+                          color="primary"
+                          href={doc.url}
+                          rel="noopener noreferrer"
+                          size="sm"
+                          startContent={<Eye className="h-3 w-3" />}
+                          target="_blank"
+                          variant="flat"
+                        >
                           Visualizar
                         </Button>
                       )}
@@ -983,7 +1254,9 @@ export default function ProcessoDetalhesPage() {
               <Card className="border border-default-200">
                 <CardBody className="py-12 text-center">
                   <Calendar className="mx-auto h-12 w-12 text-default-300" />
-                  <p className="mt-4 text-lg font-semibold text-default-600">Nenhum evento cadastrado</p>
+                  <p className="mt-4 text-lg font-semibold text-default-600">
+                    Nenhum evento cadastrado
+                  </p>
                 </CardBody>
               </Card>
             ) : (
@@ -993,16 +1266,32 @@ export default function ProcessoDetalhesPage() {
                     <CardBody className="gap-2">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="text-sm font-semibold">{evento.titulo}</p>
-                          <p className="text-xs text-default-400">{DateUtils.formatDateTime(evento.dataInicio)}</p>
+                          <p className="text-sm font-semibold">
+                            {evento.titulo}
+                          </p>
+                          <p className="text-xs text-default-400">
+                            {DateUtils.formatDateTime(evento.dataInicio)}
+                          </p>
                         </div>
                         {evento.status && (
-                          <Chip color={evento.status === "CONFIRMADO" ? "success" : "default"} size="sm" variant="flat">
+                          <Chip
+                            color={
+                              evento.status === "CONFIRMADO"
+                                ? "success"
+                                : "default"
+                            }
+                            size="sm"
+                            variant="flat"
+                          >
                             {evento.status}
                           </Chip>
                         )}
                       </div>
-                      {evento.descricao && <p className="text-xs text-default-500">{evento.descricao}</p>}
+                      {evento.descricao && (
+                        <p className="text-xs text-default-500">
+                          {evento.descricao}
+                        </p>
+                      )}
                       {evento.local && (
                         <div className="flex items-center gap-1 text-xs text-default-400">
                           <MapPin className="h-3 w-3" />
@@ -1035,14 +1324,20 @@ export default function ProcessoDetalhesPage() {
             <Card className="border border-default-200">
               <CardHeader>
                 <div className="flex items-center justify-between w-full">
-                  <h3 className="text-lg font-semibold">Procurações vinculadas</h3>
-                  <Chip variant="flat">{processo.procuracoesVinculadas.length}</Chip>
+                  <h3 className="text-lg font-semibold">
+                    Procurações vinculadas
+                  </h3>
+                  <Chip variant="flat">
+                    {processo.procuracoesVinculadas.length}
+                  </Chip>
                 </div>
               </CardHeader>
               <Divider />
               <CardBody className="space-y-3">
                 {processo.procuracoesVinculadas.length === 0 ? (
-                  <p className="text-sm text-default-500">Nenhuma procuração vinculada a este processo.</p>
+                  <p className="text-sm text-default-500">
+                    Nenhuma procuração vinculada a este processo.
+                  </p>
                 ) : (
                   processo.procuracoesVinculadas.map((item) => (
                     <Card key={item.id} className="border border-default-200">
@@ -1050,10 +1345,19 @@ export default function ProcessoDetalhesPage() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <Chip color={item.procuracao.ativa ? "success" : "danger"} size="sm" variant="flat">
+                              <Chip
+                                color={
+                                  item.procuracao.ativa ? "success" : "danger"
+                                }
+                                size="sm"
+                                variant="flat"
+                              >
                                 {item.procuracao.status}
                               </Chip>
-                              <span className="text-sm font-semibold text-default-700">Procuração {item.procuracao.numero || "(sem número)"}</span>
+                              <span className="text-sm font-semibold text-default-700">
+                                Procuração{" "}
+                                {item.procuracao.numero || "(sem número)"}
+                              </span>
                             </div>
                             {item.procuracao.arquivoUrl && (
                               <Button
@@ -1072,18 +1376,29 @@ export default function ProcessoDetalhesPage() {
                             <div className="text-xs text-default-500 space-y-1">
                               {item.procuracao.assinaturas.length > 0 && (
                                 <p>
-                                  <strong>Assinada em:</strong> {DateUtils.formatDate(item.procuracao.assinaturas[0].assinadaEm ?? new Date())}
+                                  <strong>Assinada em:</strong>{" "}
+                                  {DateUtils.formatDate(
+                                    item.procuracao.assinaturas[0].assinadaEm ??
+                                      new Date(),
+                                  )}
                                 </p>
                               )}
                               {item.procuracao.validaAte && (
                                 <p>
-                                  <strong>Validade:</strong> {DateUtils.formatDate(item.procuracao.validaAte)}
+                                  <strong>Validade:</strong>{" "}
+                                  {DateUtils.formatDate(
+                                    item.procuracao.validaAte,
+                                  )}
                                 </p>
                               )}
                               {item.procuracao.outorgados.length > 0 && (
                                 <p>
                                   <strong>Outorgados:</strong>{" "}
-                                  {item.procuracao.outorgados.map((out) => `${out.advogado.usuario?.firstName || ""} ${out.advogado.usuario?.lastName || ""}`.trim()).join(", ")}
+                                  {item.procuracao.outorgados
+                                    .map((out) =>
+                                      `${out.advogado.usuario?.firstName || ""} ${out.advogado.usuario?.lastName || ""}`.trim(),
+                                    )
+                                    .join(", ")}
                                 </p>
                               )}
                             </div>
@@ -1092,10 +1407,14 @@ export default function ProcessoDetalhesPage() {
                             <Button
                               isIconOnly
                               color="danger"
-                              isLoading={procuracaoActionId === item.procuracao.id}
+                              isLoading={
+                                procuracaoActionId === item.procuracao.id
+                              }
                               size="sm"
                               variant="light"
-                              onPress={() => handleUnlinkProcuracao(item.procuracao.id)}
+                              onPress={() =>
+                                handleUnlinkProcuracao(item.procuracao.id)
+                              }
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -1121,7 +1440,9 @@ export default function ProcessoDetalhesPage() {
                     isDisabled={procuracoesDisponiveisFiltradas.length === 0}
                     label="Procuração"
                     placeholder="Selecione uma procuração ativa"
-                    selectedKeys={selectedProcuracaoId ? [selectedProcuracaoId] : []}
+                    selectedKeys={
+                      selectedProcuracaoId ? [selectedProcuracaoId] : []
+                    }
                     onSelectionChange={(keys) => {
                       const key = Array.from(keys)[0] as string | undefined;
 
@@ -1129,22 +1450,42 @@ export default function ProcessoDetalhesPage() {
                     }}
                   >
                     {procuracoesDisponiveisFiltradas.map((proc: any) => (
-                      <SelectItem key={proc.id} textValue={proc.numero || proc.id}>
+                      <SelectItem
+                        key={proc.id}
+                        textValue={proc.numero || proc.id}
+                      >
                         <div className="flex flex-col">
-                          <span className="text-sm font-semibold">{proc.numero || "Sem número"}</span>
-                          <span className="text-xs text-default-400">Emitida em {proc.emitidaEm ? DateUtils.formatDate(proc.emitidaEm) : "-"}</span>
+                          <span className="text-sm font-semibold">
+                            {proc.numero || "Sem número"}
+                          </span>
+                          <span className="text-xs text-default-400">
+                            Emitida em{" "}
+                            {proc.emitidaEm
+                              ? DateUtils.formatDate(proc.emitidaEm)
+                              : "-"}
+                          </span>
                         </div>
                       </SelectItem>
                     ))}
                   </Select>
 
                   <div className="flex justify-end">
-                    <Button color="primary" isDisabled={!selectedProcuracaoId} isLoading={isLinkingProcuracao} startContent={<Link2 className="h-4 w-4" />} onPress={handleLinkProcuracao}>
+                    <Button
+                      color="primary"
+                      isDisabled={!selectedProcuracaoId}
+                      isLoading={isLinkingProcuracao}
+                      startContent={<Link2 className="h-4 w-4" />}
+                      onPress={handleLinkProcuracao}
+                    >
                       Vincular procuração
                     </Button>
                   </div>
 
-                  {procuracoesDisponiveisFiltradas.length === 0 && <p className="text-xs text-default-500">Nenhuma procuração ativa disponível para vincular.</p>}
+                  {procuracoesDisponiveisFiltradas.length === 0 && (
+                    <p className="text-xs text-default-500">
+                      Nenhuma procuração ativa disponível para vincular.
+                    </p>
+                  )}
                 </CardBody>
               </Card>
             )}

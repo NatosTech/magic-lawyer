@@ -120,7 +120,10 @@ export async function getProcuracoesDisponiveis(clienteId: string) {
  * - Se o contrato NÃO tem processo: vincula o contrato ao primeiro processo da procuração
  * - Se a procuração não tem processos: retorna erro
  */
-export async function vincularContratoProcuracao(contratoId: string, procuracaoId: string) {
+export async function vincularContratoProcuracao(
+  contratoId: string,
+  procuracaoId: string,
+) {
   const session = await getSession();
 
   if (!session?.user?.id) {
@@ -179,7 +182,9 @@ export async function vincularContratoProcuracao(contratoId: string, procuracaoI
 
     // Caso 1: Contrato JÁ tem um processo vinculado
     if (contrato.processoId) {
-      const processoVinculado = procuracao.processos.find((pp) => pp.processoId === contrato.processoId);
+      const processoVinculado = procuracao.processos.find(
+        (pp) => pp.processoId === contrato.processoId,
+      );
 
       if (!processoVinculado) {
         return {
@@ -199,7 +204,8 @@ export async function vincularContratoProcuracao(contratoId: string, procuracaoI
     if (procuracao.processos.length === 0) {
       return {
         success: false,
-        error: "Esta procuração não está vinculada a nenhum processo. Primeiro vincule a procuração a um processo.",
+        error:
+          "Esta procuração não está vinculada a nenhum processo. Primeiro vincule a procuração a um processo.",
       };
     }
 
@@ -329,9 +335,15 @@ export async function createContrato(data: ContratoCreateInput) {
       advogadoResponsavel: contrato.advogadoResponsavel
         ? {
             ...contrato.advogadoResponsavel,
-            comissaoPadrao: toNumber(contrato.advogadoResponsavel.comissaoPadrao),
-            comissaoAcaoGanha: toNumber(contrato.advogadoResponsavel.comissaoAcaoGanha),
-            comissaoHonorarios: toNumber(contrato.advogadoResponsavel.comissaoHonorarios),
+            comissaoPadrao: toNumber(
+              contrato.advogadoResponsavel.comissaoPadrao,
+            ),
+            comissaoAcaoGanha: toNumber(
+              contrato.advogadoResponsavel.comissaoAcaoGanha,
+            ),
+            comissaoHonorarios: toNumber(
+              contrato.advogadoResponsavel.comissaoHonorarios,
+            ),
           }
         : null,
     };
@@ -608,7 +620,7 @@ export interface ContratoUpdateInput extends Partial<ContratoCreateInput> {
  */
 export async function updateContrato(
   contratoId: string,
-  data: Partial<ContratoCreateInput>
+  data: Partial<ContratoCreateInput>,
 ): Promise<{
   success: boolean;
   contrato?: any;
@@ -648,16 +660,23 @@ export async function updateContrato(
     if (data.status !== undefined) updateData.status = data.status;
     if (data.valor !== undefined) updateData.valor = data.valor;
     if (data.dataInicio !== undefined) {
-      updateData.dataInicio = data.dataInicio instanceof Date ? data.dataInicio : new Date(data.dataInicio);
+      updateData.dataInicio =
+        data.dataInicio instanceof Date
+          ? data.dataInicio
+          : new Date(data.dataInicio);
     }
     if (data.dataFim !== undefined) {
-      updateData.dataFim = data.dataFim instanceof Date ? data.dataFim : new Date(data.dataFim);
+      updateData.dataFim =
+        data.dataFim instanceof Date ? data.dataFim : new Date(data.dataFim);
     }
-    if (data.observacoes !== undefined) updateData.observacoes = data.observacoes;
+    if (data.observacoes !== undefined)
+      updateData.observacoes = data.observacoes;
     if (data.clienteId !== undefined) updateData.clienteId = data.clienteId;
-    if (data.advogadoId !== undefined) updateData.advogadoResponsavelId = data.advogadoId;
+    if (data.advogadoId !== undefined)
+      updateData.advogadoResponsavelId = data.advogadoId;
     if (data.processoId !== undefined) updateData.processoId = data.processoId;
-    if (data.tipoContratoId !== undefined) updateData.tipoId = data.tipoContratoId;
+    if (data.tipoContratoId !== undefined)
+      updateData.tipoId = data.tipoContratoId;
 
     // Atualizar contrato
     const contratoAtualizado = await prisma.contrato.update({

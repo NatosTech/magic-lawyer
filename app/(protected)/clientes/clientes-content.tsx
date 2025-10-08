@@ -7,13 +7,37 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/dropdown";
 import { Select, SelectItem } from "@heroui/select";
 import { Divider } from "@heroui/divider";
 import { Avatar } from "@heroui/avatar";
 import { Textarea } from "@heroui/input";
 import { Checkbox } from "@heroui/checkbox";
-import { Plus, Search, MoreVertical, Edit, Trash2, Eye, User, Building2, Phone, Mail, FileText, Users, Key, Copy, CheckCircle, KeyRound, RefreshCw, AlertCircle } from "lucide-react";
+import {
+  Plus,
+  Search,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Eye,
+  User,
+  Building2,
+  Phone,
+  Mail,
+  FileText,
+  Users,
+  Key,
+  Copy,
+  CheckCircle,
+  KeyRound,
+  RefreshCw,
+  AlertCircle,
+} from "lucide-react";
 import { Spinner } from "@heroui/spinner";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -21,7 +45,15 @@ import Link from "next/link";
 import { title } from "@/components/primitives";
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { useClientesAdvogado, useAllClientes } from "@/app/hooks/use-clientes";
-import { createCliente, updateCliente, deleteCliente, resetarSenhaCliente, type Cliente, type ClienteCreateInput, type ClienteUpdateInput } from "@/app/actions/clientes";
+import {
+  createCliente,
+  updateCliente,
+  deleteCliente,
+  resetarSenhaCliente,
+  type Cliente,
+  type ClienteCreateInput,
+  type ClienteUpdateInput,
+} from "@/app/actions/clientes";
 import { TipoPessoa } from "@/app/generated/prisma";
 import { Modal } from "@/components/ui/modal";
 import { CpfInput } from "@/components/cpf-input";
@@ -42,11 +74,20 @@ export function ClientesContent() {
     senha: string;
   } | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [clienteParaResetarSenha, setClienteParaResetarSenha] = useState<Cliente | null>(null);
+  const [clienteParaResetarSenha, setClienteParaResetarSenha] =
+    useState<Cliente | null>(null);
 
   // Buscar clientes (advogado ou admin)
-  const { clientes: clientesAdvogado, isLoading: isLoadingAdvogado, mutate: mutateAdvogado } = useClientesAdvogado();
-  const { clientes: clientesAdmin, isLoading: isLoadingAdmin, mutate: mutateAdmin } = useAllClientes();
+  const {
+    clientes: clientesAdvogado,
+    isLoading: isLoadingAdvogado,
+    mutate: mutateAdvogado,
+  } = useClientesAdvogado();
+  const {
+    clientes: clientesAdmin,
+    isLoading: isLoadingAdmin,
+    mutate: mutateAdmin,
+  } = useAllClientes();
 
   const clientes = isAdmin ? clientesAdmin : clientesAdvogado;
   const isLoading = isAdmin ? isLoadingAdmin : isLoadingAdvogado;
@@ -66,7 +107,8 @@ export function ClientesContent() {
     responsavelTelefone: "",
   };
 
-  const [formState, setFormState] = useState<ClienteCreateInput>(initialFormState);
+  const [formState, setFormState] =
+    useState<ClienteCreateInput>(initialFormState);
 
   // Filtrar clientes
   const clientesFiltrados =
@@ -77,7 +119,9 @@ export function ClientesContent() {
         cliente.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         cliente.documento?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchTipoPessoa = selectedTipoPessoa === "all" || cliente.tipoPessoa === selectedTipoPessoa;
+      const matchTipoPessoa =
+        selectedTipoPessoa === "all" ||
+        cliente.tipoPessoa === selectedTipoPessoa;
 
       return matchSearch && matchTipoPessoa;
     }) || [];
@@ -258,7 +302,9 @@ export function ClientesContent() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className={title({ size: "lg", color: "blue" })}>Clientes</h1>
-          <p className="mt-2 text-sm text-default-500">Gerencie seus clientes e acesse seus processos</p>
+          <p className="mt-2 text-sm text-default-500">
+            Gerencie seus clientes e acesse seus processos
+          </p>
         </div>
         {permissions.canViewAllClients && (
           <Button
@@ -285,7 +331,12 @@ export function ClientesContent() {
               value={searchTerm}
               onValueChange={setSearchTerm}
             />
-            <Select className="w-full sm:w-48" placeholder="Tipo de Pessoa" selectedKeys={[selectedTipoPessoa]} onChange={(e) => setSelectedTipoPessoa(e.target.value)}>
+            <Select
+              className="w-full sm:w-48"
+              placeholder="Tipo de Pessoa"
+              selectedKeys={[selectedTipoPessoa]}
+              onChange={(e) => setSelectedTipoPessoa(e.target.value)}
+            >
               {tipoPessoaOptions.map((option) => (
                 <SelectItem key={option.key}>{option.label}</SelectItem>
               ))}
@@ -303,26 +354,55 @@ export function ClientesContent() {
         <Card className="border border-default-200">
           <CardBody className="py-12 text-center">
             <Users className="mx-auto h-12 w-12 text-default-300" />
-            <p className="mt-4 text-lg font-semibold text-default-600">Nenhum cliente encontrado</p>
-            <p className="mt-2 text-sm text-default-400">{searchTerm ? "Tente ajustar os filtros de busca" : "Comece adicionando seu primeiro cliente"}</p>
+            <p className="mt-4 text-lg font-semibold text-default-600">
+              Nenhum cliente encontrado
+            </p>
+            <p className="mt-2 text-sm text-default-400">
+              {searchTerm
+                ? "Tente ajustar os filtros de busca"
+                : "Comece adicionando seu primeiro cliente"}
+            </p>
           </CardBody>
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {clientesFiltrados.map((cliente) => (
-            <Card key={cliente.id} className="border border-default-200 hover:border-primary transition-colors">
+            <Card
+              key={cliente.id}
+              className="border border-default-200 hover:border-primary transition-colors"
+            >
               <CardHeader className="flex gap-3">
-                <Avatar showFallback className="bg-primary/10 text-primary" icon={cliente.tipoPessoa === TipoPessoa.JURIDICA ? <Building2 /> : <User />} name={getInitials(cliente.nome)} />
+                <Avatar
+                  showFallback
+                  className="bg-primary/10 text-primary"
+                  icon={
+                    cliente.tipoPessoa === TipoPessoa.JURIDICA ? (
+                      <Building2 />
+                    ) : (
+                      <User />
+                    )
+                  }
+                  name={getInitials(cliente.nome)}
+                />
                 <div className="flex flex-col flex-1">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold">{cliente.nome}</p>
                     {cliente.usuarioId && (
-                      <Chip color="success" size="sm" startContent={<Key className="h-3 w-3" />} variant="flat">
+                      <Chip
+                        color="success"
+                        size="sm"
+                        startContent={<Key className="h-3 w-3" />}
+                        variant="flat"
+                      >
                         Acesso
                       </Chip>
                     )}
                   </div>
-                  <p className="text-xs text-default-400">{cliente.tipoPessoa === TipoPessoa.FISICA ? "Pessoa Física" : "Pessoa Jurídica"}</p>
+                  <p className="text-xs text-default-400">
+                    {cliente.tipoPessoa === TipoPessoa.FISICA
+                      ? "Pessoa Física"
+                      : "Pessoa Jurídica"}
+                  </p>
                 </div>
                 <Dropdown>
                   <DropdownTrigger>
@@ -331,18 +411,39 @@ export function ClientesContent() {
                     </Button>
                   </DropdownTrigger>
                   <DropdownMenu aria-label="Ações do cliente">
-                    <DropdownItem key="view" as={Link} href={`/clientes/${cliente.id}`} startContent={<Eye className="h-4 w-4" />}>
+                    <DropdownItem
+                      key="view"
+                      as={Link}
+                      href={`/clientes/${cliente.id}`}
+                      startContent={<Eye className="h-4 w-4" />}
+                    >
                       Ver Detalhes
                     </DropdownItem>
-                    <DropdownItem key="edit" startContent={<Edit className="h-4 w-4" />} onPress={() => handleEditCliente(cliente)}>
+                    <DropdownItem
+                      key="edit"
+                      startContent={<Edit className="h-4 w-4" />}
+                      onPress={() => handleEditCliente(cliente)}
+                    >
                       Editar
                     </DropdownItem>
                     {cliente.usuarioId ? (
-                      <DropdownItem key="reset-password" className="text-warning" color="warning" startContent={<KeyRound className="h-4 w-4" />} onPress={() => handleOpenResetModal(cliente)}>
+                      <DropdownItem
+                        key="reset-password"
+                        className="text-warning"
+                        color="warning"
+                        startContent={<KeyRound className="h-4 w-4" />}
+                        onPress={() => handleOpenResetModal(cliente)}
+                      >
                         Resetar Senha
                       </DropdownItem>
                     ) : null}
-                    <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="h-4 w-4" />} onPress={() => handleDeleteCliente(cliente.id)}>
+                    <DropdownItem
+                      key="delete"
+                      className="text-danger"
+                      color="danger"
+                      startContent={<Trash2 className="h-4 w-4" />}
+                      onPress={() => handleDeleteCliente(cliente.id)}
+                    >
                       Excluir
                     </DropdownItem>
                   </DropdownMenu>
@@ -353,7 +454,9 @@ export function ClientesContent() {
                 {cliente.documento && (
                   <div className="flex items-center gap-2 text-xs">
                     <FileText className="h-3 w-3 text-default-400" />
-                    <span className="text-default-600">{cliente.documento}</span>
+                    <span className="text-default-600">
+                      {cliente.documento}
+                    </span>
                   </div>
                 )}
                 {cliente.email && (
@@ -375,7 +478,13 @@ export function ClientesContent() {
                       {cliente._count?.processos || 0} processos
                     </Chip>
                   </div>
-                  <Button as={Link} color="primary" href={`/clientes/${cliente.id}`} size="sm" variant="flat">
+                  <Button
+                    as={Link}
+                    color="primary"
+                    href={`/clientes/${cliente.id}`}
+                    size="sm"
+                    variant="flat"
+                  >
                     Ver Processos
                   </Button>
                 </div>
@@ -392,7 +501,11 @@ export function ClientesContent() {
             <Button variant="light" onPress={() => setIsCreateModalOpen(false)}>
               Cancelar
             </Button>
-            <Button color="primary" isLoading={isSaving} onPress={handleCreateCliente}>
+            <Button
+              color="primary"
+              isLoading={isSaving}
+              onPress={handleCreateCliente}
+            >
               Criar Cliente
             </Button>
           </div>
@@ -420,36 +533,69 @@ export function ClientesContent() {
 
           <Input
             isRequired
-            label={formState.tipoPessoa === TipoPessoa.FISICA ? "Nome Completo" : "Razão Social"}
-            placeholder={formState.tipoPessoa === TipoPessoa.FISICA ? "Nome completo" : "Razão Social"}
-            startContent={formState.tipoPessoa === TipoPessoa.FISICA ? <User className="h-4 w-4 text-default-400" /> : <Building2 className="h-4 w-4 text-default-400" />}
+            label={
+              formState.tipoPessoa === TipoPessoa.FISICA
+                ? "Nome Completo"
+                : "Razão Social"
+            }
+            placeholder={
+              formState.tipoPessoa === TipoPessoa.FISICA
+                ? "Nome completo"
+                : "Razão Social"
+            }
+            startContent={
+              formState.tipoPessoa === TipoPessoa.FISICA ? (
+                <User className="h-4 w-4 text-default-400" />
+              ) : (
+                <Building2 className="h-4 w-4 text-default-400" />
+              )
+            }
             value={formState.nome}
-            onValueChange={(value) => setFormState({ ...formState, nome: value })}
+            onValueChange={(value) =>
+              setFormState({ ...formState, nome: value })
+            }
           />
 
           {formState.tipoPessoa === TipoPessoa.FISICA ? (
-            <CpfInput value={formState.documento} onChange={(value) => setFormState({ ...formState, documento: value })} />
+            <CpfInput
+              value={formState.documento}
+              onChange={(value) =>
+                setFormState({ ...formState, documento: value })
+              }
+            />
           ) : (
-            <CnpjInput value={formState.documento} onChange={(value) => setFormState({ ...formState, documento: value })} onCnpjFound={handleCnpjFound} />
+            <CnpjInput
+              value={formState.documento}
+              onChange={(value) =>
+                setFormState({ ...formState, documento: value })
+              }
+              onCnpjFound={handleCnpjFound}
+            />
           )}
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              description={criarUsuario ? "Obrigatório para criar usuário" : undefined}
+              description={
+                criarUsuario ? "Obrigatório para criar usuário" : undefined
+              }
               isRequired={criarUsuario}
               label="Email"
               placeholder="email@exemplo.com"
               startContent={<Mail className="h-4 w-4 text-default-400" />}
               type="email"
               value={formState.email}
-              onValueChange={(value) => setFormState({ ...formState, email: value })}
+              onValueChange={(value) =>
+                setFormState({ ...formState, email: value })
+              }
             />
             <Input
               label="Telefone"
               placeholder="(00) 0000-0000"
               startContent={<Phone className="h-4 w-4 text-default-400" />}
               value={formState.telefone}
-              onValueChange={(value) => setFormState({ ...formState, telefone: value })}
+              onValueChange={(value) =>
+                setFormState({ ...formState, telefone: value })
+              }
             />
           </div>
 
@@ -458,19 +604,25 @@ export function ClientesContent() {
             placeholder="(00) 00000-0000"
             startContent={<Phone className="h-4 w-4 text-default-400" />}
             value={formState.celular}
-            onValueChange={(value) => setFormState({ ...formState, celular: value })}
+            onValueChange={(value) =>
+              setFormState({ ...formState, celular: value })
+            }
           />
 
           {formState.tipoPessoa === TipoPessoa.JURIDICA && (
             <>
               <Divider className="my-2" />
-              <p className="text-sm font-semibold text-default-700">Responsável pela Empresa</p>
+              <p className="text-sm font-semibold text-default-700">
+                Responsável pela Empresa
+              </p>
               <Input
                 label="Nome do Responsável"
                 placeholder="Nome completo"
                 startContent={<User className="h-4 w-4 text-default-400" />}
                 value={formState.responsavelNome}
-                onValueChange={(value) => setFormState({ ...formState, responsavelNome: value })}
+                onValueChange={(value) =>
+                  setFormState({ ...formState, responsavelNome: value })
+                }
               />
               <div className="grid grid-cols-2 gap-4">
                 <Input
@@ -479,14 +631,18 @@ export function ClientesContent() {
                   startContent={<Mail className="h-4 w-4 text-default-400" />}
                   type="email"
                   value={formState.responsavelEmail}
-                  onValueChange={(value) => setFormState({ ...formState, responsavelEmail: value })}
+                  onValueChange={(value) =>
+                    setFormState({ ...formState, responsavelEmail: value })
+                  }
                 />
                 <Input
                   label="Telefone do Responsável"
                   placeholder="(00) 00000-0000"
                   startContent={<Phone className="h-4 w-4 text-default-400" />}
                   value={formState.responsavelTelefone}
-                  onValueChange={(value) => setFormState({ ...formState, responsavelTelefone: value })}
+                  onValueChange={(value) =>
+                    setFormState({ ...formState, responsavelTelefone: value })
+                  }
                 />
               </div>
             </>
@@ -497,8 +653,14 @@ export function ClientesContent() {
           <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
             <Checkbox isSelected={criarUsuario} onValueChange={setCriarUsuario}>
               <div>
-                <p className="font-semibold text-sm">Criar usuário de acesso ao sistema</p>
-                <p className="text-xs text-default-500 mt-1">{criarUsuario ? "Um usuário será criado automaticamente com email e senha aleatória" : "O cliente não terá acesso ao sistema"}</p>
+                <p className="font-semibold text-sm">
+                  Criar usuário de acesso ao sistema
+                </p>
+                <p className="text-xs text-default-500 mt-1">
+                  {criarUsuario
+                    ? "Um usuário será criado automaticamente com email e senha aleatória"
+                    : "O cliente não terá acesso ao sistema"}
+                </p>
               </div>
             </Checkbox>
           </div>
@@ -508,7 +670,9 @@ export function ClientesContent() {
             minRows={3}
             placeholder="Informações adicionais sobre o cliente..."
             value={formState.observacoes}
-            onValueChange={(value) => setFormState({ ...formState, observacoes: value })}
+            onValueChange={(value) =>
+              setFormState({ ...formState, observacoes: value })
+            }
           />
         </div>
       </Modal>
@@ -520,7 +684,11 @@ export function ClientesContent() {
             <Button variant="light" onPress={() => setIsEditModalOpen(false)}>
               Cancelar
             </Button>
-            <Button color="primary" isLoading={isSaving} onPress={handleUpdateCliente}>
+            <Button
+              color="primary"
+              isLoading={isSaving}
+              onPress={handleUpdateCliente}
+            >
               Salvar Alterações
             </Button>
           </div>
@@ -548,17 +716,44 @@ export function ClientesContent() {
 
           <Input
             isRequired
-            label={formState.tipoPessoa === TipoPessoa.FISICA ? "Nome Completo" : "Razão Social"}
-            placeholder={formState.tipoPessoa === TipoPessoa.FISICA ? "Nome completo" : "Razão Social"}
-            startContent={formState.tipoPessoa === TipoPessoa.FISICA ? <User className="h-4 w-4 text-default-400" /> : <Building2 className="h-4 w-4 text-default-400" />}
+            label={
+              formState.tipoPessoa === TipoPessoa.FISICA
+                ? "Nome Completo"
+                : "Razão Social"
+            }
+            placeholder={
+              formState.tipoPessoa === TipoPessoa.FISICA
+                ? "Nome completo"
+                : "Razão Social"
+            }
+            startContent={
+              formState.tipoPessoa === TipoPessoa.FISICA ? (
+                <User className="h-4 w-4 text-default-400" />
+              ) : (
+                <Building2 className="h-4 w-4 text-default-400" />
+              )
+            }
             value={formState.nome}
-            onValueChange={(value) => setFormState({ ...formState, nome: value })}
+            onValueChange={(value) =>
+              setFormState({ ...formState, nome: value })
+            }
           />
 
           {formState.tipoPessoa === TipoPessoa.FISICA ? (
-            <CpfInput value={formState.documento} onChange={(value) => setFormState({ ...formState, documento: value })} />
+            <CpfInput
+              value={formState.documento}
+              onChange={(value) =>
+                setFormState({ ...formState, documento: value })
+              }
+            />
           ) : (
-            <CnpjInput value={formState.documento} onChange={(value) => setFormState({ ...formState, documento: value })} onCnpjFound={handleCnpjFound} />
+            <CnpjInput
+              value={formState.documento}
+              onChange={(value) =>
+                setFormState({ ...formState, documento: value })
+              }
+              onCnpjFound={handleCnpjFound}
+            />
           )}
 
           <div className="grid grid-cols-2 gap-4">
@@ -568,14 +763,18 @@ export function ClientesContent() {
               startContent={<Mail className="h-4 w-4 text-default-400" />}
               type="email"
               value={formState.email}
-              onValueChange={(value) => setFormState({ ...formState, email: value })}
+              onValueChange={(value) =>
+                setFormState({ ...formState, email: value })
+              }
             />
             <Input
               label="Telefone"
               placeholder="(00) 0000-0000"
               startContent={<Phone className="h-4 w-4 text-default-400" />}
               value={formState.telefone}
-              onValueChange={(value) => setFormState({ ...formState, telefone: value })}
+              onValueChange={(value) =>
+                setFormState({ ...formState, telefone: value })
+              }
             />
           </div>
 
@@ -584,19 +783,25 @@ export function ClientesContent() {
             placeholder="(00) 00000-0000"
             startContent={<Phone className="h-4 w-4 text-default-400" />}
             value={formState.celular}
-            onValueChange={(value) => setFormState({ ...formState, celular: value })}
+            onValueChange={(value) =>
+              setFormState({ ...formState, celular: value })
+            }
           />
 
           {formState.tipoPessoa === TipoPessoa.JURIDICA && (
             <>
               <Divider className="my-2" />
-              <p className="text-sm font-semibold text-default-700">Responsável pela Empresa</p>
+              <p className="text-sm font-semibold text-default-700">
+                Responsável pela Empresa
+              </p>
               <Input
                 label="Nome do Responsável"
                 placeholder="Nome completo"
                 startContent={<User className="h-4 w-4 text-default-400" />}
                 value={formState.responsavelNome}
-                onValueChange={(value) => setFormState({ ...formState, responsavelNome: value })}
+                onValueChange={(value) =>
+                  setFormState({ ...formState, responsavelNome: value })
+                }
               />
               <div className="grid grid-cols-2 gap-4">
                 <Input
@@ -605,14 +810,18 @@ export function ClientesContent() {
                   startContent={<Mail className="h-4 w-4 text-default-400" />}
                   type="email"
                   value={formState.responsavelEmail}
-                  onValueChange={(value) => setFormState({ ...formState, responsavelEmail: value })}
+                  onValueChange={(value) =>
+                    setFormState({ ...formState, responsavelEmail: value })
+                  }
                 />
                 <Input
                   label="Telefone do Responsável"
                   placeholder="(00) 00000-0000"
                   startContent={<Phone className="h-4 w-4 text-default-400" />}
                   value={formState.responsavelTelefone}
-                  onValueChange={(value) => setFormState({ ...formState, responsavelTelefone: value })}
+                  onValueChange={(value) =>
+                    setFormState({ ...formState, responsavelTelefone: value })
+                  }
                 />
               </div>
             </>
@@ -623,7 +832,9 @@ export function ClientesContent() {
             minRows={3}
             placeholder="Informações adicionais sobre o cliente..."
             value={formState.observacoes}
-            onValueChange={(value) => setFormState({ ...formState, observacoes: value })}
+            onValueChange={(value) =>
+              setFormState({ ...formState, observacoes: value })
+            }
           />
         </div>
       </Modal>
@@ -632,14 +843,24 @@ export function ClientesContent() {
       <Modal
         footer={
           <div className="flex justify-end">
-            <Button color="primary" startContent={<CheckCircle className="h-4 w-4" />} onPress={() => setCredenciaisModal(null)}>
+            <Button
+              color="primary"
+              startContent={<CheckCircle className="h-4 w-4" />}
+              onPress={() => setCredenciaisModal(null)}
+            >
               Entendi
             </Button>
           </div>
         }
         isOpen={!!credenciaisModal}
         size="lg"
-        title={credenciaisModal ? (credenciaisModal.senha.length > 0 ? "🔑 Credenciais de Acesso" : "✅ Cliente criado com sucesso!") : ""}
+        title={
+          credenciaisModal
+            ? credenciaisModal.senha.length > 0
+              ? "🔑 Credenciais de Acesso"
+              : "✅ Cliente criado com sucesso!"
+            : ""
+        }
         onOpenChange={() => setCredenciaisModal(null)}
       >
         {credenciaisModal && (
@@ -648,8 +869,13 @@ export function ClientesContent() {
               <div className="flex items-start gap-3">
                 <Key className="h-5 w-5 text-success mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-success">Usuário de acesso criado</p>
-                  <p className="text-xs text-default-600 mt-1">As credenciais abaixo foram geradas automaticamente. Anote ou envie para o cliente.</p>
+                  <p className="text-sm font-semibold text-success">
+                    Usuário de acesso criado
+                  </p>
+                  <p className="text-xs text-default-600 mt-1">
+                    As credenciais abaixo foram geradas automaticamente. Anote
+                    ou envie para o cliente.
+                  </p>
                 </div>
               </div>
             </div>
@@ -681,7 +907,9 @@ export function ClientesContent() {
                 </div>
 
                 <div>
-                  <p className="text-xs text-default-400 mb-1">Senha (temporária)</p>
+                  <p className="text-xs text-default-400 mb-1">
+                    Senha (temporária)
+                  </p>
                   <div className="flex items-center gap-2">
                     <Input
                       readOnly
@@ -707,7 +935,10 @@ export function ClientesContent() {
             </Card>
 
             <div className="rounded-lg bg-warning/10 border border-warning/20 p-3">
-              <p className="text-xs text-warning-600">⚠️ Esta senha será exibida apenas uma vez. Certifique-se de anotar ou enviar para o cliente.</p>
+              <p className="text-xs text-warning-600">
+                ⚠️ Esta senha será exibida apenas uma vez. Certifique-se de
+                anotar ou enviar para o cliente.
+              </p>
             </div>
           </div>
         )}
@@ -717,10 +948,22 @@ export function ClientesContent() {
       <Modal
         footer={
           <div className="flex gap-2">
-            <Button variant="light" onPress={() => setClienteParaResetarSenha(null)}>
+            <Button
+              variant="light"
+              onPress={() => setClienteParaResetarSenha(null)}
+            >
               Cancelar
             </Button>
-            <Button color="warning" isLoading={isResettingPassword} startContent={!isResettingPassword ? <RefreshCw className="h-4 w-4" /> : undefined} onPress={handleConfirmResetarSenha}>
+            <Button
+              color="warning"
+              isLoading={isResettingPassword}
+              startContent={
+                !isResettingPassword ? (
+                  <RefreshCw className="h-4 w-4" />
+                ) : undefined
+              }
+              onPress={handleConfirmResetarSenha}
+            >
               Resetar Senha
             </Button>
           </div>
@@ -737,7 +980,9 @@ export function ClientesContent() {
                 <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-warning">Atenção</p>
-                  <p className="text-xs text-default-600 mt-1">Esta ação irá gerar uma nova senha aleatória para o cliente.</p>
+                  <p className="text-xs text-default-600 mt-1">
+                    Esta ação irá gerar uma nova senha aleatória para o cliente.
+                  </p>
                 </div>
               </div>
             </div>
@@ -745,17 +990,29 @@ export function ClientesContent() {
             <Card className="border border-default-200 bg-default-50">
               <CardBody className="gap-2">
                 <div className="flex items-center gap-2">
-                  {clienteParaResetarSenha.tipoPessoa === TipoPessoa.JURIDICA ? <Building2 className="h-5 w-5 text-default-400" /> : <User className="h-5 w-5 text-default-400" />}
+                  {clienteParaResetarSenha.tipoPessoa ===
+                  TipoPessoa.JURIDICA ? (
+                    <Building2 className="h-5 w-5 text-default-400" />
+                  ) : (
+                    <User className="h-5 w-5 text-default-400" />
+                  )}
                   <div>
-                    <p className="text-sm font-semibold">{clienteParaResetarSenha.nome}</p>
-                    <p className="text-xs text-default-400">{clienteParaResetarSenha.email}</p>
+                    <p className="text-sm font-semibold">
+                      {clienteParaResetarSenha.nome}
+                    </p>
+                    <p className="text-xs text-default-400">
+                      {clienteParaResetarSenha.email}
+                    </p>
                   </div>
                 </div>
               </CardBody>
             </Card>
 
             <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
-              <p className="text-xs text-primary-600">💡 Uma nova senha será gerada e exibida na próxima tela. Certifique-se de anotar e enviar para o cliente.</p>
+              <p className="text-xs text-primary-600">
+                💡 Uma nova senha será gerada e exibida na próxima tela.
+                Certifique-se de anotar e enviar para o cliente.
+              </p>
             </div>
           </div>
         )}

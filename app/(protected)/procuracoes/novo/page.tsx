@@ -15,18 +15,39 @@ import { Divider } from "@heroui/divider";
 import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
-import { ArrowLeft, Calendar, FileSignature, Save, User, Building2, Users, FileText, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  FileSignature,
+  Save,
+  User,
+  Building2,
+  Users,
+  FileText,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
-import { createProcuracao, type ProcuracaoCreateInput } from "@/app/actions/procuracoes";
+import {
+  createProcuracao,
+  type ProcuracaoCreateInput,
+} from "@/app/actions/procuracoes";
 import { useClientesParaSelect } from "@/app/hooks/use-clientes";
 import { useProcessosCliente } from "@/app/hooks/use-processos";
 import { useModelosProcuracaoParaSelect } from "@/app/hooks/use-modelos-procuracao";
 import { useAdvogadosDisponiveis } from "@/app/hooks/use-advogados";
-import { ProcuracaoEmitidaPor, ProcuracaoStatus, TipoPessoa } from "@/app/generated/prisma";
+import {
+  ProcuracaoEmitidaPor,
+  ProcuracaoStatus,
+  TipoPessoa,
+} from "@/app/generated/prisma";
 import { title } from "@/components/primitives";
 
-type ClienteSelectItem = Pick<ClienteDTO, "id" | "nome" | "tipoPessoa" | "email" | "documento">;
+type ClienteSelectItem = Pick<
+  ClienteDTO,
+  "id" | "nome" | "tipoPessoa" | "email" | "documento"
+>;
 type ModeloSelectItem = { id: string; nome: string; categoria?: string | null };
 
 const emptyPoder = { titulo: "", descricao: "" };
@@ -57,7 +78,7 @@ export default function NovaProcuracaoPage() {
         .split(",")
         .map((id) => id.trim())
         .filter((id) => id.length > 0),
-    [processoIdsParam]
+    [processoIdsParam],
   );
 
   const [isSaving, setIsSaving] = useState(false);
@@ -76,9 +97,12 @@ export default function NovaProcuracaoPage() {
   });
 
   const { clientes, isLoading: isLoadingClientes } = useClientesParaSelect();
-  const { modelos, isLoading: isLoadingModelos } = useModelosProcuracaoParaSelect();
-  const { advogados, isLoading: isLoadingAdvogados } = useAdvogadosDisponiveis();
-  const { processos: processosDoCliente, isLoading: isLoadingProcessos } = useProcessosCliente(formData.clienteId || null);
+  const { modelos, isLoading: isLoadingModelos } =
+    useModelosProcuracaoParaSelect();
+  const { advogados, isLoading: isLoadingAdvogados } =
+    useAdvogadosDisponiveis();
+  const { processos: processosDoCliente, isLoading: isLoadingProcessos } =
+    useProcessosCliente(formData.clienteId || null);
 
   useEffect(() => {
     if (clienteIdParam) {
@@ -95,9 +119,15 @@ export default function NovaProcuracaoPage() {
     }));
   }, [preselectedProcessoIds]);
 
-  const selectedProcessoKeys = useMemo(() => new Set(formData.processoIds ?? []), [formData.processoIds]);
+  const selectedProcessoKeys = useMemo(
+    () => new Set(formData.processoIds ?? []),
+    [formData.processoIds],
+  );
 
-  const selectedAdvogadoKeys = useMemo(() => new Set(formData.advogadoIds ?? []), [formData.advogadoIds]);
+  const selectedAdvogadoKeys = useMemo(
+    () => new Set(formData.advogadoIds ?? []),
+    [formData.advogadoIds],
+  );
 
   const poderes = formData.poderes ?? [];
 
@@ -122,7 +152,8 @@ export default function NovaProcuracaoPage() {
 
   const handleProcessoSelectionChange = (keys: Selection) => {
     if (keys === "all") {
-      const todosProcessos = processosDoCliente?.map((processo) => processo.id) ?? [];
+      const todosProcessos =
+        processosDoCliente?.map((processo) => processo.id) ?? [];
 
       setFormData((prev) => ({
         ...prev,
@@ -170,7 +201,11 @@ export default function NovaProcuracaoPage() {
     }));
   };
 
-  const handleAtualizarPoder = (index: number, field: "titulo" | "descricao", value: string) => {
+  const handleAtualizarPoder = (
+    index: number,
+    field: "titulo" | "descricao",
+    value: string,
+  ) => {
     setFormData((prev) => {
       const poderesAtualizados = [...(prev.poderes ?? [])];
 
@@ -202,7 +237,10 @@ export default function NovaProcuracaoPage() {
         arquivoUrl: formData.arquivoUrl?.trim() || undefined,
         observacoes: formData.observacoes?.trim() || undefined,
         modeloId: formData.modeloId || undefined,
-        processoIds: formData.processoIds && formData.processoIds.length > 0 ? formData.processoIds : undefined,
+        processoIds:
+          formData.processoIds && formData.processoIds.length > 0
+            ? formData.processoIds
+            : undefined,
         advogadoIds: formData.advogadoIds ?? [],
         poderes: (formData.poderes ?? [])
           .map((poder) => ({
@@ -238,9 +276,16 @@ export default function NovaProcuracaoPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className={title()}>Nova Procuração</h1>
-          <p className="mt-1 text-sm text-default-500">Preencha os dados conforme o modelo e vincule aos responsáveis.</p>
+          <p className="mt-1 text-sm text-default-500">
+            Preencha os dados conforme o modelo e vincule aos responsáveis.
+          </p>
         </div>
-        <Button as={Link} href={clienteIdParam ? `/clientes/${clienteIdParam}` : "/procuracoes"} startContent={<ArrowLeft className="h-4 w-4" />} variant="light">
+        <Button
+          as={Link}
+          href={clienteIdParam ? `/clientes/${clienteIdParam}` : "/procuracoes"}
+          startContent={<ArrowLeft className="h-4 w-4" />}
+          variant="light"
+        >
           Voltar
         </Button>
       </div>
@@ -249,7 +294,9 @@ export default function NovaProcuracaoPage() {
         <Card className="border border-success/20 bg-success/5">
           <CardBody className="flex flex-row items-center gap-2">
             <User className="h-5 w-5 text-success" />
-            <p className="text-sm text-success">Esta procuração será vinculada ao cliente selecionado.</p>
+            <p className="text-sm text-success">
+              Esta procuração será vinculada ao cliente selecionado.
+            </p>
           </CardBody>
         </Card>
       )}
@@ -264,7 +311,9 @@ export default function NovaProcuracaoPage() {
         <Divider />
         <CardBody className="gap-6">
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-default-600">📋 Dados Básicos</h3>
+            <h3 className="text-sm font-semibold text-default-600">
+              📋 Dados Básicos
+            </h3>
 
             {!clienteIdParam && (
               <Select
@@ -279,10 +328,20 @@ export default function NovaProcuracaoPage() {
                 {clientes.map((cliente: ClienteSelectItem) => (
                   <SelectItem key={cliente.id}>
                     <div className="flex items-center gap-2">
-                      {cliente.tipoPessoa === TipoPessoa.JURIDICA ? <Building2 className="h-4 w-4 text-default-400" /> : <User className="h-4 w-4 text-default-400" />}
+                      {cliente.tipoPessoa === TipoPessoa.JURIDICA ? (
+                        <Building2 className="h-4 w-4 text-default-400" />
+                      ) : (
+                        <User className="h-4 w-4 text-default-400" />
+                      )}
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold">{cliente.nome}</span>
-                        {cliente.email && <span className="text-xs text-default-400">{cliente.email}</span>}
+                        <span className="text-sm font-semibold">
+                          {cliente.nome}
+                        </span>
+                        {cliente.email && (
+                          <span className="text-xs text-default-400">
+                            {cliente.email}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </SelectItem>
@@ -295,7 +354,9 @@ export default function NovaProcuracaoPage() {
               label="Número da Procuração"
               placeholder="Ex: PROC-2024-001"
               value={formData.numero ?? ""}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, numero: value }))}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, numero: value }))
+              }
             />
 
             <Select
@@ -315,8 +376,14 @@ export default function NovaProcuracaoPage() {
               {(modelos ?? []).map((modelo: ModeloSelectItem) => (
                 <SelectItem key={modelo.id}>
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-default-700">{modelo.nome}</span>
-                    {modelo.categoria && <span className="text-xs text-default-400">{modelo.categoria}</span>}
+                    <span className="text-sm font-semibold text-default-700">
+                      {modelo.nome}
+                    </span>
+                    {modelo.categoria && (
+                      <span className="text-xs text-default-400">
+                        {modelo.categoria}
+                      </span>
+                    )}
                   </div>
                 </SelectItem>
               ))}
@@ -327,7 +394,9 @@ export default function NovaProcuracaoPage() {
               placeholder="https://..."
               startContent={<FileText className="h-4 w-4 text-default-400" />}
               value={formData.arquivoUrl ?? ""}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, arquivoUrl: value }))}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, arquivoUrl: value }))
+              }
             />
 
             <Textarea
@@ -335,20 +404,28 @@ export default function NovaProcuracaoPage() {
               minRows={4}
               placeholder="Poderes outorgados, observações especiais..."
               value={formData.observacoes ?? ""}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, observacoes: value }))}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, observacoes: value }))
+              }
             />
           </div>
 
           <Divider />
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-default-600">🔗 Vinculações</h3>
+            <h3 className="text-sm font-semibold text-default-600">
+              🔗 Vinculações
+            </h3>
 
             <Select
               isDisabled={!formData.clienteId || isLoadingProcessos}
               isLoading={isLoadingProcessos}
               label="Processos vinculados"
-              placeholder={formData.clienteId ? "Selecione os processos (opcional)" : "Selecione um cliente para listar processos"}
+              placeholder={
+                formData.clienteId
+                  ? "Selecione os processos (opcional)"
+                  : "Selecione um cliente para listar processos"
+              }
               selectedKeys={selectedProcessoKeys}
               selectionMode="multiple"
               onSelectionChange={handleProcessoSelectionChange}
@@ -356,8 +433,14 @@ export default function NovaProcuracaoPage() {
               {(processosDoCliente ?? []).map((processo: ProcessoDTO) => (
                 <SelectItem key={processo.id}>
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-default-700">{processo.numero}</span>
-                    {processo.titulo && <span className="text-xs text-default-400">{processo.titulo}</span>}
+                    <span className="text-sm font-semibold text-default-700">
+                      {processo.numero}
+                    </span>
+                    {processo.titulo && (
+                      <span className="text-xs text-default-400">
+                        {processo.titulo}
+                      </span>
+                    )}
                   </div>
                 </SelectItem>
               ))}
@@ -375,8 +458,15 @@ export default function NovaProcuracaoPage() {
               {(advogados ?? []).map((advogado: AdvogadoSelectItem) => (
                 <SelectItem key={advogado.id}>
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-default-700">{`${advogado.usuario.firstName ?? ""} ${advogado.usuario.lastName ?? ""}`.trim() || advogado.usuario.email}</span>
-                    <span className="text-xs text-default-400">{advogado.oabNumero && advogado.oabUf ? `OAB ${advogado.oabNumero}/${advogado.oabUf}` : advogado.usuario.email}</span>
+                    <span className="text-sm font-semibold text-default-700">
+                      {`${advogado.usuario.firstName ?? ""} ${advogado.usuario.lastName ?? ""}`.trim() ||
+                        advogado.usuario.email}
+                    </span>
+                    <span className="text-xs text-default-400">
+                      {advogado.oabNumero && advogado.oabUf
+                        ? `OAB ${advogado.oabNumero}/${advogado.oabUf}`
+                        : advogado.usuario.email}
+                    </span>
                   </div>
                 </SelectItem>
               ))}
@@ -386,7 +476,9 @@ export default function NovaProcuracaoPage() {
           <Divider />
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-default-600">📅 Status e Validade</h3>
+            <h3 className="text-sm font-semibold text-default-600">
+              📅 Status e Validade
+            </h3>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Select
@@ -398,15 +490,25 @@ export default function NovaProcuracaoPage() {
 
                   setFormData((prev) => ({
                     ...prev,
-                    status: (key as ProcuracaoStatus | undefined) ?? ProcuracaoStatus.RASCUNHO,
+                    status:
+                      (key as ProcuracaoStatus | undefined) ??
+                      ProcuracaoStatus.RASCUNHO,
                   }));
                 }}
               >
-                <SelectItem key={ProcuracaoStatus.RASCUNHO}>Rascunho</SelectItem>
-                <SelectItem key={ProcuracaoStatus.PENDENTE_ASSINATURA}>Pendente assinatura</SelectItem>
+                <SelectItem key={ProcuracaoStatus.RASCUNHO}>
+                  Rascunho
+                </SelectItem>
+                <SelectItem key={ProcuracaoStatus.PENDENTE_ASSINATURA}>
+                  Pendente assinatura
+                </SelectItem>
                 <SelectItem key={ProcuracaoStatus.VIGENTE}>Vigente</SelectItem>
-                <SelectItem key={ProcuracaoStatus.REVOGADA}>Revogada</SelectItem>
-                <SelectItem key={ProcuracaoStatus.EXPIRADA}>Expirada</SelectItem>
+                <SelectItem key={ProcuracaoStatus.REVOGADA}>
+                  Revogada
+                </SelectItem>
+                <SelectItem key={ProcuracaoStatus.EXPIRADA}>
+                  Expirada
+                </SelectItem>
               </Select>
 
               <Select
@@ -418,12 +520,18 @@ export default function NovaProcuracaoPage() {
 
                   setFormData((prev) => ({
                     ...prev,
-                    emitidaPor: (key as ProcuracaoEmitidaPor | undefined) ?? ProcuracaoEmitidaPor.ESCRITORIO,
+                    emitidaPor:
+                      (key as ProcuracaoEmitidaPor | undefined) ??
+                      ProcuracaoEmitidaPor.ESCRITORIO,
                   }));
                 }}
               >
-                <SelectItem key={ProcuracaoEmitidaPor.ESCRITORIO}>Escritório</SelectItem>
-                <SelectItem key={ProcuracaoEmitidaPor.ADVOGADO}>Advogado</SelectItem>
+                <SelectItem key={ProcuracaoEmitidaPor.ESCRITORIO}>
+                  Escritório
+                </SelectItem>
+                <SelectItem key={ProcuracaoEmitidaPor.ADVOGADO}>
+                  Advogado
+                </SelectItem>
               </Select>
             </div>
 
@@ -483,10 +591,17 @@ export default function NovaProcuracaoPage() {
               />
             </div>
 
-            <Checkbox isSelected={formData.ativa ?? true} onValueChange={(checked) => setFormData((prev) => ({ ...prev, ativa: checked }))}>
+            <Checkbox
+              isSelected={formData.ativa ?? true}
+              onValueChange={(checked) =>
+                setFormData((prev) => ({ ...prev, ativa: checked }))
+              }
+            >
               <div className="flex flex-col">
                 <span className="text-sm font-semibold">Procuração ativa</span>
-                <span className="text-xs text-default-400">Marque se a procuração está em vigor.</span>
+                <span className="text-xs text-default-400">
+                  Marque se a procuração está em vigor.
+                </span>
               </div>
             </Checkbox>
           </div>
@@ -495,33 +610,62 @@ export default function NovaProcuracaoPage() {
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-default-600">⚖️ Poderes outorgados</h3>
-              <Button size="sm" startContent={<Plus className="h-4 w-4" />} variant="light" onPress={handleAdicionarPoder}>
+              <h3 className="text-sm font-semibold text-default-600">
+                ⚖️ Poderes outorgados
+              </h3>
+              <Button
+                size="sm"
+                startContent={<Plus className="h-4 w-4" />}
+                variant="light"
+                onPress={handleAdicionarPoder}
+              >
                 Adicionar poder
               </Button>
             </div>
 
             {poderes.length === 0 ? (
-              <p className="text-sm text-default-500">Nenhum poder cadastrado. Utilize o botão acima para adicionar.</p>
+              <p className="text-sm text-default-500">
+                Nenhum poder cadastrado. Utilize o botão acima para adicionar.
+              </p>
             ) : (
               <div className="space-y-4">
                 {poderes.map((poder, index) => (
-                  <Card key={`poder-${index}`} className="border border-default-200">
+                  <Card
+                    key={`poder-${index}`}
+                    className="border border-default-200"
+                  >
                     <CardBody className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-default-600">Poder {index + 1}</span>
-                        <Button color="danger" size="sm" startContent={<Trash2 className="h-4 w-4" />} variant="light" onPress={() => handleRemoverPoder(index)}>
+                        <span className="text-sm font-semibold text-default-600">
+                          Poder {index + 1}
+                        </span>
+                        <Button
+                          color="danger"
+                          size="sm"
+                          startContent={<Trash2 className="h-4 w-4" />}
+                          variant="light"
+                          onPress={() => handleRemoverPoder(index)}
+                        >
                           Remover
                         </Button>
                       </div>
-                      <Input label="Título (opcional)" placeholder="Representar em audiências..." value={poder.titulo ?? ""} onValueChange={(value) => handleAtualizarPoder(index, "titulo", value)} />
+                      <Input
+                        label="Título (opcional)"
+                        placeholder="Representar em audiências..."
+                        value={poder.titulo ?? ""}
+                        onValueChange={(value) =>
+                          handleAtualizarPoder(index, "titulo", value)
+                        }
+                      />
                       <Textarea
                         isRequired
                         label="Descrição do poder"
                         minRows={3}
                         placeholder="Descreva o poder concedido"
                         value={poder.descricao}
-                        onValueChange={(value) => handleAtualizarPoder(index, "descricao", value)}
+                        onValueChange={(value) =>
+                          handleAtualizarPoder(index, "descricao", value)
+                        }
                       />
                     </CardBody>
                   </Card>
@@ -531,14 +675,33 @@ export default function NovaProcuracaoPage() {
           </div>
 
           <div className="rounded-lg border border-success/20 bg-success/5 p-4">
-            <p className="text-xs text-success-600">💡 Dica: cadastre todos os poderes necessários e vincule os processos relacionados antes de salvar para evitar retrabalho.</p>
+            <p className="text-xs text-success-600">
+              💡 Dica: cadastre todos os poderes necessários e vincule os
+              processos relacionados antes de salvar para evitar retrabalho.
+            </p>
           </div>
 
           <div className="flex justify-end gap-3">
-            <Button variant="light" onPress={() => router.push(clienteIdParam ? `/clientes/${clienteIdParam}` : "/procuracoes")}>
+            <Button
+              variant="light"
+              onPress={() =>
+                router.push(
+                  clienteIdParam
+                    ? `/clientes/${clienteIdParam}`
+                    : "/procuracoes",
+                )
+              }
+            >
               Cancelar
             </Button>
-            <Button color="success" isLoading={isSaving} startContent={!isSaving ? <Save className="h-4 w-4" /> : undefined} onPress={handleSubmit}>
+            <Button
+              color="success"
+              isLoading={isSaving}
+              startContent={
+                !isSaving ? <Save className="h-4 w-4" /> : undefined
+              }
+              onPress={handleSubmit}
+            >
               Criar Procuração
             </Button>
           </div>

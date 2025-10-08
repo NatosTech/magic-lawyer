@@ -26,7 +26,9 @@ export function CidadeSelect({
   className,
   estadoSelecionado,
 }: CidadeSelectProps) {
-  const { municipios, isLoading, error } = useMunicipiosPorEstado(estadoSelecionado || null);
+  const { municipios, isLoading, error } = useMunicipiosPorEstado(
+    estadoSelecionado || null,
+  );
 
   if (!estadoSelecionado) {
     return (
@@ -64,8 +66,18 @@ export function CidadeSelect({
   }
 
   return (
-    <Select className={className} isDisabled={isDisabled} isRequired={isRequired} label={label} placeholder={placeholder} selectedKeys={selectedKeys || []} onSelectionChange={onSelectionChange}>
-      {municipios?.map((municipio) => <SelectItem key={municipio.nome}>{municipio.nome}</SelectItem>) || []}
+    <Select
+      className={className}
+      isDisabled={isDisabled}
+      isRequired={isRequired}
+      label={label}
+      placeholder={placeholder}
+      selectedKeys={selectedKeys || []}
+      onSelectionChange={onSelectionChange}
+    >
+      {municipios?.map((municipio) => (
+        <SelectItem key={municipio.nome}>{municipio.nome}</SelectItem>
+      )) || []}
     </Select>
   );
 }
