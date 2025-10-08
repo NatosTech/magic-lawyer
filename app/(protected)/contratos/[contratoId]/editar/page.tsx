@@ -8,15 +8,17 @@ import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Divider } from "@heroui/divider";
-import { ArrowLeft, Save, FileText, User, DollarSign, Calendar, Building2, AlertCircle } from "lucide-react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
+import { ArrowLeft, Save, FileText, User, DollarSign, Calendar, Building2, AlertCircle, LinkIcon } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Spinner } from "@heroui/spinner";
 
 import { title } from "@/components/primitives";
-import { getContratoById, updateContrato, type ContratoCreateInput } from "@/app/actions/contratos";
+import { getContratoById, updateContrato, vincularContratoProcuracao, type ContratoCreateInput } from "@/app/actions/contratos";
 import { ContratoStatus } from "@/app/generated/prisma";
 import { useClientesParaSelect, useProcuracoesDisponiveis } from "@/app/hooks/use-clientes";
+import { useContratoDetalhado } from "@/app/hooks/use-contratos";
 
 export default function EditarContratoPage({ params }: { params: Promise<{ contratoId: string }> }) {
   const router = useRouter();
@@ -31,12 +33,16 @@ export default function EditarContratoPage({ params }: { params: Promise<{ contr
     resumo: "",
     status: ContratoStatus.RASCUNHO,
     clienteId: "",
-    procuracaoId: undefined,
     observacoes: "",
   });
 
+  const [selectedProcuracao, setSelectedProcuracao] = useState("");
+  const [isLinking, setIsLinking] = useState(false);
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+
   const { clientes, isLoading: isLoadingClientes } = useClientesParaSelect();
   const { procuracoes, isLoading: isLoadingProcuracoes } = useProcuracoesDisponiveis(formData.clienteId || null);
+  const { contrato, mutate } = useContratoDetalhado(contratoId);
 
   useEffect(() => {
     async function loadContrato() {
@@ -55,7 +61,6 @@ export default function EditarContratoPage({ params }: { params: Promise<{ contr
             dataInicio: contrato.dataInicio ? new Date(contrato.dataInicio).toISOString().split("T")[0] : undefined,
             dataFim: contrato.dataFim ? new Date(contrato.dataFim).toISOString().split("T")[0] : undefined,
             clienteId: contrato.clienteId,
-            procuracaoId: undefined,
             observacoes: contrato.observacoes || "",
           });
         } else {
@@ -70,6 +75,33 @@ export default function EditarContratoPage({ params }: { params: Promise<{ contr
 
     loadContrato();
   }, [contratoId]);
+
+  const handleVincularProcuracao = async () => {
+    if (!selectedProcuracao) {
+      toast.error("Selecione uma procuração");
+
+      return;
+    }
+
+    setIsLinking(true);
+    try {
+      const result = await vincularContratoProcuracao(contratoId, selectedProcuracao);
+
+      if (result.success) {
+        toast.success(result.message || "Contrato vinculado à procuração com sucesso!");
+        mutate(); // Atualizar dados do contrato
+        onOpenChange();
+        setSelectedProcuracao("");
+      } else {
+        toast.error(result.error || "Erro ao vincular procuração");
+      }
+    } catch (error) {
+      console.error("Erro ao vincular procuração:", error);
+      toast.error("Erro ao processar vinculação");
+    } finally {
+      setIsLinking(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!formData.titulo.trim()) {
@@ -258,28 +290,69 @@ export default function EditarContratoPage({ params }: { params: Promise<{ contr
               onValueChange={(value) => setFormData((prev) => ({ ...prev, observacoes: value }))}
             />
 
-            {/* Procuração (opcional) */}
-            {formData.clienteId && procuracoes && procuracoes.length > 0 && (
-              <Select
-                label="Vincular Procuração (opcional)"
-                placeholder="Selecione uma procuração"
-                selectedKeys={formData.procuracaoId ? [formData.procuracaoId] : []}
-                onSelectionChange={(keys) => {
-                  const selected = Array.from(keys)[0] as string | undefined;
+            {/* Procuração Vinculada */}
+            <div className="p-4 rounded-lg border border-default-200 bg-default-50">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-default-700">Vinculação de Procuração</h4>
+                {contrato?.processo && (
+                  <Button color="primary" size="sm" startContent={<LinkIcon className="h-3 w-3" />} variant="flat" onPress={onOpen}>
+                    {contrato.processo.procuracoesVinculadas && contrato.processo.procuracoesVinculadas.length > 0 ? "Vincular Outra Procuração" : "Vincular Procuração"}
+                  </Button>
+                )}
+              </div>
 
-                  setFormData((prev) => ({ ...prev, procuracaoId: selected }));
-                }}
-              >
-                {procuracoes.map((procuracao: any) => (
-                  <SelectItem key={procuracao.id} textValue={procuracao.numero || procuracao.id}>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold">{procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}</span>
-                      <span className="text-xs text-default-400">{procuracao.processos?.length || 0} processo(s) vinculado(s)</span>
+              {contrato?.processo ? (
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 text-sm">
+                    <FileText className="h-4 w-4 text-primary mt-0.5" />
+                    <div>
+                      <p className="text-default-600">Este contrato está vinculado ao processo:</p>
+                      <p className="font-semibold text-default-900">{contrato.processo.numero}</p>
                     </div>
-                  </SelectItem>
-                ))}
-              </Select>
-            )}
+                  </div>
+
+                  <div className="border-t border-default-200 pt-2">
+                    {contrato.processo.procuracoesVinculadas && contrato.processo.procuracoesVinculadas.length > 0 ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm text-success">
+                          <span className="font-medium">✓ {contrato.processo.procuracoesVinculadas.length} procuração(ões) vinculada(s):</span>
+                        </div>
+                        <div className="ml-4 space-y-1">
+                          {contrato.processo.procuracoesVinculadas.map((pp: any, index: number) => (
+                            <div key={pp.procuracao.id} className="flex items-center gap-2 text-xs text-default-600">
+                              <span className="w-2 h-2 rounded-full bg-success"></span>
+                              <span>{pp.procuracao.numero || `Procuração ${index + 1}`}</span>
+                              {pp.procuracao.ativa ? (
+                                <span className="px-1 py-0.5 bg-success/20 text-success rounded text-xs">Ativa</span>
+                              ) : (
+                                <span className="px-1 py-0.5 bg-warning/20 text-warning rounded text-xs">Inativa</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-default-500 mt-2">💡 Você pode vincular mais procurações ao mesmo processo</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm text-warning">
+                          <AlertCircle className="h-4 w-4" />
+                          <span className="font-medium">Este processo ainda não possui procurações vinculadas</span>
+                        </div>
+                        <p className="text-xs text-default-500 ml-6">Clique em "Vincular Procuração" para conectar uma procuração ao processo</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-default-500">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="font-medium">Este contrato não está vinculado a nenhum processo</span>
+                  </div>
+                  <p className="text-xs text-default-400 ml-6">Para vincular uma procuração, primeiro é necessário vincular o contrato a um processo</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Botões de ação */}
@@ -293,6 +366,67 @@ export default function EditarContratoPage({ params }: { params: Promise<{ contr
           </div>
         </CardBody>
       </Card>
+
+      {/* Modal Vincular Procuração */}
+      <Modal isOpen={isOpen} size="md" onOpenChange={onOpenChange}>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <h3 className="text-lg font-semibold">Vincular Procuração</h3>
+                <p className="text-sm text-default-500">
+                  {contrato?.processo ? (
+                    <>
+                      Verificar vinculação da procuração ao processo <strong>{contrato.processo.numero}</strong>
+                    </>
+                  ) : (
+                    <>Selecione uma procuração para vincular ao contrato através de um processo</>
+                  )}
+                </p>
+              </ModalHeader>
+              <ModalBody>
+                {isLoadingProcuracoes ? (
+                  <div className="flex justify-center py-8">
+                    <Spinner label="Carregando procurações..." size="lg" />
+                  </div>
+                ) : procuracoes.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-default-500">Nenhuma procuração ativa encontrada para este cliente.</p>
+                  </div>
+                ) : (
+                  <Select
+                    label="Selecione uma procuração"
+                    placeholder="Escolha uma procuração"
+                    selectedKeys={selectedProcuracao ? [selectedProcuracao] : []}
+                    onSelectionChange={(keys) => {
+                      const selectedKey = Array.from(keys)[0] as string;
+
+                      setSelectedProcuracao(selectedKey || "");
+                    }}
+                  >
+                    {procuracoes.map((procuracao: any) => (
+                      <SelectItem key={procuracao.id} textValue={procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}>
+                        <div className="flex flex-col">
+                          <span className="font-semibold">{procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}</span>
+                          <span className="text-xs text-default-400">{procuracao.processos.length} processo(s) vinculado(s)</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </Select>
+                )}
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  Cancelar
+                </Button>
+                <Button color="primary" isDisabled={!selectedProcuracao || isLoadingProcuracoes} isLoading={isLinking} onPress={handleVincularProcuracao}>
+                  Vincular
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

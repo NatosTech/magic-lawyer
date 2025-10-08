@@ -1,6 +1,6 @@
 import useSWR from "swr";
 
-import { getAllContratos } from "@/app/actions/contratos";
+import { getAllContratos, getContratoById } from "@/app/actions/contratos";
 
 /**
  * Hook para buscar todos os contratos do tenant
@@ -25,6 +25,39 @@ export function useAllContratos() {
 
   return {
     contratos: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar um contrato específico
+ */
+export function useContratoDetalhado(contratoId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    contratoId ? `contrato-${contratoId}` : null,
+    async () => {
+      if (!contratoId) return null;
+
+      const result = await getContratoById(contratoId);
+
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar contrato");
+      }
+
+      return result.contrato || null;
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    contrato: data,
     isLoading,
     isError: !!error,
     error,

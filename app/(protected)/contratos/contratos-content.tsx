@@ -357,11 +357,11 @@ export default function ContratosContent() {
                       <DropdownItem key="edit" as={Link} href={`/contratos/${contrato.id}/editar`} startContent={<Edit className="h-4 w-4" />}>
                         Editar
                       </DropdownItem>
-                      {!contrato.processo?.procuracoesVinculadas || contrato.processo.procuracoesVinculadas.length === 0 ? (
+                      {contrato.processo && (
                         <DropdownItem key="link" startContent={<LinkIcon className="h-4 w-4" />} onPress={() => openVincularModal(contrato)}>
-                          Vincular Procuração
+                          {contrato.processo.procuracoesVinculadas && contrato.processo.procuracoesVinculadas.length > 0 ? "Vincular Outra Procuração" : "Vincular Procuração"}
                         </DropdownItem>
-                      ) : null}
+                      )}
                       <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="h-4 w-4" />}>
                         Excluir
                       </DropdownItem>

@@ -13,7 +13,7 @@ import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
 import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/modal";
-import { AlertCircle, Plus, Search, MoreVertical, Edit, Eye, FileText, User, Building2, Calendar, Download, Link2 } from "lucide-react";
+import { AlertCircle, Plus, Search, MoreVertical, Edit, Eye, FileText, User, Building2, Calendar, Download, Link2, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
@@ -379,6 +379,11 @@ export function ProcuracoesContent() {
                   {!permissions.isCliente ? (
                     <DropdownItem key="link" startContent={<Link2 className="h-4 w-4" />} onPress={() => openLinkModal(procuracao)}>
                       Vincular a Processo
+                    </DropdownItem>
+                  ) : null}
+                  {!permissions.isCliente ? (
+                    <DropdownItem key="documents" startContent={<Paperclip className="h-4 w-4" />} onPress={() => router.push(`/procuracoes/${procuracao.id}#documentos`)}>
+                      Anexar Documentos
                     </DropdownItem>
                   ) : null}
                   <DropdownItem

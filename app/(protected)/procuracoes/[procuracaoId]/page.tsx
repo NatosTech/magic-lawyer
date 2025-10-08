@@ -12,16 +12,41 @@ import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Checkbox } from "@heroui/checkbox";
-import { ArrowLeft, User, FileSignature, Calendar, Clock, CheckCircle, XCircle, AlertCircle, Download, Eye, Edit, Plus, Trash2, FileText, Users, Scale, Link2, Info, Building2 } from "lucide-react";
+import {
+  ArrowLeft,
+  User,
+  FileSignature,
+  Calendar,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Download,
+  Eye,
+  Edit,
+  Plus,
+  Trash2,
+  FileText,
+  Users,
+  Scale,
+  Link2,
+  Info,
+  Building2,
+  Paperclip,
+} from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
 import { useProcuracao } from "@/app/hooks/use-procuracoes";
+import { useAdvogadosDisponiveis } from "@/app/hooks/use-advogados";
+import { mutate } from "swr";
 import { title } from "@/components/primitives";
 import { ProcuracaoStatus, ProcuracaoEmitidaPor } from "@/app/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
 import { updateProcuracao, deleteProcuracao, adicionarAdvogadoNaProcuracao, removerAdvogadoDaProcuracao, vincularProcesso, desvincularProcesso } from "@/app/actions/procuracoes";
 import { Modal } from "@/components/ui/modal";
+import DocumentoUploadModal from "@/components/documento-upload-modal";
+import DocumentosList from "@/components/documentos-list";
 
 const getStatusColor = (status: ProcuracaoStatus) => {
   switch (status) {
@@ -77,11 +102,15 @@ export default function ProcuracaoDetalhesPage() {
   const procuracaoId = params.procuracaoId as string;
 
   const { procuracao, isLoading, isError, error, mutate: mutateProcuracao } = useProcuracao(procuracaoId);
+  const { advogados: advogadosDisponiveis, isLoading: isLoadingAdvogados } = useAdvogadosDisponiveis();
 
   const [activeTab, setActiveTab] = useState("informacoes");
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isAddAdvogadoModalOpen, setIsAddAdvogadoModalOpen] = useState(false);
+  const [documentosCount, setDocumentosCount] = useState(0);
 
   // Form state
   const [formData, setFormData] = useState<{
@@ -208,6 +237,25 @@ export default function ProcuracaoDetalhesPage() {
     });
   };
 
+  const handleAdicionarAdvogado = async (advogadoId: string) => {
+    startTransition(async () => {
+      try {
+        const result = await adicionarAdvogadoNaProcuracao(procuracaoId, advogadoId);
+
+        if (result.success) {
+          toast.success("Advogado adicionado à procuração!");
+          mutateProcuracao();
+          setIsAddAdvogadoModalOpen(false);
+        } else {
+          toast.error(result.error || "Erro ao adicionar advogado");
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Erro ao adicionar advogado");
+      }
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -306,7 +354,20 @@ export default function ProcuracaoDetalhesPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key as string)} aria-label="Abas da procuração" color="primary" variant="underlined">
+      <Tabs
+        selectedKey={activeTab}
+        onSelectionChange={(key) => setActiveTab(key as string)}
+        aria-label="Abas da procuração"
+        color="primary"
+        variant="underlined"
+        className="w-full"
+        classNames={{
+          tabList: "gap-2 w-full relative rounded-none p-0 border-b border-divider",
+          cursor: "w-full bg-primary",
+          tab: "max-w-fit px-3 py-2 h-12",
+          tabContent: "group-data-[selected=true]:text-primary",
+        }}
+      >
         <Tab
           key="informacoes"
           title={
@@ -479,7 +540,7 @@ export default function ProcuracaoDetalhesPage() {
           title={
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              <span>Advogados Outorgados</span>
+              <span>Advogados</span>
               <Chip size="sm" variant="flat">
                 {procuracao.outorgados?.length || 0}
               </Chip>
@@ -493,6 +554,9 @@ export default function ProcuracaoDetalhesPage() {
                   <Users className="h-5 w-5" />
                   <h3 className="text-lg font-semibold">Advogados Outorgados</h3>
                 </div>
+                <Button color="primary" size="sm" startContent={<Plus className="h-4 w-4" />} onPress={() => setIsAddAdvogadoModalOpen(true)}>
+                  Adicionar Advogado
+                </Button>
               </div>
             </CardHeader>
             <CardBody>
@@ -546,7 +610,7 @@ export default function ProcuracaoDetalhesPage() {
           title={
             <div className="flex items-center gap-2">
               <Scale className="h-4 w-4" />
-              <span>Processos Vinculados</span>
+              <span>Processos</span>
               <Chip size="sm" variant="flat">
                 {procuracao.processos?.length || 0}
               </Chip>
@@ -654,6 +718,40 @@ export default function ProcuracaoDetalhesPage() {
             </CardBody>
           </Card>
         </Tab>
+
+        {/* Tab Documentos */}
+        <Tab
+          key="documentos"
+          title={
+            <div className="flex items-center gap-2">
+              <Paperclip className="h-4 w-4" />
+              <span>Documentos</span>
+              <Chip size="sm" variant="flat">
+                {documentosCount}
+              </Chip>
+            </div>
+          }
+        >
+          <div className="mt-6 space-y-4">
+            {/* Header com ação principal */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold">Documentos da Procuração</h3>
+                <p className="text-sm text-default-500 mt-1">Gerencie os documentos anexados a esta procuração</p>
+              </div>
+              <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => setIsUploadModalOpen(true)} className="shrink-0">
+                Anexar Documento
+              </Button>
+            </div>
+
+            {/* Lista de documentos */}
+            <Card>
+              <CardBody className="p-0">
+                <DocumentosList procuracaoId={procuracaoId} onCountChange={setDocumentosCount} />
+              </CardBody>
+            </Card>
+          </div>
+        </Tab>
       </Tabs>
 
       {/* Modal de Confirmação de Exclusão */}
@@ -667,6 +765,74 @@ export default function ProcuracaoDetalhesPage() {
             </Button>
             <Button color="danger" onPress={handleDelete} isLoading={isPending}>
               Excluir Procuração
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal de Upload de Documentos */}
+      <DocumentoUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        procuracaoId={procuracaoId}
+        onSuccess={() => {
+          // Invalidar cache SWR para documentos
+          mutate(`documentos-procuracao-${procuracaoId}`);
+          // Refresh da página para atualizar outros dados
+          mutateProcuracao();
+        }}
+      />
+
+      {/* Modal de Adicionar Advogado */}
+      <Modal isOpen={isAddAdvogadoModalOpen} onClose={() => setIsAddAdvogadoModalOpen(false)} title="Adicionar Advogado">
+        <div className="space-y-4">
+          <p className="text-sm text-default-600">Selecione um advogado para adicionar à procuração:</p>
+
+          {isLoadingAdvogados ? (
+            <div className="flex items-center justify-center py-8">
+              <Spinner size="lg" />
+            </div>
+          ) : (
+            <div className="max-h-96 overflow-y-auto space-y-2">
+              {advogadosDisponiveis
+                ?.filter((advogado) => !procuracao.outorgados?.some((outorgado) => outorgado.advogado.id === advogado.id))
+                .map((advogado) => (
+                  <Card key={advogado.id} className="cursor-pointer hover:bg-default-50 transition-colors" onClick={() => handleAdicionarAdvogado(advogado.id)}>
+                    <CardBody className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                          <User className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold">
+                            {advogado.usuario.firstName} {advogado.usuario.lastName}
+                          </p>
+                          <p className="text-sm text-default-500">
+                            OAB: {advogado.oabNumero}/{advogado.oabUf}
+                          </p>
+                          <p className="text-sm text-default-500">{advogado.usuario.email}</p>
+                        </div>
+                        <Button color="primary" size="sm" variant="flat" startContent={<Plus className="h-3 w-3" />} onPress={() => handleAdicionarAdvogado(advogado.id)} isLoading={isPending}>
+                          Adicionar
+                        </Button>
+                      </div>
+                    </CardBody>
+                  </Card>
+                ))}
+
+              {advogadosDisponiveis?.filter((advogado) => !procuracao.outorgados?.some((outorgado) => outorgado.advogado.id === advogado.id)).length === 0 && (
+                <div className="text-center py-8 text-default-500">
+                  <Users className="mx-auto mb-2 h-12 w-12 opacity-50" />
+                  <p>Nenhum advogado disponível para adicionar</p>
+                  <p className="text-sm">Todos os advogados já estão vinculados a esta procuração</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-default-200">
+            <Button variant="flat" onPress={() => setIsAddAdvogadoModalOpen(false)}>
+              Cancelar
             </Button>
           </div>
         </div>

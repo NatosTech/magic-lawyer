@@ -119,6 +119,7 @@ model Tenant {
   procuracaoAssinaturas ProcuracaoAssinatura[]
   procuracaoPoderes     ProcuracaoPoder[]
   procuracaoProcessos   ProcuracaoProcesso[]
+  documentosProcuracao  DocumentoProcuracao[]
   tarefas               Tarefa[]
   superAdmin            SuperAdmin?            @relation("SuperAdminTenant", fields: [superAdminId], references: [id])
   branding              TenantBranding?
@@ -266,6 +267,7 @@ model Usuario {
   ticketMessages              TicketMessage[]        @relation("UserMessages")
   tickets                     Ticket[]               @relation("UserTickets")
   contratoParcelasResponsavel ContratoParcela[]
+  documentosProcuracaoUploaded DocumentoProcuracao[]  @relation("DocumentoProcuracaoUploader")
 
   @@unique([email, tenantId])
   @@index([role])
@@ -675,6 +677,7 @@ model Procuracao {
   processos             ProcuracaoProcesso[]
   assinaturas           ProcuracaoAssinatura[]
   poderes               ProcuracaoPoder[]
+  documentos            DocumentoProcuracao[]
 
   @@index([tenantId, clienteId])
   @@index([tenantId, ativa])
@@ -1903,5 +1906,36 @@ model ModeloProcuracao {
 
   @@index([tenantId, ativo])
   @@index([tenantId, categoria])
+  @@schema("magiclawyer")
+}
+
+// ============================================
+// DOCUMENTOS DE PROCURAÇÃO
+// ============================================
+
+model DocumentoProcuracao {
+  id           String   @id @default(cuid())
+  tenantId     String
+  procuracaoId String
+  fileName     String   // Nome personalizado do arquivo
+  originalName String   // Nome original do arquivo
+  description  String?  // Descrição opcional
+  tipo         String   // Tipo do documento: documento_original, procuracao_assinada, etc.
+  url          String   // URL do arquivo no Cloudinary
+  publicId     String   // Public ID do Cloudinary para deleção
+  size         Int      // Tamanho do arquivo em bytes
+  mimeType     String   // Tipo MIME do arquivo
+  uploadedBy   String   // ID do usuário que fez o upload
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relacionamentos
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  procuracao Procuracao @relation(fields: [procuracaoId], references: [id], onDelete: Cascade)
+  uploader   Usuario    @relation("DocumentoProcuracaoUploader", fields: [uploadedBy], references: [id])
+
+  @@index([tenantId, procuracaoId])
+  @@index([tenantId, tipo])
+  @@index([uploadedBy])
   @@schema("magiclawyer")
 }

@@ -201,18 +201,37 @@ export default function ContratoPage({ params }: { params: Promise<{ contratoId:
             </>
           )}
 
-          {/* Processo Vinculado */}
+          {/* Processo e Procuração Vinculados */}
           {contrato.processo && (
             <>
               <Divider />
               <div>
-                <h3 className="text-sm font-semibold text-default-600 mb-3">📋 Processo Vinculado</h3>
-                <div className="p-3 rounded-lg bg-default-100">
-                  <p className="font-semibold">{contrato.processo.numero}</p>
-                  {contrato.processo.titulo && <p className="text-xs text-default-500 mt-1">{contrato.processo.titulo}</p>}
-                  <Chip className="mt-2" size="sm" variant="flat">
-                    {contrato.processo.status}
-                  </Chip>
+                <h3 className="text-sm font-semibold text-default-600 mb-3">📋 Processo e Procuração</h3>
+                <div className="space-y-3">
+                  {/* Processo */}
+                  <div className="p-3 rounded-lg bg-default-100">
+                    <p className="text-xs text-default-500 mb-1">Processo vinculado</p>
+                    <p className="font-semibold">{contrato.processo.numero}</p>
+                    {contrato.processo.titulo && <p className="text-xs text-default-500 mt-1">{contrato.processo.titulo}</p>}
+                    <Chip className="mt-2" size="sm" variant="flat">
+                      {contrato.processo.status}
+                    </Chip>
+                  </div>
+
+                  {/* Procurações */}
+                  <div className="p-3 rounded-lg bg-default-50 border border-default-200">
+                    <p className="text-xs text-default-500 mb-2">Procurações vinculadas a este processo</p>
+                    {contrato.processo.procuracoesVinculadas && contrato.processo.procuracoesVinculadas.length > 0 ? (
+                      <div className="flex items-center gap-2 text-success">
+                        <span className="text-sm font-medium">✓ {contrato.processo.procuracoesVinculadas.length} procuração(ões) vinculada(s)</span>
+                      </div>
+                    ) : (
+                      <div className="text-warning">
+                        <p className="text-sm font-medium">⚠️ Este processo ainda não possui procurações vinculadas</p>
+                        <p className="text-xs text-default-500 mt-1">É recomendado vincular uma procuração ao processo</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </>

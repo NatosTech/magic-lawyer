@@ -29,7 +29,6 @@ export default function NovoContratoPage() {
     resumo: "",
     status: ContratoStatus.RASCUNHO,
     clienteId: clienteIdParam || "",
-    procuracaoId: undefined,
     observacoes: "",
   });
 
@@ -158,34 +157,13 @@ export default function NovoContratoPage() {
               onValueChange={(value) => setFormData((prev) => ({ ...prev, titulo: value }))}
             />
 
-            {/* Select de Procuração (se cliente foi selecionado) */}
+            {/* Nota sobre vinculação de procuração */}
             {formData.clienteId && (
-              <Select
-                description="Selecione uma procuração para vincular automaticamente ao processo"
-                isDisabled={!formData.clienteId}
-                isLoading={isLoadingProcuracoes}
-                label="Vincular a Procuração (Opcional)"
-                placeholder="Selecione uma procuração"
-                selectedKeys={formData.procuracaoId ? [formData.procuracaoId] : []}
-                startContent={<FileText className="h-4 w-4 text-default-400" />}
-                onSelectionChange={(keys) => {
-                  const selectedKey = Array.from(keys)[0] as string;
-
-                  setFormData((prev) => ({
-                    ...prev,
-                    procuracaoId: selectedKey || undefined,
-                  }));
-                }}
-              >
-                {procuracoes.map((procuracao: any) => (
-                  <SelectItem key={procuracao.id} textValue={procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold">{procuracao.numero || `Procuração ${procuracao.id.slice(-8)}`}</span>
-                      <span className="text-xs text-default-400">{procuracao.processos.length} processo(s) vinculado(s)</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </Select>
+              <div className="p-4 rounded-lg border border-default-200 bg-default-50">
+                <p className="text-sm text-default-600">
+                  💡 <strong>Dica:</strong> Após criar o contrato, você poderá vincular uma procuração através da lista de contratos.
+                </p>
+              </div>
             )}
 
             <Textarea
