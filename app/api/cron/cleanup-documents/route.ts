@@ -27,11 +27,12 @@ export async function GET(request: NextRequest) {
         data: result,
       });
     } else {
-      console.error("❌ Cron job falhou:", result.error);
+      const errorMessage = "error" in result ? result.error : "Erro desconhecido";
+      console.error("❌ Cron job falhou:", errorMessage);
       return NextResponse.json(
         {
           success: false,
-          error: result.error,
+          error: errorMessage,
         },
         { status: 500 }
       );
