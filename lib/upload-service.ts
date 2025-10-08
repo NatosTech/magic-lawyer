@@ -144,7 +144,7 @@ export class UploadService {
       const filePath = join(uploadDir, fileName);
 
       // Salvar arquivo
-      await writeFile(filePath, optimizedBuffer);
+      await writeFile(filePath, new Uint8Array(optimizedBuffer));
 
       // Retornar URL pública
       const avatarUrl = tenantSlug ? `/uploads/magiclawyer/${tenantSlug}/${userFolder}/${fileName}` : `/uploads/magiclawyer/avatars/${userFolder}/${fileName}`;
