@@ -1,4 +1,5 @@
 import { type CnpjData, type ReceitaWSResponse } from "@/types/brazil";
+import logger from "@/lib/logger";
 
 export type CnpjResponse = ReceitaWSResponse;
 
@@ -83,7 +84,7 @@ export async function buscarCnpj(cnpj: string): Promise<CnpjData | null> {
         })) || [],
     };
   } catch (error) {
-    console.error("Erro ao buscar CNPJ:", error);
+    logger.error("Erro ao buscar CNPJ:", error);
     throw error;
   }
 }

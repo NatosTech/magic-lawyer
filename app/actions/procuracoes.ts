@@ -2,6 +2,7 @@
 
 import { getSession } from "@/app/lib/auth";
 import prisma, { toNumber } from "@/app/lib/prisma";
+import logger from "@/lib/logger";
 import {
   Prisma,
   ProcuracaoEmitidaPor,
@@ -258,7 +259,7 @@ export async function getAllProcuracoes(): Promise<{
       procuracoes: procuracoes,
     };
   } catch (error) {
-    console.error("Erro ao buscar todas as procurações:", error);
+    logger.error("Erro ao buscar todas as procurações:", error);
 
     return {
       success: false,
@@ -412,7 +413,7 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
       procuracao: procuracaoSerializada,
     };
   } catch (error) {
-    console.error("Erro ao buscar procuração:", error);
+    logger.error("Erro ao buscar procuração:", error);
 
     return {
       success: false,
@@ -535,7 +536,7 @@ export async function getProcuracoesCliente(clienteId: string): Promise<{
       procuracoes: procuracoes,
     };
   } catch (error) {
-    console.error("Erro ao buscar procurações do cliente:", error);
+    logger.error("Erro ao buscar procurações do cliente:", error);
 
     return {
       success: false,
@@ -710,7 +711,7 @@ export async function createProcuracao(data: ProcuracaoFormData): Promise<{
       procuracao: procuracao,
     };
   } catch (error) {
-    console.error("Erro ao criar procuração:", error);
+    logger.error("Erro ao criar procuração:", error);
 
     return {
       success: false,
@@ -792,7 +793,7 @@ export async function updateProcuracao(
       procuracao,
     };
   } catch (error) {
-    console.error("Erro ao atualizar procuração:", error);
+    logger.error("Erro ao atualizar procuração:", error);
 
     return {
       success: false,
@@ -845,7 +846,7 @@ export async function deleteProcuracao(procuracaoId: string): Promise<{
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao deletar procuração:", error);
+    logger.error("Erro ao deletar procuração:", error);
 
     return {
       success: false,
@@ -927,7 +928,7 @@ export async function adicionarAdvogadoNaProcuracao(
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao adicionar advogado na procuração:", error);
+    logger.error("Erro ao adicionar advogado na procuração:", error);
 
     return {
       success: false,
@@ -973,7 +974,7 @@ export async function removerAdvogadoDaProcuracao(
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao remover advogado da procuração:", error);
+    logger.error("Erro ao remover advogado da procuração:", error);
 
     return {
       success: false,
@@ -1055,7 +1056,7 @@ export async function vincularProcesso(
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao vincular processo:", error);
+    logger.error("Erro ao vincular processo:", error);
 
     return {
       success: false,
@@ -1101,7 +1102,7 @@ export async function desvincularProcesso(
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao desvincular processo:", error);
+    logger.error("Erro ao desvincular processo:", error);
 
     return {
       success: false,

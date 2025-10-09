@@ -3,6 +3,7 @@
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { Prisma } from "@/app/generated/prisma";
+import logger from "@/lib/logger";
 
 // ============================================
 // TYPES
@@ -85,7 +86,7 @@ export async function getAllModelosProcuracao(): Promise<{
       modelos: modelos,
     };
   } catch (error) {
-    console.error("Erro ao buscar modelos de procuração:", error);
+    logger.error("Erro ao buscar modelos de procuração:", error);
 
     return {
       success: false,
@@ -139,7 +140,7 @@ export async function getModeloProcuracaoById(modeloId: string): Promise<{
       modelo: modelo,
     };
   } catch (error) {
-    console.error("Erro ao buscar modelo de procuração:", error);
+    logger.error("Erro ao buscar modelo de procuração:", error);
 
     return {
       success: false,
@@ -203,7 +204,7 @@ export async function createModeloProcuracao(
       modelo: modelo,
     };
   } catch (error) {
-    console.error("Erro ao criar modelo de procuração:", error);
+    logger.error("Erro ao criar modelo de procuração:", error);
 
     return {
       success: false,
@@ -279,7 +280,7 @@ export async function updateModeloProcuracao(
       modelo: modelo,
     };
   } catch (error) {
-    console.error("Erro ao atualizar modelo de procuração:", error);
+    logger.error("Erro ao atualizar modelo de procuração:", error);
 
     return {
       success: false,
@@ -358,7 +359,7 @@ export async function deleteModeloProcuracao(modeloId: string): Promise<{
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao excluir modelo de procuração:", error);
+    logger.error("Erro ao excluir modelo de procuração:", error);
 
     return {
       success: false,
@@ -409,7 +410,7 @@ export async function getModelosProcuracaoParaSelect(): Promise<{
       modelos: modelos,
     };
   } catch (error) {
-    console.error("Erro ao buscar modelos para select:", error);
+    logger.error("Erro ao buscar modelos para select:", error);
 
     return {
       success: false,
@@ -496,7 +497,7 @@ export async function gerarPdfProcuracao(
       pdfUrl: pdfUrl,
     };
   } catch (error) {
-    console.error("Erro ao gerar PDF da procuração:", error);
+    logger.error("Erro ao gerar PDF da procuração:", error);
 
     return {
       success: false,

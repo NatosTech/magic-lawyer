@@ -440,7 +440,10 @@ export function JuizesContent() {
             <div className="p-6 pt-5 space-y-5">
               {/* Campo de busca destacado */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-default-500 flex items-center gap-2">
+                <label
+                  className="text-sm font-medium text-default-500 flex items-center gap-2"
+                  htmlFor="juiz-search"
+                >
                   <Search className="w-4 h-4 text-primary" />
                   Busca Geral
                 </label>
@@ -459,16 +462,17 @@ export function JuizesContent() {
                   }
                   value={searchTerm}
                   variant="bordered"
+                  id="juiz-search"
                   onValueChange={setSearchTerm}
                 />
               </div>
 
               {/* Grid de filtros */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-default-500 flex items-center gap-2">
+                <p className="text-sm font-medium text-default-500 flex items-center gap-2">
                   <Filter className="w-4 h-4 text-secondary" />
                   Filtros Avançados
-                </label>
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <Select
                     classNames={{

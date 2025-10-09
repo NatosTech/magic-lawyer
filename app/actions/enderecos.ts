@@ -7,6 +7,8 @@ import { authOptions } from "../../auth";
 import prisma from "../lib/prisma";
 import { TipoEndereco } from "../generated/prisma";
 
+import logger from "@/lib/logger";
+
 // Tipos simples
 export interface EnderecoData {
   apelido: string;
@@ -111,7 +113,7 @@ export async function getEnderecosUsuario() {
       })),
     };
   } catch (error) {
-    console.error("Erro ao buscar endereços:", error);
+    logger.error("Erro ao buscar endereços:", error);
 
     return { success: false, error: "Erro interno do servidor", enderecos: [] };
   }
@@ -216,7 +218,7 @@ export async function criarEndereco(data: EnderecoData) {
       },
     };
   } catch (error) {
-    console.error("Erro ao criar endereço:", error);
+    logger.error("Erro ao criar endereço:", error);
 
     return { success: false, error: "Erro interno do servidor" };
   }
@@ -339,7 +341,7 @@ export async function atualizarEndereco(
       },
     };
   } catch (error) {
-    console.error("Erro ao atualizar endereço:", error);
+    logger.error("Erro ao atualizar endereço:", error);
 
     return { success: false, error: "Erro interno do servidor" };
   }
@@ -400,7 +402,7 @@ export async function deletarEndereco(enderecoId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao deletar endereço:", error);
+    logger.error("Erro ao deletar endereço:", error);
 
     return { success: false, error: "Erro interno do servidor" };
   }
@@ -457,7 +459,7 @@ export async function definirEnderecoPrincipal(enderecoId: string) {
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao definir endereço principal:", error);
+    logger.error("Erro ao definir endereço principal:", error);
 
     return { success: false, error: "Erro interno do servidor" };
   }

@@ -464,7 +464,7 @@ export default function EditarContratoPage({
                           </span>
                         </div>
                         <p className="text-xs text-default-500 ml-6">
-                          Clique em "Vincular Procuração" para conectar uma
+                          Clique em &quot;Vincular Procuração&quot; para conectar uma
                           procuração ao processo
                         </p>
                       </div>

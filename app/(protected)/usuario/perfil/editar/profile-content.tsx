@@ -458,9 +458,9 @@ export function ProfileContent() {
                     <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
                       <div className="flex items-center gap-2 mb-2">
                         <Shield className="w-4 h-4 text-primary" />
-                        <label className="text-sm font-medium text-primary-300">
+                        <p className="text-sm font-medium text-primary-300">
                           Função
-                        </label>
+                        </p>
                       </div>
                       <Chip color="primary" size="sm" variant="flat">
                         {getRoleLabel(profile.role)}
@@ -470,9 +470,9 @@ export function ProfileContent() {
                     <div className="p-4 rounded-lg bg-gradient-to-r from-success/10 to-success/5 border border-success/20">
                       <div className="flex items-center gap-2 mb-2">
                         <UserCheck className="w-4 h-4 text-success" />
-                        <label className="text-sm font-medium text-success-300">
+                        <p className="text-sm font-medium text-success-300">
                           Status
-                        </label>
+                        </p>
                       </div>
                       <Chip
                         color={profile.active ? "success" : "danger"}
@@ -486,9 +486,9 @@ export function ProfileContent() {
                     <div className="p-4 rounded-lg bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/20">
                       <div className="flex items-center gap-2 mb-2">
                         <Settings className="w-4 h-4 text-warning" />
-                        <label className="text-sm font-medium text-warning-300">
+                        <p className="text-sm font-medium text-warning-300">
                           Último Login
-                        </label>
+                        </p>
                       </div>
                       <p className="text-white font-medium">
                         {formatDate(profile.lastLoginAt)}
@@ -500,9 +500,9 @@ export function ProfileContent() {
                     <div className="p-4 rounded-lg bg-gradient-to-r from-secondary/10 to-secondary/5 border border-secondary/20">
                       <div className="flex items-center gap-2 mb-2">
                         <User className="w-4 h-4 text-secondary" />
-                        <label className="text-sm font-medium text-secondary-300">
+                        <p className="text-sm font-medium text-secondary-300">
                           Membro desde
-                        </label>
+                        </p>
                       </div>
                       <p className="text-white font-medium">
                         {formatDate(profile.createdAt)}
@@ -513,9 +513,9 @@ export function ProfileContent() {
                       <div className="p-4 rounded-lg bg-gradient-to-r from-info/10 to-info/5 border border-info/20">
                         <div className="flex items-center gap-2 mb-2">
                           <Mail className="w-4 h-4 text-info" />
-                          <label className="text-sm font-medium text-info-300">
+                          <p className="text-sm font-medium text-info-300">
                             Escritório
-                          </label>
+                          </p>
                         </div>
                         <Chip color="secondary" size="sm" variant="flat">
                           {profile.tenant.name}
@@ -526,9 +526,9 @@ export function ProfileContent() {
                     <div className="p-4 rounded-lg bg-gradient-to-r from-default/10 to-default/5 border border-default/20">
                       <div className="flex items-center gap-2 mb-2">
                         <Info className="w-4 h-4 text-default-400" />
-                        <label className="text-sm font-medium text-default-400">
+                        <p className="text-sm font-medium text-default-400">
                           ID do Usuário
-                        </label>
+                        </p>
                         <button
                           className="ml-2 p-1 rounded hover:bg-default-200 transition cursor-pointer"
                           title="Copiar ID"

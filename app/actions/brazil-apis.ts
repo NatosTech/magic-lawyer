@@ -10,6 +10,7 @@ import {
   type CepData,
   type CnpjData,
 } from "@/types/brazil";
+import logger from "@/lib/logger";
 
 /**
  * Server Action para buscar estados do Brasil
@@ -27,7 +28,7 @@ export async function getEstadosBrasilAction(): Promise<{
       estados,
     };
   } catch (error) {
-    console.error("Erro ao buscar estados:", error);
+    logger.error("Erro ao buscar estados:", error);
 
     return {
       success: false,
@@ -66,7 +67,7 @@ export async function buscarCepAction(cep: string): Promise<{
       cepData,
     };
   } catch (error) {
-    console.error("Erro ao buscar CEP:", error);
+    logger.error("Erro ao buscar CEP:", error);
 
     return {
       success: false,
@@ -100,7 +101,7 @@ export async function getMunicipiosPorEstadoAction(
       municipios,
     };
   } catch (error) {
-    console.error("Erro ao buscar municípios:", error);
+    logger.error("Erro ao buscar municípios:", error);
 
     return {
       success: false,
@@ -139,7 +140,7 @@ export async function buscarCnpjAction(cnpj: string): Promise<{
       cnpjData,
     };
   } catch (error) {
-    console.error("Erro ao buscar CNPJ:", error);
+    logger.error("Erro ao buscar CNPJ:", error);
 
     return {
       success: false,

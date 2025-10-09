@@ -5,6 +5,8 @@ import { existsSync } from "fs";
 import { v2 as cloudinary } from "cloudinary";
 import sharp from "sharp";
 
+import logger from "@/lib/logger";
+
 // Configurar Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -73,7 +75,7 @@ export class UploadService {
         );
       }
     } catch (error) {
-      console.error("Erro no upload:", error);
+      logger.error("Erro no upload:", error);
 
       return {
         success: false,
@@ -133,7 +135,7 @@ export class UploadService {
         url: result.secure_url,
       };
     } catch (error) {
-      console.error("Erro no upload para Cloudinary:", error);
+      logger.error("Erro no upload para Cloudinary:", error);
 
       return {
         success: false,
@@ -211,7 +213,7 @@ export class UploadService {
         url: avatarUrl,
       };
     } catch (error) {
-      console.error("Erro no upload local:", error);
+      logger.error("Erro no upload local:", error);
 
       return {
         success: false,
@@ -249,7 +251,7 @@ export class UploadService {
         };
       }
     } catch (error) {
-      console.error("Erro ao deletar avatar:", error);
+      logger.error("Erro ao deletar avatar:", error);
 
       return {
         success: false,
@@ -289,7 +291,7 @@ export class UploadService {
         success: true,
       };
     } catch (error) {
-      console.error("Erro ao deletar do Cloudinary:", error);
+      logger.error("Erro ao deletar do Cloudinary:", error);
 
       return {
         success: false,
@@ -345,7 +347,7 @@ export class UploadService {
         success: true,
       };
     } catch (error) {
-      console.error("Erro ao deletar localmente:", error);
+      logger.error("Erro ao deletar localmente:", error);
 
       return {
         success: false,
@@ -430,7 +432,7 @@ export class UploadService {
         publicId: result.public_id,
       };
     } catch (error) {
-      console.error("Erro ao fazer upload do documento:", error);
+      logger.error("Erro ao fazer upload do documento:", error);
 
       return {
         success: false,
@@ -502,7 +504,7 @@ export class UploadService {
         url: uploadResult.secure_url,
       };
     } catch (error) {
-      console.error("Erro ao fazer upload da foto do juiz:", error);
+      logger.error("Erro ao fazer upload da foto do juiz:", error);
 
       return {
         success: false,
@@ -535,7 +537,7 @@ export class UploadService {
 
       return await this.deleteFromCloudinary(documentUrl);
     } catch (error) {
-      console.error("Erro ao deletar documento:", error);
+      logger.error("Erro ao deletar documento:", error);
 
       return {
         success: false,

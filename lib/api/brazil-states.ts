@@ -1,4 +1,5 @@
 import { type EstadoIBGE } from "@/types/brazil";
+import logger from "@/lib/logger";
 
 export type EstadoBrasil = EstadoIBGE;
 
@@ -23,7 +24,7 @@ export async function getEstadosBrasil(): Promise<EstadoBrasil[]> {
 
     return estados;
   } catch (error) {
-    console.error("Erro ao buscar estados do Brasil:", error);
+    logger.error("Erro ao buscar estados do Brasil:", error);
 
     // Fallback com estados mais comuns em caso de erro
     return [

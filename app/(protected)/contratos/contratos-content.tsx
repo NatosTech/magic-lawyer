@@ -366,7 +366,7 @@ export default function ContratosContent() {
                   variant="flat"
                   onClose={() => setSearchTerm("")}
                 >
-                  Busca: "{searchTerm}"
+                  Busca: &quot;{searchTerm}&quot;
                 </Chip>
               )}
               {filtroStatus !== "todos" && (

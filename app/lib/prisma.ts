@@ -2,6 +2,8 @@ import { Decimal } from "@prisma/client/runtime/library";
 
 import { PrismaClient } from "../generated/prisma";
 
+import logger from "@/lib/logger";
+
 // Evita criar múltiplas instâncias no hot-reload do Next.js (dev)
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -10,10 +12,10 @@ const globalForPrisma = globalThis as unknown as {
 
 // Bloquear APENAS a mensagem gigante de plataforma - EXECUTAR APENAS UMA VEZ
 if (!globalForPrisma.consolePatched) {
-  const originalConsoleError = console.error;
-  const originalConsoleWarn = console.warn;
+  const originalConsoleError = logger.error;
+  const originalConsoleWarn = logger.warn;
 
-  console.error = (...args: any[]) => {
+  logger.error = (...args: any[]) => {
     const str = args.join(" ");
 
     // Bloquear APENAS a mensagem gigante de checkPlatformCaching
@@ -28,7 +30,7 @@ if (!globalForPrisma.consolePatched) {
     originalConsoleError.apply(console, args);
   };
 
-  console.warn = (...args: any[]) => {
+  logger.warn = (...args: any[]) => {
     const str = args.join(" ");
 
     if (str.includes("checkPlatformCaching")) {

@@ -198,7 +198,7 @@ export default function DocumentoUploadModal({
 
               {/* Upload de Arquivo */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Arquivo PDF</label>
+                <p className="text-sm font-medium">Arquivo PDF</p>
                 <div className="border-2 border-dashed border-default-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
                   <input
                     accept=".pdf"

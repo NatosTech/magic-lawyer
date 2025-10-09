@@ -3,6 +3,7 @@
 import bcrypt from "bcryptjs";
 
 import prisma from "@/app/lib/prisma";
+import logger from "@/lib/logger";
 
 // =============================================
 // TENANT MANAGEMENT
@@ -144,7 +145,7 @@ export async function createTenant(
       },
     };
   } catch (error) {
-    console.error("Erro ao criar tenant:", error);
+    logger.error("Erro ao criar tenant:", error);
 
     return {
       success: false,
@@ -187,7 +188,7 @@ export async function getAllTenants(): Promise<TenantResponse> {
       data: tenants,
     };
   } catch (error) {
-    console.error("Erro ao buscar tenants:", error);
+    logger.error("Erro ao buscar tenants:", error);
 
     return {
       success: false,
@@ -236,7 +237,7 @@ export async function updateTenantStatus(
       data: updatedTenant,
     };
   } catch (error) {
-    console.error("Erro ao atualizar status do tenant:", error);
+    logger.error("Erro ao atualizar status do tenant:", error);
 
     return {
       success: false,
@@ -324,7 +325,7 @@ export async function createJuizGlobal(
       data: juiz,
     };
   } catch (error) {
-    console.error("Erro ao criar juiz:", error);
+    logger.error("Erro ao criar juiz:", error);
 
     return {
       success: false,
@@ -366,7 +367,7 @@ export async function getAllJuizes(): Promise<TenantResponse> {
       data: juizes,
     };
   } catch (error) {
-    console.error("Erro ao buscar juízes:", error);
+    logger.error("Erro ao buscar juízes:", error);
 
     return {
       success: false,
@@ -425,7 +426,7 @@ export async function updateJuizGlobal(
       data: juiz,
     };
   } catch (error) {
-    console.error("Erro ao atualizar juiz:", error);
+    logger.error("Erro ao atualizar juiz:", error);
 
     return {
       success: false,
@@ -455,7 +456,7 @@ export async function getAuditLogs(
       data: logs,
     };
   } catch (error) {
-    console.error("Erro ao buscar logs de auditoria:", error);
+    logger.error("Erro ao buscar logs de auditoria:", error);
 
     return {
       success: false,

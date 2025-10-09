@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
+import logger from "@/lib/logger";
 import { UserRole } from "@/app/generated/prisma";
 
 type SessionUser = {
@@ -105,7 +106,7 @@ export async function getCurrentUserProfile(): Promise<{
       profile: user as UserProfile,
     };
   } catch (error) {
-    console.error("Erro ao buscar perfil:", error);
+    logger.error("Erro ao buscar perfil:", error);
 
     return {
       success: false,
@@ -157,7 +158,7 @@ export async function updateUserProfile(data: UpdateProfileData): Promise<{
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao atualizar perfil:", error);
+    logger.error("Erro ao atualizar perfil:", error);
 
     return {
       success: false,
@@ -222,7 +223,7 @@ export async function changePassword(data: ChangePasswordData): Promise<{
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao alterar senha:", error);
+    logger.error("Erro ao alterar senha:", error);
 
     return {
       success: false,
@@ -337,7 +338,7 @@ export async function uploadAvatar(formData: FormData): Promise<{
       sessionUpdated: true, // Flag para indicar que a sessão precisa ser atualizada
     };
   } catch (error) {
-    console.error("Erro no upload do avatar:", error);
+    logger.error("Erro no upload do avatar:", error);
 
     return {
       success: false,
@@ -390,7 +391,7 @@ export async function deleteAvatar(avatarUrl: string): Promise<{
       };
     }
   } catch (error) {
-    console.error("Erro ao deletar avatar:", error);
+    logger.error("Erro ao deletar avatar:", error);
 
     return {
       success: false,
@@ -431,7 +432,7 @@ export async function getCurrentUserAvatar(): Promise<{
       avatarUrl: user.avatarUrl,
     };
   } catch (error) {
-    console.error("Erro ao buscar avatar:", error);
+    logger.error("Erro ao buscar avatar:", error);
 
     return {
       success: false,
@@ -506,7 +507,7 @@ export async function getUserStats(): Promise<{
       },
     };
   } catch (error) {
-    console.error("Erro ao buscar estatísticas:", error);
+    logger.error("Erro ao buscar estatísticas:", error);
 
     return {
       success: false,

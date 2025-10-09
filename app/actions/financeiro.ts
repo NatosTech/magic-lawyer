@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
+import logger from "@/lib/logger";
 
 // ==================== TIPOS ====================
 
@@ -212,7 +213,7 @@ export async function getEstatisticasFinanceiras(): Promise<{
       data: estatisticas,
     };
   } catch (error) {
-    console.error("Erro ao buscar estatísticas financeiras:", error);
+    logger.error("Erro ao buscar estatísticas financeiras:", error);
 
     return {
       success: false,
@@ -301,7 +302,7 @@ export async function getResumoMensal(): Promise<{
       data: meses,
     };
   } catch (error) {
-    console.error("Erro ao buscar resumo mensal:", error);
+    logger.error("Erro ao buscar resumo mensal:", error);
 
     return {
       success: false,
@@ -376,7 +377,7 @@ export async function getTopTenants(): Promise<{
       data: topTenants,
     };
   } catch (error) {
-    console.error("Erro ao buscar top tenants:", error);
+    logger.error("Erro ao buscar top tenants:", error);
 
     return {
       success: false,
@@ -430,7 +431,7 @@ export async function getFaturasRecentes(): Promise<{
       data: faturasResumo,
     };
   } catch (error) {
-    console.error("Erro ao buscar faturas recentes:", error);
+    logger.error("Erro ao buscar faturas recentes:", error);
 
     return {
       success: false,
@@ -488,7 +489,7 @@ export async function getPagamentosRecentes(): Promise<{
       data: pagamentosResumo,
     };
   } catch (error) {
-    console.error("Erro ao buscar pagamentos recentes:", error);
+    logger.error("Erro ao buscar pagamentos recentes:", error);
 
     return {
       success: false,
@@ -576,7 +577,7 @@ export async function getComissoesPendentes(): Promise<{
       data: comissoesResumo,
     };
   } catch (error) {
-    console.error("Erro ao buscar comissões pendentes:", error);
+    logger.error("Erro ao buscar comissões pendentes:", error);
 
     return {
       success: false,

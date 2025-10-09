@@ -1,4 +1,5 @@
 import { type CepData, type ViaCepResponse } from "@/types/brazil";
+import logger from "@/lib/logger";
 
 export type CepResponse = ViaCepResponse;
 
@@ -43,7 +44,7 @@ export async function buscarCep(cep: string): Promise<CepData | null> {
       siafi: data.siafi,
     };
   } catch (error) {
-    console.error("Erro ao buscar CEP:", error);
+    logger.error("Erro ao buscar CEP:", error);
     throw error;
   }
 }

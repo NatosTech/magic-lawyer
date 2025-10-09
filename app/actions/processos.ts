@@ -2,6 +2,7 @@
 
 import { getSession } from "@/app/lib/auth";
 import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
+import logger from "@/lib/logger";
 import {
   Prisma,
   ProcessoStatus,
@@ -654,7 +655,7 @@ export async function getAllProcessos(): Promise<{
       processos: serialized,
     };
   } catch (error) {
-    console.error("Erro ao buscar processos:", error);
+    logger.error("Erro ao buscar processos:", error);
 
     return {
       success: false,
@@ -795,7 +796,7 @@ export async function getProcessosDoClienteLogado(): Promise<{
       processos: serialized,
     };
   } catch (error) {
-    console.error("Erro ao buscar processos do cliente:", error);
+    logger.error("Erro ao buscar processos do cliente:", error);
 
     return {
       success: false,
@@ -959,7 +960,7 @@ export async function getProcessosDoCliente(clienteId: string): Promise<{
       processos: serialized,
     };
   } catch (error) {
-    console.error("Erro ao buscar processos do cliente:", error);
+    logger.error("Erro ao buscar processos do cliente:", error);
 
     return {
       success: false,
@@ -1243,7 +1244,7 @@ export async function getProcessoDetalhado(processoId: string): Promise<{
       isCliente,
     };
   } catch (error) {
-    console.error("Erro ao buscar detalhes do processo:", error);
+    logger.error("Erro ao buscar detalhes do processo:", error);
 
     return {
       success: false,
@@ -1377,7 +1378,7 @@ export async function getDocumentosProcesso(processoId: string): Promise<{
       documentos: documentos,
     };
   } catch (error) {
-    console.error("Erro ao buscar documentos do processo:", error);
+    logger.error("Erro ao buscar documentos do processo:", error);
 
     return {
       success: false,
@@ -1472,7 +1473,7 @@ export async function getEventosProcesso(processoId: string): Promise<{
       eventos: eventos,
     };
   } catch (error) {
-    console.error("Erro ao buscar eventos do processo:", error);
+    logger.error("Erro ao buscar eventos do processo:", error);
 
     return {
       success: false,
@@ -1543,7 +1544,7 @@ export async function getMovimentacoesProcesso(processoId: string): Promise<{
       movimentacoes: movimentacoes,
     };
   } catch (error) {
-    console.error("Erro ao buscar movimentações do processo:", error);
+    logger.error("Erro ao buscar movimentações do processo:", error);
 
     return {
       success: false,
@@ -1792,7 +1793,7 @@ export async function createProcesso(data: ProcessoCreateInput) {
       processo: serialized,
     };
   } catch (error) {
-    console.error("Erro ao criar processo:", error);
+    logger.error("Erro ao criar processo:", error);
 
     return {
       success: false,
@@ -2041,7 +2042,7 @@ export async function updateProcesso(
       processo: serialized,
     };
   } catch (error) {
-    console.error("Erro ao atualizar processo:", error);
+    logger.error("Erro ao atualizar processo:", error);
 
     return {
       success: false,
@@ -2190,7 +2191,7 @@ export async function createProcessoParte(
       parte,
     };
   } catch (error) {
-    console.error("Erro ao criar parte do processo:", error);
+    logger.error("Erro ao criar parte do processo:", error);
 
     return {
       success: false,
@@ -2338,7 +2339,7 @@ export async function updateProcessoParte(
       parte: atualizada,
     };
   } catch (error) {
-    console.error("Erro ao atualizar parte do processo:", error);
+    logger.error("Erro ao atualizar parte do processo:", error);
 
     return {
       success: false,
@@ -2361,7 +2362,7 @@ export async function deleteProcessoParte(parteId: string) {
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao remover parte do processo:", error);
+    logger.error("Erro ao remover parte do processo:", error);
 
     return {
       success: false,
@@ -2449,7 +2450,7 @@ export async function createProcessoPrazo(
       prazo,
     };
   } catch (error) {
-    console.error("Erro ao criar prazo do processo:", error);
+    logger.error("Erro ao criar prazo do processo:", error);
 
     return {
       success: false,
@@ -2547,7 +2548,7 @@ export async function updateProcessoPrazo(
       prazo: atualizado,
     };
   } catch (error) {
-    console.error("Erro ao atualizar prazo do processo:", error);
+    logger.error("Erro ao atualizar prazo do processo:", error);
 
     return {
       success: false,
@@ -2570,7 +2571,7 @@ export async function deleteProcessoPrazo(prazoId: string) {
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao remover prazo do processo:", error);
+    logger.error("Erro ao remover prazo do processo:", error);
 
     return {
       success: false,
@@ -2637,7 +2638,7 @@ export async function linkProcuracaoAoProcesso(
       vinculo,
     };
   } catch (error) {
-    console.error("Erro ao vincular procuração ao processo:", error);
+    logger.error("Erro ao vincular procuração ao processo:", error);
 
     return {
       success: false,
@@ -2669,7 +2670,7 @@ export async function unlinkProcuracaoDoProcesso(
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao desvincular procuração do processo:", error);
+    logger.error("Erro ao desvincular procuração do processo:", error);
 
     return {
       success: false,

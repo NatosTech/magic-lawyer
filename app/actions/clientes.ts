@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { getSession } from "@/app/lib/auth";
 import prisma, { toNumber } from "@/app/lib/prisma";
 import { TipoPessoa, Prisma } from "@/app/generated/prisma";
+import logger from "@/lib/logger";
 
 // ============================================
 // TYPES
@@ -171,7 +172,7 @@ export async function getClientesAdvogado(): Promise<{
       clientes: clientesRaw,
     };
   } catch (error) {
-    console.error("Erro ao buscar clientes do advogado:", error);
+    logger.error("Erro ao buscar clientes do advogado:", error);
 
     return {
       success: false,
@@ -233,7 +234,7 @@ export async function getAllClientesTenant(): Promise<{
       clientes: clientesRaw,
     };
   } catch (error) {
-    console.error("Erro ao buscar todos os clientes:", error);
+    logger.error("Erro ao buscar todos os clientes:", error);
 
     return {
       success: false,
@@ -354,7 +355,7 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
       cliente,
     };
   } catch (error) {
-    console.error("Erro ao buscar cliente com processos:", error);
+    logger.error("Erro ao buscar cliente com processos:", error);
 
     return {
       success: false,
@@ -427,7 +428,7 @@ export async function getClienteById(clienteId: string): Promise<{
       cliente: cliente,
     };
   } catch (error) {
-    console.error("Erro ao buscar cliente:", error);
+    logger.error("Erro ao buscar cliente:", error);
 
     return {
       success: false,
@@ -628,7 +629,7 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
       usuario: usuarioData || undefined,
     };
   } catch (error) {
-    console.error("Erro ao criar cliente:", error);
+    logger.error("Erro ao criar cliente:", error);
 
     return {
       success: false,
@@ -725,7 +726,7 @@ export async function updateCliente(
       cliente: cliente,
     };
   } catch (error) {
-    console.error("Erro ao atualizar cliente:", error);
+    logger.error("Erro ao atualizar cliente:", error);
 
     return {
       success: false,
@@ -780,7 +781,7 @@ export async function deleteCliente(clienteId: string): Promise<{
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao deletar cliente:", error);
+    logger.error("Erro ao deletar cliente:", error);
 
     return {
       success: false,
@@ -888,7 +889,7 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
       clientes: clientes,
     };
   } catch (error) {
-    console.error("Erro ao buscar clientes com filtros:", error);
+    logger.error("Erro ao buscar clientes com filtros:", error);
 
     return {
       success: false,
@@ -964,7 +965,7 @@ export async function getClientesParaSelect() {
       clientes: clientes,
     };
   } catch (error) {
-    console.error("Erro ao buscar clientes para select:", error);
+    logger.error("Erro ao buscar clientes para select:", error);
 
     return {
       success: false,
@@ -1113,7 +1114,7 @@ export async function anexarDocumentoCliente(
       documento: documento,
     };
   } catch (error) {
-    console.error("Erro ao anexar documento:", error);
+    logger.error("Erro ao anexar documento:", error);
 
     return {
       success: false,
@@ -1260,7 +1261,7 @@ export async function getProcuracoesCliente(clienteId: string) {
 
     return { success: true, procuracoes: procuracoes };
   } catch (error) {
-    console.error("Erro ao buscar procurações:", error);
+    logger.error("Erro ao buscar procurações:", error);
 
     return {
       success: false,
@@ -1386,7 +1387,7 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
       },
     };
   } catch (error) {
-    console.error("Erro ao resetar senha do cliente:", error);
+    logger.error("Erro ao resetar senha do cliente:", error);
 
     return {
       success: false,
@@ -1493,7 +1494,7 @@ export async function getContratosCliente(clienteId: string): Promise<{
       contratos: contratosFormatted,
     };
   } catch (error) {
-    console.error("Erro ao buscar contratos do cliente:", error);
+    logger.error("Erro ao buscar contratos do cliente:", error);
 
     return {
       success: false,
@@ -1585,7 +1586,7 @@ export async function getDocumentosCliente(clienteId: string): Promise<{
       documentos: documentos,
     };
   } catch (error) {
-    console.error("Erro ao buscar documentos do cliente:", error);
+    logger.error("Erro ao buscar documentos do cliente:", error);
 
     return {
       success: false,

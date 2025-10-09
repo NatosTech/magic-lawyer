@@ -2,6 +2,8 @@ import prisma from "./prisma";
 import { sendEmail, emailTemplates } from "./email";
 import { sendDocumentForSigning, checkDocumentStatus } from "./clicksign";
 
+import logger from "@/lib/logger";
+
 // Interface para criar assinatura de documento
 export interface CreateDocumentoAssinaturaData {
   documentoId: string;
@@ -74,7 +76,7 @@ export const createDocumentoAssinatura = async (
 
     return { success: true, data: documentoAssinatura };
   } catch (error) {
-    console.error("Erro ao criar assinatura de documento:", error);
+    logger.error("Erro ao criar assinatura de documento:", error);
 
     return {
       success: false,
@@ -177,7 +179,7 @@ export const enviarDocumentoParaAssinatura = async (
           html: template.html,
         });
       } catch (error) {
-        console.error("Erro ao enviar email de assinatura:", error);
+        logger.error("Erro ao enviar email de assinatura:", error);
         // Não falha o processo se o email falhar
       }
     }
@@ -190,7 +192,7 @@ export const enviarDocumentoParaAssinatura = async (
       },
     };
   } catch (error) {
-    console.error("Erro ao enviar documento para assinatura:", error);
+    logger.error("Erro ao enviar documento para assinatura:", error);
 
     return {
       success: false,
@@ -282,7 +284,7 @@ export const verificarStatusAssinatura = async (
       },
     };
   } catch (error) {
-    console.error("Erro ao verificar status da assinatura:", error);
+    logger.error("Erro ao verificar status da assinatura:", error);
 
     return {
       success: false,
@@ -330,7 +332,7 @@ export const listDocumentoAssinaturas = async (
 
     return { success: true, data: assinaturas };
   } catch (error) {
-    console.error("Erro ao listar assinaturas de documento:", error);
+    logger.error("Erro ao listar assinaturas de documento:", error);
 
     return {
       success: false,
@@ -366,7 +368,7 @@ export const getDocumentoAssinaturaById = async (id: string) => {
 
     return { success: true, data: assinatura };
   } catch (error) {
-    console.error("Erro ao obter assinatura de documento:", error);
+    logger.error("Erro ao obter assinatura de documento:", error);
 
     return {
       success: false,
@@ -403,7 +405,7 @@ export const cancelarAssinatura = async (documentoAssinaturaId: string) => {
 
         await cancelDocument(documentoAssinatura.clicksignDocumentId);
       } catch (error) {
-        console.error("Erro ao cancelar documento no ClickSign:", error);
+        logger.error("Erro ao cancelar documento no ClickSign:", error);
         // Continua com o cancelamento local mesmo se falhar no ClickSign
       }
     }
@@ -418,7 +420,7 @@ export const cancelarAssinatura = async (documentoAssinaturaId: string) => {
 
     return { success: true, data: updatedAssinatura };
   } catch (error) {
-    console.error("Erro ao cancelar assinatura:", error);
+    logger.error("Erro ao cancelar assinatura:", error);
 
     return {
       success: false,
@@ -489,7 +491,7 @@ export const reenviarLinkAssinatura = async (documentoAssinaturaId: string) => {
           html: template.html,
         });
       } catch (error) {
-        console.error("Erro ao reenviar email de assinatura:", error);
+        logger.error("Erro ao reenviar email de assinatura:", error);
 
         return {
           success: false,
@@ -505,7 +507,7 @@ export const reenviarLinkAssinatura = async (documentoAssinaturaId: string) => {
       },
     };
   } catch (error) {
-    console.error("Erro ao reenviar link de assinatura:", error);
+    logger.error("Erro ao reenviar link de assinatura:", error);
 
     return {
       success: false,

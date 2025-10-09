@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { authOptions } from "@/auth";
 import { UploadService, DocumentUploadOptions } from "@/lib/upload-service";
 import { PrismaClient } from "@/app/generated/prisma";
+import logger from "@/lib/logger";
 
 const prisma = new PrismaClient();
 
@@ -158,7 +159,7 @@ export async function uploadDocumentoProcuracao(
       message: "Documento enviado com sucesso",
     };
   } catch (error) {
-    console.error("Erro ao fazer upload do documento:", error);
+    logger.error("Erro ao fazer upload do documento:", error);
 
     return {
       success: false,
@@ -212,7 +213,7 @@ export async function getDocumentosProcuracao(procuracaoId: string) {
       documentos,
     };
   } catch (error) {
-    console.error("Erro ao buscar documentos:", error);
+    logger.error("Erro ao buscar documentos:", error);
 
     return {
       success: false,
@@ -280,12 +281,12 @@ export async function deleteDocumentoProcuracao(documentoId: string) {
     );
 
     if (!deleteResult.success) {
-      console.warn("Erro ao deletar do Cloudinary:", deleteResult.error);
+      logger.warn("Erro ao deletar do Cloudinary:", deleteResult.error);
       // Continuar mesmo se falhar no Cloudinary
     }
 
     // TODO: Implementar log de auditoria quando modelo estiver disponível
-    console.log(
+    logger.info(
       `🗑️ Documento deletado: ${documentoCompleto?.fileName} por usuário ${user.id}`,
     );
 
@@ -304,7 +305,7 @@ export async function deleteDocumentoProcuracao(documentoId: string) {
       message: "Documento deletado com sucesso",
     };
   } catch (error) {
-    console.error("Erro ao deletar documento:", error);
+    logger.error("Erro ao deletar documento:", error);
 
     return {
       success: false,
@@ -319,7 +320,7 @@ export async function deleteDocumentoProcuracao(documentoId: string) {
  */
 export async function cleanupOrphanedDocuments() {
   try {
-    console.log("🧹 Iniciando limpeza de documentos órfãos...");
+    logger.info("🧹 Iniciando limpeza de documentos órfãos...");
 
     const uploadService = UploadService.getInstance();
     let totalProcessed = 0;
@@ -338,7 +339,7 @@ export async function cleanupOrphanedDocuments() {
       },
     });
 
-    console.log(`📊 Encontrados ${documentos.length} documentos no banco`);
+    logger.info(`📊 Encontrados ${documentos.length} documentos no banco`);
 
     for (const documento of documentos) {
       try {
@@ -348,7 +349,7 @@ export async function cleanupOrphanedDocuments() {
         const existsResult = await uploadService.checkFileExists(documento.url);
 
         if (!existsResult.success || !existsResult.exists) {
-          console.log(
+          logger.info(
             `🗑️  Documento órfão encontrado: ${documento.fileName} (${documento.id})`,
           );
 
@@ -362,10 +363,10 @@ export async function cleanupOrphanedDocuments() {
 
         // Log de progresso a cada 10 documentos
         if (totalProcessed % 10 === 0) {
-          console.log(`⏳ Processados: ${totalProcessed}/${documentos.length}`);
+          logger.info(`⏳ Processados: ${totalProcessed}/${documentos.length}`);
         }
       } catch (error) {
-        console.error(`❌ Erro ao processar documento ${documento.id}:`, error);
+        logger.error(`❌ Erro ao processar documento ${documento.id}:`, error);
         totalErrors++;
       }
     }
@@ -377,16 +378,16 @@ export async function cleanupOrphanedDocuments() {
       success: true,
     };
 
-    console.log("✅ Limpeza concluída:", result);
+    logger.info("✅ Limpeza concluída:", result);
 
     // TODO: Implementar log de auditoria quando modelo estiver disponível
-    console.log(
+    logger.info(
       `📊 Resumo da limpeza: ${totalProcessed} processados, ${totalDeleted} deletados, ${totalErrors} erros`,
     );
 
     return result;
   } catch (error) {
-    console.error("❌ Erro na limpeza de documentos órfãos:", error);
+    logger.error("❌ Erro na limpeza de documentos órfãos:", error);
 
     // TODO: Implementar log de auditoria quando modelo estiver disponível
     const errorMessage =
@@ -467,7 +468,7 @@ export async function updateDocumentoProcuracao(
       message: "Documento atualizado com sucesso",
     };
   } catch (error) {
-    console.error("Erro ao atualizar documento:", error);
+    logger.error("Erro ao atualizar documento:", error);
 
     return {
       success: false,

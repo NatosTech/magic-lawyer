@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
+import logger from "@/lib/logger";
 
 // ==================== TIPOS ====================
 
@@ -97,7 +98,7 @@ export async function getConfiguracoes(
       data: configuracoes,
     };
   } catch (error) {
-    console.error("Erro ao buscar configurações:", error);
+    logger.error("Erro ao buscar configurações:", error);
 
     return {
       success: false,
@@ -129,7 +130,7 @@ export async function getConfiguracaoPorChave(
       data: configuracao,
     };
   } catch (error) {
-    console.error("Erro ao buscar configuração:", error);
+    logger.error("Erro ao buscar configuração:", error);
 
     return {
       success: false,
@@ -181,7 +182,7 @@ export async function updateConfiguracao(
       data: configuracao,
     };
   } catch (error) {
-    console.error("Erro ao atualizar configuração:", error);
+    logger.error("Erro ao atualizar configuração:", error);
 
     return {
       success: false,
@@ -232,7 +233,7 @@ export async function bulkUpdateConfiguracoes(
       data: configuracoesAtualizadas,
     };
   } catch (error) {
-    console.error("Erro ao atualizar configurações em lote:", error);
+    logger.error("Erro ao atualizar configurações em lote:", error);
 
     return {
       success: false,
@@ -261,7 +262,7 @@ export async function getConfiguracaoValor(
 
     return configuracao?.valor || null;
   } catch (error) {
-    console.error(`Erro ao buscar valor da configuração ${chave}:`, error);
+    logger.error(`Erro ao buscar valor da configuração ${chave}:`, error);
 
     return null;
   }
@@ -290,7 +291,7 @@ export async function getConfiguracaoValorNumerico(
 
     return typeof valor === "number" ? valor : null;
   } catch (error) {
-    console.error(
+    logger.error(
       `Erro ao buscar valor numérico da configuração ${chave}:`,
       error,
     );
@@ -322,7 +323,7 @@ export async function getConfiguracaoValorBoolean(
 
     return typeof valor === "boolean" ? valor : null;
   } catch (error) {
-    console.error(
+    logger.error(
       `Erro ao buscar valor booleano da configuração ${chave}:`,
       error,
     );
@@ -349,7 +350,7 @@ export async function getTaxasSistema() {
       descontoAnual: descontoAnual || 16.67,
     };
   } catch (error) {
-    console.error("Erro ao buscar taxas do sistema:", error);
+    logger.error("Erro ao buscar taxas do sistema:", error);
 
     return {
       taxaCartao: 3.49,
@@ -377,7 +378,7 @@ export async function getPrecosJuizes() {
       multiplicadorPremium: multiplicadorPremium || 2.0,
     };
   } catch (error) {
-    console.error("Erro ao buscar preços de juízes:", error);
+    logger.error("Erro ao buscar preços de juízes:", error);
 
     return {
       precoConsulta: 29.9,
@@ -403,7 +404,7 @@ export async function getConfiguracoesPacotes() {
       toleranciaVencimento: toleranciaVencimento || 7,
     };
   } catch (error) {
-    console.error("Erro ao buscar configurações de pacotes:", error);
+    logger.error("Erro ao buscar configurações de pacotes:", error);
 
     return {
       trialPeriodo: 14,

@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
+import logger from "@/lib/logger";
 
 // ==================== TIPOS ====================
 
@@ -138,7 +139,7 @@ export async function getPacotesJuiz(): Promise<GetPacotesJuizResponse> {
       })),
     };
   } catch (error) {
-    console.error("Erro ao buscar pacotes de juízes:", error);
+    logger.error("Erro ao buscar pacotes de juízes:", error);
 
     return {
       success: false,
@@ -208,7 +209,7 @@ export async function getPacoteJuizById(
       },
     };
   } catch (error) {
-    console.error("Erro ao buscar pacote de juízes:", error);
+    logger.error("Erro ao buscar pacote de juízes:", error);
 
     return {
       success: false,
@@ -258,7 +259,7 @@ export async function createPacoteJuiz(
       },
     };
   } catch (error) {
-    console.error("Erro ao criar pacote de juízes:", error);
+    logger.error("Erro ao criar pacote de juízes:", error);
 
     return {
       success: false,
@@ -314,7 +315,7 @@ export async function updatePacoteJuiz(
       },
     };
   } catch (error) {
-    console.error("Erro ao atualizar pacote de juízes:", error);
+    logger.error("Erro ao atualizar pacote de juízes:", error);
 
     return {
       success: false,
@@ -365,7 +366,7 @@ export async function deletePacoteJuiz(
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao deletar pacote de juízes:", error);
+    logger.error("Erro ao deletar pacote de juízes:", error);
 
     return {
       success: false,
@@ -398,7 +399,7 @@ export async function adicionarJuizAoPacote(
       data: item,
     };
   } catch (error) {
-    console.error("Erro ao adicionar juiz ao pacote:", error);
+    logger.error("Erro ao adicionar juiz ao pacote:", error);
 
     return {
       success: false,
@@ -425,7 +426,7 @@ export async function removerJuizDoPacote(pacoteId: string, juizId: string) {
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao remover juiz do pacote:", error);
+    logger.error("Erro ao remover juiz do pacote:", error);
 
     return {
       success: false,
@@ -476,7 +477,7 @@ export async function getEstatisticasPacotesJuiz() {
       },
     };
   } catch (error) {
-    console.error("Erro ao buscar estatísticas de pacotes de juízes:", error);
+    logger.error("Erro ao buscar estatísticas de pacotes de juízes:", error);
 
     return {
       success: false,

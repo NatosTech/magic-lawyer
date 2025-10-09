@@ -2,6 +2,8 @@ import prisma from "./prisma";
 import { sendEmail, emailTemplates } from "./email";
 import { syncEventWithGoogle } from "./google-calendar";
 
+import logger from "@/lib/logger";
+
 // Interface para criar evento
 export interface CreateEventoData {
   titulo: string;
@@ -91,7 +93,7 @@ export const createEvento = async (data: CreateEventoData) => {
           });
         }
       } catch (error) {
-        console.error("Erro ao sincronizar com Google Calendar:", error);
+        logger.error("Erro ao sincronizar com Google Calendar:", error);
         // Não falha a criação do evento local se a sincronização falhar
       }
     }
@@ -116,14 +118,14 @@ export const createEvento = async (data: CreateEventoData) => {
 
         await Promise.all(emailPromises);
       } catch (error) {
-        console.error("Erro ao enviar emails de notificação:", error);
+        logger.error("Erro ao enviar emails de notificação:", error);
         // Não falha a criação do evento se o email falhar
       }
     }
 
     return { success: true, data: evento };
   } catch (error) {
-    console.error("Erro ao criar evento:", error);
+    logger.error("Erro ao criar evento:", error);
 
     return {
       success: false,
@@ -191,13 +193,13 @@ export const updateEvento = async (data: UpdateEventoData) => {
           eventoExistente.googleEventId,
         );
       } catch (error) {
-        console.error("Erro ao atualizar evento no Google Calendar:", error);
+        logger.error("Erro ao atualizar evento no Google Calendar:", error);
       }
     }
 
     return { success: true, data: evento };
   } catch (error) {
-    console.error("Erro ao atualizar evento:", error);
+    logger.error("Erro ao atualizar evento:", error);
 
     return {
       success: false,
@@ -231,7 +233,7 @@ export const deleteEvento = async (
           evento.googleEventId,
         );
       } catch (error) {
-        console.error("Erro ao deletar evento do Google Calendar:", error);
+        logger.error("Erro ao deletar evento do Google Calendar:", error);
         // Continua com a deleção local mesmo se falhar no Google
       }
     }
@@ -242,7 +244,7 @@ export const deleteEvento = async (
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao deletar evento:", error);
+    logger.error("Erro ao deletar evento:", error);
 
     return {
       success: false,
@@ -313,7 +315,7 @@ export const listEventos = async (
 
     return { success: true, data: eventos };
   } catch (error) {
-    console.error("Erro ao listar eventos:", error);
+    logger.error("Erro ao listar eventos:", error);
 
     return {
       success: false,
@@ -345,7 +347,7 @@ export const getEventoById = async (eventoId: string) => {
 
     return { success: true, data: evento };
   } catch (error) {
-    console.error("Erro ao obter evento:", error);
+    logger.error("Erro ao obter evento:", error);
 
     return {
       success: false,
@@ -418,7 +420,7 @@ export const enviarLembretesEventos = async () => {
           await Promise.all(emailPromises);
           lembretesEnviados.push(evento.id);
         } catch (error) {
-          console.error(
+          logger.error(
             `Erro ao enviar lembrete para evento ${evento.id}:`,
             error,
           );
@@ -434,7 +436,7 @@ export const enviarLembretesEventos = async () => {
       },
     };
   } catch (error) {
-    console.error("Erro ao enviar lembretes:", error);
+    logger.error("Erro ao enviar lembretes:", error);
 
     return {
       success: false,
@@ -455,7 +457,7 @@ export const marcarEventoComoRealizado = async (eventoId: string) => {
 
     return { success: true, data: evento };
   } catch (error) {
-    console.error("Erro ao marcar evento como realizado:", error);
+    logger.error("Erro ao marcar evento como realizado:", error);
 
     return {
       success: false,

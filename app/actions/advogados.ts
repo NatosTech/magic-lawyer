@@ -2,6 +2,7 @@
 
 import { getSession } from "@/app/lib/auth";
 import prisma, { toNumber } from "@/app/lib/prisma";
+import logger from "@/lib/logger";
 
 export interface Advogado {
   id: string;
@@ -91,7 +92,7 @@ export async function getAdvogadosDoTenant(): Promise<{
       advogados,
     };
   } catch (error) {
-    console.error("Erro ao buscar advogados:", error);
+    logger.error("Erro ao buscar advogados:", error);
 
     return {
       success: false,
@@ -163,7 +164,7 @@ export async function getAdvogadosDisponiveis(): Promise<{
       advogados,
     };
   } catch (error) {
-    console.error("Erro ao buscar advogados disponíveis:", error);
+    logger.error("Erro ao buscar advogados disponíveis:", error);
 
     return {
       success: false,

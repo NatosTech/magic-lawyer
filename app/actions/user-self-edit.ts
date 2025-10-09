@@ -11,6 +11,7 @@ import {
   getSelfEditPermissions,
   type SelfEditPermissions,
 } from "@/lib/user-permissions";
+import logger from "@/lib/logger";
 
 // Interface para dados que o usuário pode editar de si mesmo
 export interface UserSelfEditData {
@@ -175,7 +176,7 @@ export async function updateUserSelfData(data: UserSelfEditData): Promise<{
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao atualizar dados do usuário:", error);
+    logger.error("Erro ao atualizar dados do usuário:", error);
 
     return {
       success: false,
@@ -280,7 +281,7 @@ export async function getUserSelfEditData(): Promise<{
       },
     };
   } catch (error) {
-    console.error("Erro ao buscar dados do usuário:", error);
+    logger.error("Erro ao buscar dados do usuário:", error);
 
     return {
       success: false,

@@ -299,7 +299,7 @@ export function SearchBar({ className }: SearchBarProps) {
             ) : (
               <div className="p-6 text-center">
                 <p className="text-sm">
-                  Nenhum resultado encontrado para "{query}"
+                  Nenhum resultado encontrado para &quot;{query}&quot;
                 </p>
                 <p className="text-xs mt-2">
                   Tente termos diferentes ou mais específicos

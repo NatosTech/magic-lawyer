@@ -1,6 +1,8 @@
 import { google } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
 
+import logger from "@/lib/logger";
+
 // Configuração do OAuth2 para Google Calendar
 export const createOAuth2Client = () => {
   return new OAuth2Client(
@@ -70,7 +72,7 @@ export const getTokensFromCode = async (code: string) => {
 
     return { success: true, tokens };
   } catch (error) {
-    console.error("Erro ao obter tokens:", error);
+    logger.error("Erro ao obter tokens:", error);
 
     return {
       success: false,
@@ -106,7 +108,7 @@ export const createCalendarEvent = async (
       data: response.data,
     };
   } catch (error) {
-    console.error("Erro ao criar evento no Google Calendar:", error);
+    logger.error("Erro ao criar evento no Google Calendar:", error);
 
     return {
       success: false,
@@ -144,7 +146,7 @@ export const updateCalendarEvent = async (
       data: response.data,
     };
   } catch (error) {
-    console.error("Erro ao atualizar evento no Google Calendar:", error);
+    logger.error("Erro ao atualizar evento no Google Calendar:", error);
 
     return {
       success: false,
@@ -179,7 +181,7 @@ export const deleteCalendarEvent = async (
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao deletar evento no Google Calendar:", error);
+    logger.error("Erro ao deletar evento no Google Calendar:", error);
 
     return {
       success: false,
@@ -210,7 +212,7 @@ export const listCalendars = async (
       data: response.data.items,
     };
   } catch (error) {
-    console.error("Erro ao listar calendários:", error);
+    logger.error("Erro ao listar calendários:", error);
 
     return {
       success: false,
@@ -250,7 +252,7 @@ export const listEvents = async (
       data: response.data.items,
     };
   } catch (error) {
-    console.error("Erro ao listar eventos:", error);
+    logger.error("Erro ao listar eventos:", error);
 
     return {
       success: false,

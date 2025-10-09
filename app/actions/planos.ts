@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
+import logger from "@/lib/logger";
 
 // ==================== TIPOS ====================
 
@@ -103,7 +104,7 @@ export async function getPlanos(): Promise<GetPlanosResponse> {
       })),
     };
   } catch (error) {
-    console.error("Erro ao buscar planos:", error);
+    logger.error("Erro ao buscar planos:", error);
 
     return {
       success: false,
@@ -150,7 +151,7 @@ export async function getPlanoById(id: string): Promise<GetPlanoResponse> {
       },
     };
   } catch (error) {
-    console.error("Erro ao buscar plano:", error);
+    logger.error("Erro ao buscar plano:", error);
 
     return {
       success: false,
@@ -205,7 +206,7 @@ export async function updatePlano(
       },
     };
   } catch (error) {
-    console.error("Erro ao atualizar plano:", error);
+    logger.error("Erro ao atualizar plano:", error);
 
     return {
       success: false,
@@ -261,7 +262,7 @@ export async function getEstatisticasPlanos(): Promise<GetEstatisticasPlanosResp
       },
     };
   } catch (error) {
-    console.error("Erro ao buscar estatísticas de planos:", error);
+    logger.error("Erro ao buscar estatísticas de planos:", error);
 
     return {
       success: false,
@@ -318,7 +319,7 @@ export async function getAssinaturas() {
       })),
     };
   } catch (error) {
-    console.error("Erro ao buscar assinaturas:", error);
+    logger.error("Erro ao buscar assinaturas:", error);
 
     return {
       success: false,

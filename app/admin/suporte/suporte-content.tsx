@@ -120,11 +120,15 @@ export function SuporteContent() {
               }
             />
             <div>
-              <label className="text-sm font-medium text-white mb-2 block">
+              <label
+                className="text-sm font-medium text-white mb-2 block"
+                htmlFor="ticket-categoria"
+              >
                 Categoria
               </label>
               <select
                 className="w-full px-3 py-2 bg-default-100 border border-default-200 rounded-lg text-white"
+                id="ticket-categoria"
                 value={ticketForm.categoria}
                 onChange={(e) =>
                   setTicketForm({
@@ -146,11 +150,15 @@ export function SuporteContent() {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-white mb-2 block">
+              <label
+                className="text-sm font-medium text-white mb-2 block"
+                htmlFor="ticket-prioridade"
+              >
                 Prioridade
               </label>
               <select
                 className="w-full px-3 py-2 bg-default-100 border border-default-200 rounded-lg text-white"
+                id="ticket-prioridade"
                 value={ticketForm.prioridade}
                 onChange={(e) =>
                   setTicketForm({
@@ -173,12 +181,16 @@ export function SuporteContent() {
           </div>
           <div>
             <div>
-              <label className="text-sm font-medium text-white mb-2 block">
+              <label
+                className="text-sm font-medium text-white mb-2 block"
+                htmlFor="ticket-descricao"
+              >
                 Descrição Detalhada
               </label>
               <textarea
                 className="w-full px-3 py-2 bg-default-100 border border-default-200 rounded-lg text-white min-h-[100px] resize-y"
                 placeholder="Descreva o problema ou solicitação com o máximo de detalhes possível..."
+                id="ticket-descricao"
                 rows={4}
                 value={ticketForm.descricao}
                 onChange={(e) =>

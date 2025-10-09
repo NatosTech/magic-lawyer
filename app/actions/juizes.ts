@@ -150,7 +150,7 @@ export async function getJuizes(
       data: juizesSerializados,
     };
   } catch (error) {
-    console.error("Erro ao buscar juízes:", error);
+    logger.error("Erro ao buscar juízes:", error);
 
     return {
       success: false,
@@ -206,7 +206,7 @@ export async function getJuizById(id: string): Promise<GetJuizResponse> {
       data: juizSerializado,
     };
   } catch (error) {
-    console.error("Erro ao buscar juiz:", error);
+    logger.error("Erro ao buscar juiz:", error);
 
     return {
       success: false,
@@ -232,7 +232,7 @@ export async function createJuiz(data: any, superAdminId: string) {
       data: juiz,
     };
   } catch (error) {
-    console.error("Erro ao criar juiz:", error);
+    logger.error("Erro ao criar juiz:", error);
 
     return {
       success: false,
@@ -269,7 +269,7 @@ export async function updateJuiz(id: string, data: any, superAdminId: string) {
       data: juiz,
     };
   } catch (error) {
-    console.error("Erro ao atualizar juiz:", error);
+    logger.error("Erro ao atualizar juiz:", error);
 
     return {
       success: false,
@@ -304,7 +304,7 @@ export async function deleteJuiz(id: string, superAdminId: string) {
       success: true,
     };
   } catch (error) {
-    console.error("Erro ao deletar juiz:", error);
+    logger.error("Erro ao deletar juiz:", error);
 
     return {
       success: false,
@@ -334,7 +334,7 @@ export async function getJuizFormData() {
       },
     };
   } catch (error) {
-    console.error("Erro ao buscar dados do formulário:", error);
+    logger.error("Erro ao buscar dados do formulário:", error);
 
     return {
       success: false,
@@ -348,6 +348,7 @@ export async function getJuizFormData() {
 import { getServerSession } from "next-auth/next";
 
 import { authOptions } from "@/auth";
+import logger from "@/lib/logger";
 
 async function ensureSession() {
   const session = await getServerSession(authOptions);
@@ -391,7 +392,7 @@ async function createAuditLog(
       },
     });
   } catch (error) {
-    console.error("Erro ao criar log de auditoria:", error);
+    logger.error("Erro ao criar log de auditoria:", error);
   }
 }
 
@@ -469,7 +470,7 @@ export async function createJuizTenant(
       data: serializeJuiz(juiz),
     };
   } catch (error) {
-    console.error("Erro ao criar juiz:", error);
+    logger.error("Erro ao criar juiz:", error);
 
     return {
       success: false,
@@ -494,9 +495,9 @@ export async function updateJuizTenant(
     }
 
     // DEBUG: Verificar dados recebidos
-    console.log("🔍 [updateJuizTenant] ID:", id);
-    console.log("🔍 [updateJuizTenant] Data recebida:", data);
-    console.log("🔍 [updateJuizTenant] OAB:", data.oab);
+    logger.info("🔍 [updateJuizTenant] ID:", id);
+    logger.info("🔍 [updateJuizTenant] Data recebida:", data);
+    logger.info("🔍 [updateJuizTenant] OAB:", data.oab);
 
     // Buscar juiz atual para log de auditoria
     const juizAtual = await prisma.juiz.findUnique({
@@ -510,7 +511,7 @@ export async function updateJuizTenant(
       };
     }
 
-    console.log("🔍 [updateJuizTenant] Juiz atual OAB:", juizAtual.oab);
+    logger.info("🔍 [updateJuizTenant] Juiz atual OAB:", juizAtual.oab);
 
     // Preparar dados para o banco (converter strings vazias para null)
     const preparedData = Object.entries(data).reduce(
@@ -528,7 +529,7 @@ export async function updateJuizTenant(
       data: preparedData,
     });
 
-    console.log("✅ [updateJuizTenant] Juiz atualizado OAB:", juiz.oab);
+    logger.info("✅ [updateJuizTenant] Juiz atualizado OAB:", juiz.oab);
 
     // Identificar campos alterados
     const changedFields = Object.keys(data).filter((key) => {
@@ -554,7 +555,7 @@ export async function updateJuizTenant(
       data: serializeJuiz(juiz),
     };
   } catch (error) {
-    console.error("Erro ao atualizar juiz:", error);
+    logger.error("Erro ao atualizar juiz:", error);
 
     return {
       success: false,
@@ -609,7 +610,7 @@ export async function deleteJuizTenant(id: string) {
       message: "Juiz deletado com sucesso",
     };
   } catch (error) {
-    console.error("Erro ao deletar juiz:", error);
+    logger.error("Erro ao deletar juiz:", error);
 
     return {
       success: false,
@@ -727,7 +728,7 @@ export async function uploadJuizFoto(
       fotoUrl,
     };
   } catch (error) {
-    console.error("Erro ao fazer upload da foto do juiz:", error);
+    logger.error("Erro ao fazer upload da foto do juiz:", error);
 
     return {
       success: false,
@@ -782,7 +783,7 @@ export async function deleteJuizFoto(
       };
     }
   } catch (error) {
-    console.error("Erro ao deletar foto do juiz:", error);
+    logger.error("Erro ao deletar foto do juiz:", error);
 
     return {
       success: false,

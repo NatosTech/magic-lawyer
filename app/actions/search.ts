@@ -4,6 +4,7 @@ import type { SearchResult } from "@/components/searchbar";
 
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
+import logger from "@/lib/logger";
 
 export async function searchContent(query: string): Promise<SearchResult[]> {
   if (!query.trim() || query.length < 2) {
@@ -224,7 +225,7 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
 
     return results.slice(0, 10); // Limitar a 10 resultados
   } catch (error) {
-    console.error("Erro na busca:", error);
+    logger.error("Erro na busca:", error);
 
     return [];
   }

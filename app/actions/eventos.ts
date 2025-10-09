@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/app/lib/prisma";
 import { getTenantWithBranding } from "@/app/lib/tenant";
 import { authOptions } from "@/auth";
+import logger from "@/lib/logger";
 
 // Usar tipos do Prisma - sempre sincronizado com o banco!
 
@@ -244,7 +245,7 @@ export async function getEventos(filters?: {
 
     return { success: true, data: eventos };
   } catch (error) {
-    console.error("Erro ao buscar eventos:", error);
+    logger.error("Erro ao buscar eventos:", error);
 
     return {
       success: false,
@@ -343,7 +344,7 @@ export async function getEventoById(id: string) {
 
     return { success: true, data: evento };
   } catch (error) {
-    console.error("Erro ao buscar evento:", error);
+    logger.error("Erro ao buscar evento:", error);
 
     return {
       success: false,
@@ -537,7 +538,7 @@ export async function createEvento(formData: EventoFormData) {
 
     return { success: true, data: evento };
   } catch (error) {
-    console.error("Erro ao criar evento:", error);
+    logger.error("Erro ao criar evento:", error);
 
     // Tratar erros específicos do Prisma
     if (error instanceof Error) {
@@ -800,7 +801,7 @@ export async function updateEvento(
 
     return { success: true, data: evento };
   } catch (error) {
-    console.error("Erro ao atualizar evento:", error);
+    logger.error("Erro ao atualizar evento:", error);
 
     return {
       success: false,
@@ -845,7 +846,7 @@ export async function deleteEvento(id: string) {
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao deletar evento:", error);
+    logger.error("Erro ao deletar evento:", error);
 
     return {
       success: false,
@@ -899,7 +900,7 @@ export async function marcarEventoComoRealizado(id: string) {
 
     return { success: true, data: evento };
   } catch (error) {
-    console.error("Erro ao marcar evento como realizado:", error);
+    logger.error("Erro ao marcar evento como realizado:", error);
 
     return {
       success: false,
@@ -1013,7 +1014,7 @@ export async function confirmarParticipacaoEvento(
 
     return { success: true, data: confirmacao };
   } catch (error) {
-    console.error("Erro ao confirmar participação:", error);
+    logger.error("Erro ao confirmar participação:", error);
 
     return {
       success: false,
@@ -1050,7 +1051,7 @@ export async function getConfirmacoesEvento(eventoId: string) {
 
     return { success: true, data: confirmacoes };
   } catch (error) {
-    console.error("Erro ao buscar confirmações:", error);
+    logger.error("Erro ao buscar confirmações:", error);
 
     return {
       success: false,
@@ -1116,7 +1117,7 @@ export async function getEventoFormData() {
       data: { processos, clientes, advogados },
     };
   } catch (error) {
-    console.error("Erro ao buscar dados do formulário:", error);
+    logger.error("Erro ao buscar dados do formulário:", error);
 
     return {
       success: false,

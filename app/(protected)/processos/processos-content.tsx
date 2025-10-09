@@ -483,7 +483,7 @@ export function ProcessosContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Status */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
+                <p className="text-sm font-medium">Status</p>
                 <div className="flex flex-wrap gap-2">
                   {Object.values(ProcessoStatus).map((status) => (
                     <Checkbox
@@ -506,7 +506,7 @@ export function ProcessosContent() {
 
               {/* Fase Processual */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Fase processual</label>
+                <p className="text-sm font-medium">Fase processual</p>
                 <div className="flex flex-wrap gap-2">
                   {Object.values(ProcessoFase).map((fase) => (
                     <Checkbox
@@ -529,7 +529,7 @@ export function ProcessosContent() {
 
               {/* Grau */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Grau</label>
+                <p className="text-sm font-medium">Grau</p>
                 <div className="flex flex-wrap gap-2">
                   {Object.values(ProcessoGrau).map((grau) => (
                     <Checkbox
@@ -552,7 +552,7 @@ export function ProcessosContent() {
 
               {/* Área */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Área</label>
+                <p className="text-sm font-medium">Área</p>
                 <Select
                   placeholder="Todas as áreas"
                   selectedKeys={filtros.areaId ? [filtros.areaId] : []}
@@ -573,7 +573,7 @@ export function ProcessosContent() {
 
               {/* Advogado */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Advogado</label>
+                <p className="text-sm font-medium">Advogado</p>
                 <Select
                   placeholder="Todos os advogados"
                   selectedKeys={filtros.advogadoId ? [filtros.advogadoId] : []}
@@ -594,7 +594,7 @@ export function ProcessosContent() {
 
               {/* Cliente */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Cliente</label>
+                <p className="text-sm font-medium">Cliente</p>
                 <Select
                   placeholder="Todos os clientes"
                   selectedKeys={filtros.clienteId ? [filtros.clienteId] : []}
@@ -624,7 +624,7 @@ export function ProcessosContent() {
 
               {/* Comarca */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Comarca</label>
+                <p className="text-sm font-medium">Comarca</p>
                 <Select
                   placeholder="Todas as comarcas"
                   selectedKeys={filtros.comarca ? [filtros.comarca] : []}
@@ -645,9 +645,9 @@ export function ProcessosContent() {
 
               {/* Segredo de Justiça */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">
+                <p className="text-sm font-medium">
                   Segredo de Justiça
-                </label>
+                </p>
                 <Select
                   placeholder="Todos"
                   selectedKeys={
@@ -682,7 +682,7 @@ export function ProcessosContent() {
 
               {/* Valor da Causa */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Valor da Causa</label>
+                <p className="text-sm font-medium">Valor da Causa</p>
                 <div className="flex gap-2">
                   <Input
                     placeholder="Mínimo"
@@ -717,9 +717,9 @@ export function ProcessosContent() {
 
               {/* Data de Distribuição */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">
+                <p className="text-sm font-medium">
                   Data de Distribuição
-                </label>
+                </p>
                 <div className="flex gap-2">
                   <Input
                     placeholder="De"
@@ -748,9 +748,9 @@ export function ProcessosContent() {
 
               {/* Prazo de Vencimento */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">
+                <p className="text-sm font-medium">
                   Prazo de Vencimento
-                </label>
+                </p>
                 <Select
                   placeholder="Todos os prazos"
                   selectedKeys={

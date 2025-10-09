@@ -1,5 +1,7 @@
 import nodemailer from "nodemailer";
 
+import logger from "@/lib/logger";
+
 // Configuração do transporter do Nodemailer
 const createTransporter = () => {
   return nodemailer.createTransport({
@@ -45,11 +47,11 @@ export const sendEmail = async (options: EmailOptions) => {
 
     const result = await transporter.sendMail(mailOptions);
 
-    console.log("Email enviado com sucesso:", result.messageId);
+    logger.info("Email enviado com sucesso:", result.messageId);
 
     return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error("Erro ao enviar email:", error);
+    logger.error("Erro ao enviar email:", error);
 
     return {
       success: false,
@@ -64,11 +66,11 @@ export const verifyEmailConnection = async () => {
     const transporter = createTransporter();
 
     await transporter.verify();
-    console.log("Conexão SMTP verificada com sucesso");
+    logger.info("Conexão SMTP verificada com sucesso");
 
     return { success: true };
   } catch (error) {
-    console.error("Erro na verificação SMTP:", error);
+    logger.error("Erro na verificação SMTP:", error);
 
     return {
       success: false,

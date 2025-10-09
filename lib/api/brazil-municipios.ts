@@ -1,4 +1,5 @@
 import { type MunicipioIBGE } from "@/types/brazil";
+import logger from "@/lib/logger";
 
 /**
  * Busca todos os municípios de um estado específico via API do IBGE
@@ -19,7 +20,7 @@ export async function getMunicipiosPorEstado(
 
     return municipios;
   } catch (error) {
-    console.error("Erro ao buscar municípios do estado:", error);
+    logger.error("Erro ao buscar municípios do estado:", error);
     throw error;
   }
 }

@@ -586,7 +586,10 @@ export default function EventoForm({
 
                 {/* Participantes */}
                 <div>
-                  <label className="text-sm font-medium text-default-700 mb-2 block">
+                  <label
+                    className="text-sm font-medium text-default-700 mb-2 block"
+                    htmlFor="participant-email"
+                  >
                     <Users className="w-4 h-4 inline mr-1" />
                     Participantes
                   </label>
@@ -598,6 +601,7 @@ export default function EventoForm({
                       startContent={<Users className="w-4 h-4 text-primary" />}
                       value={novoParticipante}
                       variant="bordered"
+                      id="participant-email"
                       onChange={(e) => setNovoParticipante(e.target.value)}
                       onKeyPress={handleKeyPress}
                     />

@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import prisma, { toNumber } from "@/app/lib/prisma";
 import { ContratoStatus } from "@/app/generated/prisma";
+import logger from "@/lib/logger";
 
 // ============================================
 // TYPES
@@ -107,7 +108,7 @@ export async function getProcuracoesDisponiveis(clienteId: string) {
 
     return procuracoes;
   } catch (error) {
-    console.error("Erro ao buscar procurações:", error);
+    logger.error("Erro ao buscar procurações:", error);
     throw new Error("Erro ao buscar procurações disponíveis");
   }
 }
@@ -224,7 +225,7 @@ export async function vincularContratoProcuracao(
       message: `Contrato vinculado com sucesso ao processo ${processoParaVincular.processo.numero}! Agora o contrato e a procuração estão conectados.`,
     };
   } catch (error) {
-    console.error("Erro ao vincular contrato à procuração:", error);
+    logger.error("Erro ao vincular contrato à procuração:", error);
 
     return {
       success: false,
@@ -353,7 +354,7 @@ export async function createContrato(data: ContratoCreateInput) {
       contrato: contratoSerializado,
     };
   } catch (error) {
-    console.error("Erro ao criar contrato:", error);
+    logger.error("Erro ao criar contrato:", error);
 
     return {
       success: false,
@@ -468,7 +469,7 @@ export async function getAllContratos(): Promise<{
       contratos: contratosFormatted,
     };
   } catch (error) {
-    console.error("Erro ao buscar contratos:", error);
+    logger.error("Erro ao buscar contratos:", error);
 
     return {
       success: false,
@@ -598,7 +599,7 @@ export async function getContratoById(contratoId: string): Promise<{
       contrato: contratoFormatted,
     };
   } catch (error) {
-    console.error("Erro ao buscar contrato:", error);
+    logger.error("Erro ao buscar contrato:", error);
 
     return {
       success: false,
@@ -723,7 +724,7 @@ export async function updateContrato(
       contrato: contratoSerializado,
     };
   } catch (error) {
-    console.error("Erro ao atualizar contrato:", error);
+    logger.error("Erro ao atualizar contrato:", error);
 
     return {
       success: false,

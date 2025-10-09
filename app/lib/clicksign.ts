@@ -1,5 +1,7 @@
 import axios from "axios";
 
+import logger from "@/lib/logger";
+
 // Configuração da API do ClickSign
 const CLICKSIGN_API_BASE =
   process.env.CLICKSIGN_API_BASE || "https://sandbox.clicksign.com/api/v1";
@@ -104,7 +106,7 @@ const makeAuthenticatedRequest = async <T>(
       data: response.data,
     };
   } catch (error) {
-    console.error("Erro na requisição ClickSign:", error);
+    logger.error("Erro na requisição ClickSign:", error);
 
     if (axios.isAxiosError(error)) {
       return {
@@ -303,7 +305,7 @@ export const sendDocumentForSigning = async (documentData: {
       },
     };
   } catch (error) {
-    console.error("Erro ao enviar documento para assinatura:", error);
+    logger.error("Erro ao enviar documento para assinatura:", error);
 
     return {
       success: false,
@@ -343,7 +345,7 @@ export const checkDocumentStatus = async (
       },
     };
   } catch (error) {
-    console.error("Erro ao verificar status do documento:", error);
+    logger.error("Erro ao verificar status do documento:", error);
 
     return {
       success: false,

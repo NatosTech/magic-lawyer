@@ -1,6 +1,8 @@
 import prisma from "./prisma";
 import { sendEmail, emailTemplates } from "./email";
 
+import logger from "@/lib/logger";
+
 // Interface para resumo financeiro do cliente
 export interface ResumoFinanceiroCliente {
   clienteId: string;
@@ -150,7 +152,7 @@ export const getResumoFinanceiroCliente = async (
 
     return { success: true, data: resumo };
   } catch (error) {
-    console.error("Erro ao obter resumo financeiro do cliente:", error);
+    logger.error("Erro ao obter resumo financeiro do cliente:", error);
 
     return {
       success: false,
@@ -257,7 +259,7 @@ export const getResumoFinanceiroAdvogado = async (
 
     return { success: true, data: resumo };
   } catch (error) {
-    console.error("Erro ao obter resumo financeiro do advogado:", error);
+    logger.error("Erro ao obter resumo financeiro do advogado:", error);
 
     return {
       success: false,
@@ -380,7 +382,7 @@ export const getResumoFinanceiroEscritorio = async (
 
     return { success: true, data: resumo };
   } catch (error) {
-    console.error("Erro ao obter resumo financeiro do escritório:", error);
+    logger.error("Erro ao obter resumo financeiro do escritório:", error);
 
     return {
       success: false,
@@ -440,7 +442,7 @@ export const listFaturasPorPeriodo = async (
 
     return { success: true, data: faturas };
   } catch (error) {
-    console.error("Erro ao listar faturas por período:", error);
+    logger.error("Erro ao listar faturas por período:", error);
 
     return {
       success: false,
@@ -507,7 +509,7 @@ export const enviarLembretesVencimento = async () => {
 
           lembretesEnviados.push(fatura.id);
         } catch (error) {
-          console.error(
+          logger.error(
             `Erro ao enviar lembrete para fatura ${fatura.id}:`,
             error,
           );
@@ -523,7 +525,7 @@ export const enviarLembretesVencimento = async () => {
       },
     };
   } catch (error) {
-    console.error("Erro ao enviar lembretes de vencimento:", error);
+    logger.error("Erro ao enviar lembretes de vencimento:", error);
 
     return {
       success: false,
@@ -576,7 +578,7 @@ export const marcarFaturaComoPaga = async (
 
     return { success: true, data: pagamento };
   } catch (error) {
-    console.error("Erro ao marcar fatura como paga:", error);
+    logger.error("Erro ao marcar fatura como paga:", error);
 
     return {
       success: false,
@@ -761,7 +763,7 @@ export const gerarRelatorioFinanceiro = async (
 
     return { success: true, data: relatorio };
   } catch (error) {
-    console.error("Erro ao gerar relatório financeiro:", error);
+    logger.error("Erro ao gerar relatório financeiro:", error);
 
     return {
       success: false,
