@@ -2,7 +2,7 @@
 
 /* eslint-disable no-console */
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
@@ -15,7 +15,7 @@ import NextLink from "next/link";
 
 import { Logo } from "@/components/icons";
 
-export default function LoginPage() {
+function LoginPageInner() {
   const params = useSearchParams();
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -360,5 +360,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <LoginPageInner />
+    </Suspense>
   );
 }
