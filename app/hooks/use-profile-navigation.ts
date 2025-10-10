@@ -283,6 +283,8 @@ export function useProfileNavigation() {
 
   const getDashboardTitle = () => {
     switch (userRole) {
+      case "SUPER_ADMIN":
+        return "Painel Global";
       case "ADMIN":
         return "Painel Administrativo";
       case "ADVOGADO":
@@ -300,6 +302,8 @@ export function useProfileNavigation() {
 
   const getDashboardDescription = () => {
     switch (userRole) {
+      case "SUPER_ADMIN":
+        return "Visão unificada de tenants, receita e saúde da operação";
       case "ADMIN":
         return "Visão completa do escritório, relatórios e gestão";
       case "ADVOGADO":
@@ -319,6 +323,8 @@ export function useProfileNavigation() {
     const userName = session?.user?.name || "Usuário";
 
     switch (userRole) {
+      case "SUPER_ADMIN":
+        return `Olá, ${userName}! Aqui está a fotografia global dos tenants.`;
       case "ADMIN":
         return `Olá, ${userName}! Aqui está o resumo do seu escritório.`;
       case "ADVOGADO":
