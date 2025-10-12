@@ -24,15 +24,30 @@ import {
   ModalHeader,
 } from "@heroui/modal";
 import { Popover, PopoverTrigger, PopoverContent } from "@heroui/popover";
-import { RangeCalendar } from "@heroui/react";
+import { RangeCalendar, Tooltip } from "@heroui/react";
 import type { RangeValue } from "@react-types/shared";
 import { CalendarDate, getLocalTimeZone } from "@internationalized/date";
-import { Download, Filter, Info, Shield, Users } from "lucide-react";
+import {
+  CalendarRange,
+  ClipboardList,
+  CirclePlus,
+  Download,
+  Edit3,
+  Filter,
+  Info,
+  Search,
+  Settings2,
+  Shield,
+  Trash2,
+  Users,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { title, subtitle } from "@/components/primitives";
 import {
   exportSystemAuditLogs,
+  getAuditLogContext,
   getSystemAuditLogs,
   type AuditLogEntry,
   type AuditLogFilters,
@@ -61,6 +76,28 @@ function formatJson(data: unknown) {
 
     return String(data);
   }
+}
+
+function formatValue(value: unknown) {
+  if (value === null || value === undefined) {
+    return "—";
+  }
+
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch (error) {
+      console.error("Erro ao formatar valor de auditoria", error);
+
+      return String(value);
+    }
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "Sim" : "Não";
+  }
+
+  return String(value);
 }
 
 export function AuditoriaContent() {
@@ -102,6 +139,22 @@ export function AuditoriaContent() {
       revalidateOnFocus: false,
       refreshInterval: 60000,
     },
+  );
+
+  const logContextKey =
+    selectedLog && selectedLog.entidadeId
+      ? [
+          "audit-log-context",
+          selectedLog.entidade,
+          selectedLog.entidadeId,
+        ]
+      : null;
+
+  const {
+    data: contextData,
+    isLoading: loadingContext,
+  } = useSWR(logContextKey, ([, entidade, entidadeId]) =>
+    getAuditLogContext(entidade as string, entidadeId as string),
   );
 
   const logs = data?.data?.logs ?? [];
@@ -151,6 +204,56 @@ export function AuditoriaContent() {
         })),
     ];
   }, [logs]);
+
+  const diffEntries = useMemo(() => {
+    if (!selectedLog) {
+      return [] as Array<{ field: string; before: unknown; after: unknown }>;
+    }
+
+    const oldData =
+      selectedLog.dadosAntigos && typeof selectedLog.dadosAntigos === "object"
+        ? (selectedLog.dadosAntigos as Record<string, unknown>)
+        : {};
+    const newData =
+      selectedLog.dadosNovos && typeof selectedLog.dadosNovos === "object"
+        ? (selectedLog.dadosNovos as Record<string, unknown>)
+        : {};
+
+    const keys = new Set<string>([
+      ...(selectedLog.changedFields ?? []),
+      ...Object.keys(oldData ?? {}),
+      ...Object.keys(newData ?? {}),
+    ]);
+
+    const entries: Array<{ field: string; before: unknown; after: unknown }> = [];
+
+    keys.forEach((key) => {
+      const before = oldData ? oldData[key] : undefined;
+      const after = newData ? newData[key] : undefined;
+
+      if (before === undefined && after === undefined) {
+        return;
+      }
+
+      try {
+        const beforeSerialized = JSON.stringify(before);
+        const afterSerialized = JSON.stringify(after);
+
+        if (beforeSerialized === afterSerialized) {
+          return;
+        }
+      } catch (error) {
+        // fallback to strict equality
+        if (before === after) {
+          return;
+        }
+      }
+
+      entries.push({ field: key, before, after });
+    });
+
+    return entries;
+  }, [selectedLog]);
 
   const getActionColor = (acao: string) => {
     if (acao.includes("CREATE")) return "success";
@@ -237,13 +340,36 @@ export function AuditoriaContent() {
         <Divider className="border-white/10" />
         <CardBody className="grid grid-cols-1 gap-3 lg:grid-cols-5">
           <Input
-            label="Busca"
+            label={
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-default-400" />
+                <span>Busca</span>
+                <Tooltip
+                  className="max-w-xs"
+                  color="primary"
+                  content="Filtre por ação, entidade, usuário ou qualquer termo relacionado ao log."
+                >
+                  <Info className="h-3.5 w-3.5 cursor-help text-primary" />
+                </Tooltip>
+              </div>
+            }
             placeholder="Buscar por ação, entidade ou usuário"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
           <Select
-            label="Origem"
+            label={
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-default-400" />
+                <span>Origem</span>
+                <Tooltip
+                  color="secondary"
+                  content="Selecione a origem do log: ações disparadas por super admins ou pelos tenants."
+                >
+                  <Info className="h-3.5 w-3.5 cursor-help text-secondary" />
+                </Tooltip>
+              </div>
+            }
             selectedKeys={[fonteFiltro]}
             selectionMode="single"
             onSelectionChange={(keys) => {
@@ -259,7 +385,18 @@ export function AuditoriaContent() {
             <SelectItem key="TENANT">Tenant</SelectItem>
           </Select>
           <Select
-            label="Entidade"
+            label={
+              <div className="flex items-center gap-2">
+                <ClipboardList className="h-4 w-4 text-default-400" />
+                <span>Entidade</span>
+                <Tooltip
+                  color="success"
+                  content="Restrinja os resultados para um tipo específico de entidade auditada (ex.: USUARIO, TENANT)."
+                >
+                  <Info className="h-3.5 w-3.5 cursor-help text-success" />
+                </Tooltip>
+              </div>
+            }
             items={entidadeOptions}
             selectedKeys={[entidadeFiltro]}
             selectionMode="single"
@@ -272,7 +409,18 @@ export function AuditoriaContent() {
             {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
           </Select>
           <Select
-            label="Ação"
+            label={
+              <div className="flex items-center gap-2">
+                <Settings2 className="h-4 w-4 text-default-400" />
+                <span>Ação</span>
+                <Tooltip
+                  color="warning"
+                  content="Filtre por tipos de operação (CREATE, UPDATE, DELETE...) para investigar eventos específicos."
+                >
+                  <Info className="h-3.5 w-3.5 cursor-help text-warning" />
+                </Tooltip>
+              </div>
+            }
             items={acaoOptions}
             selectedKeys={[acaoFiltro]}
             selectionMode="single"
@@ -285,12 +433,22 @@ export function AuditoriaContent() {
             {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
           </Select>
           <div className="flex flex-col gap-2">
-            <span className="text-sm text-default-400">Período</span>
+            <div className="flex items-center gap-2 text-sm text-default-400">
+              <CalendarRange className="h-4 w-4 text-default-400" />
+              <span>Período</span>
+              <Tooltip
+                color="default"
+                content="Defina um intervalo de datas para focar em eventos ocorridos em um período específico."
+              >
+                <Info className="h-3.5 w-3.5 cursor-help text-default-400" />
+              </Tooltip>
+            </div>
             <Popover offset={10} placement="bottom">
               <PopoverTrigger>
-                <Button className="justify-start" variant="flat">
-                  {formatCalendarRange(calendarRange)}
-                </Button>
+                  <Button className="justify-start" variant="flat">
+                    <CalendarRange className="mr-2 h-4 w-4" />
+                    {formatCalendarRange(calendarRange)}
+                  </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <RangeCalendar
@@ -302,14 +460,23 @@ export function AuditoriaContent() {
                 />
               </PopoverContent>
             </Popover>
+            <span className="text-xs text-default-500">
+              Clique acima para abrir o calendário e definir o período desejado.
+            </span>
             {calendarRange ? (
-              <Button
-                size="sm"
-                variant="light"
-                onPress={() => setCalendarRange(null)}
+              <Tooltip
+                color="danger"
+                content="Remover intervalo selecionado"
               >
-                Limpar período
-              </Button>
+                <Button
+                  size="sm"
+                  startContent={<XCircle className="h-4 w-4" />}
+                  variant="light"
+                  onPress={() => setCalendarRange(null)}
+                >
+                  Limpar período
+                </Button>
+              </Tooltip>
             ) : null}
           </div>
         </CardBody>
@@ -318,49 +485,53 @@ export function AuditoriaContent() {
       {/* Estatísticas */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardBody className="flex items-center">
-            <span className="text-3xl text-blue-600 mr-4">📝</span>
+          <CardBody className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/10">
+              <ClipboardList className="h-6 w-6 text-blue-400" />
+            </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Total de Logs</p>
-              <p className="text-2xl font-bold text-gray-900">{totalLogs}</p>
-              <p className="text-sm text-blue-600">Últimos 30 dias</p>
+              <p className="text-2xl font-bold text-gray-100">{totalLogs}</p>
+              <p className="text-sm text-blue-400">Últimos 30 dias</p>
             </div>
           </CardBody>
         </Card>
 
         <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardBody className="flex items-center">
-            <span className="text-3xl text-green-600 mr-4">✅</span>
+          <CardBody className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10">
+              <CirclePlus className="h-6 w-6 text-green-400" />
+            </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Criações</p>
-              <p className="text-2xl font-bold text-green-600">
-                {totalCreates}
-              </p>
-              <p className="text-sm text-gray-600">Novos registros</p>
+              <p className="text-2xl font-bold text-green-400">{totalCreates}</p>
+              <p className="text-sm text-gray-500">Novos registros</p>
             </div>
           </CardBody>
         </Card>
 
         <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardBody className="flex items-center">
-            <span className="text-3xl text-yellow-600 mr-4">✏️</span>
+          <CardBody className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-500/10">
+              <Edit3 className="h-6 w-6 text-yellow-400" />
+            </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Atualizações</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {totalUpdates}
-              </p>
-              <p className="text-sm text-gray-600">Modificações</p>
+              <p className="text-2xl font-bold text-yellow-400">{totalUpdates}</p>
+              <p className="text-sm text-gray-500">Modificações</p>
             </div>
           </CardBody>
         </Card>
 
         <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardBody className="flex items-center">
-            <span className="text-3xl text-red-600 mr-4">🗑️</span>
+          <CardBody className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10">
+              <Trash2 className="h-6 w-6 text-red-400" />
+            </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Exclusões</p>
-              <p className="text-2xl font-bold text-red-600">{totalDeletes}</p>
-              <p className="text-sm text-gray-600">Registros removidos</p>
+              <p className="text-2xl font-bold text-red-400">{totalDeletes}</p>
+              <p className="text-sm text-gray-500">Registros removidos</p>
             </div>
           </CardBody>
         </Card>
@@ -658,6 +829,123 @@ export function AuditoriaContent() {
                       ) : (
                         <p className="text-sm text-default-400">
                           Nenhuma alteração registrada.
+                        </p>
+                      )}
+                    </div>
+
+                    {selectedLog.entidadeId ? (
+                      <div className="rounded-lg border border-white/10 bg-default/20 p-4">
+                        <h3 className="text-sm font-semibold text-white">
+                          Contexto do Registro
+                        </h3>
+                        {loadingContext ? (
+                          <p className="mt-2 text-sm text-default-400">
+                            Carregando detalhes...
+                          </p>
+                        ) : contextData?.success ? (
+                          contextData.data?.detalhes ? (
+                            <div className="mt-3 space-y-2 text-sm text-default-400">
+                              {contextData.data?.entidade === "USUARIO" ? (
+                                <>
+                                  {contextData.data.detalhes?.nome && (
+                                    <p>
+                                      <span className="text-default-500">Nome:</span>{" "}
+                                      {contextData.data.detalhes.nome}
+                                    </p>
+                                  )}
+                                  {contextData.data.detalhes?.email && (
+                                    <p>
+                                      <span className="text-default-500">Email:</span>{" "}
+                                      {contextData.data.detalhes.email}
+                                    </p>
+                                  )}
+                                  {contextData.data.detalhes?.role && (
+                                    <p>
+                                      <span className="text-default-500">Perfil:</span>{" "}
+                                      {contextData.data.detalhes.role}
+                                    </p>
+                                  )}
+                                  {contextData.data.detalhes?.ativo !== undefined && (
+                                    <p>
+                                      <span className="text-default-500">Ativo:</span>{" "}
+                                      {contextData.data.detalhes.ativo ? "Sim" : "Não"}
+                                    </p>
+                                  )}
+                                  {contextData.data.detalhes?.tenant ? (
+                                    <p>
+                                      <span className="text-default-500">Tenant:</span>{" "}
+                                      {contextData.data.detalhes.tenant.nome}
+                                      {contextData.data.detalhes.tenant.slug
+                                        ? ` (${contextData.data.detalhes.tenant.slug})`
+                                        : ""}
+                                    </p>
+                                  ) : null}
+                                </>
+                              ) : (
+                                <pre className="rounded-md bg-default-50/50 p-3 text-xs text-default-400">
+                                  {formatJson(contextData.data.detalhes)}
+                                </pre>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-sm text-default-400">
+                              Registro associado não encontrado no banco de dados.
+                            </p>
+                          )
+                        ) : contextData?.error ? (
+                          <p className="mt-2 text-sm text-danger">
+                            {contextData.error}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold text-white">
+                        Resumo das Alterações
+                      </h3>
+                      {diffEntries.length > 0 ? (
+                        <div className="space-y-3">
+                          {diffEntries.map((entry) => (
+                            <div
+                              key={entry.field}
+                              className="rounded-lg border border-white/10 bg-default/10 p-3"
+                            >
+                              <p className="text-xs uppercase tracking-widest text-default-500">
+                                {entry.field}
+                              </p>
+                              <div className="mt-2 grid gap-3 md:grid-cols-2">
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-xs text-default-500">Antes</span>
+                                  {typeof entry.before === "object" && entry.before !== null ? (
+                                    <pre className="max-h-40 overflow-auto rounded-md bg-default-50/30 p-2 text-xs text-default-400">
+                                      {formatValue(entry.before)}
+                                    </pre>
+                                  ) : (
+                                    <span className="text-sm text-default-300">
+                                      {formatValue(entry.before)}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-xs text-default-500">Depois</span>
+                                  {typeof entry.after === "object" && entry.after !== null ? (
+                                    <pre className="max-h-40 overflow-auto rounded-md bg-default-50/30 p-2 text-xs text-default-400">
+                                      {formatValue(entry.after)}
+                                    </pre>
+                                  ) : (
+                                    <span className="text-sm text-default-300">
+                                      {formatValue(entry.after)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-default-400">
+                          Nenhuma diferença relevante identificada entre os dados antigos e novos.
                         </p>
                       )}
                     </div>

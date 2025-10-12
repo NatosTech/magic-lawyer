@@ -64,6 +64,16 @@ export type GetAuditLogsResponse = {
   error?: string;
 };
 
+export type AuditLogContextResponse = {
+  success: boolean;
+  data?: {
+    entidade: string;
+    entidadeId: string;
+    detalhes?: Record<string, any> | null;
+  };
+  error?: string;
+};
+
 async function ensureSuperAdmin() {
   const session = await getServerSession(authOptions);
 
@@ -368,6 +378,124 @@ function convertLogToCsvRow(log: AuditLogEntry) {
       return value;
     })
     .join(",");
+}
+
+export async function getAuditLogContext(
+  entidade: string,
+  entidadeId: string,
+): Promise<AuditLogContextResponse> {
+  try {
+    await ensureSuperAdmin();
+
+    if (!entidade || !entidadeId) {
+      return {
+        success: false,
+        error: "Entidade ou ID inválidos",
+      };
+    }
+
+    const normalizedEntidade = entidade.toUpperCase();
+
+    switch (normalizedEntidade) {
+      case "USUARIO": {
+        const usuario = await prisma.usuario.findUnique({
+          where: { id: entidadeId },
+          include: {
+            tenant: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        });
+
+        if (!usuario) {
+          return {
+            success: true,
+            data: {
+              entidade: normalizedEntidade,
+              entidadeId,
+              detalhes: null,
+            },
+          };
+        }
+
+        return {
+          success: true,
+          data: {
+            entidade: normalizedEntidade,
+            entidadeId,
+            detalhes: {
+              id: usuario.id,
+              nome:
+                buildNome(usuario.firstName, usuario.lastName) || usuario.email,
+              email: usuario.email,
+              role: usuario.role,
+              ativo: usuario.active,
+              tenant: usuario.tenant
+                ? {
+                    id: usuario.tenant.id,
+                    nome: usuario.tenant.name,
+                    slug: usuario.tenant.slug,
+                  }
+                : null,
+              criadoEm: usuario.createdAt.toISOString(),
+              atualizadoEm: usuario.updatedAt.toISOString(),
+            },
+          },
+        };
+      }
+      case "TENANT": {
+        const tenant = await prisma.tenant.findUnique({
+          where: { id: entidadeId },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            status: true,
+            tipoPessoa: true,
+            email: true,
+            telefone: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
+
+        return {
+          success: true,
+          data: {
+            entidade: normalizedEntidade,
+            entidadeId,
+            detalhes: tenant
+              ? {
+                  ...tenant,
+                  createdAt: tenant.createdAt.toISOString(),
+                  updatedAt: tenant.updatedAt.toISOString(),
+                }
+              : null,
+          },
+        };
+      }
+      default:
+        return {
+          success: true,
+          data: {
+            entidade: normalizedEntidade,
+            entidadeId,
+            detalhes: null,
+          },
+        };
+    }
+  } catch (error) {
+    logger.error("Erro ao buscar contexto do log de auditoria:", error);
+
+    return {
+      success: false,
+      error: "Erro interno ao buscar contexto do log",
+    };
+  }
 }
 
 export async function exportSystemAuditLogs(filters?: AuditLogFilters) {
