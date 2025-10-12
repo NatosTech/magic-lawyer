@@ -34,6 +34,34 @@ export interface TenantResponse {
   error?: string;
 }
 
+const decimalToNullableNumber = (value: unknown) => {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "bigint") {
+    return Number(value);
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  if (typeof value === "object" && "toString" in (value as Record<string, unknown>)) {
+    const parsed = Number((value as { toString(): string }).toString());
+
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  return null;
+};
+
 type EspecialidadeJuridica =
   | "CIVIL"
   | "CRIMINAL"
@@ -183,9 +211,57 @@ export async function getAllTenants(): Promise<TenantResponse> {
       orderBy: { createdAt: "desc" },
     });
 
+    const data = tenants.map((tenant) => ({
+      id: tenant.id,
+      name: tenant.name,
+      slug: tenant.slug,
+      domain: tenant.domain,
+      email: tenant.email,
+      telefone: tenant.telefone,
+      timezone: tenant.timezone,
+      status: tenant.status,
+      createdAt: tenant.createdAt.toISOString(),
+      updatedAt: tenant.updatedAt.toISOString(),
+      superAdmin: tenant.superAdmin
+        ? {
+            name: `${tenant.superAdmin.firstName} ${tenant.superAdmin.lastName}`.trim(),
+            email: tenant.superAdmin.email,
+          }
+        : null,
+      branding: tenant.branding
+        ? {
+            primaryColor: tenant.branding.primaryColor,
+            secondaryColor: tenant.branding.secondaryColor,
+            accentColor: tenant.branding.accentColor,
+            logoUrl: tenant.branding.logoUrl,
+            faviconUrl: tenant.branding.faviconUrl,
+          }
+        : null,
+      plan: tenant.subscription
+        ? {
+            status: tenant.subscription.status,
+            name: tenant.subscription.plano?.nome ?? null,
+            valorMensal: decimalToNullableNumber(
+              tenant.subscription.plano?.valorMensal ?? null,
+            ),
+            valorAnual: decimalToNullableNumber(
+              tenant.subscription.plano?.valorAnual ?? null,
+            ),
+            moeda: tenant.subscription.plano?.moeda ?? "BRL",
+            trialEndsAt: tenant.subscription.trialEndsAt?.toISOString() ?? null,
+            renovaEm: tenant.subscription.renovaEm?.toISOString() ?? null,
+          }
+        : null,
+      counts: {
+        usuarios: tenant._count.usuarios,
+        processos: tenant._count.processos,
+        clientes: tenant._count.clientes,
+      },
+    }));
+
     return {
       success: true,
-      data: tenants,
+      data,
     };
   } catch (error) {
     logger.error("Erro ao buscar tenants:", error);
