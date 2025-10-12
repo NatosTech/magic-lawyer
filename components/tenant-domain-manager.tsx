@@ -7,7 +7,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@herou
 import { Chip } from "@heroui/chip";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { addToast } from "@heroui/toast";
-import { EditIcon, CheckIcon, CloseIcon } from "@/components/icons";
+import { Edit, Check, X } from "lucide-react";
 
 import { updateTenantDomain, validateDomain } from "@/app/actions/tenant-domains";
 
@@ -113,7 +113,7 @@ export function TenantDomainManager({ tenant, onUpdate }: TenantDomainManagerPro
             <h3 className="text-lg font-semibold">Domínio</h3>
             <p className="text-sm text-gray-600">Configure o domínio personalizado para este tenant</p>
           </div>
-          <Button size="sm" variant="flat" onPress={() => setIsModalOpen(true)} startContent={<EditIcon />}>
+          <Button size="sm" variant="flat" onPress={() => setIsModalOpen(true)} startContent={<Edit size={16} />}>
             Editar
           </Button>
         </CardHeader>
@@ -160,7 +160,7 @@ export function TenantDomainManager({ tenant, onUpdate }: TenantDomainManagerPro
                 value={domain}
                 onValueChange={handleDomainChange}
                 description="Domínio personalizado (opcional)"
-                endContent={validation && (validation.valid ? <CheckIcon className="text-green-500" /> : <CloseIcon className="text-red-500" />)}
+                endContent={validation && (validation.valid ? <Check size={16} className="text-green-500" /> : <X size={16} className="text-red-500" />)}
                 color={validation ? (validation.valid ? "success" : "danger") : "default"}
                 errorMessage={validation?.message}
               />
