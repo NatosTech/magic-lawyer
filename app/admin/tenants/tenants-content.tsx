@@ -243,7 +243,7 @@ export function TenantsContent() {
                       <Button
                         as={NextLink}
                         color="primary"
-                        href={`/admin/tenants?tenant=${tenant.slug}`}
+                        href={`/admin/tenants/${tenant.id}`}
                         radius="full"
                         size="sm"
                         variant="flat"

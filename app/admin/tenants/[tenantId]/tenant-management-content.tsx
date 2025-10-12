@@ -1,0 +1,1240 @@
+"use client";
+
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
+import useSWR from "swr";
+import { Button } from "@heroui/button";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Chip } from "@heroui/chip";
+import { Divider } from "@heroui/divider";
+import { Input } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
+import { Skeleton } from "@heroui/react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+} from "@heroui/table";
+import { Tabs, Tab } from "@heroui/tabs";
+import { addToast } from "@heroui/toast";
+
+import {
+  Building2,
+  CreditCard,
+  Users2,
+  Palette,
+  FileText,
+  ShieldCheck,
+  Sparkles,
+  KeyRound,
+  ToggleLeft,
+} from "lucide-react";
+
+import {
+  getTenantManagementData,
+  updateTenantDetails,
+  updateTenantStatus,
+  updateTenantSubscription,
+  updateTenantBranding,
+  updateTenantUser,
+  type TenantManagementData,
+  type UpdateTenantDetailsInput,
+  type UpdateTenantSubscriptionInput,
+  type UpdateTenantBrandingInput,
+} from "@/app/actions/admin";
+import {
+  InvoiceStatus,
+  SubscriptionStatus,
+  TenantStatus,
+  UserRole,
+} from "@/app/generated/prisma";
+
+interface TenantManagementContentProps {
+  tenantId: string;
+  initialData: TenantManagementData;
+}
+
+const numberFormatter = new Intl.NumberFormat("pt-BR");
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  maximumFractionDigits: 2,
+});
+
+const subscriptionStatusOptions = Object.values(SubscriptionStatus).map((status) => ({
+  value: status,
+  label: status
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (l) => l.toUpperCase()),
+}));
+
+const tenantStatusOptions: Array<{
+  value: TenantStatus;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: TenantStatus.ACTIVE,
+    label: "Ativo",
+    description: "Tenant com acesso total à plataforma",
+  },
+  {
+    value: TenantStatus.SUSPENDED,
+    label: "Suspenso",
+    description: "Tenant temporariamente bloqueado (sem acesso)",
+  },
+  {
+    value: TenantStatus.CANCELLED,
+    label: "Cancelado",
+    description: "Tenant encerrado definitivamente",
+  },
+];
+
+const timezoneOptions = [
+  "America/Sao_Paulo",
+  "America/Manaus",
+  "America/Fortaleza",
+  "America/Recife",
+  "America/Bahia",
+  "America/Campo_Grande",
+  "America/Belem",
+  "America/Rio_Branco",
+  "America/New_York",
+  "Europe/Lisbon",
+];
+
+const fetchTenant = async (
+  _key: string,
+  tenantId: string,
+): Promise<TenantManagementData> => {
+  const response = await getTenantManagementData(tenantId);
+
+  if (!response.success || !response.data) {
+    throw new Error(response.error ?? "Erro ao carregar tenant");
+  }
+
+  return response.data as TenantManagementData;
+};
+
+function formatCurrency(value: number) {
+  return currencyFormatter.format(value);
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "—";
+
+  return new Date(value).toLocaleDateString("pt-BR");
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) return "—";
+
+  return new Date(value).toLocaleString("pt-BR");
+}
+
+export function TenantManagementContent({
+  tenantId,
+  initialData,
+}: TenantManagementContentProps) {
+  const { data, mutate, isValidating } = useSWR<TenantManagementData>(
+    ["tenant-management", tenantId],
+    () => fetchTenant("tenant-management", tenantId),
+    {
+      fallbackData: initialData,
+      revalidateOnFocus: false,
+    },
+  );
+
+  const tenantData = data ?? initialData;
+
+  const [detailsForm, setDetailsForm] = useState<UpdateTenantDetailsInput>({
+    name: tenantData.tenant.name,
+    slug: tenantData.tenant.slug,
+    domain: tenantData.tenant.domain,
+    email: tenantData.tenant.email,
+    telefone: tenantData.tenant.telefone,
+    documento: tenantData.tenant.documento,
+    razaoSocial: tenantData.tenant.razaoSocial,
+    nomeFantasia: tenantData.tenant.nomeFantasia,
+    timezone: tenantData.tenant.timezone,
+  });
+
+  const [subscriptionForm, setSubscriptionForm] =
+    useState<UpdateTenantSubscriptionInput>({
+      planId: tenantData.subscription.planId ?? "",
+      status: tenantData.subscription.status ?? SubscriptionStatus.TRIAL,
+      trialEndsAt: tenantData.subscription.trialEndsAt,
+      renovaEm: tenantData.subscription.renovaEm,
+    });
+
+  const [brandingForm, setBrandingForm] = useState<UpdateTenantBrandingInput>({
+    primaryColor: tenantData.branding?.primaryColor ?? "",
+    secondaryColor: tenantData.branding?.secondaryColor ?? "",
+    accentColor: tenantData.branding?.accentColor ?? "",
+    logoUrl: tenantData.branding?.logoUrl ?? "",
+    faviconUrl: tenantData.branding?.faviconUrl ?? "",
+  });
+
+  const [userRoles, setUserRoles] = useState<Record<string, UserRole>>(() =>
+    tenantData.users.reduce((acc, user) => ({ ...acc, [user.id]: user.role }), {}),
+  );
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+
+  const [isSavingDetails, startSavingDetails] = useTransition();
+  const [isUpdatingStatus, startUpdatingStatus] = useTransition();
+  const [isSavingSubscription, startSavingSubscription] = useTransition();
+  const [isSavingBranding, startSavingBranding] = useTransition();
+  const [isUpdatingUser, startUpdatingUser] = useTransition();
+
+  useEffect(() => {
+    setDetailsForm({
+      name: tenantData.tenant.name,
+      slug: tenantData.tenant.slug,
+      domain: tenantData.tenant.domain,
+      email: tenantData.tenant.email,
+      telefone: tenantData.tenant.telefone,
+      documento: tenantData.tenant.documento,
+      razaoSocial: tenantData.tenant.razaoSocial,
+      nomeFantasia: tenantData.tenant.nomeFantasia,
+      timezone: tenantData.tenant.timezone,
+    });
+
+    setSubscriptionForm({
+      planId: tenantData.subscription.planId ?? "",
+      status: tenantData.subscription.status ?? SubscriptionStatus.TRIAL,
+      trialEndsAt: tenantData.subscription.trialEndsAt,
+      renovaEm: tenantData.subscription.renovaEm,
+    });
+
+    setBrandingForm({
+      primaryColor: tenantData.branding?.primaryColor ?? "",
+      secondaryColor: tenantData.branding?.secondaryColor ?? "",
+      accentColor: tenantData.branding?.accentColor ?? "",
+      logoUrl: tenantData.branding?.logoUrl ?? "",
+      faviconUrl: tenantData.branding?.faviconUrl ?? "",
+    });
+
+    setUserRoles(
+      tenantData.users.reduce(
+        (acc, user) => ({ ...acc, [user.id]: user.role }),
+        {} as Record<string, UserRole>,
+      ),
+    );
+  }, [tenantData]);
+
+  const planOptions = useMemo(
+    () => [
+      {
+        id: "",
+        nome: "Sem plano associado",
+        valorMensal: null,
+        valorAnual: null,
+        moeda: "BRL",
+      },
+      ...tenantData.availablePlans,
+    ],
+    [tenantData.availablePlans],
+  );
+
+  const handleSaveDetails = () => {
+    startSavingDetails(async () => {
+      const response = await updateTenantDetails(tenantId, detailsForm);
+
+      if (!response.success) {
+        addToast({
+          title: "Erro ao salvar",
+          description: response.error ?? "Falha ao atualizar informações",
+          color: "danger",
+        });
+        return;
+      }
+
+      addToast({
+        title: "Informações atualizadas",
+        description: "Dados gerais do tenant foram salvos",
+        color: "success",
+      });
+
+      await mutate();
+    });
+  };
+
+  const handleStatusChange = (status: TenantStatus) => {
+    startUpdatingStatus(async () => {
+      const response = await updateTenantStatus(tenantId, status);
+
+      if (!response.success) {
+        addToast({
+          title: "Não foi possível alterar o status",
+          description: response.error ?? "Tente novamente em instantes",
+          color: "danger",
+        });
+        return;
+      }
+
+      addToast({
+        title: "Status atualizado",
+        description: `Tenant agora está como ${statusLabel(status)}`,
+        color: "success",
+      });
+
+      await mutate();
+    });
+  };
+
+  const handleSaveSubscription = () => {
+    const payload: UpdateTenantSubscriptionInput = {
+      planId: subscriptionForm.planId ? subscriptionForm.planId : null,
+      status: subscriptionForm.status,
+      trialEndsAt: subscriptionForm.trialEndsAt ?? null,
+      renovaEm: subscriptionForm.renovaEm ?? null,
+    };
+
+    startSavingSubscription(async () => {
+      const response = await updateTenantSubscription(tenantId, payload);
+
+      if (!response.success) {
+        addToast({
+          title: "Erro ao atualizar assinatura",
+          description: response.error ?? "Verifique os dados informados",
+          color: "danger",
+        });
+        return;
+      }
+
+      addToast({
+        title: "Assinatura atualizada",
+        description: "Configurações de cobrança foram salvas",
+        color: "success",
+      });
+
+      await mutate();
+    });
+  };
+
+  const handleSaveBranding = () => {
+    startSavingBranding(async () => {
+      const response = await updateTenantBranding(tenantId, brandingForm);
+
+      if (!response.success) {
+        addToast({
+          title: "Erro ao atualizar branding",
+          description: response.error ?? "Tente novamente",
+          color: "danger",
+        });
+        return;
+      }
+
+      addToast({
+        title: "Branding salvo",
+        description: "Tema visual do tenant atualizado",
+        color: "success",
+      });
+
+      await mutate();
+    });
+  };
+
+  const handleUserRoleChange = (userId: string, role: UserRole) => {
+    setUserRoles((prev) => ({ ...prev, [userId]: role }));
+    setPendingUserId(userId);
+
+    startUpdatingUser(() => {
+      (async () => {
+        const response = await updateTenantUser(tenantId, userId, { role });
+
+        if (!response.success) {
+          addToast({
+            title: "Erro ao atualizar função",
+            description: response.error ?? "Tente novamente",
+            color: "danger",
+          });
+          await mutate();
+        } else {
+          addToast({
+            title: "Função atualizada",
+            description: "Usuário recebeu as novas permissões",
+            color: "success",
+          });
+        }
+
+        setPendingUserId(null);
+        await mutate();
+      })();
+    });
+  };
+
+  const handleToggleUserActive = (userId: string, current: boolean) => {
+    setPendingUserId(userId);
+    startUpdatingUser(() => {
+      (async () => {
+        const response = await updateTenantUser(tenantId, userId, {
+          active: !current,
+        });
+
+        if (!response.success) {
+          addToast({
+            title: "Erro ao alterar status",
+            description: response.error ?? "Tente novamente",
+            color: "danger",
+          });
+        } else {
+          addToast({
+            title: !current ? "Usuário reativado" : "Usuário desativado",
+            description: !current
+              ? "Acesso liberado novamente"
+              : "Usuário ficará sem acesso até nova liberação",
+            color: "success",
+          });
+        }
+
+        setPendingUserId(null);
+        await mutate();
+      })();
+    });
+  };
+
+  const handleResetUserPassword = (userId: string) => {
+    setPendingUserId(userId);
+    startUpdatingUser(() => {
+      (async () => {
+        const response = await updateTenantUser(tenantId, userId, {
+          generatePassword: true,
+        });
+
+        if (!response.success) {
+          addToast({
+            title: "Erro ao resetar senha",
+            description: response.error ?? "Tente novamente",
+            color: "danger",
+          });
+        } else {
+          const newPassword = response.data?.temporaryPassword;
+          addToast({
+            title: "Senha redefinida",
+            description: newPassword
+              ? `Nova senha temporária: ${newPassword}`
+              : "Senha redefinida com sucesso.",
+            color: "success",
+            timeout: 8000,
+          });
+        }
+
+        setPendingUserId(null);
+        await mutate();
+      })();
+    });
+  };
+
+  const isLoading = isValidating && !data;
+
+  const userRoleOptions = tenantData.availableRoles.map((role) => ({
+    value: role,
+    label: roleLabel(role),
+  }));
+
+  return (
+    <div className="flex flex-col gap-6">
+      <Card className="border border-primary/20 bg-primary/5">
+        <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <Building2 className="h-5 w-5 text-primary" />
+              <p className="text-lg font-semibold text-primary">{tenantData.tenant.name}</p>
+              <Chip size="sm" color={statusChipColor(tenantData.tenant.status)} variant="flat">
+                {statusLabel(tenantData.tenant.status)}
+              </Chip>
+            </div>
+            <p className="text-xs text-primary/80">Slug: {tenantData.tenant.slug}</p>
+            <div className="flex flex-wrap gap-2 text-xs text-primary/70">
+              {tenantData.tenant.domain ? <span>Domínio: {tenantData.tenant.domain}</span> : null}
+              <span>Timezone: {tenantData.tenant.timezone}</span>
+              <span>Criado em: {formatDate(tenantData.tenant.createdAt)}</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3 text-xs text-primary/70">
+            <Chip size="sm" color="secondary" variant="flat">
+              Plano atual: {tenantData.subscription.planName ?? "Custom"}
+            </Chip>
+            <Chip size="sm" color="secondary" variant="flat">
+              Receita 90d: {formatCurrency(tenantData.metrics.revenue90d)}
+            </Chip>
+          </div>
+        </CardBody>
+      </Card>
+
+      <Tabs aria-label="Painel de gerenciamento do tenant" color="primary" variant="bordered">
+        <Tab
+          key="overview"
+          title={<TabTitle icon={<Building2 className="h-4 w-4" />} label="Visão geral" />}
+        >
+          <OverviewTab
+            detailsForm={detailsForm}
+            setDetailsForm={setDetailsForm}
+            isSavingDetails={isSavingDetails}
+            handleSaveDetails={handleSaveDetails}
+            tenantStatus={tenantData.tenant.status}
+            handleStatusChange={handleStatusChange}
+            isUpdatingStatus={isUpdatingStatus}
+          />
+        </Tab>
+
+        <Tab
+          key="finance"
+          title={<TabTitle icon={<CreditCard className="h-4 w-4" />} label="Financeiro" />}
+        >
+          <FinanceTab
+            subscriptionForm={subscriptionForm}
+            setSubscriptionForm={setSubscriptionForm}
+            planOptions={planOptions}
+            handleSaveSubscription={handleSaveSubscription}
+            isSavingSubscription={isSavingSubscription}
+            metrics={tenantData.metrics}
+            invoices={tenantData.invoices}
+          />
+        </Tab>
+
+        <Tab
+          key="users"
+          title={<TabTitle icon={<Users2 className="h-4 w-4" />} label="Usuários" />}
+        >
+          <UsersTab
+            users={tenantData.users}
+            userRoleOptions={userRoleOptions}
+            userRoles={userRoles}
+            pendingUserId={pendingUserId}
+            isUpdatingUser={isUpdatingUser}
+            onRoleChange={handleUserRoleChange}
+            onToggleActive={handleToggleUserActive}
+            onResetPassword={handleResetUserPassword}
+          />
+        </Tab>
+
+        <Tab
+          key="branding"
+          title={<TabTitle icon={<Palette className="h-4 w-4" />} label="Branding" />}
+        >
+          <BrandingTab
+            brandingForm={brandingForm}
+            setBrandingForm={setBrandingForm}
+            handleSaveBranding={handleSaveBranding}
+            isSavingBranding={isSavingBranding}
+          />
+        </Tab>
+
+        <Tab
+          key="auditoria"
+          title={<TabTitle icon={<FileText className="h-4 w-4" />} label="Auditoria" />}
+        >
+          <AuditTab />
+        </Tab>
+      </Tabs>
+
+      {isLoading ? (
+        <div className="flex justify-center">
+          <Skeleton className="h-8 w-32 rounded-full" isLoaded={false} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+interface OverviewTabProps {
+  detailsForm: UpdateTenantDetailsInput;
+  setDetailsForm: Dispatch<SetStateAction<UpdateTenantDetailsInput>>;
+  isSavingDetails: boolean;
+  handleSaveDetails: () => void;
+  tenantStatus: TenantStatus;
+  handleStatusChange: (status: TenantStatus) => void;
+  isUpdatingStatus: boolean;
+}
+
+function OverviewTab({
+  detailsForm,
+  setDetailsForm,
+  isSavingDetails,
+  handleSaveDetails,
+  tenantStatus,
+  handleStatusChange,
+  isUpdatingStatus,
+}: OverviewTabProps) {
+  return (
+    <div className="flex flex-col gap-6">
+      <Card className="border border-white/10 bg-background/70 backdrop-blur">
+        <CardHeader className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold text-white">Informações gerais</h2>
+          <p className="text-sm text-default-400">
+            Atualize dados de identificação e contato do tenant.
+          </p>
+        </CardHeader>
+        <Divider className="border-white/10" />
+        <CardBody className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <Input
+              isRequired
+              label="Nome do tenant"
+              value={detailsForm.name ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({ ...prev, name: value || undefined }))
+              }
+            />
+            <Input
+              isRequired
+              label="Slug"
+              value={detailsForm.slug ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({ ...prev, slug: value || undefined }))
+              }
+            />
+            <Input
+              label="Domínio personalizado"
+              placeholder="ex.: escritorio.minhaempresa.com"
+              value={detailsForm.domain ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({ ...prev, domain: value || null }))
+              }
+            />
+            <Select
+              label="Fuso horário"
+              selectedKeys={new Set([detailsForm.timezone ?? "America/Sao_Paulo"])}
+              onSelectionChange={(keys) => {
+                const [value] = Array.from(keys);
+                setDetailsForm((prev) => ({
+                  ...prev,
+                  timezone: typeof value === "string" ? value : undefined,
+                }));
+              }}
+            >
+              {timezoneOptions.map((tz) => (
+                <SelectItem key={tz}>{tz}</SelectItem>
+              ))}
+            </Select>
+            <Input
+              label="Email de contato"
+              type="email"
+              value={detailsForm.email ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({ ...prev, email: value || null }))
+              }
+            />
+            <Input
+              label="Telefone"
+              value={detailsForm.telefone ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({ ...prev, telefone: value || null }))
+              }
+            />
+            <Input
+              label="Documento (CNPJ/CPF)"
+              value={detailsForm.documento ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({ ...prev, documento: value || null }))
+              }
+            />
+            <Input
+              label="Razão social"
+              value={detailsForm.razaoSocial ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({ ...prev, razaoSocial: value || null }))
+              }
+            />
+            <Input
+              label="Nome fantasia"
+              value={detailsForm.nomeFantasia ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({ ...prev, nomeFantasia: value || null }))
+              }
+            />
+          </div>
+          <div className="flex justify-end">
+            <Button
+              color="primary"
+              isLoading={isSavingDetails}
+              radius="full"
+              onPress={handleSaveDetails}
+            >
+              Salvar alterações
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
+
+      <Card className="border border-white/10 bg-background/70 backdrop-blur">
+        <CardHeader className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold text-white">Status do tenant</h2>
+          <p className="text-sm text-default-400">
+            Controle de acesso global do tenant à plataforma.
+          </p>
+        </CardHeader>
+        <Divider className="border-white/10" />
+        <CardBody className="space-y-4">
+          <div className="flex flex-wrap gap-3">
+            <Chip color={statusChipColor(tenantStatus)} size="sm" variant="flat">
+              Status atual: {statusLabel(tenantStatus)}
+            </Chip>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {tenantStatusOptions.map((option) => (
+              <Card
+                key={option.value}
+                className={`border ${
+                  tenantStatus === option.value
+                    ? "border-primary/60 bg-primary/10"
+                    : "border-white/10 bg-background/60"
+                }`}
+              >
+                <CardBody className="space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-white">{option.label}</p>
+                    <p className="text-xs text-default-400">{option.description}</p>
+                  </div>
+                  <Button
+                    color={tenantStatus === option.value ? "primary" : "default"}
+                    isDisabled={tenantStatus === option.value}
+                    isLoading={isUpdatingStatus}
+                    radius="full"
+                    variant={tenantStatus === option.value ? "flat" : "bordered"}
+                    onPress={() => handleStatusChange(option.value)}
+                  >
+                    {tenantStatus === option.value ? "Status atual" : "Aplicar"}
+                  </Button>
+                </CardBody>
+              </Card>
+            ))}
+          </div>
+        </CardBody>
+      </Card>
+    </div>
+  );
+}
+
+interface FinanceTabProps {
+  subscriptionForm: UpdateTenantSubscriptionInput;
+  setSubscriptionForm: Dispatch<SetStateAction<UpdateTenantSubscriptionInput>>;
+  planOptions: Array<{
+    id: string;
+    nome: string;
+    valorMensal: number | null;
+    valorAnual: number | null;
+    moeda: string;
+  }>;
+  handleSaveSubscription: () => void;
+  isSavingSubscription: boolean;
+  metrics: TenantManagementData["metrics"];
+  invoices: TenantManagementData["invoices"];
+}
+
+function FinanceTab({
+  subscriptionForm,
+  setSubscriptionForm,
+  planOptions,
+  handleSaveSubscription,
+  isSavingSubscription,
+  metrics,
+  invoices,
+}: FinanceTabProps) {
+  return (
+    <div className="flex flex-col gap-6">
+      <Card className="border border-white/10 bg-background/70 backdrop-blur">
+        <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Plano e assinatura</h2>
+            <p className="text-sm text-default-400">
+              Ajuste o plano, status da assinatura e datas de cobrança.
+            </p>
+          </div>
+          <Chip color="secondary" size="sm" variant="flat">
+            Receita 30 dias: {formatCurrency(metrics.revenue30d)}
+          </Chip>
+        </CardHeader>
+        <Divider className="border-white/10" />
+        <CardBody className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <Select
+              label="Plano"
+              selectedKeys={new Set([subscriptionForm.planId ?? ""])}
+              onSelectionChange={(keys) => {
+                const [value] = Array.from(keys);
+                setSubscriptionForm((prev) => ({
+                  ...prev,
+                  planId: typeof value === "string" ? value : "",
+                }));
+              }}
+            >
+              {planOptions.map((plan) => (
+                <SelectItem key={plan.id} textValue={plan.nome}>
+                  <div className="flex flex-col">
+                    <span>{plan.nome}</span>
+                    <span className="text-xs text-default-500">
+                      {plan.valorMensal
+                        ? `${formatCurrency(plan.valorMensal)} / mês`
+                        : plan.valorAnual
+                          ? `${formatCurrency(plan.valorAnual)} / ano`
+                          : "Plano customizado"}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </Select>
+            <Select
+              label="Status da assinatura"
+              selectedKeys={new Set([subscriptionForm.status ?? SubscriptionStatus.TRIAL])}
+              onSelectionChange={(keys) => {
+                const [value] = Array.from(keys);
+                if (typeof value === "string") {
+                  setSubscriptionForm((prev) => ({
+                    ...prev,
+                    status: value as SubscriptionStatus,
+                  }));
+                }
+              }}
+            >
+              {subscriptionStatusOptions.map((option) => (
+                <SelectItem key={option.value}>{option.label}</SelectItem>
+              ))}
+            </Select>
+            <Input
+              label="Término do trial"
+              type="date"
+              value={subscriptionForm.trialEndsAt?.slice(0, 10) ?? ""}
+              onValueChange={(value) =>
+                setSubscriptionForm((prev) => ({
+                  ...prev,
+                  trialEndsAt: value ? new Date(value).toISOString() : null,
+                }))
+              }
+            />
+            <Input
+              label="Próxima renovação"
+              type="date"
+              value={subscriptionForm.renovaEm?.slice(0, 10) ?? ""}
+              onValueChange={(value) =>
+                setSubscriptionForm((prev) => ({
+                  ...prev,
+                  renovaEm: value ? new Date(value).toISOString() : null,
+                }))
+              }
+            />
+          </div>
+          <div className="flex justify-end">
+            <Button
+              color="primary"
+              isLoading={isSavingSubscription}
+              radius="full"
+              onPress={handleSaveSubscription}
+            >
+              Salvar assinatura
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        <Card className="border border-white/10 bg-background/70 backdrop-blur">
+          <CardHeader className="flex flex-col gap-2">
+            <h2 className="text-lg font-semibold text-white">Indicadores</h2>
+            <p className="text-sm text-default-400">
+              Métricas resumidas dos últimos 90 dias.
+            </p>
+          </CardHeader>
+          <Divider className="border-white/10" />
+          <CardBody>
+            <div className="grid gap-4 md:grid-cols-2">
+              <MetricCard
+                label="Receita 90 dias"
+                value={formatCurrency(metrics.revenue90d)}
+                tone="success"
+              />
+              <MetricCard
+                label="Receita 30 dias"
+                value={formatCurrency(metrics.revenue30d)}
+                tone="primary"
+              />
+              <MetricCard
+                label="Usuários ativos"
+                value={numberFormatter.format(metrics.usuarios)}
+                tone="secondary"
+              />
+              <MetricCard
+                label="Clientes cadastrados"
+                value={numberFormatter.format(metrics.clientes)}
+                tone="default"
+              />
+            </div>
+          </CardBody>
+        </Card>
+        <Card className="border border-white/10 bg-background/70 backdrop-blur">
+          <CardHeader className="flex flex-col gap-1">
+            <h2 className="text-lg font-semibold text-white">Faturas recentes</h2>
+            <p className="text-sm text-default-400">
+              {metrics.outstandingInvoices} fatura(s) aguardando pagamento.
+            </p>
+          </CardHeader>
+          <Divider className="border-white/10" />
+          <CardBody className="space-y-3">
+            {invoices.length ? (
+              invoices.map((invoice) => (
+                <div
+                  key={invoice.id}
+                  className="rounded-xl border border-white/10 bg-background/60 p-3"
+                >
+                  <div className="flex items-center justify-between text-sm font-medium text-white">
+                    <span>{invoice.numero ?? `Fatura ${invoice.id.slice(0, 6)}`}</span>
+                    <span>{formatCurrency(invoice.valor)}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs text-default-500">
+                    <span>Status: {invoiceStatusLabel(invoice.status)}</span>
+                    <span>• Vencimento: {formatDate(invoice.vencimento)}</span>
+                    <span>• Criada em: {formatDate(invoice.criadoEm)}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-default-400">
+                Nenhuma fatura registrada para este tenant.
+              </p>
+            )}
+          </CardBody>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+interface UsersTabProps {
+  users: TenantManagementData["users"];
+  userRoleOptions: Array<{ value: UserRole; label: string }>;
+  userRoles: Record<string, UserRole>;
+  pendingUserId: string | null;
+  isUpdatingUser: boolean;
+  onRoleChange: (userId: string, role: UserRole) => void;
+  onToggleActive: (userId: string, active: boolean) => void;
+  onResetPassword: (userId: string) => void;
+}
+
+function UsersTab({
+  users,
+  userRoleOptions,
+  userRoles,
+  pendingUserId,
+  isUpdatingUser,
+  onRoleChange,
+  onToggleActive,
+  onResetPassword,
+}: UsersTabProps) {
+  return (
+    <Card className="border border-white/10 bg-background/70 backdrop-blur">
+      <CardHeader className="flex flex-col gap-2">
+        <h2 className="text-lg font-semibold text-white">Usuários do tenant</h2>
+        <p className="text-sm text-default-400">
+          Gerencie papéis, acesso e senhas temporárias dos usuários.
+        </p>
+      </CardHeader>
+      <Divider className="border-white/10" />
+      <CardBody>
+        {users.length ? (
+          <Table removeWrapper aria-label="Usuários do tenant">
+            <TableHeader>
+              <TableColumn>Nome</TableColumn>
+              <TableColumn>Email</TableColumn>
+              <TableColumn>Função</TableColumn>
+              <TableColumn>Último acesso</TableColumn>
+              <TableColumn>Status</TableColumn>
+              <TableColumn className="text-right">Ações</TableColumn>
+            </TableHeader>
+            <TableBody>
+              {users.map((user) => {
+                const currentRole = userRoles[user.id] ?? user.role;
+                const isPending = pendingUserId === user.id && isUpdatingUser;
+
+                return (
+                  <TableRow key={user.id}>
+                    <TableCell>{user.name}</TableCell>
+                    <TableCell className="text-default-500">{user.email}</TableCell>
+                    <TableCell>
+                      <Select
+                        selectedKeys={new Set([currentRole])}
+                        size="sm"
+                        onSelectionChange={(keys) => {
+                          const [value] = Array.from(keys);
+                          if (typeof value === "string") {
+                            onRoleChange(user.id, value as UserRole);
+                          }
+                        }}
+                      >
+                        {userRoleOptions.map((option) => (
+                          <SelectItem key={option.value}>{option.label}</SelectItem>
+                        ))}
+                      </Select>
+                    </TableCell>
+                    <TableCell>{formatDateTime(user.lastLoginAt)}</TableCell>
+                    <TableCell>
+                      <Chip color={user.active ? "success" : "warning"} size="sm" variant="flat">
+                        {user.active ? "Ativo" : "Desativado"}
+                      </Chip>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          color="default"
+                          size="sm"
+                          radius="full"
+                          variant="bordered"
+                          startContent={<ToggleLeft className="h-4 w-4" />}
+                          isLoading={isPending}
+                          onPress={() => onToggleActive(user.id, user.active)}
+                        >
+                          {user.active ? "Desativar" : "Reativar"}
+                        </Button>
+                        <Button
+                          color="secondary"
+                          size="sm"
+                          radius="full"
+                          variant="flat"
+                          startContent={<KeyRound className="h-4 w-4" />}
+                          isLoading={isPending}
+                          onPress={() => onResetPassword(user.id)}
+                        >
+                          Resetar senha
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-sm text-default-400">Nenhum usuário encontrado.</p>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+
+interface BrandingTabProps {
+  brandingForm: UpdateTenantBrandingInput;
+  setBrandingForm: (updater: (prev: UpdateTenantBrandingInput) => UpdateTenantBrandingInput) => void;
+  handleSaveBranding: () => void;
+  isSavingBranding: boolean;
+}
+
+function BrandingTab({
+  brandingForm,
+  setBrandingForm,
+  handleSaveBranding,
+  isSavingBranding,
+}: BrandingTabProps) {
+  return (
+    <Card className="border border-white/10 bg-background/70 backdrop-blur">
+      <CardHeader className="flex flex-col gap-2">
+        <h2 className="text-lg font-semibold text-white">Identidade visual</h2>
+        <p className="text-sm text-default-400">
+          Ajuste cores e ativos visuais do tenant.
+        </p>
+      </CardHeader>
+      <Divider className="border-white/10" />
+      <CardBody className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-3">
+          <ColorInput
+            label="Cor primária"
+            value={brandingForm.primaryColor ?? ""}
+            onChange={(value) =>
+              setBrandingForm((prev) => ({ ...prev, primaryColor: value || null }))
+            }
+          />
+          <ColorInput
+            label="Cor secundária"
+            value={brandingForm.secondaryColor ?? ""}
+            onChange={(value) =>
+              setBrandingForm((prev) => ({ ...prev, secondaryColor: value || null }))
+            }
+          />
+          <ColorInput
+            label="Cor de destaque"
+            value={brandingForm.accentColor ?? ""}
+            onChange={(value) =>
+              setBrandingForm((prev) => ({ ...prev, accentColor: value || null }))
+            }
+          />
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Input
+            label="Logo URL"
+            placeholder="https://..."
+            value={brandingForm.logoUrl ?? ""}
+            onValueChange={(value) =>
+              setBrandingForm((prev) => ({ ...prev, logoUrl: value || null }))
+            }
+          />
+          <Input
+            label="Favicon URL"
+            placeholder="https://..."
+            value={brandingForm.faviconUrl ?? ""}
+            onValueChange={(value) =>
+              setBrandingForm((prev) => ({ ...prev, faviconUrl: value || null }))
+            }
+          />
+        </div>
+        <div className="flex justify-end">
+          <Button
+            color="primary"
+            isLoading={isSavingBranding}
+            radius="full"
+            onPress={handleSaveBranding}
+          >
+            Salvar branding
+          </Button>
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
+function AuditTab() {
+  return (
+    <Card className="border border-white/10 bg-background/70 backdrop-blur">
+      <CardBody className="space-y-3">
+        <p className="text-sm text-default-400">
+          Todas as ações executadas neste painel geram logs na auditoria de super admin.
+        </p>
+        <Chip color="primary" size="sm" startContent={<ShieldCheck className="h-3 w-3" />}>
+          Segurança operacional ativa
+        </Chip>
+        <p className="text-xs text-default-500">
+          Consulte o histórico completo em <strong>/admin/auditoria</strong> para verificar quem alterou dados estratégicos ou financeiros.
+        </p>
+        <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
+          <div className="flex items-center gap-3 text-primary">
+            <Sparkles className="h-4 w-4" />
+            <span className="text-sm font-semibold">Boas práticas</span>
+          </div>
+          <p className="mt-2 text-xs text-primary/80">
+            Antes de bloquear um tenant, verifique pendências financeiras e comunique o contato principal para evitar disputas comerciais.
+          </p>
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
+function statusChipColor(status: TenantStatus) {
+  switch (status) {
+    case TenantStatus.ACTIVE:
+      return "success";
+    case TenantStatus.SUSPENDED:
+      return "warning";
+    case TenantStatus.CANCELLED:
+      return "danger";
+    default:
+      return "default";
+  }
+}
+
+function statusLabel(status: TenantStatus) {
+  switch (status) {
+    case TenantStatus.ACTIVE:
+      return "Ativo";
+    case TenantStatus.SUSPENDED:
+      return "Suspenso";
+    case TenantStatus.CANCELLED:
+      return "Cancelado";
+    default:
+      return status;
+  }
+}
+
+function invoiceStatusLabel(status: InvoiceStatus) {
+  switch (status) {
+    case InvoiceStatus.ABERTA:
+      return "Aberta";
+    case InvoiceStatus.RASCUNHO:
+      return "Rascunho";
+    case InvoiceStatus.PAGA:
+      return "Paga";
+    case InvoiceStatus.VENCIDA:
+      return "Vencida";
+    case InvoiceStatus.CANCELADA:
+      return "Cancelada";
+    default:
+      return status;
+  }
+}
+
+function roleLabel(role: UserRole) {
+  const normalized = role.replace(/_/g, " ").toLowerCase();
+
+  return normalized.replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+interface MetricCardProps {
+  label: string;
+  value: string;
+  tone: "primary" | "success" | "secondary" | "default";
+}
+
+function MetricCard({ label, value, tone }: MetricCardProps) {
+  const toneClass = {
+    primary: "border-primary/30 bg-primary/10 text-primary",
+    success: "border-success/30 bg-success/10 text-success",
+    secondary: "border-secondary/30 bg-secondary/10 text-secondary",
+    default: "border-white/10 bg-background/60 text-default-300",
+  }[tone];
+
+  return (
+    <div className={`rounded-2xl border p-4 ${toneClass}`}>
+      <p className="text-xs uppercase tracking-wide opacity-80">{label}</p>
+      <p className="text-xl font-semibold">{value}</p>
+    </div>
+  );
+}
+
+interface TabTitleProps {
+  icon: React.ReactNode;
+  label: string;
+}
+
+function TabTitle({ icon, label }: TabTitleProps) {
+  return (
+    <div className="flex items-center gap-2 text-sm font-medium">
+      {icon}
+      <span>{label}</span>
+    </div>
+  );
+}
+
+interface ColorInputProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function ColorInput({ label, value, onChange }: ColorInputProps) {
+  return (
+    <div className="flex items-end gap-2">
+      <Input
+        label={label}
+        type="color"
+        value={value || "#000000"}
+        onValueChange={(val) => onChange(val)}
+      />
+      <Input
+        aria-label={`${label} (hex)`}
+        value={value}
+        placeholder="#000000"
+        onValueChange={onChange}
+      />
+    </div>
+  );
+}

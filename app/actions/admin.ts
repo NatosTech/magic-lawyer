@@ -1,8 +1,19 @@
 "use server";
 
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 
+import { getServerSession } from "next-auth";
+
 import prisma from "@/app/lib/prisma";
+import {
+  InvoiceStatus,
+  PaymentStatus,
+  SubscriptionStatus,
+  TenantStatus,
+  UserRole,
+} from "@/app/generated/prisma";
+import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
 
 // =============================================
@@ -62,6 +73,75 @@ const decimalToNullableNumber = (value: unknown) => {
   return null;
 };
 
+export interface TenantManagementData {
+  tenant: {
+    id: string;
+    name: string;
+    slug: string;
+    domain: string | null;
+    email: string | null;
+    telefone: string | null;
+    documento: string | null;
+    razaoSocial: string | null;
+    nomeFantasia: string | null;
+    timezone: string;
+    status: TenantStatus;
+    createdAt: string;
+    updatedAt: string;
+  };
+  branding: {
+    primaryColor: string | null;
+    secondaryColor: string | null;
+    accentColor: string | null;
+    logoUrl: string | null;
+    faviconUrl: string | null;
+  } | null;
+  subscription: {
+    id: string | null;
+    status: SubscriptionStatus | null;
+    planId: string | null;
+    planName: string | null;
+    valorMensal: number | null;
+    valorAnual: number | null;
+    moeda: string | null;
+    trialEndsAt: string | null;
+    renovaEm: string | null;
+  };
+  availablePlans: Array<{
+    id: string;
+    nome: string;
+    valorMensal: number | null;
+    valorAnual: number | null;
+    moeda: string;
+  }>;
+  metrics: {
+    usuarios: number;
+    processos: number;
+    clientes: number;
+    revenue90d: number;
+    revenue30d: number;
+    outstandingInvoices: number;
+  };
+  invoices: Array<{
+    id: string;
+    numero: string | null;
+    status: InvoiceStatus;
+    valor: number;
+    vencimento: string | null;
+    pagoEm: string | null;
+    criadoEm: string;
+  }>;
+  users: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: UserRole;
+    active: boolean;
+    lastLoginAt: string | null;
+  }>;
+  availableRoles: UserRole[];
+}
+
 type EspecialidadeJuridica =
   | "CIVIL"
   | "CRIMINAL"
@@ -82,9 +162,19 @@ type EspecialidadeJuridica =
 // Criar novo tenant
 export async function createTenant(
   data: CreateTenantData,
-  superAdminId: string,
 ): Promise<TenantResponse> {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+      return {
+        success: false,
+        error: "Acesso não autorizado para criar tenants",
+      };
+    }
+
+    const superAdminId = session.user.id;
+
     // Verificar se slug já existe
     const existingTenant = await prisma.tenant.findUnique({
       where: { slug: data.slug },
@@ -95,6 +185,19 @@ export async function createTenant(
         success: false,
         error: "Slug já existe. Escolha outro slug.",
       };
+    }
+
+    if (data.domain) {
+      const domainConflict = await prisma.tenant.findUnique({
+        where: { domain: data.domain },
+      });
+
+      if (domainConflict) {
+        return {
+          success: false,
+          error: "Domínio já está em uso por outro tenant.",
+        };
+      }
     }
 
     // Hash da senha do admin
@@ -185,6 +288,15 @@ export async function createTenant(
 // Listar todos os tenants
 export async function getAllTenants(): Promise<TenantResponse> {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+      return {
+        success: false,
+        error: "Acesso não autorizado para listar tenants",
+      };
+    }
+
     const tenants = await prisma.tenant.findMany({
       include: {
         superAdmin: {
@@ -276,10 +388,20 @@ export async function getAllTenants(): Promise<TenantResponse> {
 // Atualizar status do tenant
 export async function updateTenantStatus(
   tenantId: string,
-  status: "ACTIVE" | "SUSPENDED" | "CANCELLED",
-  superAdminId: string,
+  status: TenantStatus,
 ): Promise<TenantResponse> {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+      return {
+        success: false,
+        error: "Acesso não autorizado para atualizar tenant",
+      };
+    }
+
+    const superAdminId = session.user.id;
+
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
     });
@@ -318,6 +440,555 @@ export async function updateTenantStatus(
     return {
       success: false,
       error: "Erro interno do servidor ao atualizar tenant",
+    };
+  }
+}
+
+export interface UpdateTenantDetailsInput {
+  name?: string;
+  slug?: string;
+  domain?: string | null;
+  email?: string | null;
+  telefone?: string | null;
+  documento?: string | null;
+  razaoSocial?: string | null;
+  nomeFantasia?: string | null;
+  timezone?: string;
+}
+
+export interface UpdateTenantSubscriptionInput {
+  planId?: string | null;
+  status?: SubscriptionStatus;
+  trialEndsAt?: string | null;
+  renovaEm?: string | null;
+}
+
+export interface UpdateTenantBrandingInput {
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  accentColor?: string | null;
+  logoUrl?: string | null;
+  faviconUrl?: string | null;
+}
+
+export interface UpdateTenantUserInput {
+  role?: UserRole;
+  active?: boolean;
+  generatePassword?: boolean;
+}
+
+export async function getTenantManagementData(
+  tenantId: string,
+): Promise<TenantResponse> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+      return {
+        success: false,
+        error: "Acesso não autorizado",
+      };
+    }
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      include: {
+        branding: true,
+        subscription: {
+          include: { plano: true },
+        },
+        _count: {
+          select: {
+            usuarios: true,
+            processos: true,
+            clientes: true,
+          },
+        },
+      },
+    });
+
+    if (!tenant) {
+      return {
+        success: false,
+        error: "Tenant não encontrado",
+      };
+    }
+
+    const ninetyDaysAgo = new Date(Date.now() - 89 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+
+    const [
+      plans,
+      invoices,
+      users,
+      revenue90Agg,
+      revenue30Agg,
+      outstandingInvoices,
+    ] = await Promise.all([
+      prisma.plano.findMany({
+        where: { ativo: true },
+        orderBy: { nome: "asc" },
+      }),
+      prisma.fatura.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+      }),
+      prisma.usuario.findMany({
+        where: { tenantId },
+        orderBy: { firstName: "asc" },
+      }),
+      prisma.pagamento.aggregate({
+        _sum: { valor: true },
+        where: {
+          tenantId,
+          status: PaymentStatus.PAGO,
+          confirmadoEm: { gte: ninetyDaysAgo },
+        },
+      }),
+      prisma.pagamento.aggregate({
+        _sum: { valor: true },
+        where: {
+          tenantId,
+          status: PaymentStatus.PAGO,
+          confirmadoEm: { gte: thirtyDaysAgo },
+        },
+      }),
+      prisma.fatura.count({
+        where: {
+          tenantId,
+          status: { in: [InvoiceStatus.ABERTA, InvoiceStatus.VENCIDA] },
+        },
+      }),
+    ]);
+
+    const data: TenantManagementData = {
+      tenant: {
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
+        domain: tenant.domain,
+        email: tenant.email,
+        telefone: tenant.telefone,
+        documento: tenant.documento,
+        razaoSocial: tenant.razaoSocial,
+        nomeFantasia: tenant.nomeFantasia,
+        timezone: tenant.timezone,
+        status: tenant.status,
+        createdAt: tenant.createdAt.toISOString(),
+        updatedAt: tenant.updatedAt.toISOString(),
+      },
+      branding: tenant.branding
+        ? {
+            primaryColor: tenant.branding.primaryColor,
+            secondaryColor: tenant.branding.secondaryColor,
+            accentColor: tenant.branding.accentColor,
+            logoUrl: tenant.branding.logoUrl,
+            faviconUrl: tenant.branding.faviconUrl,
+          }
+        : null,
+      subscription: {
+        id: tenant.subscription?.id ?? null,
+        status: tenant.subscription?.status ?? null,
+        planId: tenant.subscription?.planoId ?? null,
+        planName: tenant.subscription?.plano?.nome ?? null,
+        valorMensal: decimalToNullableNumber(tenant.subscription?.plano?.valorMensal),
+        valorAnual: decimalToNullableNumber(tenant.subscription?.plano?.valorAnual),
+        moeda: tenant.subscription?.plano?.moeda ?? null,
+        trialEndsAt: tenant.subscription?.trialEndsAt?.toISOString() ?? null,
+        renovaEm: tenant.subscription?.renovaEm?.toISOString() ?? null,
+      },
+      availablePlans: plans.map((plan) => ({
+        id: plan.id,
+        nome: plan.nome,
+        valorMensal: decimalToNullableNumber(plan.valorMensal),
+        valorAnual: decimalToNullableNumber(plan.valorAnual),
+        moeda: plan.moeda ?? "BRL",
+      })),
+      metrics: {
+        usuarios: tenant._count.usuarios,
+        processos: tenant._count.processos,
+        clientes: tenant._count.clientes,
+        revenue90d: decimalToNullableNumber(revenue90Agg._sum.valor) ?? 0,
+        revenue30d: decimalToNullableNumber(revenue30Agg._sum.valor) ?? 0,
+        outstandingInvoices,
+      },
+      invoices: invoices.map((invoice) => ({
+        id: invoice.id,
+        numero: invoice.numero,
+        status: invoice.status,
+        valor: decimalToNullableNumber(invoice.valor) ?? 0,
+        vencimento: invoice.vencimento?.toISOString() ?? null,
+        pagoEm: invoice.pagoEm?.toISOString() ?? null,
+        criadoEm: invoice.createdAt.toISOString(),
+      })),
+      users: users.map((user) => ({
+        id: user.id,
+        name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email,
+        email: user.email,
+        role: user.role,
+        active: user.active,
+        lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+      })),
+      availableRoles: Object.values(UserRole),
+    };
+
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    logger.error("Erro ao carregar dados do tenant", error);
+
+    return {
+      success: false,
+      error: "Erro interno do servidor ao carregar tenant",
+    };
+  }
+}
+
+export async function updateTenantDetails(
+  tenantId: string,
+  payload: UpdateTenantDetailsInput,
+): Promise<TenantResponse> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+      return { success: false, error: "Acesso não autorizado" };
+    }
+
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+
+    if (!tenant) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    if (payload.slug && payload.slug !== tenant.slug) {
+      const slugConflict = await prisma.tenant.findUnique({
+        where: { slug: payload.slug },
+      });
+
+      if (slugConflict) {
+        return {
+          success: false,
+          error: "Slug informado já está em uso.",
+        };
+      }
+    }
+
+    if (payload.domain !== undefined && payload.domain !== tenant.domain) {
+      if (payload.domain) {
+        const domainConflict = await prisma.tenant.findUnique({
+          where: { domain: payload.domain },
+        });
+
+        if (domainConflict) {
+          return {
+            success: false,
+            error: "Domínio informado já está em uso.",
+          };
+        }
+      }
+    }
+
+    const updateData: Record<string, unknown> = {};
+
+    if (payload.name !== undefined) updateData.name = payload.name;
+    if (payload.slug !== undefined) updateData.slug = payload.slug;
+    if (payload.domain !== undefined) updateData.domain = payload.domain;
+    if (payload.email !== undefined) updateData.email = payload.email;
+    if (payload.telefone !== undefined) updateData.telefone = payload.telefone;
+    if (payload.documento !== undefined) updateData.documento = payload.documento;
+    if (payload.razaoSocial !== undefined) updateData.razaoSocial = payload.razaoSocial;
+    if (payload.nomeFantasia !== undefined) updateData.nomeFantasia = payload.nomeFantasia;
+    if (payload.timezone !== undefined) updateData.timezone = payload.timezone;
+
+    if (Object.keys(updateData).length === 0) {
+      return {
+        success: true,
+        data: tenant,
+      };
+    }
+
+    const updatedTenant = await prisma.tenant.update({
+      where: { id: tenantId },
+      data: updateData,
+    });
+
+    await prisma.superAdminAuditLog.create({
+      data: {
+        superAdminId: session.user.id,
+        acao: "UPDATE_TENANT_DETAILS",
+        entidade: "TENANT",
+        entidadeId: tenantId,
+        dadosAntigos: {
+          name: tenant.name,
+          slug: tenant.slug,
+          domain: tenant.domain,
+          email: tenant.email,
+          telefone: tenant.telefone,
+        },
+        dadosNovos: {
+          name: updatedTenant.name,
+          slug: updatedTenant.slug,
+          domain: updatedTenant.domain,
+          email: updatedTenant.email,
+          telefone: updatedTenant.telefone,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: updatedTenant,
+    };
+  } catch (error) {
+    logger.error("Erro ao atualizar dados do tenant", error);
+
+    return {
+      success: false,
+      error: "Erro interno ao salvar alterações",
+    };
+  }
+}
+
+export async function updateTenantSubscription(
+  tenantId: string,
+  payload: UpdateTenantSubscriptionInput,
+): Promise<TenantResponse> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+      return { success: false, error: "Acesso não autorizado" };
+    }
+
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+
+    if (!tenant) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    let planId: string | null | undefined = payload.planId;
+
+    if (planId) {
+      const plan = await prisma.plano.findUnique({ where: { id: planId } });
+      if (!plan) {
+        return {
+          success: false,
+          error: "Plano selecionado não existe",
+        };
+      }
+    }
+
+    const trialEndsAt = payload.trialEndsAt ? new Date(payload.trialEndsAt) : null;
+    const renovaEm = payload.renovaEm ? new Date(payload.renovaEm) : null;
+
+    const existingSubscription = await prisma.tenantSubscription.findUnique({
+      where: { tenantId },
+    });
+
+    let subscription;
+
+    if (existingSubscription) {
+      subscription = await prisma.tenantSubscription.update({
+        where: { tenantId },
+        data: {
+          planoId: planId ?? null,
+          status: payload.status ?? existingSubscription.status,
+          trialEndsAt,
+          renovaEm,
+        },
+        include: {
+          plano: true,
+        },
+      });
+    } else {
+      subscription = await prisma.tenantSubscription.create({
+        data: {
+          tenantId,
+          planoId: planId ?? null,
+          status: payload.status ?? SubscriptionStatus.TRIAL,
+          trialEndsAt,
+          renovaEm,
+        },
+        include: {
+          plano: true,
+        },
+      });
+    }
+
+    await prisma.superAdminAuditLog.create({
+      data: {
+        superAdminId: session.user.id,
+        acao: "UPDATE_TENANT_SUBSCRIPTION",
+        entidade: "TENANT",
+        entidadeId: tenantId,
+        dadosNovos: {
+          planId: subscription.planoId,
+          status: subscription.status,
+          trialEndsAt: subscription.trialEndsAt,
+          renovaEm: subscription.renovaEm,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: subscription,
+    };
+  } catch (error) {
+    logger.error("Erro ao atualizar assinatura do tenant", error);
+
+    return {
+      success: false,
+      error: "Erro interno ao atualizar assinatura",
+    };
+  }
+}
+
+export async function updateTenantBranding(
+  tenantId: string,
+  payload: UpdateTenantBrandingInput,
+): Promise<TenantResponse> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+      return { success: false, error: "Acesso não autorizado" };
+    }
+
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+
+    if (!tenant) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    const branding = await prisma.tenantBranding.upsert({
+      where: { tenantId },
+      update: {
+        primaryColor: payload.primaryColor ?? undefined,
+        secondaryColor: payload.secondaryColor ?? undefined,
+        accentColor: payload.accentColor ?? undefined,
+        logoUrl: payload.logoUrl ?? undefined,
+        faviconUrl: payload.faviconUrl ?? undefined,
+      },
+      create: {
+        tenantId,
+        primaryColor: payload.primaryColor ?? "#2563eb",
+        secondaryColor: payload.secondaryColor ?? "#1d4ed8",
+        accentColor: payload.accentColor ?? "#3b82f6",
+        logoUrl: payload.logoUrl ?? null,
+        faviconUrl: payload.faviconUrl ?? null,
+      },
+    });
+
+    await prisma.superAdminAuditLog.create({
+      data: {
+        superAdminId: session.user.id,
+        acao: "UPDATE_TENANT_BRANDING",
+        entidade: "TENANT",
+        entidadeId: tenantId,
+        dadosNovos: branding,
+      },
+    });
+
+    return {
+      success: true,
+      data: branding,
+    };
+  } catch (error) {
+    logger.error("Erro ao atualizar branding do tenant", error);
+
+    return {
+      success: false,
+      error: "Erro interno ao salvar branding",
+    };
+  }
+}
+
+function generateTemporaryPassword(length = 12) {
+  return crypto.randomBytes(length)
+    .toString("base64")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, length);
+}
+
+export async function updateTenantUser(
+  tenantId: string,
+  userId: string,
+  payload: UpdateTenantUserInput,
+): Promise<TenantResponse> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+      return { success: false, error: "Acesso não autorizado" };
+    }
+
+    const user = await prisma.usuario.findUnique({ where: { id: userId } });
+
+    if (!user || user.tenantId !== tenantId) {
+      return { success: false, error: "Usuário não encontrado para este tenant" };
+    }
+
+    const updateData: Record<string, unknown> = {};
+    let temporaryPassword: string | undefined;
+
+    if (payload.role && payload.role !== user.role) {
+      updateData.role = payload.role;
+    }
+
+    if (payload.active !== undefined && payload.active !== user.active) {
+      updateData.active = payload.active;
+    }
+
+    if (payload.generatePassword) {
+      temporaryPassword = generateTemporaryPassword();
+      const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+      updateData.passwordHash = passwordHash;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return {
+        success: true,
+        data: { user },
+      };
+    }
+
+    const updatedUser = await prisma.usuario.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    await prisma.superAdminAuditLog.create({
+      data: {
+        superAdminId: session.user.id,
+        acao: "UPDATE_TENANT_USER",
+        entidade: "USUARIO",
+        entidadeId: userId,
+        dadosNovos: {
+          role: updatedUser.role,
+          active: updatedUser.active,
+          temporaryPasswordSet: Boolean(payload.generatePassword),
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        user: updatedUser,
+        temporaryPassword,
+      },
+    };
+  } catch (error) {
+    logger.error("Erro ao atualizar usuário do tenant", error);
+
+    return {
+      success: false,
+      error: "Erro interno ao atualizar usuário",
     };
   }
 }
