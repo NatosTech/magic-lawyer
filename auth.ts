@@ -64,7 +64,7 @@ export const authOptions: NextAuthOptions = {
         const normalizedTenant = credentials?.tenant?.trim().toLowerCase();
 
         // Tentar detectar tenant pelo domínio da requisição
-        const host = req?.headers?.get("host") || "";
+        const host = req?.headers?.host || "";
         const tenantFromDomain = extractTenantFromDomain(host);
 
         // Se o tenant está vazio, undefined ou 'undefined', tratamos como auto-detect
