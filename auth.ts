@@ -190,19 +190,19 @@ export const authOptions: NextAuthOptions = {
             });
 
             // Se encontrou usuário em tenant específico e está no domínio principal, redirecionar
-            if (allUsers.length > 0 && !tenantFromDomain && host.includes('magiclawyer.vercel.app')) {
+            if (allUsers.length > 0 && !tenantFromDomain && host.includes("magiclawyer.vercel.app")) {
               console.info("[auth] Verificando redirecionamento", {
                 allUsersCount: allUsers.length,
                 tenantFromDomain,
                 host,
-                users: allUsers.map(u => ({
+                users: allUsers.map((u) => ({
                   email: u.email,
                   tenantSlug: u.tenant?.slug,
-                  tenantName: u.tenant?.name
-                }))
+                  tenantName: u.tenant?.name,
+                })),
               });
-              
-              const userWithSpecificTenant = allUsers.find(u => u.tenant?.slug && u.tenant.slug !== 'magiclawyer');
+
+              const userWithSpecificTenant = allUsers.find((u) => u.tenant?.slug && u.tenant.slug !== "magiclawyer");
               if (userWithSpecificTenant) {
                 const tenantSlug = userWithSpecificTenant.tenant?.slug;
                 console.info("[auth] REDIRECIONANDO para tenant específico", {
@@ -210,13 +210,13 @@ export const authOptions: NextAuthOptions = {
                   userTenant: tenantSlug,
                   currentDomain: host,
                 });
-                
+
                 // Retornar erro com redirecionamento
                 throw new Error(`REDIRECT_TO_TENANT:${tenantSlug}`);
               } else {
                 console.info("[auth] Usuário encontrado mas não precisa redirecionar", {
                   userEmail: email,
-                  userTenants: allUsers.map(u => u.tenant?.slug)
+                  userTenants: allUsers.map((u) => u.tenant?.slug),
                 });
               }
             }
@@ -245,7 +245,6 @@ export const authOptions: NextAuthOptions = {
               },
             } as any,
           });
-
 
           // Log do resultado da busca
           console.info("[auth] Resultado da busca", {
@@ -327,6 +326,17 @@ export const authOptions: NextAuthOptions = {
 
           return resultUser as any;
         } catch (error) {
+          // Verificar se é erro de redirecionamento
+          if (error instanceof Error && error.message.startsWith("REDIRECT_TO_TENANT:")) {
+            console.info("[auth] Redirecionamento para tenant específico", {
+              ...attemptContext,
+              redirectTenant: error.message.replace("REDIRECT_TO_TENANT:", ""),
+            });
+
+            // Re-lançar o erro para ser tratado pelo cliente
+            throw error;
+          }
+
           const safeError = error instanceof Error ? { message: error.message, stack: error.stack } : error;
 
           console.error("[auth] Erro inesperado durante autenticação", {
