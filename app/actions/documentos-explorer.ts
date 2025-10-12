@@ -1,6 +1,10 @@
 "use server";
 
-import type { Prisma, Documento, DocumentoVersao } from "@/app/generated/prisma";
+import type {
+  Prisma,
+  Documento,
+  DocumentoVersao,
+} from "@/app/generated/prisma";
 
 import { revalidatePath } from "next/cache";
 
@@ -186,7 +190,10 @@ function extractPublicIdFromUrl(url: string): string | null {
   }
 }
 
-function normalizeFolderSegments(tenantSlug: string, publicId: string | null | undefined): string[] {
+function normalizeFolderSegments(
+  tenantSlug: string,
+  publicId: string | null | undefined,
+): string[] {
   if (!publicId) return [];
 
   const segments = publicId.split("/");
@@ -234,14 +241,21 @@ async function getClienteIdFromSession(session: { user: any } | null) {
   return cliente?.id || null;
 }
 
-function buildProcessFolderBase(tenantSlug: string, cliente: { id: string; nome: string }, processo: { id: string; numero: string }) {
+function buildProcessFolderBase(
+  tenantSlug: string,
+  cliente: { id: string; nome: string },
+  processo: { id: string; numero: string },
+) {
   const clienteSegment = `${sanitizeSegment(cliente.nome)}-${cliente.id}`;
   const processoSegment = `${sanitizeSegment(processo.numero)}-${processo.id}`;
 
   return `magiclawyer/${tenantSlug}/clientes/${clienteSegment}/processos/${processoSegment}`;
 }
 
-function buildClienteDocumentFolder(tenantSlug: string, cliente: { id: string; nome: string }) {
+function buildClienteDocumentFolder(
+  tenantSlug: string,
+  cliente: { id: string; nome: string },
+) {
   const clienteSegment = `${sanitizeSegment(cliente.nome)}-${cliente.id}`;
 
   return `magiclawyer/${tenantSlug}/clientes/${clienteSegment}/documentos`;
@@ -253,7 +267,10 @@ function isCloudinaryUrl(url: string | null | undefined): boolean {
   try {
     const { hostname } = new URL(url);
 
-    return hostname.includes("cloudinary.com") || hostname.includes("res.cloudinary.com");
+    return (
+      hostname.includes("cloudinary.com") ||
+      hostname.includes("res.cloudinary.com")
+    );
   } catch {
     return false;
   }
@@ -269,19 +286,34 @@ function mapDocumentoToFiles(
       email: string | null;
     } | null;
   },
-  tenantSlug: string
+  tenantSlug: string,
 ): DocumentExplorerFile[] {
-  const versions = documento.versoes && documento.versoes.length > 0 ? documento.versoes : [null];
+  const versions =
+    documento.versoes && documento.versoes.length > 0
+      ? documento.versoes
+      : [null];
 
   return versions.map((versao) => {
     const publicId =
-      versao?.cloudinaryPublicId || (documento.metadados as any)?.cloudinaryPublicId || (isCloudinaryUrl(versao?.url || documento.url) ? extractPublicIdFromUrl(versao?.url || documento.url) : null);
+      versao?.cloudinaryPublicId ||
+      (documento.metadados as any)?.cloudinaryPublicId ||
+      (isCloudinaryUrl(versao?.url || documento.url)
+        ? extractPublicIdFromUrl(versao?.url || documento.url)
+        : null);
 
-    const folderSegments = normalizeFolderSegments(tenantSlug, publicId || undefined);
+    const folderSegments = normalizeFolderSegments(
+      tenantSlug,
+      publicId || undefined,
+    );
     const fileUrl = versao?.url || documento.url;
-    const fileName = versao ? getFileNameFromUrl(versao.url) : getFileNameFromUrl(documento.url);
+    const fileName = versao
+      ? getFileNameFromUrl(versao.url)
+      : getFileNameFromUrl(documento.url);
 
-    const nomeArquivo = versao?.numeroVersao && versao.numeroVersao > 1 ? `${documento.nome} (v${versao.numeroVersao})` : documento.nome;
+    const nomeArquivo =
+      versao?.numeroVersao && versao.numeroVersao > 1
+        ? `${documento.nome} (v${versao.numeroVersao})`
+        : documento.nome;
 
     return {
       id: versao?.id ?? documento.id,
@@ -296,7 +328,10 @@ function mapDocumentoToFiles(
       uploadedBy: documento.uploadedBy
         ? {
             id: documento.uploadedBy.id,
-            nome: [documento.uploadedBy.firstName, documento.uploadedBy.lastName].filter(Boolean).join(" ") || null,
+            nome:
+              [documento.uploadedBy.firstName, documento.uploadedBy.lastName]
+                .filter(Boolean)
+                .join(" ") || null,
             email: documento.uploadedBy.email,
           }
         : undefined,
@@ -305,7 +340,10 @@ function mapDocumentoToFiles(
       folderSegments,
       folderPath: folderSegments.join("/"),
       versionNumber: versao?.numeroVersao,
-      metadata: typeof documento.metadados === "object" ? (documento.metadados as any) : null,
+      metadata:
+        typeof documento.metadados === "object"
+          ? (documento.metadados as any)
+          : null,
     } satisfies DocumentExplorerFile;
   });
 }
@@ -481,11 +519,18 @@ export async function getDocumentExplorerData(): Promise<{
       let clienteDocumentos = cliente.documentos.length;
 
       for (const processo of cliente.processos) {
-        const documentosProcesso = processo.documentos.flatMap((documento) => mapDocumentoToFiles(documento as any, user.tenantSlug));
+        const documentosProcesso = processo.documentos.flatMap((documento) =>
+          mapDocumentoToFiles(documento as any, user.tenantSlug),
+        );
 
-        const baseFolder = buildProcessFolderBase(user.tenantSlug, { id: cliente.id, nome: cliente.nome }, { id: processo.id, numero: processo.numero });
+        const baseFolder = buildProcessFolderBase(
+          user.tenantSlug,
+          { id: cliente.id, nome: cliente.nome },
+          { id: processo.id, numero: processo.numero },
+        );
 
-        const folderTreeResult = await uploadService.buildFolderTree(baseFolder);
+        const folderTreeResult =
+          await uploadService.buildFolderTree(baseFolder);
 
         const causasProcesso =
           processo.causasVinculadas?.map((processoCausa: any) => ({
@@ -519,7 +564,9 @@ export async function getDocumentExplorerData(): Promise<{
 
       totalProcessos += cliente.processos.length;
 
-      const documentosGerais = cliente.documentos.flatMap((documento) => mapDocumentoToFiles(documento as any, user.tenantSlug));
+      const documentosGerais = cliente.documentos.flatMap((documento) =>
+        mapDocumentoToFiles(documento as any, user.tenantSlug),
+      );
 
       clienteArquivos += documentosGerais.length;
       totalArquivos += documentosGerais.length;
@@ -605,7 +652,7 @@ export async function uploadDocumentoExplorer(
     folderSegments?: string[];
     description?: string;
     visivelParaCliente?: boolean;
-  } = {}
+  } = {},
 ) {
   try {
     const session = await getSession();
@@ -639,7 +686,12 @@ export async function uploadDocumentoExplorer(
       return { success: false, error: "Cliente não encontrado" };
     }
 
-    const processoIdsRaw = formData.getAll("processoIds").filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+    const processoIdsRaw = formData
+      .getAll("processoIds")
+      .filter(
+        (value): value is string =>
+          typeof value === "string" && value.trim().length > 0,
+      );
 
     if (processoId) {
       processoIdsRaw.push(processoId);
@@ -666,7 +718,12 @@ export async function uploadDocumentoExplorer(
       return { success: false, error: "Processo selecionado inválido" };
     }
 
-    const contratoIdsRaw = formData.getAll("contratoIds").filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+    const contratoIdsRaw = formData
+      .getAll("contratoIds")
+      .filter(
+        (value): value is string =>
+          typeof value === "string" && value.trim().length > 0,
+      );
 
     const contratos = contratoIdsRaw.length
       ? await prisma.contrato.findMany({
@@ -708,25 +765,34 @@ export async function uploadDocumentoExplorer(
 
     const uploadService = UploadService.getInstance();
 
-    const uploadResult = await uploadService.uploadStructuredDocument(bytes, user.id, file.name, {
-      tenantSlug: user.tenantSlug,
-      categoria: "processo",
-      cliente: {
-        id: cliente.id,
-        nome: cliente.nome,
+    const uploadResult = await uploadService.uploadStructuredDocument(
+      bytes,
+      user.id,
+      file.name,
+      {
+        tenantSlug: user.tenantSlug,
+        categoria: "processo",
+        cliente: {
+          id: cliente.id,
+          nome: cliente.nome,
+        },
+        processo: processos[0]
+          ? {
+              id: processos[0].id,
+              numero: processos[0].numero,
+            }
+          : undefined,
+        subpastas: options.folderSegments,
+        fileName: file.name,
+        contentType: file.type,
+        resourceType: file.type.startsWith("image/") ? "image" : "raw",
+        tags: [
+          "processo",
+          ...(processos.length ? processos.map((proc) => proc.id) : []),
+          cliente.id,
+        ],
       },
-      processo: processos[0]
-        ? {
-            id: processos[0].id,
-            numero: processos[0].numero,
-          }
-        : undefined,
-      subpastas: options.folderSegments,
-      fileName: file.name,
-      contentType: file.type,
-      resourceType: file.type.startsWith("image/") ? "image" : "raw",
-      tags: ["processo", ...(processos.length ? processos.map((proc) => proc.id) : []), cliente.id],
-    });
+    );
 
     if (!uploadResult.success || !uploadResult.publicId || !uploadResult.url) {
       return {
@@ -756,7 +822,10 @@ export async function uploadDocumentoExplorer(
           clienteId: cliente.id,
           contratoId: primaryContratoId,
           uploadedById: user.id,
-          visivelParaCliente: typeof options.visivelParaCliente === "boolean" ? options.visivelParaCliente : true,
+          visivelParaCliente:
+            typeof options.visivelParaCliente === "boolean"
+              ? options.visivelParaCliente
+              : true,
           visivelParaEquipe: true,
           metadados: {
             folderPath: uploadedFolderPath,
@@ -787,7 +856,10 @@ export async function uploadDocumentoExplorer(
             processoId: proc.id,
             documentoId: createdDocumento.id,
             createdById: user.id,
-            visivelParaCliente: typeof options.visivelParaCliente === "boolean" ? options.visivelParaCliente : true,
+            visivelParaCliente:
+              typeof options.visivelParaCliente === "boolean"
+                ? options.visivelParaCliente
+                : true,
           })),
           skipDuplicates: true,
         });
@@ -877,9 +949,17 @@ export async function createExplorerFolder(input: CreateFolderInput) {
       return { success: false, error: "Cliente ou processo não encontrado" };
     }
 
-    const baseFolder = buildProcessFolderBase(user.tenantSlug, cliente, processo);
+    const baseFolder = buildProcessFolderBase(
+      user.tenantSlug,
+      cliente,
+      processo,
+    );
 
-    const fullPathSegments = [baseFolder, ...(input.parentSegments || []).map((segment) => segment.trim()), sanitizeSegment(input.nomePasta)].filter(Boolean);
+    const fullPathSegments = [
+      baseFolder,
+      ...(input.parentSegments || []).map((segment) => segment.trim()),
+      sanitizeSegment(input.nomePasta),
+    ].filter(Boolean);
 
     const fullPath = fullPathSegments.join("/");
 
@@ -939,7 +1019,11 @@ export async function renameExplorerFolder(input: RenameFolderInput) {
       return { success: false, error: "Cliente ou processo não encontrado" };
     }
 
-    const baseFolder = buildProcessFolderBase(user.tenantSlug, cliente, processo);
+    const baseFolder = buildProcessFolderBase(
+      user.tenantSlug,
+      cliente,
+      processo,
+    );
 
     if (!input.currentSegments.length) {
       return { success: false, error: "Selecione uma pasta para renomear" };
@@ -948,7 +1032,9 @@ export async function renameExplorerFolder(input: RenameFolderInput) {
     const oldPath = [baseFolder, ...input.currentSegments].join("/");
     const newPathSegments = [...input.currentSegments];
 
-    newPathSegments[newPathSegments.length - 1] = sanitizeSegment(input.novoNome);
+    newPathSegments[newPathSegments.length - 1] = sanitizeSegment(
+      input.novoNome,
+    );
     const newPath = [baseFolder, ...newPathSegments].join("/");
 
     const uploadService = UploadService.getInstance();
@@ -1071,7 +1157,11 @@ export async function deleteExplorerFolder(input: DeleteFolderInput) {
       return { success: false, error: "Cliente ou processo não encontrado" };
     }
 
-    const baseFolder = buildProcessFolderBase(user.tenantSlug, cliente, processo);
+    const baseFolder = buildProcessFolderBase(
+      user.tenantSlug,
+      cliente,
+      processo,
+    );
 
     const targetPath = [baseFolder, ...input.targetSegments].join("/");
 
@@ -1108,7 +1198,12 @@ export async function deleteExplorerFolder(input: DeleteFolderInput) {
     });
 
     const versaoIds = versoesParaDeletar.map((versao) => versao.id);
-    const documentoIds = Array.from(new Set([...versoesParaDeletar.map((versao) => versao.documentoId), ...documentosSemVersao.map((doc) => doc.id)]));
+    const documentoIds = Array.from(
+      new Set([
+        ...versoesParaDeletar.map((versao) => versao.documentoId),
+        ...documentosSemVersao.map((doc) => doc.id),
+      ]),
+    );
 
     const uploadService = UploadService.getInstance();
 
@@ -1169,17 +1264,25 @@ export async function deleteExplorerFile(input: DeleteFileInput) {
       return { success: false, error: "Documento não encontrado" };
     }
 
-    const versaoAlvo = input.versaoId ? documento.versoes.find((versao) => versao.id === input.versaoId) : documento.versoes[0];
+    const versaoAlvo = input.versaoId
+      ? documento.versoes.find((versao) => versao.id === input.versaoId)
+      : documento.versoes[0];
 
     const uploadService = UploadService.getInstance();
 
     const publicId =
       versaoAlvo?.cloudinaryPublicId ||
-      ((documento.metadados as any)?.cloudinaryPublicId as string | undefined) ||
-      (isCloudinaryUrl(documento.url) ? (extractPublicIdFromUrl(documento.url) ?? undefined) : undefined);
+      ((documento.metadados as any)?.cloudinaryPublicId as
+        | string
+        | undefined) ||
+      (isCloudinaryUrl(documento.url)
+        ? (extractPublicIdFromUrl(documento.url) ?? undefined)
+        : undefined);
 
     if (publicId) {
-      const resourceType = documento.contentType?.startsWith("image/") ? "image" : "raw";
+      const resourceType = documento.contentType?.startsWith("image/")
+        ? "image"
+        : "raw";
 
       await uploadService.deleteResources([publicId], resourceType);
     }

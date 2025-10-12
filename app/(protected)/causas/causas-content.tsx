@@ -8,12 +8,23 @@ import { Input, Textarea } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Switch } from "@heroui/switch";
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/modal";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@heroui/modal";
 import { Skeleton } from "@heroui/react";
 import { Plus, RefreshCw, Edit3 } from "lucide-react";
 import { toast } from "sonner";
 
-import { listCausas, createCausa, updateCausa, setCausaAtiva } from "@/app/actions/causas";
+import {
+  listCausas,
+  createCausa,
+  updateCausa,
+  setCausaAtiva,
+} from "@/app/actions/causas";
 import { title } from "@/components/primitives";
 
 interface CausaDto {
@@ -41,9 +52,13 @@ const causasFetcher = async () => {
 };
 
 export function CausasContent() {
-  const { data, mutate, isLoading, isValidating } = useSWR("causas", causasFetcher, {
-    revalidateOnFocus: true,
-  });
+  const { data, mutate, isLoading, isValidating } = useSWR(
+    "causas",
+    causasFetcher,
+    {
+      revalidateOnFocus: true,
+    },
+  );
 
   const [form, setForm] = useState({
     nome: "",
@@ -104,7 +119,7 @@ export function CausasContent() {
       await mutate();
       toast.success("Status atualizado");
     },
-    [mutate]
+    [mutate],
   );
 
   const handleOpenEdit = useCallback((causa: CausaDto) => {
@@ -131,7 +146,7 @@ export function CausasContent() {
       setEditingCausa(null);
       await mutate();
     },
-    [editingCausa, mutate]
+    [editingCausa, mutate],
   );
 
   return (
@@ -139,9 +154,19 @@ export function CausasContent() {
       <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className={title({ size: "lg", color: "blue" })}>Causas</h1>
-          <p className="text-sm text-default-500">Cadastre e gerencie os assuntos utilizados na classificação dos processos.</p>
+          <p className="text-sm text-default-500">
+            Cadastre e gerencie os assuntos utilizados na classificação dos
+            processos.
+          </p>
         </div>
-        <Button color="primary" isLoading={isValidating} radius="full" startContent={<RefreshCw className="h-4 w-4" />} variant="flat" onPress={() => mutate()}>
+        <Button
+          color="primary"
+          isLoading={isValidating}
+          radius="full"
+          startContent={<RefreshCw className="h-4 w-4" />}
+          variant="flat"
+          onPress={() => mutate()}
+        >
           Atualizar
         </Button>
       </header>
@@ -150,7 +175,9 @@ export function CausasContent() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Plus className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold text-default-700">Nova causa</h2>
+            <h2 className="text-sm font-semibold text-default-700">
+              Nova causa
+            </h2>
           </div>
         </CardHeader>
         <Divider className="border-default-100/20" />
@@ -192,7 +219,11 @@ export function CausasContent() {
             />
           </div>
           <div className="sm:col-span-2 flex justify-end">
-            <Button color="primary" isLoading={isCreating} onPress={handleCreate}>
+            <Button
+              color="primary"
+              isLoading={isCreating}
+              onPress={handleCreate}
+            >
               Salvar causa
             </Button>
           </div>
@@ -201,7 +232,9 @@ export function CausasContent() {
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-default-700">Causas cadastradas</h2>
+          <h2 className="text-base font-semibold text-default-700">
+            Causas cadastradas
+          </h2>
           <Chip color="primary" size="sm" variant="flat">
             {causas.length}
           </Chip>
@@ -210,10 +243,16 @@ export function CausasContent() {
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, index) => (
-              <Card key={`causa-skeleton-${index}`} className="border border-default-100/30 bg-default-50/10">
+              <Card
+                key={`causa-skeleton-${index}`}
+                className="border border-default-100/30 bg-default-50/10"
+              >
                 <CardBody>
                   <Skeleton className="h-5 w-48 rounded-lg" isLoaded={false} />
-                  <Skeleton className="mt-2 h-3 w-64 rounded-lg" isLoaded={false} />
+                  <Skeleton
+                    className="mt-2 h-3 w-64 rounded-lg"
+                    isLoaded={false}
+                  />
                 </CardBody>
               </Card>
             ))}
@@ -221,23 +260,51 @@ export function CausasContent() {
         ) : causas.length ? (
           <div className="space-y-3">
             {causas.map((causa) => (
-              <Card key={causa.id} className="border border-default-100/30 bg-default-50/10">
+              <Card
+                key={causa.id}
+                className="border border-default-100/30 bg-default-50/10"
+              >
                 <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-3">
-                      <h3 className="text-base font-semibold text-default-700">{causa.nome}</h3>
-                      <Chip color={causa.ativo ? "success" : "default"} size="sm" variant="flat">
+                      <h3 className="text-base font-semibold text-default-700">
+                        {causa.nome}
+                      </h3>
+                      <Chip
+                        color={causa.ativo ? "success" : "default"}
+                        size="sm"
+                        variant="flat"
+                      >
                         {causa.ativo ? "Ativa" : "Arquivada"}
                       </Chip>
                     </div>
-                    {causa.codigoCnj && <p className="text-xs text-default-500">Código CNJ: {causa.codigoCnj}</p>}
-                    {causa.descricao && <p className="text-xs text-default-500">{causa.descricao}</p>}
+                    {causa.codigoCnj && (
+                      <p className="text-xs text-default-500">
+                        Código CNJ: {causa.codigoCnj}
+                      </p>
+                    )}
+                    {causa.descricao && (
+                      <p className="text-xs text-default-500">
+                        {causa.descricao}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <Switch isSelected={causa.ativo} size="sm" onValueChange={(selected) => handleToggleAtiva(causa, selected)}>
+                    <Switch
+                      isSelected={causa.ativo}
+                      size="sm"
+                      onValueChange={(selected) =>
+                        handleToggleAtiva(causa, selected)
+                      }
+                    >
                       Ativa
                     </Switch>
-                    <Button size="sm" startContent={<Edit3 className="h-3.5 w-3.5" />} variant="light" onPress={() => handleOpenEdit(causa)}>
+                    <Button
+                      size="sm"
+                      startContent={<Edit3 className="h-3.5 w-3.5" />}
+                      variant="light"
+                      onPress={() => handleOpenEdit(causa)}
+                    >
                       Editar
                     </Button>
                   </div>
@@ -247,12 +314,18 @@ export function CausasContent() {
           </div>
         ) : (
           <Card className="border border-default-100/30 bg-default-50/10">
-            <CardBody className="text-sm text-default-500">Nenhuma causa cadastrada até o momento.</CardBody>
+            <CardBody className="text-sm text-default-500">
+              Nenhuma causa cadastrada até o momento.
+            </CardBody>
           </Card>
         )}
       </section>
 
-      <EditCausaModal causa={editingCausa} onClose={() => setEditingCausa(null)} onSave={handleEditSave} />
+      <EditCausaModal
+        causa={editingCausa}
+        onClose={() => setEditingCausa(null)}
+        onSave={handleEditSave}
+      />
     </section>
   );
 }
@@ -260,7 +333,11 @@ export function CausasContent() {
 interface EditCausaModalProps {
   causa: CausaDto | null;
   onClose: () => void;
-  onSave: (payload: { nome: string; codigoCnj: string; descricao: string }) => void;
+  onSave: (payload: {
+    nome: string;
+    codigoCnj: string;
+    descricao: string;
+  }) => void;
 }
 
 function EditCausaModal({ causa, onClose, onSave }: EditCausaModalProps) {
@@ -275,7 +352,7 @@ function EditCausaModal({ causa, onClose, onSave }: EditCausaModalProps) {
         onClose();
       }
     },
-    [onClose]
+    [onClose],
   );
 
   const handleConfirm = async () => {
@@ -308,19 +385,43 @@ function EditCausaModal({ causa, onClose, onSave }: EditCausaModalProps) {
         {() => (
           <>
             <ModalHeader className="flex flex-col gap-1">
-              <h3 className="text-lg font-semibold text-default-900">Editar causa</h3>
-              {causa && <p className="text-sm text-default-400">Criada em {new Date(causa.createdAt).toLocaleDateString("pt-BR")}</p>}
+              <h3 className="text-lg font-semibold text-default-900">
+                Editar causa
+              </h3>
+              {causa && (
+                <p className="text-sm text-default-400">
+                  Criada em{" "}
+                  {new Date(causa.createdAt).toLocaleDateString("pt-BR")}
+                </p>
+              )}
             </ModalHeader>
             <ModalBody className="space-y-3">
-              <Input isRequired label="Nome" value={nome} onValueChange={setNome} />
-              <Input label="Código CNJ" value={codigoCnj} onValueChange={setCodigoCnj} />
-              <Textarea label="Descrição" value={descricao} onValueChange={setDescricao} />
+              <Input
+                isRequired
+                label="Nome"
+                value={nome}
+                onValueChange={setNome}
+              />
+              <Input
+                label="Código CNJ"
+                value={codigoCnj}
+                onValueChange={setCodigoCnj}
+              />
+              <Textarea
+                label="Descrição"
+                value={descricao}
+                onValueChange={setDescricao}
+              />
             </ModalBody>
             <ModalFooter>
               <Button disabled={isSaving} variant="light" onPress={onClose}>
                 Cancelar
               </Button>
-              <Button color="primary" isLoading={isSaving} onPress={handleConfirm}>
+              <Button
+                color="primary"
+                isLoading={isSaving}
+                onPress={handleConfirm}
+              >
                 Salvar alterações
               </Button>
             </ModalFooter>

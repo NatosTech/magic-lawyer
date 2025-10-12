@@ -9,11 +9,29 @@ import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Tooltip } from "@heroui/tooltip";
 import { Skeleton } from "@heroui/react";
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/modal";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@heroui/modal";
 import { Checkbox } from "@heroui/checkbox";
 import { Switch } from "@heroui/switch";
 import { Select, SelectItem } from "@heroui/select";
-import { FolderPlus, RefreshCw, UploadCloud, Trash2, Pencil, Folder, FileText, Users, Search, AlertCircle, Sparkles } from "lucide-react";
+import {
+  FolderPlus,
+  RefreshCw,
+  UploadCloud,
+  Trash2,
+  Pencil,
+  Folder,
+  FileText,
+  Users,
+  Search,
+  AlertCircle,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -66,7 +84,10 @@ function sanitizeSegment(value: string): string {
     .slice(0, 120);
 }
 
-function getRelativeSegmentsFromPath(path: string, tenantSlug: string): string[] {
+function getRelativeSegmentsFromPath(
+  path: string,
+  tenantSlug: string,
+): string[] {
   const segments = path.split("/").filter(Boolean);
 
   if (segments[0] === "magiclawyer") {
@@ -80,9 +101,16 @@ function getRelativeSegmentsFromPath(path: string, tenantSlug: string): string[]
   return segments;
 }
 
-function computeBaseSegmentsForProcess(data: DocumentExplorerData, cliente: DocumentExplorerCliente, processo: DocumentExplorerProcess): string[] {
+function computeBaseSegmentsForProcess(
+  data: DocumentExplorerData,
+  cliente: DocumentExplorerCliente,
+  processo: DocumentExplorerProcess,
+): string[] {
   if (processo.folderTree) {
-    return getRelativeSegmentsFromPath(processo.folderTree.path, data.tenantSlug);
+    return getRelativeSegmentsFromPath(
+      processo.folderTree.path,
+      data.tenantSlug,
+    );
   }
 
   const clienteSegment = `${sanitizeSegment(cliente.nome)}-${cliente.id}`;
@@ -91,9 +119,15 @@ function computeBaseSegmentsForProcess(data: DocumentExplorerData, cliente: Docu
   return ["clientes", clienteSegment, "processos", processoSegment];
 }
 
-function computeBaseSegmentsForCliente(data: DocumentExplorerData, cliente: DocumentExplorerCliente): string[] {
+function computeBaseSegmentsForCliente(
+  data: DocumentExplorerData,
+  cliente: DocumentExplorerCliente,
+): string[] {
   if (cliente.documentosGeraisTree) {
-    return getRelativeSegmentsFromPath(cliente.documentosGeraisTree.path, data.tenantSlug);
+    return getRelativeSegmentsFromPath(
+      cliente.documentosGeraisTree.path,
+      data.tenantSlug,
+    );
   }
 
   const clienteSegment = `${sanitizeSegment(cliente.nome)}-${cliente.id}`;
@@ -101,14 +135,19 @@ function computeBaseSegmentsForCliente(data: DocumentExplorerData, cliente: Docu
   return ["clientes", clienteSegment, "documentos"];
 }
 
-function getRelativeDocSegments(doc: DocumentExplorerFile, baseSegments: string[]): string[] {
+function getRelativeDocSegments(
+  doc: DocumentExplorerFile,
+  baseSegments: string[],
+): string[] {
   if (!doc.folderSegments?.length) return [];
 
   const segments = [...doc.folderSegments];
 
   if (baseSegments.length) {
     const prefix = segments.slice(0, baseSegments.length);
-    const matchesPrefix = baseSegments.every((segment, index) => segment === prefix[index]);
+    const matchesPrefix = baseSegments.every(
+      (segment, index) => segment === prefix[index],
+    );
 
     if (matchesPrefix) {
       return segments.slice(baseSegments.length);
@@ -118,7 +157,10 @@ function getRelativeDocSegments(doc: DocumentExplorerFile, baseSegments: string[
   return segments;
 }
 
-function ensureNode(map: Map<string, ExplorerTreeNode>, relativeSegments: string[]): ExplorerTreeNode {
+function ensureNode(
+  map: Map<string, ExplorerTreeNode>,
+  relativeSegments: string[],
+): ExplorerTreeNode {
   const key = relativeSegments.join("/");
 
   if (map.has(key)) {
@@ -127,7 +169,9 @@ function ensureNode(map: Map<string, ExplorerTreeNode>, relativeSegments: string
 
   const node: ExplorerTreeNode = {
     id: key,
-    name: relativeSegments.length ? relativeSegments[relativeSegments.length - 1] : "Pasta principal",
+    name: relativeSegments.length
+      ? relativeSegments[relativeSegments.length - 1]
+      : "Pasta principal",
     relativeSegments,
     children: [],
     files: [],
@@ -147,18 +191,29 @@ function ensureNode(map: Map<string, ExplorerTreeNode>, relativeSegments: string
   return node;
 }
 
-function buildExplorerTree(data: DocumentExplorerData, cliente: DocumentExplorerCliente, processo: DocumentExplorerProcess | null): ExplorerTreeNode {
+function buildExplorerTree(
+  data: DocumentExplorerData,
+  cliente: DocumentExplorerCliente,
+  processo: DocumentExplorerProcess | null,
+): ExplorerTreeNode {
   const map = new Map<string, ExplorerTreeNode>();
-  const baseSegments = processo ? computeBaseSegmentsForProcess(data, cliente, processo) : computeBaseSegmentsForCliente(data, cliente);
+  const baseSegments = processo
+    ? computeBaseSegmentsForProcess(data, cliente, processo)
+    : computeBaseSegmentsForCliente(data, cliente);
 
   ensureNode(map, []);
 
-  const folderTree = processo ? processo.folderTree : cliente.documentosGeraisTree;
+  const folderTree = processo
+    ? processo.folderTree
+    : cliente.documentosGeraisTree;
 
   const visit = (current: typeof folderTree) => {
     if (!current) return;
 
-    const relativeSegments = getRelativeSegmentsFromPath(current.path, data.tenantSlug).slice(baseSegments.length);
+    const relativeSegments = getRelativeSegmentsFromPath(
+      current.path,
+      data.tenantSlug,
+    ).slice(baseSegments.length);
 
     ensureNode(map, relativeSegments);
 
@@ -181,8 +236,12 @@ function buildExplorerTree(data: DocumentExplorerData, cliente: DocumentExplorer
   }
 
   for (const node of Array.from(map.values())) {
-    node.children.sort((a: ExplorerTreeNode, b: ExplorerTreeNode) => a.name.localeCompare(b.name));
-    node.files.sort((a: DocumentExplorerFile, b: DocumentExplorerFile) => a.nome.localeCompare(b.nome));
+    node.children.sort((a: ExplorerTreeNode, b: ExplorerTreeNode) =>
+      a.name.localeCompare(b.name),
+    );
+    node.files.sort((a: DocumentExplorerFile, b: DocumentExplorerFile) =>
+      a.nome.localeCompare(b.nome),
+    );
   }
 
   return map.get(ROOT_SEGMENT_KEY)!;
@@ -213,10 +272,19 @@ function formatDate(date: string | undefined): string {
   });
 }
 
-export function DocumentosContent({ initialData, initialError }: DocumentosContentProps) {
-  const [selectedClienteId, setSelectedClienteId] = useState<string | null>(initialData?.clientes[0]?.id ?? null);
-  const [selectedProcessoId, setSelectedProcessoId] = useState<string | null>(initialData?.clientes[0]?.processos[0]?.id ?? null);
-  const [selectedFolderSegments, setSelectedFolderSegments] = useState<string[]>([]);
+export function DocumentosContent({
+  initialData,
+  initialError,
+}: DocumentosContentProps) {
+  const [selectedClienteId, setSelectedClienteId] = useState<string | null>(
+    initialData?.clientes[0]?.id ?? null,
+  );
+  const [selectedProcessoId, setSelectedProcessoId] = useState<string | null>(
+    initialData?.clientes[0]?.processos[0]?.id ?? null,
+  );
+  const [selectedFolderSegments, setSelectedFolderSegments] = useState<
+    string[]
+  >([]);
   const [isUploading, setIsUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
@@ -244,13 +312,16 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
       fallbackData: initialData ?? undefined,
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   useEffect(() => {
     if (!data) return;
 
-    if (!selectedClienteId || !data.clientes.some((cliente) => cliente.id === selectedClienteId)) {
+    if (
+      !selectedClienteId ||
+      !data.clientes.some((cliente) => cliente.id === selectedClienteId)
+    ) {
       const firstCliente = data.clientes[0];
 
       setSelectedClienteId(firstCliente ? firstCliente.id : null);
@@ -264,7 +335,10 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
 
     if (!cliente) return;
 
-    if (selectedProcessoId && !cliente.processos.some((processo) => processo.id === selectedProcessoId)) {
+    if (
+      selectedProcessoId &&
+      !cliente.processos.some((processo) => processo.id === selectedProcessoId)
+    ) {
       setSelectedProcessoId(cliente.processos[0]?.id ?? null);
       setSelectedFolderSegments([]);
     }
@@ -273,13 +347,19 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
   const selectedCliente = useMemo(() => {
     if (!data || !selectedClienteId) return null;
 
-    return data.clientes.find((cliente) => cliente.id === selectedClienteId) ?? null;
+    return (
+      data.clientes.find((cliente) => cliente.id === selectedClienteId) ?? null
+    );
   }, [data, selectedClienteId]);
 
   const selectedProcesso = useMemo(() => {
     if (!selectedCliente || !selectedProcessoId) return null;
 
-    return selectedCliente.processos.find((processo) => processo.id === selectedProcessoId) ?? null;
+    return (
+      selectedCliente.processos.find(
+        (processo) => processo.id === selectedProcessoId,
+      ) ?? null
+    );
   }, [selectedCliente, selectedProcessoId]);
 
   const tree = useMemo(() => {
@@ -368,7 +448,8 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
       return;
     }
 
-    const currentName = selectedFolderSegments[selectedFolderSegments.length - 1];
+    const currentName =
+      selectedFolderSegments[selectedFolderSegments.length - 1];
     const novoNome = prompt("Novo nome da pasta", currentName);
 
     if (!novoNome || novoNome === currentName) return;
@@ -410,7 +491,9 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
       return;
     }
 
-    const confirmDelete = confirm("Deseja realmente excluir esta pasta e todos os arquivos dentro dela?");
+    const confirmDelete = confirm(
+      "Deseja realmente excluir esta pasta e todos os arquivos dentro dela?",
+    );
 
     if (!confirmDelete) return;
 
@@ -441,14 +524,18 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
         return;
       }
 
-      const defaultProcesso = selectedProcesso ?? selectedCliente.processos[0] ?? null;
+      const defaultProcesso =
+        selectedProcesso ?? selectedCliente.processos[0] ?? null;
       const defaultCausaId = defaultProcesso?.causas?.[0]?.id ?? null;
-      const relacionados = selectedCliente.contratos?.filter((contrato: any) => (defaultProcesso ? contrato.processoId === defaultProcesso.id : false));
+      const relacionados = selectedCliente.contratos?.filter((contrato: any) =>
+        defaultProcesso ? contrato.processoId === defaultProcesso.id : false,
+      );
 
       setUploadOptions({
         causaId: defaultCausaId,
         processoIds: defaultProcesso ? [defaultProcesso.id] : [],
-        contratoIds: relacionados && relacionados.length ? [relacionados[0].id] : [],
+        contratoIds:
+          relacionados && relacionados.length ? [relacionados[0].id] : [],
         visivelParaCliente: true,
         description: "",
       });
@@ -456,7 +543,7 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
       setPendingFiles(files);
       setIsUploadModalOpen(true);
     },
-    [selectedCliente, selectedProcesso]
+    [selectedCliente, selectedProcesso],
   );
 
   const handleUploadModalClose = useCallback(() => {
@@ -487,18 +574,27 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
 
         formData.append("file", file);
 
-        uploadOptions.processoIds.forEach((processoId) => formData.append("processoIds", processoId));
-        uploadOptions.contratoIds.forEach((contratoId) => formData.append("contratoIds", contratoId));
+        uploadOptions.processoIds.forEach((processoId) =>
+          formData.append("processoIds", processoId),
+        );
+        uploadOptions.contratoIds.forEach((contratoId) =>
+          formData.append("contratoIds", contratoId),
+        );
 
         if (uploadOptions.causaId) {
           formData.append("causaId", uploadOptions.causaId);
         }
 
-        const response = await uploadDocumentoExplorer(selectedCliente.id, uploadOptions.processoIds[0] ?? null, formData, {
-          folderSegments: selectedFolderSegments,
-          description: uploadOptions.description || undefined,
-          visivelParaCliente: uploadOptions.visivelParaCliente,
-        });
+        const response = await uploadDocumentoExplorer(
+          selectedCliente.id,
+          uploadOptions.processoIds[0] ?? null,
+          formData,
+          {
+            folderSegments: selectedFolderSegments,
+            description: uploadOptions.description || undefined,
+            visivelParaCliente: uploadOptions.visivelParaCliente,
+          },
+        );
 
         if (!response.success) {
           throw new Error(response.error || `Erro ao enviar ${file.name}`);
@@ -510,11 +606,19 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
       setIsUploadModalOpen(false);
       await mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao enviar documentos");
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao enviar documentos",
+      );
     } finally {
       setIsUploading(false);
     }
-  }, [pendingFiles, selectedCliente, uploadOptions, selectedFolderSegments, mutate]);
+  }, [
+    pendingFiles,
+    selectedCliente,
+    uploadOptions,
+    selectedFolderSegments,
+    mutate,
+  ]);
 
   const handleUpload = useCallback(
     (files: FileList | null) => {
@@ -522,7 +626,7 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
 
       openUploadModalForFiles(files);
     },
-    [openUploadModalForFiles]
+    [openUploadModalForFiles],
   );
 
   const handleDeleteFile = useCallback(
@@ -545,7 +649,7 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
       toast.success("Arquivo removido");
       await mutate();
     },
-    [mutate]
+    [mutate],
   );
 
   const filteredClientes = useMemo(() => {
@@ -553,10 +657,16 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
 
     if (!searchTerm) return data.clientes;
 
-    return data.clientes.filter((cliente) => cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()));
+    return data.clientes.filter((cliente) =>
+      cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
   }, [data, searchTerm]);
 
-  const canConfirmUpload = Boolean(pendingFiles?.length && (uploadOptions.processoIds.length > 0 || uploadOptions.contratoIds.length > 0));
+  const canConfirmUpload = Boolean(
+    pendingFiles?.length &&
+      (uploadOptions.processoIds.length > 0 ||
+        uploadOptions.contratoIds.length > 0),
+  );
 
   const fileCount = pendingFiles?.length ?? 0;
 
@@ -579,9 +689,16 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
               <AlertCircle className="h-5 w-5" />
               <span className="font-semibold">Erro ao carregar documentos</span>
             </div>
-            <p className="text-sm text-danger-200/80">{displayError || "Não foi possível recuperar a biblioteca de documentos."}</p>
+            <p className="text-sm text-danger-200/80">
+              {displayError ||
+                "Não foi possível recuperar a biblioteca de documentos."}
+            </p>
             <div>
-              <Button color="danger" startContent={<RefreshCw className="h-4 w-4" />} onPress={() => mutate()}>
+              <Button
+                color="danger"
+                startContent={<RefreshCw className="h-4 w-4" />}
+                onPress={() => mutate()}
+              >
                 Tentar novamente
               </Button>
             </div>
@@ -597,11 +714,25 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
         <header className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">Documentos</p>
-              <h1 className={title({ size: "lg", color: "blue" })}>Biblioteca organizada por cliente e processo</h1>
-              <p className="text-sm text-default-400">Arraste arquivos, organize em pastas e mantenha o escritório sincronizado com o Cloudinary.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
+                Documentos
+              </p>
+              <h1 className={title({ size: "lg", color: "blue" })}>
+                Biblioteca organizada por cliente e processo
+              </h1>
+              <p className="text-sm text-default-400">
+                Arraste arquivos, organize em pastas e mantenha o escritório
+                sincronizado com o Cloudinary.
+              </p>
             </div>
-            <Button color="primary" isLoading={isValidating} radius="full" startContent={<RefreshCw className="h-4 w-4" />} variant="flat" onPress={() => mutate()}>
+            <Button
+              color="primary"
+              isLoading={isValidating}
+              radius="full"
+              startContent={<RefreshCw className="h-4 w-4" />}
+              variant="flat"
+              onPress={() => mutate()}
+            >
               Atualizar
             </Button>
           </div>
@@ -609,26 +740,42 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Card className="border border-primary/30 bg-primary/10">
               <CardBody className="flex flex-col gap-1">
-                <span className="text-xs uppercase tracking-wide text-primary/70">Clientes</span>
-                <span className="text-2xl font-semibold text-primary-200">{data.totals.clientes}</span>
+                <span className="text-xs uppercase tracking-wide text-primary/70">
+                  Clientes
+                </span>
+                <span className="text-2xl font-semibold text-primary-200">
+                  {data.totals.clientes}
+                </span>
               </CardBody>
             </Card>
             <Card className="border border-success/30 bg-success/10">
               <CardBody className="flex flex-col gap-1">
-                <span className="text-xs uppercase tracking-wide text-success/70">Processos</span>
-                <span className="text-2xl font-semibold text-success-200">{data.totals.processos}</span>
+                <span className="text-xs uppercase tracking-wide text-success/70">
+                  Processos
+                </span>
+                <span className="text-2xl font-semibold text-success-200">
+                  {data.totals.processos}
+                </span>
               </CardBody>
             </Card>
             <Card className="border border-secondary/30 bg-secondary/10">
               <CardBody className="flex flex-col gap-1">
-                <span className="text-xs uppercase tracking-wide text-secondary/70">Documentos</span>
-                <span className="text-2xl font-semibold text-secondary-200">{data.totals.documentos}</span>
+                <span className="text-xs uppercase tracking-wide text-secondary/70">
+                  Documentos
+                </span>
+                <span className="text-2xl font-semibold text-secondary-200">
+                  {data.totals.documentos}
+                </span>
               </CardBody>
             </Card>
             <Card className="border border-warning/30 bg-warning/10">
               <CardBody className="flex flex-col gap-1">
-                <span className="text-xs uppercase tracking-wide text-warning/70">Arquivos</span>
-                <span className="text-2xl font-semibold text-warning-200">{data.totals.arquivos}</span>
+                <span className="text-xs uppercase tracking-wide text-warning/70">
+                  Arquivos
+                </span>
+                <span className="text-2xl font-semibold text-warning-200">
+                  {data.totals.arquivos}
+                </span>
               </CardBody>
             </Card>
           </div>
@@ -639,8 +786,12 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
             <CardHeader className="flex items-center gap-2 border-b border-default-100/20 pb-4">
               <Users className="h-5 w-5 text-primary" />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-default-100">Clientes</p>
-                <p className="text-xs text-default-400">{filteredClientes.length} registros</p>
+                <p className="text-sm font-semibold text-default-100">
+                  Clientes
+                </p>
+                <p className="text-xs text-default-400">
+                  {filteredClientes.length} registros
+                </p>
               </div>
             </CardHeader>
             <Divider className="border-default-100/20" />
@@ -653,7 +804,10 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
                 variant="bordered"
                 onValueChange={setSearchTerm}
               />
-              <div className="flex flex-col gap-2 overflow-y-auto pr-1" style={{ maxHeight: "520px" }}>
+              <div
+                className="flex flex-col gap-2 overflow-y-auto pr-1"
+                style={{ maxHeight: "520px" }}
+              >
                 {filteredClientes.map((cliente) => {
                   const isActive = cliente.id === selectedClienteId;
 
@@ -663,9 +817,12 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
                       className={`flex flex-col gap-1 rounded-xl border px-3 py-2 text-left transition ${isActive ? "border-primary/40 bg-primary/10" : "border-default-100/10 bg-default-100/5 hover:border-default-100/30"}`}
                       onClick={() => handleSelectCliente(cliente.id)}
                     >
-                      <span className="text-sm font-medium text-default-100">{cliente.nome}</span>
+                      <span className="text-sm font-medium text-default-100">
+                        {cliente.nome}
+                      </span>
                       <span className="text-xs text-default-400">
-                        {cliente.counts.processos} processos · {cliente.counts.arquivos} arquivos
+                        {cliente.counts.processos} processos ·{" "}
+                        {cliente.counts.arquivos} arquivos
                       </span>
                     </button>
                   );
@@ -678,8 +835,13 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
             <Card className="border border-default-100/40 bg-default-50/10">
               <CardHeader className="flex items-center justify-between gap-2 border-b border-default-100/20 pb-4">
                 <div>
-                  <p className="text-sm font-semibold text-default-100">Processos</p>
-                  <p className="text-xs text-default-400">{selectedCliente?.processos.length ?? 0} associados ao cliente</p>
+                  <p className="text-sm font-semibold text-default-100">
+                    Processos
+                  </p>
+                  <p className="text-xs text-default-400">
+                    {selectedCliente?.processos.length ?? 0} associados ao
+                    cliente
+                  </p>
                 </div>
                 {selectedCliente && (
                   <Chip color="primary" size="sm" variant="flat">
@@ -698,8 +860,12 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
                         className={`flex flex-col gap-1 rounded-xl border px-3 py-2 text-left transition ${isActive ? "border-primary/40 bg-primary/10" : "border-default-100/10 bg-default-100/5 hover:border-default-100/30"}`}
                         onClick={() => handleSelectProcesso(processo.id)}
                       >
-                        <span className="text-sm font-medium text-default-100">{processo.numero}</span>
-                        <span className="text-xs text-default-400 line-clamp-1">{processo.titulo || "Sem título"}</span>
+                        <span className="text-sm font-medium text-default-100">
+                          {processo.numero}
+                        </span>
+                        <span className="text-xs text-default-400 line-clamp-1">
+                          {processo.titulo || "Sem título"}
+                        </span>
                         <div className="flex items-center gap-2 text-[11px] text-default-500">
                           <span>{processo.counts.arquivos} arquivos</span>
                           <span>•</span>
@@ -709,7 +875,9 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
                     );
                   })
                 ) : (
-                  <div className="flex items-center justify-center py-6 text-sm text-default-400">Nenhum processo vinculado</div>
+                  <div className="flex items-center justify-center py-6 text-sm text-default-400">
+                    Nenhum processo vinculado
+                  </div>
                 )}
               </CardBody>
             </Card>
@@ -717,20 +885,41 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
             <Card className="border border-default-100/40 bg-default-50/10">
               <CardHeader className="flex flex-wrap items-center justify-between gap-3 border-b border-default-100/20 pb-4">
                 <div>
-                  <p className="text-sm font-semibold text-default-100">Explorador de arquivos</p>
-                  <p className="text-xs text-default-400">{selectedProcesso ? "Pastas do processo" : "Documentos gerais do cliente"}</p>
+                  <p className="text-sm font-semibold text-default-100">
+                    Explorador de arquivos
+                  </p>
+                  <p className="text-xs text-default-400">
+                    {selectedProcesso
+                      ? "Pastas do processo"
+                      : "Documentos gerais do cliente"}
+                  </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <Button color="primary" size="sm" startContent={<FolderPlus className="h-3.5 w-3.5" />} variant="flat" onPress={handleCreateFolder}>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    startContent={<FolderPlus className="h-3.5 w-3.5" />}
+                    variant="flat"
+                    onPress={handleCreateFolder}
+                  >
                     Nova pasta
                   </Button>
                   <Tooltip content="Renomear pasta selecionada">
-                    <Button size="sm" variant="light" onPress={handleRenameFolder}>
+                    <Button
+                      size="sm"
+                      variant="light"
+                      onPress={handleRenameFolder}
+                    >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                   </Tooltip>
                   <Tooltip content="Excluir pasta selecionada">
-                    <Button color="danger" size="sm" variant="light" onPress={handleDeleteFolder}>
+                    <Button
+                      color="danger"
+                      size="sm"
+                      variant="light"
+                      onPress={handleDeleteFolder}
+                    >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </Tooltip>
@@ -738,20 +927,32 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
               </CardHeader>
               <CardBody>
                 {!selectedCliente ? (
-                  <div className="flex items-center justify-center py-20 text-sm text-default-400">Selecione um cliente para visualizar documentos</div>
+                  <div className="flex items-center justify-center py-20 text-sm text-default-400">
+                    Selecione um cliente para visualizar documentos
+                  </div>
                 ) : !tree ? (
-                  <div className="flex items-center justify-center py-20 text-sm text-default-400">Nenhuma estrutura encontrada</div>
+                  <div className="flex items-center justify-center py-20 text-sm text-default-400">
+                    Nenhuma estrutura encontrada
+                  </div>
                 ) : (
                   <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
                     <div className="rounded-xl border border-default-100/20 bg-default-100/5 p-3">
-                      <FolderTree root={tree} selectedPath={selectedFolderSegments} onSelectFolder={handleSelectFolder} />
+                      <FolderTree
+                        root={tree}
+                        selectedPath={selectedFolderSegments}
+                        onSelectFolder={handleSelectFolder}
+                      />
                     </div>
 
                     <div className="rounded-xl border border-default-100/20 bg-default-100/5">
                       <div className="flex items-center justify-between border-b border-default-100/10 px-4 py-3">
                         <div className="flex items-center gap-2 text-sm font-semibold text-default-100">
                           <Folder className="h-4 w-4 text-primary" />
-                          {selectedFolderSegments.length ? selectedFolderSegments[selectedFolderSegments.length - 1] : "Pasta principal"}
+                          {selectedFolderSegments.length
+                            ? selectedFolderSegments[
+                                selectedFolderSegments.length - 1
+                              ]
+                            : "Pasta principal"}
                         </div>
                         <Button
                           color="primary"
@@ -802,17 +1003,32 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
                                 <div className="flex flex-1 items-center gap-3">
                                   <FileText className="h-4 w-4 text-default-300" />
                                   <div>
-                                    <p className="text-sm font-medium text-default-100">{arquivo.nome}</p>
+                                    <p className="text-sm font-medium text-default-100">
+                                      {arquivo.nome}
+                                    </p>
                                     <p className="text-xs text-default-400">
-                                      {formatBytes(arquivo.tamanhoBytes)} · {formatDate(arquivo.uploadedAt)}
+                                      {formatBytes(arquivo.tamanhoBytes)} ·{" "}
+                                      {formatDate(arquivo.uploadedAt)}
                                     </p>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <Button as="a" href={arquivo.url} rel="noopener noreferrer" size="sm" target="_blank" variant="light">
+                                  <Button
+                                    as="a"
+                                    href={arquivo.url}
+                                    rel="noopener noreferrer"
+                                    size="sm"
+                                    target="_blank"
+                                    variant="light"
+                                  >
                                     Abrir
                                   </Button>
-                                  <Button color="danger" size="sm" variant="light" onPress={() => handleDeleteFile(arquivo)}>
+                                  <Button
+                                    color="danger"
+                                    size="sm"
+                                    variant="light"
+                                    onPress={() => handleDeleteFile(arquivo)}
+                                  >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </Button>
                                 </div>
@@ -820,7 +1036,9 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
                             ))}
                           </div>
                         ) : (
-                          <div className="flex flex-1 items-center justify-center text-xs text-default-400">Nenhum arquivo nesta pasta</div>
+                          <div className="flex flex-1 items-center justify-center text-xs text-default-400">
+                            Nenhum arquivo nesta pasta
+                          </div>
                         )}
                       </div>
                     </div>
@@ -834,10 +1052,16 @@ export function DocumentosContent({ initialData, initialError }: DocumentosConte
         <footer className="flex items-center justify-between rounded-xl border border-default-100/20 bg-default-100/5 px-4 py-3 text-xs text-default-400">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary/80" />
-            <span>Estrutura sincronizada em {data.generatedAt ? formatDate(data.generatedAt) : "--"}</span>
+            <span>
+              Estrutura sincronizada em{" "}
+              {data.generatedAt ? formatDate(data.generatedAt) : "--"}
+            </span>
           </div>
           <span>
-            Cloudinary folder base: <code className="text-default-300">magiclawyer/{data.tenantSlug}</code>
+            Cloudinary folder base:{" "}
+            <code className="text-default-300">
+              magiclawyer/{data.tenantSlug}
+            </code>
           </span>
         </footer>
       </section>
@@ -929,7 +1153,10 @@ function ExplorerSkeleton() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Card key={index} className="border border-default-100/20 bg-default-50/10">
+          <Card
+            key={index}
+            className="border border-default-100/20 bg-default-50/10"
+          >
             <CardBody className="space-y-3">
               <Skeleton className="h-3 w-20 rounded-lg" isLoaded={false} />
               <Skeleton className="h-8 w-16 rounded-lg" isLoaded={false} />
@@ -943,7 +1170,11 @@ function ExplorerSkeleton() {
           <CardBody className="space-y-4">
             <Skeleton className="h-10 w-full rounded-lg" isLoaded={false} />
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-12 w-full rounded-xl" isLoaded={false} />
+              <Skeleton
+                key={index}
+                className="h-12 w-full rounded-xl"
+                isLoaded={false}
+              />
             ))}
           </CardBody>
         </Card>
@@ -951,7 +1182,11 @@ function ExplorerSkeleton() {
           <CardBody className="space-y-4">
             <Skeleton className="h-10 w-full rounded-lg" isLoaded={false} />
             {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={index} className="h-20 w-full rounded-xl" isLoaded={false} />
+              <Skeleton
+                key={index}
+                className="h-20 w-full rounded-xl"
+                isLoaded={false}
+              />
             ))}
           </CardBody>
         </Card>
@@ -975,7 +1210,20 @@ interface UploadOptionsModalProps {
   setUploadOptions: React.Dispatch<React.SetStateAction<UploadOptionsState>>;
 }
 
-function UploadOptionsModal({ isOpen, onClose, onConfirm, isSubmitting, canConfirm, fileCount, cliente, processos, contratos, causas, uploadOptions, setUploadOptions }: UploadOptionsModalProps) {
+function UploadOptionsModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  isSubmitting,
+  canConfirm,
+  fileCount,
+  cliente,
+  processos,
+  contratos,
+  causas,
+  uploadOptions,
+  setUploadOptions,
+}: UploadOptionsModalProps) {
   const handleToggleProcesso = (processoId: string, selected: boolean) => {
     setUploadOptions((prev) => {
       const next = new Set(prev.processoIds);
@@ -1026,14 +1274,18 @@ function UploadOptionsModal({ isOpen, onClose, onConfirm, isSubmitting, canConfi
         {(close) => (
           <>
             <ModalHeader className="flex flex-col gap-1">
-              <h3 className="text-lg font-semibold text-default-900">Configurar upload</h3>
+              <h3 className="text-lg font-semibold text-default-900">
+                Configurar upload
+              </h3>
               <p className="text-sm text-default-500">
                 {fileCount} arquivo{fileCount === 1 ? "" : "s"} selecionado
               </p>
             </ModalHeader>
             <ModalBody className="space-y-4">
               {!cliente ? (
-                <p className="text-sm text-default-500">Selecione um cliente para vincular os documentos.</p>
+                <p className="text-sm text-default-500">
+                  Selecione um cliente para vincular os documentos.
+                </p>
               ) : (
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -1051,7 +1303,9 @@ function UploadOptionsModal({ isOpen, onClose, onConfirm, isSubmitting, canConfi
                       }}
                     >
                       {[
-                        <SelectItem key="__none">Sem causa específica</SelectItem>,
+                        <SelectItem key="__none">
+                          Sem causa específica
+                        </SelectItem>,
                         ...causas.map((causa) => (
                           <SelectItem key={causa.id}>
                             {causa.nome}
@@ -1063,37 +1317,71 @@ function UploadOptionsModal({ isOpen, onClose, onConfirm, isSubmitting, canConfi
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-sm font-semibold text-default-600">Processos vinculados</p>
+                    <p className="text-sm font-semibold text-default-600">
+                      Processos vinculados
+                    </p>
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                       {processos.length ? (
                         processos.map((processo) => (
-                          <Checkbox key={processo.id} isSelected={uploadOptions.processoIds.includes(processo.id)} onValueChange={(selected) => handleToggleProcesso(processo.id, selected)}>
+                          <Checkbox
+                            key={processo.id}
+                            isSelected={uploadOptions.processoIds.includes(
+                              processo.id,
+                            )}
+                            onValueChange={(selected) =>
+                              handleToggleProcesso(processo.id, selected)
+                            }
+                          >
                             <div className="flex flex-col">
-                              <span className="text-sm font-medium text-default-600">{processo.numero}</span>
-                              <span className="text-xs text-default-400">{processo.titulo || "Sem título"}</span>
+                              <span className="text-sm font-medium text-default-600">
+                                {processo.numero}
+                              </span>
+                              <span className="text-xs text-default-400">
+                                {processo.titulo || "Sem título"}
+                              </span>
                             </div>
                           </Checkbox>
                         ))
                       ) : (
-                        <p className="text-xs text-default-500">Nenhum processo disponível para este cliente.</p>
+                        <p className="text-xs text-default-500">
+                          Nenhum processo disponível para este cliente.
+                        </p>
                       )}
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-sm font-semibold text-default-600">Contratos relacionados</p>
+                    <p className="text-sm font-semibold text-default-600">
+                      Contratos relacionados
+                    </p>
                     <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                       {contratos.length ? (
                         contratos.map((contrato) => (
-                          <Checkbox key={contrato.id} isSelected={uploadOptions.contratoIds.includes(contrato.id)} onValueChange={(selected) => handleToggleContrato(contrato.id, selected)}>
+                          <Checkbox
+                            key={contrato.id}
+                            isSelected={uploadOptions.contratoIds.includes(
+                              contrato.id,
+                            )}
+                            onValueChange={(selected) =>
+                              handleToggleContrato(contrato.id, selected)
+                            }
+                          >
                             <div className="flex flex-col">
-                              <span className="text-sm font-medium text-default-600">{contrato.titulo}</span>
-                              {contrato.processoId && <span className="text-xs text-default-400">Vinculado ao processo {contrato.processoId}</span>}
+                              <span className="text-sm font-medium text-default-600">
+                                {contrato.titulo}
+                              </span>
+                              {contrato.processoId && (
+                                <span className="text-xs text-default-400">
+                                  Vinculado ao processo {contrato.processoId}
+                                </span>
+                              )}
                             </div>
                           </Checkbox>
                         ))
                       ) : (
-                        <p className="text-xs text-default-500">Nenhum contrato vinculado ao cliente.</p>
+                        <p className="text-xs text-default-500">
+                          Nenhum contrato vinculado ao cliente.
+                        </p>
                       )}
                     </div>
                   </div>
@@ -1137,7 +1425,12 @@ function UploadOptionsModal({ isOpen, onClose, onConfirm, isSubmitting, canConfi
               >
                 Cancelar
               </Button>
-              <Button color="primary" isDisabled={!canConfirm || !cliente || isSubmitting} isLoading={isSubmitting} onPress={onConfirm}>
+              <Button
+                color="primary"
+                isDisabled={!canConfirm || !cliente || isSubmitting}
+                isLoading={isSubmitting}
+                onPress={onConfirm}
+              >
                 Confirmar upload
               </Button>
             </ModalFooter>
