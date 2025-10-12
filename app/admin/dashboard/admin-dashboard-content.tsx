@@ -7,7 +7,6 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Skeleton } from "@heroui/react";
-import { Tooltip } from "@heroui/tooltip";
 import NextLink from "next/link";
 
 import {
@@ -471,7 +470,7 @@ function DashboardSkeleton() {
 }
 
 export function AdminDashboardContent() {
-  const { data, error, isLoading, mutate } = useSWR<AdminDashboardData>(
+  const { data, error, isLoading } = useSWR<AdminDashboardData>(
     "admin-dashboard-overview",
     fetchAdminDashboard,
     {
@@ -495,19 +494,7 @@ export function AdminDashboardContent() {
               de atenção
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Tooltip content="Recarregar dados agora">
-              <Button
-                color="primary"
-                isLoading={isLoading && !data}
-                radius="full"
-                variant="flat"
-                onPress={() => mutate()}
-              >
-                Atualizar dados
-              </Button>
-            </Tooltip>
-          </div>
+          <div className="flex items-center gap-2" />
         </div>
       </header>
 
@@ -522,9 +509,6 @@ export function AdminDashboardContent() {
                 {error instanceof Error ? error.message : "Erro inesperado"}
               </p>
             </div>
-            <Button color="danger" variant="flat" onPress={() => mutate()}>
-              Tentar novamente
-            </Button>
           </CardBody>
         </Card>
       ) : null}

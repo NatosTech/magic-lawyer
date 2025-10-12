@@ -95,7 +95,7 @@ function TenantsSkeleton() {
 }
 
 export function TenantsContent() {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading } = useSWR(
     "admin-tenants",
     fetchTenants,
     { revalidateOnFocus: false },
@@ -128,14 +128,6 @@ export function TenantsContent() {
             >
               ➕ Criar novo tenant
             </Button>
-            <Button
-              isLoading={isLoading && !data}
-              radius="full"
-              variant="bordered"
-              onPress={() => mutate()}
-            >
-              Atualizar
-            </Button>
           </div>
         </div>
       </header>
@@ -151,9 +143,6 @@ export function TenantsContent() {
                 {error instanceof Error ? error.message : "Erro inesperado"}
               </p>
             </div>
-            <Button color="danger" variant="flat" onPress={() => mutate()}>
-              Tentar novamente
-            </Button>
           </CardBody>
         </Card>
       ) : null}
