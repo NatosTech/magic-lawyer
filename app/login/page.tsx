@@ -2,8 +2,8 @@
 
 /* eslint-disable no-console */
 
-import { Suspense, useState } from "react";
-import { signIn } from "next-auth/react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { getSession, signIn, useSession } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
@@ -18,11 +18,78 @@ import { Logo } from "@/components/icons";
 function LoginPageInner() {
   const params = useSearchParams();
   const router = useRouter();
+  const { status, data: session } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [tenant, setTenant] = useState("");
   const [loading, setLoading] = useState(false);
-  const callbackUrl = params.get("callbackUrl") || "/";
+  const callbackUrl = params.get("callbackUrl");
+
+  const resolveRedirectTarget = useCallback(
+    (role?: string | null) => {
+      const defaultTarget =
+        role === "SUPER_ADMIN" ? "/admin/dashboard" : "/dashboard";
+
+      if (!callbackUrl) {
+        return defaultTarget;
+      }
+
+      const parsedTarget = (() => {
+        // Permitir somente rotas internas
+        if (callbackUrl.startsWith("/")) {
+          return callbackUrl;
+        }
+
+        try {
+          if (typeof window === "undefined") {
+            return null;
+          }
+
+          const url = new URL(callbackUrl, window.location.origin);
+
+          if (url.origin !== window.location.origin) {
+            return null;
+          }
+
+          return `${url.pathname}${url.search}${url.hash}` || null;
+        } catch (error) {
+          console.warn("[login] Callback inválida, usando padrão", {
+            callbackUrl,
+            error,
+          });
+
+          return null;
+        }
+      })();
+
+      if (!parsedTarget) {
+        return defaultTarget;
+      }
+
+      // Bloquear acesso indevido às áreas erradas conforme o perfil
+      if (role === "SUPER_ADMIN" && !parsedTarget.startsWith("/admin")) {
+        return "/admin/dashboard";
+      }
+
+      if (role !== "SUPER_ADMIN" && parsedTarget.startsWith("/admin")) {
+        return defaultTarget;
+      }
+
+      return parsedTarget;
+    },
+    [callbackUrl],
+  );
+
+  useEffect(() => {
+    if (status !== "authenticated") {
+      return;
+    }
+
+    const role = (session?.user as any)?.role as string | undefined;
+    const target = resolveRedirectTarget(role);
+
+    router.replace(target);
+  }, [status, session, router, resolveRedirectTarget]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +187,11 @@ function LoginPageInner() {
         timeout: 3500,
       });
 
-      router.push(callbackUrl);
+      const freshSession = await getSession();
+      const role = (freshSession?.user as any)?.role as string | undefined;
+      const target = resolveRedirectTarget(role);
+
+      router.replace(target);
     } catch (error) {
       const message =
         error instanceof Error

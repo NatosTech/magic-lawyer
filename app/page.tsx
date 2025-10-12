@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
@@ -11,6 +14,20 @@ const stats = [
 ];
 
 export default function Home() {
+  const router = useRouter();
+  const { status, data: session } = useSession();
+
+  useEffect(() => {
+    if (status !== "authenticated") {
+      return;
+    }
+
+    const role = (session?.user as any)?.role as string | undefined;
+    const target = role === "SUPER_ADMIN" ? "/admin/dashboard" : "/dashboard";
+
+    router.replace(target);
+  }, [status, session, router]);
+
   return (
     <section className="relative flex flex-col items-center justify-center gap-10 py-12 sm:py-16">
       <div
