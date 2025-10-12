@@ -144,13 +144,34 @@ function LoginPageInner() {
         throw new Error("Não foi possível contatar o servidor de autenticação.");
       }
 
-      if (!response.ok) {
-        // Tratamento específico de erros
-        if (response.error === "CredentialsSignin") {
-          throw new Error("Usuário não encontrado ou credenciais inválidas. Verifique seu e-mail, senha e escritório.");
+        if (!response.ok) {
+          // Tratamento específico de erros
+          if (response.error === "CredentialsSignin") {
+            throw new Error("Usuário não encontrado ou credenciais inválidas. Verifique seu e-mail, senha e escritório.");
+          }
+          
+          // Verificar se é um erro de redirecionamento para tenant
+          if (response.error?.startsWith("REDIRECT_TO_TENANT:")) {
+            const tenantSlug = response.error.replace("REDIRECT_TO_TENANT:", "");
+            const redirectUrl = `https://${tenantSlug}.magiclawyer.vercel.app/login`;
+            
+            addToast({
+              title: "Redirecionamento automático",
+              description: `Você será redirecionado para o domínio correto do seu escritório.`,
+              color: "primary",
+              timeout: 3000,
+            });
+            
+            // Redirecionar após um pequeno delay
+            setTimeout(() => {
+              window.location.href = redirectUrl;
+            }, 2000);
+            
+            return;
+          }
+          
+          throw new Error(response.error ?? "Credenciais inválidas. Verifique seus dados e tente novamente.");
         }
-        throw new Error(response.error ?? "Credenciais inválidas. Verifique seus dados e tente novamente.");
-      }
 
       console.info("[login] Autenticação concluída", attemptContext);
 
