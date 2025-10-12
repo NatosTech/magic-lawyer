@@ -416,7 +416,6 @@ export async function getCurrentUserAvatar(): Promise<{
     const user = await prisma.usuario.findUnique({
       where: {
         id: session.user.id,
-        tenantId: session.user.tenantId,
       },
       select: {
         avatarUrl: true,
