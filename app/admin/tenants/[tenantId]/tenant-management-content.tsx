@@ -38,6 +38,9 @@ import {
   Sparkles,
   KeyRound,
   ToggleLeft,
+  Edit,
+  Check,
+  X,
 } from "lucide-react";
 
 import {
@@ -189,6 +192,22 @@ export function TenantManagementContent({
   const [userRoles, setUserRoles] = useState<Record<string, UserRole>>(() =>
     tenantData.users.reduce((acc, user) => ({ ...acc, [user.id]: user.role }), {}),
   );
+  const [userFirstNames, setUserFirstNames] = useState<Record<string, string>>(() =>
+    tenantData.users.reduce((acc, user) => ({ 
+      ...acc, 
+      [user.id]: user.name.split(' ')[0] || '' 
+    }), {}),
+  );
+  const [userLastNames, setUserLastNames] = useState<Record<string, string>>(() =>
+    tenantData.users.reduce((acc, user) => ({ 
+      ...acc, 
+      [user.id]: user.name.split(' ').slice(1).join(' ') || '' 
+    }), {}),
+  );
+  const [userEmails, setUserEmails] = useState<Record<string, string>>(() =>
+    tenantData.users.reduce((acc, user) => ({ ...acc, [user.id]: user.email }), {}),
+  );
+  const [editingUser, setEditingUser] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
   const [isSavingDetails, startSavingDetails] = useTransition();
@@ -229,6 +248,24 @@ export function TenantManagementContent({
       tenantData.users.reduce(
         (acc, user) => ({ ...acc, [user.id]: user.role }),
         {} as Record<string, UserRole>,
+      ),
+    );
+    setUserFirstNames(
+      tenantData.users.reduce(
+        (acc, user) => ({ ...acc, [user.id]: user.name.split(' ')[0] || '' }),
+        {} as Record<string, string>,
+      ),
+    );
+    setUserLastNames(
+      tenantData.users.reduce(
+        (acc, user) => ({ ...acc, [user.id]: user.name.split(' ').slice(1).join(' ') || '' }),
+        {} as Record<string, string>,
+      ),
+    );
+    setUserEmails(
+      tenantData.users.reduce(
+        (acc, user) => ({ ...acc, [user.id]: user.email }),
+        {} as Record<string, string>,
       ),
     );
   }, [tenantData]);
@@ -437,6 +474,49 @@ export function TenantManagementContent({
     });
   };
 
+  const handleSaveUserInfo = (userId: string) => {
+    setPendingUserId(userId);
+    startUpdatingUser(() => {
+      (async () => {
+        const response = await updateTenantUser(tenantId, userId, {
+          firstName: userFirstNames[userId],
+          lastName: userLastNames[userId],
+          email: userEmails[userId],
+        });
+
+        if (!response.success) {
+          addToast({
+            title: "Erro ao atualizar usuário",
+            description: response.error ?? "Tente novamente",
+            color: "danger",
+          });
+        } else {
+          addToast({
+            title: "Usuário atualizado",
+            description: "Informações do usuário foram salvas",
+            color: "success",
+          });
+          setEditingUser(null);
+        }
+
+        setPendingUserId(null);
+        await mutate();
+      })();
+    });
+  };
+
+  const handleCancelEdit = (userId: string) => {
+    // Restaurar valores originais
+    const originalUser = tenantData.users.find(u => u.id === userId);
+    if (originalUser) {
+      const nameParts = originalUser.name.split(' ');
+      setUserFirstNames(prev => ({ ...prev, [userId]: nameParts[0] || '' }));
+      setUserLastNames(prev => ({ ...prev, [userId]: nameParts.slice(1).join(' ') || '' }));
+      setUserEmails(prev => ({ ...prev, [userId]: originalUser.email }));
+    }
+    setEditingUser(null);
+  };
+
   const isLoading = isValidating && !data;
 
   const userRoleOptions = tenantData.availableRoles.map((role) => ({
@@ -513,11 +593,21 @@ export function TenantManagementContent({
             users={tenantData.users}
             userRoleOptions={userRoleOptions}
             userRoles={userRoles}
+            userFirstNames={userFirstNames}
+            userLastNames={userLastNames}
+            userEmails={userEmails}
+            editingUser={editingUser}
             pendingUserId={pendingUserId}
             isUpdatingUser={isUpdatingUser}
             onRoleChange={handleUserRoleChange}
             onToggleActive={handleToggleUserActive}
             onResetPassword={handleResetUserPassword}
+            onStartEdit={setEditingUser}
+            onSaveEdit={handleSaveUserInfo}
+            onCancelEdit={handleCancelEdit}
+            onFirstNameChange={(userId, firstName) => setUserFirstNames(prev => ({ ...prev, [userId]: firstName }))}
+            onLastNameChange={(userId, lastName) => setUserLastNames(prev => ({ ...prev, [userId]: lastName }))}
+            onEmailChange={(userId, email) => setUserEmails(prev => ({ ...prev, [userId]: email }))}
           />
         </Tab>
 
@@ -916,22 +1006,42 @@ interface UsersTabProps {
   users: TenantManagementData["users"];
   userRoleOptions: Array<{ value: UserRole; label: string }>;
   userRoles: Record<string, UserRole>;
+  userFirstNames: Record<string, string>;
+  userLastNames: Record<string, string>;
+  userEmails: Record<string, string>;
+  editingUser: string | null;
   pendingUserId: string | null;
   isUpdatingUser: boolean;
   onRoleChange: (userId: string, role: UserRole) => void;
   onToggleActive: (userId: string, active: boolean) => void;
   onResetPassword: (userId: string) => void;
+  onStartEdit: (userId: string) => void;
+  onSaveEdit: (userId: string) => void;
+  onCancelEdit: (userId: string) => void;
+  onFirstNameChange: (userId: string, firstName: string) => void;
+  onLastNameChange: (userId: string, lastName: string) => void;
+  onEmailChange: (userId: string, email: string) => void;
 }
 
 function UsersTab({
   users,
   userRoleOptions,
   userRoles,
+  userFirstNames,
+  userLastNames,
+  userEmails,
+  editingUser,
   pendingUserId,
   isUpdatingUser,
   onRoleChange,
   onToggleActive,
   onResetPassword,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onFirstNameChange,
+  onLastNameChange,
+  onEmailChange,
 }: UsersTabProps) {
   return (
     <Card className="border border-white/10 bg-background/70 backdrop-blur">
@@ -947,6 +1057,7 @@ function UsersTab({
           <Table removeWrapper aria-label="Usuários do tenant">
             <TableHeader>
               <TableColumn>Nome</TableColumn>
+              <TableColumn>Sobrenome</TableColumn>
               <TableColumn>Email</TableColumn>
               <TableColumn>Função</TableColumn>
               <TableColumn>Último acesso</TableColumn>
@@ -956,12 +1067,48 @@ function UsersTab({
             <TableBody>
               {users.map((user) => {
                 const currentRole = userRoles[user.id] ?? user.role;
+                const currentFirstName = userFirstNames[user.id] ?? (user.name.split(' ')[0] || '');
+                const currentLastName = userLastNames[user.id] ?? (user.name.split(' ').slice(1).join(' ') || '');
+                const currentEmail = userEmails[user.id] ?? user.email;
                 const isPending = pendingUserId === user.id && isUpdatingUser;
+                const isEditing = editingUser === user.id;
 
                 return (
                   <TableRow key={user.id}>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell className="text-default-500">{user.email}</TableCell>
+                    <TableCell>
+                      {isEditing ? (
+                        <Input
+                          size="sm"
+                          value={currentFirstName}
+                          onValueChange={(value) => onFirstNameChange(user.id, value)}
+                        />
+                      ) : (
+                        <span>{currentFirstName}</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {isEditing ? (
+                        <Input
+                          size="sm"
+                          value={currentLastName}
+                          onValueChange={(value) => onLastNameChange(user.id, value)}
+                        />
+                      ) : (
+                        <span>{currentLastName}</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {isEditing ? (
+                        <Input
+                          size="sm"
+                          type="email"
+                          value={currentEmail}
+                          onValueChange={(value) => onEmailChange(user.id, value)}
+                        />
+                      ) : (
+                        <span className="text-default-500">{currentEmail}</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Select
                         selectedKeys={new Set([currentRole])}
@@ -986,28 +1133,66 @@ function UsersTab({
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <Button
-                          color="default"
-                          size="sm"
-                          radius="full"
-                          variant="bordered"
-                          startContent={<ToggleLeft className="h-4 w-4" />}
-                          isLoading={isPending}
-                          onPress={() => onToggleActive(user.id, user.active)}
-                        >
-                          {user.active ? "Desativar" : "Reativar"}
-                        </Button>
-                        <Button
-                          color="secondary"
-                          size="sm"
-                          radius="full"
-                          variant="flat"
-                          startContent={<KeyRound className="h-4 w-4" />}
-                          isLoading={isPending}
-                          onPress={() => onResetPassword(user.id)}
-                        >
-                          Resetar senha
-                        </Button>
+                        {isEditing ? (
+                          <>
+                            <Button
+                              color="success"
+                              size="sm"
+                              radius="full"
+                              variant="flat"
+                              startContent={<Check className="h-4 w-4" />}
+                              isLoading={isPending}
+                              onPress={() => onSaveEdit(user.id)}
+                            >
+                              Salvar
+                            </Button>
+                            <Button
+                              color="default"
+                              size="sm"
+                              radius="full"
+                              variant="bordered"
+                              startContent={<X className="h-4 w-4" />}
+                              onPress={() => onCancelEdit(user.id)}
+                            >
+                              Cancelar
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              color="primary"
+                              size="sm"
+                              radius="full"
+                              variant="bordered"
+                              startContent={<Edit className="h-4 w-4" />}
+                              onPress={() => onStartEdit(user.id)}
+                            >
+                              Editar
+                            </Button>
+                            <Button
+                              color="default"
+                              size="sm"
+                              radius="full"
+                              variant="bordered"
+                              startContent={<ToggleLeft className="h-4 w-4" />}
+                              isLoading={isPending}
+                              onPress={() => onToggleActive(user.id, user.active)}
+                            >
+                              {user.active ? "Desativar" : "Reativar"}
+                            </Button>
+                            <Button
+                              color="secondary"
+                              size="sm"
+                              radius="full"
+                              variant="flat"
+                              startContent={<KeyRound className="h-4 w-4" />}
+                              isLoading={isPending}
+                              onPress={() => onResetPassword(user.id)}
+                            >
+                              Resetar senha
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

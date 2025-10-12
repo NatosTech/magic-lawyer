@@ -472,6 +472,9 @@ export interface UpdateTenantBrandingInput {
 }
 
 export interface UpdateTenantUserInput {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
   role?: UserRole;
   active?: boolean;
   generatePassword?: boolean;
@@ -935,6 +938,33 @@ export async function updateTenantUser(
 
     const updateData: Record<string, unknown> = {};
     let temporaryPassword: string | undefined;
+
+    // Validar email único se está sendo alterado
+    if (payload.email && payload.email !== user.email) {
+      const existingUser = await prisma.usuario.findFirst({
+        where: {
+          email: payload.email,
+          tenantId: tenantId,
+          id: { not: userId },
+        },
+      });
+
+      if (existingUser) {
+        return { success: false, error: "Este email já está em uso por outro usuário neste tenant" };
+      }
+
+      updateData.email = payload.email;
+    }
+
+    // Atualizar firstName se fornecido
+    if (payload.firstName !== undefined && payload.firstName !== user.firstName) {
+      updateData.firstName = payload.firstName;
+    }
+
+    // Atualizar lastName se fornecido
+    if (payload.lastName !== undefined && payload.lastName !== user.lastName) {
+      updateData.lastName = payload.lastName;
+    }
 
     if (payload.role && payload.role !== user.role) {
       updateData.role = payload.role;
