@@ -4,13 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import prisma from "@/app/lib/prisma";
-import { getCurrentUser } from "@/app/lib/auth";
+import { getSession } from "@/app/lib/auth";
 
 /**
  * Atualiza o domínio de um tenant
  */
 export async function updateTenantDomain(tenantId: string, domain: string | null) {
-  const user = await getCurrentUser();
+  const session = await getSession();
+  const user = session?.user;
 
   // Verificar se o usuário tem permissão para editar este tenant
   const tenant = await prisma.tenant.findUnique({
@@ -23,7 +24,7 @@ export async function updateTenantDomain(tenantId: string, domain: string | null
   }
 
   // Verificar se o usuário é SuperAdmin ou tem permissão para editar este tenant
-  if (user.role !== "SUPER_ADMIN") {
+  if ((user as any)?.role !== "SUPER_ADMIN") {
     throw new Error("Sem permissão para editar domínios");
   }
 
@@ -57,9 +58,10 @@ export async function updateTenantDomain(tenantId: string, domain: string | null
  * Lista todos os domínios configurados
  */
 export async function getTenantDomains() {
-  const user = await getCurrentUser();
+  const session = await getSession();
+  const user = session?.user;
 
-  if (user.role !== "SUPER_ADMIN") {
+  if ((user as any)?.role !== "SUPER_ADMIN") {
     throw new Error("Sem permissão para acessar esta informação");
   }
 
