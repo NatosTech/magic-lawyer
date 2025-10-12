@@ -8,6 +8,37 @@ import bcrypt from "bcryptjs";
 
 import prisma from "./app/lib/prisma";
 
+// Função para extrair tenant do domínio
+function extractTenantFromDomain(host: string): string | null {
+  // Remove porta se existir
+  const cleanHost = host.split(":")[0];
+
+  // Para domínios Vercel: subdomain.magiclawyer.vercel.app
+  if (cleanHost.endsWith(".magiclawyer.vercel.app")) {
+    const subdomain = cleanHost.replace(".magiclawyer.vercel.app", "");
+    // Se não é o domínio principal, retorna o subdomínio
+    if (subdomain && subdomain !== "magiclawyer") {
+      return subdomain;
+    }
+  }
+
+  // Para domínios customizados: subdomain.magiclawyer.com.br
+  if (cleanHost.endsWith(".magiclawyer.com.br")) {
+    const subdomain = cleanHost.replace(".magiclawyer.com.br", "");
+    if (subdomain) {
+      return subdomain;
+    }
+  }
+
+  // Para domínios diretos: sandra.com.br
+  // Neste caso, o domínio completo é o identificador do tenant
+  if (!cleanHost.includes("magiclawyer") && !cleanHost.includes("vercel.app")) {
+    return cleanHost;
+  }
+
+  return null;
+}
+
 // Campos extras que vamos guardar no token
 // - id, tenantId, role, name, email
 
@@ -28,26 +59,28 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Senha", type: "password" },
         tenant: { label: "Escritório", type: "text" }, // pode ser slug ou domínio
       },
-      authorize: async (credentials) => {
+      authorize: async (credentials, req) => {
         const normalizedEmail = credentials?.email?.trim();
         const normalizedTenant = credentials?.tenant?.trim().toLowerCase();
 
+        // Tentar detectar tenant pelo domínio da requisição
+        const host = req?.headers?.get("host") || "";
+        const tenantFromDomain = extractTenantFromDomain(host);
+
         // Se o tenant está vazio, undefined ou 'undefined', tratamos como auto-detect
-        const shouldAutoDetect =
-          !normalizedTenant ||
-          normalizedTenant === "undefined" ||
-          normalizedTenant === "";
+        // Mas se detectamos pelo domínio, usamos esse
+        const shouldAutoDetect = !normalizedTenant || normalizedTenant === "undefined" || normalizedTenant === "";
+
+        const finalTenant = tenantFromDomain || normalizedTenant;
 
         const attemptContext = {
           email: normalizedEmail ?? "(missing)",
-          tenant: shouldAutoDetect ? "(auto)" : normalizedTenant,
+          tenant: shouldAutoDetect ? "(auto)" : finalTenant,
+          tenantFromDomain,
         };
 
         if (!credentials?.email || !credentials?.password) {
-          console.warn(
-            "[auth] Credenciais incompletas para login",
-            attemptContext,
-          );
+          console.warn("[auth] Credenciais incompletas para login", attemptContext);
 
           return null;
         }
@@ -61,7 +94,8 @@ export const authOptions: NextAuthOptions = {
           console.info("[auth] Buscando usuário", {
             email,
             tenantWhere: shouldAutoDetect ? "todos os tenants" : "específico",
-            tenant: shouldAutoDetect ? "(auto-detect)" : normalizedTenant,
+            tenant: shouldAutoDetect ? "(auto-detect)" : finalTenant,
+            tenantFromDomain,
             shouldAutoDetect,
           });
 
@@ -84,10 +118,7 @@ export const authOptions: NextAuthOptions = {
               return null;
             }
 
-            const validPassword = await bcrypt.compare(
-              credentials.password,
-              superAdmin.passwordHash,
-            );
+            const validPassword = await bcrypt.compare(credentials.password, superAdmin.passwordHash);
 
             if (!validPassword) {
               console.warn("[auth] Senha inválida para SuperAdmin");
@@ -120,9 +151,9 @@ export const authOptions: NextAuthOptions = {
           // SEGUNDO: Se não é SuperAdmin, buscar usuário normal
           let tenantWhere: any = undefined;
 
-          if (!shouldAutoDetect) {
+          if (!shouldAutoDetect && finalTenant) {
             tenantWhere = {
-              OR: [{ slug: normalizedTenant }, { domain: normalizedTenant }],
+              OR: [{ slug: finalTenant }, { domain: finalTenant }],
             };
           }
 
@@ -192,24 +223,15 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user || !user.passwordHash) {
-            console.warn(
-              "[auth] Usuário não encontrado ou sem senha cadastrada",
-              attemptContext,
-            );
+            console.warn("[auth] Usuário não encontrado ou sem senha cadastrada", attemptContext);
 
             return null;
           }
 
-          const valid = await bcrypt.compare(
-            credentials.password,
-            user.passwordHash,
-          );
+          const valid = await bcrypt.compare(credentials.password, user.passwordHash);
 
           if (!valid) {
-            console.warn(
-              "[auth] Senha inválida para o usuário",
-              attemptContext,
-            );
+            console.warn("[auth] Senha inválida para o usuário", attemptContext);
 
             return null;
           }
@@ -240,23 +262,14 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          const tenantName =
-            tenantData?.nomeFantasia ??
-            tenantData?.razaoSocial ??
-            tenantData?.name ??
-            tenantData?.slug ??
-            undefined;
+          const tenantName = tenantData?.nomeFantasia ?? tenantData?.razaoSocial ?? tenantData?.name ?? tenantData?.slug ?? undefined;
 
-          const permissions = permissionsRaw.map(
-            (permission) => permission.permissao,
-          );
+          const permissions = permissionsRaw.map((permission) => permission.permissao);
 
           const resultUser = {
             id: user.id,
             email: user.email,
-            name:
-              [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-              undefined,
+            name: [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined,
             image: user.avatarUrl || undefined,
             tenantId: user.tenantId,
             role: user.role,
@@ -280,10 +293,7 @@ export const authOptions: NextAuthOptions = {
 
           return resultUser as any;
         } catch (error) {
-          const safeError =
-            error instanceof Error
-              ? { message: error.message, stack: error.stack }
-              : error;
+          const safeError = error instanceof Error ? { message: error.message, stack: error.stack } : error;
 
           console.error("[auth] Erro inesperado durante autenticação", {
             ...attemptContext,
@@ -327,37 +337,18 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
-    async session({
-      session,
-      token,
-    }: {
-      session: Session;
-      token: JWT;
-    }): Promise<Session> {
+    async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
       if (session.user) {
         // Usar dados do token (mais rápido e confiável)
         (session.user as any).id = (token as any).id as string | undefined;
-        (session.user as any).tenantId = (token as any).tenantId as
-          | string
-          | undefined;
+        (session.user as any).tenantId = (token as any).tenantId as string | undefined;
         (session.user as any).role = (token as any).role as string | undefined;
-        (session.user as any).tenantSlug = (token as any).tenantSlug as
-          | string
-          | undefined;
-        (session.user as any).tenantName = (token as any).tenantName as
-          | string
-          | undefined;
-        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as
-          | string
-          | undefined;
-        (session.user as any).tenantFaviconUrl = (token as any)
-          .tenantFaviconUrl as string | undefined;
-        (session.user as any).permissions = (token as any).permissions as
-          | string[]
-          | undefined;
-        (session.user as any).avatarUrl = (token as any).avatarUrl as
-          | string
-          | undefined;
+        (session.user as any).tenantSlug = (token as any).tenantSlug as string | undefined;
+        (session.user as any).tenantName = (token as any).tenantName as string | undefined;
+        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as string | undefined;
+        (session.user as any).tenantFaviconUrl = (token as any).tenantFaviconUrl as string | undefined;
+        (session.user as any).permissions = (token as any).permissions as string[] | undefined;
+        (session.user as any).avatarUrl = (token as any).avatarUrl as string | undefined;
       }
 
       return session;

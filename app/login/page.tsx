@@ -14,11 +14,13 @@ import { addToast, closeToast } from "@heroui/toast";
 import NextLink from "next/link";
 
 import { Logo } from "@/components/icons";
+import { useTenantFromDomain } from "@/hooks/use-tenant-from-domain";
 
 function LoginPageInner() {
   const params = useSearchParams();
   const router = useRouter();
   const { status, data: session } = useSession();
+  const tenantFromDomain = useTenantFromDomain();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [tenant, setTenant] = useState("");
@@ -27,8 +29,7 @@ function LoginPageInner() {
 
   const resolveRedirectTarget = useCallback(
     (role?: string | null) => {
-      const defaultTarget =
-        role === "SUPER_ADMIN" ? "/admin/dashboard" : "/dashboard";
+      const defaultTarget = role === "SUPER_ADMIN" ? "/admin/dashboard" : "/dashboard";
 
       if (!callbackUrl) {
         return defaultTarget;
@@ -77,7 +78,7 @@ function LoginPageInner() {
 
       return parsedTarget;
     },
-    [callbackUrl],
+    [callbackUrl]
   );
 
   useEffect(() => {
@@ -135,27 +136,20 @@ function LoginPageInner() {
       const response = await signIn("credentials", {
         email: sanitizedEmail,
         password,
-        tenant: sanitizedTenant || undefined,
+        tenant: tenantFromDomain || sanitizedTenant || undefined,
         redirect: false,
       });
 
       if (!response) {
-        throw new Error(
-          "Não foi possível contatar o servidor de autenticação.",
-        );
+        throw new Error("Não foi possível contatar o servidor de autenticação.");
       }
 
       if (!response.ok) {
         // Tratamento específico de erros
         if (response.error === "CredentialsSignin") {
-          throw new Error(
-            "Usuário não encontrado ou credenciais inválidas. Verifique seu e-mail, senha e escritório.",
-          );
+          throw new Error("Usuário não encontrado ou credenciais inválidas. Verifique seu e-mail, senha e escritório.");
         }
-        throw new Error(
-          response.error ??
-            "Credenciais inválidas. Verifique seus dados e tente novamente.",
-        );
+        throw new Error(response.error ?? "Credenciais inválidas. Verifique seus dados e tente novamente.");
       }
 
       console.info("[login] Autenticação concluída", attemptContext);
@@ -193,10 +187,7 @@ function LoginPageInner() {
 
       router.replace(target);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Ocorreu um erro inesperado durante o login.";
+      const message = error instanceof Error ? error.message : "Ocorreu um erro inesperado durante o login.";
 
       console.warn("[login] Falha na autenticação", {
         ...attemptContext,
@@ -212,13 +203,9 @@ function LoginPageInner() {
       let description = message;
       let color: "danger" | "warning" = "danger";
 
-      if (
-        message.includes("Usuário não encontrado") ||
-        message.includes("credenciais inválidas")
-      ) {
+      if (message.includes("Usuário não encontrado") || message.includes("credenciais inválidas")) {
         title = "Credenciais inválidas";
-        description =
-          "Verifique se seu e-mail, senha e escritório estão corretos. Se não souber o slug do escritório, deixe o campo vazio.";
+        description = "Verifique se seu e-mail, senha e escritório estão corretos. Se não souber o slug do escritório, deixe o campo vazio.";
         color = "warning";
       } else if (message.includes("Não foi possível contatar")) {
         title = "Erro de conexão";
@@ -247,18 +234,8 @@ function LoginPageInner() {
         radius="full"
         size="sm"
         startContent={
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M15 19l-7-7 7-7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-            />
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
           </svg>
         }
         variant="bordered"
@@ -274,12 +251,8 @@ function LoginPageInner() {
               <Logo className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">
-            Bem-vindo de volta
-          </h1>
-          <p className="text-default-400 text-sm">
-            Entre na sua conta para acessar o escritório
-          </p>
+          <h1 className="text-2xl font-bold text-white mb-2">Bem-vindo de volta</h1>
+          <p className="text-default-400 text-sm">Entre na sua conta para acessar o escritório</p>
         </div>
 
         {/* Card de login */}
@@ -287,22 +260,15 @@ function LoginPageInner() {
           <CardHeader className="flex flex-col gap-2 pb-2">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🔐</span>
-              <h2 className="text-lg font-semibold text-white">
-                Acesso seguro
-              </h2>
+              <h2 className="text-lg font-semibold text-white">Acesso seguro</h2>
             </div>
-            <p className="text-sm text-default-400">
-              Suas credenciais são protegidas com criptografia de ponta
-            </p>
+            <p className="text-sm text-default-400">Suas credenciais são protegidas com criptografia de ponta</p>
             <div className="mt-2 rounded-lg bg-blue-500/10 border border-blue-500/20 p-3">
               <div className="flex items-start gap-2">
                 <span className="text-blue-400 text-sm">💡</span>
                 <div>
                   <p className="text-xs font-medium text-blue-300">Dica:</p>
-                  <p className="text-xs text-blue-200">
-                    Se não souber o slug do escritório, deixe o campo vazio. O
-                    sistema tentará encontrar automaticamente.
-                  </p>
+                  <p className="text-xs text-blue-200">Se não souber o slug do escritório, deixe o campo vazio. O sistema tentará encontrar automaticamente.</p>
                 </div>
               </div>
             </div>
@@ -314,9 +280,7 @@ function LoginPageInner() {
                 isRequired
                 className="mb-4"
                 label="E-mail"
-                startContent={
-                  <span className="text-default-400 text-sm">📧</span>
-                }
+                startContent={<span className="text-default-400 text-sm">📧</span>}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -325,9 +289,7 @@ function LoginPageInner() {
                 isRequired
                 className="mb-4"
                 label="Senha"
-                startContent={
-                  <span className="text-default-400 text-sm">🔒</span>
-                }
+                startContent={<span className="text-default-400 text-sm">🔒</span>}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -337,20 +299,11 @@ function LoginPageInner() {
                 description="Opcional. Se não souber, deixe vazio. Exemplo: meu-escritorio ou meuescritorio.com.br"
                 label="Escritório (slug/domínio)"
                 placeholder="meu-escritorio"
-                startContent={
-                  <span className="text-default-400 text-sm">🏢</span>
-                }
+                startContent={<span className="text-default-400 text-sm">🏢</span>}
                 value={tenant}
                 onChange={(e) => setTenant(e.target.value)}
               />
-              <Button
-                fullWidth
-                color="primary"
-                isLoading={loading}
-                size="lg"
-                startContent={loading ? null : <span>🚀</span>}
-                type="submit"
-              >
+              <Button fullWidth color="primary" isLoading={loading} size="lg" startContent={loading ? null : <span>🚀</span>} type="submit">
                 {loading ? "Conectando..." : "Entrar no sistema"}
               </Button>
             </form>
@@ -359,30 +312,12 @@ function LoginPageInner() {
 
         {/* Links úteis */}
         <div className="mt-6 text-center">
-          <p className="text-xs text-default-500 mb-4">
-            Não tem uma conta ainda?
-          </p>
+          <p className="text-xs text-default-500 mb-4">Não tem uma conta ainda?</p>
           <div className="flex flex-col gap-2">
-            <Button
-              as={NextLink}
-              className="border-white/20 text-white"
-              href="/precos"
-              radius="full"
-              size="sm"
-              startContent={<span>💎</span>}
-              variant="bordered"
-            >
+            <Button as={NextLink} className="border-white/20 text-white" href="/precos" radius="full" size="sm" startContent={<span>💎</span>} variant="bordered">
               Ver planos disponíveis
             </Button>
-            <Button
-              as={NextLink}
-              className="text-default-400"
-              href="/about"
-              radius="full"
-              size="sm"
-              startContent={<span>ℹ️</span>}
-              variant="light"
-            >
+            <Button as={NextLink} className="text-default-400" href="/about" radius="full" size="sm" startContent={<span>ℹ️</span>} variant="light">
               Saiba mais sobre a plataforma
             </Button>
           </div>
@@ -393,9 +328,7 @@ function LoginPageInner() {
           <CardBody className="py-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">✨</span>
-              <h3 className="text-sm font-semibold text-white">
-                Recursos em destaque
-              </h3>
+              <h3 className="text-sm font-semibold text-white">Recursos em destaque</h3>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="flex items-center gap-2">
@@ -420,12 +353,7 @@ function LoginPageInner() {
 
         {/* Badge de segurança */}
         <div className="mt-6 text-center">
-          <Chip
-            color="success"
-            size="sm"
-            startContent={<span>🛡️</span>}
-            variant="flat"
-          >
+          <Chip color="success" size="sm" startContent={<span>🛡️</span>} variant="flat">
             Login 100% seguro
           </Chip>
         </div>
