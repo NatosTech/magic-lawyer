@@ -191,10 +191,21 @@ export const authOptions: NextAuthOptions = {
 
             // Se encontrou usuário em tenant específico e está no domínio principal, redirecionar
             if (allUsers.length > 0 && !tenantFromDomain && host.includes('magiclawyer.vercel.app')) {
+              console.info("[auth] Verificando redirecionamento", {
+                allUsersCount: allUsers.length,
+                tenantFromDomain,
+                host,
+                users: allUsers.map(u => ({
+                  email: u.email,
+                  tenantSlug: u.tenant?.slug,
+                  tenantName: u.tenant?.name
+                }))
+              });
+              
               const userWithSpecificTenant = allUsers.find(u => u.tenant?.slug && u.tenant.slug !== 'magiclawyer');
               if (userWithSpecificTenant) {
                 const tenantSlug = userWithSpecificTenant.tenant?.slug;
-                console.info("[auth] Usuário com tenant específico tentando logar no domínio principal", {
+                console.info("[auth] REDIRECIONANDO para tenant específico", {
                   userEmail: email,
                   userTenant: tenantSlug,
                   currentDomain: host,
@@ -202,6 +213,11 @@ export const authOptions: NextAuthOptions = {
                 
                 // Retornar erro com redirecionamento
                 throw new Error(`REDIRECT_TO_TENANT:${tenantSlug}`);
+              } else {
+                console.info("[auth] Usuário encontrado mas não precisa redirecionar", {
+                  userEmail: email,
+                  userTenants: allUsers.map(u => u.tenant?.slug)
+                });
               }
             }
           }
