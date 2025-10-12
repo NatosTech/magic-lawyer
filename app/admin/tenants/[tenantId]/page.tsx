@@ -6,10 +6,6 @@ import { ProfileDashboard } from "@/components/profile-dashboard";
 
 import { TenantManagementContent } from "./tenant-management-content";
 
-interface TenantManagementPageProps {
-  params: { tenantId: string };
-}
-
 export const metadata: Metadata = {
   title: "Detalhes do Tenant",
   description: "Gerencie um tenant específico da Magic Lawyer",
@@ -17,8 +13,11 @@ export const metadata: Metadata = {
 
 export default async function TenantManagementPage({
   params,
-}: TenantManagementPageProps) {
-  const response = await getTenantManagementData(params.tenantId);
+}: {
+  params: Promise<{ tenantId: string }>;
+}) {
+  const { tenantId } = await params;
+  const response = await getTenantManagementData(tenantId);
 
   if (!response.success || !response.data) {
     notFound();
@@ -29,10 +28,9 @@ export default async function TenantManagementPage({
   return (
     <ProfileDashboard>
       <TenantManagementContent
-        tenantId={params.tenantId}
+        tenantId={tenantId}
         initialData={initialData}
       />
     </ProfileDashboard>
   );
 }
-
