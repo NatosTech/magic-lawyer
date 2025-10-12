@@ -20,13 +20,7 @@ import {
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
 
-export type Tone =
-  | "primary"
-  | "success"
-  | "warning"
-  | "secondary"
-  | "danger"
-  | "default";
+export type Tone = "primary" | "success" | "warning" | "secondary" | "danger" | "default";
 
 export type StatFormat = "integer" | "currency" | "percentage" | "string";
 
@@ -166,12 +160,7 @@ function formatMonthLabel(date: Date) {
   });
 }
 
-async function generateMonthlySeries(
-  months: number,
-  now: Date,
-  generator: (start: Date, end: Date) => Promise<number>,
-  format?: StatFormat,
-): Promise<DashboardTrend[]> {
+async function generateMonthlySeries(months: number, now: Date, generator: (start: Date, end: Date) => Promise<number>, format?: StatFormat): Promise<DashboardTrend[]> {
   const series: DashboardTrend[] = [];
   let previousValue: number | undefined;
 
@@ -310,8 +299,7 @@ async function buildSuperAdminDashboard(now: Date): Promise<DashboardData> {
   const revenueTotal = Number(revenueTotalAgg._sum.valor || 0);
   const revenue30dias = Number(revenue30DaysAgg._sum.valor || 0);
   const revenueAno = Number(revenueYearAgg._sum.valor || 0);
-  const activeRatio =
-    totalTenants > 0 ? Math.round((activeTenants / totalTenants) * 100) : 0;
+  const activeRatio = totalTenants > 0 ? Math.round((activeTenants / totalTenants) * 100) : 0;
 
   const stats: DashboardStatDto[] = [
     {
@@ -319,10 +307,7 @@ async function buildSuperAdminDashboard(now: Date): Promise<DashboardData> {
       label: "Tenants cadastrados",
       value: totalTenants,
       format: "integer",
-      helper:
-        newTenantsMonth > 0
-          ? `+${newTenantsMonth} no mês`
-          : "Sem novos tenants neste mês",
+      helper: newTenantsMonth > 0 ? `+${newTenantsMonth} no mês` : "Sem novos tenants neste mês",
       tone: "primary",
       icon: "🏢",
     },
@@ -358,34 +343,22 @@ async function buildSuperAdminDashboard(now: Date): Promise<DashboardData> {
   const insights: DashboardInsightDto[] = [
     {
       id: "inadimplencia",
-      title:
-        subscriptionsInadimplentes > 0
-          ? "Tenants inadimplentes"
-          : "Planos em dia",
-      description:
-        subscriptionsInadimplentes > 0
-          ? `${subscriptionsInadimplentes} escritórios precisam de atenção no faturamento`
-          : "Nenhum tenant com pendências de assinatura",
+      title: subscriptionsInadimplentes > 0 ? "Tenants inadimplentes" : "Planos em dia",
+      description: subscriptionsInadimplentes > 0 ? `${subscriptionsInadimplentes} escritórios precisam de atenção no faturamento` : "Nenhum tenant com pendências de assinatura",
       tone: subscriptionsInadimplentes > 0 ? "warning" : "success",
       icon: subscriptionsInadimplentes > 0 ? "⚠️" : "✅",
     },
     {
       id: "faturas",
       title: overdueInvoices > 0 ? "Faturas vencidas" : "Cobranças em dia",
-      description:
-        overdueInvoices > 0
-          ? `${overdueInvoices} faturas aguardando ação do financeiro`
-          : "Nenhuma fatura vencida neste momento",
+      description: overdueInvoices > 0 ? `${overdueInvoices} faturas aguardando ação do financeiro` : "Nenhuma fatura vencida neste momento",
       tone: overdueInvoices > 0 ? "danger" : "success",
       icon: overdueInvoices > 0 ? "📄" : "🧾",
     },
     {
       id: "suporte",
       title: ticketsEmAberto > 0 ? "Chamados em andamento" : "Suporte zerado",
-      description:
-        ticketsEmAberto > 0
-          ? `${ticketsEmAberto} tickets aguardam retorno da equipe`
-          : "Nenhum chamado pendente no momento",
+      description: ticketsEmAberto > 0 ? `${ticketsEmAberto} tickets aguardam retorno da equipe` : "Nenhum chamado pendente no momento",
       tone: ticketsEmAberto > 0 ? "secondary" : "success",
       icon: ticketsEmAberto > 0 ? "💬" : "🎉",
       detail:
@@ -414,7 +387,7 @@ async function buildSuperAdminDashboard(now: Date): Promise<DashboardData> {
 
       return Number(aggregate._sum.valor || 0);
     },
-    "currency",
+    "currency"
   );
 
   const alerts: DashboardAlert[] = [];
@@ -493,10 +466,7 @@ async function buildSuperAdminDashboard(now: Date): Promise<DashboardData> {
   };
 }
 
-async function buildAdminDashboard(
-  tenantId: string,
-  now: Date,
-): Promise<DashboardData> {
+async function buildAdminDashboard(tenantId: string, now: Date): Promise<DashboardData> {
   const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const weekStart = startOfWeek(now);
   const weekEnd = endOfWeek(weekStart);
@@ -689,10 +659,7 @@ async function buildAdminDashboard(
       label: "Clientes",
       value: clientesAtivos,
       format: "integer",
-      helper:
-        novosClientesMes > 0
-          ? `+${novosClientesMes} novos cadastros`
-          : "Sem novos clientes neste mês",
+      helper: novosClientesMes > 0 ? `+${novosClientesMes} novos cadastros` : "Sem novos clientes neste mês",
       tone: "success",
       icon: "🤝",
     },
@@ -719,38 +686,22 @@ async function buildAdminDashboard(
   const insights: DashboardInsightDto[] = [
     {
       id: "prazos",
-      title:
-        prazosCriticos > 0
-          ? "Prazos para os próximos 3 dias"
-          : "Prazos controlados",
-      description:
-        prazosCriticos > 0
-          ? `${prazosCriticos} prazos precisam de atenção imediata`
-          : "Nenhum prazo crítico até agora",
+      title: prazosCriticos > 0 ? "Prazos para os próximos 3 dias" : "Prazos controlados",
+      description: prazosCriticos > 0 ? `${prazosCriticos} prazos precisam de atenção imediata` : "Nenhum prazo crítico até agora",
       tone: prazosCriticos > 0 ? "danger" : "success",
       icon: prazosCriticos > 0 ? "⚠️" : "✅",
     },
     {
       id: "contratos",
-      title:
-        contratosRascunho > 0
-          ? "Contratos aguardando aprovação"
-          : "Contratos em dia",
-      description:
-        contratosRascunho > 0
-          ? `${contratosRascunho} contratos estão em rascunho`
-          : "Nenhum contrato pendente no momento",
+      title: contratosRascunho > 0 ? "Contratos aguardando aprovação" : "Contratos em dia",
+      description: contratosRascunho > 0 ? `${contratosRascunho} contratos estão em rascunho` : "Nenhum contrato pendente no momento",
       tone: contratosRascunho > 0 ? "warning" : "success",
       icon: contratosRascunho > 0 ? "📝" : "📄",
     },
     {
       id: "documentos",
-      title:
-        documentosRecentes > 0 ? "Documentos recentes" : "Sem novos documentos",
-      description:
-        documentosRecentes > 0
-          ? `${documentosRecentes} documentos foram adicionados este mês`
-          : "Nenhum documento novo desde o início do mês",
+      title: documentosRecentes > 0 ? "Documentos recentes" : "Sem novos documentos",
+      description: documentosRecentes > 0 ? `${documentosRecentes} documentos foram adicionados este mês` : "Nenhum documento novo desde o início do mês",
       tone: documentosRecentes > 0 ? "secondary" : "default",
       icon: "📁",
     },
@@ -770,7 +721,7 @@ async function buildAdminDashboard(
           },
         },
       }),
-    "integer",
+    "integer"
   );
 
   const revenueSeries = await generateMonthlySeries(
@@ -791,7 +742,7 @@ async function buildAdminDashboard(
 
       return Number(aggregate._sum.valor || 0);
     },
-    "currency",
+    "currency"
   );
 
   const alerts: DashboardAlert[] = [];
@@ -833,9 +784,7 @@ async function buildAdminDashboard(
     ...recentEventos.map((evento) => ({
       id: `evento-${evento.id}`,
       title: evento.titulo,
-      description: evento.processo?.numero
-        ? `Evento relacionado ao processo ${evento.processo.numero}`
-        : "Evento registrado",
+      description: evento.processo?.numero ? `Evento relacionado ao processo ${evento.processo.numero}` : "Evento registrado",
       date: (evento.createdAt ?? evento.dataInicio ?? now).toISOString(),
       icon: "🗓️",
       href: evento.processo ? `/processos/${evento.processo.id}` : undefined,
@@ -843,26 +792,18 @@ async function buildAdminDashboard(
     ...recentDocumentos.map((documento) => ({
       id: `documento-${documento.id}`,
       title: documento.nome,
-      description: documento.cliente?.nome
-        ? `Documento do cliente ${documento.cliente.nome}`
-        : "Documento enviado",
+      description: documento.cliente?.nome ? `Documento do cliente ${documento.cliente.nome}` : "Documento enviado",
       date: documento.createdAt.toISOString(),
       icon: "📁",
-      href: documento.processo
-        ? `/processos/${documento.processo.id}`
-        : undefined,
+      href: documento.processo ? `/processos/${documento.processo.id}` : undefined,
     })),
     ...recentMovimentacoes.map((movimentacao) => ({
       id: `movimentacao-${movimentacao.id}`,
       title: movimentacao.titulo,
-      description: movimentacao.processo?.numero
-        ? `Movimentação no processo ${movimentacao.processo.numero}`
-        : "Movimentação registrada",
+      description: movimentacao.processo?.numero ? `Movimentação no processo ${movimentacao.processo.numero}` : "Movimentação registrada",
       date: movimentacao.createdAt.toISOString(),
       icon: "⚖️",
-      href: movimentacao.processo
-        ? `/processos/${movimentacao.processo.id}`
-        : undefined,
+      href: movimentacao.processo ? `/processos/${movimentacao.processo.id}` : undefined,
     })),
   ]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -911,11 +852,7 @@ async function buildAdminDashboard(
   };
 }
 
-async function buildAdvogadoDashboard(
-  tenantId: string,
-  userId: string,
-  now: Date,
-): Promise<DashboardData> {
+async function buildAdvogadoDashboard(tenantId: string, userId: string, now: Date): Promise<DashboardData> {
   const advogado = await prisma.advogado.findUnique({
     where: { usuarioId: userId },
     select: { id: true },
@@ -1096,10 +1033,7 @@ async function buildAdvogadoDashboard(
       label: "Clientes atendidos",
       value: clientesRelacionados,
       format: "integer",
-      helper:
-        tarefasPendentes > 0
-          ? `${tarefasPendentes} tarefas abertas`
-          : undefined,
+      helper: tarefasPendentes > 0 ? `${tarefasPendentes} tarefas abertas` : undefined,
       tone: "success",
       icon: "👩‍💼",
     },
@@ -1127,10 +1061,7 @@ async function buildAdvogadoDashboard(
     {
       id: "prazos",
       title: prazos24h > 0 ? "Prazos nas próximas 24h" : "Sem prazos urgentes",
-      description:
-        prazos24h > 0
-          ? `${prazos24h} prazos precisam de ação até amanhã`
-          : "Nenhum prazo crítico para hoje",
+      description: prazos24h > 0 ? `${prazos24h} prazos precisam de ação até amanhã` : "Nenhum prazo crítico para hoje",
       tone: prazos24h > 0 ? "danger" : "success",
       icon: prazos24h > 0 ? "⏳" : "✅",
     },
@@ -1138,27 +1069,20 @@ async function buildAdvogadoDashboard(
       id: "proximo-evento",
       title: proximoEvento ? "Próximo compromisso" : "Agenda livre",
       description: proximoEvento
-        ? `${proximoEvento.titulo} em ${proximoEvento.dataInicio.toLocaleDateString(
-            "pt-BR",
-            {
-              day: "2-digit",
-              month: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            },
-          )}`
+        ? `${proximoEvento.titulo} em ${proximoEvento.dataInicio.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}`
         : "Nenhum evento agendado a partir de hoje",
       tone: proximoEvento ? "secondary" : "default",
       icon: "🗓️",
     },
     {
       id: "tarefas",
-      title:
-        tarefasPendentes > 0 ? "Checklist em andamento" : "Tarefas concluídas",
-      description:
-        tarefasPendentes > 0
-          ? `${tarefasPendentes} tarefas aguardando conclusão`
-          : "Nenhuma tarefa pendente",
+      title: tarefasPendentes > 0 ? "Checklist em andamento" : "Tarefas concluídas",
+      description: tarefasPendentes > 0 ? `${tarefasPendentes} tarefas aguardando conclusão` : "Nenhuma tarefa pendente",
       tone: tarefasPendentes > 0 ? "warning" : "success",
       icon: tarefasPendentes > 0 ? "✅" : "🎉",
     },
@@ -1179,7 +1103,7 @@ async function buildAdvogadoDashboard(
           },
         },
       }),
-    "integer",
+    "integer"
   );
 
   const assinaturaSeries = await generateMonthlySeries(
@@ -1196,7 +1120,7 @@ async function buildAdvogadoDashboard(
           },
         },
       }),
-    "integer",
+    "integer"
   );
 
   const alerts: DashboardAlert[] = [];
@@ -1238,9 +1162,7 @@ async function buildAdvogadoDashboard(
     ...eventosProximos.map((evento) => ({
       id: `evento-${evento.id}`,
       title: evento.titulo,
-      description: evento.processo?.numero
-        ? `Audiência do processo ${evento.processo.numero}`
-        : "Audiência agendada",
+      description: evento.processo?.numero ? `Audiência do processo ${evento.processo.numero}` : "Audiência agendada",
       date: evento.dataInicio?.toISOString() ?? now.toISOString(),
       icon: "📅",
       href: evento.processo ? `/processos/${evento.processo.id}` : undefined,
@@ -1248,21 +1170,15 @@ async function buildAdvogadoDashboard(
     ...tarefasDetalhes.map((tarefa) => ({
       id: `tarefa-${tarefa.id}`,
       title: tarefa.titulo,
-      description: tarefa.processo?.numero
-        ? `Tarefa vinculada ao processo ${tarefa.processo.numero}`
-        : "Tarefa atribuída",
-      date: tarefa.dataLimite
-        ? tarefa.dataLimite.toISOString()
-        : now.toISOString(),
+      description: tarefa.processo?.numero ? `Tarefa vinculada ao processo ${tarefa.processo.numero}` : "Tarefa atribuída",
+      date: tarefa.dataLimite ? tarefa.dataLimite.toISOString() : now.toISOString(),
       icon: "🗂️",
       href: tarefa.processo ? `/processos/${tarefa.processo.id}` : undefined,
     })),
     ...documentosRecentes.map((doc) => ({
       id: `doc-${doc.id}`,
       title: doc.nome,
-      description: doc.cliente?.nome
-        ? `Documento enviado para ${doc.cliente.nome}`
-        : "Documento anexado",
+      description: doc.cliente?.nome ? `Documento enviado para ${doc.cliente.nome}` : "Documento anexado",
       date: doc.createdAt.toISOString(),
       icon: "📁",
       href: doc.processo ? `/processos/${doc.processo.id}` : undefined,
@@ -1270,9 +1186,7 @@ async function buildAdvogadoDashboard(
     ...movimentacoesRecentes.map((mov) => ({
       id: `mov-${mov.id}`,
       title: mov.titulo,
-      description: mov.processo?.numero
-        ? `Movimentação do processo ${mov.processo.numero}`
-        : "Movimentação registrada",
+      description: mov.processo?.numero ? `Movimentação do processo ${mov.processo.numero}` : "Movimentação registrada",
       date: mov.createdAt.toISOString(),
       icon: "⚖️",
       href: mov.processo ? `/processos/${mov.processo.id}` : undefined,
@@ -1295,8 +1209,7 @@ async function buildAdvogadoDashboard(
     title: tarefa.titulo,
     subtitle: tarefa.processo?.numero,
     date: tarefa.dataLimite ? tarefa.dataLimite.toISOString() : undefined,
-    tone:
-      tarefa.dataLimite && tarefa.dataLimite <= tomorrow ? "danger" : "warning",
+    tone: tarefa.dataLimite && tarefa.dataLimite <= tomorrow ? "danger" : "warning",
     href: tarefa.processo ? `/processos/${tarefa.processo.id}` : undefined,
   }));
 
@@ -1325,10 +1238,7 @@ async function buildAdvogadoDashboard(
   };
 }
 
-async function buildFinanceiroDashboard(
-  tenantId: string,
-  now: Date,
-): Promise<DashboardData> {
+async function buildFinanceiroDashboard(tenantId: string, now: Date): Promise<DashboardData> {
   const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startYear = new Date(now.getFullYear(), 0, 1);
 
@@ -1507,25 +1417,15 @@ async function buildFinanceiroDashboard(
   const insights: DashboardInsightDto[] = [
     {
       id: "inadimplencia",
-      title:
-        faturasVencidas > 0 ? "Cobranças em atraso" : "Sem faturas vencidas",
-      description:
-        faturasVencidas > 0
-          ? `${faturasVencidas} faturas exigem ação na cobrança`
-          : "Nenhuma fatura vencida neste momento",
+      title: faturasVencidas > 0 ? "Cobranças em atraso" : "Sem faturas vencidas",
+      description: faturasVencidas > 0 ? `${faturasVencidas} faturas exigem ação na cobrança` : "Nenhuma fatura vencida neste momento",
       tone: faturasVencidas > 0 ? "danger" : "success",
       icon: faturasVencidas > 0 ? "⚠️" : "✅",
     },
     {
       id: "parcelas",
-      title:
-        parcelasAtrasadas > 0
-          ? "Parcelas de honorários em atraso"
-          : "Parcelas em dia",
-      description:
-        parcelasAtrasadas > 0
-          ? `${parcelasAtrasadas} parcelas precisam de follow-up`
-          : "Nenhuma parcela atrasada para contratos de honorários",
+      title: parcelasAtrasadas > 0 ? "Parcelas de honorários em atraso" : "Parcelas em dia",
+      description: parcelasAtrasadas > 0 ? `${parcelasAtrasadas} parcelas precisam de follow-up` : "Nenhuma parcela atrasada para contratos de honorários",
       tone: parcelasAtrasadas > 0 ? "warning" : "success",
       icon: parcelasAtrasadas > 0 ? "📊" : "💼",
     },
@@ -1556,7 +1456,7 @@ async function buildFinanceiroDashboard(
 
       return Number(aggregate._sum.valor || 0);
     },
-    "currency",
+    "currency"
   );
 
   const faturaSeries = await generateMonthlySeries(
@@ -1572,7 +1472,7 @@ async function buildFinanceiroDashboard(
           },
         },
       }),
-    "integer",
+    "integer"
   );
 
   const alerts: DashboardAlert[] = [];
@@ -1613,16 +1513,12 @@ async function buildFinanceiroDashboard(
   const activity: DashboardActivity[] = [
     ...pagamentosRecentes.map((pagamento) => ({
       id: `pagamento-${pagamento.id}`,
-      title: pagamento.fatura?.numero
-        ? `Pagamento ${pagamento.fatura.numero}`
-        : "Pagamento registrado",
+      title: pagamento.fatura?.numero ? `Pagamento ${pagamento.fatura.numero}` : "Pagamento registrado",
       description: `Valor: R$ ${Number(pagamento.valor).toLocaleString("pt-BR")}`,
       date: (pagamento.confirmadoEm || pagamento.createdAt).toISOString(),
       icon: pagamento.status === PaymentStatus.PAGO ? "✅" : "⏳",
-      tone: pagamento.status === PaymentStatus.PAGO ? "success" : "warning",
-      href: pagamento.fatura
-        ? `/financeiro/faturas/${pagamento.fatura.id}`
-        : undefined,
+      tone: (pagamento.status === PaymentStatus.PAGO ? "success" : "warning") as Tone,
+      href: pagamento.fatura ? `/financeiro/faturas/${pagamento.fatura.id}` : undefined,
     })),
     ...faturasRecentes.map((fatura) => ({
       id: `fatura-${fatura.id}`,
@@ -1630,38 +1526,31 @@ async function buildFinanceiroDashboard(
       description: `Valor: R$ ${Number(fatura.valor).toLocaleString("pt-BR")}`,
       date: fatura.createdAt.toISOString(),
       icon: "📄",
-      tone: fatura.status === InvoiceStatus.VENCIDA ? "danger" : "secondary",
+      tone: (fatura.status === InvoiceStatus.VENCIDA ? "danger" : "secondary") as Tone,
       href: `/financeiro/faturas/${fatura.id}`,
     })),
   ]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 8);
 
-  const highlights: DashboardListItem[] = faturasPendentesDetalhes.map(
-    (fatura) => ({
-      id: fatura.id,
-      title: fatura.numero ?? "Fatura sem número",
-      subtitle: `Valor: R$ ${Number(fatura.valor).toLocaleString("pt-BR")}`,
-      tone: fatura.status === InvoiceStatus.VENCIDA ? "danger" : "warning",
-      date: fatura.vencimento ? fatura.vencimento.toISOString() : undefined,
-      href: `/financeiro/faturas/${fatura.id}`,
-    }),
-  );
+  const highlights: DashboardListItem[] = faturasPendentesDetalhes.map((fatura) => ({
+    id: fatura.id,
+    title: fatura.numero ?? "Fatura sem número",
+    subtitle: `Valor: R$ ${Number(fatura.valor).toLocaleString("pt-BR")}`,
+    tone: fatura.status === InvoiceStatus.VENCIDA ? "danger" : "warning",
+    date: fatura.vencimento ? fatura.vencimento.toISOString() : undefined,
+    href: `/financeiro/faturas/${fatura.id}`,
+  }));
 
-  const pending: DashboardListItem[] = parcelasPendentesDetalhes.map(
-    (parcela) => ({
-      id: parcela.id,
-      title: parcela.titulo || `Parcela #${parcela.numeroParcela}`,
-      subtitle: parcela.contrato?.titulo,
-      badge: `R$ ${Number(parcela.valor).toLocaleString("pt-BR")}`,
-      tone:
-        parcela.status === ContratoParcelaStatus.ATRASADA
-          ? "danger"
-          : "warning",
-      date: parcela.dataVencimento?.toISOString(),
-      href: parcela.contrato ? `/contratos/${parcela.contrato.id}` : undefined,
-    }),
-  );
+  const pending: DashboardListItem[] = parcelasPendentesDetalhes.map((parcela) => ({
+    id: parcela.id,
+    title: parcela.titulo || `Parcela #${parcela.numeroParcela}`,
+    subtitle: parcela.contrato?.titulo,
+    badge: `R$ ${Number(parcela.valor).toLocaleString("pt-BR")}`,
+    tone: parcela.status === ContratoParcelaStatus.ATRASADA ? "danger" : "warning",
+    date: parcela.dataVencimento?.toISOString(),
+    href: parcela.contrato ? `/contratos/${parcela.contrato.id}` : undefined,
+  }));
 
   const trends = [
     ...receitaSeries.map((trend) => ({
@@ -1688,25 +1577,12 @@ async function buildFinanceiroDashboard(
   };
 }
 
-async function buildSecretariaDashboard(
-  tenantId: string,
-  now: Date,
-): Promise<DashboardData> {
+async function buildSecretariaDashboard(tenantId: string, now: Date): Promise<DashboardData> {
   const hojeInicio = startOfDay(now);
   const hojeFim = endOfDay(now);
   const tresDias = addDays(now, 3);
 
-  const [
-    eventosHoje,
-    eventosSemana,
-    tarefasPendentes,
-    documentosPendentes,
-    prazosCriticos,
-    clientesNovos,
-    eventosProximos,
-    documentosPendentesDetalhes,
-    tarefasRecentes,
-  ] = await Promise.all([
+  const [eventosHoje, eventosSemana, tarefasPendentes, documentosPendentes, prazosCriticos, clientesNovos, eventosProximos, documentosPendentesDetalhes, tarefasRecentes] = await Promise.all([
     prisma.evento.count({
       where: {
         tenantId,
@@ -1832,31 +1708,21 @@ async function buildSecretariaDashboard(
     {
       id: "agenda",
       title: eventosSemana > 0 ? "Agenda da semana" : "Agenda tranquila",
-      description:
-        eventosSemana > 0
-          ? `${eventosSemana} compromissos agendados até o final da semana`
-          : "Nenhum compromisso registrado para os próximos dias",
+      description: eventosSemana > 0 ? `${eventosSemana} compromissos agendados até o final da semana` : "Nenhum compromisso registrado para os próximos dias",
       tone: eventosSemana > 0 ? "secondary" : "success",
       icon: "🗓️",
     },
     {
       id: "prazos",
       title: prazosCriticos > 0 ? "Prazos críticos" : "Prazos controlados",
-      description:
-        prazosCriticos > 0
-          ? `${prazosCriticos} prazos vencem nos próximos 3 dias`
-          : "Nenhum prazo urgente no radar",
+      description: prazosCriticos > 0 ? `${prazosCriticos} prazos vencem nos próximos 3 dias` : "Nenhum prazo urgente no radar",
       tone: prazosCriticos > 0 ? "danger" : "success",
       icon: prazosCriticos > 0 ? "⚠️" : "✅",
     },
     {
       id: "clientes",
-      title:
-        clientesNovos > 0 ? "Novos clientes em onboarding" : "Onboarding ok",
-      description:
-        clientesNovos > 0
-          ? `${clientesNovos} clientes foram cadastrados nos últimos 7 dias`
-          : "Sem novos clientes nesta semana",
+      title: clientesNovos > 0 ? "Novos clientes em onboarding" : "Onboarding ok",
+      description: clientesNovos > 0 ? `${clientesNovos} clientes foram cadastrados nos últimos 7 dias` : "Sem novos clientes nesta semana",
       tone: clientesNovos > 0 ? "primary" : "default",
       icon: "🤝",
     },
@@ -1875,7 +1741,7 @@ async function buildSecretariaDashboard(
           },
         },
       }),
-    "integer",
+    "integer"
   );
 
   const clientesSeries = await generateMonthlySeries(
@@ -1892,7 +1758,7 @@ async function buildSecretariaDashboard(
           },
         },
       }),
-    "integer",
+    "integer"
   );
 
   const alerts: DashboardAlert[] = [];
@@ -1923,9 +1789,7 @@ async function buildSecretariaDashboard(
     ...eventosProximos.map((evento) => ({
       id: `evento-${evento.id}`,
       title: evento.titulo,
-      description: evento.processo?.numero
-        ? `Evento do processo ${evento.processo.numero}`
-        : "Evento agendado",
+      description: evento.processo?.numero ? `Evento do processo ${evento.processo.numero}` : "Evento agendado",
       date: evento.dataInicio?.toISOString() ?? now.toISOString(),
       icon: "📅",
       href: evento.processo ? `/processos/${evento.processo.id}` : undefined,
@@ -1933,9 +1797,7 @@ async function buildSecretariaDashboard(
     ...documentosPendentesDetalhes.map((doc) => ({
       id: `doc-${doc.id}`,
       title: doc.titulo,
-      description: doc.cliente?.nome
-        ? `Cliente: ${doc.cliente.nome}`
-        : "Documento aguardando assinatura",
+      description: doc.cliente?.nome ? `Cliente: ${doc.cliente.nome}` : "Documento aguardando assinatura",
       date: doc.createdAt?.toISOString() ?? now.toISOString(),
       icon: "📁",
       tone: "warning",
@@ -1944,9 +1806,7 @@ async function buildSecretariaDashboard(
     ...tarefasRecentes.map((tarefa) => ({
       id: `tarefa-${tarefa.id}`,
       title: tarefa.titulo,
-      description: tarefa.dataLimite
-        ? `Prazo: ${tarefa.dataLimite.toLocaleDateString("pt-BR")}`
-        : "Tarefa registrada",
+      description: tarefa.dataLimite ? `Prazo: ${tarefa.dataLimite.toLocaleDateString("pt-BR")}` : "Tarefa registrada",
       date: tarefa.createdAt.toISOString(),
       icon: "🗂️",
     })),
@@ -1963,16 +1823,14 @@ async function buildSecretariaDashboard(
     href: evento.processo ? `/processos/${evento.processo.id}` : undefined,
   }));
 
-  const pending: DashboardListItem[] = documentosPendentesDetalhes.map(
-    (doc) => ({
-      id: doc.id,
-      title: doc.titulo,
-      subtitle: doc.cliente?.nome,
-      date: doc.createdAt?.toISOString(),
-      tone: "warning",
-      href: doc.processo ? `/processos/${doc.processo.id}` : undefined,
-    }),
-  );
+  const pending: DashboardListItem[] = documentosPendentesDetalhes.map((doc) => ({
+    id: doc.id,
+    title: doc.titulo,
+    subtitle: doc.cliente?.nome,
+    date: doc.createdAt?.toISOString(),
+    tone: "warning",
+    href: doc.processo ? `/processos/${doc.processo.id}` : undefined,
+  }));
 
   const trends = [
     ...eventosSeries.map((trend) => ({
@@ -1999,11 +1857,7 @@ async function buildSecretariaDashboard(
   };
 }
 
-async function buildClienteDashboard(
-  tenantId: string,
-  userId: string,
-  now: Date,
-): Promise<DashboardData> {
+async function buildClienteDashboard(tenantId: string, userId: string, now: Date): Promise<DashboardData> {
   const cliente = await prisma.cliente.findFirst({
     where: {
       tenantId,
@@ -2027,16 +1881,7 @@ async function buildClienteDashboard(
 
   const weekEnd = addDays(now, 7);
 
-  const [
-    processos,
-    documentos,
-    parcelasPendentes,
-    parcelasAtrasadas,
-    eventosSemana,
-    proximoEvento,
-    eventosLista,
-    parcelasLista,
-  ] = await Promise.all([
+  const [processos, documentos, parcelasPendentes, parcelasAtrasadas, eventosSemana, proximoEvento, eventosLista, parcelasLista] = await Promise.all([
     prisma.processo.count({
       where: {
         tenantId,
@@ -2146,10 +1991,7 @@ async function buildClienteDashboard(
       label: "Pagamentos em aberto",
       value: parcelasPendentes + parcelasAtrasadas,
       format: "integer",
-      helper:
-        parcelasAtrasadas > 0
-          ? `${parcelasAtrasadas} parcelas atrasadas`
-          : "Nenhum pagamento atrasado",
+      helper: parcelasAtrasadas > 0 ? `${parcelasAtrasadas} parcelas atrasadas` : "Nenhum pagamento atrasado",
       tone: parcelasAtrasadas > 0 ? "danger" : "warning",
       icon: "💳",
     },
@@ -2160,40 +2002,27 @@ async function buildClienteDashboard(
       id: "agenda",
       title: proximoEvento ? "Próxima etapa do processo" : "Sem eventos",
       description: proximoEvento
-        ? `${proximoEvento.titulo} em ${proximoEvento.dataInicio.toLocaleDateString(
-            "pt-BR",
-            {
-              day: "2-digit",
-              month: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            },
-          )}`
+        ? `${proximoEvento.titulo} em ${proximoEvento.dataInicio.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}`
         : "Nenhum compromisso agendado",
       tone: proximoEvento ? "secondary" : "default",
       icon: "🗓️",
     },
     {
       id: "pagamentos",
-      title:
-        parcelasPendentes + parcelasAtrasadas > 0
-          ? "Pagamentos pendentes"
-          : "Financeiro em dia",
-      description:
-        parcelasPendentes + parcelasAtrasadas > 0
-          ? `${parcelasPendentes} parcelas aguardando pagamento`
-          : "Nenhuma pendência financeira registrada",
+      title: parcelasPendentes + parcelasAtrasadas > 0 ? "Pagamentos pendentes" : "Financeiro em dia",
+      description: parcelasPendentes + parcelasAtrasadas > 0 ? `${parcelasPendentes} parcelas aguardando pagamento` : "Nenhuma pendência financeira registrada",
       tone: parcelasPendentes + parcelasAtrasadas > 0 ? "warning" : "success",
       icon: parcelasPendentes + parcelasAtrasadas > 0 ? "💡" : "✅",
     },
     {
       id: "documentos",
-      title:
-        documentos > 0 ? "Documentos compartilhados" : "Portal sem documentos",
-      description:
-        documentos > 0
-          ? `${documentos} documentos estão disponíveis para consulta`
-          : "Nenhum documento enviado até o momento",
+      title: documentos > 0 ? "Documentos compartilhados" : "Portal sem documentos",
+      description: documentos > 0 ? `${documentos} documentos estão disponíveis para consulta` : "Nenhum documento enviado até o momento",
       tone: documentos > 0 ? "primary" : "default",
       icon: "📦",
     },
@@ -2214,7 +2043,7 @@ async function buildClienteDashboard(
           },
         },
       }),
-    "integer",
+    "integer"
   );
 
   const documentoSeries = await generateMonthlySeries(
@@ -2232,7 +2061,7 @@ async function buildClienteDashboard(
           },
         },
       }),
-    "integer",
+    "integer"
   );
 
   const alerts: DashboardAlert[] = [];
@@ -2266,7 +2095,7 @@ async function buildClienteDashboard(
       description: "Evento do seu processo",
       date: evento.dataInicio?.toISOString() ?? now.toISOString(),
       icon: "📅",
-      tone: "secondary",
+      tone: "secondary" as Tone,
     })),
     ...parcelasLista.map((parcela) => ({
       id: `parcela-${parcela.id}`,
@@ -2274,10 +2103,7 @@ async function buildClienteDashboard(
       description: `Valor: R$ ${Number(parcela.valor).toLocaleString("pt-BR")}`,
       date: parcela.dataVencimento?.toISOString() ?? now.toISOString(),
       icon: "💳",
-      tone:
-        parcela.status === ContratoParcelaStatus.ATRASADA
-          ? "danger"
-          : "warning",
+      tone: (parcela.status === ContratoParcelaStatus.ATRASADA ? "danger" : "warning") as Tone,
     })),
   ]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -2295,8 +2121,7 @@ async function buildClienteDashboard(
     title: parcela.titulo || `Parcela #${parcela.numeroParcela}`,
     badge: `R$ ${Number(parcela.valor).toLocaleString("pt-BR")}`,
     date: parcela.dataVencimento?.toISOString(),
-    tone:
-      parcela.status === ContratoParcelaStatus.ATRASADA ? "danger" : "warning",
+    tone: parcela.status === ContratoParcelaStatus.ATRASADA ? "danger" : "warning",
   }));
 
   const trends = [
@@ -2394,8 +2219,7 @@ export async function getDashboardData(): Promise<DashboardResponse> {
 
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Erro ao carregar dashboard",
+      error: error instanceof Error ? error.message : "Erro ao carregar dashboard",
     };
   }
 }

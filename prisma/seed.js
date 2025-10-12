@@ -13,6 +13,8 @@ const { seedConfiguracoesPreco } = require("./seeds/configuracoesPreco");
 const { seedPacotesJuiz } = require("./seeds/pacotesJuiz");
 const { seedDadosFinanceiros } = require("./seeds/dadosFinanceiros");
 const { seedContratos } = require("./seeds/contratos");
+const seedCausas = require("./seeds/causas");
+const seedRegimesPrazo = require("./seeds/regimesPrazo");
 
 const prisma = new PrismaClient();
 
@@ -45,6 +47,12 @@ async function main() {
   // Seeds de tenants
   await seedTenantSandra(prisma, Prisma);
   await seedSalbaAdvocacia(prisma);
+
+  console.log("\n🗂️  Criando catálogo de causas...\n");
+  await seedCausas(prisma);
+
+  console.log("\n⏱️  Criando regimes de prazo padrão...\n");
+  await seedRegimesPrazo(prisma);
 
   console.log("\n📅 Criando eventos...\n");
 

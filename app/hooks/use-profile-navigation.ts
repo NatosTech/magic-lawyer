@@ -170,6 +170,19 @@ export function useProfileNavigation() {
       });
     }
 
+    if (
+      !isCliente &&
+      (permissions.canViewAllProcesses || permissions.canManageOfficeSettings)
+    ) {
+      items.push({
+        label: "Causas",
+        href: "/causas",
+        icon: "Scale",
+        description: "Catálogo de assuntos processuais",
+        section: "Atividades Jurídicas",
+      });
+    }
+
     // Juízes - Baseado em permissões
     if (permissions.canViewJudgesDatabase) {
       items.push({
@@ -195,6 +208,32 @@ export function useProfileNavigation() {
         href: "/agenda",
         icon: "Calendar",
         description: isCliente ? "Eventos do meu processo" : "Gestão de agenda",
+        section: "Operacional",
+      });
+    }
+
+    if (
+      !isCliente &&
+      (permissions.canViewAllProcesses || isSecretaria || isAdvogado)
+    ) {
+      items.push({
+        label: "Diligências",
+        href: "/diligencias",
+        icon: "Clipboard",
+        description: "Controle de diligências internas e externas",
+        section: "Operacional",
+      });
+    }
+
+    if (
+      !isCliente &&
+      (permissions.canManageOfficeSettings || isSecretaria || isAdvogado)
+    ) {
+      items.push({
+        label: "Regimes de prazo",
+        href: "/regimes-prazo",
+        icon: "Clock",
+        description: "Regras de contagem aplicadas aos prazos",
         section: "Operacional",
       });
     }

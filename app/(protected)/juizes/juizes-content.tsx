@@ -453,6 +453,7 @@ export function JuizesContent() {
                     inputWrapper:
                       "border-2 border-primary/20 hover:border-primary/40 focus-within:border-primary bg-background/50 backdrop-blur-sm shadow-sm",
                   }}
+                  id="juiz-search"
                   placeholder="Digite nome, vara, comarca ou cidade..."
                   size="lg"
                   startContent={
@@ -462,7 +463,6 @@ export function JuizesContent() {
                   }
                   value={searchTerm}
                   variant="bordered"
-                  id="juiz-search"
                   onValueChange={setSearchTerm}
                 />
               </div>

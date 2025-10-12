@@ -299,6 +299,44 @@ const ShieldIcon = ({ size = 18 }: IconProps) => (
   </svg>
 );
 
+const ClockIcon = ({ size = 18 }: IconProps) => (
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 6v6l3 3" />
+  </svg>
+);
+
+const ClipboardIcon = ({ size = 18 }: IconProps) => (
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
+    <path d="M16 4h1a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1" />
+    <path d="M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
+    <path d="M9 12h6" />
+    <path d="M9 16h6" />
+  </svg>
+);
+
 const UsersIcon = ({ size = 18 }: IconProps) => (
   <svg
     aria-hidden
@@ -349,6 +387,9 @@ const navIconMap: Record<string, JSX.Element> = {
   Financeiro: <WalletIcon />,
   Juízes: <ScaleIcon />,
   "Juízes Globais": <ScaleIcon />,
+  Causas: <ScaleIcon />,
+  "Regimes de prazo": <ClockIcon />,
+  Diligências: <ClipboardIcon />,
   Relatórios: <ChartIcon />,
   Equipe: <PeopleIcon />,
   Tenants: <PeopleIcon />,

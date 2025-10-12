@@ -189,8 +189,8 @@ export function SuporteContent() {
               </label>
               <textarea
                 className="w-full px-3 py-2 bg-default-100 border border-default-200 rounded-lg text-white min-h-[100px] resize-y"
-                placeholder="Descreva o problema ou solicitação com o máximo de detalhes possível..."
                 id="ticket-descricao"
+                placeholder="Descreva o problema ou solicitação com o máximo de detalhes possível..."
                 rows={4}
                 value={ticketForm.descricao}
                 onChange={(e) =>

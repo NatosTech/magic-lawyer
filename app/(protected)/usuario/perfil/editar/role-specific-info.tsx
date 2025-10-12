@@ -36,9 +36,7 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {profile.advogado.oabNumero && (
               <div>
-                <p className="text-sm font-medium text-default-600">
-                  OAB
-                </p>
+                <p className="text-sm font-medium text-default-600">OAB</p>
                 <p className="text-white">
                   {profile.advogado.oabUf} {profile.advogado.oabNumero}
                 </p>
@@ -77,18 +75,14 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
 
           {profile.advogado.bio && (
             <div>
-              <p className="text-sm font-medium text-default-600">
-                Biografia
-              </p>
+              <p className="text-sm font-medium text-default-600">Biografia</p>
               <p className="text-white text-sm mt-1">{profile.advogado.bio}</p>
             </div>
           )}
 
           {profile.advogado.whatsapp && (
             <div>
-              <p className="text-sm font-medium text-default-600">
-                WhatsApp
-              </p>
+              <p className="text-sm font-medium text-default-600">WhatsApp</p>
               <p className="text-white">{profile.advogado.whatsapp}</p>
             </div>
           )}
@@ -111,9 +105,7 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
         <CardBody className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium text-default-600">
-                Escritório
-              </p>
+              <p className="text-sm font-medium text-default-600">Escritório</p>
               <p className="text-white">{profile.tenant?.name || "N/A"}</p>
             </div>
 

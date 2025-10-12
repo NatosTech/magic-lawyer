@@ -645,9 +645,7 @@ export function ProcessosContent() {
 
               {/* Segredo de Justiça */}
               <div className="space-y-2">
-                <p className="text-sm font-medium">
-                  Segredo de Justiça
-                </p>
+                <p className="text-sm font-medium">Segredo de Justiça</p>
                 <Select
                   placeholder="Todos"
                   selectedKeys={
@@ -717,9 +715,7 @@ export function ProcessosContent() {
 
               {/* Data de Distribuição */}
               <div className="space-y-2">
-                <p className="text-sm font-medium">
-                  Data de Distribuição
-                </p>
+                <p className="text-sm font-medium">Data de Distribuição</p>
                 <div className="flex gap-2">
                   <Input
                     placeholder="De"
@@ -748,9 +744,7 @@ export function ProcessosContent() {
 
               {/* Prazo de Vencimento */}
               <div className="space-y-2">
-                <p className="text-sm font-medium">
-                  Prazo de Vencimento
-                </p>
+                <p className="text-sm font-medium">Prazo de Vencimento</p>
                 <Select
                   placeholder="Todos os prazos"
                   selectedKeys={

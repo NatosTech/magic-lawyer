@@ -597,11 +597,11 @@ export default function EventoForm({
                     <Input
                       className="flex-1"
                       color="primary"
+                      id="participant-email"
                       placeholder="Digite o email do participante"
                       startContent={<Users className="w-4 h-4 text-primary" />}
                       value={novoParticipante}
                       variant="bordered"
-                      id="participant-email"
                       onChange={(e) => setNovoParticipante(e.target.value)}
                       onKeyPress={handleKeyPress}
                     />
