@@ -188,6 +188,22 @@ export const authOptions: NextAuthOptions = {
                 tenantStatus: u.tenant?.status,
               })),
             });
+
+            // Se encontrou usuário em tenant específico e está no domínio principal, redirecionar
+            if (allUsers.length > 0 && !tenantFromDomain && host.includes('magiclawyer.vercel.app')) {
+              const userWithSpecificTenant = allUsers.find(u => u.tenant?.slug && u.tenant.slug !== 'magiclawyer');
+              if (userWithSpecificTenant) {
+                const tenantSlug = userWithSpecificTenant.tenant?.slug;
+                console.info("[auth] Usuário com tenant específico tentando logar no domínio principal", {
+                  userEmail: email,
+                  userTenant: tenantSlug,
+                  currentDomain: host,
+                });
+                
+                // Retornar erro com redirecionamento
+                throw new Error(`REDIRECT_TO_TENANT:${tenantSlug}`);
+              }
+            }
           }
 
           const user = await prisma.usuario.findFirst({
@@ -214,21 +230,6 @@ export const authOptions: NextAuthOptions = {
             } as any,
           });
 
-          // Verificar se usuário tem domínio específico e está tentando logar no domínio errado
-          if (user && !tenantFromDomain && host.includes('magiclawyer.vercel.app')) {
-            const userTenant = (user as any).tenant;
-            if (userTenant?.slug && userTenant.slug !== 'magiclawyer') {
-              // Usuário tem tenant específico mas está no domínio principal
-              console.info("[auth] Usuário com tenant específico tentando logar no domínio principal", {
-                userEmail: email,
-                userTenant: userTenant.slug,
-                currentDomain: host,
-              });
-              
-              // Retornar erro com redirecionamento
-              throw new Error(`REDIRECT_TO_TENANT:${userTenant.slug}`);
-            }
-          }
 
           // Log do resultado da busca
           console.info("[auth] Resultado da busca", {
