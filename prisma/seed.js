@@ -15,6 +15,7 @@ const { seedDadosFinanceiros } = require("./seeds/dadosFinanceiros");
 const { seedContratos } = require("./seeds/contratos");
 const seedCausas = require("./seeds/causas");
 const seedRegimesPrazo = require("./seeds/regimesPrazo");
+const { seedAuditLogs } = require("./seeds/auditLogs");
 
 const prisma = new PrismaClient();
 
@@ -78,6 +79,11 @@ async function main() {
 
   // Seed de pacotes de juízes
   await seedPacotesJuiz(superAdmin.id, prisma);
+
+  console.log("\n🕵️  Criando registros de auditoria...\n");
+
+  // Seed de logs de auditoria (super admin e tenants)
+  await seedAuditLogs(prisma, superAdmin.id);
 
   console.log("\n💰 Criando dados financeiros de teste...\n");
 

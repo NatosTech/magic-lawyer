@@ -1,5 +1,7 @@
 "use server";
 
+import { getServerSession } from "next-auth/next";
+
 import prisma from "@/app/lib/prisma";
 import {
   EspecialidadeJuridica,
@@ -7,6 +9,8 @@ import {
   JuizNivel,
   Juiz,
 } from "@/app/generated/prisma";
+import { authOptions } from "@/auth";
+import logger from "@/lib/logger";
 
 export interface JuizFilters {
   search?: string;
@@ -34,6 +38,16 @@ export interface JuizSerializado
   dataNascimento: string | null;
   dataPosse: string | null;
   dataAposentadoria: string | null;
+  tribunal?: {
+    id: string;
+    nome: string;
+    sigla: string | null;
+  } | null;
+  _count?: {
+    processos?: number;
+    julgamentos?: number;
+    pacotes?: number;
+  };
 }
 
 export interface GetJuizesResponse {
@@ -79,78 +93,134 @@ export interface SaveJuizResponse {
 }
 
 // Buscar juízes com filtros - APENAS JUÍZES PÚBLICOS GLOBAIS
+type JuizQueryOptions = {
+  onlyPublicos?: boolean;
+};
+
+function buildJuizWhere(
+  filters?: JuizFilters,
+  options: JuizQueryOptions = { onlyPublicos: true },
+) {
+  const where: any = {};
+
+  if (options.onlyPublicos !== false) {
+    where.isPublico = true;
+  }
+
+  if (filters?.search) {
+    where.OR = [
+      { nome: { contains: filters.search, mode: "insensitive" } },
+      { nomeCompleto: { contains: filters.search, mode: "insensitive" } },
+      { vara: { contains: filters.search, mode: "insensitive" } },
+      { comarca: { contains: filters.search, mode: "insensitive" } },
+      { biografia: { contains: filters.search, mode: "insensitive" } },
+    ];
+  }
+
+  if (filters?.status) {
+    where.status = filters.status;
+  }
+
+  if (filters?.especialidade) {
+    where.especialidades = {
+      has: filters.especialidade,
+    };
+  }
+
+  if (filters?.nivel) {
+    where.nivel = filters.nivel;
+  }
+
+  if (filters?.isPublico !== undefined) {
+    where.isPublico = filters.isPublico;
+  }
+
+  if (filters?.isPremium !== undefined) {
+    where.isPremium = filters.isPremium;
+  }
+
+  return where;
+}
+
 export async function getJuizes(
   filters?: JuizFilters,
 ): Promise<GetJuizesResponse> {
   try {
-    const where: any = {
-      // SEGURANÇA: Apenas juízes públicos (globais) são visíveis
-      isPublico: true,
-    };
-
-    // Filtro por busca textual
-    if (filters?.search) {
-      where.OR = [
-        { nome: { contains: filters.search, mode: "insensitive" } },
-        { nomeCompleto: { contains: filters.search, mode: "insensitive" } },
-        { vara: { contains: filters.search, mode: "insensitive" } },
-        { comarca: { contains: filters.search, mode: "insensitive" } },
-        { biografia: { contains: filters.search, mode: "insensitive" } },
-      ];
-    }
-
-    // Filtro por status
-    if (filters?.status) {
-      where.status = filters.status;
-    }
-
-    // Filtro por especialidade
-    if (filters?.especialidade) {
-      where.especialidades = {
-        has: filters.especialidade,
-      };
-    }
-
-    // Filtro por nível
-    if (filters?.nivel) {
-      where.nivel = filters.nivel;
-    }
-
-    // Filtro por premium (mantém isPublico = true sempre)
-    if (filters?.isPremium !== undefined) {
-      where.isPremium = filters.isPremium;
-    }
-
     const juizes = await prisma.juiz.findMany({
-      where,
+      where: buildJuizWhere(filters),
       orderBy: [
-        { isPublico: "desc" }, // Públicos primeiro
+        { isPublico: "desc" },
         { nome: "asc" },
       ],
-      // Sem select - traz TODOS os campos automaticamente
+      include: {
+        tribunal: {
+          select: {
+            id: true,
+            nome: true,
+            sigla: true,
+          },
+        },
+        _count: {
+          select: {
+            processos: true,
+            julgamentos: true,
+            pacotes: true,
+          },
+        },
+      },
     });
-
-    // Serializar para enviar ao cliente (converter Decimal e Dates)
-    const juizesSerializados = juizes.map((juiz) => ({
-      ...juiz,
-      precoAcesso: juiz.precoAcesso ? Number(juiz.precoAcesso) : null,
-      dataNascimento: juiz.dataNascimento
-        ? juiz.dataNascimento.toISOString()
-        : null,
-      dataPosse: juiz.dataPosse ? juiz.dataPosse.toISOString() : null,
-      dataAposentadoria: juiz.dataAposentadoria
-        ? juiz.dataAposentadoria.toISOString()
-        : null,
-      createdAt: juiz.createdAt.toISOString(),
-      updatedAt: juiz.updatedAt.toISOString(),
-    }));
 
     return {
       success: true,
-      data: juizesSerializados,
+      data: juizes.map(serializeJuiz),
     };
   } catch (error) {
     logger.error("Erro ao buscar juízes:", error);
+
+    return {
+      success: false,
+      error: "Erro interno do servidor ao buscar juízes",
+    };
+  }
+}
+
+export async function getJuizesAdmin(
+  filters?: JuizFilters,
+): Promise<GetJuizesResponse> {
+  try {
+    await ensureSuperAdmin();
+
+    const juizes = await prisma.juiz.findMany({
+      where: buildJuizWhere(filters, { onlyPublicos: false }),
+      orderBy: [
+        { isPublico: "desc" },
+        { isPremium: "desc" },
+        { nome: "asc" },
+      ],
+      include: {
+        tribunal: {
+          select: {
+            id: true,
+            nome: true,
+            sigla: true,
+          },
+        },
+        _count: {
+          select: {
+            processos: true,
+            julgamentos: true,
+            pacotes: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: juizes.map(serializeJuiz),
+    };
+  } catch (error) {
+    logger.error("Erro ao buscar juízes (admin):", error);
 
     return {
       success: false,
@@ -345,10 +415,23 @@ export async function getJuizFormData() {
 
 // ========== NOVAS SERVER ACTIONS MULTI-TENANT COM AUDITORIA ==========
 
-import { getServerSession } from "next-auth/next";
+async function ensureSuperAdmin() {
+  const session = await getServerSession(authOptions);
 
-import { authOptions } from "@/auth";
-import logger from "@/lib/logger";
+  if (!session?.user?.id) {
+    throw new Error("Não autenticado");
+  }
+
+  const userRole = (session.user as any)?.role;
+
+  if (userRole !== "SUPER_ADMIN") {
+    throw new Error(
+      "Acesso negado. Apenas Super Admins podem gerenciar juízes globais.",
+    );
+  }
+
+  return session.user.id;
+}
 
 async function ensureSession() {
   const session = await getServerSession(authOptions);
@@ -397,10 +480,15 @@ async function createAuditLog(
 }
 
 // Serializar juiz para o cliente (converter Decimal para string)
-function serializeJuiz(juiz: any) {
+function serializeJuiz(juiz: any): JuizSerializado {
+  const precoAcesso =
+    juiz.precoAcesso !== null && juiz.precoAcesso !== undefined
+      ? Number(juiz.precoAcesso)
+      : null;
+
   return {
     ...juiz,
-    precoAcesso: juiz.precoAcesso ? juiz.precoAcesso.toString() : null,
+    precoAcesso,
     dataNascimento: juiz.dataNascimento
       ? juiz.dataNascimento.toISOString()
       : null,
@@ -410,6 +498,20 @@ function serializeJuiz(juiz: any) {
       : null,
     createdAt: juiz.createdAt ? juiz.createdAt.toISOString() : null,
     updatedAt: juiz.updatedAt ? juiz.updatedAt.toISOString() : null,
+    tribunal: juiz.tribunal
+      ? {
+          id: juiz.tribunal.id,
+          nome: juiz.tribunal.nome,
+          sigla: juiz.tribunal.sigla ?? null,
+        }
+      : null,
+    _count: juiz._count
+      ? {
+          processos: juiz._count.processos ?? 0,
+          julgamentos: juiz._count.julgamentos ?? 0,
+          pacotes: juiz._count.pacotes ?? 0,
+        }
+      : undefined,
   };
 }
 

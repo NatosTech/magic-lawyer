@@ -121,6 +121,59 @@ async function seedPacotesJuiz(superAdminId, prisma) {
       }
     }
 
+    // Criar assinaturas de exemplo para demonstrar métricas no painel admin
+    const tenants = await prisma.tenant.findMany({
+      where: {
+        slug: {
+          in: ["sandra", "salba-advocacia"],
+        },
+      },
+      select: {
+        id: true,
+        slug: true,
+      },
+    });
+
+    const tenantIds = tenants.map((tenant) => tenant.id);
+
+    if (tenantIds.length > 0) {
+      await prisma.assinaturaPacoteJuiz.deleteMany({
+        where: {
+          tenantId: {
+            in: tenantIds,
+          },
+        },
+      });
+
+      const pacotes = await prisma.pacoteJuiz.findMany({
+        orderBy: { ordemExibicao: "asc" },
+      });
+
+      const agora = new Date();
+
+      for (let i = 0; i < tenants.length && i < pacotes.length; i++) {
+        const tenant = tenants[i];
+        const pacote = pacotes[i];
+
+        await prisma.assinaturaPacoteJuiz.create({
+          data: {
+            tenantId: tenant.id,
+            pacoteId: pacote.id,
+            status: "ATIVA",
+            dataInicio: new Date(agora.getTime() - i * 7 * 24 * 60 * 60 * 1000),
+            renovacaoAutomatica: true,
+            precoPago: pacote.preco,
+            formaPagamento: "CARTAO_CREDITO",
+            observacoes: `Assinatura seed para ${tenant.slug}`,
+          },
+        });
+      }
+
+      console.log(
+        `   📊 ${tenantIds.length} assinaturas de pacotes criadas para tenants demo`,
+      );
+    }
+
     console.log(`\n✅ ${pacotesData.length} pacotes de juízes criados com sucesso!`);
     return true;
   } catch (error) {

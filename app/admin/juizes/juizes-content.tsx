@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import useSWR from "swr";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
@@ -15,60 +16,23 @@ import {
 } from "@heroui/table";
 
 import { title, subtitle } from "@/components/primitives";
+import { getJuizesAdmin } from "@/app/actions/juizes";
+import type { JuizSerializado } from "@/app/actions/juizes";
 
 export function JuizesContent() {
-  // Mock data - em produção viria de actions
-  const juizes = [
+  const { data, error, isLoading, mutate } = useSWR(
+    "admin-juizes",
+    () => getJuizesAdmin(),
     {
-      id: "1",
-      nome: "Dr. João Silva",
-      nomeCompleto: "João Carlos Silva",
-      comarca: "São Paulo",
-      vara: "1ª Vara Cível",
-      tribunal: { nome: "TJSP", sigla: "TJSP" },
-      especialidades: ["CIVEL", "FAMILIA", "TRABALHISTA"],
-      status: "ATIVO",
-      isPublico: true,
-      isPremium: false,
-      precoAcesso: null,
-      nivel: "DESEMBARGADOR",
-      _count: { processos: 45, julgamentos: 23 },
+      revalidateOnFocus: false,
+      refreshInterval: 60000,
     },
-    {
-      id: "2",
-      nome: "Dra. Maria Santos",
-      nomeCompleto: "Maria Fernanda Santos",
-      comarca: "Rio de Janeiro",
-      vara: "2ª Vara Criminal",
-      tribunal: { nome: "TJRJ", sigla: "TJRJ" },
-      especialidades: ["CRIMINAL", "EXECUCAO_PENAL"],
-      status: "ATIVO",
-      isPublico: true,
-      isPremium: true,
-      precoAcesso: 299.9,
-      nivel: "JUIZ",
-      _count: { processos: 78, julgamentos: 41 },
-    },
-    {
-      id: "3",
-      nome: "Dr. Pedro Costa",
-      nomeCompleto: "Pedro Henrique Costa",
-      comarca: "Brasília",
-      vara: "3ª Vara Federal",
-      tribunal: { nome: "TRF1", sigla: "TRF1" },
-      especialidades: ["TRIBUTARIO", "ADMINISTRATIVO"],
-      status: "ATIVO",
-      isPublico: false,
-      isPremium: true,
-      precoAcesso: 499.9,
-      nivel: "DESEMBARGADOR",
-      _count: { processos: 32, julgamentos: 18 },
-    },
-  ];
+  );
+
+  const juizes: JuizSerializado[] = data?.data ?? [];
 
   // Separar juízes globais dos privados
   const juizesGlobais = juizes.filter((j) => j.isPublico || j.isPremium);
-  const juizesPrivados = juizes.filter((j) => !j.isPublico && !j.isPremium);
 
   const getStatusColor = (status: string) => {
     return status === "ATIVO" ? "success" : "default";
@@ -108,6 +72,14 @@ export function JuizesContent() {
             </Button>
             <Button color="secondary" variant="flat">
               📊 Relatórios
+            </Button>
+            <Button
+              color="default"
+              isDisabled={isLoading}
+              onPress={() => mutate()}
+              variant="flat"
+            >
+              🔄 Atualizar
             </Button>
           </div>
         </div>
@@ -166,7 +138,10 @@ export function JuizesContent() {
                 Processos Totais
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {juizes.reduce((sum, j) => sum + j._count.processos, 0)}
+                {juizes.reduce(
+                  (sum, j) => sum + (j._count?.processos ?? 0),
+                  0,
+                )}
               </p>
               <p className="text-sm text-yellow-600">Ativos</p>
             </div>
@@ -187,7 +162,28 @@ export function JuizesContent() {
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody>
-          {juizesGlobais.length > 0 ? (
+          {error ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Não foi possível carregar os juízes globais
+              </h3>
+              <p className="text-default-400">
+                {(error as Error)?.message ||
+                  "Tente atualizar a página para tentar novamente."}
+              </p>
+            </div>
+          ) : isLoading ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">⏳</div>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Carregando juízes...
+              </h3>
+              <p className="text-default-400">
+                Buscando os juízes globais cadastrados pelo super admin.
+              </p>
+            </div>
+          ) : juizesGlobais.length > 0 ? (
             <Table aria-label="Tabela de Juízes Globais">
               <TableHeader>
                 <TableColumn>Juiz</TableColumn>
@@ -294,7 +290,7 @@ export function JuizesContent() {
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="text-sm font-medium text-white">
-                          {juiz._count.processos}
+                          {juiz._count?.processos ?? 0}
                         </span>
                         <span className="text-xs text-default-400">
                           processos

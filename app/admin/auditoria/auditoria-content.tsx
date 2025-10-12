@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import useSWR from "swr";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Badge } from "@heroui/badge";
@@ -15,35 +16,26 @@ import {
 } from "@heroui/table";
 
 import { title, subtitle } from "@/components/primitives";
+import { getSystemAuditLogs } from "@/app/actions/auditoria";
 
 export function AuditoriaContent() {
-  // Mock data - em produção viria de uma action
-  const logs = [
-    {
-      id: "1",
-      acao: "CREATE_TENANT",
-      entidade: "TENANT",
-      entidadeId: "tenant_123",
-      superAdminId: "admin_123",
-      ipAddress: "192.168.1.1",
-      userAgent: "Mozilla/5.0...",
-      createdAt: "2025-01-04T10:30:00Z",
-      dadosAntigos: null,
-      dadosNovos: { nome: "Escritório Silva", slug: "silva" },
-    },
-    {
-      id: "2",
-      acao: "UPDATE_TENANT",
-      entidade: "TENANT",
-      entidadeId: "tenant_456",
-      superAdminId: "admin_123",
-      ipAddress: "192.168.1.1",
-      userAgent: "Mozilla/5.0...",
-      createdAt: "2025-01-04T09:15:00Z",
-      dadosAntigos: { status: "ACTIVE" },
-      dadosNovos: { status: "SUSPENDED" },
-    },
-  ];
+  const {
+    data,
+    error,
+    isLoading,
+    mutate,
+  } = useSWR("system-audit-logs", () => getSystemAuditLogs(100), {
+    revalidateOnFocus: false,
+    refreshInterval: 60000,
+  });
+
+  const logs = data?.data?.logs ?? [];
+  const summary = data?.data?.summary;
+
+  const totalLogs = summary?.total ?? 0;
+  const totalCreates = summary?.porCategoria.create ?? 0;
+  const totalUpdates = summary?.porCategoria.update ?? 0;
+  const totalDeletes = summary?.porCategoria.delete ?? 0;
 
   const getActionColor = (acao: string) => {
     if (acao.includes("CREATE")) return "success";
@@ -76,7 +68,12 @@ export function AuditoriaContent() {
             <Button color="primary" variant="flat">
               📥 Exportar Logs
             </Button>
-            <Button color="secondary" variant="flat">
+            <Button
+              color="secondary"
+              isDisabled={isLoading}
+              onPress={() => mutate()}
+              variant="flat"
+            >
               🔄 Atualizar
             </Button>
           </div>
@@ -90,7 +87,7 @@ export function AuditoriaContent() {
             <span className="text-3xl text-blue-600 mr-4">📝</span>
             <div>
               <p className="text-sm font-medium text-gray-500">Total de Logs</p>
-              <p className="text-2xl font-bold text-gray-900">{logs.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{totalLogs}</p>
               <p className="text-sm text-blue-600">Últimos 30 dias</p>
             </div>
           </CardBody>
@@ -101,9 +98,7 @@ export function AuditoriaContent() {
             <span className="text-3xl text-green-600 mr-4">✅</span>
             <div>
               <p className="text-sm font-medium text-gray-500">Criações</p>
-              <p className="text-2xl font-bold text-green-600">
-                {logs.filter((l) => l.acao.includes("CREATE")).length}
-              </p>
+              <p className="text-2xl font-bold text-green-600">{totalCreates}</p>
               <p className="text-sm text-gray-600">Novos registros</p>
             </div>
           </CardBody>
@@ -114,9 +109,7 @@ export function AuditoriaContent() {
             <span className="text-3xl text-yellow-600 mr-4">✏️</span>
             <div>
               <p className="text-sm font-medium text-gray-500">Atualizações</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {logs.filter((l) => l.acao.includes("UPDATE")).length}
-              </p>
+              <p className="text-2xl font-bold text-yellow-600">{totalUpdates}</p>
               <p className="text-sm text-gray-600">Modificações</p>
             </div>
           </CardBody>
@@ -127,9 +120,7 @@ export function AuditoriaContent() {
             <span className="text-3xl text-red-600 mr-4">🗑️</span>
             <div>
               <p className="text-sm font-medium text-gray-500">Exclusões</p>
-              <p className="text-2xl font-bold text-red-600">
-                {logs.filter((l) => l.acao.includes("DELETE")).length}
-              </p>
+              <p className="text-2xl font-bold text-red-600">{totalDeletes}</p>
               <p className="text-sm text-gray-600">Registros removidos</p>
             </div>
           </CardBody>
@@ -148,56 +139,117 @@ export function AuditoriaContent() {
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody>
-          {logs.length > 0 ? (
+          {error ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Não foi possível carregar os logs
+              </h3>
+              <p className="text-default-400">
+                {(error as Error)?.message ||
+                  "Tente atualizar a página ou tente novamente mais tarde."}
+              </p>
+            </div>
+          ) : isLoading ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">⏳</div>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Carregando logs...
+              </h3>
+              <p className="text-default-400">
+                Buscando os registros de auditoria mais recentes.
+              </p>
+            </div>
+          ) : logs.length > 0 ? (
             <Table aria-label="Tabela de Logs de Auditoria">
               <TableHeader>
                 <TableColumn>Data/Hora</TableColumn>
                 <TableColumn>Ação</TableColumn>
                 <TableColumn>Entidade</TableColumn>
+                <TableColumn>Origem</TableColumn>
                 <TableColumn>IP</TableColumn>
                 <TableColumn>Detalhes</TableColumn>
               </TableHeader>
               <TableBody>
-                {logs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-white">
-                          {formatDate(log.createdAt)}
+                {logs.map((log) => {
+                  const origemLabel =
+                    log.fonte === "SUPER_ADMIN" ? "Super Admin" : "Tenant";
+                  const origemDescricao =
+                    log.fonte === "SUPER_ADMIN"
+                      ? log.superAdmin?.nome || log.superAdmin?.email || "—"
+                      : log.tenant?.nome || log.usuario?.nome || "—";
+                  const camposAlterados = log.changedFields ?? [];
+
+                  return (
+                    <TableRow key={log.id}>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-white">
+                            {formatDate(log.createdAt)}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className="capitalize"
+                          color={getActionColor(log.acao) as any}
+                          variant="flat"
+                        >
+                          {log.acao.replace(/_/g, " ")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium text-white">
+                            {log.entidade.replace(/_/g, " ")}
+                          </span>
+                          {log.entidadeId && (
+                            <span className="text-xs text-default-400">
+                              ID: {log.entidadeId}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-sm text-white">{origemLabel}</span>
+                          <span className="text-xs text-default-400">
+                            {origemDescricao}
+                          </span>
+                          {log.tenant?.slug && log.fonte !== "SUPER_ADMIN" && (
+                            <span className="text-xs text-primary">
+                              {log.tenant.slug}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-default-400">
+                          {log.ipAddress || "—"}
                         </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className="capitalize"
-                        color={getActionColor(log.acao) as any}
-                        variant="flat"
-                      >
-                        {log.acao.replace("_", " ")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-white">
-                          {log.entidade}
-                        </span>
-                        <span className="text-xs text-default-400">
-                          ID: {log.entidadeId}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-default-400">
-                        {log.ipAddress}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Button color="primary" size="sm" variant="light">
-                        Ver Detalhes
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-2">
+                          {camposAlterados.length > 0 ? (
+                            <span className="text-xs text-default-400">
+                              Campos alterados: {camposAlterados.slice(0, 3).join(", ")}
+                              {camposAlterados.length > 3
+                                ? ` +${camposAlterados.length - 3}`
+                                : ""}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-default-400">
+                              {log.dadosNovos ? "Dados atualizados" : "Sem alterações registradas"}
+                            </span>
+                          )}
+                          <Button color="primary" size="sm" variant="light">
+                            Ver Detalhes
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : (
@@ -208,7 +260,7 @@ export function AuditoriaContent() {
               </h3>
               <p className="text-default-400 mb-4">
                 Os logs de auditoria aparecerão aqui conforme as ações forem
-                realizadas
+                registradas no sistema.
               </p>
             </div>
           )}

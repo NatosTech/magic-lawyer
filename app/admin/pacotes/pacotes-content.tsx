@@ -25,6 +25,8 @@ import {
   getPacotesJuiz,
   getEstatisticasPacotesJuiz,
 } from "@/app/actions/pacotesJuiz";
+import { getJuizesAdmin } from "@/app/actions/juizes";
+import type { JuizSerializado } from "@/app/actions/juizes";
 
 export function PacotesContent() {
   // Buscar dados reais dos PLANOS e PACOTES DE JUÍZES
@@ -67,41 +69,27 @@ export function PacotesContent() {
     faturamentoMensal: 0,
   };
 
-  // Mock data para juízes premium (será substituído por dados reais)
-  const juizesPremium = [
+  const {
+    data: juizesPremiumResponse,
+    error: errorJuizesPremium,
+    isLoading: loadingJuizesPremium,
+    mutate: mutateJuizesPremium,
+  } = useSWR(
+    ["admin-juizes-premium", { isPremium: true }],
+    ([, filters]) => getJuizesAdmin(filters),
     {
-      id: "1",
-      nome: "Dr. João Silva",
-      nomeCompleto: "João Carlos Silva",
-      comarca: "São Paulo",
-      vara: "1ª Vara Cível",
-      especialidades: ["CIVEL", "FAMILIA", "TRABALHISTA"],
-      precoAcesso: 299.9,
-      _count: { processos: 45 },
+      revalidateOnFocus: false,
+      refreshInterval: 60000,
     },
-    {
-      id: "2",
-      nome: "Dra. Maria Santos",
-      nomeCompleto: "Maria Fernanda Santos",
-      comarca: "Rio de Janeiro",
-      vara: "2ª Vara Criminal",
-      especialidades: ["CRIMINAL", "EXECUCAO_PENAL"],
-      precoAcesso: 399.9,
-      _count: { processos: 78 },
-    },
-    {
-      id: "3",
-      nome: "Dr. Pedro Costa",
-      nomeCompleto: "Pedro Henrique Costa",
-      comarca: "Brasília",
-      vara: "3ª Vara Federal",
-      especialidades: ["TRIBUTARIO", "ADMINISTRATIVO"],
-      precoAcesso: 499.9,
-      _count: { processos: 32 },
-    },
-  ];
+  );
 
-  const formatCurrency = (value: number) => {
+  const juizesPremium: JuizSerializado[] = juizesPremiumResponse?.data ?? [];
+
+  const formatCurrency = (value: number | null | undefined) => {
+    if (value === null || value === undefined) {
+      return "Sob consulta";
+    }
+
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
@@ -170,7 +158,7 @@ export function PacotesContent() {
                 Juízes Premium
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {juizesPremium.length}
+                {loadingJuizesPremium ? "—" : juizesPremium.length}
               </p>
               <p className="text-sm text-purple-600">Monetizáveis</p>
             </div>
@@ -522,16 +510,50 @@ export function PacotesContent() {
       {/* Juízes Premium Table */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">
-            💎 Juízes Premium Disponíveis
-          </h2>
-          <p className="text-sm text-default-400">
-            Juízes que podem ser incluídos em pacotes premium.
-          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                💎 Juízes Premium Disponíveis
+              </h2>
+              <p className="text-sm text-default-400">
+                Juízes que podem ser incluídos em pacotes premium.
+              </p>
+            </div>
+            <Button
+              color="default"
+              isDisabled={loadingJuizesPremium}
+              onPress={() => mutateJuizesPremium()}
+              size="sm"
+              variant="flat"
+            >
+              🔄 Atualizar
+            </Button>
+          </div>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody>
-          {juizesPremium.length > 0 ? (
+          {errorJuizesPremium ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Não foi possível carregar os juízes premium
+              </h3>
+              <p className="text-default-400">
+                {(errorJuizesPremium as Error)?.message ||
+                  "Recarregue os dados para tentar novamente."}
+              </p>
+            </div>
+          ) : loadingJuizesPremium ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">⏳</div>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Carregando juízes premium...
+              </h3>
+              <p className="text-default-400">
+                Buscando juízes monetizáveis cadastrados pelo super admin.
+              </p>
+            </div>
+          ) : juizesPremium.length > 0 ? (
             <Table aria-label="Tabela de Juízes Premium">
               <TableHeader>
                 <TableColumn>Juiz</TableColumn>
@@ -555,11 +577,12 @@ export function PacotesContent() {
                           </span>
                         )}
                         <span className="text-xs text-primary">
-                          {juiz.comarca} - {juiz.vara}
+                          {(juiz.comarca || "—")}
+                          {juiz.vara ? ` - ${juiz.vara}` : ""}
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>{juiz.comarca}</TableCell>
+                    <TableCell>{juiz.comarca || "—"}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {juiz.especialidades.slice(0, 2).map((esp) => (
@@ -569,7 +592,7 @@ export function PacotesContent() {
                             size="sm"
                             variant="flat"
                           >
-                            {esp}
+                            {esp.replace(/_/g, " ")}
                           </Badge>
                         ))}
                         {juiz.especialidades.length > 2 && (
@@ -580,7 +603,7 @@ export function PacotesContent() {
                       </div>
                     </TableCell>
                     <TableCell>{formatCurrency(juiz.precoAcesso)}</TableCell>
-                    <TableCell>{juiz._count.processos}</TableCell>
+                    <TableCell>{juiz._count?.processos ?? 0}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button color="primary" size="sm" variant="light">
