@@ -148,10 +148,7 @@ export async function getJuizes(
   try {
     const juizes = await prisma.juiz.findMany({
       where: buildJuizWhere(filters),
-      orderBy: [
-        { isPublico: "desc" },
-        { nome: "asc" },
-      ],
+      orderBy: [{ isPublico: "desc" }, { nome: "asc" }],
       include: {
         tribunal: {
           select: {
@@ -192,11 +189,7 @@ export async function getJuizesAdmin(
 
     const juizes = await prisma.juiz.findMany({
       where: buildJuizWhere(filters, { onlyPublicos: false }),
-      orderBy: [
-        { isPublico: "desc" },
-        { isPremium: "desc" },
-        { nome: "asc" },
-      ],
+      orderBy: [{ isPublico: "desc" }, { isPremium: "desc" }, { nome: "asc" }],
       include: {
         tribunal: {
           select: {

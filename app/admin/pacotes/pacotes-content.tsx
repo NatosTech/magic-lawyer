@@ -1,5 +1,7 @@
 "use client";
 
+import type { JuizSerializado } from "@/app/actions/juizes";
+
 import React from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
@@ -26,7 +28,6 @@ import {
   getEstatisticasPacotesJuiz,
 } from "@/app/actions/pacotesJuiz";
 import { getJuizesAdmin } from "@/app/actions/juizes";
-import type { JuizSerializado } from "@/app/actions/juizes";
 
 export function PacotesContent() {
   // Buscar dados reais dos PLANOS e PACOTES DE JUÍZES
@@ -522,9 +523,9 @@ export function PacotesContent() {
             <Button
               color="default"
               isDisabled={loadingJuizesPremium}
-              onPress={() => mutateJuizesPremium()}
               size="sm"
               variant="flat"
+              onPress={() => mutateJuizesPremium()}
             >
               🔄 Atualizar
             </Button>
@@ -577,7 +578,7 @@ export function PacotesContent() {
                           </span>
                         )}
                         <span className="text-xs text-primary">
-                          {(juiz.comarca || "—")}
+                          {juiz.comarca || "—"}
                           {juiz.vara ? ` - ${juiz.vara}` : ""}
                         </span>
                       </div>

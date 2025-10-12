@@ -45,6 +45,16 @@ export type AuditLogSummary = {
   };
 };
 
+export type AuditLogFilters = {
+  limit?: number;
+  fonte?: "SUPER_ADMIN" | "TENANT";
+  entidade?: string;
+  acao?: string;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+};
+
 export type GetAuditLogsResponse = {
   success: boolean;
   data?: {
@@ -107,54 +117,120 @@ function buildSummary(logs: AuditLogEntry[]): AuditLogSummary {
 
   for (const log of logs) {
     const categoria = categorizeAcao(log.acao);
+
     summary.porCategoria[categoria] += 1;
   }
 
   return summary;
 }
 
+function buildDateRangeFilter(startDate?: string, endDate?: string) {
+  if (!startDate && !endDate) {
+    return undefined;
+  }
+
+  const filter: { gte?: Date; lte?: Date } = {};
+
+  if (startDate) {
+    const start = new Date(startDate);
+
+    start.setHours(0, 0, 0, 0);
+    filter.gte = start;
+  }
+
+  if (endDate) {
+    const end = new Date(endDate);
+
+    end.setHours(23, 59, 59, 999);
+    filter.lte = end;
+  }
+
+  return filter;
+}
+
 export async function getSystemAuditLogs(
-  limit: number = 100,
+  filters?: AuditLogFilters,
 ): Promise<GetAuditLogsResponse> {
   try {
     await ensureSuperAdmin();
 
+    const {
+      limit = 100,
+      fonte,
+      entidade,
+      acao,
+      search,
+      startDate,
+      endDate,
+    } = filters ?? {};
+
+    const shouldFetchSuperAdmin = fonte !== "TENANT";
+    const shouldFetchTenant = fonte !== "SUPER_ADMIN";
+
+    const dateFilter = buildDateRangeFilter(startDate, endDate);
+
     const [superAdminLogs, tenantLogs] = await Promise.all([
-      prisma.superAdminAuditLog.findMany({
-        take: limit,
-        orderBy: { createdAt: "desc" },
-        include: {
-          superAdmin: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
+      shouldFetchSuperAdmin
+        ? prisma.superAdminAuditLog.findMany({
+            orderBy: { createdAt: "desc" },
+            where: {
+              ...(entidade ? { entidade } : {}),
+              ...(acao
+                ? {
+                    acao: {
+                      contains: acao,
+                      mode: "insensitive",
+                    },
+                  }
+                : {}),
+              ...(dateFilter ? { createdAt: dateFilter } : {}),
             },
-          },
-        },
-      }),
-      prisma.auditLog.findMany({
-        take: limit,
-        orderBy: { createdAt: "desc" },
-        include: {
-          tenant: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
+            include: {
+              superAdmin: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
             },
-          },
-          usuario: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
+          })
+        : [],
+      shouldFetchTenant
+        ? prisma.auditLog.findMany({
+            orderBy: { createdAt: "desc" },
+            where: {
+              ...(entidade ? { entidade } : {}),
+              ...(acao
+                ? {
+                    acao: {
+                      contains: acao,
+                      mode: "insensitive",
+                    },
+                  }
+                : {}),
+              ...(dateFilter ? { createdAt: dateFilter } : {}),
             },
-          },
-        },
-      }),
+            include: {
+              tenant: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                },
+              },
+              usuario: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+            },
+          })
+        : [],
     ]);
 
     const logs: AuditLogEntry[] = [
@@ -172,7 +248,9 @@ export async function getSystemAuditLogs(
         superAdmin: log.superAdmin
           ? {
               id: log.superAdmin.id,
-              nome: buildNome(log.superAdmin.firstName, log.superAdmin.lastName),
+              nome:
+                buildNome(log.superAdmin.firstName, log.superAdmin.lastName) ||
+                log.superAdmin.email,
               email: log.superAdmin.email,
             }
           : null,
@@ -199,18 +277,46 @@ export async function getSystemAuditLogs(
         usuario: log.usuario
           ? {
               id: log.usuario.id,
-              nome: buildNome(log.usuario.firstName, log.usuario.lastName),
-              email: log.usuario.email,
+              nome:
+                buildNome(log.usuario.firstName, log.usuario.lastName) ||
+                log.usuario.email ||
+                "",
+              email: log.usuario.email ?? "",
             }
           : null,
       })),
     ];
 
-    logs.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    let filteredLogs = logs;
+
+    if (search && search.trim().length > 0) {
+      const searchTerm = search.trim().toLowerCase();
+
+      filteredLogs = filteredLogs.filter((log) => {
+        const candidateValues = [
+          log.acao,
+          log.entidade,
+          log.entidadeId,
+          log.superAdmin?.nome,
+          log.superAdmin?.email,
+          log.tenant?.nome,
+          log.tenant?.slug,
+          log.usuario?.nome,
+          log.usuario?.email,
+        ]
+          .filter(Boolean)
+          .map((value) => String(value).toLowerCase());
+
+        return candidateValues.some((value) => value.includes(searchTerm));
+      });
+    }
+
+    filteredLogs.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
 
-    const limitedLogs = logs.slice(0, limit);
+    const limitedLogs = filteredLogs.slice(0, limit);
 
     return {
       success: true,
@@ -225,6 +331,92 @@ export async function getSystemAuditLogs(
     return {
       success: false,
       error: "Erro interno do servidor ao buscar logs de auditoria",
+    };
+  }
+}
+
+function convertLogToCsvRow(log: AuditLogEntry) {
+  const row = [
+    new Date(log.createdAt).toISOString(),
+    log.fonte,
+    log.acao,
+    log.entidade,
+    log.entidadeId ?? "",
+    log.tenant?.nome ?? "",
+    log.tenant?.slug ?? "",
+    log.superAdmin?.nome ?? log.usuario?.nome ?? "",
+    log.superAdmin?.email ?? log.usuario?.email ?? "",
+    log.ipAddress ?? "",
+    log.userAgent ?? "",
+    log.changedFields?.join("|") ?? "",
+    log.dadosAntigos ? JSON.stringify(log.dadosAntigos) : "",
+    log.dadosNovos ? JSON.stringify(log.dadosNovos) : "",
+  ];
+
+  return row
+    .map((cell) => {
+      if (cell === null || cell === undefined) {
+        return "";
+      }
+
+      const value = String(cell);
+
+      if (/[",\n]/.test(value)) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+
+      return value;
+    })
+    .join(",");
+}
+
+export async function exportSystemAuditLogs(filters?: AuditLogFilters) {
+  try {
+    const result = await getSystemAuditLogs({
+      ...filters,
+      limit: filters?.limit ?? 1000,
+    });
+
+    if (!result.success || !result.data) {
+      return {
+        success: false,
+        error: result.error ?? "Não foi possível exportar os logs",
+      };
+    }
+
+    const header = [
+      "createdAt",
+      "fonte",
+      "acao",
+      "entidade",
+      "entidadeId",
+      "tenantNome",
+      "tenantSlug",
+      "usuarioNome",
+      "usuarioEmail",
+      "ip",
+      "userAgent",
+      "changedFields",
+      "dadosAntigos",
+      "dadosNovos",
+    ].join(",");
+
+    const rows = result.data.logs.map(convertLogToCsvRow);
+    const csv = [header, ...rows].join("\n");
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+
+    return {
+      success: true,
+      data: csv,
+      filename: `audit-logs-${timestamp}.csv`,
+    };
+  } catch (error) {
+    logger.error("Erro ao exportar logs de auditoria:", error);
+
+    return {
+      success: false,
+      error: "Erro interno do servidor ao exportar logs de auditoria",
     };
   }
 }

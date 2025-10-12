@@ -1,5 +1,7 @@
 "use client";
 
+import type { JuizSerializado } from "@/app/actions/juizes";
+
 import React from "react";
 import useSWR from "swr";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -17,7 +19,6 @@ import {
 
 import { title, subtitle } from "@/components/primitives";
 import { getJuizesAdmin } from "@/app/actions/juizes";
-import type { JuizSerializado } from "@/app/actions/juizes";
 
 export function JuizesContent() {
   const { data, error, isLoading, mutate } = useSWR(
@@ -76,8 +77,8 @@ export function JuizesContent() {
             <Button
               color="default"
               isDisabled={isLoading}
-              onPress={() => mutate()}
               variant="flat"
+              onPress={() => mutate()}
             >
               🔄 Atualizar
             </Button>
@@ -138,10 +139,7 @@ export function JuizesContent() {
                 Processos Totais
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {juizes.reduce(
-                  (sum, j) => sum + (j._count?.processos ?? 0),
-                  0,
-                )}
+                {juizes.reduce((sum, j) => sum + (j._count?.processos ?? 0), 0)}
               </p>
               <p className="text-sm text-yellow-600">Ativos</p>
             </div>
