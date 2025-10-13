@@ -238,6 +238,10 @@ model Usuario {
   phone                        String?
   avatarUrl                    String?
   active                       Boolean                @default(true)
+  cpf                          String?
+  rg                           String?
+  dataNascimento               DateTime?
+  observacoes                  String?
   lastLoginAt                  DateTime?
   createdById                  String?
   createdAt                    DateTime               @default(now())

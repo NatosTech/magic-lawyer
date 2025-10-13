@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 
 import prisma from "@/app/lib/prisma";
-import { EspecialidadeJuridica, InvoiceStatus, PaymentStatus, SubscriptionStatus, TenantStatus, UserRole } from "@/app/generated/prisma";
+import { EspecialidadeJuridica, InvoiceStatus, PaymentStatus, SubscriptionStatus, TenantStatus, TipoPessoa, UserRole } from "@/app/generated/prisma";
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
 
@@ -444,9 +444,15 @@ export interface UpdateTenantUserInput {
   lastName?: string;
   email?: string;
   phone?: string;
+  avatarUrl?: string;
   role?: UserRole;
   active?: boolean;
   generatePassword?: boolean;
+  // Campos pessoais adicionais (todos os roles)
+  cpf?: string;
+  rg?: string;
+  dataNascimentoUsuario?: Date | string;
+  observacoes?: string;
   // Campos específicos do advogado
   oabNumero?: string;
   oabUf?: string;
@@ -457,6 +463,17 @@ export interface UpdateTenantUserInput {
   comissaoPadrao?: number;
   comissaoAcaoGanha?: number;
   comissaoHonorarios?: number;
+  // Campos específicos do cliente
+  tipoPessoa?: string;
+  documento?: string;
+  telefoneCliente?: string;
+  celular?: string;
+  dataNascimento?: Date | string;
+  inscricaoEstadual?: string;
+  responsavelNome?: string;
+  responsavelEmail?: string;
+  responsavelTelefone?: string;
+  observacoesCliente?: string;
 }
 
 export interface CreateTenantUserInput extends UpdateTenantUserInput {
@@ -938,6 +955,11 @@ export async function createTenantUser(tenantId: string, payload: CreateTenantUs
         role: payload.role || "SECRETARIA",
         active: payload.active ?? true,
         passwordHash: passwordHash,
+        // Campos pessoais adicionais
+        cpf: payload.cpf,
+        rg: payload.rg,
+        dataNascimento: payload.dataNascimentoUsuario ? new Date(payload.dataNascimentoUsuario) : undefined,
+        observacoes: payload.observacoes,
       },
     });
 
@@ -956,6 +978,28 @@ export async function createTenantUser(tenantId: string, payload: CreateTenantUs
           comissaoPadrao: payload.comissaoPadrao || 0,
           comissaoAcaoGanha: payload.comissaoAcaoGanha || 0,
           comissaoHonorarios: payload.comissaoHonorarios || 0,
+        },
+      });
+    }
+
+    // Criar dados do cliente se for cliente
+    if (payload.role === "CLIENTE") {
+      await prisma.cliente.create({
+        data: {
+          tenantId: tenantId,
+          usuarioId: newUser.id,
+          tipoPessoa: (payload.tipoPessoa || "FISICA") as TipoPessoa,
+          nome: `${payload.firstName || ""} ${payload.lastName || ""}`.trim() || payload.email,
+          documento: payload.documento,
+          email: payload.email,
+          telefone: payload.telefoneCliente,
+          celular: payload.celular,
+          dataNascimento: payload.dataNascimento ? new Date(payload.dataNascimento) : undefined,
+          inscricaoEstadual: payload.inscricaoEstadual,
+          responsavelNome: payload.responsavelNome,
+          responsavelEmail: payload.responsavelEmail,
+          responsavelTelefone: payload.responsavelTelefone,
+          observacoes: payload.observacoesCliente,
         },
       });
     }
@@ -1032,6 +1076,30 @@ export async function updateTenantUser(tenantId: string, userId: string, payload
       updateData.lastName = payload.lastName;
     }
 
+    // Atualizar phone se fornecido
+    if (payload.phone !== undefined && payload.phone !== user.phone) {
+      updateData.phone = payload.phone;
+    }
+
+    // Atualizar avatarUrl se fornecido
+    if (payload.avatarUrl !== undefined && payload.avatarUrl !== user.avatarUrl) {
+      updateData.avatarUrl = payload.avatarUrl;
+    }
+
+    // Atualizar campos pessoais adicionais
+    if (payload.cpf !== undefined) {
+      updateData.cpf = payload.cpf;
+    }
+    if (payload.rg !== undefined) {
+      updateData.rg = payload.rg;
+    }
+    if (payload.dataNascimentoUsuario !== undefined) {
+      updateData.dataNascimento = payload.dataNascimentoUsuario ? new Date(payload.dataNascimentoUsuario) : null;
+    }
+    if (payload.observacoes !== undefined) {
+      updateData.observacoes = payload.observacoes;
+    }
+
     if (payload.role && payload.role !== user.role) {
       updateData.role = payload.role;
     }
@@ -1094,6 +1162,70 @@ export async function updateTenantUser(tenantId: string, userId: string, payload
             ...advogadoData,
           },
           update: advogadoData,
+        });
+      }
+    }
+
+    // Atualizar dados do cliente se for cliente
+    if (payload.role === "CLIENTE" || user.role === "CLIENTE") {
+      const clienteData: Record<string, unknown> = {};
+
+      if (payload.tipoPessoa !== undefined) {
+        clienteData.tipoPessoa = payload.tipoPessoa;
+      }
+      if (payload.documento !== undefined) {
+        clienteData.documento = payload.documento;
+      }
+      if (payload.telefoneCliente !== undefined) {
+        clienteData.telefone = payload.telefoneCliente;
+      }
+      if (payload.celular !== undefined) {
+        clienteData.celular = payload.celular;
+      }
+      if (payload.dataNascimento !== undefined) {
+        clienteData.dataNascimento = payload.dataNascimento;
+      }
+      if (payload.inscricaoEstadual !== undefined) {
+        clienteData.inscricaoEstadual = payload.inscricaoEstadual;
+      }
+      if (payload.responsavelNome !== undefined) {
+        clienteData.responsavelNome = payload.responsavelNome;
+      }
+      if (payload.responsavelEmail !== undefined) {
+        clienteData.responsavelEmail = payload.responsavelEmail;
+      }
+      if (payload.responsavelTelefone !== undefined) {
+        clienteData.responsavelTelefone = payload.responsavelTelefone;
+      }
+      if (payload.observacoesCliente !== undefined) {
+        clienteData.observacoes = payload.observacoesCliente;
+      }
+
+      // Atualizar nome do cliente baseado no firstName/lastName se fornecido
+      if (payload.firstName !== undefined || payload.lastName !== undefined) {
+        const nome = `${payload.firstName || user.firstName || ""} ${payload.lastName || user.lastName || ""}`.trim();
+        if (nome) {
+          clienteData.nome = nome;
+        }
+      }
+
+      if (Object.keys(clienteData).length > 0) {
+        await prisma.cliente.upsert({
+          where: {
+            tenantId_usuarioId: {
+              tenantId: tenantId,
+              usuarioId: userId,
+            },
+          },
+          create: {
+            tenantId: tenantId,
+            usuarioId: userId,
+            tipoPessoa: (payload.tipoPessoa || "FISICA") as TipoPessoa,
+            nome: `${payload.firstName || ""} ${payload.lastName || ""}`.trim() || payload.email || "",
+            email: payload.email || user.email,
+            ...clienteData,
+          },
+          update: clienteData,
         });
       }
     }

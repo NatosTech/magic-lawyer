@@ -5,29 +5,12 @@ import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@heroui/modal";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
 import { Checkbox } from "@heroui/checkbox";
 import { toast } from "sonner";
-import {
-  MapPin,
-  Plus,
-  Edit3,
-  Trash2,
-  Star,
-  Home,
-  Building2,
-  Briefcase,
-  Mail,
-  Building,
-} from "lucide-react";
+import { MapPin, Plus, Edit3, Trash2, Star, Home, Building2, Briefcase, Mail, Building } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 import { CidadeSelect } from "./cidade-select";
@@ -40,6 +23,11 @@ import {
   atualizarEndereco,
   deletarEndereco,
   definirEnderecoPrincipal,
+  getEnderecosUsuarioAdmin,
+  criarEnderecoAdmin,
+  atualizarEnderecoAdmin,
+  deletarEnderecoAdmin,
+  definirEnderecoPrincipalAdmin,
   EnderecoData,
   EnderecoWithId,
 } from "@/app/actions/enderecos";
@@ -64,18 +52,19 @@ const tipoEnderecoClienteOptions = [
 
 interface EnderecoManagerProps {
   className?: string;
+  userId?: string; // Opcional: Se fornecido, gerencia endereços deste usuário (para Super Admin)
 }
 
-export function EnderecoManager({ className }: EnderecoManagerProps) {
+export function EnderecoManager({ className, userId }: EnderecoManagerProps) {
   const { data: session } = useSession();
+  // Se userId for fornecido, usa ele. Caso contrário, usa o da sessão
+  const targetUserId = userId || session?.user?.id;
   const { estados, isLoading: estadosLoading } = useEstadosBrasil();
   const [enderecos, setEnderecos] = useState<EnderecoWithId[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingEndereco, setEditingEndereco] = useState<EnderecoWithId | null>(
-    null,
-  );
+  const [editingEndereco, setEditingEndereco] = useState<EnderecoWithId | null>(null);
   const [formData, setFormData] = useState<EnderecoData>({
     apelido: "",
     tipo: "RESIDENCIAL" as TipoEndereco, // Valor padrão, será atualizado baseado no role
@@ -96,9 +85,7 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
   const getTipoEnderecoOptions = () => {
     const isCliente = session?.user?.role === "CLIENTE";
 
-    return isCliente
-      ? tipoEnderecoClienteOptions
-      : tipoEnderecoEscritorioOptions;
+    return isCliente ? tipoEnderecoClienteOptions : tipoEnderecoEscritorioOptions;
   };
 
   // Obter tipo padrão baseado no role do usuário
@@ -128,7 +115,8 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
   const loadEnderecos = async () => {
     try {
       setLoading(true);
-      const result = await getEnderecosUsuario();
+      // Se userId for fornecido, usa função Admin, caso contrário usa função normal
+      const result = userId ? await getEnderecosUsuarioAdmin(userId) : await getEnderecosUsuario();
 
       if (result.success && result.enderecos) {
         setEnderecos(result.enderecos);
@@ -193,15 +181,15 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
       let result;
 
       if (editingEndereco) {
-        result = await atualizarEndereco(editingEndereco.id, formData);
+        // Se userId for fornecido, usa função Admin
+        result = userId ? await atualizarEnderecoAdmin(userId, editingEndereco.id, formData) : await atualizarEndereco(editingEndereco.id, formData);
       } else {
-        result = await criarEndereco(formData);
+        // Se userId for fornecido, usa função Admin
+        result = userId ? await criarEnderecoAdmin(userId, formData) : await criarEndereco(formData);
       }
 
       if (result.success) {
-        toast.success(
-          editingEndereco ? "Endereço atualizado!" : "Endereço criado!",
-        );
+        toast.success(editingEndereco ? "Endereço atualizado!" : "Endereço criado!");
         await loadEnderecos();
         handleCloseModal();
       } else {
@@ -219,7 +207,8 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
 
     try {
       setSaving(true);
-      const result = await deletarEndereco(enderecoId);
+      // Se userId for fornecido, usa função Admin
+      const result = userId ? await deletarEnderecoAdmin(userId, enderecoId) : await deletarEndereco(enderecoId);
 
       if (result.success) {
         toast.success("Endereço deletado!");
@@ -237,7 +226,8 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
   const handleSetPrincipal = async (enderecoId: string) => {
     try {
       setSaving(true);
-      const result = await definirEnderecoPrincipal(enderecoId);
+      // Se userId for fornecido, usa função Admin
+      const result = userId ? await definirEnderecoPrincipalAdmin(userId, enderecoId) : await definirEnderecoPrincipal(enderecoId);
 
       if (result.success) {
         toast.success("Endereço definido como principal!");
@@ -285,21 +275,11 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
               <MapPin className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">
-                Meus Endereços
-              </h3>
-              <p className="text-sm text-default-400">
-                Gerencie seus endereços
-              </p>
+              <h3 className="text-lg font-semibold text-white">Meus Endereços</h3>
+              <p className="text-sm text-default-400">Gerencie seus endereços</p>
             </div>
           </div>
-          <Button
-            color="primary"
-            isDisabled={saving}
-            startContent={<Plus className="w-4 h-4" />}
-            variant="bordered"
-            onPress={() => handleOpenModal()}
-          >
+          <Button color="primary" isDisabled={saving} startContent={<Plus className="w-4 h-4" />} variant="bordered" onPress={() => handleOpenModal()}>
             Adicionar
           </Button>
         </CardHeader>
@@ -309,9 +289,7 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
             <div className="text-center py-8">
               <MapPin className="w-12 h-12 text-default-400 mx-auto mb-4" />
               <p className="text-default-400">Nenhum endereço cadastrado</p>
-              <p className="text-sm text-default-500">
-                Adicione seu primeiro endereço
-              </p>
+              <p className="text-sm text-default-500">Adicione seu primeiro endereço</p>
             </div>
           ) : (
             <div className="grid gap-4">
@@ -319,25 +297,15 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
                 const TipoIcon = getTipoIcon(endereco.tipo);
 
                 return (
-                  <Card
-                    key={endereco.id}
-                    className="border border-white/10 bg-background/50"
-                  >
+                  <Card key={endereco.id} className="border border-white/10 bg-background/50">
                     <CardBody className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <TipoIcon className="w-5 h-5 text-primary" />
-                            <h4 className="font-semibold text-white">
-                              {endereco.apelido}
-                            </h4>
+                            <h4 className="font-semibold text-white">{endereco.apelido}</h4>
                             {endereco.principal && (
-                              <Chip
-                                className="flex items-center gap-1 font-medium"
-                                color="primary"
-                                size="sm"
-                                variant="flat"
-                              >
+                              <Chip className="flex items-center gap-1 font-medium" color="primary" size="sm" variant="flat">
                                 <span className="flex items-center gap-1">
                                   <Star className="w-3 h-3" />
                                   Principal
@@ -353,8 +321,7 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
                             <p>
                               {endereco.logradouro}
                               {endereco.numero && `, ${endereco.numero}`}
-                              {endereco.complemento &&
-                                `, ${endereco.complemento}`}
+                              {endereco.complemento && `, ${endereco.complemento}`}
                             </p>
                             <p>
                               {endereco.bairro && `${endereco.bairro}, `}
@@ -362,35 +329,17 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
                               {endereco.cep && `, ${endereco.cep}`}
                             </p>
                             {endereco.telefone && <p>📞 {endereco.telefone}</p>}
-                            {endereco.observacoes && (
-                              <p className="text-default-400 italic">
-                                💬 {endereco.observacoes}
-                              </p>
-                            )}
+                            {endereco.observacoes && <p className="text-default-400 italic">💬 {endereco.observacoes}</p>}
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2 ml-4">
                           {!endereco.principal && (
-                            <Button
-                              color="warning"
-                              isDisabled={saving}
-                              size="sm"
-                              startContent={<Star className="w-4 h-4" />}
-                              variant="ghost"
-                              onPress={() => handleSetPrincipal(endereco.id)}
-                            >
+                            <Button color="warning" isDisabled={saving} size="sm" startContent={<Star className="w-4 h-4" />} variant="ghost" onPress={() => handleSetPrincipal(endereco.id)}>
                               Principal
                             </Button>
                           )}
-                          <Button
-                            color="primary"
-                            isDisabled={saving}
-                            size="sm"
-                            startContent={<Edit3 className="w-4 h-4" />}
-                            variant="ghost"
-                            onPress={() => handleOpenModal(endereco)}
-                          >
+                          <Button color="primary" isDisabled={saving} size="sm" startContent={<Edit3 className="w-4 h-4" />} variant="ghost" onPress={() => handleOpenModal(endereco)}>
                             Editar
                           </Button>
                           <Button
@@ -415,17 +364,10 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
       </Card>
 
       {/* Modal de Edição/Criação */}
-      <Modal
-        isOpen={isModalOpen}
-        scrollBehavior="inside"
-        size="2xl"
-        onClose={handleCloseModal}
-      >
+      <Modal isOpen={isModalOpen} scrollBehavior="inside" size="2xl" onClose={handleCloseModal}>
         <ModalContent>
           <ModalHeader>
-            <h2 className="text-xl font-semibold">
-              {editingEndereco ? "Editar Endereço" : "Novo Endereço"}
-            </h2>
+            <h2 className="text-xl font-semibold">{editingEndereco ? "Editar Endereço" : "Novo Endereço"}</h2>
           </ModalHeader>
 
           <ModalBody className="space-y-4">
@@ -433,15 +375,9 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
               <Input
                 isRequired
                 label="Apelido"
-                placeholder={
-                  session?.user?.role === "CLIENTE"
-                    ? "Ex: Casa, Trabalho, Comercial"
-                    : "Ex: Matriz, Filial, Escritório"
-                }
+                placeholder={session?.user?.role === "CLIENTE" ? "Ex: Casa, Trabalho, Comercial" : "Ex: Matriz, Filial, Escritório"}
                 value={formData.apelido}
-                onChange={(e) =>
-                  setFormData({ ...formData, apelido: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, apelido: e.target.value })}
               />
 
               <Select
@@ -461,53 +397,18 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
               </Select>
             </div>
 
-            <CepInput
-              isRequired
-              label="CEP"
-              value={formData.cep}
-              onCepFound={handleCepFound}
-              onChange={(value) => setFormData({ ...formData, cep: value })}
-            />
+            <CepInput isRequired label="CEP" value={formData.cep} onCepFound={handleCepFound} onChange={(value) => setFormData({ ...formData, cep: value })} />
 
-            <Input
-              isRequired
-              label="Logradouro"
-              placeholder="Rua, Avenida, etc."
-              value={formData.logradouro}
-              onChange={(e) =>
-                setFormData({ ...formData, logradouro: e.target.value })
-              }
-            />
+            <Input isRequired label="Logradouro" placeholder="Rua, Avenida, etc." value={formData.logradouro} onChange={(e) => setFormData({ ...formData, logradouro: e.target.value })} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Número"
-                placeholder="123"
-                value={formData.numero}
-                onChange={(e) =>
-                  setFormData({ ...formData, numero: e.target.value })
-                }
-              />
+              <Input label="Número" placeholder="123" value={formData.numero} onChange={(e) => setFormData({ ...formData, numero: e.target.value })} />
 
-              <Input
-                label="Complemento"
-                placeholder="Apto, Sala, etc."
-                value={formData.complemento}
-                onChange={(e) =>
-                  setFormData({ ...formData, complemento: e.target.value })
-                }
-              />
+              <Input label="Complemento" placeholder="Apto, Sala, etc." value={formData.complemento} onChange={(e) => setFormData({ ...formData, complemento: e.target.value })} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Input
-                label="Bairro"
-                placeholder="Centro, Vila, etc."
-                value={formData.bairro}
-                onChange={(e) =>
-                  setFormData({ ...formData, bairro: e.target.value })
-                }
-              />
+              <Input label="Bairro" placeholder="Centro, Vila, etc." value={formData.bairro} onChange={(e) => setFormData({ ...formData, bairro: e.target.value })} />
 
               <CidadeSelect
                 isRequired
@@ -524,9 +425,7 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
               {estadosLoading ? (
                 <div className="flex items-center gap-2">
                   <Spinner size="sm" />
-                  <span className="text-sm text-default-500">
-                    Carregando estados...
-                  </span>
+                  <span className="text-sm text-default-500">Carregando estados...</span>
                 </div>
               ) : (
                 <Select
@@ -541,10 +440,7 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
                   }}
                 >
                   {estados?.map((estado) => (
-                    <SelectItem
-                      key={estado.sigla}
-                      textValue={`${estado.nome} (${estado.sigla})`}
-                    >
+                    <SelectItem key={estado.sigla} textValue={`${estado.nome} (${estado.sigla})`}>
                       {estado.nome} ({estado.sigla})
                     </SelectItem>
                   )) || []}
@@ -553,40 +449,14 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="País"
-                placeholder="Brasil"
-                value={formData.pais}
-                onChange={(e) =>
-                  setFormData({ ...formData, pais: e.target.value })
-                }
-              />
+              <Input label="País" placeholder="Brasil" value={formData.pais} onChange={(e) => setFormData({ ...formData, pais: e.target.value })} />
 
-              <Input
-                label="Telefone"
-                placeholder="(11) 99999-9999"
-                value={formData.telefone}
-                onChange={(e) =>
-                  setFormData({ ...formData, telefone: e.target.value })
-                }
-              />
+              <Input label="Telefone" placeholder="(11) 99999-9999" value={formData.telefone} onChange={(e) => setFormData({ ...formData, telefone: e.target.value })} />
             </div>
 
-            <Input
-              label="Observações"
-              placeholder="Informações adicionais..."
-              value={formData.observacoes}
-              onChange={(e) =>
-                setFormData({ ...formData, observacoes: e.target.value })
-              }
-            />
+            <Input label="Observações" placeholder="Informações adicionais..." value={formData.observacoes} onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })} />
 
-            <Checkbox
-              isSelected={formData.principal}
-              onValueChange={(checked) =>
-                setFormData({ ...formData, principal: checked })
-              }
-            >
+            <Checkbox isSelected={formData.principal} onValueChange={(checked) => setFormData({ ...formData, principal: checked })}>
               Definir como endereço principal
             </Checkbox>
           </ModalBody>
@@ -595,17 +465,7 @@ export function EnderecoManager({ className }: EnderecoManagerProps) {
             <Button variant="ghost" onPress={handleCloseModal}>
               Cancelar
             </Button>
-            <Button
-              color="primary"
-              isDisabled={
-                !formData.apelido ||
-                !formData.logradouro ||
-                !formData.cidade ||
-                !formData.estado
-              }
-              isLoading={saving}
-              onPress={handleSave}
-            >
+            <Button color="primary" isDisabled={!formData.apelido || !formData.logradouro || !formData.cidade || !formData.estado} isLoading={saving} onPress={handleSave}>
               {editingEndereco ? "Atualizar" : "Criar"}
             </Button>
           </ModalFooter>
