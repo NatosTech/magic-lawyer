@@ -6,13 +6,7 @@ import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 
 import prisma from "@/app/lib/prisma";
-import {
-  InvoiceStatus,
-  PaymentStatus,
-  SubscriptionStatus,
-  TenantStatus,
-  UserRole,
-} from "@/app/generated/prisma";
+import { EspecialidadeJuridica, InvoiceStatus, PaymentStatus, SubscriptionStatus, TenantStatus, UserRole } from "@/app/generated/prisma";
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
 
@@ -142,27 +136,8 @@ export interface TenantManagementData {
   availableRoles: UserRole[];
 }
 
-type EspecialidadeJuridica =
-  | "CIVIL"
-  | "CRIMINAL"
-  | "TRABALHISTA"
-  | "FAMILIA"
-  | "TRIBUTARIO"
-  | "ADMINISTRATIVO"
-  | "EMPRESARIAL"
-  | "CONSUMIDOR"
-  | "AMBIENTAL"
-  | "ELETORAL"
-  | "MILITAR"
-  | "PREVIDENCIARIO"
-  | "CONSTITUCIONAL"
-  | "INTERNACIONAL"
-  | "OUTROS";
-
 // Criar novo tenant
-export async function createTenant(
-  data: CreateTenantData,
-): Promise<TenantResponse> {
+export async function createTenant(data: CreateTenantData): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -353,12 +328,8 @@ export async function getAllTenants(): Promise<TenantResponse> {
         ? {
             status: tenant.subscription.status,
             name: tenant.subscription.plano?.nome ?? null,
-            valorMensal: decimalToNullableNumber(
-              tenant.subscription.plano?.valorMensal ?? null,
-            ),
-            valorAnual: decimalToNullableNumber(
-              tenant.subscription.plano?.valorAnual ?? null,
-            ),
+            valorMensal: decimalToNullableNumber(tenant.subscription.plano?.valorMensal ?? null),
+            valorAnual: decimalToNullableNumber(tenant.subscription.plano?.valorAnual ?? null),
             moeda: tenant.subscription.plano?.moeda ?? "BRL",
             trialEndsAt: tenant.subscription.trialEndsAt?.toISOString() ?? null,
             renovaEm: tenant.subscription.renovaEm?.toISOString() ?? null,
@@ -386,10 +357,7 @@ export async function getAllTenants(): Promise<TenantResponse> {
 }
 
 // Atualizar status do tenant
-export async function updateTenantStatus(
-  tenantId: string,
-  status: TenantStatus,
-): Promise<TenantResponse> {
+export async function updateTenantStatus(tenantId: string, status: TenantStatus): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -475,14 +443,29 @@ export interface UpdateTenantUserInput {
   firstName?: string;
   lastName?: string;
   email?: string;
+  phone?: string;
   role?: UserRole;
   active?: boolean;
   generatePassword?: boolean;
+  // Campos específicos do advogado
+  oabNumero?: string;
+  oabUf?: string;
+  telefone?: string;
+  whatsapp?: string;
+  bio?: string;
+  especialidades?: string[];
+  comissaoPadrao?: number;
+  comissaoAcaoGanha?: number;
+  comissaoHonorarios?: number;
 }
 
-export async function getTenantManagementData(
-  tenantId: string,
-): Promise<TenantResponse> {
+export interface CreateTenantUserInput extends UpdateTenantUserInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export async function getTenantManagementData(tenantId: string): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -520,14 +503,7 @@ export async function getTenantManagementData(
     const ninetyDaysAgo = new Date(Date.now() - 89 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
 
-    const [
-      plans,
-      invoices,
-      users,
-      revenue90Agg,
-      revenue30Agg,
-      outstandingInvoices,
-    ] = await Promise.all([
+    const [plans, invoices, users, revenue90Agg, revenue30Agg, outstandingInvoices] = await Promise.all([
       prisma.plano.findMany({
         where: { ativo: true },
         orderBy: { nome: "asc" },
@@ -540,6 +516,9 @@ export async function getTenantManagementData(
       prisma.usuario.findMany({
         where: { tenantId },
         orderBy: { firstName: "asc" },
+        include: {
+          advogado: true,
+        },
       }),
       prisma.pagamento.aggregate({
         _sum: { valor: true },
@@ -628,10 +607,25 @@ export async function getTenantManagementData(
       users: users.map((user) => ({
         id: user.id,
         name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
+        phone: user.phone,
+        avatarUrl: user.avatarUrl,
         role: user.role,
         active: user.active,
         lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+        createdAt: user.createdAt.toISOString(),
+        // Dados do advogado se existir
+        oabNumero: user.advogado?.oabNumero ?? null,
+        oabUf: user.advogado?.oabUf ?? null,
+        telefone: user.advogado?.telefone ?? null,
+        whatsapp: user.advogado?.whatsapp ?? null,
+        bio: user.advogado?.bio ?? null,
+        especialidades: user.advogado?.especialidades ?? null,
+        comissaoPadrao: user.advogado?.comissaoPadrao ? parseFloat(user.advogado.comissaoPadrao.toString()) : null,
+        comissaoAcaoGanha: user.advogado?.comissaoAcaoGanha ? parseFloat(user.advogado.comissaoAcaoGanha.toString()) : null,
+        comissaoHonorarios: user.advogado?.comissaoHonorarios ? parseFloat(user.advogado.comissaoHonorarios.toString()) : null,
       })),
       availableRoles: Object.values(UserRole),
     };
@@ -650,10 +644,7 @@ export async function getTenantManagementData(
   }
 }
 
-export async function updateTenantDetails(
-  tenantId: string,
-  payload: UpdateTenantDetailsInput,
-): Promise<TenantResponse> {
+export async function updateTenantDetails(tenantId: string, payload: UpdateTenantDetailsInput): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -756,10 +747,7 @@ export async function updateTenantDetails(
   }
 }
 
-export async function updateTenantSubscription(
-  tenantId: string,
-  payload: UpdateTenantSubscriptionInput,
-): Promise<TenantResponse> {
+export async function updateTenantSubscription(tenantId: string, payload: UpdateTenantSubscriptionInput): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -851,10 +839,7 @@ export async function updateTenantSubscription(
   }
 }
 
-export async function updateTenantBranding(
-  tenantId: string,
-  payload: UpdateTenantBrandingInput,
-): Promise<TenantResponse> {
+export async function updateTenantBranding(tenantId: string, payload: UpdateTenantBrandingInput): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -912,17 +897,98 @@ export async function updateTenantBranding(
 }
 
 function generateTemporaryPassword(length = 12) {
-  return crypto.randomBytes(length)
+  return crypto
+    .randomBytes(length)
     .toString("base64")
     .replace(/[^a-zA-Z0-9]/g, "")
     .slice(0, length);
 }
 
-export async function updateTenantUser(
-  tenantId: string,
-  userId: string,
-  payload: UpdateTenantUserInput,
-): Promise<TenantResponse> {
+export async function createTenantUser(tenantId: string, payload: CreateTenantUserInput): Promise<TenantResponse> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+      return { success: false, error: "Acesso não autorizado" };
+    }
+
+    // Validar email único
+    const existingUser = await prisma.usuario.findFirst({
+      where: {
+        email: payload.email,
+        tenantId: tenantId,
+      },
+    });
+
+    if (existingUser) {
+      return { success: false, error: "Este email já está em uso por outro usuário neste tenant" };
+    }
+
+    const temporaryPassword = payload.generatePassword ? generateTemporaryPassword() : undefined;
+    const passwordHash = temporaryPassword ? await bcrypt.hash(temporaryPassword, 12) : null;
+
+    // Criar usuário
+    const newUser = await prisma.usuario.create({
+      data: {
+        tenantId: tenantId,
+        email: payload.email,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        phone: payload.phone,
+        role: payload.role || "SECRETARIA",
+        active: payload.active ?? true,
+        passwordHash: passwordHash,
+      },
+    });
+
+    // Criar dados do advogado se for advogado
+    if (payload.role === "ADVOGADO") {
+      await prisma.advogado.create({
+        data: {
+          tenantId: tenantId,
+          usuarioId: newUser.id,
+          oabNumero: payload.oabNumero,
+          oabUf: payload.oabUf,
+          telefone: payload.telefone,
+          whatsapp: payload.whatsapp,
+          bio: payload.bio,
+          especialidades: (payload.especialidades || []) as EspecialidadeJuridica[],
+          comissaoPadrao: payload.comissaoPadrao || 0,
+          comissaoAcaoGanha: payload.comissaoAcaoGanha || 0,
+          comissaoHonorarios: payload.comissaoHonorarios || 0,
+        },
+      });
+    }
+
+    await prisma.superAdminAuditLog.create({
+      data: {
+        superAdminId: session.user.id,
+        acao: "CREATE_TENANT_USER",
+        entidade: "USUARIO",
+        entidadeId: newUser.id,
+        dadosNovos: {
+          email: newUser.email,
+          role: newUser.role,
+          generatePassword: !!temporaryPassword,
+          tenantId: tenantId,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        user: newUser,
+        temporaryPassword: temporaryPassword,
+      },
+    };
+  } catch (error) {
+    logger.error("Erro ao criar usuário:", error);
+    return { success: false, error: "Erro interno do servidor ao criar usuário" };
+  }
+}
+
+export async function updateTenantUser(tenantId: string, userId: string, payload: UpdateTenantUserInput): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -987,6 +1053,51 @@ export async function updateTenantUser(
       };
     }
 
+    // Atualizar dados do advogado se for advogado
+    if (payload.role === "ADVOGADO" || user.role === "ADVOGADO") {
+      const advogadoData: Record<string, unknown> = {};
+
+      if (payload.oabNumero !== undefined) {
+        advogadoData.oabNumero = payload.oabNumero;
+      }
+      if (payload.oabUf !== undefined) {
+        advogadoData.oabUf = payload.oabUf;
+      }
+      if (payload.telefone !== undefined) {
+        advogadoData.telefone = payload.telefone;
+      }
+      if (payload.whatsapp !== undefined) {
+        advogadoData.whatsapp = payload.whatsapp;
+      }
+      if (payload.bio !== undefined) {
+        advogadoData.bio = payload.bio;
+      }
+      if (payload.especialidades !== undefined) {
+        advogadoData.especialidades = payload.especialidades as EspecialidadeJuridica[];
+      }
+      if (payload.comissaoPadrao !== undefined) {
+        advogadoData.comissaoPadrao = payload.comissaoPadrao;
+      }
+      if (payload.comissaoAcaoGanha !== undefined) {
+        advogadoData.comissaoAcaoGanha = payload.comissaoAcaoGanha;
+      }
+      if (payload.comissaoHonorarios !== undefined) {
+        advogadoData.comissaoHonorarios = payload.comissaoHonorarios;
+      }
+
+      if (Object.keys(advogadoData).length > 0) {
+        await prisma.advogado.upsert({
+          where: { usuarioId: userId },
+          create: {
+            tenantId: tenantId,
+            usuarioId: userId,
+            ...advogadoData,
+          },
+          update: advogadoData,
+        });
+      }
+    }
+
     const updatedUser = await prisma.usuario.update({
       where: { id: userId },
       data: updateData,
@@ -1040,12 +1151,7 @@ export interface CreateJuizData {
   dataNascimento?: Date;
   dataPosse?: Date;
   status: "ATIVO" | "INATIVO" | "APOSENTADO";
-  nivel:
-    | "JUIZ_SUBSTITUTO"
-    | "JUIZ_TITULAR"
-    | "DESEMBARGADOR"
-    | "MINISTRO"
-    | "OUTROS";
+  nivel: "JUIZ_SUBSTITUTO" | "JUIZ_TITULAR" | "DESEMBARGADOR" | "MINISTRO" | "OUTROS";
   especialidades: EspecialidadeJuridica[];
   vara?: string;
   comarca?: string;
@@ -1067,10 +1173,7 @@ export interface CreateJuizData {
 }
 
 // Criar novo juiz global
-export async function createJuizGlobal(
-  data: CreateJuizData,
-  superAdminId: string,
-): Promise<TenantResponse> {
+export async function createJuizGlobal(data: CreateJuizData, superAdminId: string): Promise<TenantResponse> {
   try {
     const { especialidades, tribunalId, ...rest } = data;
     const juiz = await prisma.juiz.create({
@@ -1154,11 +1257,7 @@ export async function getAllJuizes(): Promise<TenantResponse> {
 }
 
 // Atualizar juiz
-export async function updateJuizGlobal(
-  juizId: string,
-  data: Partial<CreateJuizData>,
-  superAdminId: string,
-): Promise<TenantResponse> {
+export async function updateJuizGlobal(juizId: string, data: Partial<CreateJuizData>, superAdminId: string): Promise<TenantResponse> {
   try {
     // Verificar se o juiz existe e se o super admin tem permissão
     const juizExistente = await prisma.juiz.findFirst({
@@ -1217,10 +1316,7 @@ export async function updateJuizGlobal(
 // =============================================
 
 // Buscar logs de auditoria
-export async function getAuditLogs(
-  superAdminId: string,
-  limit: number = 50,
-): Promise<TenantResponse> {
+export async function getAuditLogs(superAdminId: string, limit: number = 50): Promise<TenantResponse> {
   try {
     const logs = await prisma.superAdminAuditLog.findMany({
       where: { superAdminId },

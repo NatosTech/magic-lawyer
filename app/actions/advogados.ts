@@ -1,64 +1,372 @@
 "use server";
 
-import { getSession } from "@/app/lib/auth";
-import prisma, { toNumber } from "@/app/lib/prisma";
-import logger from "@/lib/logger";
+import { revalidatePath } from "next/cache";
 
-export interface Advogado {
+import prisma from "@/app/lib/prisma";
+import { getSession } from "@/app/lib/auth";
+import { EspecialidadeJuridica } from "@/app/generated/prisma";
+
+// =============================================
+// TYPES
+// =============================================
+
+export interface AdvogadoSelectItem {
+  id: string;
+  value: string;
+  label: string;
+  oab: string | null;
+  oabNumero: string | null;
+  oabUf: string | null;
+  usuario: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  };
+}
+
+export interface AdvogadoData {
   id: string;
   usuarioId: string;
   oabNumero: string | null;
   oabUf: string | null;
-  especialidades: string[];
+  especialidades: EspecialidadeJuridica[];
   bio: string | null;
   telefone: string | null;
   whatsapp: string | null;
   comissaoPadrao: number;
   comissaoAcaoGanha: number;
   comissaoHonorarios: number;
-  createdAt: Date;
-  updatedAt: Date;
   usuario: {
+    id: string;
     firstName: string | null;
     lastName: string | null;
     email: string;
+    phone: string | null;
     avatarUrl: string | null;
-    createdAt: Date;
     active: boolean;
+    role: string;
   };
 }
 
-export async function getAdvogadosDoTenant(): Promise<{
+export interface CreateAdvogadoInput {
+  // Dados do usuário
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  // Dados do advogado
+  oabNumero?: string;
+  oabUf?: string;
+  especialidades?: EspecialidadeJuridica[];
+  bio?: string;
+  telefone?: string;
+  whatsapp?: string;
+  comissaoPadrao?: number;
+  comissaoAcaoGanha?: number;
+  comissaoHonorarios?: number;
+}
+
+export interface UpdateAdvogadoInput {
+  // Dados do usuário
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  // Dados do advogado
+  oabNumero?: string;
+  oabUf?: string;
+  especialidades?: EspecialidadeJuridica[];
+  bio?: string;
+  telefone?: string;
+  whatsapp?: string;
+  comissaoPadrao?: number;
+  comissaoAcaoGanha?: number;
+  comissaoHonorarios?: number;
+}
+
+interface ActionResponse<T = any> {
   success: boolean;
-  advogados?: Advogado[];
+  data?: T;
   error?: string;
-}> {
+  advogados?: T;
+}
+
+// =============================================
+// ACTIONS
+// =============================================
+
+export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
   try {
     const session = await getSession();
 
-    if (!session?.user) {
-      return { success: false, error: "Não autorizado" };
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
     }
 
-    const user = session.user as any;
-
-    // Verificar se é admin do tenant (não SuperAdmin)
-    if (user.role === "SUPER_ADMIN") {
-      return { success: false, error: "Acesso negado" };
-    }
-
-    if (user.role !== "ADMIN") {
-      return { success: false, error: "Acesso negado" };
-    }
-
-    if (!user.tenantId) {
-      return { success: false, error: "Tenant não encontrado" };
-    }
-
-    // Buscar advogados do tenant
-    const advogadosRaw = await prisma.advogado.findMany({
+    const advogados = await prisma.advogado.findMany({
       where: {
-        tenantId: user.tenantId,
+        tenantId: session.user.tenantId,
+      },
+      include: {
+        usuario: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+            active: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        usuario: {
+          firstName: "asc",
+        },
+      },
+    });
+
+    const data = advogados.map((adv) => ({
+      id: adv.id,
+      usuarioId: adv.usuarioId,
+      oabNumero: adv.oabNumero,
+      oabUf: adv.oabUf,
+      especialidades: adv.especialidades as EspecialidadeJuridica[],
+      bio: adv.bio,
+      telefone: adv.telefone,
+      whatsapp: adv.whatsapp,
+      comissaoPadrao: parseFloat(adv.comissaoPadrao.toString()),
+      comissaoAcaoGanha: parseFloat(adv.comissaoAcaoGanha.toString()),
+      comissaoHonorarios: parseFloat(adv.comissaoHonorarios.toString()),
+      usuario: adv.usuario,
+    }));
+
+    return { success: true, advogados: data } as any;
+  } catch (error) {
+    console.error("Erro ao buscar advogados:", error);
+
+    return { success: false, error: "Erro ao buscar advogados" };
+  }
+}
+
+export async function getAdvogado(advogadoId: string): Promise<ActionResponse<AdvogadoData>> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const advogado = await prisma.advogado.findFirst({
+      where: {
+        id: advogadoId,
+        tenantId: session.user.tenantId,
+      },
+      include: {
+        usuario: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+            active: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!advogado) {
+      return { success: false, error: "Advogado não encontrado" };
+    }
+
+    const data: AdvogadoData = {
+      id: advogado.id,
+      usuarioId: advogado.usuarioId,
+      oabNumero: advogado.oabNumero,
+      oabUf: advogado.oabUf,
+      especialidades: advogado.especialidades as EspecialidadeJuridica[],
+      bio: advogado.bio,
+      telefone: advogado.telefone,
+      whatsapp: advogado.whatsapp,
+      comissaoPadrao: parseFloat(advogado.comissaoPadrao.toString()),
+      comissaoAcaoGanha: parseFloat(advogado.comissaoAcaoGanha.toString()),
+      comissaoHonorarios: parseFloat(advogado.comissaoHonorarios.toString()),
+      usuario: advogado.usuario,
+    };
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Erro ao buscar advogado:", error);
+
+    return { success: false, error: "Erro ao buscar advogado" };
+  }
+}
+
+export async function getCurrentUserAdvogado(): Promise<ActionResponse<AdvogadoData>> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.id || !session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const advogado = await prisma.advogado.findFirst({
+      where: {
+        usuarioId: session.user.id,
+        tenantId: session.user.tenantId,
+      },
+      include: {
+        usuario: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+            active: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!advogado) {
+      return { success: false, error: "Dados de advogado não encontrados" };
+    }
+
+    const data: AdvogadoData = {
+      id: advogado.id,
+      usuarioId: advogado.usuarioId,
+      oabNumero: advogado.oabNumero,
+      oabUf: advogado.oabUf,
+      especialidades: advogado.especialidades as EspecialidadeJuridica[],
+      bio: advogado.bio,
+      telefone: advogado.telefone,
+      whatsapp: advogado.whatsapp,
+      comissaoPadrao: parseFloat(advogado.comissaoPadrao.toString()),
+      comissaoAcaoGanha: parseFloat(advogado.comissaoAcaoGanha.toString()),
+      comissaoHonorarios: parseFloat(advogado.comissaoHonorarios.toString()),
+      usuario: advogado.usuario,
+    };
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Erro ao buscar dados do advogado:", error);
+
+    return { success: false, error: "Erro ao buscar dados do advogado" };
+  }
+}
+
+export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoInput): Promise<ActionResponse> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const advogado = await prisma.advogado.findFirst({
+      where: {
+        id: advogadoId,
+        tenantId: session.user.tenantId,
+      },
+    });
+
+    if (!advogado) {
+      return { success: false, error: "Advogado não encontrado" };
+    }
+
+    // Atualizar dados do usuário se fornecido
+    const usuarioUpdate: any = {};
+
+    if (input.firstName !== undefined) usuarioUpdate.firstName = input.firstName;
+    if (input.lastName !== undefined) usuarioUpdate.lastName = input.lastName;
+    if (input.phone !== undefined) usuarioUpdate.phone = input.phone;
+
+    if (Object.keys(usuarioUpdate).length > 0) {
+      await prisma.usuario.update({
+        where: { id: advogado.usuarioId },
+        data: usuarioUpdate,
+      });
+    }
+
+    // Atualizar dados do advogado
+    const advogadoUpdate: any = {};
+
+    if (input.oabNumero !== undefined) advogadoUpdate.oabNumero = input.oabNumero;
+    if (input.oabUf !== undefined) advogadoUpdate.oabUf = input.oabUf;
+    if (input.especialidades !== undefined) advogadoUpdate.especialidades = input.especialidades;
+    if (input.bio !== undefined) advogadoUpdate.bio = input.bio;
+    if (input.telefone !== undefined) advogadoUpdate.telefone = input.telefone;
+    if (input.whatsapp !== undefined) advogadoUpdate.whatsapp = input.whatsapp;
+    if (input.comissaoPadrao !== undefined) advogadoUpdate.comissaoPadrao = input.comissaoPadrao;
+    if (input.comissaoAcaoGanha !== undefined) advogadoUpdate.comissaoAcaoGanha = input.comissaoAcaoGanha;
+    if (input.comissaoHonorarios !== undefined) advogadoUpdate.comissaoHonorarios = input.comissaoHonorarios;
+
+    if (Object.keys(advogadoUpdate).length > 0) {
+      await prisma.advogado.update({
+        where: { id: advogadoId },
+        data: advogadoUpdate,
+      });
+    }
+
+    revalidatePath("/advogados");
+    revalidatePath("/usuario/perfil/editar");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao atualizar advogado:", error);
+
+    return { success: false, error: "Erro ao atualizar advogado" };
+  }
+}
+
+export async function updateCurrentUserAdvogado(input: UpdateAdvogadoInput): Promise<ActionResponse> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.id || !session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const advogado = await prisma.advogado.findFirst({
+      where: {
+        usuarioId: session.user.id,
+        tenantId: session.user.tenantId,
+      },
+    });
+
+    if (!advogado) {
+      return { success: false, error: "Dados de advogado não encontrados" };
+    }
+
+    return updateAdvogado(advogado.id, input);
+  } catch (error) {
+    console.error("Erro ao atualizar dados do advogado:", error);
+
+    return { success: false, error: "Erro ao atualizar dados do advogado" };
+  }
+}
+
+export async function getAdvogadosDisponiveis(): Promise<ActionResponse<AdvogadoSelectItem[]>> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const advogados = await prisma.advogado.findMany({
+      where: {
+        tenantId: session.user.tenantId,
+        usuario: {
+          active: true,
+        },
       },
       include: {
         usuario: {
@@ -66,9 +374,6 @@ export async function getAdvogadosDoTenant(): Promise<{
             firstName: true,
             lastName: true,
             email: true,
-            avatarUrl: true,
-            createdAt: true,
-            active: true,
           },
         },
       },
@@ -79,96 +384,28 @@ export async function getAdvogadosDoTenant(): Promise<{
       },
     });
 
-    // Converter Decimal para number para serialização
-    const advogados: Advogado[] = advogadosRaw.map((advogado) => ({
-      ...advogado,
-      comissaoPadrao: toNumber(advogado.comissaoPadrao) || 0,
-      comissaoAcaoGanha: toNumber(advogado.comissaoAcaoGanha) || 0,
-      comissaoHonorarios: toNumber(advogado.comissaoHonorarios) || 0,
+    const data: AdvogadoSelectItem[] = advogados.map((adv) => ({
+      id: adv.id,
+      value: adv.id,
+      label: `${adv.usuario.firstName || ""} ${adv.usuario.lastName || ""}`.trim() || "Sem nome",
+      oab: adv.oabNumero && adv.oabUf ? `${adv.oabUf} ${adv.oabNumero}` : null,
+      oabNumero: adv.oabNumero,
+      oabUf: adv.oabUf,
+      usuario: {
+        firstName: adv.usuario.firstName,
+        lastName: adv.usuario.lastName,
+        email: adv.usuario.email,
+      },
     }));
 
-    return {
-      success: true,
-      advogados,
-    };
+    return { success: true, advogados: data } as any;
   } catch (error) {
-    logger.error("Erro ao buscar advogados:", error);
+    console.error("Erro ao buscar advogados disponíveis:", error);
 
-    return {
-      success: false,
-      error: "Erro interno do servidor",
-    };
+    return { success: false, error: "Erro ao buscar advogados disponíveis" };
   }
 }
 
-export interface AdvogadoSelectItem {
-  id: string;
-  oabNumero: string | null;
-  oabUf: string | null;
-  usuario: {
-    firstName: string | null;
-    lastName: string | null;
-    email: string;
-  };
-}
-
-export async function getAdvogadosDisponiveis(): Promise<{
-  success: boolean;
-  advogados?: AdvogadoSelectItem[];
-  error?: string;
-}> {
-  try {
-    const session = await getSession();
-
-    if (!session?.user) {
-      return { success: false, error: "Não autorizado" };
-    }
-
-    const user = session.user as any;
-
-    if (!user.tenantId) {
-      return { success: false, error: "Tenant não encontrado" };
-    }
-
-    const allowedRoles = ["SUPER_ADMIN", "ADMIN", "ADVOGADO", "SECRETARIA"];
-
-    if (!allowedRoles.includes(user.role)) {
-      return { success: false, error: "Acesso negado" };
-    }
-
-    const advogados = await prisma.advogado.findMany({
-      where: {
-        tenantId: user.tenantId,
-      },
-      select: {
-        id: true,
-        oabNumero: true,
-        oabUf: true,
-        usuario: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: {
-        usuario: {
-          firstName: "asc",
-        },
-      },
-    });
-
-    return {
-      success: true,
-      advogados,
-    };
-  } catch (error) {
-    logger.error("Erro ao buscar advogados disponíveis:", error);
-
-    return {
-      success: false,
-      error: "Erro interno do servidor",
-    };
-  }
-}
+// Alias para compatibilidade
+export const getAdvogadosDoTenant = getAdvogados;
+export type Advogado = AdvogadoData;

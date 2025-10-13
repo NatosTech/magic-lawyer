@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
-} from "react";
+import { useEffect, useMemo, useState, useTransition, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import useSWR from "swr";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -16,32 +8,12 @@ import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
-import { Skeleton } from "@heroui/react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from "@heroui/table";
+import { Skeleton, Tooltip } from "@heroui/react";
+import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/table";
 import { Tabs, Tab } from "@heroui/tabs";
 import { addToast } from "@heroui/toast";
 
-import {
-  Building2,
-  CreditCard,
-  Users2,
-  Palette,
-  FileText,
-  ShieldCheck,
-  Sparkles,
-  KeyRound,
-  ToggleLeft,
-  Edit,
-  Check,
-  X,
-} from "lucide-react";
+import { Building2, CreditCard, Users2, Palette, FileText, ShieldCheck, Sparkles, KeyRound, ToggleLeft, Edit, Check, X, Plus } from "lucide-react";
 
 import {
   getTenantManagementData,
@@ -55,12 +27,8 @@ import {
   type UpdateTenantSubscriptionInput,
   type UpdateTenantBrandingInput,
 } from "@/app/actions/admin";
-import {
-  InvoiceStatus,
-  SubscriptionStatus,
-  TenantStatus,
-  UserRole,
-} from "@/app/generated/prisma";
+import { UserManagementModal } from "@/components/user-management-modal";
+import { InvoiceStatus, SubscriptionStatus, TenantStatus, UserRole } from "@/app/generated/prisma";
 
 interface TenantManagementContentProps {
   tenantId: string;
@@ -117,10 +85,7 @@ const timezoneOptions = [
   "Europe/Lisbon",
 ];
 
-const fetchTenant = async (
-  _key: string,
-  tenantId: string,
-): Promise<TenantManagementData> => {
+const fetchTenant = async (_key: string, tenantId: string): Promise<TenantManagementData> => {
   const response = await getTenantManagementData(tenantId);
 
   if (!response.success || !response.data) {
@@ -146,18 +111,11 @@ function formatDateTime(value: string | null) {
   return new Date(value).toLocaleString("pt-BR");
 }
 
-export function TenantManagementContent({
-  tenantId,
-  initialData,
-}: TenantManagementContentProps) {
-  const { data, mutate, isValidating } = useSWR<TenantManagementData>(
-    ["tenant-management", tenantId],
-    () => fetchTenant("tenant-management", tenantId),
-    {
-      fallbackData: initialData,
-      revalidateOnFocus: false,
-    },
-  );
+export function TenantManagementContent({ tenantId, initialData }: TenantManagementContentProps) {
+  const { data, mutate, isValidating } = useSWR<TenantManagementData>(["tenant-management", tenantId], () => fetchTenant("tenant-management", tenantId), {
+    fallbackData: initialData,
+    revalidateOnFocus: false,
+  });
 
   const tenantData = data ?? initialData;
 
@@ -173,13 +131,12 @@ export function TenantManagementContent({
     timezone: tenantData.tenant.timezone,
   });
 
-  const [subscriptionForm, setSubscriptionForm] =
-    useState<UpdateTenantSubscriptionInput>({
-      planId: tenantData.subscription.planId ?? "",
-      status: tenantData.subscription.status ?? SubscriptionStatus.TRIAL,
-      trialEndsAt: tenantData.subscription.trialEndsAt,
-      renovaEm: tenantData.subscription.renovaEm,
-    });
+  const [subscriptionForm, setSubscriptionForm] = useState<UpdateTenantSubscriptionInput>({
+    planId: tenantData.subscription.planId ?? "",
+    status: tenantData.subscription.status ?? SubscriptionStatus.TRIAL,
+    trialEndsAt: tenantData.subscription.trialEndsAt,
+    renovaEm: tenantData.subscription.renovaEm,
+  });
 
   const [brandingForm, setBrandingForm] = useState<UpdateTenantBrandingInput>({
     primaryColor: tenantData.branding?.primaryColor ?? "",
@@ -189,26 +146,9 @@ export function TenantManagementContent({
     faviconUrl: tenantData.branding?.faviconUrl ?? "",
   });
 
-  const [userRoles, setUserRoles] = useState<Record<string, UserRole>>(() =>
-    tenantData.users.reduce((acc, user) => ({ ...acc, [user.id]: user.role }), {}),
-  );
-  const [userFirstNames, setUserFirstNames] = useState<Record<string, string>>(() =>
-    tenantData.users.reduce((acc, user) => ({ 
-      ...acc, 
-      [user.id]: user.name.split(' ')[0] || '' 
-    }), {}),
-  );
-  const [userLastNames, setUserLastNames] = useState<Record<string, string>>(() =>
-    tenantData.users.reduce((acc, user) => ({ 
-      ...acc, 
-      [user.id]: user.name.split(' ').slice(1).join(' ') || '' 
-    }), {}),
-  );
-  const [userEmails, setUserEmails] = useState<Record<string, string>>(() =>
-    tenantData.users.reduce((acc, user) => ({ ...acc, [user.id]: user.email }), {}),
-  );
-  const [editingUser, setEditingUser] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
   const [isSavingDetails, startSavingDetails] = useTransition();
   const [isUpdatingStatus, startUpdatingStatus] = useTransition();
@@ -243,31 +183,6 @@ export function TenantManagementContent({
       logoUrl: tenantData.branding?.logoUrl ?? "",
       faviconUrl: tenantData.branding?.faviconUrl ?? "",
     });
-
-    setUserRoles(
-      tenantData.users.reduce(
-        (acc, user) => ({ ...acc, [user.id]: user.role }),
-        {} as Record<string, UserRole>,
-      ),
-    );
-    setUserFirstNames(
-      tenantData.users.reduce(
-        (acc, user) => ({ ...acc, [user.id]: user.name.split(' ')[0] || '' }),
-        {} as Record<string, string>,
-      ),
-    );
-    setUserLastNames(
-      tenantData.users.reduce(
-        (acc, user) => ({ ...acc, [user.id]: user.name.split(' ').slice(1).join(' ') || '' }),
-        {} as Record<string, string>,
-      ),
-    );
-    setUserEmails(
-      tenantData.users.reduce(
-        (acc, user) => ({ ...acc, [user.id]: user.email }),
-        {} as Record<string, string>,
-      ),
-    );
   }, [tenantData]);
 
   const planOptions = useMemo(
@@ -281,7 +196,7 @@ export function TenantManagementContent({
       },
       ...tenantData.availablePlans,
     ],
-    [tenantData.availablePlans],
+    [tenantData.availablePlans]
   );
 
   const handleSaveDetails = () => {
@@ -383,35 +298,6 @@ export function TenantManagementContent({
     });
   };
 
-  const handleUserRoleChange = (userId: string, role: UserRole) => {
-    setUserRoles((prev) => ({ ...prev, [userId]: role }));
-    setPendingUserId(userId);
-
-    startUpdatingUser(() => {
-      (async () => {
-        const response = await updateTenantUser(tenantId, userId, { role });
-
-        if (!response.success) {
-          addToast({
-            title: "Erro ao atualizar função",
-            description: response.error ?? "Tente novamente",
-            color: "danger",
-          });
-          await mutate();
-        } else {
-          addToast({
-            title: "Função atualizada",
-            description: "Usuário recebeu as novas permissões",
-            color: "success",
-          });
-        }
-
-        setPendingUserId(null);
-        await mutate();
-      })();
-    });
-  };
-
   const handleToggleUserActive = (userId: string, current: boolean) => {
     setPendingUserId(userId);
     startUpdatingUser(() => {
@@ -429,9 +315,7 @@ export function TenantManagementContent({
         } else {
           addToast({
             title: !current ? "Usuário reativado" : "Usuário desativado",
-            description: !current
-              ? "Acesso liberado novamente"
-              : "Usuário ficará sem acesso até nova liberação",
+            description: !current ? "Acesso liberado novamente" : "Usuário ficará sem acesso até nova liberação",
             color: "success",
           });
         }
@@ -460,9 +344,7 @@ export function TenantManagementContent({
           const newPassword = response.data?.temporaryPassword;
           addToast({
             title: "Senha redefinida",
-            description: newPassword
-              ? `Nova senha temporária: ${newPassword}`
-              : "Senha redefinida com sucesso.",
+            description: newPassword ? `Nova senha temporária: ${newPassword}` : "Senha redefinida com sucesso.",
             color: "success",
             timeout: 8000,
           });
@@ -474,47 +356,27 @@ export function TenantManagementContent({
     });
   };
 
-  const handleSaveUserInfo = (userId: string) => {
-    setPendingUserId(userId);
-    startUpdatingUser(() => {
-      (async () => {
-        const response = await updateTenantUser(tenantId, userId, {
-          firstName: userFirstNames[userId],
-          lastName: userLastNames[userId],
-          email: userEmails[userId],
-        });
-
-        if (!response.success) {
-          addToast({
-            title: "Erro ao atualizar usuário",
-            description: response.error ?? "Tente novamente",
-            color: "danger",
-          });
-        } else {
-          addToast({
-            title: "Usuário atualizado",
-            description: "Informações do usuário foram salvas",
-            color: "success",
-          });
-          setEditingUser(null);
-        }
-
-        setPendingUserId(null);
-        await mutate();
-      })();
-    });
+  const handleOpenUserModal = async (user?: any) => {
+    if (user) {
+      // Buscar dados completos do usuário incluindo advogado se aplicável
+      const userWithDetails = {
+        ...user,
+        // Os dados já vêm do getTenantManagementData
+      };
+      setSelectedUser(userWithDetails);
+    } else {
+      setSelectedUser(null);
+    }
+    setIsUserModalOpen(true);
   };
 
-  const handleCancelEdit = (userId: string) => {
-    // Restaurar valores originais
-    const originalUser = tenantData.users.find(u => u.id === userId);
-    if (originalUser) {
-      const nameParts = originalUser.name.split(' ');
-      setUserFirstNames(prev => ({ ...prev, [userId]: nameParts[0] || '' }));
-      setUserLastNames(prev => ({ ...prev, [userId]: nameParts.slice(1).join(' ') || '' }));
-      setUserEmails(prev => ({ ...prev, [userId]: originalUser.email }));
-    }
-    setEditingUser(null);
+  const handleCloseUserModal = () => {
+    setIsUserModalOpen(false);
+    setSelectedUser(null);
+  };
+
+  const handleUserModalSuccess = async () => {
+    await mutate();
   };
 
   const isLoading = isValidating && !data;
@@ -555,10 +417,7 @@ export function TenantManagementContent({
       </Card>
 
       <Tabs aria-label="Painel de gerenciamento do tenant" color="primary" variant="bordered">
-        <Tab
-          key="overview"
-          title={<TabTitle icon={<Building2 className="h-4 w-4" />} label="Visão geral" />}
-        >
+        <Tab key="overview" title={<TabTitle icon={<Building2 className="h-4 w-4" />} label="Visão geral" />}>
           <OverviewTab
             detailsForm={detailsForm}
             setDetailsForm={setDetailsForm}
@@ -570,10 +429,7 @@ export function TenantManagementContent({
           />
         </Tab>
 
-        <Tab
-          key="finance"
-          title={<TabTitle icon={<CreditCard className="h-4 w-4" />} label="Financeiro" />}
-        >
+        <Tab key="finance" title={<TabTitle icon={<CreditCard className="h-4 w-4" />} label="Financeiro" />}>
           <FinanceTab
             subscriptionForm={subscriptionForm}
             setSubscriptionForm={setSubscriptionForm}
@@ -585,48 +441,23 @@ export function TenantManagementContent({
           />
         </Tab>
 
-        <Tab
-          key="users"
-          title={<TabTitle icon={<Users2 className="h-4 w-4" />} label="Usuários" />}
-        >
+        <Tab key="users" title={<TabTitle icon={<Users2 className="h-4 w-4" />} label="Usuários" />}>
           <UsersTab
             users={tenantData.users}
             userRoleOptions={userRoleOptions}
-            userRoles={userRoles}
-            userFirstNames={userFirstNames}
-            userLastNames={userLastNames}
-            userEmails={userEmails}
-            editingUser={editingUser}
             pendingUserId={pendingUserId}
             isUpdatingUser={isUpdatingUser}
-            onRoleChange={handleUserRoleChange}
             onToggleActive={handleToggleUserActive}
             onResetPassword={handleResetUserPassword}
-            onStartEdit={setEditingUser}
-            onSaveEdit={handleSaveUserInfo}
-            onCancelEdit={handleCancelEdit}
-            onFirstNameChange={(userId, firstName) => setUserFirstNames(prev => ({ ...prev, [userId]: firstName }))}
-            onLastNameChange={(userId, lastName) => setUserLastNames(prev => ({ ...prev, [userId]: lastName }))}
-            onEmailChange={(userId, email) => setUserEmails(prev => ({ ...prev, [userId]: email }))}
+            onOpenUserModal={handleOpenUserModal}
           />
         </Tab>
 
-        <Tab
-          key="branding"
-          title={<TabTitle icon={<Palette className="h-4 w-4" />} label="Branding" />}
-        >
-          <BrandingTab
-            brandingForm={brandingForm}
-            setBrandingForm={setBrandingForm}
-            handleSaveBranding={handleSaveBranding}
-            isSavingBranding={isSavingBranding}
-          />
+        <Tab key="branding" title={<TabTitle icon={<Palette className="h-4 w-4" />} label="Branding" />}>
+          <BrandingTab brandingForm={brandingForm} setBrandingForm={setBrandingForm} handleSaveBranding={handleSaveBranding} isSavingBranding={isSavingBranding} />
         </Tab>
 
-        <Tab
-          key="auditoria"
-          title={<TabTitle icon={<FileText className="h-4 w-4" />} label="Auditoria" />}
-        >
+        <Tab key="auditoria" title={<TabTitle icon={<FileText className="h-4 w-4" />} label="Auditoria" />}>
           <AuditTab />
         </Tab>
       </Tabs>
@@ -636,6 +467,8 @@ export function TenantManagementContent({
           <Skeleton className="h-8 w-32 rounded-full" isLoaded={false} />
         </div>
       ) : null}
+
+      <UserManagementModal isOpen={isUserModalOpen} onClose={handleCloseUserModal} tenantId={tenantId} user={selectedUser} onSuccess={handleUserModalSuccess} />
     </div>
   );
 }
@@ -650,50 +483,24 @@ interface OverviewTabProps {
   isUpdatingStatus: boolean;
 }
 
-function OverviewTab({
-  detailsForm,
-  setDetailsForm,
-  isSavingDetails,
-  handleSaveDetails,
-  tenantStatus,
-  handleStatusChange,
-  isUpdatingStatus,
-}: OverviewTabProps) {
+function OverviewTab({ detailsForm, setDetailsForm, isSavingDetails, handleSaveDetails, tenantStatus, handleStatusChange, isUpdatingStatus }: OverviewTabProps) {
   return (
     <div className="flex flex-col gap-6">
       <Card className="border border-white/10 bg-background/70 backdrop-blur">
         <CardHeader className="flex flex-col gap-2">
           <h2 className="text-lg font-semibold text-white">Informações gerais</h2>
-          <p className="text-sm text-default-400">
-            Atualize dados de identificação e contato do tenant.
-          </p>
+          <p className="text-sm text-default-400">Atualize dados de identificação e contato do tenant.</p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
-            <Input
-              isRequired
-              label="Nome do tenant"
-              value={detailsForm.name ?? ""}
-              onValueChange={(value) =>
-                setDetailsForm((prev) => ({ ...prev, name: value || undefined }))
-              }
-            />
-            <Input
-              isRequired
-              label="Slug"
-              value={detailsForm.slug ?? ""}
-              onValueChange={(value) =>
-                setDetailsForm((prev) => ({ ...prev, slug: value || undefined }))
-              }
-            />
+            <Input isRequired label="Nome do tenant" value={detailsForm.name ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, name: value || undefined }))} />
+            <Input isRequired label="Slug" value={detailsForm.slug ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, slug: value || undefined }))} />
             <Input
               label="Domínio personalizado"
               placeholder="ex.: escritorio.minhaempresa.com"
               value={detailsForm.domain ?? ""}
-              onValueChange={(value) =>
-                setDetailsForm((prev) => ({ ...prev, domain: value || null }))
-              }
+              onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, domain: value || null }))}
             />
             <Select
               label="Fuso horário"
@@ -710,50 +517,14 @@ function OverviewTab({
                 <SelectItem key={tz}>{tz}</SelectItem>
               ))}
             </Select>
-            <Input
-              label="Email de contato"
-              type="email"
-              value={detailsForm.email ?? ""}
-              onValueChange={(value) =>
-                setDetailsForm((prev) => ({ ...prev, email: value || null }))
-              }
-            />
-            <Input
-              label="Telefone"
-              value={detailsForm.telefone ?? ""}
-              onValueChange={(value) =>
-                setDetailsForm((prev) => ({ ...prev, telefone: value || null }))
-              }
-            />
-            <Input
-              label="Documento (CNPJ/CPF)"
-              value={detailsForm.documento ?? ""}
-              onValueChange={(value) =>
-                setDetailsForm((prev) => ({ ...prev, documento: value || null }))
-              }
-            />
-            <Input
-              label="Razão social"
-              value={detailsForm.razaoSocial ?? ""}
-              onValueChange={(value) =>
-                setDetailsForm((prev) => ({ ...prev, razaoSocial: value || null }))
-              }
-            />
-            <Input
-              label="Nome fantasia"
-              value={detailsForm.nomeFantasia ?? ""}
-              onValueChange={(value) =>
-                setDetailsForm((prev) => ({ ...prev, nomeFantasia: value || null }))
-              }
-            />
+            <Input label="Email de contato" type="email" value={detailsForm.email ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, email: value || null }))} />
+            <Input label="Telefone" value={detailsForm.telefone ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, telefone: value || null }))} />
+            <Input label="Documento (CNPJ/CPF)" value={detailsForm.documento ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, documento: value || null }))} />
+            <Input label="Razão social" value={detailsForm.razaoSocial ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, razaoSocial: value || null }))} />
+            <Input label="Nome fantasia" value={detailsForm.nomeFantasia ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, nomeFantasia: value || null }))} />
           </div>
           <div className="flex justify-end">
-            <Button
-              color="primary"
-              isLoading={isSavingDetails}
-              radius="full"
-              onPress={handleSaveDetails}
-            >
+            <Button color="primary" isLoading={isSavingDetails} radius="full" onPress={handleSaveDetails}>
               Salvar alterações
             </Button>
           </div>
@@ -763,9 +534,7 @@ function OverviewTab({
       <Card className="border border-white/10 bg-background/70 backdrop-blur">
         <CardHeader className="flex flex-col gap-2">
           <h2 className="text-lg font-semibold text-white">Status do tenant</h2>
-          <p className="text-sm text-default-400">
-            Controle de acesso global do tenant à plataforma.
-          </p>
+          <p className="text-sm text-default-400">Controle de acesso global do tenant à plataforma.</p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody className="space-y-4">
@@ -776,14 +545,7 @@ function OverviewTab({
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             {tenantStatusOptions.map((option) => (
-              <Card
-                key={option.value}
-                className={`border ${
-                  tenantStatus === option.value
-                    ? "border-primary/60 bg-primary/10"
-                    : "border-white/10 bg-background/60"
-                }`}
-              >
+              <Card key={option.value} className={`border ${tenantStatus === option.value ? "border-primary/60 bg-primary/10" : "border-white/10 bg-background/60"}`}>
                 <CardBody className="space-y-3">
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-white">{option.label}</p>
@@ -825,24 +587,14 @@ interface FinanceTabProps {
   invoices: TenantManagementData["invoices"];
 }
 
-function FinanceTab({
-  subscriptionForm,
-  setSubscriptionForm,
-  planOptions,
-  handleSaveSubscription,
-  isSavingSubscription,
-  metrics,
-  invoices,
-}: FinanceTabProps) {
+function FinanceTab({ subscriptionForm, setSubscriptionForm, planOptions, handleSaveSubscription, isSavingSubscription, metrics, invoices }: FinanceTabProps) {
   return (
     <div className="flex flex-col gap-6">
       <Card className="border border-white/10 bg-background/70 backdrop-blur">
         <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-white">Plano e assinatura</h2>
-            <p className="text-sm text-default-400">
-              Ajuste o plano, status da assinatura e datas de cobrança.
-            </p>
+            <p className="text-sm text-default-400">Ajuste o plano, status da assinatura e datas de cobrança.</p>
           </div>
           <Chip color="secondary" size="sm" variant="flat">
             Receita 30 dias: {formatCurrency(metrics.revenue30d)}
@@ -867,11 +619,7 @@ function FinanceTab({
                   <div className="flex flex-col">
                     <span>{plan.nome}</span>
                     <span className="text-xs text-default-500">
-                      {plan.valorMensal
-                        ? `${formatCurrency(plan.valorMensal)} / mês`
-                        : plan.valorAnual
-                          ? `${formatCurrency(plan.valorAnual)} / ano`
-                          : "Plano customizado"}
+                      {plan.valorMensal ? `${formatCurrency(plan.valorMensal)} / mês` : plan.valorAnual ? `${formatCurrency(plan.valorAnual)} / ano` : "Plano customizado"}
                     </span>
                   </div>
                 </SelectItem>
@@ -918,12 +666,7 @@ function FinanceTab({
             />
           </div>
           <div className="flex justify-end">
-            <Button
-              color="primary"
-              isLoading={isSavingSubscription}
-              radius="full"
-              onPress={handleSaveSubscription}
-            >
+            <Button color="primary" isLoading={isSavingSubscription} radius="full" onPress={handleSaveSubscription}>
               Salvar assinatura
             </Button>
           </div>
@@ -934,51 +677,28 @@ function FinanceTab({
         <Card className="border border-white/10 bg-background/70 backdrop-blur">
           <CardHeader className="flex flex-col gap-2">
             <h2 className="text-lg font-semibold text-white">Indicadores</h2>
-            <p className="text-sm text-default-400">
-              Métricas resumidas dos últimos 90 dias.
-            </p>
+            <p className="text-sm text-default-400">Métricas resumidas dos últimos 90 dias.</p>
           </CardHeader>
           <Divider className="border-white/10" />
           <CardBody>
             <div className="grid gap-4 md:grid-cols-2">
-              <MetricCard
-                label="Receita 90 dias"
-                value={formatCurrency(metrics.revenue90d)}
-                tone="success"
-              />
-              <MetricCard
-                label="Receita 30 dias"
-                value={formatCurrency(metrics.revenue30d)}
-                tone="primary"
-              />
-              <MetricCard
-                label="Usuários ativos"
-                value={numberFormatter.format(metrics.usuarios)}
-                tone="secondary"
-              />
-              <MetricCard
-                label="Clientes cadastrados"
-                value={numberFormatter.format(metrics.clientes)}
-                tone="default"
-              />
+              <MetricCard label="Receita 90 dias" value={formatCurrency(metrics.revenue90d)} tone="success" />
+              <MetricCard label="Receita 30 dias" value={formatCurrency(metrics.revenue30d)} tone="primary" />
+              <MetricCard label="Usuários ativos" value={numberFormatter.format(metrics.usuarios)} tone="secondary" />
+              <MetricCard label="Clientes cadastrados" value={numberFormatter.format(metrics.clientes)} tone="default" />
             </div>
           </CardBody>
         </Card>
         <Card className="border border-white/10 bg-background/70 backdrop-blur">
           <CardHeader className="flex flex-col gap-1">
             <h2 className="text-lg font-semibold text-white">Faturas recentes</h2>
-            <p className="text-sm text-default-400">
-              {metrics.outstandingInvoices} fatura(s) aguardando pagamento.
-            </p>
+            <p className="text-sm text-default-400">{metrics.outstandingInvoices} fatura(s) aguardando pagamento.</p>
           </CardHeader>
           <Divider className="border-white/10" />
           <CardBody className="space-y-3">
             {invoices.length ? (
               invoices.map((invoice) => (
-                <div
-                  key={invoice.id}
-                  className="rounded-xl border border-white/10 bg-background/60 p-3"
-                >
+                <div key={invoice.id} className="rounded-xl border border-white/10 bg-background/60 p-3">
                   <div className="flex items-center justify-between text-sm font-medium text-white">
                     <span>{invoice.numero ?? `Fatura ${invoice.id.slice(0, 6)}`}</span>
                     <span>{formatCurrency(invoice.valor)}</span>
@@ -991,9 +711,7 @@ function FinanceTab({
                 </div>
               ))
             ) : (
-              <p className="text-sm text-default-400">
-                Nenhuma fatura registrada para este tenant.
-              </p>
+              <p className="text-sm text-default-400">Nenhuma fatura registrada para este tenant.</p>
             )}
           </CardBody>
         </Card>
@@ -1005,194 +723,77 @@ function FinanceTab({
 interface UsersTabProps {
   users: TenantManagementData["users"];
   userRoleOptions: Array<{ value: UserRole; label: string }>;
-  userRoles: Record<string, UserRole>;
-  userFirstNames: Record<string, string>;
-  userLastNames: Record<string, string>;
-  userEmails: Record<string, string>;
-  editingUser: string | null;
   pendingUserId: string | null;
   isUpdatingUser: boolean;
-  onRoleChange: (userId: string, role: UserRole) => void;
   onToggleActive: (userId: string, active: boolean) => void;
   onResetPassword: (userId: string) => void;
-  onStartEdit: (userId: string) => void;
-  onSaveEdit: (userId: string) => void;
-  onCancelEdit: (userId: string) => void;
-  onFirstNameChange: (userId: string, firstName: string) => void;
-  onLastNameChange: (userId: string, lastName: string) => void;
-  onEmailChange: (userId: string, email: string) => void;
+  onOpenUserModal: (user?: any) => void;
 }
 
-function UsersTab({
-  users,
-  userRoleOptions,
-  userRoles,
-  userFirstNames,
-  userLastNames,
-  userEmails,
-  editingUser,
-  pendingUserId,
-  isUpdatingUser,
-  onRoleChange,
-  onToggleActive,
-  onResetPassword,
-  onStartEdit,
-  onSaveEdit,
-  onCancelEdit,
-  onFirstNameChange,
-  onLastNameChange,
-  onEmailChange,
-}: UsersTabProps) {
+function UsersTab({ users, userRoleOptions, pendingUserId, isUpdatingUser, onToggleActive, onResetPassword, onOpenUserModal }: UsersTabProps) {
   return (
     <Card className="border border-white/10 bg-background/70 backdrop-blur">
-      <CardHeader className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold text-white">Usuários do tenant</h2>
-        <p className="text-sm text-default-400">
-          Gerencie papéis, acesso e senhas temporárias dos usuários.
-        </p>
+      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Usuários do tenant</h2>
+          <p className="text-sm text-default-400">Gerencie papéis, acesso e senhas temporárias dos usuários.</p>
+        </div>
+        <Button color="primary" size="sm" startContent={<Plus className="h-4 w-4" />} onPress={() => onOpenUserModal()}>
+          Criar Usuário
+        </Button>
       </CardHeader>
       <Divider className="border-white/10" />
       <CardBody>
         {users.length ? (
           <Table removeWrapper aria-label="Usuários do tenant">
             <TableHeader>
-              <TableColumn>Nome</TableColumn>
-              <TableColumn>Sobrenome</TableColumn>
+              <TableColumn>Nome Completo</TableColumn>
               <TableColumn>Email</TableColumn>
               <TableColumn>Função</TableColumn>
-              <TableColumn>Último acesso</TableColumn>
               <TableColumn>Status</TableColumn>
               <TableColumn className="text-right">Ações</TableColumn>
             </TableHeader>
             <TableBody>
               {users.map((user) => {
-                const currentRole = userRoles[user.id] ?? user.role;
-                const currentFirstName = userFirstNames[user.id] ?? (user.name.split(' ')[0] || '');
-                const currentLastName = userLastNames[user.id] ?? (user.name.split(' ').slice(1).join(' ') || '');
-                const currentEmail = userEmails[user.id] ?? user.email;
                 const isPending = pendingUserId === user.id && isUpdatingUser;
-                const isEditing = editingUser === user.id;
 
                 return (
                   <TableRow key={user.id}>
                     <TableCell>
-                      {isEditing ? (
-                        <Input
-                          size="sm"
-                          value={currentFirstName}
-                          onValueChange={(value) => onFirstNameChange(user.id, value)}
-                        />
-                      ) : (
-                        <span>{currentFirstName}</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{user.name}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {isEditing ? (
-                        <Input
-                          size="sm"
-                          value={currentLastName}
-                          onValueChange={(value) => onLastNameChange(user.id, value)}
-                        />
-                      ) : (
-                        <span>{currentLastName}</span>
-                      )}
+                      <span className="text-default-500">{user.email}</span>
                     </TableCell>
                     <TableCell>
-                      {isEditing ? (
-                        <Input
-                          size="sm"
-                          type="email"
-                          value={currentEmail}
-                          onValueChange={(value) => onEmailChange(user.id, value)}
-                        />
-                      ) : (
-                        <span className="text-default-500">{currentEmail}</span>
-                      )}
+                      <Chip color="primary" size="sm" variant="flat">
+                        {userRoleOptions.find((r) => r.value === user.role)?.label || user.role}
+                      </Chip>
                     </TableCell>
-                    <TableCell>
-                      <Select
-                        selectedKeys={new Set([currentRole])}
-                        size="sm"
-                        onSelectionChange={(keys) => {
-                          const [value] = Array.from(keys);
-                          if (typeof value === "string") {
-                            onRoleChange(user.id, value as UserRole);
-                          }
-                        }}
-                      >
-                        {userRoleOptions.map((option) => (
-                          <SelectItem key={option.value}>{option.label}</SelectItem>
-                        ))}
-                      </Select>
-                    </TableCell>
-                    <TableCell>{formatDateTime(user.lastLoginAt)}</TableCell>
                     <TableCell>
                       <Chip color={user.active ? "success" : "warning"} size="sm" variant="flat">
                         {user.active ? "Ativo" : "Desativado"}
                       </Chip>
                     </TableCell>
                     <TableCell>
-                      <div className="flex justify-end gap-2">
-                        {isEditing ? (
-                          <>
-                            <Button
-                              color="success"
-                              size="sm"
-                              radius="full"
-                              variant="flat"
-                              startContent={<Check className="h-4 w-4" />}
-                              isLoading={isPending}
-                              onPress={() => onSaveEdit(user.id)}
-                            >
-                              Salvar
-                            </Button>
-                            <Button
-                              color="default"
-                              size="sm"
-                              radius="full"
-                              variant="bordered"
-                              startContent={<X className="h-4 w-4" />}
-                              onPress={() => onCancelEdit(user.id)}
-                            >
-                              Cancelar
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              color="primary"
-                              size="sm"
-                              radius="full"
-                              variant="bordered"
-                              startContent={<Edit className="h-4 w-4" />}
-                              onPress={() => onStartEdit(user.id)}
-                            >
-                              Editar
-                            </Button>
-                            <Button
-                              color="default"
-                              size="sm"
-                              radius="full"
-                              variant="bordered"
-                              startContent={<ToggleLeft className="h-4 w-4" />}
-                              isLoading={isPending}
-                              onPress={() => onToggleActive(user.id, user.active)}
-                            >
-                              {user.active ? "Desativar" : "Reativar"}
-                            </Button>
-                            <Button
-                              color="secondary"
-                              size="sm"
-                              radius="full"
-                              variant="flat"
-                              startContent={<KeyRound className="h-4 w-4" />}
-                              isLoading={isPending}
-                              onPress={() => onResetPassword(user.id)}
-                            >
-                              Resetar senha
-                            </Button>
-                          </>
-                        )}
+                      <div className="flex justify-end gap-1">
+                        <Tooltip content="Editar usuário completo">
+                          <Button color="primary" size="sm" isIconOnly radius="full" variant="bordered" onPress={() => onOpenUserModal(user)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content={user.active ? "Desativar usuário" : "Reativar usuário"}>
+                          <Button color="default" size="sm" isIconOnly radius="full" variant="bordered" isLoading={isPending} onPress={() => onToggleActive(user.id, user.active)}>
+                            <ToggleLeft className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content="Resetar senha">
+                          <Button color="secondary" size="sm" isIconOnly radius="full" variant="flat" isLoading={isPending} onPress={() => onResetPassword(user.id)}>
+                            <KeyRound className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -1215,70 +816,26 @@ interface BrandingTabProps {
   isSavingBranding: boolean;
 }
 
-function BrandingTab({
-  brandingForm,
-  setBrandingForm,
-  handleSaveBranding,
-  isSavingBranding,
-}: BrandingTabProps) {
+function BrandingTab({ brandingForm, setBrandingForm, handleSaveBranding, isSavingBranding }: BrandingTabProps) {
   return (
     <Card className="border border-white/10 bg-background/70 backdrop-blur">
       <CardHeader className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold text-white">Identidade visual</h2>
-        <p className="text-sm text-default-400">
-          Ajuste cores e ativos visuais do tenant.
-        </p>
+        <p className="text-sm text-default-400">Ajuste cores e ativos visuais do tenant.</p>
       </CardHeader>
       <Divider className="border-white/10" />
       <CardBody className="space-y-4">
         <div className="grid gap-4 md:grid-cols-3">
-          <ColorInput
-            label="Cor primária"
-            value={brandingForm.primaryColor ?? ""}
-            onChange={(value) =>
-              setBrandingForm((prev) => ({ ...prev, primaryColor: value || null }))
-            }
-          />
-          <ColorInput
-            label="Cor secundária"
-            value={brandingForm.secondaryColor ?? ""}
-            onChange={(value) =>
-              setBrandingForm((prev) => ({ ...prev, secondaryColor: value || null }))
-            }
-          />
-          <ColorInput
-            label="Cor de destaque"
-            value={brandingForm.accentColor ?? ""}
-            onChange={(value) =>
-              setBrandingForm((prev) => ({ ...prev, accentColor: value || null }))
-            }
-          />
+          <ColorInput label="Cor primária" value={brandingForm.primaryColor ?? ""} onChange={(value) => setBrandingForm((prev) => ({ ...prev, primaryColor: value || null }))} />
+          <ColorInput label="Cor secundária" value={brandingForm.secondaryColor ?? ""} onChange={(value) => setBrandingForm((prev) => ({ ...prev, secondaryColor: value || null }))} />
+          <ColorInput label="Cor de destaque" value={brandingForm.accentColor ?? ""} onChange={(value) => setBrandingForm((prev) => ({ ...prev, accentColor: value || null }))} />
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          <Input
-            label="Logo URL"
-            placeholder="https://..."
-            value={brandingForm.logoUrl ?? ""}
-            onValueChange={(value) =>
-              setBrandingForm((prev) => ({ ...prev, logoUrl: value || null }))
-            }
-          />
-          <Input
-            label="Favicon URL"
-            placeholder="https://..."
-            value={brandingForm.faviconUrl ?? ""}
-            onValueChange={(value) =>
-              setBrandingForm((prev) => ({ ...prev, faviconUrl: value || null }))
-            }
-          />
+          <Input label="Logo URL" placeholder="https://..." value={brandingForm.logoUrl ?? ""} onValueChange={(value) => setBrandingForm((prev) => ({ ...prev, logoUrl: value || null }))} />
+          <Input label="Favicon URL" placeholder="https://..." value={brandingForm.faviconUrl ?? ""} onValueChange={(value) => setBrandingForm((prev) => ({ ...prev, faviconUrl: value || null }))} />
         </div>
         <div className="flex justify-end">
-          <Button
-            color="primary"
-            isLoading={isSavingBranding}
-            radius="full"
-            onPress={handleSaveBranding}
-          >
+          <Button color="primary" isLoading={isSavingBranding} radius="full" onPress={handleSaveBranding}>
             Salvar branding
           </Button>
         </div>
@@ -1291,9 +848,7 @@ function AuditTab() {
   return (
     <Card className="border border-white/10 bg-background/70 backdrop-blur">
       <CardBody className="space-y-3">
-        <p className="text-sm text-default-400">
-          Todas as ações executadas neste painel geram logs na auditoria de super admin.
-        </p>
+        <p className="text-sm text-default-400">Todas as ações executadas neste painel geram logs na auditoria de super admin.</p>
         <Chip color="primary" size="sm" startContent={<ShieldCheck className="h-3 w-3" />}>
           Segurança operacional ativa
         </Chip>
@@ -1305,9 +860,7 @@ function AuditTab() {
             <Sparkles className="h-4 w-4" />
             <span className="text-sm font-semibold">Boas práticas</span>
           </div>
-          <p className="mt-2 text-xs text-primary/80">
-            Antes de bloquear um tenant, verifique pendências financeiras e comunique o contato principal para evitar disputas comerciais.
-          </p>
+          <p className="mt-2 text-xs text-primary/80">Antes de bloquear um tenant, verifique pendências financeiras e comunique o contato principal para evitar disputas comerciais.</p>
         </div>
       </CardBody>
     </Card>
@@ -1408,18 +961,8 @@ interface ColorInputProps {
 function ColorInput({ label, value, onChange }: ColorInputProps) {
   return (
     <div className="flex items-end gap-2">
-      <Input
-        label={label}
-        type="color"
-        value={value || "#000000"}
-        onValueChange={(val) => onChange(val)}
-      />
-      <Input
-        aria-label={`${label} (hex)`}
-        value={value}
-        placeholder="#000000"
-        onValueChange={onChange}
-      />
+      <Input label={label} type="color" value={value || "#000000"} onValueChange={(val) => onChange(val)} />
+      <Input aria-label={`${label} (hex)`} value={value} placeholder="#000000" onValueChange={onChange} />
     </div>
   );
 }

@@ -30,9 +30,17 @@ function extractTenantFromDomain(host: string): string | null {
     }
   }
 
+  // Para desenvolvimento local: subdomain.localhost
+  if (cleanHost.endsWith(".localhost")) {
+    const subdomain = cleanHost.replace(".localhost", "");
+    if (subdomain) {
+      return subdomain;
+    }
+  }
+
   // Para domínios diretos: sandra.com.br
   // Neste caso, o domínio completo é o identificador do tenant
-  if (!cleanHost.includes("magiclawyer") && !cleanHost.includes("vercel.app")) {
+  if (!cleanHost.includes("magiclawyer") && !cleanHost.includes("vercel.app") && !cleanHost.includes("localhost")) {
     return cleanHost;
   }
 
@@ -77,6 +85,10 @@ export const authOptions: NextAuthOptions = {
           email: normalizedEmail ?? "(missing)",
           tenant: shouldAutoDetect ? "(auto)" : finalTenant,
           tenantFromDomain,
+          rawTenant: credentials?.tenant,
+          normalizedTenant,
+          shouldAutoDetect,
+          finalTenant,
         };
 
         if (!credentials?.email || !credentials?.password) {
@@ -156,6 +168,12 @@ export const authOptions: NextAuthOptions = {
             tenantWhere = {
               OR: [{ slug: finalTenant }, { domain: finalTenant }],
             };
+            console.info("[auth] Buscando usuário com filtro de tenant", {
+              finalTenant,
+              tenantWhere,
+            });
+          } else {
+            console.info("[auth] Buscando usuário SEM filtro de tenant (auto-detect)");
           }
 
           // Primeiro, vamos tentar buscar o usuário sem filtro de tenant para debug
