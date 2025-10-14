@@ -5,6 +5,7 @@ const seedTiposContrato = require("./seeds/tiposContrato");
 const seedCategoriasTarefa = require("./seeds/categoriasTarefa");
 const seedPlanos = require("./seeds/planos");
 const { seedTenantSandra } = require("./seeds/tenants/tenantSandra");
+const { seedTenantLuana } = require("./seeds/tenants/tenantLuana");
 const { seedSalbaAdvocacia } = require("./seeds/tenants/salbaAdvocacia");
 const { seedEventos } = require("./seeds/eventos");
 const { seedJuizes } = require("./seeds/juizes");
@@ -47,6 +48,7 @@ async function main() {
 
   // Seeds de tenants
   await seedTenantSandra(prisma, Prisma);
+  await seedTenantLuana(prisma, Prisma);
   await seedSalbaAdvocacia(prisma);
 
   console.log("\n🗂️  Criando catálogo de causas...\n");
@@ -60,30 +62,30 @@ async function main() {
   // Seed de eventos
   await seedEventos();
 
-  console.log("\n🔑 Criando Super Admin do sistema...\n");
+  console.log("\n🔑 Criando Super Admins do sistema...\n");
 
   // Seed do Super Admin
-  const superAdmin = await seedSuperAdmin(prisma);
+  const { superAdminRobson, superAdminTalisia } = await seedSuperAdmin(prisma);
 
   console.log("\n👨‍⚖️ Criando base de juízes...\n");
 
-  // Seed de juízes (controlados pelo Super Admin)
-  await seedJuizes(superAdmin.id, prisma);
+  // Seed de juízes (controlados pelo Super Admin Robson)
+  await seedJuizes(superAdminRobson.id, prisma);
 
   console.log("\n⚙️ Criando configurações de preço...\n");
 
   // Seed de configurações de preço
-  await seedConfiguracoesPreco(superAdmin.id, prisma);
+  await seedConfiguracoesPreco(superAdminRobson.id, prisma);
 
   console.log("\n📦 Criando pacotes de juízes...\n");
 
   // Seed de pacotes de juízes
-  await seedPacotesJuiz(superAdmin.id, prisma);
+  await seedPacotesJuiz(superAdminRobson.id, prisma);
 
   console.log("\n🕵️  Criando registros de auditoria...\n");
 
   // Seed de logs de auditoria (super admin e tenants)
-  await seedAuditLogs(prisma, superAdmin.id);
+  await seedAuditLogs(prisma, superAdminRobson.id);
 
   console.log("\n💰 Criando dados financeiros de teste...\n");
 
