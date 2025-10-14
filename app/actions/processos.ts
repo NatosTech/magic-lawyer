@@ -19,8 +19,10 @@ import { Prisma, ProcessoStatus, ProcessoFase, ProcessoGrau, ProcessoPrazoStatus
  * - Auto-completado: IDE sugere campos disponíveis
  * - Zero duplicação: tipo deriva automaticamente da query
  * - Impossível desincronizar: erro de compilação se não corresponder
+ *
+ * NOTA: NÃO exportado porque "use server" files só podem exportar async functions
  */
-export const processoDetalhadoInclude = Prisma.validator<Prisma.ProcessoDefaultArgs>()({
+const processoDetalhadoInclude = Prisma.validator<Prisma.ProcessoDefaultArgs>()({
   include: {
     area: {
       select: {
