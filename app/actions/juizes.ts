@@ -852,7 +852,7 @@ export async function removerFavoritoJuiz(juizId: string): Promise<{
   }
 }
 
-export async function getJuizesAdmin(): Promise<{
+export async function getJuizesAdmin(filters?: { isPremium?: boolean; isPublico?: boolean }): Promise<{
   success: boolean;
   data?: JuizSerializado[];
   error?: string;
@@ -874,6 +874,8 @@ export async function getJuizesAdmin(): Promise<{
     const juizes = await prisma.juiz.findMany({
       where: {
         superAdminId: user.id,
+        ...(filters?.isPremium !== undefined && { isPremium: filters.isPremium }),
+        ...(filters?.isPublico !== undefined && { isPublico: filters.isPublico }),
       },
       include: {
         tribunal: {

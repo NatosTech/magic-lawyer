@@ -9,7 +9,7 @@ import { Chip } from "@heroui/chip";
 import { Select, SelectItem } from "@heroui/select";
 import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/modal";
 import { Skeleton } from "@heroui/react";
-import { Plus, RefreshCw, CheckCircle2, Circle, Clock, XCircle, AlertCircle, Calendar, Target, TrendingUp, AlertTriangle } from "lucide-react";
+import { Plus, RefreshCw, CheckCircle2, Circle, Clock, XCircle, AlertCircle, Calendar, Target, TrendingUp, AlertTriangle, Kanban } from "lucide-react";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
@@ -38,6 +38,8 @@ interface TarefaDto {
   dataLimite: string | null;
   lembreteEm: string | null;
   completedAt: string | null;
+  boardId?: string | null;
+  columnId?: string | null;
   categoria?: {
     id: string;
     nome: string;
@@ -148,7 +150,7 @@ export default function TarefasContent() {
 
   const { data: processosData } = useSWR("processos-para-tarefa", () => getAllProcessos());
 
-  const { data: clientesData } = useSWR("clientes-para-tarefa", () => searchClientes({ limit: 100 }));
+  const { data: clientesData } = useSWR("clientes-para-tarefa", () => searchClientes({}));
 
   const { data: boardsData } = useSWR("boards-for-select", async () => {
     const { listBoards } = await import("@/app/actions/boards");
@@ -186,7 +188,7 @@ export default function TarefasContent() {
       responsavelId: "",
       processoId: "",
       clienteId: "",
-      boardId: boards.length > 0 ? boards[0].id : "",
+      boardId: boards && boards.length > 0 ? boards[0].id : "",
       columnId: "",
     });
     onOpen();
@@ -336,20 +338,20 @@ export default function TarefasContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className={title()}>Tarefas</h1>
-          <p className="text-default-500">Gerencie suas tarefas e atividades</p>
+          <h1 className={title({ size: "lg", color: "blue" })}>Tarefas</h1>
+          <p className="mt-2 text-sm text-default-500">Gerencie suas tarefas e atividades</p>
         </div>
         <div className="flex gap-2">
-          <Button as="a" href="/tarefas/kanban" color="secondary" variant="flat">
+          <Button as="a" href="/tarefas/kanban" color="secondary" variant="flat" startContent={<Kanban className="h-4 w-4" />}>
             Ver Kanban
           </Button>
-          <Button color="primary" startContent={<Plus size={18} />} onPress={handleOpenNova}>
+          <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={handleOpenNova}>
             Nova Tarefa
           </Button>
         </div>
-      </div>
+      </header>
 
       {/* Dashboard Cards */}
       {dashboard && (
@@ -414,9 +416,7 @@ export default function TarefasContent() {
               size="sm"
             >
               {Object.entries(statusConfig).map(([key, config]) => (
-                <SelectItem key={key} value={key}>
-                  {config.label}
-                </SelectItem>
+                <SelectItem key={key}>{config.label}</SelectItem>
               ))}
             </Select>
 
@@ -429,9 +429,7 @@ export default function TarefasContent() {
               size="sm"
             >
               {Object.entries(prioridadeConfig).map(([key, config]) => (
-                <SelectItem key={key} value={key}>
-                  {config.label}
-                </SelectItem>
+                <SelectItem key={key}>{config.label}</SelectItem>
               ))}
             </Select>
 
@@ -462,15 +460,15 @@ export default function TarefasContent() {
               </CardBody>
             </Card>
           ))
-        ) : tarefas.length === 0 ? (
+        ) : !tarefas || tarefas.length === 0 ? (
           <Card>
             <CardBody className="text-center py-12">
               <p className="text-default-400">Nenhuma tarefa encontrada</p>
             </CardBody>
           </Card>
         ) : (
-          tarefas.map((tarefa: TarefaDto) => {
-            const StatusIcon = statusConfig[tarefa.status].icon;
+          tarefas.map((tarefa: any) => {
+            const StatusIcon = statusConfig[tarefa.status as keyof typeof statusConfig].icon;
             const dataInfo = getDataLimiteInfo(tarefa.dataLimite);
 
             return (
@@ -498,8 +496,8 @@ export default function TarefasContent() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <h3 className="font-semibold">{tarefa.titulo}</h3>
-                          <Chip size="sm" color={prioridadeConfig[tarefa.prioridade].color} variant="flat">
-                            {prioridadeConfig[tarefa.prioridade].label}
+                          <Chip size="sm" color={prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].color} variant="flat">
+                            {prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].label}
                           </Chip>
                           {tarefa.categoria && (
                             <Chip
@@ -534,8 +532,8 @@ export default function TarefasContent() {
                       </div>
                     </div>
 
-                    <Chip size="sm" color={statusConfig[tarefa.status].color} variant="flat">
-                      {statusConfig[tarefa.status].label}
+                    <Chip size="sm" color={statusConfig[tarefa.status as keyof typeof statusConfig].color} variant="flat">
+                      {statusConfig[tarefa.status as keyof typeof statusConfig].label}
                     </Chip>
                   </div>
                 </CardBody>
@@ -574,9 +572,7 @@ export default function TarefasContent() {
                   isRequired
                 >
                   {Object.entries(prioridadeConfig).map(([key, config]) => (
-                    <SelectItem key={key} value={key}>
-                      {config.label}
-                    </SelectItem>
+                    <SelectItem key={key}>{config.label}</SelectItem>
                   ))}
                 </Select>
 
@@ -586,10 +582,8 @@ export default function TarefasContent() {
                   selectedKeys={formData.categoriaId ? [formData.categoriaId] : []}
                   onChange={(e) => setFormData({ ...formData, categoriaId: e.target.value })}
                 >
-                  {categorias.map((cat: any) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.nome}
-                    </SelectItem>
+                  {(categorias || []).map((cat: any) => (
+                    <SelectItem key={cat.id}>{cat.nome}</SelectItem>
                   ))}
                 </Select>
               </div>
@@ -620,8 +614,8 @@ export default function TarefasContent() {
                 selectedKeys={formData.processoId ? [formData.processoId] : []}
                 onChange={(e) => setFormData({ ...formData, processoId: e.target.value })}
               >
-                {processos.map((proc: any) => (
-                  <SelectItem key={proc.id} value={proc.id}>
+                {(processos || []).map((proc: any) => (
+                  <SelectItem key={proc.id}>
                     {proc.numero} - {proc.titulo || "Sem título"}
                   </SelectItem>
                 ))}
@@ -633,10 +627,8 @@ export default function TarefasContent() {
                 selectedKeys={formData.clienteId ? [formData.clienteId] : []}
                 onChange={(e) => setFormData({ ...formData, clienteId: e.target.value })}
               >
-                {clientes.map((cli: any) => (
-                  <SelectItem key={cli.id} value={cli.id}>
-                    {cli.nome}
-                  </SelectItem>
+                {(clientes || []).map((cli: any) => (
+                  <SelectItem key={cli.id}>{cli.nome}</SelectItem>
                 ))}
               </Select>
 
@@ -649,11 +641,7 @@ export default function TarefasContent() {
                     selectedKeys={formData.boardId ? [formData.boardId] : []}
                     onChange={(e) => setFormData({ ...formData, boardId: e.target.value, columnId: "" })}
                   >
-                    {boards.map((b: any) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.nome}
-                      </SelectItem>
-                    ))}
+                    {(boards || []).length > 0 ? (boards || []).map((b: any) => <SelectItem key={b.id}>{b.nome}</SelectItem>) : null}
                   </Select>
 
                   <Select
@@ -663,11 +651,7 @@ export default function TarefasContent() {
                     onChange={(e) => setFormData({ ...formData, columnId: e.target.value })}
                     isDisabled={!formData.boardId}
                   >
-                    {colunas.map((col: any) => (
-                      <SelectItem key={col.id} value={col.id}>
-                        {col.nome}
-                      </SelectItem>
-                    ))}
+                    {(colunas || []).length > 0 ? (colunas || []).map((col: any) => <SelectItem key={col.id}>{col.nome}</SelectItem>) : null}
                   </Select>
                 </div>
                 <p className="text-xs text-default-400 mt-2">💡 Tarefas com board/coluna aparecem automaticamente no Kanban visual</p>

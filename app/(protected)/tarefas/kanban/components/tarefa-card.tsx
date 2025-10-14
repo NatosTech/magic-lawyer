@@ -63,8 +63,8 @@ export function TarefaCard({ tarefa, onClick, isDragging }: TarefaCardProps) {
             {tarefa.descricao && <p className="text-xs text-default-500 line-clamp-2 leading-relaxed">{tarefa.descricao}</p>}
           </div>
           {tarefa.prioridade !== "MEDIA" && (
-            <div className="text-lg" title={prioridadeConfig[tarefa.prioridade].label}>
-              {prioridadeConfig[tarefa.prioridade].icon}
+            <div className="text-lg" title={prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].label}>
+              {prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].icon}
             </div>
           )}
         </div>

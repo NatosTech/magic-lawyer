@@ -125,7 +125,7 @@ export default function TiposContratoPage() {
                 </CardBody>
               </Card>
             ))
-          : tipos.map((tipo: any) => (
+          : tipos && tipos.map((tipo: any) => (
               <Card key={tipo.id}>
                 <CardBody>
                   <div className="flex justify-between items-start mb-2">

@@ -125,7 +125,7 @@ export default function AreasProcessoPage() {
                 </CardBody>
               </Card>
             ))
-          : areas.map((area: any) => (
+          : areas && areas.map((area: any) => (
               <Card key={area.id}>
                 <CardBody>
                   <div className="flex justify-between items-start mb-2">

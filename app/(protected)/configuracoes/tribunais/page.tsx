@@ -140,7 +140,7 @@ export default function TribunaisPage() {
                 </CardBody>
               </Card>
             ))
-          : tribunais.map((tribunal: any) => (
+          : tribunais && tribunais.map((tribunal: any) => (
               <Card key={tribunal.id}>
                 <CardBody>
                   <div className="flex items-start gap-3 mb-3">
@@ -209,8 +209,8 @@ export default function TribunaisPage() {
 
                 <Select label="UF" placeholder="Selecione" selectedKeys={formData.uf ? [formData.uf] : []} onChange={(e) => setFormData({ ...formData, uf: e.target.value })}>
                   {estados.map((estado: any) => (
-                    <SelectItem key={estado.sigla} value={estado.sigla}>
-                      {estado.nome}
+                    <SelectItem key={estado.sigla}>
+                      {estado.sigla} - {estado.nome}
                     </SelectItem>
                   ))}
                 </Select>
@@ -218,7 +218,7 @@ export default function TribunaisPage() {
 
               <Select label="Esfera" placeholder="Selecione" selectedKeys={formData.esfera ? [formData.esfera] : []} onChange={(e) => setFormData({ ...formData, esfera: e.target.value })}>
                 {ESFERAS.map((esfera) => (
-                  <SelectItem key={esfera.key} value={esfera.key}>
+                  <SelectItem key={esfera.key}>
                     {esfera.label}
                   </SelectItem>
                 ))}

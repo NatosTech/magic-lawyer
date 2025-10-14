@@ -38,9 +38,9 @@ export function TarefaDetailModal({ tarefa, isOpen, onClose, onUpdate }: TarefaD
               <h2 className="text-xl font-bold">{tarefa.titulo}</h2>
               {tarefa.numeroSequencial && <p className="text-sm text-default-400">#{tarefa.numeroSequencial}</p>}
             </div>
-            <div className="flex gap-2">
-              <Chip color={statusConfig[tarefa.status].color}>{statusConfig[tarefa.status].label}</Chip>
-              <Chip color={prioridadeConfig[tarefa.prioridade].color}>{prioridadeConfig[tarefa.prioridade].label}</Chip>
+              <div className="flex gap-2">
+                <Chip color={statusConfig[tarefa.status as keyof typeof statusConfig].color}>{statusConfig[tarefa.status as keyof typeof statusConfig].label}</Chip>
+                <Chip color={prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].color}>{prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].label}</Chip>
             </div>
           </div>
         </ModalHeader>

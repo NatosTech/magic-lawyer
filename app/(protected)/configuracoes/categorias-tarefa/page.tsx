@@ -144,7 +144,7 @@ export default function CategoriasTarefaPage() {
                 </CardBody>
               </Card>
             ))
-          : categorias.map((categoria: any) => (
+          : categorias && categorias.map((categoria: any) => (
               <Card key={categoria.id}>
                 <CardBody>
                   <div className="flex justify-between items-start mb-2">

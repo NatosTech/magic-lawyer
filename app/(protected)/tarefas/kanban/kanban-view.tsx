@@ -5,7 +5,7 @@ import { Card } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
 import { Skeleton } from "@heroui/react";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, List, Kanban } from "lucide-react";
 import { toast } from "sonner";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 
@@ -35,7 +35,7 @@ export default function KanbanView() {
 
   // Selecionar primeiro board automaticamente
   useEffect(() => {
-    if (boards.length > 0 && !boardSelecionadoId) {
+    if (boards && boards.length > 0 && !boardSelecionadoId) {
       setBoardSelecionadoId(boards[0].id);
     }
   }, [boards, boardSelecionadoId]);
@@ -48,7 +48,7 @@ export default function KanbanView() {
       map.set(col.id, []);
     });
 
-    tarefas.forEach((tarefa: any) => {
+    tarefas?.forEach((tarefa: any) => {
       if (tarefa.columnId && map.has(tarefa.columnId)) {
         map.get(tarefa.columnId)!.push(tarefa);
       }
@@ -89,7 +89,7 @@ export default function KanbanView() {
   };
 
   const tarefaAtiva = useMemo(() => {
-    return tarefas.find((t: any) => t.id === activeId);
+    return tarefas?.find((t: any) => t.id === activeId);
   }, [activeId, tarefas]);
 
   const handleCriarBoardPadrao = async () => {
@@ -108,7 +108,7 @@ export default function KanbanView() {
     setCriandoBoard(false);
   };
 
-  if (boards.length === 0 && !isLoading) {
+  if (!boards || (boards.length === 0 && !isLoading)) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col items-center justify-center h-96 gap-4">
@@ -125,68 +125,71 @@ export default function KanbanView() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className={title()}>Kanban</h1>
-            <p className="text-default-500 text-lg">{board?.nome || "Carregando..."}</p>
-          </div>
-          <div className="flex gap-3">
-            <Button as="a" href="/tarefas" color="default" variant="flat" size="lg">
-              Ver Lista
-            </Button>
-            <Button color="primary" startContent={<Plus size={20} />} as="a" href="/tarefas" size="lg">
-              Nova Tarefa
-            </Button>
-          </div>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className={title({ size: "lg", color: "blue" })}>Kanban</h1>
+          <p className="mt-2 text-sm text-default-500">Visualização em quadros - {board?.nome || "Carregando..."}</p>
         </div>
+        <div className="flex gap-2">
+          <Button as="a" href="/tarefas" color="secondary" variant="flat" startContent={<List className="h-4 w-4" />}>
+            Ver Lista
+          </Button>
+          <Button color="primary" startContent={<Plus className="h-4 w-4" />} as="a" href="/tarefas">
+            Nova Tarefa
+          </Button>
+        </div>
+      </header>
 
-        {/* Seletor de Board */}
-        {boards.length > 1 && (
-          <div className="flex items-center gap-3">
-            <p className="text-sm font-medium text-default-600">Quadro:</p>
-            <Select className="max-w-sm" selectedKeys={boardSelecionadoId ? [boardSelecionadoId] : []} onChange={(e) => setBoardSelecionadoId(e.target.value)} size="md" variant="bordered">
-              {boards.map((b: any) => (
-                <SelectItem key={b.id} value={b.id}>
-                  {b.favorito ? "⭐ " : ""}
-                  {b.nome}
-                </SelectItem>
-              ))}
-            </Select>
-          </div>
-        )}
-      </div>
+      {/* Seletor de Board */}
+      {boards && boards.length > 1 && (
+        <div className="flex items-center gap-2">
+          <Kanban size={16} className="text-default-400" />
+          <Select
+            label="Quadro"
+            className="max-w-xs"
+            selectedKeys={boardSelecionadoId ? [boardSelecionadoId] : []}
+            onChange={(e) => setBoardSelecionadoId(e.target.value)}
+            size="sm"
+            variant="bordered"
+          >
+            {boards.map((b: any) => (
+              <SelectItem key={b.id}>
+                {b.favorito ? "⭐ " : ""}
+                {b.nome}
+              </SelectItem>
+            ))}
+          </Select>
+        </div>
+      )}
 
       {/* Kanban Board */}
-      <div className="bg-default-50/50 rounded-2xl p-6 border-2 border-default-100">
-        {isLoading ? (
-          <div className="flex gap-4 overflow-x-auto pb-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex-shrink-0 w-80">
-                <Skeleton className="h-[600px] rounded-xl" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="flex gap-4 overflow-x-auto pb-4 min-h-[600px]">
-              {board?.colunas?.map((coluna: any) => {
-                const tarefasDaColuna = tarefasPorColuna.get(coluna.id) || [];
-
-                return <KanbanColumn key={coluna.id} column={coluna} tarefas={tarefasDaColuna} onTarefaClick={(tarefa) => setTarefaSelecionada(tarefa)} />;
-              })}
+      {isLoading ? (
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex-shrink-0 w-80">
+              <Skeleton className="h-[600px] rounded-xl" />
             </div>
+          ))}
+        </div>
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <div className="flex gap-4 overflow-x-auto pb-4 min-h-[600px]">
+            {board?.colunas?.map((coluna: any) => {
+              const tarefasDaColuna = tarefasPorColuna.get(coluna.id) || [];
 
-            <DragOverlay>
-              {activeId && tarefaAtiva ? (
-                <div className="rotate-3 scale-105 opacity-90">
-                  <TarefaCard tarefa={tarefaAtiva} isDragging />
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        )}
-      </div>
+              return <KanbanColumn key={coluna.id} column={coluna} tarefas={tarefasDaColuna} onTarefaClick={(tarefa) => setTarefaSelecionada(tarefa)} />;
+            })}
+          </div>
+
+          <DragOverlay>
+            {activeId && tarefaAtiva ? (
+              <div className="rotate-3 scale-105 opacity-90">
+                <TarefaCard tarefa={tarefaAtiva} isDragging />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
 
       {/* Modal de Detalhes */}
       {tarefaSelecionada && <TarefaDetailModal tarefa={tarefaSelecionada} isOpen={!!tarefaSelecionada} onClose={() => setTarefaSelecionada(null)} onUpdate={refreshAll} />}
