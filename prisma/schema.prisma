@@ -141,6 +141,15 @@ model Tenant {
   contratoParcelas      ContratoParcela[]
   tickets               Ticket[]               @relation("TenantTickets")
   ProcessoCausa         ProcessoCausa[]
+  boards                Board[]
+  boardColumns          BoardColumn[]
+  tarefaChecklists      TarefaChecklist[]
+  tarefaComentarios     TarefaComentario[]
+  tarefaAnexos          TarefaAnexo[]
+  tarefaTags            TarefaTag[]
+  tarefaAtividades      TarefaAtividade[]
+  tarefaTagRelacoes     TarefaTagRelacao[]
+  TarefaWatcher         TarefaWatcher[]
 
   @@index([status])
   @@index([superAdminId])
@@ -283,6 +292,9 @@ model Usuario {
   tickets                      Ticket[]               @relation("UserTickets")
   contratoParcelasResponsavel  ContratoParcela[]
   documentosProcuracaoUploaded DocumentoProcuracao[]  @relation("DocumentoProcuracaoUploader")
+  tarefaComentarios            TarefaComentario[]
+  tarefaAtividades             TarefaAtividade[]
+  tarefasObservadas            TarefaWatcher[]
 
   @@unique([email, tenantId])
   @@index([role])
@@ -1187,34 +1199,223 @@ model ModeloContrato {
 }
 
 model Tarefa {
-  id            String           @id @default(cuid())
-  tenantId      String
-  titulo        String
-  descricao     String?
-  status        TarefaStatus     @default(PENDENTE)
-  prioridade    TarefaPrioridade @default(MEDIA)
-  processoId    String?
-  clienteId     String?
-  categoriaId   String?
-  responsavelId String?
-  criadoPorId   String?
-  dataLimite    DateTime?
-  completedAt   DateTime?
-  lembreteEm    DateTime?
-  deletedAt     DateTime?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  categoria     CategoriaTarefa? @relation(fields: [categoriaId], references: [id])
-  cliente       Cliente?         @relation("TarefaCliente", fields: [clienteId], references: [id])
-  criadoPor     Usuario?         @relation("TarefasCriadas", fields: [criadoPorId], references: [id])
-  processo      Processo?        @relation(fields: [processoId], references: [id])
-  responsavel   Usuario?         @relation("TarefasResponsaveis", fields: [responsavelId], references: [id])
-  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id               String             @id @default(cuid())
+  tenantId         String
+  boardId          String?
+  columnId         String?
+  titulo           String
+  descricao        String?
+  numeroSequencial Int?
+  status           TarefaStatus       @default(PENDENTE)
+  prioridade       TarefaPrioridade   @default(MEDIA)
+  processoId       String?
+  clienteId        String?
+  categoriaId      String?
+  responsavelId    String?
+  criadoPorId      String?
+  dataLimite       DateTime?
+  dataInicio       DateTime?
+  completedAt      DateTime?
+  lembreteEm       DateTime?
+  estimativaHoras  Decimal?           @db.Decimal(8, 2)
+  horasGastas      Decimal?           @db.Decimal(8, 2)
+  ordem            Int                @default(0)
+  cor              String?
+  arquivada        Boolean            @default(false)
+  tarefaPaiId      String?
+  deletedAt        DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  categoria        CategoriaTarefa?   @relation(fields: [categoriaId], references: [id])
+  cliente          Cliente?           @relation("TarefaCliente", fields: [clienteId], references: [id])
+  criadoPor        Usuario?           @relation("TarefasCriadas", fields: [criadoPorId], references: [id])
+  processo         Processo?          @relation(fields: [processoId], references: [id])
+  responsavel      Usuario?           @relation("TarefasResponsaveis", fields: [responsavelId], references: [id])
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  board            Board?             @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  column           BoardColumn?       @relation(fields: [columnId], references: [id], onDelete: SetNull)
+  tarefaPai        Tarefa?            @relation("TarefaSubtarefas", fields: [tarefaPaiId], references: [id], onDelete: SetNull)
+  subtarefas       Tarefa[]           @relation("TarefaSubtarefas")
+  checklists       TarefaChecklist[]
+  comentarios      TarefaComentario[]
+  anexos           TarefaAnexo[]
+  atividades       TarefaAtividade[]
+  tags             TarefaTagRelacao[]
+  observadores     TarefaWatcher[]
 
   @@index([tenantId, status])
   @@index([tenantId, responsavelId])
   @@index([tenantId, dataLimite])
   @@index([tenantId, deletedAt])
+  @@index([tenantId, boardId, columnId, ordem])
+  @@index([boardId, columnId])
+  @@index([tarefaPaiId])
+  @@schema("magiclawyer")
+}
+
+// ============================================
+// SISTEMA KANBAN COMPLETO
+// ============================================
+
+model Board {
+  id           String            @id @default(cuid())
+  tenantId     String
+  nome         String
+  descricao    String?
+  tipo         BoardTipo         @default(PESSOAL)
+  icone        String?
+  cor          String?
+  favorito     Boolean           @default(false)
+  visibilidade BoardVisibilidade @default(EQUIPE)
+  ordem        Int               @default(0)
+  ativo        Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  colunas      BoardColumn[]
+  tarefas      Tarefa[]
+
+  @@index([tenantId, ativo])
+  @@index([tenantId, tipo])
+  @@schema("magiclawyer")
+}
+
+model BoardColumn {
+  id        String   @id @default(cuid())
+  tenantId  String
+  boardId   String
+  nome      String
+  cor       String?
+  ordem     Int      @default(0)
+  limite    Int? // Limite WIP (Work In Progress)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tarefas   Tarefa[]
+
+  @@unique([boardId, ordem])
+  @@index([tenantId, boardId])
+  @@schema("magiclawyer")
+}
+
+model TarefaChecklist {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tarefaId    String
+  titulo      String
+  concluida   Boolean   @default(false)
+  concluidaEm DateTime?
+  ordem       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tarefa      Tarefa    @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, tarefaId])
+  @@index([tarefaId, ordem])
+  @@schema("magiclawyer")
+}
+
+model TarefaComentario {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tarefaId  String
+  usuarioId String
+  conteudo  String
+  editado   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tarefa    Tarefa   @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, tarefaId])
+  @@index([tarefaId, createdAt])
+  @@schema("magiclawyer")
+}
+
+model TarefaAnexo {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tarefaId    String
+  nome        String
+  url         String
+  tamanho     Int? // bytes
+  contentType String?
+  publicId    String? // Cloudinary
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tarefa      Tarefa   @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, tarefaId])
+  @@schema("magiclawyer")
+}
+
+model TarefaTag {
+  id        String             @id @default(cuid())
+  tenantId  String
+  nome      String
+  cor       String             @default("#3B82F6")
+  ativo     Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tarefas   TarefaTagRelacao[]
+
+  @@unique([tenantId, nome])
+  @@index([tenantId, ativo])
+  @@schema("magiclawyer")
+}
+
+model TarefaTagRelacao {
+  id        String    @id @default(cuid())
+  tenantId  String
+  tarefaId  String
+  tagId     String
+  createdAt DateTime  @default(now())
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tarefa    Tarefa    @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+  tag       TarefaTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([tarefaId, tagId])
+  @@index([tenantId, tarefaId])
+  @@index([tenantId, tagId])
+  @@schema("magiclawyer")
+}
+
+model TarefaAtividade {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tarefaId     String
+  usuarioId    String
+  tipo         String // CRIOU, EDITOU, COMENTOU, MOVEU, ANEXOU, etc
+  descricao    String
+  dadosAntigos Json?
+  dadosNovos   Json?
+  createdAt    DateTime @default(now())
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tarefa       Tarefa   @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, tarefaId, createdAt])
+  @@schema("magiclawyer")
+}
+
+model TarefaWatcher {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tarefaId  String
+  usuarioId String
+  createdAt DateTime @default(now())
+  tarefa    Tarefa   @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tarefaId, usuarioId])
+  @@index([tenantId, usuarioId])
   @@schema("magiclawyer")
 }
 
@@ -2109,6 +2310,24 @@ enum StatusPacoteJuiz {
   ATIVO
   INATIVO
   PROMOCIONAL
+
+  @@schema("magiclawyer")
+}
+
+enum BoardTipo {
+  PESSOAL
+  EQUIPE
+  PROJETO
+  PROCESSO
+  CLIENTE
+
+  @@schema("magiclawyer")
+}
+
+enum BoardVisibilidade {
+  PRIVADO
+  EQUIPE
+  PUBLICO
 
   @@schema("magiclawyer")
 }

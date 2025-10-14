@@ -16,15 +16,7 @@ export interface NavigationItem {
 
 export function useProfileNavigation() {
   const { data: session } = useSession();
-  const {
-    userRole,
-    permissions,
-    isAdmin,
-    isAdvogado,
-    isSecretaria,
-    isFinanceiro,
-    isCliente,
-  } = useUserPermissions();
+  const { userRole, permissions, isAdmin, isAdvogado, isSecretaria, isFinanceiro, isCliente } = useUserPermissions();
 
   const navigationItems = useMemo<NavigationItem[]>(() => {
     const items: NavigationItem[] = [];
@@ -170,10 +162,7 @@ export function useProfileNavigation() {
       });
     }
 
-    if (
-      !isCliente &&
-      (permissions.canViewAllProcesses || permissions.canManageOfficeSettings)
-    ) {
+    if (!isCliente && (permissions.canViewAllProcesses || permissions.canManageOfficeSettings)) {
       items.push({
         label: "Causas",
         href: "/causas",
@@ -189,20 +178,14 @@ export function useProfileNavigation() {
         label: "Juízes",
         href: "/juizes",
         icon: "Scale",
-        description: isCliente
-          ? "Informações sobre juízes"
-          : "Base de dados de juízes",
+        description: isCliente ? "Informações sobre juízes" : "Base de dados de juízes",
         section: "Atividades Jurídicas",
       });
     }
 
     // ===== SEÇÃO: OPERACIONAL =====
     // Agenda - Baseado em permissões
-    if (
-      permissions.canViewAllEvents ||
-      permissions.canCreateEvents ||
-      permissions.canViewClientEvents
-    ) {
+    if (permissions.canViewAllEvents || permissions.canCreateEvents || permissions.canViewClientEvents) {
       items.push({
         label: "Agenda",
         href: "/agenda",
@@ -212,10 +195,33 @@ export function useProfileNavigation() {
       });
     }
 
-    if (
-      !isCliente &&
-      (permissions.canViewAllProcesses || isSecretaria || isAdvogado)
-    ) {
+    // Tarefas - Não cliente (com accordion para views)
+    if (!isCliente) {
+      items.push({
+        label: "Tarefas",
+        href: "/tarefas",
+        icon: "CheckSquare",
+        description: "Gestão de tarefas e atividades",
+        section: "Operacional",
+        isAccordion: true,
+        children: [
+          {
+            label: "Kanban",
+            href: "/tarefas/kanban",
+            icon: "LayoutBoard",
+            description: "Visualização em quadros",
+          },
+          {
+            label: "Lista",
+            href: "/tarefas",
+            icon: "List",
+            description: "Visualização em lista",
+          },
+        ],
+      });
+    }
+
+    if (!isCliente && (permissions.canViewAllProcesses || isSecretaria || isAdvogado)) {
       items.push({
         label: "Diligências",
         href: "/diligencias",
@@ -225,10 +231,7 @@ export function useProfileNavigation() {
       });
     }
 
-    if (
-      !isCliente &&
-      (permissions.canManageOfficeSettings || isSecretaria || isAdvogado)
-    ) {
+    if (!isCliente && (permissions.canManageOfficeSettings || isSecretaria || isAdvogado)) {
       items.push({
         label: "Regimes de prazo",
         href: "/regimes-prazo",
@@ -244,11 +247,7 @@ export function useProfileNavigation() {
         label: "Financeiro",
         href: "/financeiro",
         icon: "DollarSign",
-        description: isCliente
-          ? "Minhas faturas"
-          : isAdvogado
-            ? "Minhas comissões"
-            : "Gestão financeira",
+        description: isCliente ? "Minhas faturas" : isAdvogado ? "Minhas comissões" : "Gestão financeira",
         section: "Operacional",
       });
     }
@@ -266,15 +265,7 @@ export function useProfileNavigation() {
     // }
 
     return items;
-  }, [
-    permissions,
-    userRole,
-    isAdmin,
-    isAdvogado,
-    isSecretaria,
-    isFinanceiro,
-    isCliente,
-  ]);
+  }, [permissions, userRole, isAdmin, isAdvogado, isSecretaria, isFinanceiro, isCliente]);
 
   const secondaryNavigationItems = useMemo<NavigationItem[]>(() => {
     const items: NavigationItem[] = [];
@@ -297,14 +288,47 @@ export function useProfileNavigation() {
       });
     }
 
-    // Configurações do Escritório - Apenas ADMIN
+    // Configurações do Escritório - Apenas ADMIN (com accordion)
     if (permissions.canManageOfficeSettings) {
       items.push({
-        label: "Configurações do Escritório",
+        label: "Configurações",
         href: "/configuracoes",
         icon: "Settings",
         description: "Configurações gerais do escritório",
         section: "Administração",
+        isAccordion: true,
+        children: [
+          {
+            label: "Configurações do escritório",
+            href: "/configuracoes",
+            icon: "Settings",
+            description: "Configurações gerais",
+          },
+          {
+            label: "Categorias de Tarefa",
+            href: "/configuracoes/categorias-tarefa",
+            icon: "Tag",
+            description: "Categorias para organizar tarefas",
+          },
+          {
+            label: "Áreas de Processo",
+            href: "/configuracoes/areas-processo",
+            icon: "Scale",
+            description: "Áreas de atuação processual",
+          },
+          {
+            label: "Tipos de Contrato",
+            href: "/configuracoes/tipos-contrato",
+            icon: "FileSignature",
+            description: "Tipos de contrato do escritório",
+          },
+          {
+            label: "Tribunais",
+            href: "/configuracoes/tribunais",
+            icon: "Building",
+            description: "Cadastro de tribunais e órgãos",
+          },
+        ],
       });
     }
 

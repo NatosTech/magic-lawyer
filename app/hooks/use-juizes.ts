@@ -1,59 +1,195 @@
-import type { JuizFilters } from "@/app/actions/juizes";
+import type { JuizDetalhado, ProcessoJuiz, JulgamentoJuiz, JuizSerializado, JuizFormOptions, JuizFilters } from "@/app/actions/juizes";
 
 import useSWR from "swr";
 
-import { getJuizes, getJuizById, getJuizFormData } from "@/app/actions/juizes";
+import { getJuizDetalhado, getProcessosDoJuiz, getJulgamentosDoJuiz, getJuizFormData, getJuizes, verificarFavoritoJuiz } from "@/app/actions/juizes";
 
-// Hook para buscar juízes
-export function useJuizes(filters?: JuizFilters) {
-  const { data, error, isLoading, mutate } = useSWR(
-    ["juizes", filters],
-    () => getJuizes(filters),
+/**
+ * Hook para buscar detalhes completos de um juiz
+ */
+export function useJuizDetalhado(juizId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR<JuizDetalhado | null>(
+    juizId ? `juiz-${juizId}` : null,
+    async () => {
+      if (!juizId) return null;
+      const result = await getJuizDetalhado(juizId);
+
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar juiz");
+      }
+
+      return result.juiz || null;
+    },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 60000, // Revalidar a cada 60 segundos (juízes mudam menos frequentemente)
-    },
+    }
   );
 
   return {
-    juizes: data?.success ? data.data : [],
+    juiz: data ?? null,
     isLoading,
-    error: error || (data?.success === false ? data.error : null),
+    isError: !!error,
+    error,
     mutate,
+    refresh: mutate,
   };
 }
 
-// Hook para buscar juiz específico
-export function useJuiz(id: string) {
-  const { data, error, isLoading, mutate } = useSWR(
-    id ? ["juiz", id] : null,
-    () => getJuizById(id),
+/**
+ * Hook para buscar processos de um juiz
+ */
+export function useProcessosDoJuiz(juizId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR<ProcessoJuiz[] | null>(
+    juizId ? `processos-juiz-${juizId}` : null,
+    async () => {
+      if (!juizId) return null;
+      const result = await getProcessosDoJuiz(juizId);
+
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar processos do juiz");
+      }
+
+      return result.processos || [];
+    },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    },
+    }
   );
 
   return {
-    juiz: data?.success ? data.data : null,
+    processos: data ?? [],
     isLoading,
-    error: error || (data?.success === false ? data.error : null),
+    isError: !!error,
+    error,
     mutate,
+    refresh: mutate,
   };
 }
 
-// Hook para dados do formulário
+/**
+ * Hook para buscar julgamentos de um juiz
+ */
+export function useJulgamentosDoJuiz(juizId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR<JulgamentoJuiz[] | null>(
+    juizId ? `julgamentos-juiz-${juizId}` : null,
+    async () => {
+      if (!juizId) return null;
+      const result = await getJulgamentosDoJuiz(juizId);
+
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar julgamentos do juiz");
+      }
+
+      return result.julgamentos || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    julgamentos: data ?? [],
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar opções do formulário de juízes
+ */
 export function useJuizFormData() {
-  const { data, error, isLoading } = useSWR("juiz-form-data", getJuizFormData, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    refreshInterval: 300000, // 5 minutos - dados estáticos
-  });
+  const { data, error, isLoading, mutate } = useSWR<JuizFormOptions | null>(
+    "juiz-form-data",
+    async () => {
+      const result = await getJuizFormData();
+
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar dados do formulário");
+      }
+
+      return result.data || null;
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
 
   return {
-    formData: data?.success ? data.data : null,
+    formData: data,
     isLoading,
-    error: error || (data?.success === false ? data.error : null),
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar lista de juízes com filtros
+ */
+export function useJuizes(filters: JuizFilters = {}) {
+  const { data, error, isLoading, mutate } = useSWR<JuizSerializado[] | null>(
+    `juizes-${JSON.stringify(filters)}`,
+    async () => {
+      const result = await getJuizes(filters);
+
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar juízes");
+      }
+
+      return result.data || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    juizes: data ?? [],
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para verificar se um juiz é favorito
+ */
+export function useFavoritoJuiz(juizId: string | null) {
+  const { data, error, isLoading, mutate } = useSWR<boolean>(
+    juizId ? `favorito-juiz-${juizId}` : null,
+    async () => {
+      if (!juizId) return false;
+      const result = await verificarFavoritoJuiz(juizId);
+
+      if (!result.success) {
+        return false;
+      }
+
+      return result.isFavorito || false;
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    isFavorito: data ?? false,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
   };
 }
