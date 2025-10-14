@@ -87,6 +87,28 @@ export function useProfileNavigation() {
       });
     }
 
+    // Petições - Não disponível para clientes
+    if (!isCliente && (permissions.canViewAllProcesses || isAdvogado || isSecretaria)) {
+      items.push({
+        label: "Petições",
+        href: "/peticoes",
+        icon: "FileText",
+        description: "Gestão de petições processuais",
+        section: "Atividades Jurídicas",
+      });
+    }
+
+    // Andamentos - Não disponível para clientes
+    if (!isCliente && (permissions.canViewAllProcesses || isAdvogado || isSecretaria)) {
+      items.push({
+        label: "Andamentos",
+        href: "/andamentos",
+        icon: "Activity",
+        description: "Timeline de movimentações processuais",
+        section: "Atividades Jurídicas",
+      });
+    }
+
     // Procurações - Baseado em permissões
     if (permissions.canViewAllClients || isAdvogado) {
       items.push({
@@ -327,6 +349,12 @@ export function useProfileNavigation() {
             href: "/configuracoes/tribunais",
             icon: "Building",
             description: "Cadastro de tribunais e órgãos",
+          },
+          {
+            label: "Feriados",
+            href: "/configuracoes/feriados",
+            icon: "Calendar",
+            description: "Gestão de feriados e dias não úteis",
           },
         ],
       });

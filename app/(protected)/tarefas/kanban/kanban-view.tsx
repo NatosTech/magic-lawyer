@@ -68,6 +68,19 @@ export default function KanbanView() {
   const clientes = useMemo(() => (clientesData?.success ? clientesData.clientes : []), [clientesData]);
   const colunas = useMemo(() => (colunasData?.success ? colunasData.columns : []), [colunasData]);
 
+  // Garantir que selectedKeys sempre exista na coleção
+  const processoKeySet = useMemo(() => new Set((processos || []).map((p: any) => p.id)), [processos]);
+  const clienteKeySet = useMemo(() => new Set((clientes || []).map((c: any) => c.id)), [clientes]);
+  const categoriaKeySet = useMemo(() => new Set((categorias || []).map((c: any) => c.id)), [categorias]);
+  const boardKeySet = useMemo(() => new Set((boards || []).map((b: any) => b.id)), [boards]);
+  const colunaKeySet = useMemo(() => new Set((colunas || []).map((c: any) => c.id)), [colunas]);
+
+  const selectedProcessKeys = useMemo(() => (formData.processoId && processoKeySet.has(formData.processoId) ? [formData.processoId] : []), [formData.processoId, processoKeySet]);
+  const selectedClienteKeys = useMemo(() => (formData.clienteId && clienteKeySet.has(formData.clienteId) ? [formData.clienteId] : []), [formData.clienteId, clienteKeySet]);
+  const selectedCategoriaKeys = useMemo(() => (formData.categoriaId && categoriaKeySet.has(formData.categoriaId) ? [formData.categoriaId] : []), [formData.categoriaId, categoriaKeySet]);
+  const selectedBoardKeys = useMemo(() => (formData.boardId && boardKeySet.has(formData.boardId) ? [formData.boardId] : []), [formData.boardId, boardKeySet]);
+  const selectedColunaKeys = useMemo(() => (formData.columnId && colunaKeySet.has(formData.columnId) ? [formData.columnId] : []), [formData.columnId, colunaKeySet]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -246,13 +259,16 @@ export default function KanbanView() {
           <Select
             label="Quadro"
             className="max-w-xs"
-            selectedKeys={boardSelecionadoId ? [boardSelecionadoId] : []}
-            onChange={(e) => setBoardSelecionadoId(e.target.value)}
+            selectedKeys={boardSelecionadoId && boardKeySet.has(boardSelecionadoId) ? [boardSelecionadoId] : []}
+            onSelectionChange={(keys) => {
+              const value = Array.from(keys)[0];
+              setBoardSelecionadoId(value as string);
+            }}
             size="sm"
             variant="bordered"
           >
             {boards.map((b: any) => (
-              <SelectItem key={b.id}>
+              <SelectItem key={b.id} textValue={b.nome}>
                 {b.favorito ? "⭐ " : ""}
                 {b.nome}
               </SelectItem>
@@ -313,27 +329,35 @@ export default function KanbanView() {
                 <Select
                   label="Prioridade"
                   selectedKeys={[formData.prioridade]}
-                  onChange={(e) =>
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0];
                     setFormData({
                       ...formData,
-                      prioridade: e.target.value as any,
-                    })
-                  }
+                      prioridade: value as "BAIXA" | "MEDIA" | "ALTA" | "CRITICA",
+                    });
+                  }}
                   isRequired
                 >
                   {Object.entries(prioridadeConfig).map(([key, config]) => (
-                    <SelectItem key={key}>{config.label}</SelectItem>
+                    <SelectItem key={key} textValue={config.label}>
+                      {config.label}
+                    </SelectItem>
                   ))}
                 </Select>
 
                 <Select
                   label="Categoria"
                   placeholder="Selecione uma categoria"
-                  selectedKeys={formData.categoriaId ? [formData.categoriaId] : []}
-                  onChange={(e) => setFormData({ ...formData, categoriaId: e.target.value })}
+                  selectedKeys={selectedCategoriaKeys}
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0];
+                    setFormData({ ...formData, categoriaId: value as string });
+                  }}
                 >
                   {(categorias || []).map((cat: any) => (
-                    <SelectItem key={cat.id}>{cat.nome}</SelectItem>
+                    <SelectItem key={cat.id} textValue={cat.nome}>
+                      {cat.nome}
+                    </SelectItem>
                   ))}
                 </Select>
               </div>
@@ -361,11 +385,21 @@ export default function KanbanView() {
               <Select
                 label="Processo"
                 placeholder="Vincular a um processo (opcional)"
-                selectedKeys={formData.processoId ? [formData.processoId] : []}
-                onChange={(e) => setFormData({ ...formData, processoId: e.target.value })}
+                selectedKeys={selectedProcessKeys}
+                onSelectionChange={(keys) => {
+                  const value = Array.from(keys)[0];
+                  console.log("🔍 Kanban Processo - Keys:", keys);
+                  console.log("🔍 Kanban Processo - Valor:", value);
+                  console.log("🔍 Kanban Processo - formData.processoId:", formData.processoId);
+                  console.log(
+                    "🔍 Kanban Processo - Processos:",
+                    (processos || []).map((p: any) => ({ id: p.id, numero: p.numero }))
+                  );
+                  setFormData({ ...formData, processoId: value as string });
+                }}
               >
                 {(processos || []).map((proc: any) => (
-                  <SelectItem key={proc.id}>
+                  <SelectItem key={proc.id} textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}>
                     {proc.numero} - {proc.titulo || "Sem título"}
                   </SelectItem>
                 ))}
@@ -374,11 +408,16 @@ export default function KanbanView() {
               <Select
                 label="Cliente"
                 placeholder="Vincular a um cliente (opcional)"
-                selectedKeys={formData.clienteId ? [formData.clienteId] : []}
-                onChange={(e) => setFormData({ ...formData, clienteId: e.target.value })}
+                selectedKeys={selectedClienteKeys}
+                onSelectionChange={(keys) => {
+                  const value = Array.from(keys)[0];
+                  setFormData({ ...formData, clienteId: value as string });
+                }}
               >
                 {(clientes || []).map((cli: any) => (
-                  <SelectItem key={cli.id}>{cli.nome}</SelectItem>
+                  <SelectItem key={cli.id} textValue={cli.nome}>
+                    {cli.nome}
+                  </SelectItem>
                 ))}
               </Select>
 
@@ -388,20 +427,38 @@ export default function KanbanView() {
                   <Select
                     label="Board"
                     placeholder="Selecionar quadro"
-                    selectedKeys={formData.boardId ? [formData.boardId] : []}
-                    onChange={(e) => setFormData({ ...formData, boardId: e.target.value, columnId: "" })}
+                    selectedKeys={selectedBoardKeys}
+                    onSelectionChange={(keys) => {
+                      const value = Array.from(keys)[0];
+                      setFormData({ ...formData, boardId: value as string, columnId: "" });
+                    }}
                   >
-                    {(boards || []).length > 0 ? (boards || []).map((b: any) => <SelectItem key={b.id}>{b.nome}</SelectItem>) : null}
+                    {(boards || []).length > 0
+                      ? (boards || []).map((b: any) => (
+                          <SelectItem key={b.id} textValue={b.nome}>
+                            {b.nome}
+                          </SelectItem>
+                        ))
+                      : null}
                   </Select>
 
                   <Select
                     label="Coluna"
                     placeholder="Selecionar coluna"
-                    selectedKeys={formData.columnId ? [formData.columnId] : []}
-                    onChange={(e) => setFormData({ ...formData, columnId: e.target.value })}
+                    selectedKeys={selectedColunaKeys}
+                    onSelectionChange={(keys) => {
+                      const value = Array.from(keys)[0];
+                      setFormData({ ...formData, columnId: value as string });
+                    }}
                     isDisabled={!formData.boardId}
                   >
-                    {(colunas || []).length > 0 ? (colunas || []).map((col: any) => <SelectItem key={col.id}>{col.nome}</SelectItem>) : null}
+                    {(colunas || []).length > 0
+                      ? (colunas || []).map((col: any) => (
+                          <SelectItem key={col.id} textValue={col.nome}>
+                            {col.nome}
+                          </SelectItem>
+                        ))
+                      : null}
                   </Select>
                 </div>
                 <p className="text-xs text-default-400 mt-2">💡 A tarefa será criada na coluna selecionada</p>

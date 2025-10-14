@@ -214,16 +214,24 @@ const ListIcon = ({ size = 18 }: IconProps) => (
   </svg>
 );
 
+const ActivityIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
+);
+
 const navIconMap: Record<string, JSX.Element> = {
   Painel: <DashboardIcon />,
   Dashboard: <DashboardIcon />,
   Clientes: <PeopleIcon />,
   Processos: <FolderIcon />,
+  Petições: <FileIcon />,
   Procurações: <ShieldIcon />,
   Contratos: <FileSignatureIcon />,
   Modelos: <FileTemplateIcon />,
   Documentos: <FileIcon />,
   Agenda: <CalendarIcon />,
+  Feriados: <CalendarIcon />,
   Tarefas: <CheckSquareIcon />,
   Financeiro: <WalletIcon />,
   Juízes: <ScaleIcon />,
@@ -242,6 +250,7 @@ const navIconMap: Record<string, JSX.Element> = {
   "Áreas de Processo": <ScaleIcon />,
   "Tipos de Contrato": <FileSignatureIcon />,
   Tribunais: <BuildingIcon />,
+  Andamentos: <ActivityIcon />,
   Kanban: <LayoutBoardIcon />,
   Lista: <ListIcon />,
   Suporte: <HelpIcon />,

@@ -150,6 +150,7 @@ model Tenant {
   tarefaAtividades      TarefaAtividade[]
   tarefaTagRelacoes     TarefaTagRelacao[]
   TarefaWatcher         TarefaWatcher[]
+  feriados              Feriado[]
 
   @@index([status])
   @@index([superAdminId])
@@ -496,6 +497,7 @@ model Tribunal {
   updatedAt DateTime   @updatedAt
   juizes    Juiz[]
   processos Processo[]
+  feriados  Feriado[]
   tenant    Tenant?    @relation(fields: [tenantId], references: [id])
 
   @@unique([nome, uf])
@@ -907,6 +909,28 @@ model RegimePrazo {
   diligencias     Diligencia[]
 
   @@unique([tenantId, nome])
+  @@schema("magiclawyer")
+}
+
+model Feriado {
+  id          String        @id @default(cuid())
+  tenantId    String?
+  nome        String
+  data        DateTime      @db.Date
+  tipo        TipoFeriado   @default(NACIONAL)
+  tribunalId  String?
+  uf          String?
+  municipio   String?
+  descricao   String?
+  recorrente  Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  tenant      Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tribunal    Tribunal?     @relation(fields: [tribunalId], references: [id])
+
+  @@index([tenantId, data])
+  @@index([tipo])
+  @@index([uf])
   @@schema("magiclawyer")
 }
 
@@ -1991,6 +2015,15 @@ enum RegimePrazoTipo {
   TRABALHISTA
   FEDERAL
   OUTRO
+
+  @@schema("magiclawyer")
+}
+
+enum TipoFeriado {
+  NACIONAL
+  ESTADUAL
+  MUNICIPAL
+  JUDICIARIO
 
   @@schema("magiclawyer")
 }
