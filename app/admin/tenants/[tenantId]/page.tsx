@@ -1,10 +1,13 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { getTenantManagementData, type TenantManagementData } from "@/app/actions/admin";
-import { ProfileDashboard } from "@/components/profile-dashboard";
-
 import { TenantManagementContent } from "./tenant-management-content";
+
+import {
+  getTenantManagementData,
+  type TenantManagementData,
+} from "@/app/actions/admin";
+import { ProfileDashboard } from "@/components/profile-dashboard";
 
 export const metadata: Metadata = {
   title: "Detalhes do Tenant",
@@ -27,10 +30,7 @@ export default async function TenantManagementPage({
 
   return (
     <ProfileDashboard>
-      <TenantManagementContent
-        tenantId={tenantId}
-        initialData={initialData}
-      />
+      <TenantManagementContent initialData={initialData} tenantId={tenantId} />
     </ProfileDashboard>
   );
 }

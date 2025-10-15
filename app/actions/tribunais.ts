@@ -66,6 +66,7 @@ export async function listTribunais(params?: { uf?: string; esfera?: string }) {
     return { success: true, tribunais };
   } catch (error) {
     logger.error("Erro ao listar tribunais:", error);
+
     return { success: false, error: "Erro ao listar tribunais" };
   }
 }
@@ -106,6 +107,7 @@ export async function getTribunal(id: string) {
     return { success: true, tribunal };
   } catch (error) {
     logger.error("Erro ao buscar tribunal:", error);
+
     return { success: false, error: "Erro ao buscar tribunal" };
   }
 }
@@ -160,6 +162,7 @@ export async function createTribunal(data: TribunalCreatePayload) {
     return { success: true, tribunal };
   } catch (error) {
     logger.error("Erro ao criar tribunal:", error);
+
     return { success: false, error: "Erro ao criar tribunal" };
   }
 }
@@ -227,6 +230,7 @@ export async function updateTribunal(id: string, data: TribunalUpdatePayload) {
     return { success: true, tribunal };
   } catch (error) {
     logger.error("Erro ao atualizar tribunal:", error);
+
     return { success: false, error: "Erro ao atualizar tribunal" };
   }
 }
@@ -284,6 +288,7 @@ export async function deleteTribunal(id: string) {
     return { success: true };
   } catch (error) {
     logger.error("Erro ao deletar tribunal:", error);
+
     return { success: false, error: "Erro ao deletar tribunal" };
   }
 }

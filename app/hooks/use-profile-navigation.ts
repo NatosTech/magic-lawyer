@@ -16,7 +16,15 @@ export interface NavigationItem {
 
 export function useProfileNavigation() {
   const { data: session } = useSession();
-  const { userRole, permissions, isAdmin, isAdvogado, isSecretaria, isFinanceiro, isCliente } = useUserPermissions();
+  const {
+    userRole,
+    permissions,
+    isAdmin,
+    isAdvogado,
+    isSecretaria,
+    isFinanceiro,
+    isCliente,
+  } = useUserPermissions();
 
   const navigationItems = useMemo<NavigationItem[]>(() => {
     const items: NavigationItem[] = [];
@@ -88,7 +96,10 @@ export function useProfileNavigation() {
     }
 
     // Petições - Não disponível para clientes
-    if (!isCliente && (permissions.canViewAllProcesses || isAdvogado || isSecretaria)) {
+    if (
+      !isCliente &&
+      (permissions.canViewAllProcesses || isAdvogado || isSecretaria)
+    ) {
       items.push({
         label: "Petições",
         href: "/peticoes",
@@ -114,7 +125,10 @@ export function useProfileNavigation() {
     }
 
     // Andamentos - Não disponível para clientes
-    if (!isCliente && (permissions.canViewAllProcesses || isAdvogado || isSecretaria)) {
+    if (
+      !isCliente &&
+      (permissions.canViewAllProcesses || isAdvogado || isSecretaria)
+    ) {
       items.push({
         label: "Andamentos",
         href: "/andamentos",
@@ -199,7 +213,10 @@ export function useProfileNavigation() {
       });
     }
 
-    if (!isCliente && (permissions.canViewAllProcesses || permissions.canManageOfficeSettings)) {
+    if (
+      !isCliente &&
+      (permissions.canViewAllProcesses || permissions.canManageOfficeSettings)
+    ) {
       items.push({
         label: "Causas",
         href: "/causas",
@@ -215,14 +232,20 @@ export function useProfileNavigation() {
         label: "Juízes",
         href: "/juizes",
         icon: "Scale",
-        description: isCliente ? "Informações sobre juízes" : "Base de dados de juízes",
+        description: isCliente
+          ? "Informações sobre juízes"
+          : "Base de dados de juízes",
         section: "Atividades Jurídicas",
       });
     }
 
     // ===== SEÇÃO: OPERACIONAL =====
     // Agenda - Baseado em permissões
-    if (permissions.canViewAllEvents || permissions.canCreateEvents || permissions.canViewClientEvents) {
+    if (
+      permissions.canViewAllEvents ||
+      permissions.canCreateEvents ||
+      permissions.canViewClientEvents
+    ) {
       items.push({
         label: "Agenda",
         href: "/agenda",
@@ -258,7 +281,10 @@ export function useProfileNavigation() {
       });
     }
 
-    if (!isCliente && (permissions.canViewAllProcesses || isSecretaria || isAdvogado)) {
+    if (
+      !isCliente &&
+      (permissions.canViewAllProcesses || isSecretaria || isAdvogado)
+    ) {
       items.push({
         label: "Diligências",
         href: "/diligencias",
@@ -268,7 +294,10 @@ export function useProfileNavigation() {
       });
     }
 
-    if (!isCliente && (permissions.canManageOfficeSettings || isSecretaria || isAdvogado)) {
+    if (
+      !isCliente &&
+      (permissions.canManageOfficeSettings || isSecretaria || isAdvogado)
+    ) {
       items.push({
         label: "Regimes de prazo",
         href: "/regimes-prazo",
@@ -284,7 +313,11 @@ export function useProfileNavigation() {
         label: "Financeiro",
         href: "/financeiro",
         icon: "DollarSign",
-        description: isCliente ? "Minhas faturas" : isAdvogado ? "Minhas comissões" : "Gestão financeira",
+        description: isCliente
+          ? "Minhas faturas"
+          : isAdvogado
+            ? "Minhas comissões"
+            : "Gestão financeira",
         isAccordion: true,
         section: "Operacional",
         children: [
@@ -323,7 +356,15 @@ export function useProfileNavigation() {
     // }
 
     return items;
-  }, [permissions, userRole, isAdmin, isAdvogado, isSecretaria, isFinanceiro, isCliente]);
+  }, [
+    permissions,
+    userRole,
+    isAdmin,
+    isAdvogado,
+    isSecretaria,
+    isFinanceiro,
+    isCliente,
+  ]);
 
   const secondaryNavigationItems = useMemo<NavigationItem[]>(() => {
     const items: NavigationItem[] = [];

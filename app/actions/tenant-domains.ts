@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
@@ -9,7 +8,10 @@ import { getSession } from "@/app/lib/auth";
 /**
  * Atualiza o domínio de um tenant
  */
-export async function updateTenantDomain(tenantId: string, domain: string | null) {
+export async function updateTenantDomain(
+  tenantId: string,
+  domain: string | null,
+) {
   const session = await getSession();
   const user = session?.user;
 
@@ -39,7 +41,9 @@ export async function updateTenantDomain(tenantId: string, domain: string | null
     });
 
     if (existingTenant) {
-      throw new Error(`O domínio ${domain} já está sendo usado pelo tenant ${existingTenant.name}`);
+      throw new Error(
+        `O domínio ${domain} já está sendo usado pelo tenant ${existingTenant.name}`,
+      );
     }
   }
 
@@ -89,7 +93,8 @@ export async function validateDomain(domain: string, excludeTenantId?: string) {
   if (!domain) return { valid: true, message: "" };
 
   // Verificar formato básico do domínio
-  const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.([a-zA-Z]{2,}|[a-zA-Z]{2,}\.[a-zA-Z]{2,})$/;
+  const domainRegex =
+    /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.([a-zA-Z]{2,}|[a-zA-Z]{2,}\.[a-zA-Z]{2,})$/;
 
   if (!domainRegex.test(domain)) {
     return { valid: false, message: "Formato de domínio inválido" };
@@ -141,6 +146,7 @@ export async function getTenantByDomain(host: string) {
   // Buscar por subdomínio (ex: sandra.magiclawyer.vercel.app)
   if (cleanHost.endsWith(".magiclawyer.vercel.app")) {
     const subdomain = cleanHost.replace(".magiclawyer.vercel.app", "");
+
     if (subdomain && subdomain !== "magiclawyer") {
       return await prisma.tenant.findFirst({
         where: {

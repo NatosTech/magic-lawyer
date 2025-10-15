@@ -1,12 +1,23 @@
 import useSWR from "swr";
-import { listBancos, getBanco, getBancosAtivos, getDashboardBancos, type BancoListFilters } from "@/app/actions/bancos";
+
+import {
+  listBancos,
+  getBanco,
+  getBancosAtivos,
+  getDashboardBancos,
+  type BancoListFilters,
+} from "@/app/actions/bancos";
 
 // Hook para listar bancos
 export function useBancos(filters?: BancoListFilters) {
-  const { data, error, isLoading, mutate } = useSWR(["bancos", filters], () => listBancos(filters), {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    ["bancos", filters],
+    () => listBancos(filters),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    },
+  );
 
   return {
     bancos: data?.bancos || [],
@@ -19,9 +30,13 @@ export function useBancos(filters?: BancoListFilters) {
 
 // Hook para buscar banco específico
 export function useBanco(codigo: string) {
-  const { data, error, isLoading, mutate } = useSWR(codigo ? ["banco", codigo] : null, () => getBanco(codigo), {
-    revalidateOnFocus: false,
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    codigo ? ["banco", codigo] : null,
+    () => getBanco(codigo),
+    {
+      revalidateOnFocus: false,
+    },
+  );
 
   return {
     banco: data?.banco,
@@ -33,10 +48,14 @@ export function useBanco(codigo: string) {
 
 // Hook para bancos ativos (para selects)
 export function useBancosAtivos() {
-  const { data, error, isLoading, mutate } = useSWR("bancos-ativos", () => getBancosAtivos(), {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    "bancos-ativos",
+    () => getBancosAtivos(),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    },
+  );
 
   return {
     bancos: data?.bancos || [],
@@ -53,10 +72,14 @@ export function useBancosDisponiveis() {
 
 // Hook para dashboard de bancos
 export function useDashboardBancos() {
-  const { data, error, isLoading, mutate } = useSWR("dashboard-bancos", getDashboardBancos, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    "dashboard-bancos",
+    getDashboardBancos,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    },
+  );
 
   return {
     dashboard: data?.dashboard,

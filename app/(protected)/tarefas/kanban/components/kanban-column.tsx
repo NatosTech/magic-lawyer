@@ -1,10 +1,12 @@
 "use client";
 
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { Plus, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,7 +26,11 @@ interface KanbanColumnProps {
   onTarefaClick: (tarefa: any) => void;
 }
 
-export function KanbanColumn({ column, tarefas, onTarefaClick }: KanbanColumnProps) {
+export function KanbanColumn({
+  column,
+  tarefas,
+  onTarefaClick,
+}: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
   });
@@ -40,11 +46,21 @@ export function KanbanColumn({ column, tarefas, onTarefaClick }: KanbanColumnPro
         <div className="p-4 pb-3 bg-background/80 backdrop-blur-sm border-b-2 border-default-200">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              {column.cor && <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: column.cor }} />}
+              {column.cor && (
+                <div
+                  className="w-3 h-3 rounded-full shadow-sm"
+                  style={{ backgroundColor: column.cor }}
+                />
+              )}
               <h3 className="font-bold text-base">{column.nome}</h3>
             </div>
             <div className="flex items-center gap-2">
-              <Chip size="sm" variant="flat" color={isOverLimit ? "danger" : "default"} className="font-semibold">
+              <Chip
+                className="font-semibold"
+                color={isOverLimit ? "danger" : "default"}
+                size="sm"
+                variant="flat"
+              >
                 {count}
                 {column.limite ? `/${column.limite}` : ""}
               </Chip>
@@ -56,11 +72,21 @@ export function KanbanColumn({ column, tarefas, onTarefaClick }: KanbanColumnPro
         </div>
 
         {/* Body da Coluna - Drop Zone */}
-        <div ref={setNodeRef} className={`p-3 min-h-[500px] max-h-[calc(100vh-300px)] overflow-y-auto transition-all ${isOver ? "bg-primary/10 ring-2 ring-primary ring-inset" : "bg-transparent"}`}>
+        <div
+          ref={setNodeRef}
+          className={`p-3 min-h-[500px] max-h-[calc(100vh-300px)] overflow-y-auto transition-all ${isOver ? "bg-primary/10 ring-2 ring-primary ring-inset" : "bg-transparent"}`}
+        >
           <div className="space-y-3">
-            <SortableContext items={tarefaIds} strategy={verticalListSortingStrategy}>
+            <SortableContext
+              items={tarefaIds}
+              strategy={verticalListSortingStrategy}
+            >
               {tarefas.map((tarefa) => (
-                <TarefaCard key={tarefa.id} tarefa={tarefa} onClick={() => onTarefaClick(tarefa)} />
+                <TarefaCard
+                  key={tarefa.id}
+                  tarefa={tarefa}
+                  onClick={() => onTarefaClick(tarefa)}
+                />
               ))}
             </SortableContext>
 
@@ -82,7 +108,15 @@ export function KanbanColumn({ column, tarefas, onTarefaClick }: KanbanColumnPro
             )}
 
             {/* Botão Adicionar */}
-            <Button fullWidth variant="flat" color="default" size="sm" startContent={<Plus size={16} />} className="mt-2" onPress={() => toast.info("Criar tarefa - Em implementação")}>
+            <Button
+              fullWidth
+              className="mt-2"
+              color="default"
+              size="sm"
+              startContent={<Plus size={16} />}
+              variant="flat"
+              onPress={() => toast.info("Criar tarefa - Em implementação")}
+            >
               Adicionar tarefa
             </Button>
           </div>

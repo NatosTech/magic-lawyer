@@ -61,6 +61,7 @@ export async function listTiposContrato(params?: { ativo?: boolean }) {
     return { success: true, tipos };
   } catch (error) {
     logger.error("Erro ao listar tipos de contrato:", error);
+
     return { success: false, error: "Erro ao listar tipos de contrato" };
   }
 }
@@ -101,6 +102,7 @@ export async function getTipoContrato(id: string) {
     return { success: true, tipo };
   } catch (error) {
     logger.error("Erro ao buscar tipo de contrato:", error);
+
     return { success: false, error: "Erro ao buscar tipo de contrato" };
   }
 }
@@ -151,16 +153,22 @@ export async function createTipoContrato(data: TipoContratoCreatePayload) {
       },
     });
 
-    logger.info(`Tipo de contrato criado: ${tipo.id} por usuário ${user.email}`);
+    logger.info(
+      `Tipo de contrato criado: ${tipo.id} por usuário ${user.email}`,
+    );
 
     return { success: true, tipo };
   } catch (error) {
     logger.error("Erro ao criar tipo de contrato:", error);
+
     return { success: false, error: "Erro ao criar tipo de contrato" };
   }
 }
 
-export async function updateTipoContrato(id: string, data: TipoContratoUpdatePayload) {
+export async function updateTipoContrato(
+  id: string,
+  data: TipoContratoUpdatePayload,
+) {
   try {
     const session = await getSession();
 
@@ -203,7 +211,8 @@ export async function updateTipoContrato(id: string, data: TipoContratoUpdatePay
 
     if (data.nome !== undefined) updateData.nome = data.nome.trim();
     if (data.slug !== undefined) updateData.slug = data.slug.trim();
-    if (data.descricao !== undefined) updateData.descricao = data.descricao?.trim();
+    if (data.descricao !== undefined)
+      updateData.descricao = data.descricao?.trim();
     if (data.ordem !== undefined) updateData.ordem = data.ordem;
     if (data.ativo !== undefined) updateData.ativo = data.ativo;
 
@@ -217,6 +226,7 @@ export async function updateTipoContrato(id: string, data: TipoContratoUpdatePay
     return { success: true, tipo };
   } catch (error) {
     logger.error("Erro ao atualizar tipo de contrato:", error);
+
     return { success: false, error: "Erro ao atualizar tipo de contrato" };
   }
 }
@@ -274,6 +284,7 @@ export async function deleteTipoContrato(id: string) {
     return { success: true };
   } catch (error) {
     logger.error("Erro ao deletar tipo de contrato:", error);
+
     return { success: false, error: "Erro ao deletar tipo de contrato" };
   }
 }

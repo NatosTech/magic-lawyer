@@ -1,11 +1,10 @@
 import useSWR from "swr";
+
 import {
   listModelosPeticao,
   getModeloPeticao,
   getCategoriasModeloPeticao,
   getTiposModeloPeticao,
-  type ModeloPeticaoListItem,
-  type ModeloPeticaoDetail,
   type ModeloPeticaoFilters,
 } from "@/app/actions/modelos-peticao";
 
@@ -17,9 +16,11 @@ export function useModelosPeticao(filters: ModeloPeticaoFilters = {}) {
 
   const { data, error, isLoading, mutate } = useSWR(key, async () => {
     const result = await listModelosPeticao(filters);
+
     if (!result.success) {
       throw new Error(result.error);
     }
+
     return result.data;
   });
 
@@ -41,9 +42,11 @@ export function useModeloPeticao(id: string | null) {
   const { data, error, isLoading, mutate } = useSWR(key, async () => {
     if (!id) return null;
     const result = await getModeloPeticao(id);
+
     if (!result.success) {
       throw new Error(result.error);
     }
+
     return result.data;
   });
 
@@ -60,13 +63,18 @@ export function useModeloPeticao(id: string | null) {
  * Hook para buscar categorias de modelos
  */
 export function useCategoriasModeloPeticao() {
-  const { data, error, isLoading, mutate } = useSWR("categorias-modelo-peticao", async () => {
-    const result = await getCategoriasModeloPeticao();
-    if (!result.success) {
-      throw new Error(result.error);
-    }
-    return result.data;
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    "categorias-modelo-peticao",
+    async () => {
+      const result = await getCategoriasModeloPeticao();
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      return result.data;
+    },
+  );
 
   return {
     categorias: data ?? [],
@@ -81,13 +89,18 @@ export function useCategoriasModeloPeticao() {
  * Hook para buscar tipos de modelos
  */
 export function useTiposModeloPeticao() {
-  const { data, error, isLoading, mutate } = useSWR("tipos-modelo-peticao", async () => {
-    const result = await getTiposModeloPeticao();
-    if (!result.success) {
-      throw new Error(result.error);
-    }
-    return result.data;
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    "tipos-modelo-peticao",
+    async () => {
+      const result = await getTiposModeloPeticao();
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      return result.data;
+    },
+  );
 
   return {
     tipos: data ?? [],
@@ -102,13 +115,18 @@ export function useTiposModeloPeticao() {
  * Hook para listar modelos ativos (para selects)
  */
 export function useModelosPeticaoAtivos() {
-  const { data, error, isLoading, mutate } = useSWR("modelos-peticao-ativos", async () => {
-    const result = await listModelosPeticao({ ativo: true });
-    if (!result.success) {
-      throw new Error(result.error);
-    }
-    return result.data;
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    "modelos-peticao-ativos",
+    async () => {
+      const result = await listModelosPeticao({ ativo: true });
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      return result.data;
+    },
+  );
 
   return {
     modelos: data ?? [],

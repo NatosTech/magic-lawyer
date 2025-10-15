@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { Card, CardBody, CardHeader, Button, Input, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Chip, Skeleton, Tooltip } from "@heroui/react";
 import { toast } from "sonner";
 import { Calendar, Plus, Search, Filter, X, Pencil, Trash2, Download, CalendarCheck, MapPin, Building } from "lucide-react";
+
 import {
   listFeriados,
   createFeriado,
@@ -18,6 +19,7 @@ import {
 } from "@/app/actions/feriados";
 import { getEstadosBrasilCached } from "@/lib/api/brazil-states";
 import { TipoFeriado } from "@/app/generated/prisma";
+import { title, subtitle } from "@/components/primitives";
 
 // ============================================
 // TIPOS
@@ -124,6 +126,7 @@ export default function FeriadosPage() {
     if (!confirm("Tem certeza que deseja excluir este feriado?")) return;
 
     const result = await deleteFeriado(feriadoId);
+
     if (result.success) {
       toast.success("Feriado excluído com sucesso!");
       mutateFeriados();
@@ -136,10 +139,12 @@ export default function FeriadosPage() {
   // Handler de importação
   const handleImportar = async () => {
     const ano = filters.ano || currentYear;
+
     if (!confirm(`Deseja importar os feriados nacionais de ${ano}?`)) return;
 
     toast.loading("Importando feriados...");
     const result = await importarFeriadosNacionais(ano);
+
     toast.dismiss();
 
     if (result.success) {
@@ -197,11 +202,16 @@ export default function FeriadosPage() {
   // Agrupar feriados por mês
   const feriadosPorMes = feriados.reduce(
     (acc, feriado) => {
-      const mes = new Date(feriado.data).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      const mes = new Date(feriado.data).toLocaleDateString("pt-BR", {
+        month: "long",
+        year: "numeric",
+      });
+
       if (!acc[mes]) {
         acc[mes] = [];
       }
       acc[mes].push(feriado);
+
       return acc;
     },
     {} as Record<string, Feriado[]>
@@ -212,11 +222,11 @@ export default function FeriadosPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Feriados</h1>
-          <p className="text-gray-600 dark:text-gray-400">Gestão de feriados e dias não úteis</p>
+          <h1 className={title({ size: "lg", color: "blue" })}>Feriados</h1>
+          <p className={subtitle({ fullWidth: true })}>Gestão de feriados e dias não úteis</p>
         </div>
         <div className="flex gap-2">
-          <Button color="secondary" variant="flat" startContent={<Download size={20} />} onPress={handleImportar}>
+          <Button color="secondary" startContent={<Download size={20} />} variant="flat" onPress={handleImportar}>
             Importar Nacionais
           </Button>
           <Button color="primary" startContent={<Plus size={20} />} onPress={openCreateModal}>
@@ -240,7 +250,7 @@ export default function FeriadosPage() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">Total {dashboard.ano}</p>
                 <p className="text-2xl font-bold">{dashboard.total}</p>
               </div>
-              <Calendar size={32} className="text-primary" />
+              <Calendar className="text-primary" size={32} />
             </CardBody>
           </Card>
 
@@ -250,7 +260,7 @@ export default function FeriadosPage() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">Nacionais</p>
                 <p className="text-2xl font-bold">{dashboard.porTipo.find((t) => t.tipo === "NACIONAL")?._count || 0}</p>
               </div>
-              <CalendarCheck size={32} className="text-success" />
+              <CalendarCheck className="text-success" size={32} />
             </CardBody>
           </Card>
 
@@ -260,7 +270,7 @@ export default function FeriadosPage() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">Estaduais</p>
                 <p className="text-2xl font-bold">{dashboard.porTipo.find((t) => t.tipo === "ESTADUAL")?._count || 0}</p>
               </div>
-              <MapPin size={32} className="text-primary" />
+              <MapPin className="text-primary" size={32} />
             </CardBody>
           </Card>
 
@@ -270,7 +280,7 @@ export default function FeriadosPage() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">Judiciários</p>
                 <p className="text-2xl font-bold">{dashboard.porTipo.find((t) => t.tipo === "JUDICIARIO")?._count || 0}</p>
               </div>
-              <Building size={32} className="text-warning" />
+              <Building className="text-warning" size={32} />
             </CardBody>
           </Card>
         </div>
@@ -280,18 +290,18 @@ export default function FeriadosPage() {
       <Card>
         <CardHeader className="flex flex-col gap-3">
           <div className="flex gap-2 w-full">
-            <Input placeholder="Buscar feriado..." value={searchTerm} onValueChange={handleSearch} startContent={<Search size={18} />} className="flex-1" />
+            <Input className="flex-1" placeholder="Buscar feriado..." startContent={<Search size={18} />} value={searchTerm} onValueChange={handleSearch} />
             <Select
+              className="w-32"
               label="Ano"
               selectedKeys={filters.ano ? [filters.ano.toString()] : []}
               onChange={(e) => handleFilterChange("ano", e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-32"
             >
               {[currentYear - 1, currentYear, currentYear + 1, currentYear + 2].map((ano) => (
                 <SelectItem key={ano.toString()}>{ano}</SelectItem>
               ))}
             </Select>
-            <Button variant={showFilters ? "solid" : "flat"} color={showFilters ? "primary" : "default"} onPress={() => setShowFilters(!showFilters)} startContent={<Filter size={18} />}>
+            <Button color={showFilters ? "primary" : "default"} startContent={<Filter size={18} />} variant={showFilters ? "solid" : "flat"} onPress={() => setShowFilters(!showFilters)}>
               Filtros
             </Button>
           </div>
@@ -310,7 +320,7 @@ export default function FeriadosPage() {
                 ))}
               </Select>
 
-              <Button color="danger" variant="flat" onPress={clearFilters} startContent={<X size={18} />}>
+              <Button color="danger" startContent={<X size={18} />} variant="flat" onPress={clearFilters}>
                 Limpar Filtros
               </Button>
             </div>
@@ -330,7 +340,7 @@ export default function FeriadosPage() {
           <Card>
             <CardBody>
               <div className="text-center py-12">
-                <Calendar size={48} className="mx-auto text-gray-400 mb-4" />
+                <Calendar className="mx-auto text-gray-400 mb-4" size={48} />
                 <p className="text-gray-600 dark:text-gray-400">Nenhum feriado encontrado</p>
                 <Button className="mt-4" color="primary" variant="flat" onPress={handleImportar}>
                   Importar Feriados Nacionais
@@ -349,8 +359,17 @@ export default function FeriadosPage() {
                   {feriadosDoMes.map((feriado) => (
                     <div
                       key={feriado.id}
+                      aria-label={`Ver detalhes do feriado ${feriado.nome}`}
                       className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => openViewModal(feriado)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openViewModal(feriado);
+                        }
+                      }}
                     >
                       <div className="flex items-center gap-4 flex-1">
                         <div className="flex flex-col items-center justify-center bg-white dark:bg-gray-700 rounded-lg p-3 min-w-[80px]">
@@ -361,7 +380,7 @@ export default function FeriadosPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-semibold text-lg">{feriado.nome}</h3>
-                            <Chip size="sm" color={getTipoColor(feriado.tipo)} variant="flat">
+                            <Chip color={getTipoColor(feriado.tipo)} size="sm" variant="flat">
                               {getTipoLabel(feriado.tipo)}
                             </Chip>
                             {feriado.recorrente && (
@@ -389,15 +408,15 @@ export default function FeriadosPage() {
                         </div>
                       </div>
 
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-2" role="group">
                         <Tooltip content="Editar">
-                          <Button size="sm" variant="light" isIconOnly onPress={() => openEditModal(feriado)}>
+                          <Button isIconOnly size="sm" variant="light" onPress={() => openEditModal(feriado)}>
                             <Pencil size={16} />
                           </Button>
                         </Tooltip>
 
                         <Tooltip content="Excluir">
-                          <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => handleDelete(feriado.id)}>
+                          <Button isIconOnly color="danger" size="sm" variant="light" onPress={() => handleDelete(feriado.id)}>
                             <Trash2 size={16} />
                           </Button>
                         </Tooltip>
@@ -413,12 +432,12 @@ export default function FeriadosPage() {
 
       {/* Modal de Criar/Editar/Visualizar */}
       <FeriadoModal
-        isOpen={modalOpen}
-        onClose={closeModal}
-        mode={modalMode}
-        feriado={selectedFeriado}
-        tipos={tipos}
         estados={estados}
+        feriado={selectedFeriado}
+        isOpen={modalOpen}
+        mode={modalMode}
+        tipos={tipos}
+        onClose={closeModal}
         onSuccess={() => {
           mutateFeriados();
           mutateDashboard();
@@ -486,6 +505,7 @@ function FeriadoModal({ isOpen, onClose, mode, feriado, tipos, estados, onSucces
   const handleSubmit = async () => {
     if (!formData.nome || !formData.data || !formData.tipo) {
       toast.error("Preencha os campos obrigatórios");
+
       return;
     }
 
@@ -530,7 +550,7 @@ function FeriadoModal({ isOpen, onClose, mode, feriado, tipos, estados, onSucces
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} size="lg" onClose={onClose}>
       <ModalContent>
         <ModalHeader>
           {mode === "create" && "Novo Feriado"}
@@ -540,23 +560,23 @@ function FeriadoModal({ isOpen, onClose, mode, feriado, tipos, estados, onSucces
         <ModalBody>
           <div className="space-y-4">
             <Input
+              isRequired
+              isReadOnly={isReadOnly}
               label="Nome do Feriado"
               placeholder="Ex: Dia do Trabalho, Carnaval, etc"
               value={formData.nome}
               onValueChange={(value) => setFormData({ ...formData, nome: value })}
-              isRequired
-              isReadOnly={isReadOnly}
             />
 
-            <Input type="date" label="Data" value={formData.data} onValueChange={(value) => setFormData({ ...formData, data: value })} isRequired isReadOnly={isReadOnly} />
+            <Input isRequired isReadOnly={isReadOnly} label="Data" type="date" value={formData.data} onValueChange={(value) => setFormData({ ...formData, data: value })} />
 
             <Select
+              isRequired
+              isDisabled={isReadOnly}
               label="Tipo"
               placeholder="Selecione o tipo"
               selectedKeys={formData.tipo ? [formData.tipo] : []}
               onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-              isRequired
-              isDisabled={isReadOnly}
             >
               {tipos.map((tipo) => (
                 <SelectItem key={tipo}>{getTipoLabel(tipo)}</SelectItem>
@@ -565,11 +585,11 @@ function FeriadoModal({ isOpen, onClose, mode, feriado, tipos, estados, onSucces
 
             {(formData.tipo === "ESTADUAL" || formData.tipo === "MUNICIPAL") && (
               <Select
+                isDisabled={isReadOnly}
                 label="Estado (UF)"
                 placeholder="Selecione o estado"
                 selectedKeys={formData.uf ? [formData.uf] : []}
                 onChange={(e) => setFormData({ ...formData, uf: e.target.value })}
-                isDisabled={isReadOnly}
               >
                 {estados.map((estado) => (
                   <SelectItem key={estado.sigla}>{estado.nome}</SelectItem>
@@ -579,26 +599,26 @@ function FeriadoModal({ isOpen, onClose, mode, feriado, tipos, estados, onSucces
 
             {formData.tipo === "MUNICIPAL" && (
               <Input
+                isReadOnly={isReadOnly}
                 label="Município"
                 placeholder="Ex: São Paulo, Rio de Janeiro"
                 value={formData.municipio}
                 onValueChange={(value) => setFormData({ ...formData, municipio: value })}
-                isReadOnly={isReadOnly}
               />
             )}
 
             <Textarea
+              isReadOnly={isReadOnly}
               label="Descrição (opcional)"
+              minRows={2}
               placeholder="Informações adicionais sobre o feriado"
               value={formData.descricao}
               onValueChange={(value) => setFormData({ ...formData, descricao: value })}
-              minRows={2}
-              isReadOnly={isReadOnly}
             />
 
             {!isReadOnly && (
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={formData.recorrente} onChange={(e) => setFormData({ ...formData, recorrente: e.target.checked })} className="w-4 h-4" />
+                <input checked={formData.recorrente} className="w-4 h-4" type="checkbox" onChange={(e) => setFormData({ ...formData, recorrente: e.target.checked })} />
                 <span className="text-sm">Feriado anual (repete todos os anos)</span>
               </label>
             )}
@@ -609,7 +629,7 @@ function FeriadoModal({ isOpen, onClose, mode, feriado, tipos, estados, onSucces
             {isReadOnly ? "Fechar" : "Cancelar"}
           </Button>
           {!isReadOnly && (
-            <Button color="primary" onPress={handleSubmit} isLoading={saving}>
+            <Button color="primary" isLoading={saving} onPress={handleSubmit}>
               {mode === "create" ? "Criar" : "Salvar"}
             </Button>
           )}

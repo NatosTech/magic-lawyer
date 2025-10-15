@@ -77,6 +77,7 @@ export function TenantCreateContent() {
         description: "Preencha pelo menos nome e slug do tenant.",
         color: "warning",
       });
+
       return;
     }
 
@@ -86,6 +87,7 @@ export function TenantCreateContent() {
         description: "Informe um email de contato para o tenant.",
         color: "warning",
       });
+
       return;
     }
 
@@ -95,15 +97,18 @@ export function TenantCreateContent() {
         description: "Preencha email e senha para o administrador inicial.",
         color: "warning",
       });
+
       return;
     }
 
     if (form.adminPassword.length < 8) {
       addToast({
         title: "Senha muito curta",
-        description: "Use pelo menos 8 caracteres para a senha do administrador.",
+        description:
+          "Use pelo menos 8 caracteres para a senha do administrador.",
         color: "warning",
       });
+
       return;
     }
 
@@ -155,9 +160,12 @@ export function TenantCreateContent() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <Card className="border border-white/10 bg-background/70 backdrop-blur">
         <CardHeader className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold text-white">Cadastrar novo tenant</h1>
+          <h1 className="text-2xl font-semibold text-white">
+            Cadastrar novo tenant
+          </h1>
           <p className="text-sm text-default-400">
-            Preencha as informações básicas do escritório e os dados do administrador inicial.
+            Preencha as informações básicas do escritório e os dados do
+            administrador inicial.
           </p>
         </CardHeader>
         <Divider className="border-white/10" />
@@ -191,6 +199,7 @@ export function TenantCreateContent() {
                 selectedKeys={new Set([form.timezone])}
                 onSelectionChange={(keys) => {
                   const [value] = Array.from(keys);
+
                   if (typeof value === "string") {
                     handleChange("timezone", value);
                   }
@@ -222,6 +231,7 @@ export function TenantCreateContent() {
                 selectedKeys={new Set([form.tipoPessoa])}
                 onSelectionChange={(keys) => {
                   const [value] = Array.from(keys);
+
                   if (value === "FISICA" || value === "JURIDICA") {
                     handleChange("tipoPessoa", value);
                   }
@@ -291,4 +301,3 @@ export function TenantCreateContent() {
     </div>
   );
 }
-

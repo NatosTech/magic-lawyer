@@ -130,7 +130,12 @@ export async function criarEndereco(data: EnderecoData) {
     }
 
     // Validar dados obrigatórios
-    if (!data.apelido?.trim() || !data.logradouro?.trim() || !data.cidade?.trim() || !data.estado?.trim()) {
+    if (
+      !data.apelido?.trim() ||
+      !data.logradouro?.trim() ||
+      !data.cidade?.trim() ||
+      !data.estado?.trim()
+    ) {
       return { success: false, error: "Dados obrigatórios não preenchidos" };
     }
 
@@ -220,7 +225,10 @@ export async function criarEndereco(data: EnderecoData) {
 }
 
 // Atualizar endereço
-export async function atualizarEndereco(enderecoId: string, data: EnderecoData) {
+export async function atualizarEndereco(
+  enderecoId: string,
+  data: EnderecoData,
+) {
   try {
     const session = await getServerSession(authOptions);
     const user = session?.user as any;
@@ -251,7 +259,12 @@ export async function atualizarEndereco(enderecoId: string, data: EnderecoData) 
     }
 
     // Validar dados obrigatórios
-    if (!data.apelido?.trim() || !data.logradouro?.trim() || !data.cidade?.trim() || !data.estado?.trim()) {
+    if (
+      !data.apelido?.trim() ||
+      !data.logradouro?.trim() ||
+      !data.cidade?.trim() ||
+      !data.estado?.trim()
+    ) {
       return { success: false, error: "Dados obrigatórios não preenchidos" };
     }
 
@@ -511,13 +524,18 @@ export async function getEnderecosUsuarioAdmin(targetUserId: string) {
     // 1. SUPER_ADMIN pode gerenciar qualquer usuário
     // 2. ADMIN pode gerenciar usuários do mesmo tenant
     const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
-    const isAdminSameTenant = currentUser.role === "ADMIN" && currentUser.tenantId === targetUser.tenantId;
+    const isAdminSameTenant =
+      currentUser.role === "ADMIN" &&
+      currentUser.tenantId === targetUser.tenantId;
 
     if (!isSuperAdmin && !isAdminSameTenant) {
       return { success: false, error: "Permissão negada", enderecos: [] };
     }
 
-    const { isCliente, id } = await getCorrectIdForUser(targetUserId, targetUser.tenantId);
+    const { isCliente, id } = await getCorrectIdForUser(
+      targetUserId,
+      targetUser.tenantId,
+    );
 
     if (!id) {
       return { success: false, error: "Usuário não encontrado", enderecos: [] };
@@ -562,7 +580,10 @@ export async function getEnderecosUsuarioAdmin(targetUserId: string) {
 }
 
 // Criar novo endereço para um usuário específico (ADMIN)
-export async function criarEnderecoAdmin(targetUserId: string, data: EnderecoData) {
+export async function criarEnderecoAdmin(
+  targetUserId: string,
+  data: EnderecoData,
+) {
   try {
     const session = await getServerSession(authOptions);
     const currentUser = session?.user as any;
@@ -585,18 +606,28 @@ export async function criarEnderecoAdmin(targetUserId: string, data: EnderecoDat
     // 1. SUPER_ADMIN pode gerenciar qualquer usuário
     // 2. ADMIN pode gerenciar usuários do mesmo tenant
     const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
-    const isAdminSameTenant = currentUser.role === "ADMIN" && currentUser.tenantId === targetUser.tenantId;
+    const isAdminSameTenant =
+      currentUser.role === "ADMIN" &&
+      currentUser.tenantId === targetUser.tenantId;
 
     if (!isSuperAdmin && !isAdminSameTenant) {
       return { success: false, error: "Permissão negada" };
     }
 
     // Validar dados obrigatórios
-    if (!data.apelido?.trim() || !data.logradouro?.trim() || !data.cidade?.trim() || !data.estado?.trim()) {
+    if (
+      !data.apelido?.trim() ||
+      !data.logradouro?.trim() ||
+      !data.cidade?.trim() ||
+      !data.estado?.trim()
+    ) {
       return { success: false, error: "Dados obrigatórios não preenchidos" };
     }
 
-    const { isCliente, id } = await getCorrectIdForUser(targetUserId, targetUser.tenantId);
+    const { isCliente, id } = await getCorrectIdForUser(
+      targetUserId,
+      targetUser.tenantId,
+    );
 
     if (!id) {
       return { success: false, error: "Usuário não encontrado" };
@@ -682,7 +713,11 @@ export async function criarEnderecoAdmin(targetUserId: string, data: EnderecoDat
 }
 
 // Atualizar endereço de um usuário específico (ADMIN)
-export async function atualizarEnderecoAdmin(targetUserId: string, enderecoId: string, data: EnderecoData) {
+export async function atualizarEnderecoAdmin(
+  targetUserId: string,
+  enderecoId: string,
+  data: EnderecoData,
+) {
   try {
     const session = await getServerSession(authOptions);
     const currentUser = session?.user as any;
@@ -705,13 +740,18 @@ export async function atualizarEnderecoAdmin(targetUserId: string, enderecoId: s
     // 1. SUPER_ADMIN pode gerenciar qualquer usuário
     // 2. ADMIN pode gerenciar usuários do mesmo tenant
     const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
-    const isAdminSameTenant = currentUser.role === "ADMIN" && currentUser.tenantId === targetUser.tenantId;
+    const isAdminSameTenant =
+      currentUser.role === "ADMIN" &&
+      currentUser.tenantId === targetUser.tenantId;
 
     if (!isSuperAdmin && !isAdminSameTenant) {
       return { success: false, error: "Permissão negada" };
     }
 
-    const { isCliente, id } = await getCorrectIdForUser(targetUserId, targetUser.tenantId);
+    const { isCliente, id } = await getCorrectIdForUser(
+      targetUserId,
+      targetUser.tenantId,
+    );
 
     if (!id) {
       return { success: false, error: "Usuário não encontrado" };
@@ -733,7 +773,12 @@ export async function atualizarEnderecoAdmin(targetUserId: string, enderecoId: s
     }
 
     // Validar dados obrigatórios
-    if (!data.apelido?.trim() || !data.logradouro?.trim() || !data.cidade?.trim() || !data.estado?.trim()) {
+    if (
+      !data.apelido?.trim() ||
+      !data.logradouro?.trim() ||
+      !data.cidade?.trim() ||
+      !data.estado?.trim()
+    ) {
       return { success: false, error: "Dados obrigatórios não preenchidos" };
     }
 
@@ -817,7 +862,10 @@ export async function atualizarEnderecoAdmin(targetUserId: string, enderecoId: s
 }
 
 // Deletar endereço de um usuário específico (ADMIN)
-export async function deletarEnderecoAdmin(targetUserId: string, enderecoId: string) {
+export async function deletarEnderecoAdmin(
+  targetUserId: string,
+  enderecoId: string,
+) {
   try {
     const session = await getServerSession(authOptions);
     const currentUser = session?.user as any;
@@ -840,13 +888,18 @@ export async function deletarEnderecoAdmin(targetUserId: string, enderecoId: str
     // 1. SUPER_ADMIN pode gerenciar qualquer usuário
     // 2. ADMIN pode gerenciar usuários do mesmo tenant
     const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
-    const isAdminSameTenant = currentUser.role === "ADMIN" && currentUser.tenantId === targetUser.tenantId;
+    const isAdminSameTenant =
+      currentUser.role === "ADMIN" &&
+      currentUser.tenantId === targetUser.tenantId;
 
     if (!isSuperAdmin && !isAdminSameTenant) {
       return { success: false, error: "Permissão negada" };
     }
 
-    const { isCliente, id } = await getCorrectIdForUser(targetUserId, targetUser.tenantId);
+    const { isCliente, id } = await getCorrectIdForUser(
+      targetUserId,
+      targetUser.tenantId,
+    );
 
     if (!id) {
       return { success: false, error: "Usuário não encontrado" };
@@ -898,7 +951,10 @@ export async function deletarEnderecoAdmin(targetUserId: string, enderecoId: str
 }
 
 // Definir endereço como principal para um usuário específico (ADMIN)
-export async function definirEnderecoPrincipalAdmin(targetUserId: string, enderecoId: string) {
+export async function definirEnderecoPrincipalAdmin(
+  targetUserId: string,
+  enderecoId: string,
+) {
   try {
     const session = await getServerSession(authOptions);
     const currentUser = session?.user as any;
@@ -921,13 +977,18 @@ export async function definirEnderecoPrincipalAdmin(targetUserId: string, endere
     // 1. SUPER_ADMIN pode gerenciar qualquer usuário
     // 2. ADMIN pode gerenciar usuários do mesmo tenant
     const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
-    const isAdminSameTenant = currentUser.role === "ADMIN" && currentUser.tenantId === targetUser.tenantId;
+    const isAdminSameTenant =
+      currentUser.role === "ADMIN" &&
+      currentUser.tenantId === targetUser.tenantId;
 
     if (!isSuperAdmin && !isAdminSameTenant) {
       return { success: false, error: "Permissão negada" };
     }
 
-    const { isCliente, id } = await getCorrectIdForUser(targetUserId, targetUser.tenantId);
+    const { isCliente, id } = await getCorrectIdForUser(
+      targetUserId,
+      targetUser.tenantId,
+    );
 
     if (!id) {
       return { success: false, error: "Usuário não encontrado" };

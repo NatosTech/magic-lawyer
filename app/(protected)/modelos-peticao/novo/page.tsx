@@ -28,7 +28,11 @@ const VARIAVEIS_PADRAO = [
   { nome: "processo_numero", tipo: "texto", descricao: "Número do processo" },
   { nome: "processo_titulo", tipo: "texto", descricao: "Título do processo" },
   { nome: "cliente_nome", tipo: "texto", descricao: "Nome do cliente" },
-  { nome: "cliente_documento", tipo: "texto", descricao: "CPF/CNPJ do cliente" },
+  {
+    nome: "cliente_documento",
+    tipo: "texto",
+    descricao: "CPF/CNPJ do cliente",
+  },
   { nome: "advogado_nome", tipo: "texto", descricao: "Nome do advogado" },
   { nome: "advogado_oab", tipo: "texto", descricao: "OAB do advogado" },
   { nome: "tribunal_nome", tipo: "texto", descricao: "Nome do tribunal" },
@@ -70,6 +74,7 @@ export default function NovoModeloPeticaoPage() {
   const handleAdicionarVariavel = (variavel: (typeof VARIAVEIS_PADRAO)[0]) => {
     if (variaveis.some((v) => v.nome === variavel.nome)) {
       toast.warning("Esta variável já foi adicionada");
+
       return;
     }
 
@@ -101,11 +106,13 @@ export default function NovoModeloPeticaoPage() {
   const handleSubmit = async () => {
     if (!formData.nome.trim()) {
       toast.error("Nome do modelo é obrigatório");
+
       return;
     }
 
     if (!formData.conteudo.trim()) {
       toast.error("Conteúdo do modelo é obrigatório");
+
       return;
     }
 
@@ -155,8 +162,8 @@ export default function NovoModeloPeticaoPage() {
 
           <Textarea
             label="Descrição"
-            placeholder="Descreva o propósito e uso deste modelo..."
             minRows={3}
+            placeholder="Descreva o propósito e uso deste modelo..."
             value={formData.descricao}
             onValueChange={(value) => setFormData({ ...formData, descricao: value })}
           />
@@ -169,6 +176,7 @@ export default function NovoModeloPeticaoPage() {
                 selectedKeys={formData.categoria ? [formData.categoria] : []}
                 onSelectionChange={(keys) => {
                   const value = Array.from(keys)[0] as string;
+
                   setFormData({ ...formData, categoria: value });
                   setNovaCategoria("");
                 }}
@@ -179,7 +187,7 @@ export default function NovoModeloPeticaoPage() {
                   </SelectItem>
                 ))}
               </Select>
-              <Input size="sm" placeholder="Ou digite nova categoria" value={novaCategoria} onValueChange={setNovaCategoria} />
+              <Input placeholder="Ou digite nova categoria" size="sm" value={novaCategoria} onValueChange={setNovaCategoria} />
             </div>
 
             <div className="space-y-2">
@@ -189,6 +197,7 @@ export default function NovoModeloPeticaoPage() {
                 selectedKeys={formData.tipo ? [formData.tipo] : []}
                 onSelectionChange={(keys) => {
                   const value = Array.from(keys)[0] as string;
+
                   setFormData({ ...formData, tipo: value });
                   setNovoTipo("");
                 }}
@@ -199,7 +208,7 @@ export default function NovoModeloPeticaoPage() {
                   </SelectItem>
                 ))}
               </Select>
-              <Input size="sm" placeholder="Ou digite novo tipo" value={novoTipo} onValueChange={setNovoTipo} />
+              <Input placeholder="Ou digite novo tipo" size="sm" value={novoTipo} onValueChange={setNovoTipo} />
             </div>
           </div>
 
@@ -243,10 +252,9 @@ export default function NovoModeloPeticaoPage() {
               {VARIAVEIS_PADRAO.map((variavel) => (
                 <Chip
                   key={variavel.nome}
-                  className="cursor-pointer"
                   color={variaveis.some((v) => v.nome === variavel.nome) ? "success" : "default"}
-                  variant="flat"
                   startContent={variaveis.some((v) => v.nome === variavel.nome) ? <span>✓</span> : <Plus className="h-3 w-3" />}
+                  variant="flat"
                   onClick={() => handleAdicionarVariavel(variavel)}
                 >
                   {variavel.nome}
@@ -270,10 +278,10 @@ export default function NovoModeloPeticaoPage() {
                         <p className="text-xs text-default-500">{variavel.descricao}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Checkbox size="sm" isSelected={variavel.obrigatorio} onValueChange={() => handleToggleObrigatorio(variavel.nome)}>
+                        <Checkbox isSelected={variavel.obrigatorio} size="sm" onValueChange={() => handleToggleObrigatorio(variavel.nome)}>
                           <span className="text-xs">Obrigatório</span>
                         </Checkbox>
-                        <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleRemoverVariavel(variavel.nome)}>
+                        <Button isIconOnly color="danger" size="sm" variant="light" onPress={() => handleRemoverVariavel(variavel.nome)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -298,14 +306,14 @@ export default function NovoModeloPeticaoPage() {
         <CardBody>
           <Textarea
             isRequired
-            label="Template"
-            placeholder="Digite o conteúdo do modelo aqui. Use {{variavel}} para inserir variáveis dinâmicas."
-            minRows={15}
-            value={formData.conteudo}
-            onValueChange={(value) => setFormData({ ...formData, conteudo: value })}
             classNames={{
               input: "font-mono text-sm",
             }}
+            label="Template"
+            minRows={15}
+            placeholder="Digite o conteúdo do modelo aqui. Use {{variavel}} para inserir variáveis dinâmicas."
+            value={formData.conteudo}
+            onValueChange={(value) => setFormData({ ...formData, conteudo: value })}
           />
         </CardBody>
       </Card>
@@ -315,7 +323,7 @@ export default function NovoModeloPeticaoPage() {
         <Button variant="light" onPress={() => router.push("/modelos-peticao")}>
           Cancelar
         </Button>
-        <Button color="primary" startContent={<Save className="h-4 w-4" />} isLoading={isPending} onPress={handleSubmit}>
+        <Button color="primary" isLoading={isPending} startContent={<Save className="h-4 w-4" />} onPress={handleSubmit}>
           Criar Modelo
         </Button>
       </div>

@@ -1,8 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
-import { revalidatePath } from "next/cache";
 import { MovimentacaoTipo } from "@/app/generated/prisma";
 
 // ============================================
@@ -47,17 +48,21 @@ export interface ActionResponse<T> {
 
 async function getTenantId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado ou tenant não encontrado");
   }
+
   return session.user.tenantId;
 }
 
 async function getUserId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.id) {
     throw new Error("Usuário não autenticado");
   }
+
   return session.user.id;
 }
 
@@ -65,7 +70,9 @@ async function getUserId(): Promise<string> {
 // LISTAGEM
 // ============================================
 
-export async function listAndamentos(filters: AndamentoFilters): Promise<ActionResponse<any[]>> {
+export async function listAndamentos(
+  filters: AndamentoFilters,
+): Promise<ActionResponse<any[]>> {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -89,7 +96,10 @@ export async function listAndamentos(filters: AndamentoFilters): Promise<ActionR
 
     // Busca textual
     if (filters.searchTerm) {
-      where.OR = [{ titulo: { contains: filters.searchTerm, mode: "insensitive" } }, { descricao: { contains: filters.searchTerm, mode: "insensitive" } }];
+      where.OR = [
+        { titulo: { contains: filters.searchTerm, mode: "insensitive" } },
+        { descricao: { contains: filters.searchTerm, mode: "insensitive" } },
+      ];
     }
 
     const andamentos = await prisma.movimentacaoProcesso.findMany({
@@ -138,6 +148,7 @@ export async function listAndamentos(filters: AndamentoFilters): Promise<ActionR
     };
   } catch (error: any) {
     console.error("Erro ao listar andamentos:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao listar andamentos",
@@ -149,7 +160,9 @@ export async function listAndamentos(filters: AndamentoFilters): Promise<ActionR
 // BUSCAR INDIVIDUAL
 // ============================================
 
-export async function getAndamento(andamentoId: string): Promise<ActionResponse<any>> {
+export async function getAndamento(
+  andamentoId: string,
+): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -221,6 +234,7 @@ export async function getAndamento(andamentoId: string): Promise<ActionResponse<
     };
   } catch (error: any) {
     console.error("Erro ao buscar andamento:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao buscar andamento",
@@ -232,7 +246,9 @@ export async function getAndamento(andamentoId: string): Promise<ActionResponse<
 // CRIAR ANDAMENTO
 // ============================================
 
-export async function createAndamento(input: AndamentoCreateInput): Promise<ActionResponse<any>> {
+export async function createAndamento(
+  input: AndamentoCreateInput,
+): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -306,6 +322,7 @@ export async function createAndamento(input: AndamentoCreateInput): Promise<Acti
     };
   } catch (error: any) {
     console.error("Erro ao criar andamento:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao criar andamento",
@@ -317,7 +334,10 @@ export async function createAndamento(input: AndamentoCreateInput): Promise<Acti
 // ATUALIZAR ANDAMENTO
 // ============================================
 
-export async function updateAndamento(andamentoId: string, input: AndamentoUpdateInput): Promise<ActionResponse<any>> {
+export async function updateAndamento(
+  andamentoId: string,
+  input: AndamentoUpdateInput,
+): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -373,6 +393,7 @@ export async function updateAndamento(andamentoId: string, input: AndamentoUpdat
     };
   } catch (error: any) {
     console.error("Erro ao atualizar andamento:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao atualizar andamento",
@@ -384,7 +405,9 @@ export async function updateAndamento(andamentoId: string, input: AndamentoUpdat
 // EXCLUIR ANDAMENTO
 // ============================================
 
-export async function deleteAndamento(andamentoId: string): Promise<ActionResponse<null>> {
+export async function deleteAndamento(
+  andamentoId: string,
+): Promise<ActionResponse<null>> {
   try {
     const tenantId = await getTenantId();
 
@@ -416,6 +439,7 @@ export async function deleteAndamento(andamentoId: string): Promise<ActionRespon
     };
   } catch (error: any) {
     console.error("Erro ao excluir andamento:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao excluir andamento",
@@ -427,11 +451,14 @@ export async function deleteAndamento(andamentoId: string): Promise<ActionRespon
 // DASHBOARD/MÉTRICAS
 // ============================================
 
-export async function getDashboardAndamentos(processoId?: string): Promise<ActionResponse<any>> {
+export async function getDashboardAndamentos(
+  processoId?: string,
+): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
     const where: any = { tenantId };
+
     if (processoId) {
       where.processoId = processoId;
     }
@@ -476,6 +503,7 @@ export async function getDashboardAndamentos(processoId?: string): Promise<Actio
     };
   } catch (error: any) {
     console.error("Erro ao buscar dashboard de andamentos:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao buscar dashboard de andamentos",
@@ -487,10 +515,19 @@ export async function getDashboardAndamentos(processoId?: string): Promise<Actio
 // TIPOS DE MOVIMENTAÇÃO
 // ============================================
 
-export async function getTiposMovimentacao(): Promise<ActionResponse<MovimentacaoTipo[]>> {
+export async function getTiposMovimentacao(): Promise<
+  ActionResponse<MovimentacaoTipo[]>
+> {
   try {
     // Retornar os tipos do enum
-    const tipos: MovimentacaoTipo[] = ["ANDAMENTO", "PRAZO", "INTIMACAO", "AUDIENCIA", "ANEXO", "OUTRO"];
+    const tipos: MovimentacaoTipo[] = [
+      "ANDAMENTO",
+      "PRAZO",
+      "INTIMACAO",
+      "AUDIENCIA",
+      "ANEXO",
+      "OUTRO",
+    ];
 
     return {
       success: true,
@@ -498,6 +535,7 @@ export async function getTiposMovimentacao(): Promise<ActionResponse<Movimentaca
     };
   } catch (error: any) {
     console.error("Erro ao buscar tipos de movimentação:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao buscar tipos de movimentação",

@@ -14,7 +14,7 @@ import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
 import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/modal";
-import { AlertCircle, Plus, Search, MoreVertical, Edit, Eye, FileText, User, Building2, Calendar, Download, Link2, Paperclip } from "lucide-react";
+import { AlertCircle, Plus, Search, MoreVertical, Eye, FileText, User, Building2, Calendar, Download, Link2, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
@@ -24,6 +24,7 @@ import { useProcessosCliente } from "@/app/hooks/use-processos";
 import { DateUtils } from "@/app/lib/date-utils";
 import { linkProcuracaoAoProcesso } from "@/app/actions/processos";
 import { ProcuracaoEmitidaPor, ProcuracaoStatus } from "@/app/generated/prisma";
+import { title, subtitle } from "@/components/primitives";
 
 type ProcuracaoFiltroValue<T extends string> = T | "";
 
@@ -272,8 +273,8 @@ export function ProcuracoesContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Procurações</h1>
-          <p className="text-small text-default-500">
+          <h1 className={title({ size: "lg", color: "blue" })}>Procurações</h1>
+          <p className={subtitle({ fullWidth: true })}>
             {procuracoesFiltradas.length} de {procuracoes.length} procurações
             {temFiltrosAtivos && " (filtradas)"}
           </p>

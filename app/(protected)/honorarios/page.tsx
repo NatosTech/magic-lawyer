@@ -29,11 +29,28 @@ import {
   DropdownItem,
   Textarea,
 } from "@heroui/react";
-import { PlusIcon, EyeIcon, PencilIcon, TrashIcon, CalculatorIcon, DollarSignIcon, TargetIcon, RefreshCwIcon, FilterIcon } from "lucide-react";
+import {
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+  CalculatorIcon,
+  DollarSignIcon,
+  FilterIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
-import { useHonorariosContratuais, useTiposHonorario } from "@/app/hooks/use-honorarios-contratuais";
-import { createHonorarioContratual, updateHonorarioContratual, deleteHonorarioContratual, calcularValorHonorario } from "@/app/actions/honorarios-contratuais";
+import {
+  useHonorariosContratuais,
+  useTiposHonorario,
+} from "@/app/hooks/use-honorarios-contratuais";
+import {
+  createHonorarioContratual,
+  updateHonorarioContratual,
+  deleteHonorarioContratual,
+  calcularValorHonorario,
+} from "@/app/actions/honorarios-contratuais";
+import { title, subtitle } from "@/components/primitives";
 
 type TipoHonorario = "FIXO" | "SUCESSO" | "HIBRIDO";
 
@@ -121,25 +138,36 @@ export default function HonorariosContratuaisPage() {
       // Validar campos obrigatórios
       if (!formData.contratoId) {
         toast.error("Selecione um contrato");
+
         return;
       }
 
       if (formData.tipo === "FIXO" && !formData.valorFixo) {
         toast.error("Valor fixo é obrigatório");
+
         return;
       }
 
-      if (formData.tipo === "SUCESSO" && (!formData.percentualSucesso || !formData.valorMinimoSucesso)) {
+      if (
+        formData.tipo === "SUCESSO" &&
+        (!formData.percentualSucesso || !formData.valorMinimoSucesso)
+      ) {
         toast.error("Percentual e valor mínimo são obrigatórios");
+
         return;
       }
 
-      if (formData.tipo === "HIBRIDO" && (!formData.valorFixo || !formData.percentualSucesso)) {
+      if (
+        formData.tipo === "HIBRIDO" &&
+        (!formData.valorFixo || !formData.percentualSucesso)
+      ) {
         toast.error("Valor fixo e percentual são obrigatórios");
+
         return;
       }
 
       let result;
+
       if (editingId) {
         result = await updateHonorarioContratual(editingId, formData);
       } else {
@@ -236,10 +264,18 @@ export default function HonorariosContratuaisPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Honorários Contratuais</h1>
-          <p className="text-gray-600">Gerencie os honorários dos contratos</p>
+          <h1 className={title({ size: "lg", color: "blue" })}>
+            Honorários Contratuais
+          </h1>
+          <p className={subtitle({ fullWidth: true })}>
+            Gerencie os honorários dos contratos
+          </p>
         </div>
-        <Button color="primary" startContent={<PlusIcon size={20} />} onPress={() => handleOpenModal()}>
+        <Button
+          color="primary"
+          startContent={<PlusIcon size={20} />}
+          onPress={() => handleOpenModal()}
+        >
           Novo Honorário
         </Button>
       </div>
@@ -249,21 +285,24 @@ export default function HonorariosContratuaisPage() {
         <CardBody>
           <div className="flex gap-4 items-end">
             <Input
+              className="max-w-xs"
               label="ID do Contrato"
               placeholder="Filtrar por contrato"
               value={filters.contratoId || ""}
-              onChange={(e) => setFilters({ ...filters, contratoId: e.target.value })}
-              className="max-w-xs"
+              onChange={(e) =>
+                setFilters({ ...filters, contratoId: e.target.value })
+              }
             />
             <Select
+              className="max-w-xs"
               label="Tipo de Honorário"
               placeholder="Todos os tipos"
               selectedKeys={filters.tipo ? [filters.tipo] : []}
               onSelectionChange={(keys) => {
                 const tipo = Array.from(keys)[0] as TipoHonorario;
+
                 setFilters({ ...filters, tipo: tipo || undefined });
               }}
-              className="max-w-xs"
             >
               {tipos.map((tipo) => (
                 <SelectItem key={tipo.value} textValue={tipo.label}>
@@ -274,7 +313,11 @@ export default function HonorariosContratuaisPage() {
                 </SelectItem>
               ))}
             </Select>
-            <Button variant="light" startContent={<FilterIcon size={16} />} onPress={() => setFilters({})}>
+            <Button
+              startContent={<FilterIcon size={16} />}
+              variant="light"
+              onPress={() => setFilters({})}
+            >
               Limpar Filtros
             </Button>
           </div>
@@ -305,62 +348,107 @@ export default function HonorariosContratuaisPage() {
                 {honorarios.map((honorario) => (
                   <TableRow key={honorario.id}>
                     <TableCell>
-                      <Chip color={getTipoColor(honorario.tipo)} variant="flat" startContent={getTipoIcon(honorario.tipo)}>
+                      <Chip
+                        color={getTipoColor(honorario.tipo)}
+                        startContent={getTipoIcon(honorario.tipo)}
+                        variant="flat"
+                      >
                         {tipos.find((t) => t.value === honorario.tipo)?.label}
                       </Chip>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{honorario.contrato.cliente.nome}</p>
-                        <p className="text-sm text-gray-500">{honorario.contrato.cliente.email}</p>
+                        <p className="font-medium">
+                          {honorario.contrato.cliente.nome}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {honorario.contrato.cliente.email}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{honorario.contrato.advogado.nome}</p>
-                        <p className="text-sm text-gray-500">{honorario.contrato.advogado.email}</p>
+                        <p className="font-medium">
+                          {honorario.contrato.advogado.nome}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {honorario.contrato.advogado.email}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {honorario.tipo === "FIXO" && honorario.valorFixo && <p className="font-medium">{formatCurrency(Number(honorario.valorFixo))}</p>}
+                        {honorario.tipo === "FIXO" && honorario.valorFixo && (
+                          <p className="font-medium">
+                            {formatCurrency(Number(honorario.valorFixo))}
+                          </p>
+                        )}
                         {honorario.tipo === "SUCESSO" && (
                           <div>
-                            <p className="font-medium">{honorario.percentualSucesso}%</p>
-                            <p className="text-xs text-gray-500">Mín: {formatCurrency(Number(honorario.valorMinimoSucesso || 0))}</p>
+                            <p className="font-medium">
+                              {honorario.percentualSucesso}%
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Mín:{" "}
+                              {formatCurrency(
+                                Number(honorario.valorMinimoSucesso || 0),
+                              )}
+                            </p>
                           </div>
                         )}
                         {honorario.tipo === "HIBRIDO" && (
                           <div>
-                            <p className="font-medium">{formatCurrency(Number(honorario.valorFixo || 0))}</p>
-                            <p className="text-xs text-gray-500">+ {honorario.percentualSucesso}%</p>
+                            <p className="font-medium">
+                              {formatCurrency(Number(honorario.valorFixo || 0))}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              + {honorario.percentualSucesso}%
+                            </p>
                           </div>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Chip color="success" variant="flat" size="sm">
+                      <Chip color="success" size="sm" variant="flat">
                         Ativo
                       </Chip>
                     </TableCell>
                     <TableCell>
                       <Dropdown>
                         <DropdownTrigger>
-                          <Button variant="light" size="sm">
+                          <Button size="sm" variant="light">
                             Ações
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu>
-                          <DropdownItem key="view" startContent={<EyeIcon size={16} />} onPress={() => handleOpenModal(honorario)}>
+                          <DropdownItem
+                            key="view"
+                            startContent={<EyeIcon size={16} />}
+                            onPress={() => handleOpenModal(honorario)}
+                          >
                             Ver Detalhes
                           </DropdownItem>
-                          <DropdownItem key="edit" startContent={<PencilIcon size={16} />} onPress={() => handleOpenModal(honorario)}>
+                          <DropdownItem
+                            key="edit"
+                            startContent={<PencilIcon size={16} />}
+                            onPress={() => handleOpenModal(honorario)}
+                          >
                             Editar
                           </DropdownItem>
-                          <DropdownItem key="calculate" startContent={<CalculatorIcon size={16} />} onPress={() => handleCalcular(honorario)}>
+                          <DropdownItem
+                            key="calculate"
+                            startContent={<CalculatorIcon size={16} />}
+                            onPress={() => handleCalcular(honorario)}
+                          >
                             Calcular Valor
                           </DropdownItem>
-                          <DropdownItem key="delete" startContent={<TrashIcon size={16} />} className="text-danger" color="danger" onPress={() => handleDelete(honorario.id)}>
+                          <DropdownItem
+                            key="delete"
+                            className="text-danger"
+                            color="danger"
+                            startContent={<TrashIcon size={16} />}
+                            onPress={() => handleDelete(honorario.id)}
+                          >
                             Remover
                           </DropdownItem>
                         </DropdownMenu>
@@ -374,9 +462,17 @@ export default function HonorariosContratuaisPage() {
 
           {honorarios.length === 0 && !isLoading && (
             <div className="text-center py-8">
-              <DollarSignIcon size={48} className="mx-auto text-gray-400 mb-4" />
+              <DollarSignIcon
+                className="mx-auto text-gray-400 mb-4"
+                size={48}
+              />
               <p className="text-gray-500">Nenhum honorário encontrado</p>
-              <Button color="primary" variant="light" className="mt-2" onPress={() => handleOpenModal()}>
+              <Button
+                className="mt-2"
+                color="primary"
+                variant="light"
+                onPress={() => handleOpenModal()}
+              >
                 Criar Primeiro Honorário
               </Button>
             </div>
@@ -385,21 +481,38 @@ export default function HonorariosContratuaisPage() {
       </Card>
 
       {/* Modal de Criação/Edição */}
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} size="2xl">
+      <Modal isOpen={modalOpen} size="2xl" onClose={handleCloseModal}>
         <ModalContent>
-          <ModalHeader>{editingId ? "Editar Honorário" : "Novo Honorário"}</ModalHeader>
+          <ModalHeader>
+            {editingId ? "Editar Honorário" : "Novo Honorário"}
+          </ModalHeader>
           <ModalBody className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <Input label="ID do Contrato" placeholder="Digite o ID do contrato" value={formData.contratoId} onChange={(e) => setFormData({ ...formData, contratoId: e.target.value })} isRequired />
+              <Input
+                isRequired
+                label="ID do Contrato"
+                placeholder="Digite o ID do contrato"
+                value={formData.contratoId}
+                onChange={(e) =>
+                  setFormData({ ...formData, contratoId: e.target.value })
+                }
+              />
               <Select
+                isRequired
                 label="Tipo de Honorário"
                 placeholder="Selecione o tipo"
                 selectedKeys={[formData.tipo]}
                 onSelectionChange={(keys) => {
                   const tipo = Array.from(keys)[0] as TipoHonorario;
-                  setFormData({ ...formData, tipo, valorFixo: undefined, percentualSucesso: undefined, valorMinimoSucesso: undefined });
+
+                  setFormData({
+                    ...formData,
+                    tipo,
+                    valorFixo: undefined,
+                    percentualSucesso: undefined,
+                    valorMinimoSucesso: undefined,
+                  });
                 }}
-                isRequired
               >
                 {tipos.map((tipo) => (
                   <SelectItem key={tipo.value} textValue={tipo.label}>
@@ -407,7 +520,9 @@ export default function HonorariosContratuaisPage() {
                       <span>{tipo.icon}</span>
                       <div>
                         <p className="font-medium">{tipo.label}</p>
-                        <p className="text-xs text-gray-500">{tipo.description}</p>
+                        <p className="text-xs text-gray-500">
+                          {tipo.description}
+                        </p>
                       </div>
                     </div>
                   </SelectItem>
@@ -420,38 +535,55 @@ export default function HonorariosContratuaisPage() {
             {/* Campos baseados no tipo */}
             {formData.tipo === "FIXO" && (
               <Input
+                isRequired
                 label="Valor Fixo"
                 placeholder="0,00"
-                type="number"
-                step="0.01"
-                value={formData.valorFixo?.toString() || ""}
-                onChange={(e) => setFormData({ ...formData, valorFixo: parseFloat(e.target.value) || undefined })}
                 startContent="R$"
-                isRequired
+                step="0.01"
+                type="number"
+                value={formData.valorFixo?.toString() || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    valorFixo: parseFloat(e.target.value) || undefined,
+                  })
+                }
               />
             )}
 
             {formData.tipo === "SUCESSO" && (
               <div className="grid grid-cols-2 gap-4">
                 <Input
+                  isRequired
+                  endContent="%"
                   label="Percentual de Sucesso"
                   placeholder="0"
-                  type="number"
                   step="0.01"
+                  type="number"
                   value={formData.percentualSucesso?.toString() || ""}
-                  onChange={(e) => setFormData({ ...formData, percentualSucesso: parseFloat(e.target.value) || undefined })}
-                  endContent="%"
-                  isRequired
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      percentualSucesso:
+                        parseFloat(e.target.value) || undefined,
+                    })
+                  }
                 />
                 <Input
+                  isRequired
                   label="Valor Mínimo"
                   placeholder="0,00"
-                  type="number"
-                  step="0.01"
-                  value={formData.valorMinimoSucesso?.toString() || ""}
-                  onChange={(e) => setFormData({ ...formData, valorMinimoSucesso: parseFloat(e.target.value) || undefined })}
                   startContent="R$"
-                  isRequired
+                  step="0.01"
+                  type="number"
+                  value={formData.valorMinimoSucesso?.toString() || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      valorMinimoSucesso:
+                        parseFloat(e.target.value) || undefined,
+                    })
+                  }
                 />
               </div>
             )}
@@ -459,24 +591,35 @@ export default function HonorariosContratuaisPage() {
             {formData.tipo === "HIBRIDO" && (
               <div className="space-y-4">
                 <Input
+                  isRequired
                   label="Valor Fixo"
                   placeholder="0,00"
-                  type="number"
-                  step="0.01"
-                  value={formData.valorFixo?.toString() || ""}
-                  onChange={(e) => setFormData({ ...formData, valorFixo: parseFloat(e.target.value) || undefined })}
                   startContent="R$"
-                  isRequired
+                  step="0.01"
+                  type="number"
+                  value={formData.valorFixo?.toString() || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      valorFixo: parseFloat(e.target.value) || undefined,
+                    })
+                  }
                 />
                 <Input
+                  isRequired
+                  endContent="%"
                   label="Percentual de Sucesso"
                   placeholder="0"
-                  type="number"
                   step="0.01"
+                  type="number"
                   value={formData.percentualSucesso?.toString() || ""}
-                  onChange={(e) => setFormData({ ...formData, percentualSucesso: parseFloat(e.target.value) || undefined })}
-                  endContent="%"
-                  isRequired
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      percentualSucesso:
+                        parseFloat(e.target.value) || undefined,
+                    })
+                  }
                 />
               </div>
             )}
@@ -485,22 +628,26 @@ export default function HonorariosContratuaisPage() {
               label="Base de Cálculo"
               placeholder="Ex: Valor da causa, valor do acordo, etc."
               value={formData.baseCalculo || ""}
-              onChange={(e) => setFormData({ ...formData, baseCalculo: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, baseCalculo: e.target.value })
+              }
             />
 
             <Textarea
               label="Observações"
               placeholder="Observações adicionais sobre o honorário"
-              value={formData.observacoes || ""}
-              onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
               rows={3}
+              value={formData.observacoes || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, observacoes: e.target.value })
+              }
             />
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={handleCloseModal}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleSubmit} isLoading={loading}>
+            <Button color="primary" isLoading={loading} onPress={handleSubmit}>
               {editingId ? "Atualizar" : "Criar"}
             </Button>
           </ModalFooter>

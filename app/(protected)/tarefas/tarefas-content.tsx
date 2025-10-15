@@ -2,21 +2,21 @@
 
 import { useCallback, useMemo, useState } from "react";
 import useSWR from "swr";
-import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import { Select, SelectItem } from "@heroui/select";
 import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/modal";
 import { Skeleton } from "@heroui/react";
-import { Plus, RefreshCw, CheckCircle2, Circle, Clock, XCircle, AlertCircle, Calendar, Target, TrendingUp, AlertTriangle, Kanban } from "lucide-react";
+import { Plus, CheckCircle2, Circle, Clock, XCircle, AlertCircle, Calendar, Target, TrendingUp, AlertTriangle, Kanban } from "lucide-react";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import { DatePicker } from "@heroui/date-picker";
-import { now, getLocalTimeZone, parseAbsoluteToLocal } from "@internationalized/date";
+import { parseAbsoluteToLocal } from "@internationalized/date";
 
 import { listTarefas, createTarefa, updateTarefa, deleteTarefa, marcarTarefaConcluida, getDashboardTarefas } from "@/app/actions/tarefas";
 import { listCategoriasTarefa } from "@/app/actions/categorias-tarefa";
@@ -154,11 +154,13 @@ export default function TarefasContent() {
 
   const { data: boardsData } = useSWR("boards-for-select", async () => {
     const { listBoards } = await import("@/app/actions/boards");
+
     return listBoards({ ativo: true });
   });
 
   const { data: colunasData } = useSWR(formData.boardId ? ["columns-for-select", formData.boardId] : null, async () => {
     const { listColumns } = await import("@/app/actions/board-columns");
+
     return listColumns(formData.boardId);
   });
 
@@ -344,7 +346,7 @@ export default function TarefasContent() {
           <p className="mt-2 text-sm text-default-500">Gerencie suas tarefas e atividades</p>
         </div>
         <div className="flex gap-2">
-          <Button as="a" href="/tarefas/kanban" color="secondary" variant="flat" startContent={<Kanban className="h-4 w-4" />}>
+          <Button as="a" color="secondary" href="/tarefas/kanban" startContent={<Kanban className="h-4 w-4" />} variant="flat">
             Ver Kanban
           </Button>
           <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={handleOpenNova}>
@@ -408,12 +410,12 @@ export default function TarefasContent() {
         <CardBody>
           <div className="flex flex-wrap gap-3 items-end">
             <Select
+              className="max-w-[200px]"
               label="📊 Status"
               placeholder="Todos os status"
-              className="max-w-[200px]"
               selectedKeys={filtroStatus ? [filtroStatus] : []}
-              onChange={(e) => setFiltroStatus(e.target.value)}
               size="sm"
+              onChange={(e) => setFiltroStatus(e.target.value)}
             >
               {Object.entries(statusConfig).map(([key, config]) => (
                 <SelectItem key={key}>{config.label}</SelectItem>
@@ -421,12 +423,12 @@ export default function TarefasContent() {
             </Select>
 
             <Select
+              className="max-w-[200px]"
               label="🎯 Prioridade"
               placeholder="Todas prioridades"
-              className="max-w-[200px]"
               selectedKeys={filtroPrioridade ? [filtroPrioridade] : []}
-              onChange={(e) => setFiltroPrioridade(e.target.value)}
               size="sm"
+              onChange={(e) => setFiltroPrioridade(e.target.value)}
             >
               {Object.entries(prioridadeConfig).map(([key, config]) => (
                 <SelectItem key={key}>{config.label}</SelectItem>
@@ -434,14 +436,14 @@ export default function TarefasContent() {
             </Select>
 
             <div className="flex gap-2">
-              <Button color={filtroMinhas ? "primary" : "default"} variant={filtroMinhas ? "solid" : "bordered"} onPress={() => setFiltroMinhas(!filtroMinhas)} startContent={<Target size={16} />}>
+              <Button color={filtroMinhas ? "primary" : "default"} startContent={<Target size={16} />} variant={filtroMinhas ? "solid" : "bordered"} onPress={() => setFiltroMinhas(!filtroMinhas)}>
                 Minhas
               </Button>
               <Button
                 color={filtroAtrasadas ? "danger" : "default"}
+                startContent={<AlertTriangle size={16} />}
                 variant={filtroAtrasadas ? "solid" : "bordered"}
                 onPress={() => setFiltroAtrasadas(!filtroAtrasadas)}
-                startContent={<AlertTriangle size={16} />}
               >
                 Atrasadas
               </Button>
@@ -472,7 +474,20 @@ export default function TarefasContent() {
             const dataInfo = getDataLimiteInfo(tarefa.dataLimite);
 
             return (
-              <Card key={tarefa.id} className="hover:border-primary/50 transition-colors cursor-pointer">
+              <Card
+                key={tarefa.id}
+                aria-label={`Ver detalhes da tarefa ${tarefa.titulo}`}
+                className="hover:border-primary/50 transition-colors cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setTarefaSelecionada(tarefa);
+                    onViewOpen();
+                  }
+                }}
+              >
                 <CardBody
                   onClick={() => {
                     setTarefaSelecionada(tarefa);
@@ -482,21 +497,21 @@ export default function TarefasContent() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 flex-1">
                       <button
+                        className="mt-1 hover:scale-110 transition-transform"
                         onClick={(e) => {
                           e.stopPropagation();
                           if (tarefa.status !== "CONCLUIDA") {
                             handleMarcarConcluida(tarefa);
                           }
                         }}
-                        className="mt-1 hover:scale-110 transition-transform"
                       >
-                        <StatusIcon size={20} className={tarefa.status === "CONCLUIDA" ? "text-success" : "text-default-400 hover:text-success"} />
+                        <StatusIcon className={tarefa.status === "CONCLUIDA" ? "text-success" : "text-default-400 hover:text-success"} size={20} />
                       </button>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <h3 className="font-semibold">{tarefa.titulo}</h3>
-                          <Chip size="sm" color={prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].color} variant="flat">
+                          <Chip color={prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].color} size="sm" variant="flat">
                             {prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].label}
                           </Chip>
                           {tarefa.categoria && (
@@ -532,7 +547,7 @@ export default function TarefasContent() {
                       </div>
                     </div>
 
-                    <Chip size="sm" color={statusConfig[tarefa.status as keyof typeof statusConfig].color} variant="flat">
+                    <Chip color={statusConfig[tarefa.status as keyof typeof statusConfig].color} size="sm" variant="flat">
                       {statusConfig[tarefa.status as keyof typeof statusConfig].label}
                     </Chip>
                   </div>
@@ -544,23 +559,24 @@ export default function TarefasContent() {
       </div>
 
       {/* Modal Criar/Editar */}
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+      <Modal isOpen={isOpen} scrollBehavior="inside" size="2xl" onClose={onClose}>
         <ModalContent>
           <ModalHeader>{tarefaSelecionada ? "Editar Tarefa" : "Nova Tarefa"}</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <Input label="Título" placeholder="Digite o título da tarefa" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} isRequired />
+              <Input isRequired label="Título" placeholder="Digite o título da tarefa" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} />
 
               <Textarea
                 label="Descrição"
+                minRows={3}
                 placeholder="Digite uma descrição (opcional)"
                 value={formData.descricao}
                 onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                minRows={3}
               />
 
               <div className="grid grid-cols-2 gap-4">
                 <Select
+                  isRequired
                   label="Prioridade"
                   selectedKeys={[formData.prioridade]}
                   onChange={(e) =>
@@ -569,7 +585,6 @@ export default function TarefasContent() {
                       prioridade: e.target.value as any,
                     })
                   }
-                  isRequired
                 >
                   {Object.entries(prioridadeConfig).map(([key, config]) => (
                     <SelectItem key={key}>{config.label}</SelectItem>
@@ -590,20 +605,20 @@ export default function TarefasContent() {
 
               <div className="grid grid-cols-2 gap-4">
                 <DatePicker
-                  label="Data Limite"
-                  variant="bordered"
                   hideTimeZone
                   showMonthAndYearPickers
+                  label="Data Limite"
                   value={formData.dataLimite}
+                  variant="bordered"
                   onChange={(value) => setFormData({ ...formData, dataLimite: value })}
                 />
 
                 <DatePicker
-                  label="Lembrete"
-                  variant="bordered"
                   hideTimeZone
                   showMonthAndYearPickers
+                  label="Lembrete"
                   value={formData.lembreteEm}
+                  variant="bordered"
                   onChange={(value) => setFormData({ ...formData, lembreteEm: value })}
                 />
               </div>
@@ -639,17 +654,23 @@ export default function TarefasContent() {
                     label="Board"
                     placeholder="Selecionar quadro"
                     selectedKeys={formData.boardId ? [formData.boardId] : []}
-                    onChange={(e) => setFormData({ ...formData, boardId: e.target.value, columnId: "" })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        boardId: e.target.value,
+                        columnId: "",
+                      })
+                    }
                   >
                     {(boards || []).length > 0 ? (boards || []).map((b: any) => <SelectItem key={b.id}>{b.nome}</SelectItem>) : null}
                   </Select>
 
                   <Select
+                    isDisabled={!formData.boardId}
                     label="Coluna"
                     placeholder="Selecionar coluna"
                     selectedKeys={formData.columnId ? [formData.columnId] : []}
                     onChange={(e) => setFormData({ ...formData, columnId: e.target.value })}
-                    isDisabled={!formData.boardId}
                   >
                     {(colunas || []).length > 0 ? (colunas || []).map((col: any) => <SelectItem key={col.id}>{col.nome}</SelectItem>) : null}
                   </Select>
@@ -662,7 +683,7 @@ export default function TarefasContent() {
             <Button variant="light" onPress={onClose}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleSalvar} isLoading={salvando}>
+            <Button color="primary" isLoading={salvando} onPress={handleSalvar}>
               {tarefaSelecionada ? "Atualizar" : "Criar"}
             </Button>
           </ModalFooter>
@@ -670,7 +691,7 @@ export default function TarefasContent() {
       </Modal>
 
       {/* Modal Visualizar */}
-      <Modal isOpen={isViewOpen} onClose={onViewClose} size="2xl">
+      <Modal isOpen={isViewOpen} size="2xl" onClose={onViewClose}>
         <ModalContent>
           {tarefaSelecionada && (
             <>

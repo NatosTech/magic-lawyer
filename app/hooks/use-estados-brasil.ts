@@ -7,13 +7,14 @@ export function useEstadosBrasil() {
     "estados-brasil",
     async () => {
       const estados = await getEstadosBrasilCached();
+
       return estados.map((e) => e.sigla);
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       // Cache permanente - estados não mudam
-    }
+    },
   );
 
   return {

@@ -60,6 +60,7 @@ export async function listAreasProcesso(params?: { ativo?: boolean }) {
     return { success: true, areas };
   } catch (error) {
     logger.error("Erro ao listar áreas de processo:", error);
+
     return { success: false, error: "Erro ao listar áreas de processo" };
   }
 }
@@ -99,6 +100,7 @@ export async function getAreaProcesso(id: string) {
     return { success: true, area };
   } catch (error) {
     logger.error("Erro ao buscar área de processo:", error);
+
     return { success: false, error: "Erro ao buscar área de processo" };
   }
 }
@@ -149,16 +151,22 @@ export async function createAreaProcesso(data: AreaProcessoCreatePayload) {
       },
     });
 
-    logger.info(`Área de processo criada: ${area.id} por usuário ${user.email}`);
+    logger.info(
+      `Área de processo criada: ${area.id} por usuário ${user.email}`,
+    );
 
     return { success: true, area };
   } catch (error) {
     logger.error("Erro ao criar área de processo:", error);
+
     return { success: false, error: "Erro ao criar área de processo" };
   }
 }
 
-export async function updateAreaProcesso(id: string, data: AreaProcessoUpdatePayload) {
+export async function updateAreaProcesso(
+  id: string,
+  data: AreaProcessoUpdatePayload,
+) {
   try {
     const session = await getSession();
 
@@ -201,7 +209,8 @@ export async function updateAreaProcesso(id: string, data: AreaProcessoUpdatePay
 
     if (data.nome !== undefined) updateData.nome = data.nome.trim();
     if (data.slug !== undefined) updateData.slug = data.slug.trim();
-    if (data.descricao !== undefined) updateData.descricao = data.descricao?.trim();
+    if (data.descricao !== undefined)
+      updateData.descricao = data.descricao?.trim();
     if (data.ordem !== undefined) updateData.ordem = data.ordem;
     if (data.ativo !== undefined) updateData.ativo = data.ativo;
 
@@ -215,6 +224,7 @@ export async function updateAreaProcesso(id: string, data: AreaProcessoUpdatePay
     return { success: true, area };
   } catch (error) {
     logger.error("Erro ao atualizar área de processo:", error);
+
     return { success: false, error: "Erro ao atualizar área de processo" };
   }
 }
@@ -269,6 +279,7 @@ export async function deleteAreaProcesso(id: string) {
     return { success: true };
   } catch (error) {
     logger.error("Erro ao deletar área de processo:", error);
+
     return { success: false, error: "Erro ao deletar área de processo" };
   }
 }

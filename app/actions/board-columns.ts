@@ -51,6 +51,7 @@ export async function listColumns(boardId: string) {
     return { success: true, columns };
   } catch (error) {
     logger.error("Erro ao listar colunas:", error);
+
     return { success: false, error: "Erro ao listar colunas" };
   }
 }
@@ -107,11 +108,14 @@ export async function createColumn(data: ColumnCreatePayload) {
       },
     });
 
-    logger.info(`Coluna criada: ${column.id} no board ${data.boardId} por usuário ${user.email}`);
+    logger.info(
+      `Coluna criada: ${column.id} no board ${data.boardId} por usuário ${user.email}`,
+    );
 
     return { success: true, column };
   } catch (error) {
     logger.error("Erro ao criar coluna:", error);
+
     return { success: false, error: "Erro ao criar coluna" };
   }
 }
@@ -156,6 +160,7 @@ export async function updateColumn(id: string, data: ColumnUpdatePayload) {
     return { success: true, column };
   } catch (error) {
     logger.error("Erro ao atualizar coluna:", error);
+
     return { success: false, error: "Erro ao atualizar coluna" };
   }
 }
@@ -210,11 +215,15 @@ export async function deleteColumn(id: string) {
     return { success: true };
   } catch (error) {
     logger.error("Erro ao deletar coluna:", error);
+
     return { success: false, error: "Erro ao deletar coluna" };
   }
 }
 
-export async function reorderColumns(boardId: string, columnOrders: Array<{ id: string; ordem: number }>) {
+export async function reorderColumns(
+  boardId: string,
+  columnOrders: Array<{ id: string; ordem: number }>,
+) {
   try {
     const session = await getSession();
 
@@ -242,15 +251,18 @@ export async function reorderColumns(boardId: string, columnOrders: Array<{ id: 
         prisma.boardColumn.update({
           where: { id },
           data: { ordem },
-        })
-      )
+        }),
+      ),
     );
 
-    logger.info(`Colunas reordenadas no board ${boardId} por usuário ${user.email}`);
+    logger.info(
+      `Colunas reordenadas no board ${boardId} por usuário ${user.email}`,
+    );
 
     return { success: true };
   } catch (error) {
     logger.error("Erro ao reordenar colunas:", error);
+
     return { success: false, error: "Erro ao reordenar colunas" };
   }
 }

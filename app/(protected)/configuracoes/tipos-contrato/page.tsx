@@ -6,12 +6,24 @@ import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
 import { Chip } from "@heroui/chip";
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/modal";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  useDisclosure,
+} from "@heroui/modal";
 import { Skeleton } from "@heroui/react";
 import { Plus, RefreshCw, Pencil, Trash2, FileText, File } from "lucide-react";
 import { toast } from "sonner";
 
-import { listTiposContrato, createTipoContrato, updateTipoContrato, deleteTipoContrato } from "@/app/actions/tipos-contrato";
+import {
+  listTiposContrato,
+  createTipoContrato,
+  updateTipoContrato,
+  deleteTipoContrato,
+} from "@/app/actions/tipos-contrato";
 import { title } from "@/components/primitives";
 
 export default function TiposContratoPage() {
@@ -26,9 +38,16 @@ export default function TiposContratoPage() {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const { data: tiposData, isLoading, mutate } = useSWR("tipos-contrato-list", () => listTiposContrato());
+  const {
+    data: tiposData,
+    isLoading,
+    mutate,
+  } = useSWR("tipos-contrato-list", () => listTiposContrato());
 
-  const tipos = useMemo(() => (tiposData?.success ? tiposData.tipos : []), [tiposData]);
+  const tipos = useMemo(
+    () => (tiposData?.success ? tiposData.tipos : []),
+    [tiposData],
+  );
 
   const handleOpenNovo = useCallback(() => {
     setTipoSelecionado(null);
@@ -47,7 +66,7 @@ export default function TiposContratoPage() {
       });
       onOpen();
     },
-    [onOpen]
+    [onOpen],
   );
 
   const handleSalvar = useCallback(async () => {
@@ -67,10 +86,16 @@ export default function TiposContratoPage() {
         ordem: formData.ordem,
       };
 
-      const result = tipoSelecionado ? await updateTipoContrato(tipoSelecionado.id, payload) : await createTipoContrato(payload);
+      const result = tipoSelecionado
+        ? await updateTipoContrato(tipoSelecionado.id, payload)
+        : await createTipoContrato(payload);
 
       if (result.success) {
-        toast.success(tipoSelecionado ? "Tipo atualizado com sucesso!" : "Tipo criado com sucesso!");
+        toast.success(
+          tipoSelecionado
+            ? "Tipo atualizado com sucesso!"
+            : "Tipo criado com sucesso!",
+        );
         mutate();
         onClose();
       } else {
@@ -96,7 +121,7 @@ export default function TiposContratoPage() {
         toast.error(result.error || "Erro ao excluir tipo");
       }
     },
-    [mutate]
+    [mutate],
   );
 
   return (
@@ -104,13 +129,24 @@ export default function TiposContratoPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className={title()}>Tipos de Contrato</h1>
-          <p className="text-default-500">Gerencie os tipos de contrato do escritório</p>
+          <p className="text-default-500">
+            Gerencie os tipos de contrato do escritório
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button color="default" variant="flat" startContent={<RefreshCw size={18} />} onPress={() => mutate()}>
+          <Button
+            color="default"
+            startContent={<RefreshCw size={18} />}
+            variant="flat"
+            onPress={() => mutate()}
+          >
             Atualizar
           </Button>
-          <Button color="primary" startContent={<Plus size={18} />} onPress={handleOpenNovo}>
+          <Button
+            color="primary"
+            startContent={<Plus size={18} />}
+            onPress={handleOpenNovo}
+          >
             Novo Tipo
           </Button>
         </div>
@@ -125,23 +161,34 @@ export default function TiposContratoPage() {
                 </CardBody>
               </Card>
             ))
-          : tipos && tipos.map((tipo: any) => (
+          : tipos &&
+            tipos.map((tipo: any) => (
               <Card key={tipo.id}>
                 <CardBody>
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-start gap-2 flex-1">
-                      <FileText size={20} className="mt-1 text-primary" />
+                      <FileText className="mt-1 text-primary" size={20} />
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{tipo.nome}</h3>
-                        <p className="text-xs text-default-400">Slug: {tipo.slug}</p>
+                        <p className="text-xs text-default-400">
+                          Slug: {tipo.slug}
+                        </p>
                       </div>
                     </div>
-                    <Chip size="sm" color={tipo.ativo ? "success" : "default"} variant="flat">
+                    <Chip
+                      color={tipo.ativo ? "success" : "default"}
+                      size="sm"
+                      variant="flat"
+                    >
                       {tipo.ativo ? "Ativo" : "Inativo"}
                     </Chip>
                   </div>
 
-                  {tipo.descricao && <p className="text-sm text-default-500 mb-3">{tipo.descricao}</p>}
+                  {tipo.descricao && (
+                    <p className="text-sm text-default-500 mb-3">
+                      {tipo.descricao}
+                    </p>
+                  )}
 
                   <div className="flex justify-between items-center text-xs text-default-400">
                     <div className="flex gap-3">
@@ -155,10 +202,21 @@ export default function TiposContratoPage() {
                       </span>
                     </div>
                     <div className="flex gap-2">
-                      <Button isIconOnly size="sm" variant="flat" onPress={() => handleOpenEditar(tipo)}>
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="flat"
+                        onPress={() => handleOpenEditar(tipo)}
+                      >
                         <Pencil size={14} />
                       </Button>
-                      <Button isIconOnly size="sm" color="danger" variant="flat" onPress={() => handleExcluir(tipo.id)}>
+                      <Button
+                        isIconOnly
+                        color="danger"
+                        size="sm"
+                        variant="flat"
+                        onPress={() => handleExcluir(tipo.id)}
+                      >
                         <Trash2 size={14} />
                       </Button>
                     </div>
@@ -168,17 +226,21 @@ export default function TiposContratoPage() {
             ))}
       </div>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <Modal isOpen={isOpen} size="lg" onClose={onClose}>
         <ModalContent>
-          <ModalHeader>{tipoSelecionado ? "Editar Tipo" : "Novo Tipo"}</ModalHeader>
+          <ModalHeader>
+            {tipoSelecionado ? "Editar Tipo" : "Novo Tipo"}
+          </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
               <Input
+                isRequired
                 label="Nome"
                 placeholder="Ex: Honorários Advocatícios"
                 value={formData.nome}
                 onChange={(e) => {
                   const nome = e.target.value;
+
                   setFormData({
                     ...formData,
                     nome,
@@ -191,17 +253,32 @@ export default function TiposContratoPage() {
                           .replace(/[^a-z0-9]+/g, "-"),
                   });
                 }}
-                isRequired
               />
 
-              <Input label="Slug" placeholder="honorarios-advocaticios" value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} isRequired />
+              <Input
+                isRequired
+                label="Slug"
+                placeholder="honorarios-advocaticios"
+                value={formData.slug}
+                onChange={(e) =>
+                  setFormData({ ...formData, slug: e.target.value })
+                }
+              />
 
-              <Textarea label="Descrição" placeholder="Descrição opcional" value={formData.descricao} onChange={(e) => setFormData({ ...formData, descricao: e.target.value })} minRows={3} />
+              <Textarea
+                label="Descrição"
+                minRows={3}
+                placeholder="Descrição opcional"
+                value={formData.descricao}
+                onChange={(e) =>
+                  setFormData({ ...formData, descricao: e.target.value })
+                }
+              />
 
               <Input
-                type="number"
                 label="Ordem"
                 placeholder="0"
+                type="number"
                 value={formData.ordem.toString()}
                 onChange={(e) =>
                   setFormData({
@@ -216,7 +293,7 @@ export default function TiposContratoPage() {
             <Button variant="light" onPress={onClose}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleSalvar} isLoading={salvando}>
+            <Button color="primary" isLoading={salvando} onPress={handleSalvar}>
               {tipoSelecionado ? "Atualizar" : "Criar"}
             </Button>
           </ModalFooter>

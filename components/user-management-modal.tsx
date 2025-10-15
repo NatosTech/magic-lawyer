@@ -21,11 +21,10 @@ import {
   Switch,
   Textarea,
   Chip,
-  Avatar,
   DatePicker,
 } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import { User, Briefcase, Shield, Save, X, MapPin, Settings } from "lucide-react";
+import { User, Briefcase, Shield, Save, X, MapPin } from "lucide-react";
 
 import { updateTenantUser, createTenantUser } from "@/app/actions/admin";
 import { UserRole, EspecialidadeJuridica } from "@/app/generated/prisma";
@@ -106,7 +105,13 @@ const especialidadeLabels: Record<string, string> = {
   OUTROS: "Outros",
 };
 
-export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess }: UserManagementModalProps) {
+export function UserManagementModal({
+  isOpen,
+  onClose,
+  tenantId,
+  user,
+  onSuccess,
+}: UserManagementModalProps) {
   const isEditing = !!user;
 
   // Buscar UFs
@@ -123,35 +128,69 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
   // Estados para dados pessoais adicionais (todos os roles)
   const [cpf, setCpf] = useState(user?.cpf || "");
   const [rg, setRg] = useState(user?.rg || "");
-  const [dataNascimentoUsuario, setDataNascimentoUsuario] = useState<DateValue | undefined>(
-    user?.dataNascimentoUsuario ? parseDate(new Date(user.dataNascimentoUsuario).toISOString().split("T")[0]) : undefined
+  const [dataNascimentoUsuario, setDataNascimentoUsuario] = useState<
+    DateValue | undefined
+  >(
+    user?.dataNascimentoUsuario
+      ? parseDate(
+          new Date(user.dataNascimentoUsuario).toISOString().split("T")[0],
+        )
+      : undefined,
   );
   const [observacoes, setObservacoes] = useState(user?.observacoes || "");
 
   // Estados para dados da OAB
   const [oabNumero, setOabNumero] = useState(user?.oabNumero || "");
   const [oabUf, setOabUf] = useState(user?.oabUf || "");
-  const [telefoneAdvogado, setTelefoneAdvogado] = useState(user?.telefone || "");
+  const [telefoneAdvogado, setTelefoneAdvogado] = useState(
+    user?.telefone || "",
+  );
   const [whatsapp, setWhatsapp] = useState(user?.whatsapp || "");
   const [bio, setBio] = useState(user?.bio || "");
-  const [especialidades, setEspecialidades] = useState<string[]>(user?.especialidades || []);
+  const [especialidades, setEspecialidades] = useState<string[]>(
+    user?.especialidades || [],
+  );
 
   // Estados para comissões
-  const [comissaoPadrao, setComissaoPadrao] = useState(user?.comissaoPadrao?.toString() || "");
-  const [comissaoAcaoGanha, setComissaoAcaoGanha] = useState(user?.comissaoAcaoGanha?.toString() || "");
-  const [comissaoHonorarios, setComissaoHonorarios] = useState(user?.comissaoHonorarios?.toString() || "");
+  const [comissaoPadrao, setComissaoPadrao] = useState(
+    user?.comissaoPadrao?.toString() || "",
+  );
+  const [comissaoAcaoGanha, setComissaoAcaoGanha] = useState(
+    user?.comissaoAcaoGanha?.toString() || "",
+  );
+  const [comissaoHonorarios, setComissaoHonorarios] = useState(
+    user?.comissaoHonorarios?.toString() || "",
+  );
 
   // Estados para dados do Cliente
-  const [tipoPessoa, setTipoPessoa] = useState<string>(user?.tipoPessoa || "FISICA");
+  const [tipoPessoa, setTipoPessoa] = useState<string>(
+    user?.tipoPessoa || "FISICA",
+  );
   const [documento, setDocumento] = useState(user?.documento || "");
-  const [dataNascimento, setDataNascimento] = useState<DateValue | undefined>(user?.dataNascimento ? parseDate(new Date(user.dataNascimento).toISOString().split("T")[0]) : undefined);
-  const [inscricaoEstadual, setInscricaoEstadual] = useState(user?.inscricaoEstadual || "");
-  const [telefoneCliente, setTelefoneCliente] = useState(user?.telefoneCliente || "");
+  const [dataNascimento, setDataNascimento] = useState<DateValue | undefined>(
+    user?.dataNascimento
+      ? parseDate(new Date(user.dataNascimento).toISOString().split("T")[0])
+      : undefined,
+  );
+  const [inscricaoEstadual, setInscricaoEstadual] = useState(
+    user?.inscricaoEstadual || "",
+  );
+  const [telefoneCliente, setTelefoneCliente] = useState(
+    user?.telefoneCliente || "",
+  );
   const [celular, setCelular] = useState(user?.celular || "");
-  const [responsavelNome, setResponsavelNome] = useState(user?.responsavelNome || "");
-  const [responsavelEmail, setResponsavelEmail] = useState(user?.responsavelEmail || "");
-  const [responsavelTelefone, setResponsavelTelefone] = useState(user?.responsavelTelefone || "");
-  const [observacoesCliente, setObservacoesCliente] = useState(user?.observacoesCliente || "");
+  const [responsavelNome, setResponsavelNome] = useState(
+    user?.responsavelNome || "",
+  );
+  const [responsavelEmail, setResponsavelEmail] = useState(
+    user?.responsavelEmail || "",
+  );
+  const [responsavelTelefone, setResponsavelTelefone] = useState(
+    user?.responsavelTelefone || "",
+  );
+  const [observacoesCliente, setObservacoesCliente] = useState(
+    user?.observacoesCliente || "",
+  );
 
   // Estados para permissões
   const [role, setRole] = useState<UserRole>(user?.role || "SECRETARIA");
@@ -164,11 +203,13 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
     const loadUfs = async () => {
       try {
         const estados = await getEstadosBrasilCached();
+
         setUfs(estados.map((e) => e.sigla));
       } catch (error) {
         console.error("Erro ao carregar UFs:", error);
       }
     };
+
     loadUfs();
   }, []);
 
@@ -186,7 +227,13 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
       // Dados pessoais adicionais
       setCpf(user?.cpf || "");
       setRg(user?.rg || "");
-      setDataNascimentoUsuario(user?.dataNascimentoUsuario ? parseDate(new Date(user.dataNascimentoUsuario).toISOString().split("T")[0]) : undefined);
+      setDataNascimentoUsuario(
+        user?.dataNascimentoUsuario
+          ? parseDate(
+              new Date(user.dataNascimentoUsuario).toISOString().split("T")[0],
+            )
+          : undefined,
+      );
       setObservacoes(user?.observacoes || "");
 
       // Dados da OAB
@@ -205,7 +252,11 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
       // Dados do Cliente
       setTipoPessoa(user?.tipoPessoa || "FISICA");
       setDocumento(user?.documento || "");
-      setDataNascimento(user?.dataNascimento ? parseDate(new Date(user.dataNascimento).toISOString().split("T")[0]) : undefined);
+      setDataNascimento(
+        user?.dataNascimento
+          ? parseDate(new Date(user.dataNascimento).toISOString().split("T")[0])
+          : undefined,
+      );
       setInscricaoEstadual(user?.inscricaoEstadual || "");
       setTelefoneCliente(user?.telefoneCliente || "");
       setCelular(user?.celular || "");
@@ -256,16 +307,25 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
           telefone: telefoneAdvogado || undefined,
           whatsapp: whatsapp || undefined,
           bio: bio || undefined,
-          especialidades: especialidades.length > 0 ? especialidades : undefined,
-          comissaoPadrao: comissaoPadrao ? parseFloat(comissaoPadrao) : undefined,
-          comissaoAcaoGanha: comissaoAcaoGanha ? parseFloat(comissaoAcaoGanha) : undefined,
-          comissaoHonorarios: comissaoHonorarios ? parseFloat(comissaoHonorarios) : undefined,
+          especialidades:
+            especialidades.length > 0 ? especialidades : undefined,
+          comissaoPadrao: comissaoPadrao
+            ? parseFloat(comissaoPadrao)
+            : undefined,
+          comissaoAcaoGanha: comissaoAcaoGanha
+            ? parseFloat(comissaoAcaoGanha)
+            : undefined,
+          comissaoHonorarios: comissaoHonorarios
+            ? parseFloat(comissaoHonorarios)
+            : undefined,
         }),
         // Campos específicos do cliente
         ...(role === "CLIENTE" && {
           tipoPessoa: tipoPessoa,
           documento: documento || undefined,
-          dataNascimento: dataNascimento ? `${dataNascimento.year}-${String(dataNascimento.month).padStart(2, "0")}-${String(dataNascimento.day).padStart(2, "0")}` : undefined,
+          dataNascimento: dataNascimento
+            ? `${dataNascimento.year}-${String(dataNascimento.month).padStart(2, "0")}-${String(dataNascimento.day).padStart(2, "0")}`
+            : undefined,
           inscricaoEstadual: inscricaoEstadual || undefined,
           telefoneCliente: telefoneCliente || undefined,
           celular: celular || undefined,
@@ -276,7 +336,9 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
         }),
       };
 
-      const response = isEditing ? await updateTenantUser(tenantId, user!.id, userData) : await createTenantUser(tenantId, userData);
+      const response = isEditing
+        ? await updateTenantUser(tenantId, user!.id, userData)
+        : await createTenantUser(tenantId, userData);
 
       if (!response.success) {
         addToast({
@@ -284,12 +346,15 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
           description: response.error || "Tente novamente",
           color: "danger",
         });
+
         return;
       }
 
       addToast({
         title: isEditing ? "Usuário atualizado" : "Usuário criado",
-        description: isEditing ? "Informações do usuário foram salvas" : "Usuário foi criado com sucesso",
+        description: isEditing
+          ? "Informações do usuário foram salvas"
+          : "Usuário foi criado com sucesso",
         color: "success",
       });
 
@@ -308,14 +373,14 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
 
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="5xl"
-      scrollBehavior="inside"
       classNames={{
         base: "max-h-[90vh]",
         body: "py-6",
       }}
+      isOpen={isOpen}
+      scrollBehavior="inside"
+      size="5xl"
+      onClose={onClose}
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
@@ -324,14 +389,24 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
               <User className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold">{isEditing ? "Editar Usuário" : "Criar Novo Usuário"}</h3>
-              <p className="text-sm text-default-500">{isEditing ? "Gerencie todas as informações do usuário" : "Cadastre um novo usuário no sistema"}</p>
+              <h3 className="text-lg font-semibold">
+                {isEditing ? "Editar Usuário" : "Criar Novo Usuário"}
+              </h3>
+              <p className="text-sm text-default-500">
+                {isEditing
+                  ? "Gerencie todas as informações do usuário"
+                  : "Cadastre um novo usuário no sistema"}
+              </p>
             </div>
           </div>
         </ModalHeader>
 
         <ModalBody>
-          <Tabs aria-label="Informações do usuário" color="primary" variant="underlined">
+          <Tabs
+            aria-label="Informações do usuário"
+            color="primary"
+            variant="underlined"
+          >
             {/* TAB 1: DADOS PESSOAIS */}
             <Tab
               key="personal"
@@ -345,50 +420,106 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
               <div className="space-y-6">
                 <Card className="border border-white/10 bg-background/70 backdrop-blur">
                   <CardHeader>
-                    <h4 className="text-md font-semibold">Informações Básicas</h4>
+                    <h4 className="text-md font-semibold">
+                      Informações Básicas
+                    </h4>
                   </CardHeader>
                   <CardBody className="space-y-4">
                     {isEditing && (
                       <div className="flex items-center gap-4 pb-4 border-b border-white/10">
-                        <AvatarUpload currentAvatarUrl={avatarUrl || undefined} userName={firstName || email} onAvatarChange={handleAvatarChange} />
+                        <AvatarUpload
+                          currentAvatarUrl={avatarUrl || undefined}
+                          userName={firstName || email}
+                          onAvatarChange={handleAvatarChange}
+                        />
                         <div className="flex-1">
-                          <p className="text-sm font-medium">{firstName && lastName ? `${firstName} ${lastName}` : email}</p>
-                          <p className="text-xs text-default-500">Clique no avatar para alterar a foto do usuário</p>
+                          <p className="text-sm font-medium">
+                            {firstName && lastName
+                              ? `${firstName} ${lastName}`
+                              : email}
+                          </p>
+                          <p className="text-xs text-default-500">
+                            Clique no avatar para alterar a foto do usuário
+                          </p>
                         </div>
                       </div>
                     )}
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <Input isRequired label="Nome" placeholder="João" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                      <Input isRequired label="Sobrenome" placeholder="Silva" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                      <Input
+                        isRequired
+                        label="Nome"
+                        placeholder="João"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                      />
+                      <Input
+                        isRequired
+                        label="Sobrenome"
+                        placeholder="Silva"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                      />
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <Input isRequired type="email" label="Email" placeholder="joao@escritorio.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-                      <Input label="Telefone Pessoal" placeholder="(11) 99999-9999" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                      <Input
+                        isRequired
+                        label="Email"
+                        placeholder="joao@escritorio.com"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                      <Input
+                        label="Telefone Pessoal"
+                        placeholder="(11) 99999-9999"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                      />
                     </div>
 
                     <Divider />
 
                     <div className="grid gap-4 md:grid-cols-3">
-                      <CpfInput label="CPF" placeholder="000.000.000-00" value={cpf} onChange={setCpf} />
-                      <Input label="RG" placeholder="00.000.000-0" value={rg} onChange={(e) => setRg(e.target.value)} />
+                      <CpfInput
+                        label="CPF"
+                        placeholder="000.000.000-00"
+                        value={cpf}
+                        onChange={setCpf}
+                      />
+                      <Input
+                        label="RG"
+                        placeholder="00.000.000-0"
+                        value={rg}
+                        onChange={(e) => setRg(e.target.value)}
+                      />
                       <DatePicker
-                        label="Data de Nascimento"
-                        value={dataNascimentoUsuario as any}
-                        onChange={(value: any) => setDataNascimentoUsuario(value || undefined)}
                         showMonthAndYearPickers
                         granularity="day"
+                        label="Data de Nascimento"
+                        value={dataNascimentoUsuario as any}
+                        onChange={(value: any) =>
+                          setDataNascimentoUsuario(value || undefined)
+                        }
                       />
                     </div>
 
-                    <Textarea label="Observações" placeholder="Informações adicionais sobre o usuário..." value={observacoes} onChange={(e) => setObservacoes(e.target.value)} minRows={3} />
+                    <Textarea
+                      label="Observações"
+                      minRows={3}
+                      placeholder="Informações adicionais sobre o usuário..."
+                      value={observacoes}
+                      onChange={(e) => setObservacoes(e.target.value)}
+                    />
                   </CardBody>
                 </Card>
 
                 <Card className="border border-white/10 bg-background/70 backdrop-blur">
                   <CardHeader>
-                    <h4 className="text-md font-semibold">Configurações de Acesso</h4>
+                    <h4 className="text-md font-semibold">
+                      Configurações de Acesso
+                    </h4>
                   </CardHeader>
                   <CardBody className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
@@ -398,13 +529,16 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
                           selectedKeys={new Set([role])}
                           onSelectionChange={(keys) => {
                             const [value] = Array.from(keys);
+
                             if (typeof value === "string") {
                               setRole(value as UserRole);
                             }
                           }}
                         >
                           {roleOptions.map((option) => (
-                            <SelectItem key={option.value}>{option.label}</SelectItem>
+                            <SelectItem key={option.value}>
+                              {option.label}
+                            </SelectItem>
                           ))}
                         </Select>
                       ) : (
@@ -422,19 +556,33 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm font-medium">Usuário Ativo</p>
-                          <p className="text-xs text-default-500">Permite login no sistema</p>
+                          <p className="text-xs text-default-500">
+                            Permite login no sistema
+                          </p>
                         </div>
-                        <Switch isSelected={active} onValueChange={setActive} color="success" />
+                        <Switch
+                          color="success"
+                          isSelected={active}
+                          onValueChange={setActive}
+                        />
                       </div>
                     </div>
 
                     {!isEditing && (
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium">Gerar Senha Temporária</p>
-                          <p className="text-xs text-default-500">Cria uma senha aleatória para o usuário</p>
+                          <p className="text-sm font-medium">
+                            Gerar Senha Temporária
+                          </p>
+                          <p className="text-xs text-default-500">
+                            Cria uma senha aleatória para o usuário
+                          </p>
                         </div>
-                        <Switch isSelected={generatePassword} onValueChange={setGeneratePassword} color="primary" />
+                        <Switch
+                          color="primary"
+                          isSelected={generatePassword}
+                          onValueChange={setGeneratePassword}
+                        />
                       </div>
                     )}
                   </CardBody>
@@ -456,17 +604,25 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
                 <div className="space-y-6">
                   <Card className="border border-white/10 bg-background/70 backdrop-blur">
                     <CardHeader>
-                      <h4 className="text-md font-semibold">Informações da OAB</h4>
+                      <h4 className="text-md font-semibold">
+                        Informações da OAB
+                      </h4>
                     </CardHeader>
                     <CardBody className="space-y-4">
                       <div className="grid gap-4 md:grid-cols-2">
-                        <Input label="Número da OAB" placeholder="123456" value={oabNumero} onChange={(e) => setOabNumero(e.target.value)} />
+                        <Input
+                          label="Número da OAB"
+                          placeholder="123456"
+                          value={oabNumero}
+                          onChange={(e) => setOabNumero(e.target.value)}
+                        />
                         <Select
                           label="UF da OAB"
                           placeholder="Selecione o estado"
                           selectedKeys={oabUf ? new Set([oabUf]) : new Set()}
                           onSelectionChange={(keys) => {
                             const [value] = Array.from(keys);
+
                             setOabUf(typeof value === "string" ? value : "");
                           }}
                         >
@@ -477,62 +633,94 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-2">
-                        <Input label="Telefone Profissional" placeholder="(11) 3333-3333" value={telefoneAdvogado} onChange={(e) => setTelefoneAdvogado(e.target.value)} />
-                        <Input label="WhatsApp" placeholder="(11) 99999-9999" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+                        <Input
+                          label="Telefone Profissional"
+                          placeholder="(11) 3333-3333"
+                          value={telefoneAdvogado}
+                          onChange={(e) => setTelefoneAdvogado(e.target.value)}
+                        />
+                        <Input
+                          label="WhatsApp"
+                          placeholder="(11) 99999-9999"
+                          value={whatsapp}
+                          onChange={(e) => setWhatsapp(e.target.value)}
+                        />
                       </div>
 
                       <Select
                         label="Especialidades Jurídicas"
                         placeholder="Selecione as especialidades"
-                        selectionMode="multiple"
                         selectedKeys={new Set(especialidades)}
+                        selectionMode="multiple"
                         onSelectionChange={(keys) => {
                           const selected = Array.from(keys) as string[];
+
                           setEspecialidades(selected);
                         }}
                       >
                         {Object.values(EspecialidadeJuridica).map((esp) => (
-                          <SelectItem key={esp}>{especialidadeLabels[esp]}</SelectItem>
+                          <SelectItem key={esp}>
+                            {especialidadeLabels[esp]}
+                          </SelectItem>
                         ))}
                       </Select>
 
-                      <Textarea label="Biografia Profissional" placeholder="Conte um pouco sobre a experiência profissional..." value={bio} onChange={(e) => setBio(e.target.value)} minRows={4} />
+                      <Textarea
+                        label="Biografia Profissional"
+                        minRows={4}
+                        placeholder="Conte um pouco sobre a experiência profissional..."
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                      />
                     </CardBody>
                   </Card>
 
                   <Card className="border border-white/10 bg-background/70 backdrop-blur">
                     <CardHeader>
-                      <h4 className="text-md font-semibold">Configurações de Comissão</h4>
-                      <p className="text-xs text-default-500">Percentuais padrão para cálculos automáticos de honorários</p>
+                      <h4 className="text-md font-semibold">
+                        Configurações de Comissão
+                      </h4>
+                      <p className="text-xs text-default-500">
+                        Percentuais padrão para cálculos automáticos de
+                        honorários
+                      </p>
                     </CardHeader>
                     <CardBody className="space-y-4">
                       <div className="grid gap-4 md:grid-cols-3">
                         <Input
+                          endContent={
+                            <span className="text-default-400">%</span>
+                          }
                           label="Comissão Padrão (%)"
-                          type="number"
-                          step="0.01"
                           placeholder="0.00"
+                          step="0.01"
+                          type="number"
                           value={comissaoPadrao}
                           onChange={(e) => setComissaoPadrao(e.target.value)}
-                          endContent={<span className="text-default-400">%</span>}
                         />
                         <Input
+                          endContent={
+                            <span className="text-default-400">%</span>
+                          }
                           label="Ação Ganha (%)"
-                          type="number"
-                          step="0.01"
                           placeholder="0.00"
+                          step="0.01"
+                          type="number"
                           value={comissaoAcaoGanha}
                           onChange={(e) => setComissaoAcaoGanha(e.target.value)}
-                          endContent={<span className="text-default-400">%</span>}
                         />
                         <Input
+                          endContent={
+                            <span className="text-default-400">%</span>
+                          }
                           label="Honorários (%)"
-                          type="number"
-                          step="0.01"
                           placeholder="0.00"
+                          step="0.01"
+                          type="number"
                           value={comissaoHonorarios}
-                          onChange={(e) => setComissaoHonorarios(e.target.value)}
-                          endContent={<span className="text-default-400">%</span>}
+                          onChange={(e) =>
+                            setComissaoHonorarios(e.target.value)
+                          }
                         />
                       </div>
                     </CardBody>
@@ -555,7 +743,9 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
                 <div className="space-y-6">
                   <Card className="border border-white/10 bg-background/70 backdrop-blur">
                     <CardHeader>
-                      <h4 className="text-md font-semibold">Informações do Cliente</h4>
+                      <h4 className="text-md font-semibold">
+                        Informações do Cliente
+                      </h4>
                     </CardHeader>
                     <CardBody className="space-y-4">
                       <div className="grid gap-4 md:grid-cols-2">
@@ -564,16 +754,24 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
                           selectedKeys={new Set([tipoPessoa])}
                           onSelectionChange={(keys) => {
                             const [value] = Array.from(keys);
+
                             if (typeof value === "string") {
                               setTipoPessoa(value);
                             }
                           }}
                         >
                           <SelectItem key="FISICA">Pessoa Física</SelectItem>
-                          <SelectItem key="JURIDICA">Pessoa Jurídica</SelectItem>
+                          <SelectItem key="JURIDICA">
+                            Pessoa Jurídica
+                          </SelectItem>
                         </Select>
                         {tipoPessoa === "FISICA" ? (
-                          <CpfInput label="CPF" placeholder="000.000.000-00" value={documento} onChange={setDocumento} />
+                          <CpfInput
+                            label="CPF"
+                            placeholder="000.000.000-00"
+                            value={documento}
+                            onChange={setDocumento}
+                          />
                         ) : (
                           <CnpjInput
                             label="CNPJ"
@@ -593,39 +791,79 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
 
                       <div className="grid gap-4 md:grid-cols-2">
                         <DatePicker
-                          label="Data de Nascimento"
-                          value={dataNascimento as any}
-                          onChange={(value: any) => setDataNascimento(value || undefined)}
                           showMonthAndYearPickers
                           granularity="day"
+                          label="Data de Nascimento"
+                          value={dataNascimento as any}
+                          onChange={(value: any) =>
+                            setDataNascimento(value || undefined)
+                          }
                         />
                         {tipoPessoa === "JURIDICA" && (
-                          <Input label="Inscrição Estadual" placeholder="000.000.000.000" value={inscricaoEstadual} onChange={(e) => setInscricaoEstadual(e.target.value)} />
+                          <Input
+                            label="Inscrição Estadual"
+                            placeholder="000.000.000.000"
+                            value={inscricaoEstadual}
+                            onChange={(e) =>
+                              setInscricaoEstadual(e.target.value)
+                            }
+                          />
                         )}
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-2">
-                        <Input label="Telefone" placeholder="(11) 3333-3333" value={telefoneCliente} onChange={(e) => setTelefoneCliente(e.target.value)} />
-                        <Input label="Celular" placeholder="(11) 99999-9999" value={celular} onChange={(e) => setCelular(e.target.value)} />
+                        <Input
+                          label="Telefone"
+                          placeholder="(11) 3333-3333"
+                          value={telefoneCliente}
+                          onChange={(e) => setTelefoneCliente(e.target.value)}
+                        />
+                        <Input
+                          label="Celular"
+                          placeholder="(11) 99999-9999"
+                          value={celular}
+                          onChange={(e) => setCelular(e.target.value)}
+                        />
                       </div>
 
                       <Divider />
 
                       <div className="space-y-4">
-                        <h5 className="text-sm font-medium">Responsável (se aplicável)</h5>
+                        <h5 className="text-sm font-medium">
+                          Responsável (se aplicável)
+                        </h5>
                         <div className="grid gap-4 md:grid-cols-3">
-                          <Input label="Nome do Responsável" placeholder="Nome completo" value={responsavelNome} onChange={(e) => setResponsavelNome(e.target.value)} />
-                          <Input label="Email do Responsável" placeholder="email@responsavel.com" value={responsavelEmail} onChange={(e) => setResponsavelEmail(e.target.value)} />
-                          <Input label="Telefone do Responsável" placeholder="(11) 99999-9999" value={responsavelTelefone} onChange={(e) => setResponsavelTelefone(e.target.value)} />
+                          <Input
+                            label="Nome do Responsável"
+                            placeholder="Nome completo"
+                            value={responsavelNome}
+                            onChange={(e) => setResponsavelNome(e.target.value)}
+                          />
+                          <Input
+                            label="Email do Responsável"
+                            placeholder="email@responsavel.com"
+                            value={responsavelEmail}
+                            onChange={(e) =>
+                              setResponsavelEmail(e.target.value)
+                            }
+                          />
+                          <Input
+                            label="Telefone do Responsável"
+                            placeholder="(11) 99999-9999"
+                            value={responsavelTelefone}
+                            onChange={(e) =>
+                              setResponsavelTelefone(e.target.value)
+                            }
+                          />
                         </div>
                       </div>
 
                       <Textarea
                         label="Observações"
+                        minRows={3}
                         placeholder="Informações adicionais sobre o cliente..."
                         value={observacoesCliente}
                         onChange={(e) => setObservacoesCliente(e.target.value)}
-                        minRows={3}
                       />
                     </CardBody>
                   </Card>
@@ -648,8 +886,12 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
                   <div className="flex items-center gap-3 mb-4">
                     <MapPin className="w-5 h-5 text-primary" />
                     <div>
-                      <h3 className="text-lg font-semibold">Gerenciar Endereços</h3>
-                      <p className="text-xs text-default-500">Endereços residenciais e comerciais do usuário</p>
+                      <h3 className="text-lg font-semibold">
+                        Gerenciar Endereços
+                      </h3>
+                      <p className="text-xs text-default-500">
+                        Endereços residenciais e comerciais do usuário
+                      </p>
                     </div>
                   </div>
                   <EnderecoManager userId={user!.id} />
@@ -670,7 +912,9 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
               <Card className="border border-white/10 bg-background/70 backdrop-blur">
                 <CardHeader>
                   <h4 className="text-md font-semibold">Controle de Acesso</h4>
-                  <p className="text-xs text-default-500">As permissões são definidas pela função do usuário</p>
+                  <p className="text-xs text-default-500">
+                    As permissões são definidas pela função do usuário
+                  </p>
                 </CardHeader>
                 <CardBody className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
@@ -684,7 +928,11 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
                     {isEditing && (
                       <div className="space-y-2">
                         <p className="text-sm font-medium">Status</p>
-                        <Chip color={active ? "success" : "warning"} size="lg" variant="flat">
+                        <Chip
+                          color={active ? "success" : "warning"}
+                          size="lg"
+                          variant="flat"
+                        >
                           {active ? "✓ Ativo" : "✗ Inativo"}
                         </Chip>
                       </div>
@@ -694,23 +942,33 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
                   <Divider />
 
                   <div className="space-y-3">
-                    <h5 className="text-sm font-medium">Permissões por Função</h5>
+                    <h5 className="text-sm font-medium">
+                      Permissões por Função
+                    </h5>
                     <div className="grid gap-3 text-sm">
                       <div className="flex justify-between items-center p-3 rounded-lg bg-default-100/50">
                         <span className="font-medium">Secretária:</span>
-                        <span className="text-default-500">Acesso básico aos módulos</span>
+                        <span className="text-default-500">
+                          Acesso básico aos módulos
+                        </span>
                       </div>
                       <div className="flex justify-between items-center p-3 rounded-lg bg-default-100/50">
                         <span className="font-medium">Advogado:</span>
-                        <span className="text-default-500">Acesso completo aos processos e clientes</span>
+                        <span className="text-default-500">
+                          Acesso completo aos processos e clientes
+                        </span>
                       </div>
                       <div className="flex justify-between items-center p-3 rounded-lg bg-default-100/50">
                         <span className="font-medium">Financeiro:</span>
-                        <span className="text-default-500">Acesso ao módulo financeiro e relatórios</span>
+                        <span className="text-default-500">
+                          Acesso ao módulo financeiro e relatórios
+                        </span>
                       </div>
                       <div className="flex justify-between items-center p-3 rounded-lg bg-default-100/50">
                         <span className="font-medium">Administrador:</span>
-                        <span className="text-default-500">Acesso total + configurações do escritório</span>
+                        <span className="text-default-500">
+                          Acesso total + configurações do escritório
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -719,7 +977,9 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
                     <>
                       <Divider />
                       <div className="space-y-2">
-                        <h5 className="text-sm font-medium">Informações da Conta</h5>
+                        <h5 className="text-sm font-medium">
+                          Informações da Conta
+                        </h5>
                         <div className="grid gap-2 text-xs text-default-500">
                           <div className="flex justify-between">
                             <span>ID do Usuário:</span>
@@ -727,13 +987,23 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
                           </div>
                           <div className="flex justify-between">
                             <span>Criado em:</span>
-                            <span>{new Date(user?.createdAt || "").toLocaleDateString("pt-BR")}</span>
+                            <span>
+                              {new Date(
+                                user?.createdAt || "",
+                              ).toLocaleDateString("pt-BR")}
+                            </span>
                           </div>
                           {user?.lastLoginAt && (
                             <div className="flex justify-between">
                               <span>Último login:</span>
                               <span>
-                                {new Date(user.lastLoginAt).toLocaleDateString("pt-BR")} às {new Date(user.lastLoginAt).toLocaleTimeString("pt-BR")}
+                                {new Date(user.lastLoginAt).toLocaleDateString(
+                                  "pt-BR",
+                                )}{" "}
+                                às{" "}
+                                {new Date(user.lastLoginAt).toLocaleTimeString(
+                                  "pt-BR",
+                                )}
                               </span>
                             </div>
                           )}
@@ -748,10 +1018,19 @@ export function UserManagementModal({ isOpen, onClose, tenantId, user, onSuccess
         </ModalBody>
 
         <ModalFooter>
-          <Button variant="light" onPress={onClose} startContent={<X className="h-4 w-4" />}>
+          <Button
+            startContent={<X className="h-4 w-4" />}
+            variant="light"
+            onPress={onClose}
+          >
             Cancelar
           </Button>
-          <Button color="primary" onPress={handleSave} isLoading={isSaving} startContent={<Save className="h-4 w-4" />}>
+          <Button
+            color="primary"
+            isLoading={isSaving}
+            startContent={<Save className="h-4 w-4" />}
+            onPress={handleSave}
+          >
             {isEditing ? "Salvar Alterações" : "Criar Usuário"}
           </Button>
         </ModalFooter>

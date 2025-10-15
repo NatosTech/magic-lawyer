@@ -3,7 +3,11 @@
 import { getSession } from "@/app/lib/auth";
 import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
 import logger from "@/lib/logger";
-import { Prisma, JuizStatus, JuizNivel, EspecialidadeJuridica } from "@/app/generated/prisma";
+import {
+  JuizStatus,
+  JuizNivel,
+  EspecialidadeJuridica,
+} from "@/app/generated/prisma";
 
 // ============================================
 // TYPES
@@ -268,9 +272,20 @@ export async function getJuizFormData(): Promise<{
       "SEGURANCA_PUBLICA",
     ] as EspecialidadeJuridica[];
 
-    const status = ["ATIVO", "INATIVO", "APOSENTADO", "AFASTADO"] as JuizStatus[];
+    const status = [
+      "ATIVO",
+      "INATIVO",
+      "APOSENTADO",
+      "AFASTADO",
+    ] as JuizStatus[];
 
-    const niveis = ["JUIZ_TITULAR", "JUIZ_SUBSTITUTO", "DESEMBARGADOR", "MINISTRO", "MAGISTRADO"] as JuizNivel[];
+    const niveis = [
+      "JUIZ_TITULAR",
+      "JUIZ_SUBSTITUTO",
+      "DESEMBARGADOR",
+      "MINISTRO",
+      "MAGISTRADO",
+    ] as JuizNivel[];
 
     return {
       success: true,
@@ -286,7 +301,10 @@ export async function getJuizFormData(): Promise<{
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao buscar dados do formulário",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao buscar dados do formulário",
     };
   }
 }
@@ -402,15 +420,23 @@ export async function getJuizes(filters: JuizFilters = {}): Promise<{
       orderBy: [{ isPremium: "desc" }, { isPublico: "desc" }, { nome: "asc" }],
     });
 
-    const converted = juizes.map((j) => convertAllDecimalFields(j)) as JuizSerializado[];
+    const converted = juizes.map((j) =>
+      convertAllDecimalFields(j),
+    ) as JuizSerializado[];
 
     const serialized = JSON.parse(
       JSON.stringify(converted, (key, value) => {
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
+
         return value;
-      })
+      }),
     );
 
     return {
@@ -441,7 +467,11 @@ export async function getJuizDetalhado(juizId: string): Promise<{
 
     const user = session.user as any;
 
-    logger.info("getJuizDetalhado - Usuário:", { userId: user.id, role: user.role, tenantId: user.tenantId });
+    logger.info("getJuizDetalhado - Usuário:", {
+      userId: user.id,
+      role: user.role,
+      tenantId: user.tenantId,
+    });
     logger.info("getJuizDetalhado - Buscando juiz:", juizId);
 
     // Construir condições de acesso - simplificado para debug
@@ -451,7 +481,9 @@ export async function getJuizDetalhado(juizId: string): Promise<{
 
     // Temporariamente permitir acesso a todos os juízes para debug
     // TODO: Restaurar controle de acesso depois de resolver o problema
-    logger.info("getJuizDetalhado - Aplicando condições de acesso simplificadas para debug");
+    logger.info(
+      "getJuizDetalhado - Aplicando condições de acesso simplificadas para debug",
+    );
 
     const juiz = await prisma.juiz.findFirst({
       where: whereCondition,
@@ -481,6 +513,7 @@ export async function getJuizDetalhado(juizId: string): Promise<{
 
     if (!juiz) {
       logger.error("getJuizDetalhado - Juiz não encontrado para ID:", juizId);
+
       return { success: false, error: "Juiz não encontrado ou sem acesso" };
     }
 
@@ -489,11 +522,17 @@ export async function getJuizDetalhado(juizId: string): Promise<{
     // Serialização simplificada para debug
     const serialized = JSON.parse(
       JSON.stringify(converted, (key, value) => {
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
+
         return value;
-      })
+      }),
     );
 
     logger.info("getJuizDetalhado - Dados serializados:", {
@@ -599,15 +638,23 @@ export async function getProcessosDoJuiz(juizId: string): Promise<{
       },
     });
 
-    const converted = processos.map((p) => convertAllDecimalFields(p)) as ProcessoJuiz[];
+    const converted = processos.map((p) =>
+      convertAllDecimalFields(p),
+    ) as ProcessoJuiz[];
 
     const serialized = JSON.parse(
       JSON.stringify(converted, (key, value) => {
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
+
         return value;
-      })
+      }),
     );
 
     return {
@@ -619,7 +666,10 @@ export async function getProcessosDoJuiz(juizId: string): Promise<{
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao buscar processos do juiz",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao buscar processos do juiz",
     };
   }
 }
@@ -705,15 +755,23 @@ export async function getJulgamentosDoJuiz(juizId: string): Promise<{
       },
     });
 
-    const converted = julgamentos.map((j) => convertAllDecimalFields(j)) as JulgamentoJuiz[];
+    const converted = julgamentos.map((j) =>
+      convertAllDecimalFields(j),
+    ) as JulgamentoJuiz[];
 
     const serialized = JSON.parse(
       JSON.stringify(converted, (key, value) => {
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
+
         return value;
-      })
+      }),
     );
 
     return {
@@ -725,7 +783,10 @@ export async function getJulgamentosDoJuiz(juizId: string): Promise<{
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao buscar julgamentos do juiz",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao buscar julgamentos do juiz",
     };
   }
 }
@@ -762,7 +823,8 @@ export async function verificarFavoritoJuiz(juizId: string): Promise<{
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao verificar favorito",
+      error:
+        error instanceof Error ? error.message : "Erro ao verificar favorito",
     };
   }
 }
@@ -811,7 +873,8 @@ export async function adicionarFavoritoJuiz(juizId: string): Promise<{
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao adicionar favorito",
+      error:
+        error instanceof Error ? error.message : "Erro ao adicionar favorito",
     };
   }
 }
@@ -847,12 +910,16 @@ export async function removerFavoritoJuiz(juizId: string): Promise<{
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao remover favorito",
+      error:
+        error instanceof Error ? error.message : "Erro ao remover favorito",
     };
   }
 }
 
-export async function getJuizesAdmin(filters?: { isPremium?: boolean; isPublico?: boolean }): Promise<{
+export async function getJuizesAdmin(filters?: {
+  isPremium?: boolean;
+  isPublico?: boolean;
+}): Promise<{
   success: boolean;
   data?: JuizSerializado[];
   error?: string;
@@ -874,8 +941,12 @@ export async function getJuizesAdmin(filters?: { isPremium?: boolean; isPublico?
     const juizes = await prisma.juiz.findMany({
       where: {
         superAdminId: user.id,
-        ...(filters?.isPremium !== undefined && { isPremium: filters.isPremium }),
-        ...(filters?.isPublico !== undefined && { isPublico: filters.isPublico }),
+        ...(filters?.isPremium !== undefined && {
+          isPremium: filters.isPremium,
+        }),
+        ...(filters?.isPublico !== undefined && {
+          isPublico: filters.isPublico,
+        }),
       },
       include: {
         tribunal: {
@@ -900,15 +971,23 @@ export async function getJuizesAdmin(filters?: { isPremium?: boolean; isPublico?
       orderBy: [{ isPremium: "desc" }, { isPublico: "desc" }, { nome: "asc" }],
     });
 
-    const converted = juizes.map((j) => convertAllDecimalFields(j)) as JuizSerializado[];
+    const converted = juizes.map((j) =>
+      convertAllDecimalFields(j),
+    ) as JuizSerializado[];
 
     const serialized = JSON.parse(
       JSON.stringify(converted, (key, value) => {
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
+
         return value;
-      })
+      }),
     );
 
     return {
@@ -972,7 +1051,10 @@ export async function createJuizTenant(data: {
 
     // Apenas super admins podem criar juízes
     if (user.role !== "SUPER_ADMIN") {
-      return { success: false, error: "Apenas super admins podem criar juízes" };
+      return {
+        success: false,
+        error: "Apenas super admins podem criar juízes",
+      };
     }
 
     const juiz = await prisma.juiz.create({
@@ -1006,11 +1088,17 @@ export async function createJuizTenant(data: {
 
     const serialized = JSON.parse(
       JSON.stringify(converted, (key, value) => {
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
+
         return value;
-      })
+      }),
     );
 
     return {
@@ -1060,7 +1148,7 @@ export async function updateJuizTenant(
     instagram?: string;
     observacoes?: string;
     tribunalId?: string;
-  }
+  },
 ): Promise<{
   success: boolean;
   juiz?: JuizSerializado;
@@ -1077,7 +1165,10 @@ export async function updateJuizTenant(
 
     // Apenas super admins podem atualizar juízes
     if (user.role !== "SUPER_ADMIN") {
-      return { success: false, error: "Apenas super admins podem atualizar juízes" };
+      return {
+        success: false,
+        error: "Apenas super admins podem atualizar juízes",
+      };
     }
 
     // Verificar se o juiz foi criado pelo super admin
@@ -1121,11 +1212,17 @@ export async function updateJuizTenant(
 
     const serialized = JSON.parse(
       JSON.stringify(converted, (key, value) => {
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
+
         return value;
-      })
+      }),
     );
 
     return {
@@ -1157,7 +1254,10 @@ export async function deleteJuizTenant(juizId: string): Promise<{
 
     // Apenas super admins podem excluir juízes
     if (user.role !== "SUPER_ADMIN") {
-      return { success: false, error: "Apenas super admins podem excluir juízes" };
+      return {
+        success: false,
+        error: "Apenas super admins podem excluir juízes",
+      };
     }
 
     // Verificar se o juiz foi criado pelo super admin
@@ -1202,7 +1302,7 @@ export async function deleteJuizTenant(juizId: string): Promise<{
 export async function uploadJuizFoto(
   formData: FormData,
   juizId: string,
-  juizNome: string
+  juizNome: string,
 ): Promise<{
   success: boolean;
   fotoUrl?: string;
@@ -1260,14 +1360,15 @@ export async function uploadJuizFoto(
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao fazer upload da foto",
+      error:
+        error instanceof Error ? error.message : "Erro ao fazer upload da foto",
     };
   }
 }
 
 export async function deleteJuizFoto(
   juizId: string,
-  currentFotoUrl: string | null
+  currentFotoUrl: string | null,
 ): Promise<{
   success: boolean;
   error?: string;
@@ -1309,7 +1410,10 @@ export async function deleteJuizFoto(
         });
 
         if (!deleteResponse.ok) {
-          logger.warn("Erro ao deletar foto do Cloudinary:", await deleteResponse.text());
+          logger.warn(
+            "Erro ao deletar foto do Cloudinary:",
+            await deleteResponse.text(),
+          );
         }
       } catch (deleteError) {
         logger.warn("Erro ao deletar foto do Cloudinary:", deleteError);

@@ -1,9 +1,10 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { UploadService } from "@/lib/upload-service";
-import { revalidatePath } from "next/cache";
 
 const uploadService = UploadService.getInstance();
 
@@ -18,10 +19,11 @@ export async function uploadDocumentoPeticao(
   options: {
     fileName: string;
     description?: string;
-  }
+  },
 ) {
   try {
     const session = await getSession();
+
     if (!session?.user?.id || !session?.user?.tenantId) {
       return {
         success: false,
@@ -68,12 +70,18 @@ export async function uploadDocumentoPeticao(
     const file = Buffer.from(fileBase64, "base64");
 
     // Fazer upload para Cloudinary usando a estrutura hierárquica
-    const uploadResult = await uploadService.uploadDocumento(file, userId, originalName, tenant.slug, {
-      tipo: "processo", // Documentos de petições vão na pasta de processos
-      identificador: peticao.processoId,
-      fileName: options.fileName,
-      description: options.description,
-    });
+    const uploadResult = await uploadService.uploadDocumento(
+      file,
+      userId,
+      originalName,
+      tenant.slug,
+      {
+        tipo: "processo", // Documentos de petições vão na pasta de processos
+        identificador: peticao.processoId,
+        fileName: options.fileName,
+        description: options.description,
+      },
+    );
 
     if (!uploadResult.success) {
       return {
@@ -122,6 +130,7 @@ export async function uploadDocumentoPeticao(
     };
   } catch (error) {
     console.error("Erro ao fazer upload do documento:", error);
+
     return {
       success: false,
       error: "Erro ao fazer upload do documento",
@@ -136,6 +145,7 @@ export async function uploadDocumentoPeticao(
 export async function removerDocumentoPeticao(peticaoId: string) {
   try {
     const session = await getSession();
+
     if (!session?.user?.id || !session?.user?.tenantId) {
       return {
         success: false,
@@ -207,6 +217,7 @@ export async function removerDocumentoPeticao(peticaoId: string) {
     };
   } catch (error) {
     console.error("Erro ao remover documento:", error);
+
     return {
       success: false,
       error: "Erro ao remover documento",

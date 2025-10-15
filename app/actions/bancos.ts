@@ -1,8 +1,8 @@
 "use server";
 
-import prisma from "@/app/lib/prisma";
-import { getSession } from "@/app/lib/auth";
 import { revalidatePath } from "next/cache";
+
+import prisma from "@/app/lib/prisma";
 
 // ============================================
 // INTERFACES
@@ -101,6 +101,7 @@ export async function listBancos(filters: BancoListFilters = {}) {
     };
   } catch (error) {
     console.error("Erro ao listar bancos:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -137,6 +138,7 @@ export async function getBanco(codigo: string) {
     };
   } catch (error) {
     console.error("Erro ao buscar banco:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -173,6 +175,7 @@ export async function createBanco(data: BancoCreateInput) {
     };
   } catch (error) {
     console.error("Erro ao criar banco:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -199,6 +202,7 @@ export async function updateBanco(codigo: string, data: BancoUpdateInput) {
     };
   } catch (error) {
     console.error("Erro ao atualizar banco:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -237,6 +241,7 @@ export async function deleteBanco(codigo: string) {
     };
   } catch (error) {
     console.error("Erro ao excluir banco:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -274,6 +279,7 @@ export async function toggleBancoStatus(codigo: string) {
     };
   } catch (error) {
     console.error("Erro ao alternar status do banco:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -306,6 +312,7 @@ export async function getBancosAtivos() {
     };
   } catch (error) {
     console.error("Erro ao buscar bancos ativos:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -315,34 +322,35 @@ export async function getBancosAtivos() {
 
 export async function getDashboardBancos() {
   try {
-    const [totalBancos, bancosAtivos, bancosInativos, bancoMaisUsado] = await Promise.all([
-      prisma.banco.count({
-        where: { deletedAt: null },
-      }),
-      prisma.banco.count({
-        where: { ativo: true, deletedAt: null },
-      }),
-      prisma.banco.count({
-        where: { ativo: false, deletedAt: null },
-      }),
-      prisma.banco.findFirst({
-        where: { deletedAt: null },
-        orderBy: {
-          dadosBancarios: {
-            _count: "desc",
-          },
-        },
-        select: {
-          codigo: true,
-          nome: true,
-          _count: {
-            select: {
-              dadosBancarios: true,
+    const [totalBancos, bancosAtivos, bancosInativos, bancoMaisUsado] =
+      await Promise.all([
+        prisma.banco.count({
+          where: { deletedAt: null },
+        }),
+        prisma.banco.count({
+          where: { ativo: true, deletedAt: null },
+        }),
+        prisma.banco.count({
+          where: { ativo: false, deletedAt: null },
+        }),
+        prisma.banco.findFirst({
+          where: { deletedAt: null },
+          orderBy: {
+            dadosBancarios: {
+              _count: "desc",
             },
           },
-        },
-      }),
-    ]);
+          select: {
+            codigo: true,
+            nome: true,
+            _count: {
+              select: {
+                dadosBancarios: true,
+              },
+            },
+          },
+        }),
+      ]);
 
     return {
       success: true,
@@ -355,6 +363,7 @@ export async function getDashboardBancos() {
     };
   } catch (error) {
     console.error("Erro ao buscar dashboard de bancos:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -383,6 +392,7 @@ export async function buscarBancoPorCodigo(codigo: string) {
     };
   } catch (error) {
     console.error("Erro ao buscar banco por código:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -411,6 +421,7 @@ export async function getBancosDisponiveis() {
     };
   } catch (error) {
     console.error("Erro ao buscar bancos disponíveis:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",

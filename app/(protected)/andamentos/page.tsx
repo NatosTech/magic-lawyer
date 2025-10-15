@@ -2,9 +2,41 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { Card, CardBody, CardHeader, Button, Input, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Chip, Tooltip, Skeleton } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Button,
+  Input,
+  Select,
+  SelectItem,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Textarea,
+  Chip,
+  Tooltip,
+  Skeleton,
+} from "@heroui/react";
 import { toast } from "sonner";
-import { Clock, FileText, Calendar, Plus, Search, Filter, X, Pencil, Trash2, AlertCircle, CheckCircle2, Activity, Bell, Paperclip } from "lucide-react";
+import {
+  Clock,
+  FileText,
+  Calendar,
+  Plus,
+  Search,
+  Filter,
+  X,
+  Pencil,
+  Trash2,
+  AlertCircle,
+  Activity,
+  Bell,
+  Paperclip,
+} from "lucide-react";
+
 import {
   listAndamentos,
   createAndamento,
@@ -17,6 +49,7 @@ import {
 } from "@/app/actions/andamentos";
 import { getAllProcessos } from "@/app/actions/processos";
 import { MovimentacaoTipo } from "@/app/generated/prisma";
+import { title, subtitle } from "@/components/primitives";
 
 // ============================================
 // TIPOS
@@ -76,17 +109,31 @@ export default function AndamentosPage() {
 
   // Estado do modal
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
-  const [selectedAndamento, setSelectedAndamento] = useState<Andamento | null>(null);
+  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">(
+    "create",
+  );
+  const [selectedAndamento, setSelectedAndamento] = useState<Andamento | null>(
+    null,
+  );
 
   // SWR - Fetch data
-  const { data: andamentosData, mutate: mutateAndamentos, isLoading: loadingAndamentos } = useSWR(["andamentos", filters], () => listAndamentos(filters));
+  const {
+    data: andamentosData,
+    mutate: mutateAndamentos,
+    isLoading: loadingAndamentos,
+  } = useSWR(["andamentos", filters], () => listAndamentos(filters));
 
-  const { data: dashboardData, isLoading: loadingDashboard } = useSWR("dashboard-andamentos", getDashboardAndamentos);
+  const { data: dashboardData, isLoading: loadingDashboard } = useSWR(
+    "dashboard-andamentos",
+    getDashboardAndamentos,
+  );
 
   const { data: processosData } = useSWR("processos-list", getAllProcessos);
 
-  const { data: tiposData } = useSWR("tipos-movimentacao", getTiposMovimentacao);
+  const { data: tiposData } = useSWR(
+    "tipos-movimentacao",
+    getTiposMovimentacao,
+  );
 
   const andamentos = (andamentosData?.data || []) as Andamento[];
   const dashboard = dashboardData?.data as DashboardData | undefined;
@@ -140,6 +187,7 @@ export default function AndamentosPage() {
     if (!confirm("Tem certeza que deseja excluir este andamento?")) return;
 
     const result = await deleteAndamento(andamentoId);
+
     if (result.success) {
       toast.success("Andamento excluído com sucesso!");
       mutateAndamentos();
@@ -196,10 +244,18 @@ export default function AndamentosPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Andamentos Processuais</h1>
-          <p className="text-gray-600 dark:text-gray-400">Timeline completa de movimentações processuais</p>
+          <h1 className={title({ size: "lg", color: "blue" })}>
+            Andamentos Processuais
+          </h1>
+          <p className={subtitle({ fullWidth: true })}>
+            Timeline completa de movimentações processuais
+          </p>
         </div>
-        <Button color="primary" startContent={<Plus size={20} />} onPress={openCreateModal}>
+        <Button
+          color="primary"
+          startContent={<Plus size={20} />}
+          onPress={openCreateModal}
+        >
           Novo Andamento
         </Button>
       </div>
@@ -216,30 +272,42 @@ export default function AndamentosPage() {
           <Card>
             <CardBody className="flex flex-row items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total de Andamentos</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Total de Andamentos
+                </p>
                 <p className="text-2xl font-bold">{dashboard.total}</p>
               </div>
-              <Activity size={32} className="text-primary" />
+              <Activity className="text-primary" size={32} />
             </CardBody>
           </Card>
 
           <Card>
             <CardBody className="flex flex-row items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Com Prazo</p>
-                <p className="text-2xl font-bold">{dashboard.porTipo.find((t) => t.tipo === "PRAZO")?._count || 0}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Com Prazo
+                </p>
+                <p className="text-2xl font-bold">
+                  {dashboard.porTipo.find((t) => t.tipo === "PRAZO")?._count ||
+                    0}
+                </p>
               </div>
-              <Clock size={32} className="text-warning" />
+              <Clock className="text-warning" size={32} />
             </CardBody>
           </Card>
 
           <Card>
             <CardBody className="flex flex-row items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Intimações</p>
-                <p className="text-2xl font-bold">{dashboard.porTipo.find((t) => t.tipo === "INTIMACAO")?._count || 0}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Intimações
+                </p>
+                <p className="text-2xl font-bold">
+                  {dashboard.porTipo.find((t) => t.tipo === "INTIMACAO")
+                    ?._count || 0}
+                </p>
               </div>
-              <Bell size={32} className="text-danger" />
+              <Bell className="text-danger" size={32} />
             </CardBody>
           </Card>
         </div>
@@ -249,8 +317,19 @@ export default function AndamentosPage() {
       <Card>
         <CardHeader className="flex flex-col gap-3">
           <div className="flex gap-2 w-full">
-            <Input placeholder="Buscar por título ou descrição..." value={searchTerm} onValueChange={handleSearch} startContent={<Search size={18} />} className="flex-1" />
-            <Button variant={showFilters ? "solid" : "flat"} color={showFilters ? "primary" : "default"} onPress={() => setShowFilters(!showFilters)} startContent={<Filter size={18} />}>
+            <Input
+              className="flex-1"
+              placeholder="Buscar por título ou descrição..."
+              startContent={<Search size={18} />}
+              value={searchTerm}
+              onValueChange={handleSearch}
+            />
+            <Button
+              color={showFilters ? "primary" : "default"}
+              startContent={<Filter size={18} />}
+              variant={showFilters ? "solid" : "flat"}
+              onPress={() => setShowFilters(!showFilters)}
+            >
               Filtros
             </Button>
           </div>
@@ -261,7 +340,9 @@ export default function AndamentosPage() {
                 label="Processo"
                 placeholder="Todos os processos"
                 selectedKeys={filters.processoId ? [filters.processoId] : []}
-                onChange={(e) => handleFilterChange("processoId", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("processoId", e.target.value)
+                }
               >
                 {processos.map((proc: any) => (
                   <SelectItem key={proc.id}>
@@ -270,13 +351,23 @@ export default function AndamentosPage() {
                 ))}
               </Select>
 
-              <Select label="Tipo" placeholder="Todos os tipos" selectedKeys={filters.tipo ? [filters.tipo] : []} onChange={(e) => handleFilterChange("tipo", e.target.value)}>
+              <Select
+                label="Tipo"
+                placeholder="Todos os tipos"
+                selectedKeys={filters.tipo ? [filters.tipo] : []}
+                onChange={(e) => handleFilterChange("tipo", e.target.value)}
+              >
                 {tipos.map((tipo) => (
                   <SelectItem key={tipo}>{tipo}</SelectItem>
                 ))}
               </Select>
 
-              <Button color="danger" variant="flat" onPress={clearFilters} startContent={<X size={18} />}>
+              <Button
+                color="danger"
+                startContent={<X size={18} />}
+                variant="flat"
+                onPress={clearFilters}
+              >
                 Limpar Filtros
               </Button>
             </div>
@@ -298,8 +389,10 @@ export default function AndamentosPage() {
             </div>
           ) : andamentos.length === 0 ? (
             <div className="text-center py-12">
-              <Activity size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">Nenhum andamento encontrado</p>
+              <Activity className="mx-auto text-gray-400 mb-4" size={48} />
+              <p className="text-gray-600 dark:text-gray-400">
+                Nenhum andamento encontrado
+              </p>
             </div>
           ) : (
             <div className="relative space-y-6">
@@ -314,14 +407,24 @@ export default function AndamentosPage() {
                   </div>
 
                   {/* Card do andamento */}
-                  <Card className="flex-1 hover:shadow-lg transition-shadow cursor-pointer" isPressable onPress={() => openViewModal(andamento)}>
+                  <Card
+                    isPressable
+                    className="flex-1 hover:shadow-lg transition-shadow cursor-pointer"
+                    onPress={() => openViewModal(andamento)}
+                  >
                     <CardBody>
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-lg">{andamento.titulo}</h3>
+                            <h3 className="font-semibold text-lg">
+                              {andamento.titulo}
+                            </h3>
                             {andamento.tipo && (
-                              <Chip size="sm" color={getTipoColor(andamento.tipo)} variant="flat">
+                              <Chip
+                                color={getTipoColor(andamento.tipo)}
+                                size="sm"
+                                variant="flat"
+                              >
                                 {andamento.tipo}
                               </Chip>
                             )}
@@ -329,10 +432,15 @@ export default function AndamentosPage() {
 
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                             Processo: {andamento.processo.numero}
-                            {andamento.processo.titulo && ` - ${andamento.processo.titulo}`}
+                            {andamento.processo.titulo &&
+                              ` - ${andamento.processo.titulo}`}
                           </p>
 
-                          {andamento.descricao && <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">{andamento.descricao}</p>}
+                          {andamento.descricao && (
+                            <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                              {andamento.descricao}
+                            </p>
+                          )}
 
                           <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-400">
                             <span className="flex items-center gap-1">
@@ -363,7 +471,8 @@ export default function AndamentosPage() {
 
                             {andamento.criadoPor && (
                               <span>
-                                Por: {andamento.criadoPor.firstName} {andamento.criadoPor.lastName}
+                                Por: {andamento.criadoPor.firstName}{" "}
+                                {andamento.criadoPor.lastName}
                               </span>
                             )}
                           </div>
@@ -371,13 +480,24 @@ export default function AndamentosPage() {
 
                         <div className="flex gap-2">
                           <Tooltip content="Editar">
-                            <Button size="sm" variant="light" isIconOnly onPress={() => openEditModal(andamento)}>
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              variant="light"
+                              onPress={() => openEditModal(andamento)}
+                            >
                               <Pencil size={16} />
                             </Button>
                           </Tooltip>
 
                           <Tooltip content="Excluir">
-                            <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => handleDelete(andamento.id)}>
+                            <Button
+                              isIconOnly
+                              color="danger"
+                              size="sm"
+                              variant="light"
+                              onPress={() => handleDelete(andamento.id)}
+                            >
                               <Trash2 size={16} />
                             </Button>
                           </Tooltip>
@@ -393,7 +513,15 @@ export default function AndamentosPage() {
       </Card>
 
       {/* Modal de Criar/Editar/Visualizar */}
-      <AndamentoModal isOpen={modalOpen} onClose={closeModal} mode={modalMode} andamento={selectedAndamento} processos={processos} tipos={tipos} onSuccess={mutateAndamentos} />
+      <AndamentoModal
+        andamento={selectedAndamento}
+        isOpen={modalOpen}
+        mode={modalMode}
+        processos={processos}
+        tipos={tipos}
+        onClose={closeModal}
+        onSuccess={mutateAndamentos}
+      />
     </div>
   );
 }
@@ -412,7 +540,15 @@ interface AndamentoModalProps {
   onSuccess: () => void;
 }
 
-function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, onSuccess }: AndamentoModalProps) {
+function AndamentoModal({
+  isOpen,
+  onClose,
+  mode,
+  andamento,
+  processos,
+  tipos,
+  onSuccess,
+}: AndamentoModalProps) {
   const isReadOnly = mode === "view";
 
   const [formData, setFormData] = useState<any>({
@@ -445,8 +581,12 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
           titulo: andamento.titulo,
           descricao: andamento.descricao || "",
           tipo: andamento.tipo || "",
-          dataMovimentacao: new Date(andamento.dataMovimentacao).toISOString().slice(0, 16),
-          prazo: andamento.prazo ? new Date(andamento.prazo).toISOString().slice(0, 16) : "",
+          dataMovimentacao: new Date(andamento.dataMovimentacao)
+            .toISOString()
+            .slice(0, 16),
+          prazo: andamento.prazo
+            ? new Date(andamento.prazo).toISOString().slice(0, 16)
+            : "",
           geraPrazo: false,
         });
       }
@@ -456,6 +596,7 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
   const handleSubmit = async () => {
     if (!formData.processoId || !formData.titulo) {
       toast.error("Preencha os campos obrigatórios");
+
       return;
     }
 
@@ -466,17 +607,26 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
       titulo: formData.titulo,
       descricao: formData.descricao || undefined,
       tipo: formData.tipo || undefined,
-      dataMovimentacao: formData.dataMovimentacao ? new Date(formData.dataMovimentacao) : undefined,
+      dataMovimentacao: formData.dataMovimentacao
+        ? new Date(formData.dataMovimentacao)
+        : undefined,
       prazo: formData.prazo ? new Date(formData.prazo) : undefined,
       geraPrazo: formData.geraPrazo,
     };
 
-    const result = mode === "create" ? await createAndamento(input) : await updateAndamento(andamento!.id, input);
+    const result =
+      mode === "create"
+        ? await createAndamento(input)
+        : await updateAndamento(andamento!.id, input);
 
     setSaving(false);
 
     if (result.success) {
-      toast.success(mode === "create" ? "Andamento criado com sucesso!" : "Andamento atualizado com sucesso!");
+      toast.success(
+        mode === "create"
+          ? "Andamento criado com sucesso!"
+          : "Andamento atualizado com sucesso!",
+      );
       onSuccess();
       onClose();
     } else {
@@ -485,7 +635,7 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} scrollBehavior="inside" size="2xl" onClose={onClose}>
       <ModalContent>
         <ModalHeader>
           {mode === "create" && "Novo Andamento"}
@@ -495,12 +645,14 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
         <ModalBody>
           <div className="space-y-4">
             <Select
+              isRequired
+              isDisabled={isReadOnly || mode === "edit"}
               label="Processo"
               placeholder="Selecione o processo"
               selectedKeys={formData.processoId ? [formData.processoId] : []}
-              onChange={(e) => setFormData({ ...formData, processoId: e.target.value })}
-              isRequired
-              isDisabled={isReadOnly || mode === "edit"}
+              onChange={(e) =>
+                setFormData({ ...formData, processoId: e.target.value })
+              }
             >
               {processos.map((proc: any) => (
                 <SelectItem key={proc.id}>
@@ -510,29 +662,35 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
             </Select>
 
             <Input
+              isRequired
+              isReadOnly={isReadOnly}
               label="Título"
               placeholder="Ex: Sentença proferida, Intimação recebida, etc"
               value={formData.titulo}
-              onValueChange={(value) => setFormData({ ...formData, titulo: value })}
-              isRequired
-              isReadOnly={isReadOnly}
+              onValueChange={(value) =>
+                setFormData({ ...formData, titulo: value })
+              }
             />
 
             <Textarea
+              isReadOnly={isReadOnly}
               label="Descrição"
+              minRows={3}
               placeholder="Descreva o andamento em detalhes..."
               value={formData.descricao}
-              onValueChange={(value) => setFormData({ ...formData, descricao: value })}
-              minRows={3}
-              isReadOnly={isReadOnly}
+              onValueChange={(value) =>
+                setFormData({ ...formData, descricao: value })
+              }
             />
 
             <Select
+              isDisabled={isReadOnly}
               label="Tipo"
               placeholder="Selecione o tipo"
               selectedKeys={formData.tipo ? [formData.tipo] : []}
-              onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-              isDisabled={isReadOnly}
+              onChange={(e) =>
+                setFormData({ ...formData, tipo: e.target.value })
+              }
             >
               {tipos.map((tipo) => (
                 <SelectItem key={tipo}>{tipo}</SelectItem>
@@ -540,26 +698,39 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
             </Select>
 
             <Input
-              type="datetime-local"
-              label="Data da Movimentação"
-              value={formData.dataMovimentacao}
-              onValueChange={(value) => setFormData({ ...formData, dataMovimentacao: value })}
               isReadOnly={isReadOnly}
+              label="Data da Movimentação"
+              type="datetime-local"
+              value={formData.dataMovimentacao}
+              onValueChange={(value) =>
+                setFormData({ ...formData, dataMovimentacao: value })
+              }
             />
 
             <Input
-              type="datetime-local"
-              label="Prazo (opcional)"
-              value={formData.prazo}
-              onValueChange={(value) => setFormData({ ...formData, prazo: value })}
-              isReadOnly={isReadOnly}
               description="Se houver prazo relacionado a este andamento"
+              isReadOnly={isReadOnly}
+              label="Prazo (opcional)"
+              type="datetime-local"
+              value={formData.prazo}
+              onValueChange={(value) =>
+                setFormData({ ...formData, prazo: value })
+              }
             />
 
             {!isReadOnly && formData.prazo && mode === "create" && (
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={formData.geraPrazo} onChange={(e) => setFormData({ ...formData, geraPrazo: e.target.checked })} className="w-4 h-4" />
-                <span className="text-sm">Gerar prazo automático no sistema</span>
+                <input
+                  checked={formData.geraPrazo}
+                  className="w-4 h-4"
+                  type="checkbox"
+                  onChange={(e) =>
+                    setFormData({ ...formData, geraPrazo: e.target.checked })
+                  }
+                />
+                <span className="text-sm">
+                  Gerar prazo automático no sistema
+                </span>
               </label>
             )}
 
@@ -567,10 +738,18 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
               <>
                 {andamento.documentos.length > 0 && (
                   <div>
-                    <p className="text-sm font-semibold mb-2">Documentos Anexados:</p>
+                    <p className="text-sm font-semibold mb-2">
+                      Documentos Anexados:
+                    </p>
                     <div className="space-y-1">
                       {andamento.documentos.map((doc) => (
-                        <a key={doc.id} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
+                        <a
+                          key={doc.id}
+                          className="flex items-center gap-2 text-sm text-primary hover:underline"
+                          href={doc.url}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
                           <Paperclip size={14} />
                           {doc.nome}
                         </a>
@@ -581,13 +760,28 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
 
                 {andamento.prazosRelacionados.length > 0 && (
                   <div>
-                    <p className="text-sm font-semibold mb-2">Prazos Relacionados:</p>
+                    <p className="text-sm font-semibold mb-2">
+                      Prazos Relacionados:
+                    </p>
                     <div className="space-y-2">
                       {andamento.prazosRelacionados.map((prazo) => (
-                        <div key={prazo.id} className="p-2 bg-gray-100 dark:bg-gray-800 rounded">
+                        <div
+                          key={prazo.id}
+                          className="p-2 bg-gray-100 dark:bg-gray-800 rounded"
+                        >
                           <p className="text-sm font-medium">{prazo.titulo}</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">Vencimento: {new Date(prazo.dataVencimento).toLocaleDateString("pt-BR")}</p>
-                          <Chip size="sm" color={prazo.status === "ABERTO" ? "warning" : "success"}>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            Vencimento:{" "}
+                            {new Date(prazo.dataVencimento).toLocaleDateString(
+                              "pt-BR",
+                            )}
+                          </p>
+                          <Chip
+                            color={
+                              prazo.status === "ABERTO" ? "warning" : "success"
+                            }
+                            size="sm"
+                          >
                             {prazo.status}
                           </Chip>
                         </div>
@@ -604,7 +798,7 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
             {isReadOnly ? "Fechar" : "Cancelar"}
           </Button>
           {!isReadOnly && (
-            <Button color="primary" onPress={handleSubmit} isLoading={saving}>
+            <Button color="primary" isLoading={saving} onPress={handleSubmit}>
               {mode === "create" ? "Criar" : "Salvar"}
             </Button>
           )}

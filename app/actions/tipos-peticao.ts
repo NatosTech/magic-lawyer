@@ -1,8 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
-import { revalidatePath } from "next/cache";
 
 // ============================================
 // FUNÇÕES AUXILIARES
@@ -10,9 +11,11 @@ import { revalidatePath } from "next/cache";
 
 async function getTenantId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado ou tenant não encontrado");
   }
+
   return session.user.tenantId;
 }
 
@@ -43,6 +46,7 @@ export async function listTiposPeticao() {
     };
   } catch (error) {
     console.error("Erro ao listar tipos de petição:", error);
+
     return {
       success: false,
       error: "Erro ao listar tipos de petição",
@@ -55,7 +59,12 @@ export async function listTiposPeticao() {
 // CRIAR TIPO DE PETIÇÃO
 // ============================================
 
-export async function createTipoPeticao(data: { nome: string; descricao?: string; categoria?: string; ordem?: number }) {
+export async function createTipoPeticao(data: {
+  nome: string;
+  descricao?: string;
+  categoria?: string;
+  ordem?: number;
+}) {
   try {
     const tenantId = await getTenantId();
 
@@ -99,6 +108,7 @@ export async function createTipoPeticao(data: { nome: string; descricao?: string
     };
   } catch (error) {
     console.error("Erro ao criar tipo de petição:", error);
+
     return {
       success: false,
       error: "Erro ao criar tipo de petição",
@@ -118,7 +128,7 @@ export async function updateTipoPeticao(
     categoria?: string;
     ordem?: number;
     ativo?: boolean;
-  }
+  },
 ) {
   try {
     const tenantId = await getTenantId();
@@ -178,6 +188,7 @@ export async function updateTipoPeticao(
     };
   } catch (error) {
     console.error("Erro ao atualizar tipo de petição:", error);
+
     return {
       success: false,
       error: "Erro ao atualizar tipo de petição",
@@ -234,6 +245,7 @@ export async function deleteTipoPeticao(id: string) {
     };
   } catch (error) {
     console.error("Erro ao deletar tipo de petição:", error);
+
     return {
       success: false,
       error: "Erro ao deletar tipo de petição",
@@ -270,6 +282,7 @@ export async function getTipoPeticao(id: string) {
     };
   } catch (error) {
     console.error("Erro ao buscar tipo de petição:", error);
+
     return {
       success: false,
       error: "Erro ao buscar tipo de petição",
@@ -326,9 +339,17 @@ export async function addTiposGlobais() {
 
       // EXECUCAO
       { nome: "Cumprimento de Sentença", categoria: "EXECUCAO", ordem: 30 },
-      { nome: "Execução de Título Extrajudicial", categoria: "EXECUCAO", ordem: 31 },
+      {
+        nome: "Execução de Título Extrajudicial",
+        categoria: "EXECUCAO",
+        ordem: 31,
+      },
       { nome: "Embargos à Execução", categoria: "EXECUCAO", ordem: 32 },
-      { nome: "Exceção de Pré-executividade", categoria: "EXECUCAO", ordem: 33 },
+      {
+        nome: "Exceção de Pré-executividade",
+        categoria: "EXECUCAO",
+        ordem: 33,
+      },
 
       // URGENTE
       { nome: "Tutela Antecipada", categoria: "URGENTE", ordem: 40 },
@@ -385,6 +406,7 @@ export async function addTiposGlobais() {
     };
   } catch (error) {
     console.error("Erro ao adicionar tipos globais:", error);
+
     return { success: false, error: "Erro ao adicionar tipos globais" };
   }
 }
@@ -394,7 +416,10 @@ export async function addTiposGlobais() {
 // ============================================
 // Permite o tenant escolher quais tipos globais quer usar
 
-export async function configurarTiposGlobaisTenant(tipoGlobalId: string, ativo: boolean) {
+export async function configurarTiposGlobaisTenant(
+  tipoGlobalId: string,
+  ativo: boolean,
+) {
   try {
     const tenantId = await getTenantId();
 
@@ -445,6 +470,7 @@ export async function configurarTiposGlobaisTenant(tipoGlobalId: string, ativo: 
     };
   } catch (error) {
     console.error("Erro ao configurar tipo global:", error);
+
     return {
       success: false,
       error: "Erro ao configurar tipo global",
@@ -474,6 +500,7 @@ export async function listarTiposGlobais() {
     };
   } catch (error) {
     console.error("Erro ao listar tipos globais:", error);
+
     return {
       success: false,
       error: "Erro ao listar tipos globais",

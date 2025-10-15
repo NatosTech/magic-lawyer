@@ -3,13 +3,22 @@
 import { useState } from "react";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 import { Chip } from "@heroui/chip";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { addToast } from "@heroui/toast";
 import { Edit, Check, X } from "lucide-react";
 
-import { updateTenantDomain, validateDomain } from "@/app/actions/tenant-domains";
+import {
+  updateTenantDomain,
+  validateDomain,
+} from "@/app/actions/tenant-domains";
 
 interface TenantDomainManagerProps {
   tenant: {
@@ -22,11 +31,17 @@ interface TenantDomainManagerProps {
   onUpdate?: () => void;
 }
 
-export function TenantDomainManager({ tenant, onUpdate }: TenantDomainManagerProps) {
+export function TenantDomainManager({
+  tenant,
+  onUpdate,
+}: TenantDomainManagerProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [domain, setDomain] = useState(tenant.domain || "");
   const [isLoading, setIsLoading] = useState(false);
-  const [validation, setValidation] = useState<{ valid: boolean; message: string } | null>(null);
+  const [validation, setValidation] = useState<{
+    valid: boolean;
+    message: string;
+  } | null>(null);
 
   const handleSave = async () => {
     setIsLoading(true);
@@ -38,6 +53,7 @@ export function TenantDomainManager({ tenant, onUpdate }: TenantDomainManagerPro
       if (!validationResult.valid) {
         setValidation(validationResult);
         setIsLoading(false);
+
         return;
       }
 
@@ -55,7 +71,8 @@ export function TenantDomainManager({ tenant, onUpdate }: TenantDomainManagerPro
     } catch (error) {
       addToast({
         title: "Erro ao atualizar domínio",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
+        description:
+          error instanceof Error ? error.message : "Erro desconhecido",
         color: "danger",
       });
     } finally {
@@ -75,6 +92,7 @@ export function TenantDomainManager({ tenant, onUpdate }: TenantDomainManagerPro
     if (value && value !== tenant.domain) {
       // Validar em tempo real
       const validationResult = await validateDomain(value, tenant.id);
+
       setValidation(validationResult);
     } else {
       setValidation(null);
@@ -111,9 +129,16 @@ export function TenantDomainManager({ tenant, onUpdate }: TenantDomainManagerPro
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">Domínio</h3>
-            <p className="text-sm text-gray-600">Configure o domínio personalizado para este tenant</p>
+            <p className="text-sm text-gray-600">
+              Configure o domínio personalizado para este tenant
+            </p>
           </div>
-          <Button size="sm" variant="flat" onPress={() => setIsModalOpen(true)} startContent={<Edit size={16} />}>
+          <Button
+            size="sm"
+            startContent={<Edit size={16} />}
+            variant="flat"
+            onPress={() => setIsModalOpen(true)}
+          >
             Editar
           </Button>
         </CardHeader>
@@ -126,7 +151,9 @@ export function TenantDomainManager({ tenant, onUpdate }: TenantDomainManagerPro
               </div>
               <div>
                 <p className="font-medium">Domínio Atual</p>
-                <p className="text-sm text-gray-600">{tenant.domain || "Nenhum configurado"}</p>
+                <p className="text-sm text-gray-600">
+                  {tenant.domain || "Nenhum configurado"}
+                </p>
               </div>
             </div>
 
@@ -143,32 +170,54 @@ export function TenantDomainManager({ tenant, onUpdate }: TenantDomainManagerPro
         </CardBody>
       </Card>
 
-      <Modal isOpen={isModalOpen} onClose={handleCancel} size="md">
+      <Modal isOpen={isModalOpen} size="md" onClose={handleCancel}>
         <ModalContent>
           <ModalHeader>
-            <h3 className="text-lg font-semibold">Configurar Domínio - {tenant.name}</h3>
+            <h3 className="text-lg font-semibold">
+              Configurar Domínio - {tenant.name}
+            </h3>
           </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-gray-600 mb-2">Configure um domínio personalizado para este tenant. Deixe em branco para usar apenas o subdomínio da Vercel.</p>
+                <p className="text-sm text-gray-600 mb-2">
+                  Configure um domínio personalizado para este tenant. Deixe em
+                  branco para usar apenas o subdomínio da Vercel.
+                </p>
               </div>
 
               <Input
+                color={
+                  validation
+                    ? validation.valid
+                      ? "success"
+                      : "danger"
+                    : "default"
+                }
+                description="Domínio personalizado (opcional)"
+                endContent={
+                  validation &&
+                  (validation.valid ? (
+                    <Check className="text-green-500" size={16} />
+                  ) : (
+                    <X className="text-red-500" size={16} />
+                  ))
+                }
+                errorMessage={validation?.message}
                 label="Domínio"
                 placeholder="exemplo.com.br"
                 value={domain}
                 onValueChange={handleDomainChange}
-                description="Domínio personalizado (opcional)"
-                endContent={validation && (validation.valid ? <Check size={16} className="text-green-500" /> : <X size={16} className="text-red-500" />)}
-                color={validation ? (validation.valid ? "success" : "danger") : "default"}
-                errorMessage={validation?.message}
               />
 
               <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm font-medium mb-2">URLs que funcionarão:</p>
+                <p className="text-sm font-medium mb-2">
+                  URLs que funcionarão:
+                </p>
                 <div className="space-y-1 text-sm text-gray-600">
-                  <p>• {tenant.slug}.magiclawyer.vercel.app (sempre funciona)</p>
+                  <p>
+                    • {tenant.slug}.magiclawyer.vercel.app (sempre funciona)
+                  </p>
                   {domain && <p>• {domain} (após configuração DNS)</p>}
                 </div>
               </div>
@@ -178,7 +227,12 @@ export function TenantDomainManager({ tenant, onUpdate }: TenantDomainManagerPro
             <Button variant="flat" onPress={handleCancel}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleSave} isLoading={isLoading} isDisabled={validation !== null && !validation.valid}>
+            <Button
+              color="primary"
+              isDisabled={validation !== null && !validation.valid}
+              isLoading={isLoading}
+              onPress={handleSave}
+            >
               Salvar
             </Button>
           </ModalFooter>

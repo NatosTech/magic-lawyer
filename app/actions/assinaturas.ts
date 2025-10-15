@@ -1,10 +1,11 @@
 "use server";
 
+import type { AssinaturaPeticao } from "@/app/generated/prisma";
+
+import { revalidatePath } from "next/cache";
+
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
-import { revalidatePath } from "next/cache";
-import type { AssinaturaPeticao } from "@/app/generated/prisma";
-import { AssinaturaTipo } from "@/app/generated/prisma";
 
 // ============================================
 // TIPOS E INTERFACES
@@ -38,25 +39,31 @@ export interface AssinaturaInfo extends AssinaturaPeticao {
 
 async function getTenantId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado ou tenant não encontrado");
   }
+
   return session.user.tenantId;
 }
 
 async function getUserId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.id) {
     throw new Error("Usuário não autenticado");
   }
+
   return session.user.id;
 }
 
 async function getUserInfo() {
   const session = await getSession();
+
   if (!session?.user) {
     throw new Error("Usuário não autenticado");
   }
+
   return {
     id: session.user.id!,
     name: session.user.name || "Usuário",
@@ -68,7 +75,9 @@ async function getUserInfo() {
 // LISTAR ASSINATURAS
 // ============================================
 
-export async function listarAssinaturas(peticaoId: string): Promise<ActionResponse<AssinaturaInfo[]>> {
+export async function listarAssinaturas(
+  peticaoId: string,
+): Promise<ActionResponse<AssinaturaInfo[]>> {
   try {
     const tenantId = await getTenantId();
 
@@ -109,6 +118,7 @@ export async function listarAssinaturas(peticaoId: string): Promise<ActionRespon
     };
   } catch (error) {
     console.error("Erro ao listar assinaturas:", error);
+
     return {
       success: false,
       error: "Erro ao listar assinaturas",
@@ -120,7 +130,9 @@ export async function listarAssinaturas(peticaoId: string): Promise<ActionRespon
 // VERIFICAR STATUS
 // ============================================
 
-export async function verificarStatusAssinatura(assinaturaId: string): Promise<ActionResponse<AssinaturaPeticao>> {
+export async function verificarStatusAssinatura(
+  assinaturaId: string,
+): Promise<ActionResponse<AssinaturaPeticao>> {
   try {
     const tenantId = await getTenantId();
 
@@ -139,7 +151,11 @@ export async function verificarStatusAssinatura(assinaturaId: string): Promise<A
     }
 
     // Verificar se expirou
-    if (assinatura.status === "PENDENTE" && assinatura.expiradaEm && assinatura.expiradaEm < new Date()) {
+    if (
+      assinatura.status === "PENDENTE" &&
+      assinatura.expiradaEm &&
+      assinatura.expiradaEm < new Date()
+    ) {
       const assinaturaAtualizada = await prisma.assinaturaPeticao.update({
         where: { id: assinaturaId },
         data: { status: "EXPIRADO" },
@@ -157,6 +173,7 @@ export async function verificarStatusAssinatura(assinaturaId: string): Promise<A
     };
   } catch (error) {
     console.error("Erro ao verificar status:", error);
+
     return {
       success: false,
       error: "Erro ao verificar status",
@@ -168,7 +185,9 @@ export async function verificarStatusAssinatura(assinaturaId: string): Promise<A
 // CANCELAR ASSINATURA
 // ============================================
 
-export async function cancelarAssinatura(assinaturaId: string): Promise<ActionResponse> {
+export async function cancelarAssinatura(
+  assinaturaId: string,
+): Promise<ActionResponse> {
   try {
     const tenantId = await getTenantId();
 
@@ -199,6 +218,7 @@ export async function cancelarAssinatura(assinaturaId: string): Promise<ActionRe
     };
   } catch (error) {
     console.error("Erro ao cancelar assinatura:", error);
+
     return {
       success: false,
       error: "Erro ao cancelar assinatura",
@@ -210,7 +230,9 @@ export async function cancelarAssinatura(assinaturaId: string): Promise<ActionRe
 // VERIFICAR SE PETIÇÃO ESTÁ ASSINADA
 // ============================================
 
-export async function verificarPeticaoAssinada(peticaoId: string): Promise<ActionResponse<{ assinada: boolean; assinaturas: number }>> {
+export async function verificarPeticaoAssinada(
+  peticaoId: string,
+): Promise<ActionResponse<{ assinada: boolean; assinaturas: number }>> {
   try {
     const tenantId = await getTenantId();
 
@@ -231,6 +253,7 @@ export async function verificarPeticaoAssinada(peticaoId: string): Promise<Actio
     };
   } catch (error) {
     console.error("Erro ao verificar petição assinada:", error);
+
     return {
       success: false,
       error: "Erro ao verificar petição assinada",

@@ -1,22 +1,27 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
 
 async function getTenantId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Tenant ID não encontrado na sessão");
   }
+
   return session.user.tenantId;
 }
 
 async function getUserId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.id) {
     throw new Error("User ID não encontrado na sessão");
   }
+
   return session.user.id;
 }
 
@@ -24,7 +29,12 @@ async function getUserId(): Promise<string> {
 // LISTAR PARCELAS DE CONTRATO
 // ============================================
 
-export async function listParcelasContrato(filters?: { contratoId?: string; status?: "PENDENTE" | "PAGA" | "ATRASADA" | "CANCELADA"; dataVencimentoInicio?: Date; dataVencimentoFim?: Date }) {
+export async function listParcelasContrato(filters?: {
+  contratoId?: string;
+  status?: "PENDENTE" | "PAGA" | "ATRASADA" | "CANCELADA";
+  dataVencimentoInicio?: Date;
+  dataVencimentoFim?: Date;
+}) {
   try {
     const tenantId = await getTenantId();
 
@@ -86,6 +96,7 @@ export async function listParcelasContrato(filters?: { contratoId?: string; stat
     };
   } catch (error) {
     console.error("Erro ao listar parcelas de contrato:", error);
+
     return {
       success: false,
       error: "Erro ao listar parcelas de contrato",
@@ -158,6 +169,7 @@ export async function getParcelaContrato(id: string) {
     };
   } catch (error) {
     console.error("Erro ao buscar parcela:", error);
+
     return {
       success: false,
       error: "Erro ao buscar parcela",
@@ -256,6 +268,7 @@ export async function createParcelaContrato(data: {
     };
   } catch (error) {
     console.error("Erro ao criar parcela:", error);
+
     return {
       success: false,
       error: "Erro ao criar parcela",
@@ -278,7 +291,7 @@ export async function updateParcelaContrato(
     dataPagamento?: Date;
     formaPagamento?: string;
     responsavelUsuarioId?: string;
-  }
+  },
 ) {
   try {
     const tenantId = await getTenantId();
@@ -348,6 +361,7 @@ export async function updateParcelaContrato(
     };
   } catch (error) {
     console.error("Erro ao atualizar parcela:", error);
+
     return {
       success: false,
       error: "Erro ao atualizar parcela",
@@ -391,6 +405,7 @@ export async function deleteParcelaContrato(id: string) {
     };
   } catch (error) {
     console.error("Erro ao deletar parcela:", error);
+
     return {
       success: false,
       error: "Erro ao deletar parcela",
@@ -410,7 +425,7 @@ export async function gerarParcelasAutomaticamente(
     dataPrimeiroVencimento: Date;
     intervaloDias?: number; // Padrão: 30 dias
     tituloBase?: string;
-  }
+  },
 ) {
   try {
     const tenantId = await getTenantId();
@@ -451,6 +466,7 @@ export async function gerarParcelasAutomaticamente(
 
     for (let i = 1; i <= configuracao.numeroParcelas; i++) {
       const dataVencimento = new Date(configuracao.dataPrimeiroVencimento);
+
       dataVencimento.setDate(dataVencimento.getDate() + (i - 1) * intervalo);
 
       const parcela = await prisma.contratoParcela.create({
@@ -458,7 +474,9 @@ export async function gerarParcelasAutomaticamente(
           tenantId,
           contratoId,
           numeroParcela: i,
-          titulo: configuracao.tituloBase ? `${configuracao.tituloBase} ${i}/${configuracao.numeroParcelas}` : `Parcela ${i}/${configuracao.numeroParcelas}`,
+          titulo: configuracao.tituloBase
+            ? `${configuracao.tituloBase} ${i}/${configuracao.numeroParcelas}`
+            : `Parcela ${i}/${configuracao.numeroParcelas}`,
           valor: valorParcela,
           dataVencimento,
           status: "PENDENTE",
@@ -478,6 +496,7 @@ export async function gerarParcelasAutomaticamente(
     };
   } catch (error) {
     console.error("Erro ao gerar parcelas:", error);
+
     return {
       success: false,
       error: "Erro ao gerar parcelas automaticamente",
@@ -493,7 +512,15 @@ export async function getDashboardParcelas() {
   try {
     const tenantId = await getTenantId();
 
-    const [totalParcelas, parcelasPendentes, parcelasPagas, parcelasAtrasadas, valorTotalPendente, valorTotalPago, parcelasVencendo] = await Promise.all([
+    const [
+      totalParcelas,
+      parcelasPendentes,
+      parcelasPagas,
+      parcelasAtrasadas,
+      valorTotalPendente,
+      valorTotalPago,
+      parcelasVencendo,
+    ] = await Promise.all([
       // Total de parcelas
       prisma.contratoParcela.count({
         where: { tenantId },
@@ -551,6 +578,7 @@ export async function getDashboardParcelas() {
     };
   } catch (error) {
     console.error("Erro ao buscar dashboard de parcelas:", error);
+
     return {
       success: false,
       error: "Erro ao buscar dashboard de parcelas",

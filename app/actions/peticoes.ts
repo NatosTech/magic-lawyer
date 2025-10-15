@@ -1,8 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
-import { revalidatePath } from "next/cache";
 import { Prisma, PeticaoStatus } from "@/app/generated/prisma";
 
 // ============================================
@@ -51,17 +52,21 @@ export interface PeticaoUpdateInput {
 
 async function getTenantId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado ou tenant não encontrado");
   }
+
   return session.user.tenantId;
 }
 
 async function getUserId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.id) {
     throw new Error("Usuário não autenticado");
   }
+
   return session.user.id;
 }
 
@@ -83,7 +88,9 @@ export async function listPeticoes(filters?: PeticaoFilters) {
         OR: [
           { titulo: { contains: filters.search, mode: "insensitive" } },
           { descricao: { contains: filters.search, mode: "insensitive" } },
-          { protocoloNumero: { contains: filters.search, mode: "insensitive" } },
+          {
+            protocoloNumero: { contains: filters.search, mode: "insensitive" },
+          },
         ],
       }),
       ...(filters?.dataInicio &&
@@ -141,6 +148,7 @@ export async function listPeticoes(filters?: PeticaoFilters) {
     };
   } catch (error) {
     console.error("Erro ao listar petições:", error);
+
     return {
       success: false,
       error: "Erro ao listar petições",
@@ -229,6 +237,7 @@ export async function getPeticao(id: string) {
     };
   } catch (error) {
     console.error("Erro ao buscar petição:", error);
+
     return {
       success: false,
       error: "Erro ao buscar petição",
@@ -334,6 +343,7 @@ export async function createPeticao(input: PeticaoCreateInput) {
     };
   } catch (error) {
     console.error("Erro ao criar petição:", error);
+
     return {
       success: false,
       error: "Erro ao criar petição",
@@ -424,10 +434,18 @@ export async function updatePeticao(id: string, input: PeticaoUpdateInput) {
         ...(input.tipo !== undefined && { tipo: input.tipo }),
         ...(input.status && { status: input.status }),
         ...(input.descricao !== undefined && { descricao: input.descricao }),
-        ...(input.documentoId !== undefined && { documentoId: input.documentoId }),
-        ...(input.protocoloNumero !== undefined && { protocoloNumero: input.protocoloNumero }),
-        ...(input.protocoladoEm !== undefined && { protocoladoEm: input.protocoladoEm }),
-        ...(input.observacoes !== undefined && { observacoes: input.observacoes }),
+        ...(input.documentoId !== undefined && {
+          documentoId: input.documentoId,
+        }),
+        ...(input.protocoloNumero !== undefined && {
+          protocoloNumero: input.protocoloNumero,
+        }),
+        ...(input.protocoladoEm !== undefined && {
+          protocoladoEm: input.protocoladoEm,
+        }),
+        ...(input.observacoes !== undefined && {
+          observacoes: input.observacoes,
+        }),
       },
       include: {
         processo: {
@@ -454,6 +472,7 @@ export async function updatePeticao(id: string, input: PeticaoUpdateInput) {
     };
   } catch (error) {
     console.error("Erro ao atualizar petição:", error);
+
     return {
       success: false,
       error: "Erro ao atualizar petição",
@@ -508,6 +527,7 @@ export async function deletePeticao(id: string) {
     };
   } catch (error) {
     console.error("Erro ao excluir petição:", error);
+
     return {
       success: false,
       error: "Erro ao excluir petição",
@@ -519,7 +539,11 @@ export async function deletePeticao(id: string) {
 // PROTOCOLAR PETIÇÃO
 // ============================================
 
-export async function protocolarPeticao(id: string, protocoloNumero: string, protocoladoEm?: Date) {
+export async function protocolarPeticao(
+  id: string,
+  protocoloNumero: string,
+  protocoladoEm?: Date,
+) {
   try {
     const tenantId = await getTenantId();
 
@@ -565,6 +589,7 @@ export async function protocolarPeticao(id: string, protocoloNumero: string, pro
     };
   } catch (error) {
     console.error("Erro ao protocolar petição:", error);
+
     return {
       success: false,
       error: "Erro ao protocolar petição",
@@ -594,6 +619,7 @@ export async function getDashboardPeticoes() {
 
     // Petições recentes (últimos 30 dias)
     const trintaDiasAtras = new Date();
+
     trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
 
     const recentes = await prisma.peticao.count({
@@ -661,6 +687,7 @@ export async function getDashboardPeticoes() {
 
     const topProcessos = processosMaisPeticoes.map((item) => {
       const processo = processosDetalhes.find((p) => p.id === item.processoId);
+
       return {
         processoId: item.processoId,
         numero: processo?.numero || "N/A",
@@ -686,6 +713,7 @@ export async function getDashboardPeticoes() {
     };
   } catch (error) {
     console.error("Erro ao buscar dashboard:", error);
+
     return {
       success: false,
       error: "Erro ao buscar dados do dashboard",
@@ -796,6 +824,7 @@ export async function listTiposPeticao() {
     };
   } catch (error) {
     console.error("Erro ao listar tipos de petição:", error);
+
     return {
       success: false,
       error: "Erro ao listar tipos de petição",

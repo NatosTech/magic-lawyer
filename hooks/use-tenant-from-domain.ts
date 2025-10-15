@@ -14,6 +14,7 @@ export function useTenantFromDomain() {
 
     const host = window.location.hostname;
     const detectedTenant = extractTenantFromDomain(host);
+
     setTenant(detectedTenant);
   }, []);
 
@@ -30,6 +31,7 @@ function extractTenantFromDomain(host: string): string | null {
   // Para domínios Vercel: subdomain.magiclawyer.vercel.app
   if (cleanHost.endsWith(".magiclawyer.vercel.app")) {
     const subdomain = cleanHost.replace(".magiclawyer.vercel.app", "");
+
     // Se não é o domínio principal, retorna o subdomínio
     if (subdomain && subdomain !== "magiclawyer") {
       return subdomain;
@@ -39,6 +41,7 @@ function extractTenantFromDomain(host: string): string | null {
   // Para domínios customizados: subdomain.magiclawyer.com.br
   if (cleanHost.endsWith(".magiclawyer.com.br")) {
     const subdomain = cleanHost.replace(".magiclawyer.com.br", "");
+
     if (subdomain) {
       return subdomain;
     }

@@ -9,6 +9,7 @@ function extractTenantFromDomain(host: string): string | null {
   // Para domínios Vercel: subdomain.magiclawyer.vercel.app
   if (cleanHost.endsWith(".magiclawyer.vercel.app")) {
     const subdomain = cleanHost.replace(".magiclawyer.vercel.app", "");
+
     // Se não é o domínio principal, retorna o subdomínio
     if (subdomain && subdomain !== "magiclawyer") {
       return subdomain;
@@ -18,6 +19,7 @@ function extractTenantFromDomain(host: string): string | null {
   // Para domínios customizados: subdomain.magiclawyer.com.br
   if (cleanHost.endsWith(".magiclawyer.com.br")) {
     const subdomain = cleanHost.replace(".magiclawyer.com.br", "");
+
     if (subdomain) {
       return subdomain;
     }
@@ -45,6 +47,7 @@ export default withAuth(
     // Se detectamos um tenant pelo domínio, adicionar aos headers
     if (tenantFromDomain) {
       const response = NextResponse.next();
+
       response.headers.set("x-tenant-from-domain", tenantFromDomain);
 
       // Para páginas que precisam do tenant, vamos continuar o processamento
@@ -108,16 +111,35 @@ export default withAuth(
     }
 
     // Verificar se SuperAdmin está tentando acessar área comum (PROIBIR)
-    if (isAuth && !req.nextUrl.pathname.startsWith("/admin") && !req.nextUrl.pathname.startsWith("/api") && !req.nextUrl.pathname.startsWith("/login")) {
+    if (
+      isAuth &&
+      !req.nextUrl.pathname.startsWith("/admin") &&
+      !req.nextUrl.pathname.startsWith("/api") &&
+      !req.nextUrl.pathname.startsWith("/login")
+    ) {
       const userRole = (token as any)?.role;
       const isSuperAdmin = userRole === "SUPER_ADMIN";
 
       // SuperAdmin NÃO pode acessar rotas de usuário comum
       if (isSuperAdmin) {
         // Rotas que SuperAdmin NÃO pode acessar
-        const rotasProibidas = ["/dashboard", "/processos", "/documentos", "/agenda", "/financeiro", "/juizes", "/relatorios", "/equipe", "/help", "/configuracoes", "/usuario"];
+        const rotasProibidas = [
+          "/dashboard",
+          "/processos",
+          "/documentos",
+          "/agenda",
+          "/financeiro",
+          "/juizes",
+          "/relatorios",
+          "/equipe",
+          "/help",
+          "/configuracoes",
+          "/usuario",
+        ];
 
-        const isRotaProibida = rotasProibidas.some((rota) => req.nextUrl.pathname.startsWith(rota));
+        const isRotaProibida = rotasProibidas.some((rota) =>
+          req.nextUrl.pathname.startsWith(rota),
+        );
 
         if (isRotaProibida) {
           return NextResponse.redirect(new URL("/admin/dashboard", req.url));
@@ -134,7 +156,7 @@ export default withAuth(
         return true; // Deixamos o middleware acima fazer a lógica
       },
     },
-  }
+  },
 );
 
 export const config = {

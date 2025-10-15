@@ -2,17 +2,35 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
-import { Card } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/modal";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  useDisclosure,
+} from "@heroui/modal";
 import { Skeleton } from "@heroui/react";
-import { Plus, RefreshCw, List, Kanban } from "lucide-react";
+import { Plus, List, Kanban } from "lucide-react";
 import { toast } from "sonner";
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+} from "@dnd-kit/core";
 import { DatePicker } from "@heroui/date-picker";
-import { parseAbsoluteToLocal } from "@internationalized/date";
+
+import { KanbanColumn } from "./components/kanban-column";
+import { TarefaCard } from "./components/tarefa-card";
+import { TarefaDetailModal } from "./components/tarefa-detail-modal";
 
 import { criarBoardPadrao } from "@/app/actions/boards";
 import { moverTarefa, createTarefa } from "@/app/actions/tarefas";
@@ -21,9 +39,6 @@ import { getAllProcessos } from "@/app/actions/processos";
 import { searchClientes } from "@/app/actions/clientes";
 import { title } from "@/components/primitives";
 import { useKanban } from "@/app/hooks/use-kanban";
-import { KanbanColumn } from "./components/kanban-column";
-import { TarefaCard } from "./components/tarefa-card";
-import { TarefaDetailModal } from "./components/tarefa-detail-modal";
 
 const prioridadeConfig = {
   BAIXA: { label: "Baixa", color: "default" as const },
@@ -53,40 +68,108 @@ export default function KanbanView() {
   const [salvando, setSalvando] = useState(false);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { boards, board, tarefas, isLoading, refreshAll } = useKanban(boardSelecionadoId);
+  const { boards, board, tarefas, isLoading, refreshAll } =
+    useKanban(boardSelecionadoId);
 
-  const { data: categoriasData } = useSWR("categorias-tarefa-ativas", () => listCategoriasTarefa({ ativo: true }));
-  const { data: processosData } = useSWR("processos-para-tarefa", () => getAllProcessos());
-  const { data: clientesData } = useSWR("clientes-para-tarefa", () => searchClientes({}));
-  const { data: colunasData } = useSWR(formData.boardId ? ["columns-for-select", formData.boardId] : null, async () => {
-    const { listColumns } = await import("@/app/actions/board-columns");
-    return listColumns(formData.boardId);
-  });
+  const { data: categoriasData } = useSWR("categorias-tarefa-ativas", () =>
+    listCategoriasTarefa({ ativo: true }),
+  );
+  const { data: processosData } = useSWR("processos-para-tarefa", () =>
+    getAllProcessos(),
+  );
+  const { data: clientesData } = useSWR("clientes-para-tarefa", () =>
+    searchClientes({}),
+  );
+  const { data: colunasData } = useSWR(
+    formData.boardId ? ["columns-for-select", formData.boardId] : null,
+    async () => {
+      const { listColumns } = await import("@/app/actions/board-columns");
 
-  const categorias = useMemo(() => (categoriasData?.success ? categoriasData.categorias : []), [categoriasData]);
-  const processos = useMemo(() => (processosData?.success ? processosData.processos : []), [processosData]);
-  const clientes = useMemo(() => (clientesData?.success ? clientesData.clientes : []), [clientesData]);
-  const colunas = useMemo(() => (colunasData?.success ? colunasData.columns : []), [colunasData]);
+      return listColumns(formData.boardId);
+    },
+  );
+
+  const categorias = useMemo(
+    () => (categoriasData?.success ? categoriasData.categorias : []),
+    [categoriasData],
+  );
+  const processos = useMemo(
+    () => (processosData?.success ? processosData.processos : []),
+    [processosData],
+  );
+  const clientes = useMemo(
+    () => (clientesData?.success ? clientesData.clientes : []),
+    [clientesData],
+  );
+  const colunas = useMemo(
+    () => (colunasData?.success ? colunasData.columns : []),
+    [colunasData],
+  );
 
   // Garantir que selectedKeys sempre exista na coleção
-  const processoKeySet = useMemo(() => new Set((processos || []).map((p: any) => p.id)), [processos]);
-  const clienteKeySet = useMemo(() => new Set((clientes || []).map((c: any) => c.id)), [clientes]);
-  const categoriaKeySet = useMemo(() => new Set((categorias || []).map((c: any) => c.id)), [categorias]);
-  const boardKeySet = useMemo(() => new Set((boards || []).map((b: any) => b.id)), [boards]);
-  const colunaKeySet = useMemo(() => new Set((colunas || []).map((c: any) => c.id)), [colunas]);
+  const processoKeySet = useMemo(
+    () => new Set((processos || []).map((p: any) => p.id)),
+    [processos],
+  );
+  const clienteKeySet = useMemo(
+    () => new Set((clientes || []).map((c: any) => c.id)),
+    [clientes],
+  );
+  const categoriaKeySet = useMemo(
+    () => new Set((categorias || []).map((c: any) => c.id)),
+    [categorias],
+  );
+  const boardKeySet = useMemo(
+    () => new Set((boards || []).map((b: any) => b.id)),
+    [boards],
+  );
+  const colunaKeySet = useMemo(
+    () => new Set((colunas || []).map((c: any) => c.id)),
+    [colunas],
+  );
 
-  const selectedProcessKeys = useMemo(() => (formData.processoId && processoKeySet.has(formData.processoId) ? [formData.processoId] : []), [formData.processoId, processoKeySet]);
-  const selectedClienteKeys = useMemo(() => (formData.clienteId && clienteKeySet.has(formData.clienteId) ? [formData.clienteId] : []), [formData.clienteId, clienteKeySet]);
-  const selectedCategoriaKeys = useMemo(() => (formData.categoriaId && categoriaKeySet.has(formData.categoriaId) ? [formData.categoriaId] : []), [formData.categoriaId, categoriaKeySet]);
-  const selectedBoardKeys = useMemo(() => (formData.boardId && boardKeySet.has(formData.boardId) ? [formData.boardId] : []), [formData.boardId, boardKeySet]);
-  const selectedColunaKeys = useMemo(() => (formData.columnId && colunaKeySet.has(formData.columnId) ? [formData.columnId] : []), [formData.columnId, colunaKeySet]);
+  const selectedProcessKeys = useMemo(
+    () =>
+      formData.processoId && processoKeySet.has(formData.processoId)
+        ? [formData.processoId]
+        : [],
+    [formData.processoId, processoKeySet],
+  );
+  const selectedClienteKeys = useMemo(
+    () =>
+      formData.clienteId && clienteKeySet.has(formData.clienteId)
+        ? [formData.clienteId]
+        : [],
+    [formData.clienteId, clienteKeySet],
+  );
+  const selectedCategoriaKeys = useMemo(
+    () =>
+      formData.categoriaId && categoriaKeySet.has(formData.categoriaId)
+        ? [formData.categoriaId]
+        : [],
+    [formData.categoriaId, categoriaKeySet],
+  );
+  const selectedBoardKeys = useMemo(
+    () =>
+      formData.boardId && boardKeySet.has(formData.boardId)
+        ? [formData.boardId]
+        : [],
+    [formData.boardId, boardKeySet],
+  );
+  const selectedColunaKeys = useMemo(
+    () =>
+      formData.columnId && colunaKeySet.has(formData.columnId)
+        ? [formData.columnId]
+        : [],
+    [formData.columnId, colunaKeySet],
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8, // 8px de movimento antes de iniciar drag
       },
-    })
+    }),
   );
 
   // Selecionar primeiro board automaticamente
@@ -122,6 +205,7 @@ export default function KanbanView() {
 
     if (!over) {
       setActiveId(null);
+
       return;
     }
 
@@ -175,7 +259,8 @@ export default function KanbanView() {
       responsavelId: "",
       processoId: "",
       clienteId: "",
-      boardId: boardSelecionadoId || (boards && boards.length > 0 ? boards[0].id : ""),
+      boardId:
+        boardSelecionadoId || (boards && boards.length > 0 ? boards[0].id : ""),
       columnId: board?.colunas?.[0]?.id || "",
     });
     onOpen();
@@ -184,6 +269,7 @@ export default function KanbanView() {
   const handleSalvar = useCallback(async () => {
     if (!formData.titulo.trim()) {
       toast.error("Título é obrigatório");
+
       return;
     }
 
@@ -194,8 +280,12 @@ export default function KanbanView() {
         titulo: formData.titulo,
         descricao: formData.descricao || null,
         prioridade: formData.prioridade,
-        dataLimite: formData.dataLimite ? formData.dataLimite.toDate().toISOString() : null,
-        lembreteEm: formData.lembreteEm ? formData.lembreteEm.toDate().toISOString() : null,
+        dataLimite: formData.dataLimite
+          ? formData.dataLimite.toDate().toISOString()
+          : null,
+        lembreteEm: formData.lembreteEm
+          ? formData.lembreteEm.toDate().toISOString()
+          : null,
         categoriaId: formData.categoriaId || null,
         responsavelId: formData.responsavelId || null,
         processoId: formData.processoId || null,
@@ -225,8 +315,17 @@ export default function KanbanView() {
       <div className="space-y-6">
         <div className="flex flex-col items-center justify-center h-96 gap-4">
           <h1 className={title()}>Bem-vindo ao Kanban!</h1>
-          <p className="text-default-500 text-center max-w-md">Você ainda não tem nenhum quadro Kanban. Crie seu primeiro quadro para começar a organizar suas tarefas visualmente.</p>
-          <Button color="primary" size="lg" startContent={<Plus size={20} />} onPress={handleCriarBoardPadrao} isLoading={criandoBoard}>
+          <p className="text-default-500 text-center max-w-md">
+            Você ainda não tem nenhum quadro Kanban. Crie seu primeiro quadro
+            para começar a organizar suas tarefas visualmente.
+          </p>
+          <Button
+            color="primary"
+            isLoading={criandoBoard}
+            size="lg"
+            startContent={<Plus size={20} />}
+            onPress={handleCriarBoardPadrao}
+          >
             Criar Quadro Padrão
           </Button>
         </div>
@@ -240,13 +339,25 @@ export default function KanbanView() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className={title({ size: "lg", color: "blue" })}>Kanban</h1>
-          <p className="mt-2 text-sm text-default-500">Visualização em quadros - {board?.nome || "Carregando..."}</p>
+          <p className="mt-2 text-sm text-default-500">
+            Visualização em quadros - {board?.nome || "Carregando..."}
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button as="a" href="/tarefas" color="secondary" variant="flat" startContent={<List className="h-4 w-4" />}>
+          <Button
+            as="a"
+            color="secondary"
+            href="/tarefas"
+            startContent={<List className="h-4 w-4" />}
+            variant="flat"
+          >
             Ver Lista
           </Button>
-          <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={handleOpenNova}>
+          <Button
+            color="primary"
+            startContent={<Plus className="h-4 w-4" />}
+            onPress={handleOpenNova}
+          >
             Nova Tarefa
           </Button>
         </div>
@@ -255,17 +366,22 @@ export default function KanbanView() {
       {/* Seletor de Board */}
       {boards && boards.length > 1 && (
         <div className="flex items-center gap-2">
-          <Kanban size={16} className="text-default-400" />
+          <Kanban className="text-default-400" size={16} />
           <Select
-            label="Quadro"
             className="max-w-xs"
-            selectedKeys={boardSelecionadoId && boardKeySet.has(boardSelecionadoId) ? [boardSelecionadoId] : []}
-            onSelectionChange={(keys) => {
-              const value = Array.from(keys)[0];
-              setBoardSelecionadoId(value as string);
-            }}
+            label="Quadro"
+            selectedKeys={
+              boardSelecionadoId && boardKeySet.has(boardSelecionadoId)
+                ? [boardSelecionadoId]
+                : []
+            }
             size="sm"
             variant="bordered"
+            onSelectionChange={(keys) => {
+              const value = Array.from(keys)[0];
+
+              setBoardSelecionadoId(value as string);
+            }}
           >
             {boards.map((b: any) => (
               <SelectItem key={b.id} textValue={b.nome}>
@@ -287,19 +403,31 @@ export default function KanbanView() {
           ))}
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <DndContext
+          collisionDetection={closestCorners}
+          sensors={sensors}
+          onDragEnd={handleDragEnd}
+          onDragStart={handleDragStart}
+        >
           <div className="flex gap-4 overflow-x-auto pb-4 min-h-[600px]">
             {board?.colunas?.map((coluna: any) => {
               const tarefasDaColuna = tarefasPorColuna.get(coluna.id) || [];
 
-              return <KanbanColumn key={coluna.id} column={coluna} tarefas={tarefasDaColuna} onTarefaClick={(tarefa) => setTarefaSelecionada(tarefa)} />;
+              return (
+                <KanbanColumn
+                  key={coluna.id}
+                  column={coluna}
+                  tarefas={tarefasDaColuna}
+                  onTarefaClick={(tarefa) => setTarefaSelecionada(tarefa)}
+                />
+              );
             })}
           </div>
 
           <DragOverlay>
             {activeId && tarefaAtiva ? (
               <div className="rotate-3 scale-105 opacity-90">
-                <TarefaCard tarefa={tarefaAtiva} isDragging />
+                <TarefaCard isDragging tarefa={tarefaAtiva} />
               </div>
             ) : null}
           </DragOverlay>
@@ -307,36 +435,63 @@ export default function KanbanView() {
       )}
 
       {/* Modal de Detalhes */}
-      {tarefaSelecionada && <TarefaDetailModal tarefa={tarefaSelecionada} isOpen={!!tarefaSelecionada} onClose={() => setTarefaSelecionada(null)} onUpdate={refreshAll} />}
+      {tarefaSelecionada && (
+        <TarefaDetailModal
+          isOpen={!!tarefaSelecionada}
+          tarefa={tarefaSelecionada}
+          onClose={() => setTarefaSelecionada(null)}
+          onUpdate={refreshAll}
+        />
+      )}
 
       {/* Modal Criar Tarefa */}
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+      <Modal
+        isOpen={isOpen}
+        scrollBehavior="inside"
+        size="2xl"
+        onClose={onClose}
+      >
         <ModalContent>
           <ModalHeader>Nova Tarefa</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <Input label="Título" placeholder="Digite o título da tarefa" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} isRequired />
+              <Input
+                isRequired
+                label="Título"
+                placeholder="Digite o título da tarefa"
+                value={formData.titulo}
+                onChange={(e) =>
+                  setFormData({ ...formData, titulo: e.target.value })
+                }
+              />
 
               <Textarea
                 label="Descrição"
+                minRows={3}
                 placeholder="Digite uma descrição (opcional)"
                 value={formData.descricao}
-                onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                minRows={3}
+                onChange={(e) =>
+                  setFormData({ ...formData, descricao: e.target.value })
+                }
               />
 
               <div className="grid grid-cols-2 gap-4">
                 <Select
+                  isRequired
                   label="Prioridade"
                   selectedKeys={[formData.prioridade]}
                   onSelectionChange={(keys) => {
                     const value = Array.from(keys)[0];
+
                     setFormData({
                       ...formData,
-                      prioridade: value as "BAIXA" | "MEDIA" | "ALTA" | "CRITICA",
+                      prioridade: value as
+                        | "BAIXA"
+                        | "MEDIA"
+                        | "ALTA"
+                        | "CRITICA",
                     });
                   }}
-                  isRequired
                 >
                   {Object.entries(prioridadeConfig).map(([key, config]) => (
                     <SelectItem key={key} textValue={config.label}>
@@ -351,6 +506,7 @@ export default function KanbanView() {
                   selectedKeys={selectedCategoriaKeys}
                   onSelectionChange={(keys) => {
                     const value = Array.from(keys)[0];
+
                     setFormData({ ...formData, categoriaId: value as string });
                   }}
                 >
@@ -364,21 +520,25 @@ export default function KanbanView() {
 
               <div className="grid grid-cols-2 gap-4">
                 <DatePicker
-                  label="Data Limite"
-                  variant="bordered"
                   hideTimeZone
                   showMonthAndYearPickers
+                  label="Data Limite"
                   value={formData.dataLimite}
-                  onChange={(value) => setFormData({ ...formData, dataLimite: value })}
+                  variant="bordered"
+                  onChange={(value) =>
+                    setFormData({ ...formData, dataLimite: value })
+                  }
                 />
 
                 <DatePicker
-                  label="Lembrete"
-                  variant="bordered"
                   hideTimeZone
                   showMonthAndYearPickers
+                  label="Lembrete"
                   value={formData.lembreteEm}
-                  onChange={(value) => setFormData({ ...formData, lembreteEm: value })}
+                  variant="bordered"
+                  onChange={(value) =>
+                    setFormData({ ...formData, lembreteEm: value })
+                  }
                 />
               </div>
 
@@ -388,18 +548,28 @@ export default function KanbanView() {
                 selectedKeys={selectedProcessKeys}
                 onSelectionChange={(keys) => {
                   const value = Array.from(keys)[0];
+
                   console.log("🔍 Kanban Processo - Keys:", keys);
                   console.log("🔍 Kanban Processo - Valor:", value);
-                  console.log("🔍 Kanban Processo - formData.processoId:", formData.processoId);
+                  console.log(
+                    "🔍 Kanban Processo - formData.processoId:",
+                    formData.processoId,
+                  );
                   console.log(
                     "🔍 Kanban Processo - Processos:",
-                    (processos || []).map((p: any) => ({ id: p.id, numero: p.numero }))
+                    (processos || []).map((p: any) => ({
+                      id: p.id,
+                      numero: p.numero,
+                    })),
                   );
                   setFormData({ ...formData, processoId: value as string });
                 }}
               >
                 {(processos || []).map((proc: any) => (
-                  <SelectItem key={proc.id} textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}>
+                  <SelectItem
+                    key={proc.id}
+                    textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}
+                  >
                     {proc.numero} - {proc.titulo || "Sem título"}
                   </SelectItem>
                 ))}
@@ -411,6 +581,7 @@ export default function KanbanView() {
                 selectedKeys={selectedClienteKeys}
                 onSelectionChange={(keys) => {
                   const value = Array.from(keys)[0];
+
                   setFormData({ ...formData, clienteId: value as string });
                 }}
               >
@@ -430,7 +601,12 @@ export default function KanbanView() {
                     selectedKeys={selectedBoardKeys}
                     onSelectionChange={(keys) => {
                       const value = Array.from(keys)[0];
-                      setFormData({ ...formData, boardId: value as string, columnId: "" });
+
+                      setFormData({
+                        ...formData,
+                        boardId: value as string,
+                        columnId: "",
+                      });
                     }}
                   >
                     {(boards || []).length > 0
@@ -443,14 +619,15 @@ export default function KanbanView() {
                   </Select>
 
                   <Select
+                    isDisabled={!formData.boardId}
                     label="Coluna"
                     placeholder="Selecionar coluna"
                     selectedKeys={selectedColunaKeys}
                     onSelectionChange={(keys) => {
                       const value = Array.from(keys)[0];
+
                       setFormData({ ...formData, columnId: value as string });
                     }}
-                    isDisabled={!formData.boardId}
                   >
                     {(colunas || []).length > 0
                       ? (colunas || []).map((col: any) => (
@@ -461,7 +638,9 @@ export default function KanbanView() {
                       : null}
                   </Select>
                 </div>
-                <p className="text-xs text-default-400 mt-2">💡 A tarefa será criada na coluna selecionada</p>
+                <p className="text-xs text-default-400 mt-2">
+                  💡 A tarefa será criada na coluna selecionada
+                </p>
               </div>
             </div>
           </ModalBody>
@@ -469,7 +648,7 @@ export default function KanbanView() {
             <Button variant="light" onPress={onClose}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleSalvar} isLoading={salvando}>
+            <Button color="primary" isLoading={salvando} onPress={handleSalvar}>
               Criar Tarefa
             </Button>
           </ModalFooter>

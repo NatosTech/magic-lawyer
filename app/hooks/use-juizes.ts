@@ -1,8 +1,22 @@
-import type { JuizDetalhado, ProcessoJuiz, JulgamentoJuiz, JuizSerializado, JuizFormOptions, JuizFilters } from "@/app/actions/juizes";
+import type {
+  JuizDetalhado,
+  ProcessoJuiz,
+  JulgamentoJuiz,
+  JuizSerializado,
+  JuizFormOptions,
+  JuizFilters,
+} from "@/app/actions/juizes";
 
 import useSWR from "swr";
 
-import { getJuizDetalhado, getProcessosDoJuiz, getJulgamentosDoJuiz, getJuizFormData, getJuizes, verificarFavoritoJuiz } from "@/app/actions/juizes";
+import {
+  getJuizDetalhado,
+  getProcessosDoJuiz,
+  getJulgamentosDoJuiz,
+  getJuizFormData,
+  getJuizes,
+  verificarFavoritoJuiz,
+} from "@/app/actions/juizes";
 
 /**
  * Hook para buscar detalhes completos de um juiz
@@ -23,7 +37,7 @@ export function useJuizDetalhado(juizId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -55,7 +69,7 @@ export function useProcessosDoJuiz(juizId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -87,7 +101,7 @@ export function useJulgamentosDoJuiz(juizId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -118,7 +132,7 @@ export function useJuizFormData() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -149,7 +163,7 @@ export function useJuizes(filters: JuizFilters = {}) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -181,7 +195,7 @@ export function useFavoritoJuiz(juizId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {

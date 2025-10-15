@@ -7,21 +7,50 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
 import { Badge } from "@heroui/badge";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@heroui/table";
 import useSWR from "swr";
 
 import { title, subtitle } from "@/components/primitives";
-import { getPlanos, getEstatisticasPlanos, getAssinaturas } from "@/app/actions/planos";
-import { getPacotesJuiz, getEstatisticasPacotesJuiz } from "@/app/actions/pacotesJuiz";
+import {
+  getPlanos,
+  getEstatisticasPlanos,
+  getAssinaturas,
+} from "@/app/actions/planos";
+import {
+  getPacotesJuiz,
+  getEstatisticasPacotesJuiz,
+} from "@/app/actions/pacotesJuiz";
 import { getJuizesAdmin } from "@/app/actions/juizes";
 
 export function PacotesContent() {
   // Buscar dados reais dos PLANOS e PACOTES DE JUÍZES
-  const { data: planosResponse, isLoading: loadingPlanos } = useSWR("planos", getPlanos);
-  const { data: pacotesJuizResponse, isLoading: loadingPacotesJuiz } = useSWR("pacotes-juiz", getPacotesJuiz);
-  const { data: statsResponse, isLoading: loadingStats } = useSWR("stats-planos", getEstatisticasPlanos);
-  const { data: statsPacotesResponse, isLoading: loadingStatsPacotes } = useSWR("stats-pacotes-juiz", getEstatisticasPacotesJuiz);
-  const { data: assinaturasResponse, isLoading: loadingAssinaturas } = useSWR("assinaturas", getAssinaturas);
+  const { data: planosResponse, isLoading: loadingPlanos } = useSWR(
+    "planos",
+    getPlanos,
+  );
+  const { data: pacotesJuizResponse, isLoading: loadingPacotesJuiz } = useSWR(
+    "pacotes-juiz",
+    getPacotesJuiz,
+  );
+  const { data: statsResponse, isLoading: loadingStats } = useSWR(
+    "stats-planos",
+    getEstatisticasPlanos,
+  );
+  const { data: statsPacotesResponse, isLoading: loadingStatsPacotes } = useSWR(
+    "stats-pacotes-juiz",
+    getEstatisticasPacotesJuiz,
+  );
+  const { data: assinaturasResponse, isLoading: loadingAssinaturas } = useSWR(
+    "assinaturas",
+    getAssinaturas,
+  );
 
   const planos = planosResponse?.data || [];
   const pacotesJuiz = pacotesJuizResponse?.data || [];
@@ -46,10 +75,14 @@ export function PacotesContent() {
     error: errorJuizesPremium,
     isLoading: loadingJuizesPremium,
     mutate: mutateJuizesPremium,
-  } = useSWR(["admin-juizes-premium", { isPremium: true }], ([, filters]) => getJuizesAdmin(filters), {
-    revalidateOnFocus: false,
-    refreshInterval: 60000,
-  });
+  } = useSWR(
+    ["admin-juizes-premium", { isPremium: true }],
+    ([, filters]) => getJuizesAdmin(filters),
+    {
+      revalidateOnFocus: false,
+      refreshInterval: 60000,
+    },
+  );
 
   const juizesPremium: JuizSerializado[] = juizesPremiumResponse?.data ?? [];
 
@@ -93,11 +126,17 @@ export function PacotesContent() {
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 py-12 px-3 sm:px-6">
       <header className="space-y-4">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Administração</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+          Administração
+        </p>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 flex-1">
-            <h1 className={title({ size: "lg", color: "blue" })}>Planos e Pacotes de Juízes</h1>
-            <p className={subtitle({ fullWidth: true })}>Gerencie os planos de assinatura e pacotes de juízes premium</p>
+            <h1 className={title({ size: "lg", color: "blue" })}>
+              Planos e Pacotes de Juízes
+            </h1>
+            <p className={subtitle({ fullWidth: true })}>
+              Gerencie os planos de assinatura e pacotes de juízes premium
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <Button color="primary" variant="flat">
@@ -116,8 +155,12 @@ export function PacotesContent() {
           <CardBody className="flex items-center">
             <span className="text-3xl text-purple-600 mr-4">💎</span>
             <div>
-              <p className="text-sm font-medium text-gray-500">Juízes Premium</p>
-              <p className="text-2xl font-bold text-gray-900">{loadingJuizesPremium ? "—" : juizesPremium.length}</p>
+              <p className="text-sm font-medium text-gray-500">
+                Juízes Premium
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loadingJuizesPremium ? "—" : juizesPremium.length}
+              </p>
               <p className="text-sm text-purple-600">Monetizáveis</p>
             </div>
           </CardBody>
@@ -127,8 +170,12 @@ export function PacotesContent() {
           <CardBody className="flex items-center">
             <span className="text-3xl text-green-600 mr-4">💰</span>
             <div>
-              <p className="text-sm font-medium text-gray-500">Faturamento Mensal</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.faturamentoMensal)}</p>
+              <p className="text-sm font-medium text-gray-500">
+                Faturamento Mensal
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatCurrency(stats.faturamentoMensal)}
+              </p>
               <p className="text-sm text-green-600">Receita atual</p>
             </div>
           </CardBody>
@@ -139,8 +186,12 @@ export function PacotesContent() {
             <span className="text-3xl text-blue-600 mr-4">📦</span>
             <div>
               <p className="text-sm font-medium text-gray-500">Planos Ativos</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.planosAtivos}</p>
-              <p className="text-sm text-blue-600">de {stats.totalPlanos} total</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.planosAtivos}
+              </p>
+              <p className="text-sm text-blue-600">
+                de {stats.totalPlanos} total
+              </p>
             </div>
           </CardBody>
         </Card>
@@ -149,9 +200,15 @@ export function PacotesContent() {
           <CardBody className="flex items-center">
             <span className="text-3xl text-yellow-600 mr-4">👥</span>
             <div>
-              <p className="text-sm font-medium text-gray-500">Assinaturas Ativas</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.assinaturasAtivas}</p>
-              <p className="text-sm text-yellow-600">de {stats.totalAssinaturas} total</p>
+              <p className="text-sm font-medium text-gray-500">
+                Assinaturas Ativas
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.assinaturasAtivas}
+              </p>
+              <p className="text-sm text-yellow-600">
+                de {stats.totalAssinaturas} total
+              </p>
             </div>
           </CardBody>
         </Card>
@@ -162,34 +219,57 @@ export function PacotesContent() {
         {loadingPlanos ? (
           <div className="col-span-3 text-center py-12">
             <div className="text-6xl mb-4">⏳</div>
-            <h3 className="text-lg font-medium text-white mb-2">Carregando planos...</h3>
-            <p className="text-default-400">Buscando dados dos planos disponíveis</p>
+            <h3 className="text-lg font-medium text-white mb-2">
+              Carregando planos...
+            </h3>
+            <p className="text-default-400">
+              Buscando dados dos planos disponíveis
+            </p>
           </div>
         ) : planos.length === 0 ? (
           <div className="col-span-3 text-center py-12">
             <div className="text-6xl mb-4">📦</div>
-            <h3 className="text-lg font-medium text-white mb-2">Nenhum plano encontrado</h3>
-            <p className="text-default-400 mb-4">Crie planos para começar a monetizar o sistema</p>
+            <h3 className="text-lg font-medium text-white mb-2">
+              Nenhum plano encontrado
+            </h3>
+            <p className="text-default-400 mb-4">
+              Crie planos para começar a monetizar o sistema
+            </p>
             <Button color="primary">➕ Criar Primeiro Plano</Button>
           </div>
         ) : (
           planos.map((plano) => (
-            <Card key={plano.id} className="border border-white/10 bg-background/70 backdrop-blur-xl hover:border-white/20 transition-colors">
+            <Card
+              key={plano.id}
+              className="border border-white/10 bg-background/70 backdrop-blur-xl hover:border-white/20 transition-colors"
+            >
               <CardHeader className="flex flex-col gap-2 pb-2">
                 <div className="flex items-center justify-between">
                   <span className="text-3xl">{getPlanoIcon(plano.nome)}</span>
-                  <Badge color={getPlanoColor(plano.nome) as any} size="sm" variant="flat">
+                  <Badge
+                    color={getPlanoColor(plano.nome) as any}
+                    size="sm"
+                    variant="flat"
+                  >
                     {plano.ativo ? "Ativo" : "Inativo"}
                   </Badge>
                 </div>
-                <h3 className="text-lg font-semibold text-white">{plano.nome}</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  {plano.nome}
+                </h3>
                 <p className="text-sm text-default-400">{plano.descricao}</p>
               </CardHeader>
               <Divider className="border-white/10" />
               <CardBody className="space-y-4">
                 <div className="flex items-baseline">
-                  <span className="text-3xl font-bold text-white">{plano.valorMensal ? formatCurrency(plano.valorMensal) : "Sob consulta"}</span>
-                  {plano.valorMensal && <span className="text-default-400 ml-2">/mês</span>}
+                  <span className="text-3xl font-bold text-white">
+                    {plano.valorMensal
+                      ? formatCurrency(plano.valorMensal)
+                      : "Sob consulta"}
+                  </span>
+                  {plano.valorMensal && (
+                    <span className="text-default-400 ml-2">/mês</span>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -199,11 +279,18 @@ export function PacotesContent() {
                   </div>
                   <div className="flex items-center text-sm text-default-400">
                     <span className="mr-2">📄</span>
-                    <span>{plano.limiteProcessos || "Ilimitado"} processos</span>
+                    <span>
+                      {plano.limiteProcessos || "Ilimitado"} processos
+                    </span>
                   </div>
                   <div className="flex items-center text-sm text-default-400">
                     <span className="mr-2">💾</span>
-                    <span>{plano.limiteStorageMb ? `${plano.limiteStorageMb} MB` : "Ilimitado"} armazenamento</span>
+                    <span>
+                      {plano.limiteStorageMb
+                        ? `${plano.limiteStorageMb} MB`
+                        : "Ilimitado"}{" "}
+                      armazenamento
+                    </span>
                   </div>
                   <div className="flex items-center text-sm text-default-400">
                     <span className="mr-2">⚙️</span>
@@ -211,7 +298,11 @@ export function PacotesContent() {
                   </div>
                 </div>
 
-                <Button className="w-full" color={getPlanoColor(plano.nome) as any} variant={plano.valorMensal ? "solid" : "flat"}>
+                <Button
+                  className="w-full"
+                  color={getPlanoColor(plano.nome) as any}
+                  variant={plano.valorMensal ? "solid" : "flat"}
+                >
                   {plano.valorMensal ? "Editar Plano" : "Configurar Preço"}
                 </Button>
               </CardBody>
@@ -224,8 +315,13 @@ export function PacotesContent() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">📦 Pacotes de Juízes Premium</h2>
-            <p className="text-default-400">Add-ons que escritórios podem comprar para acessar dados específicos de juízes</p>
+            <h2 className="text-2xl font-bold text-white">
+              📦 Pacotes de Juízes Premium
+            </h2>
+            <p className="text-default-400">
+              Add-ons que escritórios podem comprar para acessar dados
+              específicos de juízes
+            </p>
           </div>
           <Button color="secondary" variant="solid">
             ➕ Novo Pacote de Juízes
@@ -236,34 +332,58 @@ export function PacotesContent() {
           {loadingPacotesJuiz ? (
             <div className="col-span-4 text-center py-12">
               <div className="text-6xl mb-4">⏳</div>
-              <h3 className="text-lg font-medium text-white mb-2">Carregando pacotes...</h3>
-              <p className="text-default-400">Buscando pacotes de juízes disponíveis</p>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Carregando pacotes...
+              </h3>
+              <p className="text-default-400">
+                Buscando pacotes de juízes disponíveis
+              </p>
             </div>
           ) : pacotesJuiz.length === 0 ? (
             <div className="col-span-4 text-center py-12">
               <div className="text-6xl mb-4">📦</div>
-              <h3 className="text-lg font-medium text-white mb-2">Nenhum pacote de juízes encontrado</h3>
-              <p className="text-default-400 mb-4">Crie pacotes de juízes para monetizar o acesso a dados específicos</p>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Nenhum pacote de juízes encontrado
+              </h3>
+              <p className="text-default-400 mb-4">
+                Crie pacotes de juízes para monetizar o acesso a dados
+                específicos
+              </p>
               <Button color="secondary">➕ Criar Primeiro Pacote</Button>
             </div>
           ) : (
             pacotesJuiz.map((pacote) => (
-              <Card key={pacote.id} className="border border-white/10 bg-background/70 backdrop-blur-xl hover:border-white/20 transition-colors">
+              <Card
+                key={pacote.id}
+                className="border border-white/10 bg-background/70 backdrop-blur-xl hover:border-white/20 transition-colors"
+              >
                 <CardHeader className="flex flex-col gap-2 pb-2">
                   <div className="flex items-center justify-between">
                     <span className="text-3xl">{pacote.icone}</span>
-                    <Badge color={getPlanoColor(pacote.cor) as any} size="sm" variant="flat">
+                    <Badge
+                      color={getPlanoColor(pacote.cor) as any}
+                      size="sm"
+                      variant="flat"
+                    >
                       {pacote.status}
                     </Badge>
                   </div>
-                  <h3 className="text-lg font-semibold text-white">{pacote.nome}</h3>
+                  <h3 className="text-lg font-semibold text-white">
+                    {pacote.nome}
+                  </h3>
                   <p className="text-sm text-default-400">{pacote.descricao}</p>
                 </CardHeader>
                 <Divider className="border-white/10" />
                 <CardBody className="space-y-4">
                   <div className="flex items-baseline">
-                    <span className="text-3xl font-bold text-white">{formatCurrency(pacote.preco)}</span>
-                    <span className="text-default-400 ml-2">{pacote.duracaoDias ? `/${pacote.duracaoDias} dias` : "/permanente"}</span>
+                    <span className="text-3xl font-bold text-white">
+                      {formatCurrency(pacote.preco)}
+                    </span>
+                    <span className="text-default-400 ml-2">
+                      {pacote.duracaoDias
+                        ? `/${pacote.duracaoDias} dias`
+                        : "/permanente"}
+                    </span>
                   </div>
 
                   <div className="space-y-2">
@@ -277,15 +397,23 @@ export function PacotesContent() {
                     </div>
                     <div className="flex items-center text-sm text-default-400">
                       <span className="mr-2">🔍</span>
-                      <span>{pacote.limiteConsultas || "Ilimitadas"} consultas/mês</span>
+                      <span>
+                        {pacote.limiteConsultas || "Ilimitadas"} consultas/mês
+                      </span>
                     </div>
                     <div className="flex items-center text-sm text-default-400">
                       <span className="mr-2">👥</span>
-                      <span>{pacote._count?.assinaturas || 0} assinaturas ativas</span>
+                      <span>
+                        {pacote._count?.assinaturas || 0} assinaturas ativas
+                      </span>
                     </div>
                   </div>
 
-                  <Button className="w-full" color={getPlanoColor(pacote.cor) as any} variant="solid">
+                  <Button
+                    className="w-full"
+                    color={getPlanoColor(pacote.cor) as any}
+                    variant="solid"
+                  >
                     Gerenciar Pacote
                   </Button>
                 </CardBody>
@@ -298,8 +426,12 @@ export function PacotesContent() {
       {/* Assinaturas Ativas */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">📋 Assinaturas Ativas</h2>
-          <p className="text-sm text-default-400">Tenants que possuem planos ativos no sistema.</p>
+          <h2 className="text-lg font-semibold text-white">
+            📋 Assinaturas Ativas
+          </h2>
+          <p className="text-sm text-default-400">
+            Tenants que possuem planos ativos no sistema.
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody>
@@ -322,14 +454,31 @@ export function PacotesContent() {
                 {assinaturas.map((assinatura) => (
                   <TableRow key={assinatura.id}>
                     <TableCell>{assinatura.tenant.name}</TableCell>
-                    <TableCell>{assinatura.plano?.nome || "Sem plano"}</TableCell>
                     <TableCell>
-                      <Badge color={assinatura.status === "ATIVA" ? "success" : "warning"} variant="flat">
+                      {assinatura.plano?.nome || "Sem plano"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        color={
+                          assinatura.status === "ATIVA" ? "success" : "warning"
+                        }
+                        variant="flat"
+                      >
                         {assinatura.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(assinatura.dataInicio).toLocaleDateString("pt-BR")}</TableCell>
-                    <TableCell>{assinatura.dataFim ? new Date(assinatura.dataFim).toLocaleDateString("pt-BR") : "N/A"}</TableCell>
+                    <TableCell>
+                      {new Date(assinatura.dataInicio).toLocaleDateString(
+                        "pt-BR",
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {assinatura.dataFim
+                        ? new Date(assinatura.dataFim).toLocaleDateString(
+                            "pt-BR",
+                          )
+                        : "N/A"}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button color="primary" size="sm" variant="light">
@@ -347,8 +496,12 @@ export function PacotesContent() {
           ) : (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📋</div>
-              <h3 className="text-lg font-medium text-white mb-2">Nenhuma assinatura encontrada</h3>
-              <p className="text-default-400 mb-4">As assinaturas dos tenants aparecerão aqui</p>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Nenhuma assinatura encontrada
+              </h3>
+              <p className="text-default-400 mb-4">
+                As assinaturas dos tenants aparecerão aqui
+              </p>
               <Button color="primary">➕ Gerenciar Assinaturas</Button>
             </div>
           )}
@@ -360,10 +513,20 @@ export function PacotesContent() {
         <CardHeader className="flex flex-col gap-2 pb-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-white">💎 Juízes Premium Disponíveis</h2>
-              <p className="text-sm text-default-400">Juízes que podem ser incluídos em pacotes premium.</p>
+              <h2 className="text-lg font-semibold text-white">
+                💎 Juízes Premium Disponíveis
+              </h2>
+              <p className="text-sm text-default-400">
+                Juízes que podem ser incluídos em pacotes premium.
+              </p>
             </div>
-            <Button color="default" isDisabled={loadingJuizesPremium} size="sm" variant="flat" onPress={() => mutateJuizesPremium()}>
+            <Button
+              color="default"
+              isDisabled={loadingJuizesPremium}
+              size="sm"
+              variant="flat"
+              onPress={() => mutateJuizesPremium()}
+            >
               🔄 Atualizar
             </Button>
           </div>
@@ -373,14 +536,23 @@ export function PacotesContent() {
           {errorJuizesPremium ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">⚠️</div>
-              <h3 className="text-lg font-medium text-white mb-2">Não foi possível carregar os juízes premium</h3>
-              <p className="text-default-400">{(errorJuizesPremium as Error)?.message || "Recarregue os dados para tentar novamente."}</p>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Não foi possível carregar os juízes premium
+              </h3>
+              <p className="text-default-400">
+                {(errorJuizesPremium as Error)?.message ||
+                  "Recarregue os dados para tentar novamente."}
+              </p>
             </div>
           ) : loadingJuizesPremium ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">⏳</div>
-              <h3 className="text-lg font-medium text-white mb-2">Carregando juízes premium...</h3>
-              <p className="text-default-400">Buscando juízes monetizáveis cadastrados pelo super admin.</p>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Carregando juízes premium...
+              </h3>
+              <p className="text-default-400">
+                Buscando juízes monetizáveis cadastrados pelo super admin.
+              </p>
             </div>
           ) : juizesPremium.length > 0 ? (
             <Table aria-label="Tabela de Juízes Premium">
@@ -397,8 +569,14 @@ export function PacotesContent() {
                   <TableRow key={juiz.id}>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-white">{juiz.nome}</span>
-                        {juiz.nomeCompleto && <span className="text-xs text-default-400">{juiz.nomeCompleto}</span>}
+                        <span className="text-sm font-medium text-white">
+                          {juiz.nome}
+                        </span>
+                        {juiz.nomeCompleto && (
+                          <span className="text-xs text-default-400">
+                            {juiz.nomeCompleto}
+                          </span>
+                        )}
                         <span className="text-xs text-primary">
                           {juiz.comarca || "—"}
                           {juiz.vara ? ` - ${juiz.vara}` : ""}
@@ -409,7 +587,12 @@ export function PacotesContent() {
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {juiz.especialidades.slice(0, 2).map((esp) => (
-                          <Badge key={esp} color="default" size="sm" variant="flat">
+                          <Badge
+                            key={esp}
+                            color="default"
+                            size="sm"
+                            variant="flat"
+                          >
                             {esp.replace(/_/g, " ")}
                           </Badge>
                         ))}
@@ -439,8 +622,12 @@ export function PacotesContent() {
           ) : (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">👨‍⚖️</div>
-              <h3 className="text-lg font-medium text-white mb-2">Nenhum juiz premium encontrado</h3>
-              <p className="text-default-400 mb-4">Configure juízes como premium para criar pacotes pagos</p>
+              <h3 className="text-lg font-medium text-white mb-2">
+                Nenhum juiz premium encontrado
+              </h3>
+              <p className="text-default-400 mb-4">
+                Configure juízes como premium para criar pacotes pagos
+              </p>
               <Button color="secondary">👨‍⚖️ Gerenciar Juízes</Button>
             </div>
           )}

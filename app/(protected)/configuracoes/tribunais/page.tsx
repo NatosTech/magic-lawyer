@@ -4,15 +4,34 @@ import { useCallback, useMemo, useState } from "react";
 import useSWR from "swr";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { Input, Textarea } from "@heroui/input";
+import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import { Select, SelectItem } from "@heroui/select";
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/modal";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  useDisclosure,
+} from "@heroui/modal";
 import { Skeleton } from "@heroui/react";
-import { Plus, RefreshCw, Pencil, Trash2, Building2, MapPin } from "lucide-react";
+import {
+  Plus,
+  RefreshCw,
+  Pencil,
+  Trash2,
+  Building2,
+  MapPin,
+} from "lucide-react";
 import { toast } from "sonner";
 
-import { listTribunais, createTribunal, updateTribunal, deleteTribunal } from "@/app/actions/tribunais";
+import {
+  listTribunais,
+  createTribunal,
+  updateTribunal,
+  deleteTribunal,
+} from "@/app/actions/tribunais";
 import { getEstadosBrasilCached } from "@/lib/api/brazil-states";
 import { title } from "@/components/primitives";
 
@@ -35,11 +54,20 @@ export default function TribunaisPage() {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const { data: tribunaisData, isLoading, mutate } = useSWR("tribunais-list", () => listTribunais());
+  const {
+    data: tribunaisData,
+    isLoading,
+    mutate,
+  } = useSWR("tribunais-list", () => listTribunais());
 
-  const { data: estadosData } = useSWR("estados-brasil", () => getEstadosBrasilCached());
+  const { data: estadosData } = useSWR("estados-brasil", () =>
+    getEstadosBrasilCached(),
+  );
 
-  const tribunais = useMemo(() => (tribunaisData?.success ? tribunaisData.tribunais : []), [tribunaisData]);
+  const tribunais = useMemo(
+    () => (tribunaisData?.success ? tribunaisData.tribunais : []),
+    [tribunaisData],
+  );
 
   const estados = useMemo(() => estadosData || [], [estadosData]);
 
@@ -61,7 +89,7 @@ export default function TribunaisPage() {
       });
       onOpen();
     },
-    [onOpen]
+    [onOpen],
   );
 
   const handleSalvar = useCallback(async () => {
@@ -82,10 +110,16 @@ export default function TribunaisPage() {
         siteUrl: formData.siteUrl || null,
       };
 
-      const result = tribunalSelecionado ? await updateTribunal(tribunalSelecionado.id, payload) : await createTribunal(payload);
+      const result = tribunalSelecionado
+        ? await updateTribunal(tribunalSelecionado.id, payload)
+        : await createTribunal(payload);
 
       if (result.success) {
-        toast.success(tribunalSelecionado ? "Tribunal atualizado com sucesso!" : "Tribunal criado com sucesso!");
+        toast.success(
+          tribunalSelecionado
+            ? "Tribunal atualizado com sucesso!"
+            : "Tribunal criado com sucesso!",
+        );
         mutate();
         onClose();
       } else {
@@ -111,7 +145,7 @@ export default function TribunaisPage() {
         toast.error(result.error || "Erro ao excluir tribunal");
       }
     },
-    [mutate]
+    [mutate],
   );
 
   return (
@@ -119,13 +153,24 @@ export default function TribunaisPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className={title()}>Tribunais</h1>
-          <p className="text-default-500">Gerencie os tribunais e órgãos judiciais</p>
+          <p className="text-default-500">
+            Gerencie os tribunais e órgãos judiciais
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button color="default" variant="flat" startContent={<RefreshCw size={18} />} onPress={() => mutate()}>
+          <Button
+            color="default"
+            startContent={<RefreshCw size={18} />}
+            variant="flat"
+            onPress={() => mutate()}
+          >
             Atualizar
           </Button>
-          <Button color="primary" startContent={<Plus size={18} />} onPress={handleOpenNovo}>
+          <Button
+            color="primary"
+            startContent={<Plus size={18} />}
+            onPress={handleOpenNovo}
+          >
             Novo Tribunal
           </Button>
         </div>
@@ -140,16 +185,19 @@ export default function TribunaisPage() {
                 </CardBody>
               </Card>
             ))
-          : tribunais && tribunais.map((tribunal: any) => (
+          : tribunais &&
+            tribunais.map((tribunal: any) => (
               <Card key={tribunal.id}>
                 <CardBody>
                   <div className="flex items-start gap-3 mb-3">
-                    <Building2 size={24} className="text-primary mt-1" />
+                    <Building2 className="text-primary mt-1" size={24} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3 className="font-semibold text-lg leading-tight">{tribunal.nome}</h3>
+                        <h3 className="font-semibold text-lg leading-tight">
+                          {tribunal.nome}
+                        </h3>
                         {tribunal.sigla && (
-                          <Chip size="sm" variant="flat" color="primary">
+                          <Chip color="primary" size="sm" variant="flat">
                             {tribunal.sigla}
                           </Chip>
                         )}
@@ -171,7 +219,12 @@ export default function TribunaisPage() {
                       </div>
 
                       {tribunal.siteUrl && (
-                        <a href={tribunal.siteUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate block">
+                        <a
+                          className="text-xs text-primary hover:underline truncate block"
+                          href={tribunal.siteUrl}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
                           {tribunal.siteUrl}
                         </a>
                       )}
@@ -184,10 +237,21 @@ export default function TribunaisPage() {
                       <span>{tribunal._count?.juizes || 0} juiz(es)</span>
                     </div>
                     <div className="flex gap-2">
-                      <Button isIconOnly size="sm" variant="flat" onPress={() => handleOpenEditar(tribunal)}>
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="flat"
+                        onPress={() => handleOpenEditar(tribunal)}
+                      >
                         <Pencil size={14} />
                       </Button>
-                      <Button isIconOnly size="sm" color="danger" variant="flat" onPress={() => handleExcluir(tribunal.id)}>
+                      <Button
+                        isIconOnly
+                        color="danger"
+                        size="sm"
+                        variant="flat"
+                        onPress={() => handleExcluir(tribunal.id)}
+                      >
                         <Trash2 size={14} />
                       </Button>
                     </div>
@@ -197,17 +261,41 @@ export default function TribunaisPage() {
             ))}
       </div>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <Modal isOpen={isOpen} size="lg" onClose={onClose}>
         <ModalContent>
-          <ModalHeader>{tribunalSelecionado ? "Editar Tribunal" : "Novo Tribunal"}</ModalHeader>
+          <ModalHeader>
+            {tribunalSelecionado ? "Editar Tribunal" : "Novo Tribunal"}
+          </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <Input label="Nome" placeholder="Ex: Tribunal de Justiça de São Paulo" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} isRequired />
+              <Input
+                isRequired
+                label="Nome"
+                placeholder="Ex: Tribunal de Justiça de São Paulo"
+                value={formData.nome}
+                onChange={(e) =>
+                  setFormData({ ...formData, nome: e.target.value })
+                }
+              />
 
               <div className="grid grid-cols-2 gap-4">
-                <Input label="Sigla" placeholder="Ex: TJSP" value={formData.sigla} onChange={(e) => setFormData({ ...formData, sigla: e.target.value })} />
+                <Input
+                  label="Sigla"
+                  placeholder="Ex: TJSP"
+                  value={formData.sigla}
+                  onChange={(e) =>
+                    setFormData({ ...formData, sigla: e.target.value })
+                  }
+                />
 
-                <Select label="UF" placeholder="Selecione" selectedKeys={formData.uf ? [formData.uf] : []} onChange={(e) => setFormData({ ...formData, uf: e.target.value })}>
+                <Select
+                  label="UF"
+                  placeholder="Selecione"
+                  selectedKeys={formData.uf ? [formData.uf] : []}
+                  onChange={(e) =>
+                    setFormData({ ...formData, uf: e.target.value })
+                  }
+                >
                   {estados.map((estado: any) => (
                     <SelectItem key={estado.sigla}>
                       {estado.sigla} - {estado.nome}
@@ -216,22 +304,35 @@ export default function TribunaisPage() {
                 </Select>
               </div>
 
-              <Select label="Esfera" placeholder="Selecione" selectedKeys={formData.esfera ? [formData.esfera] : []} onChange={(e) => setFormData({ ...formData, esfera: e.target.value })}>
+              <Select
+                label="Esfera"
+                placeholder="Selecione"
+                selectedKeys={formData.esfera ? [formData.esfera] : []}
+                onChange={(e) =>
+                  setFormData({ ...formData, esfera: e.target.value })
+                }
+              >
                 {ESFERAS.map((esfera) => (
-                  <SelectItem key={esfera.key}>
-                    {esfera.label}
-                  </SelectItem>
+                  <SelectItem key={esfera.key}>{esfera.label}</SelectItem>
                 ))}
               </Select>
 
-              <Input label="Site" placeholder="https://www.tjsp.jus.br" value={formData.siteUrl} onChange={(e) => setFormData({ ...formData, siteUrl: e.target.value })} type="url" />
+              <Input
+                label="Site"
+                placeholder="https://www.tjsp.jus.br"
+                type="url"
+                value={formData.siteUrl}
+                onChange={(e) =>
+                  setFormData({ ...formData, siteUrl: e.target.value })
+                }
+              />
             </div>
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onClose}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleSalvar} isLoading={salvando}>
+            <Button color="primary" isLoading={salvando} onPress={handleSalvar}>
               {tribunalSelecionado ? "Atualizar" : "Criar"}
             </Button>
           </ModalFooter>

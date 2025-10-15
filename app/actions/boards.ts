@@ -80,6 +80,7 @@ export async function listBoards(params?: { tipo?: string; ativo?: boolean }) {
     return { success: true, boards };
   } catch (error) {
     logger.error("Erro ao listar boards:", error);
+
     return { success: false, error: "Erro ao listar boards" };
   }
 }
@@ -133,6 +134,7 @@ export async function getBoard(id: string) {
     return { success: true, board };
   } catch (error) {
     logger.error("Erro ao buscar board:", error);
+
     return { success: false, error: "Erro ao buscar board" };
   }
 }
@@ -195,6 +197,7 @@ export async function createBoard(data: BoardCreatePayload) {
     return { success: true, board: boardCompleto };
   } catch (error) {
     logger.error("Erro ao criar board:", error);
+
     return { success: false, error: "Erro ao criar board" };
   }
 }
@@ -224,12 +227,14 @@ export async function updateBoard(id: string, data: BoardUpdatePayload) {
     const updateData: any = {};
 
     if (data.nome !== undefined) updateData.nome = data.nome.trim();
-    if (data.descricao !== undefined) updateData.descricao = data.descricao?.trim();
+    if (data.descricao !== undefined)
+      updateData.descricao = data.descricao?.trim();
     if (data.tipo !== undefined) updateData.tipo = data.tipo;
     if (data.icone !== undefined) updateData.icone = data.icone;
     if (data.cor !== undefined) updateData.cor = data.cor;
     if (data.favorito !== undefined) updateData.favorito = data.favorito;
-    if (data.visibilidade !== undefined) updateData.visibilidade = data.visibilidade;
+    if (data.visibilidade !== undefined)
+      updateData.visibilidade = data.visibilidade;
     if (data.ordem !== undefined) updateData.ordem = data.ordem;
     if (data.ativo !== undefined) updateData.ativo = data.ativo;
 
@@ -248,6 +253,7 @@ export async function updateBoard(id: string, data: BoardUpdatePayload) {
     return { success: true, board };
   } catch (error) {
     logger.error("Erro ao atualizar board:", error);
+
     return { success: false, error: "Erro ao atualizar board" };
   }
 }
@@ -308,6 +314,7 @@ export async function deleteBoard(id: string) {
     return { success: true };
   } catch (error) {
     logger.error("Erro ao deletar board:", error);
+
     return { success: false, error: "Erro ao deletar board" };
   }
 }
@@ -366,7 +373,9 @@ export async function duplicateBoard(id: string, novoNome: string) {
       });
     }
 
-    logger.info(`Board duplicado: ${id} → ${novoBoard.id} por usuário ${user.email}`);
+    logger.info(
+      `Board duplicado: ${id} → ${novoBoard.id} por usuário ${user.email}`,
+    );
 
     // Retornar com colunas
     const boardCompleto = await prisma.board.findUnique({
@@ -381,6 +390,7 @@ export async function duplicateBoard(id: string, novoNome: string) {
     return { success: true, board: boardCompleto };
   } catch (error) {
     logger.error("Erro ao duplicar board:", error);
+
     return { success: false, error: "Erro ao duplicar board" };
   }
 }
@@ -418,6 +428,7 @@ export async function getBoardsResumidos() {
     return { success: true, boards };
   } catch (error) {
     logger.error("Erro ao listar boards resumidos:", error);
+
     return { success: false, error: "Erro ao listar boards" };
   }
 }
@@ -480,6 +491,7 @@ export async function criarBoardPadrao() {
     return { success: true, board: boardCompleto };
   } catch (error) {
     logger.error("Erro ao criar board padrão:", error);
+
     return { success: false, error: "Erro ao criar board padrão" };
   }
 }

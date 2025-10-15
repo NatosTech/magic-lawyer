@@ -1,22 +1,27 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
 
 async function getTenantId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Tenant ID não encontrado na sessão");
   }
+
   return session.user.tenantId;
 }
 
 async function getUserId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.id) {
     throw new Error("User ID não encontrado na sessão");
   }
+
   return session.user.id;
 }
 
@@ -24,7 +29,12 @@ async function getUserId(): Promise<string> {
 // LISTAR DADOS BANCÁRIOS
 // ============================================
 
-export async function listDadosBancarios(filters?: { usuarioId?: string; clienteId?: string; ativo?: boolean; principal?: boolean }) {
+export async function listDadosBancarios(filters?: {
+  usuarioId?: string;
+  clienteId?: string;
+  ativo?: boolean;
+  principal?: boolean;
+}) {
   try {
     const tenantId = await getTenantId();
 
@@ -75,7 +85,11 @@ export async function listDadosBancarios(filters?: { usuarioId?: string; cliente
           },
         },
       },
-      orderBy: [{ principal: "desc" }, { ativo: "desc" }, { createdAt: "desc" }],
+      orderBy: [
+        { principal: "desc" },
+        { ativo: "desc" },
+        { createdAt: "desc" },
+      ],
     });
 
     return {
@@ -84,6 +98,7 @@ export async function listDadosBancarios(filters?: { usuarioId?: string; cliente
     };
   } catch (error) {
     console.error("Erro ao listar dados bancários:", error);
+
     return {
       success: false,
       error: "Erro ao listar dados bancários",
@@ -147,6 +162,7 @@ export async function getDadosBancarios(id: string) {
     };
   } catch (error) {
     console.error("Erro ao buscar dados bancários:", error);
+
     return {
       success: false,
       error: "Erro ao buscar dados bancários",
@@ -276,6 +292,7 @@ export async function createDadosBancarios(data: {
     };
   } catch (error) {
     console.error("Erro ao criar dados bancários:", error);
+
     return {
       success: false,
       error: "Erro ao criar dados bancários",
@@ -309,7 +326,7 @@ export async function updateDadosBancarios(
     ativo?: boolean;
     principal?: boolean;
     observacoes?: string;
-  }
+  },
 ) {
   try {
     const tenantId = await getTenantId();
@@ -402,6 +419,7 @@ export async function updateDadosBancarios(
     };
   } catch (error) {
     console.error("Erro ao atualizar dados bancários:", error);
+
     return {
       success: false,
       error: "Erro ao atualizar dados bancários",
@@ -451,6 +469,7 @@ export async function deleteDadosBancarios(id: string) {
     };
   } catch (error) {
     console.error("Erro ao deletar dados bancários:", error);
+
     return {
       success: false,
       error: "Erro ao deletar dados bancários",
@@ -493,6 +512,7 @@ export async function getDadosBancariosAtivos() {
     };
   } catch (error) {
     console.error("Erro ao buscar dados bancários ativos:", error);
+
     return {
       success: false,
       error: "Erro ao buscar dados bancários",
@@ -516,7 +536,11 @@ export async function getMeusDadosBancarios() {
         usuarioId: userId,
         deletedAt: null,
       },
-      orderBy: [{ principal: "desc" }, { ativo: "desc" }, { createdAt: "desc" }],
+      orderBy: [
+        { principal: "desc" },
+        { ativo: "desc" },
+        { createdAt: "desc" },
+      ],
     });
 
     return {
@@ -525,6 +549,7 @@ export async function getMeusDadosBancarios() {
     };
   } catch (error) {
     console.error("Erro ao buscar meus dados bancários:", error);
+
     return {
       success: false,
       error: "Erro ao buscar dados bancários",

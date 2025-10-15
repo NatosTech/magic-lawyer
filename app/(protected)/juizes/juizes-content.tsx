@@ -28,6 +28,7 @@ import { useJuizes, useJuizFormData } from "@/app/hooks/use-juizes";
 import { deleteJuizTenant, createJuizTenant, updateJuizTenant } from "@/app/actions/juizes";
 import { EspecialidadeJuridica, JuizStatus, JuizNivel } from "@/app/generated/prisma";
 import { JuizFotoUpload } from "@/app/(protected)/juizes/juiz-foto-upload";
+import { title, subtitle } from "@/components/primitives";
 
 export function JuizesContent() {
   const { permissions } = useUserPermissions();
@@ -329,8 +330,8 @@ export function JuizesContent() {
             </div>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">Gestão de Juízes</h1>
-                <p className="text-default-500 text-lg">
+                <h1 className={title({ size: "lg", color: "blue" })}>Gestão de Juízes</h1>
+                <p className={subtitle({ fullWidth: true })}>
                   Base de dados completa com {juizes?.length || 0} {juizes?.length === 1 ? "juiz" : "juízes"}, especialidades e histórico de julgamentos.
                 </p>
               </div>

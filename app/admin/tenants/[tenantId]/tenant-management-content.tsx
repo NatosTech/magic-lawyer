@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import useSWR from "swr";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -9,11 +16,29 @@ import { Divider } from "@heroui/divider";
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Skeleton, Tooltip } from "@heroui/react";
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+} from "@heroui/table";
 import { Tabs, Tab } from "@heroui/tabs";
 import { addToast } from "@heroui/toast";
-
-import { Building2, CreditCard, Users2, Palette, FileText, ShieldCheck, Sparkles, KeyRound, ToggleLeft, Edit, Check, X, Plus } from "lucide-react";
+import {
+  Building2,
+  CreditCard,
+  Users2,
+  Palette,
+  FileText,
+  ShieldCheck,
+  Sparkles,
+  KeyRound,
+  ToggleLeft,
+  Edit,
+  Plus,
+} from "lucide-react";
 
 import {
   getTenantManagementData,
@@ -28,7 +53,12 @@ import {
   type UpdateTenantBrandingInput,
 } from "@/app/actions/admin";
 import { UserManagementModal } from "@/components/user-management-modal";
-import { InvoiceStatus, SubscriptionStatus, TenantStatus, UserRole } from "@/app/generated/prisma";
+import {
+  InvoiceStatus,
+  SubscriptionStatus,
+  TenantStatus,
+  UserRole,
+} from "@/app/generated/prisma";
 
 interface TenantManagementContentProps {
   tenantId: string;
@@ -42,13 +72,15 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 2,
 });
 
-const subscriptionStatusOptions = Object.values(SubscriptionStatus).map((status) => ({
-  value: status,
-  label: status
-    .replace(/_/g, " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (l) => l.toUpperCase()),
-}));
+const subscriptionStatusOptions = Object.values(SubscriptionStatus).map(
+  (status) => ({
+    value: status,
+    label: status
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (l) => l.toUpperCase()),
+  }),
+);
 
 const tenantStatusOptions: Array<{
   value: TenantStatus;
@@ -85,7 +117,10 @@ const timezoneOptions = [
   "Europe/Lisbon",
 ];
 
-const fetchTenant = async (_key: string, tenantId: string): Promise<TenantManagementData> => {
+const fetchTenant = async (
+  _key: string,
+  tenantId: string,
+): Promise<TenantManagementData> => {
   const response = await getTenantManagementData(tenantId);
 
   if (!response.success || !response.data) {
@@ -111,11 +146,18 @@ function formatDateTime(value: string | null) {
   return new Date(value).toLocaleString("pt-BR");
 }
 
-export function TenantManagementContent({ tenantId, initialData }: TenantManagementContentProps) {
-  const { data, mutate, isValidating } = useSWR<TenantManagementData>(["tenant-management", tenantId], () => fetchTenant("tenant-management", tenantId), {
-    fallbackData: initialData,
-    revalidateOnFocus: false,
-  });
+export function TenantManagementContent({
+  tenantId,
+  initialData,
+}: TenantManagementContentProps) {
+  const { data, mutate, isValidating } = useSWR<TenantManagementData>(
+    ["tenant-management", tenantId],
+    () => fetchTenant("tenant-management", tenantId),
+    {
+      fallbackData: initialData,
+      revalidateOnFocus: false,
+    },
+  );
 
   const tenantData = data ?? initialData;
 
@@ -131,12 +173,13 @@ export function TenantManagementContent({ tenantId, initialData }: TenantManagem
     timezone: tenantData.tenant.timezone,
   });
 
-  const [subscriptionForm, setSubscriptionForm] = useState<UpdateTenantSubscriptionInput>({
-    planId: tenantData.subscription.planId ?? "",
-    status: tenantData.subscription.status ?? SubscriptionStatus.TRIAL,
-    trialEndsAt: tenantData.subscription.trialEndsAt,
-    renovaEm: tenantData.subscription.renovaEm,
-  });
+  const [subscriptionForm, setSubscriptionForm] =
+    useState<UpdateTenantSubscriptionInput>({
+      planId: tenantData.subscription.planId ?? "",
+      status: tenantData.subscription.status ?? SubscriptionStatus.TRIAL,
+      trialEndsAt: tenantData.subscription.trialEndsAt,
+      renovaEm: tenantData.subscription.renovaEm,
+    });
 
   const [brandingForm, setBrandingForm] = useState<UpdateTenantBrandingInput>({
     primaryColor: tenantData.branding?.primaryColor ?? "",
@@ -196,7 +239,7 @@ export function TenantManagementContent({ tenantId, initialData }: TenantManagem
       },
       ...tenantData.availablePlans,
     ],
-    [tenantData.availablePlans]
+    [tenantData.availablePlans],
   );
 
   const handleSaveDetails = () => {
@@ -209,6 +252,7 @@ export function TenantManagementContent({ tenantId, initialData }: TenantManagem
           description: response.error ?? "Falha ao atualizar informações",
           color: "danger",
         });
+
         return;
       }
 
@@ -232,6 +276,7 @@ export function TenantManagementContent({ tenantId, initialData }: TenantManagem
           description: response.error ?? "Tente novamente em instantes",
           color: "danger",
         });
+
         return;
       }
 
@@ -262,6 +307,7 @@ export function TenantManagementContent({ tenantId, initialData }: TenantManagem
           description: response.error ?? "Verifique os dados informados",
           color: "danger",
         });
+
         return;
       }
 
@@ -285,6 +331,7 @@ export function TenantManagementContent({ tenantId, initialData }: TenantManagem
           description: response.error ?? "Tente novamente",
           color: "danger",
         });
+
         return;
       }
 
@@ -315,7 +362,9 @@ export function TenantManagementContent({ tenantId, initialData }: TenantManagem
         } else {
           addToast({
             title: !current ? "Usuário reativado" : "Usuário desativado",
-            description: !current ? "Acesso liberado novamente" : "Usuário ficará sem acesso até nova liberação",
+            description: !current
+              ? "Acesso liberado novamente"
+              : "Usuário ficará sem acesso até nova liberação",
             color: "success",
           });
         }
@@ -342,9 +391,12 @@ export function TenantManagementContent({ tenantId, initialData }: TenantManagem
           });
         } else {
           const newPassword = response.data?.temporaryPassword;
+
           addToast({
             title: "Senha redefinida",
-            description: newPassword ? `Nova senha temporária: ${newPassword}` : "Senha redefinida com sucesso.",
+            description: newPassword
+              ? `Nova senha temporária: ${newPassword}`
+              : "Senha redefinida com sucesso.",
             color: "success",
             timeout: 8000,
           });
@@ -363,6 +415,7 @@ export function TenantManagementContent({ tenantId, initialData }: TenantManagem
         ...user,
         // Os dados já vêm do getTenantManagementData
       };
+
       setSelectedUser(userWithDetails);
     } else {
       setSelectedUser(null);
@@ -393,71 +446,124 @@ export function TenantManagementContent({ tenantId, initialData }: TenantManagem
           <div className="space-y-1">
             <div className="flex items-center gap-3">
               <Building2 className="h-5 w-5 text-primary" />
-              <p className="text-lg font-semibold text-primary">{tenantData.tenant.name}</p>
-              <Chip size="sm" color={statusChipColor(tenantData.tenant.status)} variant="flat">
+              <p className="text-lg font-semibold text-primary">
+                {tenantData.tenant.name}
+              </p>
+              <Chip
+                color={statusChipColor(tenantData.tenant.status)}
+                size="sm"
+                variant="flat"
+              >
                 {statusLabel(tenantData.tenant.status)}
               </Chip>
             </div>
-            <p className="text-xs text-primary/80">Slug: {tenantData.tenant.slug}</p>
+            <p className="text-xs text-primary/80">
+              Slug: {tenantData.tenant.slug}
+            </p>
             <div className="flex flex-wrap gap-2 text-xs text-primary/70">
-              {tenantData.tenant.domain ? <span>Domínio: {tenantData.tenant.domain}</span> : null}
+              {tenantData.tenant.domain ? (
+                <span>Domínio: {tenantData.tenant.domain}</span>
+              ) : null}
               <span>Timezone: {tenantData.tenant.timezone}</span>
               <span>Criado em: {formatDate(tenantData.tenant.createdAt)}</span>
             </div>
           </div>
           <div className="flex flex-wrap gap-3 text-xs text-primary/70">
-            <Chip size="sm" color="secondary" variant="flat">
+            <Chip color="secondary" size="sm" variant="flat">
               Plano atual: {tenantData.subscription.planName ?? "Custom"}
             </Chip>
-            <Chip size="sm" color="secondary" variant="flat">
+            <Chip color="secondary" size="sm" variant="flat">
               Receita 90d: {formatCurrency(tenantData.metrics.revenue90d)}
             </Chip>
           </div>
         </CardBody>
       </Card>
 
-      <Tabs aria-label="Painel de gerenciamento do tenant" color="primary" variant="bordered">
-        <Tab key="overview" title={<TabTitle icon={<Building2 className="h-4 w-4" />} label="Visão geral" />}>
+      <Tabs
+        aria-label="Painel de gerenciamento do tenant"
+        color="primary"
+        variant="bordered"
+      >
+        <Tab
+          key="overview"
+          title={
+            <TabTitle
+              icon={<Building2 className="h-4 w-4" />}
+              label="Visão geral"
+            />
+          }
+        >
           <OverviewTab
             detailsForm={detailsForm}
-            setDetailsForm={setDetailsForm}
-            isSavingDetails={isSavingDetails}
             handleSaveDetails={handleSaveDetails}
-            tenantStatus={tenantData.tenant.status}
             handleStatusChange={handleStatusChange}
+            isSavingDetails={isSavingDetails}
             isUpdatingStatus={isUpdatingStatus}
+            setDetailsForm={setDetailsForm}
+            tenantStatus={tenantData.tenant.status}
           />
         </Tab>
 
-        <Tab key="finance" title={<TabTitle icon={<CreditCard className="h-4 w-4" />} label="Financeiro" />}>
+        <Tab
+          key="finance"
+          title={
+            <TabTitle
+              icon={<CreditCard className="h-4 w-4" />}
+              label="Financeiro"
+            />
+          }
+        >
           <FinanceTab
-            subscriptionForm={subscriptionForm}
-            setSubscriptionForm={setSubscriptionForm}
-            planOptions={planOptions}
             handleSaveSubscription={handleSaveSubscription}
+            invoices={tenantData.invoices}
             isSavingSubscription={isSavingSubscription}
             metrics={tenantData.metrics}
-            invoices={tenantData.invoices}
+            planOptions={planOptions}
+            setSubscriptionForm={setSubscriptionForm}
+            subscriptionForm={subscriptionForm}
           />
         </Tab>
 
-        <Tab key="users" title={<TabTitle icon={<Users2 className="h-4 w-4" />} label="Usuários" />}>
+        <Tab
+          key="users"
+          title={
+            <TabTitle icon={<Users2 className="h-4 w-4" />} label="Usuários" />
+          }
+        >
           <UsersTab
-            users={tenantData.users}
-            userRoleOptions={userRoleOptions}
-            pendingUserId={pendingUserId}
             isUpdatingUser={isUpdatingUser}
-            onToggleActive={handleToggleUserActive}
-            onResetPassword={handleResetUserPassword}
+            pendingUserId={pendingUserId}
+            userRoleOptions={userRoleOptions}
+            users={tenantData.users}
             onOpenUserModal={handleOpenUserModal}
+            onResetPassword={handleResetUserPassword}
+            onToggleActive={handleToggleUserActive}
           />
         </Tab>
 
-        <Tab key="branding" title={<TabTitle icon={<Palette className="h-4 w-4" />} label="Branding" />}>
-          <BrandingTab brandingForm={brandingForm} setBrandingForm={setBrandingForm} handleSaveBranding={handleSaveBranding} isSavingBranding={isSavingBranding} />
+        <Tab
+          key="branding"
+          title={
+            <TabTitle icon={<Palette className="h-4 w-4" />} label="Branding" />
+          }
+        >
+          <BrandingTab
+            brandingForm={brandingForm}
+            handleSaveBranding={handleSaveBranding}
+            isSavingBranding={isSavingBranding}
+            setBrandingForm={setBrandingForm}
+          />
         </Tab>
 
-        <Tab key="auditoria" title={<TabTitle icon={<FileText className="h-4 w-4" />} label="Auditoria" />}>
+        <Tab
+          key="auditoria"
+          title={
+            <TabTitle
+              icon={<FileText className="h-4 w-4" />}
+              label="Auditoria"
+            />
+          }
+        >
           <AuditTab />
         </Tab>
       </Tabs>
@@ -468,7 +574,13 @@ export function TenantManagementContent({ tenantId, initialData }: TenantManagem
         </div>
       ) : null}
 
-      <UserManagementModal isOpen={isUserModalOpen} onClose={handleCloseUserModal} tenantId={tenantId} user={selectedUser} onSuccess={handleUserModalSuccess} />
+      <UserManagementModal
+        isOpen={isUserModalOpen}
+        tenantId={tenantId}
+        user={selectedUser}
+        onClose={handleCloseUserModal}
+        onSuccess={handleUserModalSuccess}
+      />
     </div>
   );
 }
@@ -483,30 +595,67 @@ interface OverviewTabProps {
   isUpdatingStatus: boolean;
 }
 
-function OverviewTab({ detailsForm, setDetailsForm, isSavingDetails, handleSaveDetails, tenantStatus, handleStatusChange, isUpdatingStatus }: OverviewTabProps) {
+function OverviewTab({
+  detailsForm,
+  setDetailsForm,
+  isSavingDetails,
+  handleSaveDetails,
+  tenantStatus,
+  handleStatusChange,
+  isUpdatingStatus,
+}: OverviewTabProps) {
   return (
     <div className="flex flex-col gap-6">
       <Card className="border border-white/10 bg-background/70 backdrop-blur">
         <CardHeader className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold text-white">Informações gerais</h2>
-          <p className="text-sm text-default-400">Atualize dados de identificação e contato do tenant.</p>
+          <h2 className="text-lg font-semibold text-white">
+            Informações gerais
+          </h2>
+          <p className="text-sm text-default-400">
+            Atualize dados de identificação e contato do tenant.
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
-            <Input isRequired label="Nome do tenant" value={detailsForm.name ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, name: value || undefined }))} />
-            <Input isRequired label="Slug" value={detailsForm.slug ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, slug: value || undefined }))} />
+            <Input
+              isRequired
+              label="Nome do tenant"
+              value={detailsForm.name ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({
+                  ...prev,
+                  name: value || undefined,
+                }))
+              }
+            />
+            <Input
+              isRequired
+              label="Slug"
+              value={detailsForm.slug ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({
+                  ...prev,
+                  slug: value || undefined,
+                }))
+              }
+            />
             <Input
               label="Domínio personalizado"
               placeholder="ex.: escritorio.minhaempresa.com"
               value={detailsForm.domain ?? ""}
-              onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, domain: value || null }))}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({ ...prev, domain: value || null }))
+              }
             />
             <Select
               label="Fuso horário"
-              selectedKeys={new Set([detailsForm.timezone ?? "America/Sao_Paulo"])}
+              selectedKeys={
+                new Set([detailsForm.timezone ?? "America/Sao_Paulo"])
+              }
               onSelectionChange={(keys) => {
                 const [value] = Array.from(keys);
+
                 setDetailsForm((prev) => ({
                   ...prev,
                   timezone: typeof value === "string" ? value : undefined,
@@ -517,14 +666,59 @@ function OverviewTab({ detailsForm, setDetailsForm, isSavingDetails, handleSaveD
                 <SelectItem key={tz}>{tz}</SelectItem>
               ))}
             </Select>
-            <Input label="Email de contato" type="email" value={detailsForm.email ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, email: value || null }))} />
-            <Input label="Telefone" value={detailsForm.telefone ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, telefone: value || null }))} />
-            <Input label="Documento (CNPJ/CPF)" value={detailsForm.documento ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, documento: value || null }))} />
-            <Input label="Razão social" value={detailsForm.razaoSocial ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, razaoSocial: value || null }))} />
-            <Input label="Nome fantasia" value={detailsForm.nomeFantasia ?? ""} onValueChange={(value) => setDetailsForm((prev) => ({ ...prev, nomeFantasia: value || null }))} />
+            <Input
+              label="Email de contato"
+              type="email"
+              value={detailsForm.email ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({ ...prev, email: value || null }))
+              }
+            />
+            <Input
+              label="Telefone"
+              value={detailsForm.telefone ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({ ...prev, telefone: value || null }))
+              }
+            />
+            <Input
+              label="Documento (CNPJ/CPF)"
+              value={detailsForm.documento ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({
+                  ...prev,
+                  documento: value || null,
+                }))
+              }
+            />
+            <Input
+              label="Razão social"
+              value={detailsForm.razaoSocial ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({
+                  ...prev,
+                  razaoSocial: value || null,
+                }))
+              }
+            />
+            <Input
+              label="Nome fantasia"
+              value={detailsForm.nomeFantasia ?? ""}
+              onValueChange={(value) =>
+                setDetailsForm((prev) => ({
+                  ...prev,
+                  nomeFantasia: value || null,
+                }))
+              }
+            />
           </div>
           <div className="flex justify-end">
-            <Button color="primary" isLoading={isSavingDetails} radius="full" onPress={handleSaveDetails}>
+            <Button
+              color="primary"
+              isLoading={isSavingDetails}
+              radius="full"
+              onPress={handleSaveDetails}
+            >
               Salvar alterações
             </Button>
           </div>
@@ -534,29 +728,46 @@ function OverviewTab({ detailsForm, setDetailsForm, isSavingDetails, handleSaveD
       <Card className="border border-white/10 bg-background/70 backdrop-blur">
         <CardHeader className="flex flex-col gap-2">
           <h2 className="text-lg font-semibold text-white">Status do tenant</h2>
-          <p className="text-sm text-default-400">Controle de acesso global do tenant à plataforma.</p>
+          <p className="text-sm text-default-400">
+            Controle de acesso global do tenant à plataforma.
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody className="space-y-4">
           <div className="flex flex-wrap gap-3">
-            <Chip color={statusChipColor(tenantStatus)} size="sm" variant="flat">
+            <Chip
+              color={statusChipColor(tenantStatus)}
+              size="sm"
+              variant="flat"
+            >
               Status atual: {statusLabel(tenantStatus)}
             </Chip>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             {tenantStatusOptions.map((option) => (
-              <Card key={option.value} className={`border ${tenantStatus === option.value ? "border-primary/60 bg-primary/10" : "border-white/10 bg-background/60"}`}>
+              <Card
+                key={option.value}
+                className={`border ${tenantStatus === option.value ? "border-primary/60 bg-primary/10" : "border-white/10 bg-background/60"}`}
+              >
                 <CardBody className="space-y-3">
                   <div className="space-y-1">
-                    <p className="text-sm font-semibold text-white">{option.label}</p>
-                    <p className="text-xs text-default-400">{option.description}</p>
+                    <p className="text-sm font-semibold text-white">
+                      {option.label}
+                    </p>
+                    <p className="text-xs text-default-400">
+                      {option.description}
+                    </p>
                   </div>
                   <Button
-                    color={tenantStatus === option.value ? "primary" : "default"}
+                    color={
+                      tenantStatus === option.value ? "primary" : "default"
+                    }
                     isDisabled={tenantStatus === option.value}
                     isLoading={isUpdatingStatus}
                     radius="full"
-                    variant={tenantStatus === option.value ? "flat" : "bordered"}
+                    variant={
+                      tenantStatus === option.value ? "flat" : "bordered"
+                    }
                     onPress={() => handleStatusChange(option.value)}
                   >
                     {tenantStatus === option.value ? "Status atual" : "Aplicar"}
@@ -587,14 +798,26 @@ interface FinanceTabProps {
   invoices: TenantManagementData["invoices"];
 }
 
-function FinanceTab({ subscriptionForm, setSubscriptionForm, planOptions, handleSaveSubscription, isSavingSubscription, metrics, invoices }: FinanceTabProps) {
+function FinanceTab({
+  subscriptionForm,
+  setSubscriptionForm,
+  planOptions,
+  handleSaveSubscription,
+  isSavingSubscription,
+  metrics,
+  invoices,
+}: FinanceTabProps) {
   return (
     <div className="flex flex-col gap-6">
       <Card className="border border-white/10 bg-background/70 backdrop-blur">
         <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-white">Plano e assinatura</h2>
-            <p className="text-sm text-default-400">Ajuste o plano, status da assinatura e datas de cobrança.</p>
+            <h2 className="text-lg font-semibold text-white">
+              Plano e assinatura
+            </h2>
+            <p className="text-sm text-default-400">
+              Ajuste o plano, status da assinatura e datas de cobrança.
+            </p>
           </div>
           <Chip color="secondary" size="sm" variant="flat">
             Receita 30 dias: {formatCurrency(metrics.revenue30d)}
@@ -608,6 +831,7 @@ function FinanceTab({ subscriptionForm, setSubscriptionForm, planOptions, handle
               selectedKeys={new Set([subscriptionForm.planId ?? ""])}
               onSelectionChange={(keys) => {
                 const [value] = Array.from(keys);
+
                 setSubscriptionForm((prev) => ({
                   ...prev,
                   planId: typeof value === "string" ? value : "",
@@ -619,7 +843,11 @@ function FinanceTab({ subscriptionForm, setSubscriptionForm, planOptions, handle
                   <div className="flex flex-col">
                     <span>{plan.nome}</span>
                     <span className="text-xs text-default-500">
-                      {plan.valorMensal ? `${formatCurrency(plan.valorMensal)} / mês` : plan.valorAnual ? `${formatCurrency(plan.valorAnual)} / ano` : "Plano customizado"}
+                      {plan.valorMensal
+                        ? `${formatCurrency(plan.valorMensal)} / mês`
+                        : plan.valorAnual
+                          ? `${formatCurrency(plan.valorAnual)} / ano`
+                          : "Plano customizado"}
                     </span>
                   </div>
                 </SelectItem>
@@ -627,9 +855,12 @@ function FinanceTab({ subscriptionForm, setSubscriptionForm, planOptions, handle
             </Select>
             <Select
               label="Status da assinatura"
-              selectedKeys={new Set([subscriptionForm.status ?? SubscriptionStatus.TRIAL])}
+              selectedKeys={
+                new Set([subscriptionForm.status ?? SubscriptionStatus.TRIAL])
+              }
               onSelectionChange={(keys) => {
                 const [value] = Array.from(keys);
+
                 if (typeof value === "string") {
                   setSubscriptionForm((prev) => ({
                     ...prev,
@@ -666,7 +897,12 @@ function FinanceTab({ subscriptionForm, setSubscriptionForm, planOptions, handle
             />
           </div>
           <div className="flex justify-end">
-            <Button color="primary" isLoading={isSavingSubscription} radius="full" onPress={handleSaveSubscription}>
+            <Button
+              color="primary"
+              isLoading={isSavingSubscription}
+              radius="full"
+              onPress={handleSaveSubscription}
+            >
               Salvar assinatura
             </Button>
           </div>
@@ -677,30 +913,57 @@ function FinanceTab({ subscriptionForm, setSubscriptionForm, planOptions, handle
         <Card className="border border-white/10 bg-background/70 backdrop-blur">
           <CardHeader className="flex flex-col gap-2">
             <h2 className="text-lg font-semibold text-white">Indicadores</h2>
-            <p className="text-sm text-default-400">Métricas resumidas dos últimos 90 dias.</p>
+            <p className="text-sm text-default-400">
+              Métricas resumidas dos últimos 90 dias.
+            </p>
           </CardHeader>
           <Divider className="border-white/10" />
           <CardBody>
             <div className="grid gap-4 md:grid-cols-2">
-              <MetricCard label="Receita 90 dias" value={formatCurrency(metrics.revenue90d)} tone="success" />
-              <MetricCard label="Receita 30 dias" value={formatCurrency(metrics.revenue30d)} tone="primary" />
-              <MetricCard label="Usuários ativos" value={numberFormatter.format(metrics.usuarios)} tone="secondary" />
-              <MetricCard label="Clientes cadastrados" value={numberFormatter.format(metrics.clientes)} tone="default" />
+              <MetricCard
+                label="Receita 90 dias"
+                tone="success"
+                value={formatCurrency(metrics.revenue90d)}
+              />
+              <MetricCard
+                label="Receita 30 dias"
+                tone="primary"
+                value={formatCurrency(metrics.revenue30d)}
+              />
+              <MetricCard
+                label="Usuários ativos"
+                tone="secondary"
+                value={numberFormatter.format(metrics.usuarios)}
+              />
+              <MetricCard
+                label="Clientes cadastrados"
+                tone="default"
+                value={numberFormatter.format(metrics.clientes)}
+              />
             </div>
           </CardBody>
         </Card>
         <Card className="border border-white/10 bg-background/70 backdrop-blur">
           <CardHeader className="flex flex-col gap-1">
-            <h2 className="text-lg font-semibold text-white">Faturas recentes</h2>
-            <p className="text-sm text-default-400">{metrics.outstandingInvoices} fatura(s) aguardando pagamento.</p>
+            <h2 className="text-lg font-semibold text-white">
+              Faturas recentes
+            </h2>
+            <p className="text-sm text-default-400">
+              {metrics.outstandingInvoices} fatura(s) aguardando pagamento.
+            </p>
           </CardHeader>
           <Divider className="border-white/10" />
           <CardBody className="space-y-3">
             {invoices.length ? (
               invoices.map((invoice) => (
-                <div key={invoice.id} className="rounded-xl border border-white/10 bg-background/60 p-3">
+                <div
+                  key={invoice.id}
+                  className="rounded-xl border border-white/10 bg-background/60 p-3"
+                >
                   <div className="flex items-center justify-between text-sm font-medium text-white">
-                    <span>{invoice.numero ?? `Fatura ${invoice.id.slice(0, 6)}`}</span>
+                    <span>
+                      {invoice.numero ?? `Fatura ${invoice.id.slice(0, 6)}`}
+                    </span>
                     <span>{formatCurrency(invoice.valor)}</span>
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs text-default-500">
@@ -711,7 +974,9 @@ function FinanceTab({ subscriptionForm, setSubscriptionForm, planOptions, handle
                 </div>
               ))
             ) : (
-              <p className="text-sm text-default-400">Nenhuma fatura registrada para este tenant.</p>
+              <p className="text-sm text-default-400">
+                Nenhuma fatura registrada para este tenant.
+              </p>
             )}
           </CardBody>
         </Card>
@@ -730,15 +995,32 @@ interface UsersTabProps {
   onOpenUserModal: (user?: any) => void;
 }
 
-function UsersTab({ users, userRoleOptions, pendingUserId, isUpdatingUser, onToggleActive, onResetPassword, onOpenUserModal }: UsersTabProps) {
+function UsersTab({
+  users,
+  userRoleOptions,
+  pendingUserId,
+  isUpdatingUser,
+  onToggleActive,
+  onResetPassword,
+  onOpenUserModal,
+}: UsersTabProps) {
   return (
     <Card className="border border-white/10 bg-background/70 backdrop-blur">
       <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">Usuários do tenant</h2>
-          <p className="text-sm text-default-400">Gerencie papéis, acesso e senhas temporárias dos usuários.</p>
+          <h2 className="text-lg font-semibold text-white">
+            Usuários do tenant
+          </h2>
+          <p className="text-sm text-default-400">
+            Gerencie papéis, acesso e senhas temporárias dos usuários.
+          </p>
         </div>
-        <Button color="primary" size="sm" startContent={<Plus className="h-4 w-4" />} onPress={() => onOpenUserModal()}>
+        <Button
+          color="primary"
+          size="sm"
+          startContent={<Plus className="h-4 w-4" />}
+          onPress={() => onOpenUserModal()}
+        >
           Criar Usuário
         </Button>
       </CardHeader>
@@ -769,28 +1051,62 @@ function UsersTab({ users, userRoleOptions, pendingUserId, isUpdatingUser, onTog
                     </TableCell>
                     <TableCell>
                       <Chip color="primary" size="sm" variant="flat">
-                        {userRoleOptions.find((r) => r.value === user.role)?.label || user.role}
+                        {userRoleOptions.find((r) => r.value === user.role)
+                          ?.label || user.role}
                       </Chip>
                     </TableCell>
                     <TableCell>
-                      <Chip color={user.active ? "success" : "warning"} size="sm" variant="flat">
+                      <Chip
+                        color={user.active ? "success" : "warning"}
+                        size="sm"
+                        variant="flat"
+                      >
                         {user.active ? "Ativo" : "Desativado"}
                       </Chip>
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
                         <Tooltip content="Editar usuário completo">
-                          <Button color="primary" size="sm" isIconOnly radius="full" variant="bordered" onPress={() => onOpenUserModal(user)}>
+                          <Button
+                            isIconOnly
+                            color="primary"
+                            radius="full"
+                            size="sm"
+                            variant="bordered"
+                            onPress={() => onOpenUserModal(user)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                         </Tooltip>
-                        <Tooltip content={user.active ? "Desativar usuário" : "Reativar usuário"}>
-                          <Button color="default" size="sm" isIconOnly radius="full" variant="bordered" isLoading={isPending} onPress={() => onToggleActive(user.id, user.active)}>
+                        <Tooltip
+                          content={
+                            user.active
+                              ? "Desativar usuário"
+                              : "Reativar usuário"
+                          }
+                        >
+                          <Button
+                            isIconOnly
+                            color="default"
+                            isLoading={isPending}
+                            radius="full"
+                            size="sm"
+                            variant="bordered"
+                            onPress={() => onToggleActive(user.id, user.active)}
+                          >
                             <ToggleLeft className="h-4 w-4" />
                           </Button>
                         </Tooltip>
                         <Tooltip content="Resetar senha">
-                          <Button color="secondary" size="sm" isIconOnly radius="full" variant="flat" isLoading={isPending} onPress={() => onResetPassword(user.id)}>
+                          <Button
+                            isIconOnly
+                            color="secondary"
+                            isLoading={isPending}
+                            radius="full"
+                            size="sm"
+                            variant="flat"
+                            onPress={() => onResetPassword(user.id)}
+                          >
                             <KeyRound className="h-4 w-4" />
                           </Button>
                         </Tooltip>
@@ -811,31 +1127,89 @@ function UsersTab({ users, userRoleOptions, pendingUserId, isUpdatingUser, onTog
 
 interface BrandingTabProps {
   brandingForm: UpdateTenantBrandingInput;
-  setBrandingForm: (updater: (prev: UpdateTenantBrandingInput) => UpdateTenantBrandingInput) => void;
+  setBrandingForm: (
+    updater: (prev: UpdateTenantBrandingInput) => UpdateTenantBrandingInput,
+  ) => void;
   handleSaveBranding: () => void;
   isSavingBranding: boolean;
 }
 
-function BrandingTab({ brandingForm, setBrandingForm, handleSaveBranding, isSavingBranding }: BrandingTabProps) {
+function BrandingTab({
+  brandingForm,
+  setBrandingForm,
+  handleSaveBranding,
+  isSavingBranding,
+}: BrandingTabProps) {
   return (
     <Card className="border border-white/10 bg-background/70 backdrop-blur">
       <CardHeader className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold text-white">Identidade visual</h2>
-        <p className="text-sm text-default-400">Ajuste cores e ativos visuais do tenant.</p>
+        <p className="text-sm text-default-400">
+          Ajuste cores e ativos visuais do tenant.
+        </p>
       </CardHeader>
       <Divider className="border-white/10" />
       <CardBody className="space-y-4">
         <div className="grid gap-4 md:grid-cols-3">
-          <ColorInput label="Cor primária" value={brandingForm.primaryColor ?? ""} onChange={(value) => setBrandingForm((prev) => ({ ...prev, primaryColor: value || null }))} />
-          <ColorInput label="Cor secundária" value={brandingForm.secondaryColor ?? ""} onChange={(value) => setBrandingForm((prev) => ({ ...prev, secondaryColor: value || null }))} />
-          <ColorInput label="Cor de destaque" value={brandingForm.accentColor ?? ""} onChange={(value) => setBrandingForm((prev) => ({ ...prev, accentColor: value || null }))} />
+          <ColorInput
+            label="Cor primária"
+            value={brandingForm.primaryColor ?? ""}
+            onChange={(value) =>
+              setBrandingForm((prev) => ({
+                ...prev,
+                primaryColor: value || null,
+              }))
+            }
+          />
+          <ColorInput
+            label="Cor secundária"
+            value={brandingForm.secondaryColor ?? ""}
+            onChange={(value) =>
+              setBrandingForm((prev) => ({
+                ...prev,
+                secondaryColor: value || null,
+              }))
+            }
+          />
+          <ColorInput
+            label="Cor de destaque"
+            value={brandingForm.accentColor ?? ""}
+            onChange={(value) =>
+              setBrandingForm((prev) => ({
+                ...prev,
+                accentColor: value || null,
+              }))
+            }
+          />
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          <Input label="Logo URL" placeholder="https://..." value={brandingForm.logoUrl ?? ""} onValueChange={(value) => setBrandingForm((prev) => ({ ...prev, logoUrl: value || null }))} />
-          <Input label="Favicon URL" placeholder="https://..." value={brandingForm.faviconUrl ?? ""} onValueChange={(value) => setBrandingForm((prev) => ({ ...prev, faviconUrl: value || null }))} />
+          <Input
+            label="Logo URL"
+            placeholder="https://..."
+            value={brandingForm.logoUrl ?? ""}
+            onValueChange={(value) =>
+              setBrandingForm((prev) => ({ ...prev, logoUrl: value || null }))
+            }
+          />
+          <Input
+            label="Favicon URL"
+            placeholder="https://..."
+            value={brandingForm.faviconUrl ?? ""}
+            onValueChange={(value) =>
+              setBrandingForm((prev) => ({
+                ...prev,
+                faviconUrl: value || null,
+              }))
+            }
+          />
         </div>
         <div className="flex justify-end">
-          <Button color="primary" isLoading={isSavingBranding} radius="full" onPress={handleSaveBranding}>
+          <Button
+            color="primary"
+            isLoading={isSavingBranding}
+            radius="full"
+            onPress={handleSaveBranding}
+          >
             Salvar branding
           </Button>
         </div>
@@ -848,19 +1222,30 @@ function AuditTab() {
   return (
     <Card className="border border-white/10 bg-background/70 backdrop-blur">
       <CardBody className="space-y-3">
-        <p className="text-sm text-default-400">Todas as ações executadas neste painel geram logs na auditoria de super admin.</p>
-        <Chip color="primary" size="sm" startContent={<ShieldCheck className="h-3 w-3" />}>
+        <p className="text-sm text-default-400">
+          Todas as ações executadas neste painel geram logs na auditoria de
+          super admin.
+        </p>
+        <Chip
+          color="primary"
+          size="sm"
+          startContent={<ShieldCheck className="h-3 w-3" />}
+        >
           Segurança operacional ativa
         </Chip>
         <p className="text-xs text-default-500">
-          Consulte o histórico completo em <strong>/admin/auditoria</strong> para verificar quem alterou dados estratégicos ou financeiros.
+          Consulte o histórico completo em <strong>/admin/auditoria</strong>{" "}
+          para verificar quem alterou dados estratégicos ou financeiros.
         </p>
         <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
           <div className="flex items-center gap-3 text-primary">
             <Sparkles className="h-4 w-4" />
             <span className="text-sm font-semibold">Boas práticas</span>
           </div>
-          <p className="mt-2 text-xs text-primary/80">Antes de bloquear um tenant, verifique pendências financeiras e comunique o contato principal para evitar disputas comerciais.</p>
+          <p className="mt-2 text-xs text-primary/80">
+            Antes de bloquear um tenant, verifique pendências financeiras e
+            comunique o contato principal para evitar disputas comerciais.
+          </p>
         </div>
       </CardBody>
     </Card>
@@ -961,8 +1346,18 @@ interface ColorInputProps {
 function ColorInput({ label, value, onChange }: ColorInputProps) {
   return (
     <div className="flex items-end gap-2">
-      <Input label={label} type="color" value={value || "#000000"} onValueChange={(val) => onChange(val)} />
-      <Input aria-label={`${label} (hex)`} value={value} placeholder="#000000" onValueChange={onChange} />
+      <Input
+        label={label}
+        type="color"
+        value={value || "#000000"}
+        onValueChange={(val) => onChange(val)}
+      />
+      <Input
+        aria-label={`${label} (hex)`}
+        placeholder="#000000"
+        value={value}
+        onValueChange={onChange}
+      />
     </div>
   );
 }

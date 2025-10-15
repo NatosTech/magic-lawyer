@@ -6,12 +6,24 @@ import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
 import { Chip } from "@heroui/chip";
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/modal";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  useDisclosure,
+} from "@heroui/modal";
 import { Skeleton } from "@heroui/react";
 import { Plus, RefreshCw, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { listAreasProcesso, createAreaProcesso, updateAreaProcesso, deleteAreaProcesso } from "@/app/actions/areas-processo";
+import {
+  listAreasProcesso,
+  createAreaProcesso,
+  updateAreaProcesso,
+  deleteAreaProcesso,
+} from "@/app/actions/areas-processo";
 import { title } from "@/components/primitives";
 
 export default function AreasProcessoPage() {
@@ -26,9 +38,16 @@ export default function AreasProcessoPage() {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const { data: areasData, isLoading, mutate } = useSWR("areas-processo", () => listAreasProcesso());
+  const {
+    data: areasData,
+    isLoading,
+    mutate,
+  } = useSWR("areas-processo", () => listAreasProcesso());
 
-  const areas = useMemo(() => (areasData?.success ? areasData.areas : []), [areasData]);
+  const areas = useMemo(
+    () => (areasData?.success ? areasData.areas : []),
+    [areasData],
+  );
 
   const handleOpenNova = useCallback(() => {
     setAreaSelecionada(null);
@@ -47,7 +66,7 @@ export default function AreasProcessoPage() {
       });
       onOpen();
     },
-    [onOpen]
+    [onOpen],
   );
 
   const handleSalvar = useCallback(async () => {
@@ -67,10 +86,16 @@ export default function AreasProcessoPage() {
         ordem: formData.ordem,
       };
 
-      const result = areaSelecionada ? await updateAreaProcesso(areaSelecionada.id, payload) : await createAreaProcesso(payload);
+      const result = areaSelecionada
+        ? await updateAreaProcesso(areaSelecionada.id, payload)
+        : await createAreaProcesso(payload);
 
       if (result.success) {
-        toast.success(areaSelecionada ? "Área atualizada com sucesso!" : "Área criada com sucesso!");
+        toast.success(
+          areaSelecionada
+            ? "Área atualizada com sucesso!"
+            : "Área criada com sucesso!",
+        );
         mutate();
         onClose();
       } else {
@@ -96,7 +121,7 @@ export default function AreasProcessoPage() {
         toast.error(result.error || "Erro ao excluir área");
       }
     },
-    [mutate]
+    [mutate],
   );
 
   return (
@@ -104,13 +129,24 @@ export default function AreasProcessoPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className={title()}>Áreas de Processo</h1>
-          <p className="text-default-500">Gerencie as áreas de atuação dos processos</p>
+          <p className="text-default-500">
+            Gerencie as áreas de atuação dos processos
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button color="default" variant="flat" startContent={<RefreshCw size={18} />} onPress={() => mutate()}>
+          <Button
+            color="default"
+            startContent={<RefreshCw size={18} />}
+            variant="flat"
+            onPress={() => mutate()}
+          >
             Atualizar
           </Button>
-          <Button color="primary" startContent={<Plus size={18} />} onPress={handleOpenNova}>
+          <Button
+            color="primary"
+            startContent={<Plus size={18} />}
+            onPress={handleOpenNova}
+          >
             Nova Área
           </Button>
         </div>
@@ -125,28 +161,50 @@ export default function AreasProcessoPage() {
                 </CardBody>
               </Card>
             ))
-          : areas && areas.map((area: any) => (
+          : areas &&
+            areas.map((area: any) => (
               <Card key={area.id}>
                 <CardBody>
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1">
                       <h3 className="font-semibold text-lg">{area.nome}</h3>
-                      <p className="text-xs text-default-400">Slug: {area.slug}</p>
+                      <p className="text-xs text-default-400">
+                        Slug: {area.slug}
+                      </p>
                     </div>
-                    <Chip size="sm" color={area.ativo ? "success" : "default"} variant="flat">
+                    <Chip
+                      color={area.ativo ? "success" : "default"}
+                      size="sm"
+                      variant="flat"
+                    >
                       {area.ativo ? "Ativo" : "Inativo"}
                     </Chip>
                   </div>
 
-                  {area.descricao && <p className="text-sm text-default-500 mb-3">{area.descricao}</p>}
+                  {area.descricao && (
+                    <p className="text-sm text-default-500 mb-3">
+                      {area.descricao}
+                    </p>
+                  )}
 
                   <div className="flex justify-between items-center text-xs text-default-400">
                     <span>{area._count?.processos || 0} processo(s)</span>
                     <div className="flex gap-2">
-                      <Button isIconOnly size="sm" variant="flat" onPress={() => handleOpenEditar(area)}>
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="flat"
+                        onPress={() => handleOpenEditar(area)}
+                      >
                         <Pencil size={14} />
                       </Button>
-                      <Button isIconOnly size="sm" color="danger" variant="flat" onPress={() => handleExcluir(area.id)}>
+                      <Button
+                        isIconOnly
+                        color="danger"
+                        size="sm"
+                        variant="flat"
+                        onPress={() => handleExcluir(area.id)}
+                      >
                         <Trash2 size={14} />
                       </Button>
                     </div>
@@ -156,17 +214,21 @@ export default function AreasProcessoPage() {
             ))}
       </div>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <Modal isOpen={isOpen} size="lg" onClose={onClose}>
         <ModalContent>
-          <ModalHeader>{areaSelecionada ? "Editar Área" : "Nova Área"}</ModalHeader>
+          <ModalHeader>
+            {areaSelecionada ? "Editar Área" : "Nova Área"}
+          </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
               <Input
+                isRequired
                 label="Nome"
                 placeholder="Ex: Direito Civil"
                 value={formData.nome}
                 onChange={(e) => {
                   const nome = e.target.value;
+
                   setFormData({
                     ...formData,
                     nome,
@@ -179,17 +241,32 @@ export default function AreasProcessoPage() {
                           .replace(/[^a-z0-9]+/g, "-"),
                   });
                 }}
-                isRequired
               />
 
-              <Input label="Slug" placeholder="direito-civil" value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} isRequired />
+              <Input
+                isRequired
+                label="Slug"
+                placeholder="direito-civil"
+                value={formData.slug}
+                onChange={(e) =>
+                  setFormData({ ...formData, slug: e.target.value })
+                }
+              />
 
-              <Textarea label="Descrição" placeholder="Descrição opcional" value={formData.descricao} onChange={(e) => setFormData({ ...formData, descricao: e.target.value })} minRows={3} />
+              <Textarea
+                label="Descrição"
+                minRows={3}
+                placeholder="Descrição opcional"
+                value={formData.descricao}
+                onChange={(e) =>
+                  setFormData({ ...formData, descricao: e.target.value })
+                }
+              />
 
               <Input
-                type="number"
                 label="Ordem"
                 placeholder="0"
+                type="number"
                 value={formData.ordem.toString()}
                 onChange={(e) =>
                   setFormData({
@@ -204,7 +281,7 @@ export default function AreasProcessoPage() {
             <Button variant="light" onPress={onClose}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleSalvar} isLoading={salvando}>
+            <Button color="primary" isLoading={salvando} onPress={handleSalvar}>
               {areaSelecionada ? "Atualizar" : "Criar"}
             </Button>
           </ModalFooter>

@@ -143,12 +143,17 @@ export async function listTarefas(params?: {
           },
         },
       },
-      orderBy: [{ status: "asc" }, { prioridade: "desc" }, { dataLimite: "asc" }],
+      orderBy: [
+        { status: "asc" },
+        { prioridade: "desc" },
+        { dataLimite: "asc" },
+      ],
     });
 
     return { success: true, tarefas };
   } catch (error) {
     logger.error("Erro ao listar tarefas:", error);
+
     return { success: false, error: "Erro ao listar tarefas" };
   }
 }
@@ -214,6 +219,7 @@ export async function getTarefa(id: string) {
     return { success: true, tarefa };
   } catch (error) {
     logger.error("Erro ao buscar tarefa:", error);
+
     return { success: false, error: "Erro ao buscar tarefa" };
   }
 }
@@ -346,6 +352,7 @@ export async function createTarefa(data: TarefaCreatePayload) {
     return { success: true, tarefa };
   } catch (error) {
     logger.error("Erro ao criar tarefa:", error);
+
     return { success: false, error: "Erro ao criar tarefa" };
   }
 }
@@ -404,28 +411,39 @@ export async function updateTarefa(id: string, data: TarefaUpdatePayload) {
     const updateData: any = {};
 
     if (data.titulo !== undefined) updateData.titulo = data.titulo.trim();
-    if (data.descricao !== undefined) updateData.descricao = data.descricao?.trim();
+    if (data.descricao !== undefined)
+      updateData.descricao = data.descricao?.trim();
     if (data.status !== undefined) updateData.status = data.status;
     if (data.prioridade !== undefined) updateData.prioridade = data.prioridade;
-    if (data.responsavelId !== undefined) updateData.responsavelId = data.responsavelId;
-    if (data.categoriaId !== undefined) updateData.categoriaId = data.categoriaId;
+    if (data.responsavelId !== undefined)
+      updateData.responsavelId = data.responsavelId;
+    if (data.categoriaId !== undefined)
+      updateData.categoriaId = data.categoriaId;
     if (data.boardId !== undefined) updateData.boardId = data.boardId;
     if (data.columnId !== undefined) updateData.columnId = data.columnId;
-    if (data.estimativaHoras !== undefined) updateData.estimativaHoras = data.estimativaHoras;
-    if (data.horasGastas !== undefined) updateData.horasGastas = data.horasGastas;
+    if (data.estimativaHoras !== undefined)
+      updateData.estimativaHoras = data.estimativaHoras;
+    if (data.horasGastas !== undefined)
+      updateData.horasGastas = data.horasGastas;
     if (data.cor !== undefined) updateData.cor = data.cor;
     if (data.arquivada !== undefined) updateData.arquivada = data.arquivada;
 
     if (data.dataLimite !== undefined) {
-      updateData.dataLimite = data.dataLimite ? new Date(data.dataLimite) : null;
+      updateData.dataLimite = data.dataLimite
+        ? new Date(data.dataLimite)
+        : null;
     }
 
     if (data.dataInicio !== undefined) {
-      updateData.dataInicio = data.dataInicio ? new Date(data.dataInicio) : null;
+      updateData.dataInicio = data.dataInicio
+        ? new Date(data.dataInicio)
+        : null;
     }
 
     if (data.lembreteEm !== undefined) {
-      updateData.lembreteEm = data.lembreteEm ? new Date(data.lembreteEm) : null;
+      updateData.lembreteEm = data.lembreteEm
+        ? new Date(data.lembreteEm)
+        : null;
     }
 
     // Se marcar como concluída, registrar data
@@ -434,7 +452,11 @@ export async function updateTarefa(id: string, data: TarefaUpdatePayload) {
     }
 
     // Se desmarcar como concluída, limpar data
-    if (data.status && data.status !== "CONCLUIDA" && tarefaExistente.completedAt) {
+    if (
+      data.status &&
+      data.status !== "CONCLUIDA" &&
+      tarefaExistente.completedAt
+    ) {
       updateData.completedAt = null;
     }
 
@@ -473,6 +495,7 @@ export async function updateTarefa(id: string, data: TarefaUpdatePayload) {
     return { success: true, tarefa };
   } catch (error) {
     logger.error("Erro ao atualizar tarefa:", error);
+
     return { success: false, error: "Erro ao atualizar tarefa" };
   }
 }
@@ -511,6 +534,7 @@ export async function deleteTarefa(id: string) {
     return { success: true };
   } catch (error) {
     logger.error("Erro ao deletar tarefa:", error);
+
     return { success: false, error: "Erro ao deletar tarefa" };
   }
 }
@@ -557,11 +581,14 @@ export async function marcarTarefaConcluida(id: string) {
       },
     });
 
-    logger.info(`Tarefa marcada como concluída: ${id} por usuário ${user.email}`);
+    logger.info(
+      `Tarefa marcada como concluída: ${id} por usuário ${user.email}`,
+    );
 
     return { success: true, tarefa: tarefaAtualizada };
   } catch (error) {
     logger.error("Erro ao marcar tarefa como concluída:", error);
+
     return { success: false, error: "Erro ao marcar tarefa como concluída" };
   }
 }
@@ -581,12 +608,15 @@ export async function getDashboardTarefas() {
     }
 
     const hoje = new Date();
+
     hoje.setHours(0, 0, 0, 0);
 
     const amanha = new Date(hoje);
+
     amanha.setDate(amanha.getDate() + 1);
 
     const proximosDias = new Date(hoje);
+
     proximosDias.setDate(proximosDias.getDate() + 7);
 
     // Tarefas do usuário logado
@@ -681,6 +711,7 @@ export async function getDashboardTarefas() {
     };
   } catch (error) {
     logger.error("Erro ao buscar dashboard de tarefas:", error);
+
     return { success: false, error: "Erro ao buscar dashboard de tarefas" };
   }
 }
@@ -694,7 +725,7 @@ export async function getTarefasPorBoard(
   params?: {
     columnId?: string;
     incluirArquivadas?: boolean;
-  }
+  },
 ) {
   try {
     const session = await getSession();
@@ -769,11 +800,16 @@ export async function getTarefasPorBoard(
     return { success: true, tarefas };
   } catch (error) {
     logger.error("Erro ao buscar tarefas do board:", error);
+
     return { success: false, error: "Erro ao buscar tarefas do board" };
   }
 }
 
-export async function moverTarefa(tarefaId: string, columnId: string, ordem: number) {
+export async function moverTarefa(
+  tarefaId: string,
+  columnId: string,
+  ordem: number,
+) {
   try {
     const session = await getSession();
 
@@ -829,16 +865,22 @@ export async function moverTarefa(tarefaId: string, columnId: string, ordem: num
       },
     });
 
-    logger.info(`Tarefa ${tarefaId} movida para coluna ${columnId} por usuário ${user.email}`);
+    logger.info(
+      `Tarefa ${tarefaId} movida para coluna ${columnId} por usuário ${user.email}`,
+    );
 
     return { success: true, tarefa: tarefaAtualizada };
   } catch (error) {
     logger.error("Erro ao mover tarefa:", error);
+
     return { success: false, error: "Erro ao mover tarefa" };
   }
 }
 
-export async function reordenarTarefas(columnId: string, tarefaOrders: Array<{ id: string; ordem: number }>) {
+export async function reordenarTarefas(
+  columnId: string,
+  tarefaOrders: Array<{ id: string; ordem: number }>,
+) {
   try {
     const session = await getSession();
 
@@ -866,15 +908,18 @@ export async function reordenarTarefas(columnId: string, tarefaOrders: Array<{ i
         prisma.tarefa.update({
           where: { id },
           data: { ordem },
-        })
-      )
+        }),
+      ),
     );
 
-    logger.info(`Tarefas reordenadas na coluna ${columnId} por usuário ${user.email}`);
+    logger.info(
+      `Tarefas reordenadas na coluna ${columnId} por usuário ${user.email}`,
+    );
 
     return { success: true };
   } catch (error) {
     logger.error("Erro ao reordenar tarefas:", error);
+
     return { success: false, error: "Erro ao reordenar tarefas" };
   }
 }
@@ -924,6 +969,7 @@ export async function arquivarTarefa(id: string) {
     return { success: true, tarefa: tarefaAtualizada };
   } catch (error) {
     logger.error("Erro ao arquivar tarefa:", error);
+
     return { success: false, error: "Erro ao arquivar tarefa" };
   }
 }
@@ -1002,11 +1048,14 @@ export async function duplicarTarefa(id: string) {
       });
     }
 
-    logger.info(`Tarefa duplicada: ${id} → ${novaTarefa.id} por usuário ${user.email}`);
+    logger.info(
+      `Tarefa duplicada: ${id} → ${novaTarefa.id} por usuário ${user.email}`,
+    );
 
     return { success: true, tarefa: novaTarefa };
   } catch (error) {
     logger.error("Erro ao duplicar tarefa:", error);
+
     return { success: false, error: "Erro ao duplicar tarefa" };
   }
 }

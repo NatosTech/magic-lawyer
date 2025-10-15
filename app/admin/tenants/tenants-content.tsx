@@ -95,11 +95,9 @@ function TenantsSkeleton() {
 }
 
 export function TenantsContent() {
-  const { data, error, isLoading } = useSWR(
-    "admin-tenants",
-    fetchTenants,
-    { revalidateOnFocus: false },
-  );
+  const { data, error, isLoading } = useSWR("admin-tenants", fetchTenants, {
+    revalidateOnFocus: false,
+  });
 
   const { tenants, totals } = useTenantsData(data);
 

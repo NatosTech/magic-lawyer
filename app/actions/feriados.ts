@@ -1,8 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
-import { revalidatePath } from "next/cache";
 import { TipoFeriado } from "@/app/generated/prisma";
 
 // ============================================
@@ -52,6 +53,7 @@ export interface ActionResponse<T> {
 
 async function getTenantId(): Promise<string | null> {
   const session = await getSession();
+
   // Feriados podem ser globais (tenantId null) ou específicos do tenant
   return session?.user?.tenantId || null;
 }
@@ -60,7 +62,9 @@ async function getTenantId(): Promise<string | null> {
 // LISTAGEM
 // ============================================
 
-export async function listFeriados(filters: FeriadoFilters): Promise<ActionResponse<any[]>> {
+export async function listFeriados(
+  filters: FeriadoFilters,
+): Promise<ActionResponse<any[]>> {
   try {
     const tenantId = await getTenantId();
 
@@ -87,6 +91,7 @@ export async function listFeriados(filters: FeriadoFilters): Promise<ActionRespo
     if (filters.ano) {
       const startOfYear = new Date(filters.ano, 0, 1);
       const endOfYear = new Date(filters.ano, 11, 31, 23, 59, 59);
+
       where.data = {
         gte: startOfYear,
         lte: endOfYear,
@@ -94,7 +99,10 @@ export async function listFeriados(filters: FeriadoFilters): Promise<ActionRespo
     }
 
     if (filters.searchTerm) {
-      where.OR = [{ nome: { contains: filters.searchTerm, mode: "insensitive" } }, { descricao: { contains: filters.searchTerm, mode: "insensitive" } }];
+      where.OR = [
+        { nome: { contains: filters.searchTerm, mode: "insensitive" } },
+        { descricao: { contains: filters.searchTerm, mode: "insensitive" } },
+      ];
     }
 
     const feriados = await prisma.feriado.findMany({
@@ -120,6 +128,7 @@ export async function listFeriados(filters: FeriadoFilters): Promise<ActionRespo
     };
   } catch (error: any) {
     console.error("Erro ao listar feriados:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao listar feriados",
@@ -131,7 +140,9 @@ export async function listFeriados(filters: FeriadoFilters): Promise<ActionRespo
 // BUSCAR INDIVIDUAL
 // ============================================
 
-export async function getFeriado(feriadoId: string): Promise<ActionResponse<any>> {
+export async function getFeriado(
+  feriadoId: string,
+): Promise<ActionResponse<any>> {
   try {
     const feriado = await prisma.feriado.findUnique({
       where: { id: feriadoId },
@@ -160,6 +171,7 @@ export async function getFeriado(feriadoId: string): Promise<ActionResponse<any>
     };
   } catch (error: any) {
     console.error("Erro ao buscar feriado:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao buscar feriado",
@@ -171,7 +183,9 @@ export async function getFeriado(feriadoId: string): Promise<ActionResponse<any>
 // CRIAR FERIADO
 // ============================================
 
-export async function createFeriado(input: FeriadoCreateInput): Promise<ActionResponse<any>> {
+export async function createFeriado(
+  input: FeriadoCreateInput,
+): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -206,6 +220,7 @@ export async function createFeriado(input: FeriadoCreateInput): Promise<ActionRe
     };
   } catch (error: any) {
     console.error("Erro ao criar feriado:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao criar feriado",
@@ -217,7 +232,10 @@ export async function createFeriado(input: FeriadoCreateInput): Promise<ActionRe
 // ATUALIZAR FERIADO
 // ============================================
 
-export async function updateFeriado(feriadoId: string, input: FeriadoUpdateInput): Promise<ActionResponse<any>> {
+export async function updateFeriado(
+  feriadoId: string,
+  input: FeriadoUpdateInput,
+): Promise<ActionResponse<any>> {
   try {
     const feriado = await prisma.feriado.update({
       where: { id: feriadoId },
@@ -250,6 +268,7 @@ export async function updateFeriado(feriadoId: string, input: FeriadoUpdateInput
     };
   } catch (error: any) {
     console.error("Erro ao atualizar feriado:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao atualizar feriado",
@@ -261,7 +280,9 @@ export async function updateFeriado(feriadoId: string, input: FeriadoUpdateInput
 // EXCLUIR FERIADO
 // ============================================
 
-export async function deleteFeriado(feriadoId: string): Promise<ActionResponse<null>> {
+export async function deleteFeriado(
+  feriadoId: string,
+): Promise<ActionResponse<null>> {
   try {
     await prisma.feriado.delete({
       where: { id: feriadoId },
@@ -275,6 +296,7 @@ export async function deleteFeriado(feriadoId: string): Promise<ActionResponse<n
     };
   } catch (error: any) {
     console.error("Erro ao excluir feriado:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao excluir feriado",
@@ -286,7 +308,9 @@ export async function deleteFeriado(feriadoId: string): Promise<ActionResponse<n
 // DASHBOARD/MÉTRICAS
 // ============================================
 
-export async function getDashboardFeriados(ano?: number): Promise<ActionResponse<any>> {
+export async function getDashboardFeriados(
+  ano?: number,
+): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
     const anoFiltro = ano || new Date().getFullYear();
@@ -340,6 +364,7 @@ export async function getDashboardFeriados(ano?: number): Promise<ActionResponse
     };
   } catch (error: any) {
     console.error("Erro ao buscar dashboard de feriados:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao buscar dashboard de feriados",
@@ -351,7 +376,12 @@ export async function getDashboardFeriados(ano?: number): Promise<ActionResponse
 // VERIFICAR SE DIA É FERIADO
 // ============================================
 
-export async function isDiaFeriado(data: Date, uf?: string, municipio?: string, tribunalId?: string): Promise<ActionResponse<boolean>> {
+export async function isDiaFeriado(
+  data: Date,
+  uf?: string,
+  municipio?: string,
+  tribunalId?: string,
+): Promise<ActionResponse<boolean>> {
   try {
     const tenantId = await getTenantId();
 
@@ -383,6 +413,7 @@ export async function isDiaFeriado(data: Date, uf?: string, municipio?: string, 
     };
   } catch (error: any) {
     console.error("Erro ao verificar feriado:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao verificar feriado",
@@ -409,7 +440,9 @@ const feriadosNacionais2025 = [
   { nome: "Natal", data: new Date(2025, 11, 25) },
 ];
 
-export async function importarFeriadosNacionais(ano: number): Promise<ActionResponse<any>> {
+export async function importarFeriadosNacionais(
+  ano: number,
+): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -441,6 +474,7 @@ export async function importarFeriadosNacionais(ano: number): Promise<ActionResp
             descricao: "Feriado nacional importado automaticamente",
           },
         });
+
         feriadosCriados.push(criado);
       }
     }
@@ -456,6 +490,7 @@ export async function importarFeriadosNacionais(ano: number): Promise<ActionResp
     };
   } catch (error: any) {
     console.error("Erro ao importar feriados nacionais:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao importar feriados nacionais",
@@ -467,9 +502,16 @@ export async function importarFeriadosNacionais(ano: number): Promise<ActionResp
 // TIPOS DE FERIADO
 // ============================================
 
-export async function getTiposFeriado(): Promise<ActionResponse<TipoFeriado[]>> {
+export async function getTiposFeriado(): Promise<
+  ActionResponse<TipoFeriado[]>
+> {
   try {
-    const tipos: TipoFeriado[] = ["NACIONAL", "ESTADUAL", "MUNICIPAL", "JUDICIARIO"];
+    const tipos: TipoFeriado[] = [
+      "NACIONAL",
+      "ESTADUAL",
+      "MUNICIPAL",
+      "JUDICIARIO",
+    ];
 
     return {
       success: true,
@@ -477,6 +519,7 @@ export async function getTiposFeriado(): Promise<ActionResponse<TipoFeriado[]>> 
     };
   } catch (error: any) {
     console.error("Erro ao buscar tipos de feriado:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao buscar tipos de feriado",

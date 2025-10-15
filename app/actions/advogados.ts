@@ -150,7 +150,9 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
   }
 }
 
-export async function getAdvogado(advogadoId: string): Promise<ActionResponse<AdvogadoData>> {
+export async function getAdvogado(
+  advogadoId: string,
+): Promise<ActionResponse<AdvogadoData>> {
   try {
     const session = await getSession();
 
@@ -206,7 +208,9 @@ export async function getAdvogado(advogadoId: string): Promise<ActionResponse<Ad
   }
 }
 
-export async function getCurrentUserAdvogado(): Promise<ActionResponse<AdvogadoData>> {
+export async function getCurrentUserAdvogado(): Promise<
+  ActionResponse<AdvogadoData>
+> {
   try {
     const session = await getSession();
 
@@ -262,7 +266,10 @@ export async function getCurrentUserAdvogado(): Promise<ActionResponse<AdvogadoD
   }
 }
 
-export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoInput): Promise<ActionResponse> {
+export async function updateAdvogado(
+  advogadoId: string,
+  input: UpdateAdvogadoInput,
+): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -284,7 +291,8 @@ export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoIn
     // Atualizar dados do usuário se fornecido
     const usuarioUpdate: any = {};
 
-    if (input.firstName !== undefined) usuarioUpdate.firstName = input.firstName;
+    if (input.firstName !== undefined)
+      usuarioUpdate.firstName = input.firstName;
     if (input.lastName !== undefined) usuarioUpdate.lastName = input.lastName;
     if (input.phone !== undefined) usuarioUpdate.phone = input.phone;
 
@@ -298,15 +306,20 @@ export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoIn
     // Atualizar dados do advogado
     const advogadoUpdate: any = {};
 
-    if (input.oabNumero !== undefined) advogadoUpdate.oabNumero = input.oabNumero;
+    if (input.oabNumero !== undefined)
+      advogadoUpdate.oabNumero = input.oabNumero;
     if (input.oabUf !== undefined) advogadoUpdate.oabUf = input.oabUf;
-    if (input.especialidades !== undefined) advogadoUpdate.especialidades = input.especialidades;
+    if (input.especialidades !== undefined)
+      advogadoUpdate.especialidades = input.especialidades;
     if (input.bio !== undefined) advogadoUpdate.bio = input.bio;
     if (input.telefone !== undefined) advogadoUpdate.telefone = input.telefone;
     if (input.whatsapp !== undefined) advogadoUpdate.whatsapp = input.whatsapp;
-    if (input.comissaoPadrao !== undefined) advogadoUpdate.comissaoPadrao = input.comissaoPadrao;
-    if (input.comissaoAcaoGanha !== undefined) advogadoUpdate.comissaoAcaoGanha = input.comissaoAcaoGanha;
-    if (input.comissaoHonorarios !== undefined) advogadoUpdate.comissaoHonorarios = input.comissaoHonorarios;
+    if (input.comissaoPadrao !== undefined)
+      advogadoUpdate.comissaoPadrao = input.comissaoPadrao;
+    if (input.comissaoAcaoGanha !== undefined)
+      advogadoUpdate.comissaoAcaoGanha = input.comissaoAcaoGanha;
+    if (input.comissaoHonorarios !== undefined)
+      advogadoUpdate.comissaoHonorarios = input.comissaoHonorarios;
 
     if (Object.keys(advogadoUpdate).length > 0) {
       await prisma.advogado.update({
@@ -326,7 +339,9 @@ export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoIn
   }
 }
 
-export async function updateCurrentUserAdvogado(input: UpdateAdvogadoInput): Promise<ActionResponse> {
+export async function updateCurrentUserAdvogado(
+  input: UpdateAdvogadoInput,
+): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -353,7 +368,9 @@ export async function updateCurrentUserAdvogado(input: UpdateAdvogadoInput): Pro
   }
 }
 
-export async function getAdvogadosDisponiveis(): Promise<ActionResponse<AdvogadoSelectItem[]>> {
+export async function getAdvogadosDisponiveis(): Promise<
+  ActionResponse<AdvogadoSelectItem[]>
+> {
   try {
     const session = await getSession();
 
@@ -387,7 +404,9 @@ export async function getAdvogadosDisponiveis(): Promise<ActionResponse<Advogado
     const data: AdvogadoSelectItem[] = advogados.map((adv) => ({
       id: adv.id,
       value: adv.id,
-      label: `${adv.usuario.firstName || ""} ${adv.usuario.lastName || ""}`.trim() || "Sem nome",
+      label:
+        `${adv.usuario.firstName || ""} ${adv.usuario.lastName || ""}`.trim() ||
+        "Sem nome",
       oab: adv.oabNumero && adv.oabUf ? `${adv.oabUf} ${adv.oabNumero}` : null,
       oabNumero: adv.oabNumero,
       oabUf: adv.oabUf,

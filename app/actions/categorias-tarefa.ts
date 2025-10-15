@@ -62,6 +62,7 @@ export async function listCategoriasTarefa(params?: { ativo?: boolean }) {
     return { success: true, categorias };
   } catch (error) {
     logger.error("Erro ao listar categorias de tarefa:", error);
+
     return { success: false, error: "Erro ao listar categorias de tarefa" };
   }
 }
@@ -101,11 +102,14 @@ export async function getCategoriaTarefa(id: string) {
     return { success: true, categoria };
   } catch (error) {
     logger.error("Erro ao buscar categoria de tarefa:", error);
+
     return { success: false, error: "Erro ao buscar categoria de tarefa" };
   }
 }
 
-export async function createCategoriaTarefa(data: CategoriaTarefaCreatePayload) {
+export async function createCategoriaTarefa(
+  data: CategoriaTarefaCreatePayload,
+) {
   try {
     const session = await getSession();
 
@@ -152,16 +156,22 @@ export async function createCategoriaTarefa(data: CategoriaTarefaCreatePayload) 
       },
     });
 
-    logger.info(`Categoria de tarefa criada: ${categoria.id} por usuário ${user.email}`);
+    logger.info(
+      `Categoria de tarefa criada: ${categoria.id} por usuário ${user.email}`,
+    );
 
     return { success: true, categoria };
   } catch (error) {
     logger.error("Erro ao criar categoria de tarefa:", error);
+
     return { success: false, error: "Erro ao criar categoria de tarefa" };
   }
 }
 
-export async function updateCategoriaTarefa(id: string, data: CategoriaTarefaUpdatePayload) {
+export async function updateCategoriaTarefa(
+  id: string,
+  data: CategoriaTarefaUpdatePayload,
+) {
   try {
     const session = await getSession();
 
@@ -204,7 +214,8 @@ export async function updateCategoriaTarefa(id: string, data: CategoriaTarefaUpd
 
     if (data.nome !== undefined) updateData.nome = data.nome.trim();
     if (data.slug !== undefined) updateData.slug = data.slug.trim();
-    if (data.descricao !== undefined) updateData.descricao = data.descricao?.trim();
+    if (data.descricao !== undefined)
+      updateData.descricao = data.descricao?.trim();
     if (data.corHex !== undefined) updateData.corHex = data.corHex;
     if (data.ordem !== undefined) updateData.ordem = data.ordem;
     if (data.ativo !== undefined) updateData.ativo = data.ativo;
@@ -214,11 +225,14 @@ export async function updateCategoriaTarefa(id: string, data: CategoriaTarefaUpd
       data: updateData,
     });
 
-    logger.info(`Categoria de tarefa atualizada: ${id} por usuário ${user.email}`);
+    logger.info(
+      `Categoria de tarefa atualizada: ${id} por usuário ${user.email}`,
+    );
 
     return { success: true, categoria };
   } catch (error) {
     logger.error("Erro ao atualizar categoria de tarefa:", error);
+
     return { success: false, error: "Erro ao atualizar categoria de tarefa" };
   }
 }
@@ -268,11 +282,14 @@ export async function deleteCategoriaTarefa(id: string) {
       where: { id },
     });
 
-    logger.info(`Categoria de tarefa deletada: ${id} por usuário ${user.email}`);
+    logger.info(
+      `Categoria de tarefa deletada: ${id} por usuário ${user.email}`,
+    );
 
     return { success: true };
   } catch (error) {
     logger.error("Erro ao deletar categoria de tarefa:", error);
+
     return { success: false, error: "Erro ao deletar categoria de tarefa" };
   }
 }

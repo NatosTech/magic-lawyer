@@ -1,6 +1,12 @@
 "use client";
 
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/modal";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Tabs, Tab } from "@heroui/tabs";
@@ -28,19 +34,46 @@ const prioridadeConfig = {
   CRITICA: { label: "Crítica", color: "danger" as const },
 };
 
-export function TarefaDetailModal({ tarefa, isOpen, onClose, onUpdate }: TarefaDetailModalProps) {
+export function TarefaDetailModal({
+  tarefa,
+  isOpen,
+  onClose,
+  onUpdate,
+}: TarefaDetailModalProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} scrollBehavior="inside" size="3xl" onClose={onClose}>
       <ModalContent>
         <ModalHeader>
           <div className="flex items-start justify-between gap-4 w-full pr-8">
             <div className="flex-1">
               <h2 className="text-xl font-bold">{tarefa.titulo}</h2>
-              {tarefa.numeroSequencial && <p className="text-sm text-default-400">#{tarefa.numeroSequencial}</p>}
+              {tarefa.numeroSequencial && (
+                <p className="text-sm text-default-400">
+                  #{tarefa.numeroSequencial}
+                </p>
+              )}
             </div>
-              <div className="flex gap-2">
-                <Chip color={statusConfig[tarefa.status as keyof typeof statusConfig].color}>{statusConfig[tarefa.status as keyof typeof statusConfig].label}</Chip>
-                <Chip color={prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].color}>{prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].label}</Chip>
+            <div className="flex gap-2">
+              <Chip
+                color={
+                  statusConfig[tarefa.status as keyof typeof statusConfig].color
+                }
+              >
+                {statusConfig[tarefa.status as keyof typeof statusConfig].label}
+              </Chip>
+              <Chip
+                color={
+                  prioridadeConfig[
+                    tarefa.prioridade as keyof typeof prioridadeConfig
+                  ].color
+                }
+              >
+                {
+                  prioridadeConfig[
+                    tarefa.prioridade as keyof typeof prioridadeConfig
+                  ].label
+                }
+              </Chip>
             </div>
           </div>
         </ModalHeader>
@@ -52,7 +85,9 @@ export function TarefaDetailModal({ tarefa, isOpen, onClose, onUpdate }: TarefaD
                 {tarefa.descricao && (
                   <div>
                     <p className="text-sm font-semibold mb-1">Descrição</p>
-                    <p className="text-sm text-default-600">{tarefa.descricao}</p>
+                    <p className="text-sm text-default-600">
+                      {tarefa.descricao}
+                    </p>
                   </div>
                 )}
 
@@ -61,7 +96,8 @@ export function TarefaDetailModal({ tarefa, isOpen, onClose, onUpdate }: TarefaD
                     <div>
                       <p className="text-sm font-semibold mb-1">Responsável</p>
                       <p className="text-sm text-default-600">
-                        {tarefa.responsavel.firstName} {tarefa.responsavel.lastName}
+                        {tarefa.responsavel.firstName}{" "}
+                        {tarefa.responsavel.lastName}
                       </p>
                     </div>
                   )}
@@ -69,14 +105,22 @@ export function TarefaDetailModal({ tarefa, isOpen, onClose, onUpdate }: TarefaD
                   {tarefa.dataLimite && (
                     <div>
                       <p className="text-sm font-semibold mb-1">Data Limite</p>
-                      <p className="text-sm text-default-600">{dayjs(tarefa.dataLimite).format("DD/MM/YYYY HH:mm")}</p>
+                      <p className="text-sm text-default-600">
+                        {dayjs(tarefa.dataLimite).format("DD/MM/YYYY HH:mm")}
+                      </p>
                     </div>
                   )}
 
                   {tarefa.categoria && (
                     <div>
                       <p className="text-sm font-semibold mb-1">Categoria</p>
-                      <Chip size="sm" style={{ backgroundColor: tarefa.categoria.corHex + "20", color: tarefa.categoria.corHex }}>
+                      <Chip
+                        size="sm"
+                        style={{
+                          backgroundColor: tarefa.categoria.corHex + "20",
+                          color: tarefa.categoria.corHex,
+                        }}
+                      >
                         {tarefa.categoria.nome}
                       </Chip>
                     </div>
@@ -84,9 +128,17 @@ export function TarefaDetailModal({ tarefa, isOpen, onClose, onUpdate }: TarefaD
 
                   {tarefa.estimativaHoras && (
                     <div>
-                      <p className="text-sm font-semibold mb-1">Tempo Estimado</p>
+                      <p className="text-sm font-semibold mb-1">
+                        Tempo Estimado
+                      </p>
                       <p className="text-sm text-default-600">
-                        {tarefa.estimativaHoras}h{tarefa.horasGastas && <span className="text-primary"> / {tarefa.horasGastas}h gastos</span>}
+                        {tarefa.estimativaHoras}h
+                        {tarefa.horasGastas && (
+                          <span className="text-primary">
+                            {" "}
+                            / {tarefa.horasGastas}h gastos
+                          </span>
+                        )}
                       </p>
                     </div>
                   )}
@@ -104,37 +156,53 @@ export function TarefaDetailModal({ tarefa, isOpen, onClose, onUpdate }: TarefaD
                 {tarefa.cliente && (
                   <div>
                     <p className="text-sm font-semibold mb-1">Cliente</p>
-                    <p className="text-sm text-default-600">{tarefa.cliente.nome}</p>
+                    <p className="text-sm text-default-600">
+                      {tarefa.cliente.nome}
+                    </p>
                   </div>
                 )}
               </div>
             </Tab>
 
             {/* Tab: Checklist */}
-            <Tab key="checklist" title={`Checklist (${tarefa._count?.checklists || 0})`}>
+            <Tab
+              key="checklist"
+              title={`Checklist (${tarefa._count?.checklists || 0})`}
+            >
               <div className="py-4">
-                <p className="text-sm text-default-400">Checklist - Em desenvolvimento</p>
+                <p className="text-sm text-default-400">
+                  Checklist - Em desenvolvimento
+                </p>
               </div>
             </Tab>
 
             {/* Tab: Anexos */}
             <Tab key="anexos" title={`Anexos (${tarefa._count?.anexos || 0})`}>
               <div className="py-4">
-                <p className="text-sm text-default-400">Anexos - Em desenvolvimento</p>
+                <p className="text-sm text-default-400">
+                  Anexos - Em desenvolvimento
+                </p>
               </div>
             </Tab>
 
             {/* Tab: Comentários */}
-            <Tab key="comentarios" title={`Comentários (${tarefa._count?.comentarios || 0})`}>
+            <Tab
+              key="comentarios"
+              title={`Comentários (${tarefa._count?.comentarios || 0})`}
+            >
               <div className="py-4">
-                <p className="text-sm text-default-400">Comentários - Em desenvolvimento</p>
+                <p className="text-sm text-default-400">
+                  Comentários - Em desenvolvimento
+                </p>
               </div>
             </Tab>
 
             {/* Tab: Atividades */}
             <Tab key="atividades" title="Atividades">
               <div className="py-4">
-                <p className="text-sm text-default-400">Histórico de atividades - Em desenvolvimento</p>
+                <p className="text-sm text-default-400">
+                  Histórico de atividades - Em desenvolvimento
+                </p>
               </div>
             </Tab>
           </Tabs>

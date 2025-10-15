@@ -15,7 +15,6 @@ import {
   ModalBody,
   ModalFooter,
   Chip,
-  Divider,
   Spinner,
   Table,
   TableHeader,
@@ -37,7 +36,6 @@ import {
   TrashIcon,
   ReceiptIcon,
   CalendarIcon,
-  DollarSignIcon,
   AlertTriangleIcon,
   CheckCircleIcon,
   ClockIcon,
@@ -47,8 +45,18 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useParcelasContrato, useDashboardParcelas, useStatusParcelas } from "@/app/hooks/use-parcelas-contrato";
-import { createParcelaContrato, updateParcelaContrato, deleteParcelaContrato, gerarParcelasAutomaticamente } from "@/app/actions/parcelas-contrato";
+import {
+  useParcelasContrato,
+  useDashboardParcelas,
+  useStatusParcelas,
+} from "@/app/hooks/use-parcelas-contrato";
+import {
+  createParcelaContrato,
+  updateParcelaContrato,
+  deleteParcelaContrato,
+  gerarParcelasAutomaticamente,
+} from "@/app/actions/parcelas-contrato";
+import { title, subtitle } from "@/components/primitives";
 
 type StatusParcela = "PENDENTE" | "PAGA" | "ATRASADA" | "CANCELADA";
 
@@ -105,7 +113,9 @@ export default function ParcelasContratoPage() {
         dataVencimento: new Date(parcela.dataVencimento),
         status: parcela.status,
         formaPagamento: parcela.formaPagamento || "",
-        dataPagamento: parcela.dataPagamento ? new Date(parcela.dataPagamento) : undefined,
+        dataPagamento: parcela.dataPagamento
+          ? new Date(parcela.dataPagamento)
+          : undefined,
       });
     } else {
       setEditingId(null);
@@ -147,15 +157,18 @@ export default function ParcelasContratoPage() {
       // Validar campos obrigatórios
       if (!formData.contratoId) {
         toast.error("ID do contrato é obrigatório");
+
         return;
       }
 
       if (formData.valor <= 0) {
         toast.error("Valor deve ser maior que zero");
+
         return;
       }
 
       let result;
+
       if (editingId) {
         result = await updateParcelaContrato(editingId, formData);
       } else {
@@ -270,13 +283,18 @@ export default function ParcelasContratoPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <ReceiptIcon size={28} />
+          <h1 className={title({ size: "lg", color: "blue" })}>
             Parcelas de Contrato
           </h1>
-          <p className="text-gray-600">Gerencie as parcelas dos contratos</p>
+          <p className={subtitle({ fullWidth: true })}>
+            Gerencie as parcelas dos contratos
+          </p>
         </div>
-        <Button color="primary" startContent={<PlusIcon size={20} />} onPress={() => handleOpenModal()}>
+        <Button
+          color="primary"
+          startContent={<PlusIcon size={20} />}
+          onPress={() => handleOpenModal()}
+        >
           Nova Parcela
         </Button>
       </div>
@@ -291,8 +309,10 @@ export default function ParcelasContratoPage() {
           <Card>
             <CardBody className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <ReceiptIcon size={24} className="text-blue-500" />
-                <span className="text-2xl font-bold">{dashboard?.totalParcelas || 0}</span>
+                <ReceiptIcon className="text-blue-500" size={24} />
+                <span className="text-2xl font-bold">
+                  {dashboard?.totalParcelas || 0}
+                </span>
               </div>
               <p className="text-sm text-gray-600">Total de Parcelas</p>
             </CardBody>
@@ -301,8 +321,10 @@ export default function ParcelasContratoPage() {
           <Card>
             <CardBody className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <ClockIcon size={24} className="text-yellow-500" />
-                <span className="text-2xl font-bold">{dashboard?.parcelasPendentes || 0}</span>
+                <ClockIcon className="text-yellow-500" size={24} />
+                <span className="text-2xl font-bold">
+                  {dashboard?.parcelasPendentes || 0}
+                </span>
               </div>
               <p className="text-sm text-gray-600">Pendentes</p>
             </CardBody>
@@ -311,8 +333,10 @@ export default function ParcelasContratoPage() {
           <Card>
             <CardBody className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <CheckCircleIcon size={24} className="text-green-500" />
-                <span className="text-2xl font-bold">{dashboard?.parcelasPagas || 0}</span>
+                <CheckCircleIcon className="text-green-500" size={24} />
+                <span className="text-2xl font-bold">
+                  {dashboard?.parcelasPagas || 0}
+                </span>
               </div>
               <p className="text-sm text-gray-600">Pagas</p>
             </CardBody>
@@ -321,8 +345,10 @@ export default function ParcelasContratoPage() {
           <Card>
             <CardBody className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <AlertTriangleIcon size={24} className="text-red-500" />
-                <span className="text-2xl font-bold">{dashboard?.parcelasAtrasadas || 0}</span>
+                <AlertTriangleIcon className="text-red-500" size={24} />
+                <span className="text-2xl font-bold">
+                  {dashboard?.parcelasAtrasadas || 0}
+                </span>
               </div>
               <p className="text-sm text-gray-600">Atrasadas</p>
             </CardBody>
@@ -335,21 +361,24 @@ export default function ParcelasContratoPage() {
         <CardBody>
           <div className="flex gap-4 items-end">
             <Input
+              className="max-w-xs"
               label="ID do Contrato"
               placeholder="Filtrar por contrato"
               value={filters.contratoId || ""}
-              onChange={(e) => setFilters({ ...filters, contratoId: e.target.value })}
-              className="max-w-xs"
+              onChange={(e) =>
+                setFilters({ ...filters, contratoId: e.target.value })
+              }
             />
             <Select
+              className="max-w-xs"
               label="Status"
               placeholder="Todos os status"
               selectedKeys={filters.status ? [filters.status] : []}
               onSelectionChange={(keys) => {
                 const status = Array.from(keys)[0] as StatusParcela;
+
                 setFilters({ ...filters, status: status || undefined });
               }}
-              className="max-w-xs"
             >
               {statusList.map((status) => (
                 <SelectItem key={status.value} textValue={status.label}>
@@ -360,7 +389,11 @@ export default function ParcelasContratoPage() {
                 </SelectItem>
               ))}
             </Select>
-            <Button variant="light" startContent={<FilterIcon size={16} />} onPress={() => setFilters({})}>
+            <Button
+              startContent={<FilterIcon size={16} />}
+              variant="light"
+              onPress={() => setFilters({})}
+            >
               Limpar Filtros
             </Button>
           </div>
@@ -392,45 +425,86 @@ export default function ParcelasContratoPage() {
                   <TableRow key={parcela.id}>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{parcela.contrato.cliente.nome}</p>
-                        <p className="text-sm text-gray-500">{parcela.contrato.advogado.nome}</p>
+                        <p className="font-medium">
+                          {parcela.contrato.cliente.nome}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {parcela.contrato.advogado.nome}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{parcela.titulo || `Parcela ${parcela.numeroParcela}`}</p>
-                        {parcela.descricao && <p className="text-sm text-gray-500">{parcela.descricao}</p>}
+                        <p className="font-medium">
+                          {parcela.titulo || `Parcela ${parcela.numeroParcela}`}
+                        </p>
+                        {parcela.descricao && (
+                          <p className="text-sm text-gray-500">
+                            {parcela.descricao}
+                          </p>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <p className="font-medium">{formatCurrency(Number(parcela.valor))}</p>
+                      <p className="font-medium">
+                        {formatCurrency(Number(parcela.valor))}
+                      </p>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <CalendarIcon size={16} className="text-gray-400" />
-                        <span className={isVencida(parcela.dataVencimento, parcela.status) ? "text-red-600 font-medium" : ""}>{formatDate(parcela.dataVencimento)}</span>
+                        <CalendarIcon className="text-gray-400" size={16} />
+                        <span
+                          className={
+                            isVencida(parcela.dataVencimento, parcela.status)
+                              ? "text-red-600 font-medium"
+                              : ""
+                          }
+                        >
+                          {formatDate(parcela.dataVencimento)}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Chip color={getStatusColor(parcela.status)} variant="flat" startContent={getStatusIcon(parcela.status)}>
-                        {statusList.find((s) => s.value === parcela.status)?.label}
+                      <Chip
+                        color={getStatusColor(parcela.status)}
+                        startContent={getStatusIcon(parcela.status)}
+                        variant="flat"
+                      >
+                        {
+                          statusList.find((s) => s.value === parcela.status)
+                            ?.label
+                        }
                       </Chip>
                     </TableCell>
                     <TableCell>
                       <Dropdown>
                         <DropdownTrigger>
-                          <Button variant="light" size="sm">
+                          <Button size="sm" variant="light">
                             Ações
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu>
-                          <DropdownItem key="view" startContent={<EyeIcon size={16} />} onPress={() => handleOpenModal(parcela)}>
+                          <DropdownItem
+                            key="view"
+                            startContent={<EyeIcon size={16} />}
+                            onPress={() => handleOpenModal(parcela)}
+                          >
                             Ver Detalhes
                           </DropdownItem>
-                          <DropdownItem key="edit" startContent={<PencilIcon size={16} />} onPress={() => handleOpenModal(parcela)}>
+                          <DropdownItem
+                            key="edit"
+                            startContent={<PencilIcon size={16} />}
+                            onPress={() => handleOpenModal(parcela)}
+                          >
                             Editar
                           </DropdownItem>
-                          <DropdownItem key="delete" startContent={<TrashIcon size={16} />} className="text-danger" color="danger" onPress={() => handleDelete(parcela.id)}>
+                          <DropdownItem
+                            key="delete"
+                            className="text-danger"
+                            color="danger"
+                            startContent={<TrashIcon size={16} />}
+                            onPress={() => handleDelete(parcela.id)}
+                          >
                             Remover
                           </DropdownItem>
                         </DropdownMenu>
@@ -444,9 +518,14 @@ export default function ParcelasContratoPage() {
 
           {parcelas.length === 0 && !isLoading && (
             <div className="text-center py-8">
-              <ReceiptIcon size={48} className="mx-auto text-gray-400 mb-4" />
+              <ReceiptIcon className="mx-auto text-gray-400 mb-4" size={48} />
               <p className="text-gray-500">Nenhuma parcela encontrada</p>
-              <Button color="primary" variant="light" className="mt-2" onPress={() => handleOpenModal()}>
+              <Button
+                className="mt-2"
+                color="primary"
+                variant="light"
+                onPress={() => handleOpenModal()}
+              >
                 Criar Primeira Parcela
               </Button>
             </div>
@@ -455,45 +534,73 @@ export default function ParcelasContratoPage() {
       </Card>
 
       {/* Modal de Criação/Edição */}
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} size="2xl">
+      <Modal isOpen={modalOpen} size="2xl" onClose={handleCloseModal}>
         <ModalContent>
-          <ModalHeader>{editingId ? "Editar Parcela" : "Nova Parcela"}</ModalHeader>
+          <ModalHeader>
+            {editingId ? "Editar Parcela" : "Nova Parcela"}
+          </ModalHeader>
           <ModalBody className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <Input label="ID do Contrato" placeholder="Digite o ID do contrato" value={formData.contratoId} onChange={(e) => setFormData({ ...formData, contratoId: e.target.value })} isRequired />
               <Input
+                isRequired
+                label="ID do Contrato"
+                placeholder="Digite o ID do contrato"
+                value={formData.contratoId}
+                onChange={(e) =>
+                  setFormData({ ...formData, contratoId: e.target.value })
+                }
+              />
+              <Input
+                isRequired
                 label="Número da Parcela"
+                min="1"
                 placeholder="1"
                 type="number"
-                min="1"
                 value={formData.numeroParcela.toString()}
-                onChange={(e) => setFormData({ ...formData, numeroParcela: parseInt(e.target.value) || 1 })}
-                isRequired
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    numeroParcela: parseInt(e.target.value) || 1,
+                  })
+                }
               />
             </div>
 
-            <Input label="Título" placeholder="Ex: Parcela 1/12" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} />
+            <Input
+              label="Título"
+              placeholder="Ex: Parcela 1/12"
+              value={formData.titulo}
+              onChange={(e) =>
+                setFormData({ ...formData, titulo: e.target.value })
+              }
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <Input
+                isRequired
                 label="Valor"
                 placeholder="0,00"
-                type="number"
-                step="0.01"
-                value={formData.valor.toString()}
-                onChange={(e) => setFormData({ ...formData, valor: parseFloat(e.target.value) || 0 })}
                 startContent="R$"
-                isRequired
+                step="0.01"
+                type="number"
+                value={formData.valor.toString()}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    valor: parseFloat(e.target.value) || 0,
+                  })
+                }
               />
               <Select
+                isRequired
                 label="Status"
                 placeholder="Selecione o status"
                 selectedKeys={[formData.status]}
                 onSelectionChange={(keys) => {
                   const status = Array.from(keys)[0] as StatusParcela;
+
                   setFormData({ ...formData, status });
                 }}
-                isRequired
               >
                 {statusList.map((status) => (
                   <SelectItem key={status.value} textValue={status.label}>
@@ -506,24 +613,59 @@ export default function ParcelasContratoPage() {
               </Select>
             </div>
 
-            <DatePicker label="Data de Vencimento" value={formData.dataVencimento} onChange={(date) => setFormData({ ...formData, dataVencimento: date })} isRequired />
+            <DatePicker
+              isRequired
+              label="Data de Vencimento"
+              value={formData.dataVencimento}
+              onChange={(date) =>
+                setFormData({ ...formData, dataVencimento: date })
+              }
+            />
 
-            {formData.status === "PAGA" && <DatePicker label="Data de Pagamento" value={formData.dataPagamento} onChange={(date) => setFormData({ ...formData, dataPagamento: date })} />}
+            {formData.status === "PAGA" && (
+              <DatePicker
+                label="Data de Pagamento"
+                value={formData.dataPagamento}
+                onChange={(date) =>
+                  setFormData({ ...formData, dataPagamento: date })
+                }
+              />
+            )}
 
             <Input
               label="Forma de Pagamento"
               placeholder="Ex: PIX, Transferência, Boleto"
               value={formData.formaPagamento}
-              onChange={(e) => setFormData({ ...formData, formaPagamento: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, formaPagamento: e.target.value })
+              }
             />
 
-            <Textarea label="Descrição" placeholder="Descrição opcional da parcela" value={formData.descricao} onChange={(e) => setFormData({ ...formData, descricao: e.target.value })} rows={3} />
+            <Textarea
+              label="Descrição"
+              placeholder="Descrição opcional da parcela"
+              rows={3}
+              value={formData.descricao}
+              onChange={(e) =>
+                setFormData({ ...formData, descricao: e.target.value })
+              }
+            />
 
             {!editingId && (
               <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Gerar Parcelas Automaticamente</h4>
-                <p className="text-sm text-blue-700 mb-3">Crie múltiplas parcelas baseadas nos valores informados</p>
-                <Button color="primary" variant="flat" startContent={<RefreshCwIcon size={16} />} onPress={handleGerarAutomaticamente} isLoading={loading}>
+                <h4 className="font-medium text-blue-900 mb-2">
+                  Gerar Parcelas Automaticamente
+                </h4>
+                <p className="text-sm text-blue-700 mb-3">
+                  Crie múltiplas parcelas baseadas nos valores informados
+                </p>
+                <Button
+                  color="primary"
+                  isLoading={loading}
+                  startContent={<RefreshCwIcon size={16} />}
+                  variant="flat"
+                  onPress={handleGerarAutomaticamente}
+                >
                   Gerar 12 Parcelas
                 </Button>
               </div>
@@ -533,7 +675,7 @@ export default function ParcelasContratoPage() {
             <Button variant="light" onPress={handleCloseModal}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleSubmit} isLoading={loading}>
+            <Button color="primary" isLoading={loading} onPress={handleSubmit}>
               {editingId ? "Atualizar" : "Criar"}
             </Button>
           </ModalFooter>

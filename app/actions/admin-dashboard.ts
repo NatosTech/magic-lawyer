@@ -41,7 +41,10 @@ function decimalToNumber(value: unknown): number {
     return Number.isNaN(parsed) ? 0 : parsed;
   }
 
-  if (typeof value === "object" && "toString" in (value as Record<string, unknown>)) {
+  if (
+    typeof value === "object" &&
+    "toString" in (value as Record<string, unknown>)
+  ) {
     const parsed = Number((value as { toString(): string }).toString());
 
     return Number.isNaN(parsed) ? 0 : parsed;

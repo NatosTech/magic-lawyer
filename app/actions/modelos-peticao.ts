@@ -1,9 +1,11 @@
 "use server";
 
+import type { ModeloPeticao } from "@/app/generated/prisma";
+
+import { revalidatePath } from "next/cache";
+
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
-import { revalidatePath } from "next/cache";
-import type { ModeloPeticao } from "@/app/generated/prisma";
 
 // ============================================
 // TIPOS E INTERFACES
@@ -72,17 +74,21 @@ export interface ModeloPeticaoFilters {
 
 async function getTenantId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado ou tenant não encontrado");
   }
+
   return session.user.tenantId;
 }
 
 async function getUserId(): Promise<string> {
   const session = await getSession();
+
   if (!session?.user?.id) {
     throw new Error("Usuário não autenticado");
   }
+
   return session.user.id;
 }
 
@@ -90,7 +96,9 @@ async function getUserId(): Promise<string> {
 // CRUD - LISTAR
 // ============================================
 
-export async function listModelosPeticao(filters: ModeloPeticaoFilters = {}): Promise<ActionResponse<ModeloPeticaoListItem[]>> {
+export async function listModelosPeticao(
+  filters: ModeloPeticaoFilters = {},
+): Promise<ActionResponse<ModeloPeticaoListItem[]>> {
   try {
     const tenantId = await getTenantId();
 
@@ -141,6 +149,7 @@ export async function listModelosPeticao(filters: ModeloPeticaoFilters = {}): Pr
     };
   } catch (error) {
     console.error("Erro ao listar modelos de petição:", error);
+
     return {
       success: false,
       error: "Erro ao listar modelos de petição",
@@ -152,7 +161,9 @@ export async function listModelosPeticao(filters: ModeloPeticaoFilters = {}): Pr
 // CRUD - BUSCAR POR ID
 // ============================================
 
-export async function getModeloPeticao(id: string): Promise<ActionResponse<ModeloPeticaoDetail>> {
+export async function getModeloPeticao(
+  id: string,
+): Promise<ActionResponse<ModeloPeticaoDetail>> {
   try {
     const tenantId = await getTenantId();
 
@@ -184,6 +195,7 @@ export async function getModeloPeticao(id: string): Promise<ActionResponse<Model
     };
   } catch (error) {
     console.error("Erro ao buscar modelo de petição:", error);
+
     return {
       success: false,
       error: "Erro ao buscar modelo de petição",
@@ -195,7 +207,9 @@ export async function getModeloPeticao(id: string): Promise<ActionResponse<Model
 // CRUD - CRIAR
 // ============================================
 
-export async function createModeloPeticao(input: ModeloPeticaoCreateInput): Promise<ActionResponse<ModeloPeticao>> {
+export async function createModeloPeticao(
+  input: ModeloPeticaoCreateInput,
+): Promise<ActionResponse<ModeloPeticao>> {
   try {
     const tenantId = await getTenantId();
 
@@ -221,6 +235,7 @@ export async function createModeloPeticao(input: ModeloPeticaoCreateInput): Prom
     };
   } catch (error) {
     console.error("Erro ao criar modelo de petição:", error);
+
     return {
       success: false,
       error: "Erro ao criar modelo de petição",
@@ -232,7 +247,10 @@ export async function createModeloPeticao(input: ModeloPeticaoCreateInput): Prom
 // CRUD - ATUALIZAR
 // ============================================
 
-export async function updateModeloPeticao(id: string, input: ModeloPeticaoUpdateInput): Promise<ActionResponse<ModeloPeticao>> {
+export async function updateModeloPeticao(
+  id: string,
+  input: ModeloPeticaoUpdateInput,
+): Promise<ActionResponse<ModeloPeticao>> {
   try {
     const tenantId = await getTenantId();
 
@@ -275,6 +293,7 @@ export async function updateModeloPeticao(id: string, input: ModeloPeticaoUpdate
     };
   } catch (error) {
     console.error("Erro ao atualizar modelo de petição:", error);
+
     return {
       success: false,
       error: "Erro ao atualizar modelo de petição",
@@ -322,6 +341,7 @@ export async function deleteModeloPeticao(id: string): Promise<ActionResponse> {
     };
   } catch (error) {
     console.error("Erro ao deletar modelo de petição:", error);
+
     return {
       success: false,
       error: "Erro ao deletar modelo de petição",
@@ -336,7 +356,9 @@ export async function deleteModeloPeticao(id: string): Promise<ActionResponse> {
 /**
  * Duplicar um modelo de petição
  */
-export async function duplicateModeloPeticao(id: string): Promise<ActionResponse<ModeloPeticao>> {
+export async function duplicateModeloPeticao(
+  id: string,
+): Promise<ActionResponse<ModeloPeticao>> {
   try {
     const tenantId = await getTenantId();
 
@@ -377,6 +399,7 @@ export async function duplicateModeloPeticao(id: string): Promise<ActionResponse
     };
   } catch (error) {
     console.error("Erro ao duplicar modelo de petição:", error);
+
     return {
       success: false,
       error: "Erro ao duplicar modelo de petição",
@@ -387,7 +410,9 @@ export async function duplicateModeloPeticao(id: string): Promise<ActionResponse
 /**
  * Ativar/Desativar modelo
  */
-export async function toggleModeloPeticaoStatus(id: string): Promise<ActionResponse<ModeloPeticao>> {
+export async function toggleModeloPeticaoStatus(
+  id: string,
+): Promise<ActionResponse<ModeloPeticao>> {
   try {
     const tenantId = await getTenantId();
 
@@ -421,6 +446,7 @@ export async function toggleModeloPeticaoStatus(id: string): Promise<ActionRespo
     };
   } catch (error) {
     console.error("Erro ao alterar status do modelo:", error);
+
     return {
       success: false,
       error: "Erro ao alterar status do modelo",
@@ -431,7 +457,9 @@ export async function toggleModeloPeticaoStatus(id: string): Promise<ActionRespo
 /**
  * Buscar categorias únicas
  */
-export async function getCategoriasModeloPeticao(): Promise<ActionResponse<string[]>> {
+export async function getCategoriasModeloPeticao(): Promise<
+  ActionResponse<string[]>
+> {
   try {
     const tenantId = await getTenantId();
 
@@ -458,6 +486,7 @@ export async function getCategoriasModeloPeticao(): Promise<ActionResponse<strin
     };
   } catch (error) {
     console.error("Erro ao buscar categorias:", error);
+
     return {
       success: false,
       error: "Erro ao buscar categorias",
@@ -468,7 +497,9 @@ export async function getCategoriasModeloPeticao(): Promise<ActionResponse<strin
 /**
  * Buscar tipos únicos
  */
-export async function getTiposModeloPeticao(): Promise<ActionResponse<string[]>> {
+export async function getTiposModeloPeticao(): Promise<
+  ActionResponse<string[]>
+> {
   try {
     const tenantId = await getTenantId();
 
@@ -495,6 +526,7 @@ export async function getTiposModeloPeticao(): Promise<ActionResponse<string[]>>
     };
   } catch (error) {
     console.error("Erro ao buscar tipos:", error);
+
     return {
       success: false,
       error: "Erro ao buscar tipos",
@@ -505,7 +537,10 @@ export async function getTiposModeloPeticao(): Promise<ActionResponse<string[]>>
 /**
  * Processar template com variáveis
  */
-export async function processarTemplate(modeloId: string, variaveis: Record<string, any>): Promise<ActionResponse<string>> {
+export async function processarTemplate(
+  modeloId: string,
+  variaveis: Record<string, any>,
+): Promise<ActionResponse<string>> {
   try {
     const tenantId = await getTenantId();
 
@@ -529,6 +564,7 @@ export async function processarTemplate(modeloId: string, variaveis: Record<stri
     // Substituir variáveis no formato {{variavel}}
     Object.entries(variaveis).forEach(([key, value]) => {
       const regex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
+
       conteudo = conteudo.replace(regex, String(value || ""));
     });
 
@@ -538,6 +574,7 @@ export async function processarTemplate(modeloId: string, variaveis: Record<stri
     };
   } catch (error) {
     console.error("Erro ao processar template:", error);
+
     return {
       success: false,
       error: "Erro ao processar template",

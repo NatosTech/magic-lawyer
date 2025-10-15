@@ -60,6 +60,7 @@ export async function addChecklistItem(tarefaId: string, titulo: string) {
     return { success: true, item };
   } catch (error) {
     logger.error("Erro ao adicionar item checklist:", error);
+
     return { success: false, error: "Erro ao adicionar item" };
   }
 }
@@ -99,7 +100,9 @@ export async function toggleChecklistItem(itemId: string) {
         tarefaId: item.tarefaId,
         usuarioId: user.id,
         tipo: itemAtualizado.concluida ? "CONCLUIU_ITEM" : "REABRIU_ITEM",
-        descricao: itemAtualizado.concluida ? `Marcou item como concluído: ${item.titulo}` : `Reabriu item: ${item.titulo}`,
+        descricao: itemAtualizado.concluida
+          ? `Marcou item como concluído: ${item.titulo}`
+          : `Reabriu item: ${item.titulo}`,
         tenantId: user.tenantId,
       },
     });
@@ -107,6 +110,7 @@ export async function toggleChecklistItem(itemId: string) {
     return { success: true, item: itemAtualizado };
   } catch (error) {
     logger.error("Erro ao toggle item checklist:", error);
+
     return { success: false, error: "Erro ao atualizar item" };
   }
 }
@@ -139,6 +143,7 @@ export async function deleteChecklistItem(itemId: string) {
     return { success: true };
   } catch (error) {
     logger.error("Erro ao deletar item checklist:", error);
+
     return { success: false, error: "Erro ao deletar item" };
   }
 }
@@ -164,6 +169,7 @@ export async function getChecklists(tarefaId: string) {
     return { success: true, items };
   } catch (error) {
     logger.error("Erro ao listar checklist:", error);
+
     return { success: false, error: "Erro ao listar checklist" };
   }
 }
@@ -232,6 +238,7 @@ export async function addComentario(tarefaId: string, conteudo: string) {
     return { success: true, comentario };
   } catch (error) {
     logger.error("Erro ao adicionar comentário:", error);
+
     return { success: false, error: "Erro ao adicionar comentário" };
   }
 }
@@ -259,7 +266,10 @@ export async function updateComentario(comentarioId: string, conteudo: string) {
     });
 
     if (!comentario) {
-      return { success: false, error: "Comentário não encontrado ou sem permissão" };
+      return {
+        success: false,
+        error: "Comentário não encontrado ou sem permissão",
+      };
     }
 
     const comentarioAtualizado = await prisma.tarefaComentario.update({
@@ -283,6 +293,7 @@ export async function updateComentario(comentarioId: string, conteudo: string) {
     return { success: true, comentario: comentarioAtualizado };
   } catch (error) {
     logger.error("Erro ao atualizar comentário:", error);
+
     return { success: false, error: "Erro ao atualizar comentário" };
   }
 }
@@ -306,7 +317,10 @@ export async function deleteComentario(comentarioId: string) {
     });
 
     if (!comentario) {
-      return { success: false, error: "Comentário não encontrado ou sem permissão" };
+      return {
+        success: false,
+        error: "Comentário não encontrado ou sem permissão",
+      };
     }
 
     await prisma.tarefaComentario.delete({
@@ -316,6 +330,7 @@ export async function deleteComentario(comentarioId: string) {
     return { success: true };
   } catch (error) {
     logger.error("Erro ao deletar comentário:", error);
+
     return { success: false, error: "Erro ao deletar comentário" };
   }
 }
@@ -352,6 +367,7 @@ export async function getComentarios(tarefaId: string) {
     return { success: true, comentarios };
   } catch (error) {
     logger.error("Erro ao listar comentários:", error);
+
     return { success: false, error: "Erro ao listar comentários" };
   }
 }
@@ -388,6 +404,7 @@ export async function listTags() {
     return { success: true, tags };
   } catch (error) {
     logger.error("Erro ao listar tags:", error);
+
     return { success: false, error: "Erro ao listar tags" };
   }
 }
@@ -429,6 +446,7 @@ export async function createTag(nome: string, cor: string) {
     return { success: true, tag };
   } catch (error) {
     logger.error("Erro ao criar tag:", error);
+
     return { success: false, error: "Erro ao criar tag" };
   }
 }
@@ -480,6 +498,7 @@ export async function addTagToTarefa(tarefaId: string, tagId: string) {
     return { success: true, relacao };
   } catch (error) {
     logger.error("Erro ao adicionar tag:", error);
+
     return { success: false, error: "Erro ao adicionar tag" };
   }
 }
@@ -527,6 +546,7 @@ export async function removeTagFromTarefa(tarefaId: string, tagId: string) {
     return { success: true };
   } catch (error) {
     logger.error("Erro ao remover tag:", error);
+
     return { success: false, error: "Erro ao remover tag" };
   }
 }
@@ -556,6 +576,7 @@ export async function getTagsDaTarefa(tarefaId: string) {
     return { success: true, tags };
   } catch (error) {
     logger.error("Erro ao listar tags da tarefa:", error);
+
     return { success: false, error: "Erro ao listar tags" };
   }
 }
@@ -564,7 +585,14 @@ export async function getTagsDaTarefa(tarefaId: string) {
 // ANEXOS
 // ============================================
 
-export async function addAnexo(tarefaId: string, nome: string, url: string, tamanho?: number, contentType?: string, publicId?: string) {
+export async function addAnexo(
+  tarefaId: string,
+  nome: string,
+  url: string,
+  tamanho?: number,
+  contentType?: string,
+  publicId?: string,
+) {
   try {
     const session = await getSession();
 
@@ -613,6 +641,7 @@ export async function addAnexo(tarefaId: string, nome: string, url: string, tama
     return { success: true, anexo };
   } catch (error) {
     logger.error("Erro ao adicionar anexo:", error);
+
     return { success: false, error: "Erro ao adicionar anexo" };
   }
 }
@@ -661,6 +690,7 @@ export async function deleteAnexo(anexoId: string) {
     return { success: true };
   } catch (error) {
     logger.error("Erro ao deletar anexo:", error);
+
     return { success: false, error: "Erro ao deletar anexo" };
   }
 }
@@ -686,6 +716,7 @@ export async function getAnexos(tarefaId: string) {
     return { success: true, anexos };
   } catch (error) {
     logger.error("Erro ao listar anexos:", error);
+
     return { success: false, error: "Erro ao listar anexos" };
   }
 }
@@ -726,6 +757,7 @@ export async function getAtividades(tarefaId: string) {
     return { success: true, atividades };
   } catch (error) {
     logger.error("Erro ao listar atividades:", error);
+
     return { success: false, error: "Erro ao listar atividades" };
   }
 }
@@ -788,6 +820,7 @@ export async function addWatcher(tarefaId: string, usuarioId: string) {
     return { success: true, watcher };
   } catch (error) {
     logger.error("Erro ao adicionar observador:", error);
+
     return { success: false, error: "Erro ao adicionar observador" };
   }
 }
@@ -821,6 +854,7 @@ export async function removeWatcher(tarefaId: string, usuarioId: string) {
     return { success: true };
   } catch (error) {
     logger.error("Erro ao remover observador:", error);
+
     return { success: false, error: "Erro ao remover observador" };
   }
 }
@@ -856,6 +890,7 @@ export async function getWatchers(tarefaId: string) {
     return { success: true, watchers };
   } catch (error) {
     logger.error("Erro ao listar observadores:", error);
+
     return { success: false, error: "Erro ao listar observadores" };
   }
 }

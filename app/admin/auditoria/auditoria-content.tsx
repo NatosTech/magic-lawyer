@@ -1,5 +1,7 @@
 "use client";
 
+import type { RangeValue } from "@react-types/shared";
+
 import React, { useMemo, useState } from "react";
 import useSWR from "swr";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -25,7 +27,6 @@ import {
 } from "@heroui/modal";
 import { Popover, PopoverTrigger, PopoverContent } from "@heroui/popover";
 import { RangeCalendar, Tooltip } from "@heroui/react";
-import type { RangeValue } from "@react-types/shared";
 import { CalendarDate, getLocalTimeZone } from "@internationalized/date";
 import {
   CalendarRange,
@@ -143,18 +144,13 @@ export function AuditoriaContent() {
 
   const logContextKey =
     selectedLog && selectedLog.entidadeId
-      ? [
-          "audit-log-context",
-          selectedLog.entidade,
-          selectedLog.entidadeId,
-        ]
+      ? ["audit-log-context", selectedLog.entidade, selectedLog.entidadeId]
       : null;
 
-  const {
-    data: contextData,
-    isLoading: loadingContext,
-  } = useSWR(logContextKey, ([, entidade, entidadeId]) =>
-    getAuditLogContext(entidade as string, entidadeId as string),
+  const { data: contextData, isLoading: loadingContext } = useSWR(
+    logContextKey,
+    ([, entidade, entidadeId]) =>
+      getAuditLogContext(entidade as string, entidadeId as string),
   );
 
   const logs = data?.data?.logs ?? [];
@@ -225,7 +221,8 @@ export function AuditoriaContent() {
       ...Object.keys(newData ?? {}),
     ]);
 
-    const entries: Array<{ field: string; before: unknown; after: unknown }> = [];
+    const entries: Array<{ field: string; before: unknown; after: unknown }> =
+      [];
 
     keys.forEach((key) => {
       const before = oldData ? oldData[key] : undefined;
@@ -385,6 +382,7 @@ export function AuditoriaContent() {
             <SelectItem key="TENANT">Tenant</SelectItem>
           </Select>
           <Select
+            items={entidadeOptions}
             label={
               <div className="flex items-center gap-2">
                 <ClipboardList className="h-4 w-4 text-default-400" />
@@ -397,7 +395,6 @@ export function AuditoriaContent() {
                 </Tooltip>
               </div>
             }
-            items={entidadeOptions}
             selectedKeys={[entidadeFiltro]}
             selectionMode="single"
             onSelectionChange={(keys) => {
@@ -409,6 +406,7 @@ export function AuditoriaContent() {
             {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
           </Select>
           <Select
+            items={acaoOptions}
             label={
               <div className="flex items-center gap-2">
                 <Settings2 className="h-4 w-4 text-default-400" />
@@ -421,7 +419,6 @@ export function AuditoriaContent() {
                 </Tooltip>
               </div>
             }
-            items={acaoOptions}
             selectedKeys={[acaoFiltro]}
             selectionMode="single"
             onSelectionChange={(keys) => {
@@ -445,17 +442,19 @@ export function AuditoriaContent() {
             </div>
             <Popover offset={10} placement="bottom">
               <PopoverTrigger>
-                  <Button className="justify-start" variant="flat">
-                    <CalendarRange className="mr-2 h-4 w-4" />
-                    {formatCalendarRange(calendarRange)}
-                  </Button>
+                <Button className="justify-start" variant="flat">
+                  <CalendarRange className="mr-2 h-4 w-4" />
+                  {formatCalendarRange(calendarRange)}
+                </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <RangeCalendar
                   aria-label="Filtro de período"
                   value={calendarRange as any}
                   onChange={(value) =>
-                    setCalendarRange((value as RangeValue<CalendarDate> | null) ?? null)
+                    setCalendarRange(
+                      (value as RangeValue<CalendarDate> | null) ?? null,
+                    )
                   }
                 />
               </PopoverContent>
@@ -464,10 +463,7 @@ export function AuditoriaContent() {
               Clique acima para abrir o calendário e definir o período desejado.
             </span>
             {calendarRange ? (
-              <Tooltip
-                color="danger"
-                content="Remover intervalo selecionado"
-              >
+              <Tooltip color="danger" content="Remover intervalo selecionado">
                 <Button
                   size="sm"
                   startContent={<XCircle className="h-4 w-4" />}
@@ -504,7 +500,9 @@ export function AuditoriaContent() {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Criações</p>
-              <p className="text-2xl font-bold text-green-400">{totalCreates}</p>
+              <p className="text-2xl font-bold text-green-400">
+                {totalCreates}
+              </p>
               <p className="text-sm text-gray-500">Novos registros</p>
             </div>
           </CardBody>
@@ -517,7 +515,9 @@ export function AuditoriaContent() {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Atualizações</p>
-              <p className="text-2xl font-bold text-yellow-400">{totalUpdates}</p>
+              <p className="text-2xl font-bold text-yellow-400">
+                {totalUpdates}
+              </p>
               <p className="text-sm text-gray-500">Modificações</p>
             </div>
           </CardBody>
@@ -849,31 +849,44 @@ export function AuditoriaContent() {
                                 <>
                                   {contextData.data.detalhes?.nome && (
                                     <p>
-                                      <span className="text-default-500">Nome:</span>{" "}
+                                      <span className="text-default-500">
+                                        Nome:
+                                      </span>{" "}
                                       {contextData.data.detalhes.nome}
                                     </p>
                                   )}
                                   {contextData.data.detalhes?.email && (
                                     <p>
-                                      <span className="text-default-500">Email:</span>{" "}
+                                      <span className="text-default-500">
+                                        Email:
+                                      </span>{" "}
                                       {contextData.data.detalhes.email}
                                     </p>
                                   )}
                                   {contextData.data.detalhes?.role && (
                                     <p>
-                                      <span className="text-default-500">Perfil:</span>{" "}
+                                      <span className="text-default-500">
+                                        Perfil:
+                                      </span>{" "}
                                       {contextData.data.detalhes.role}
                                     </p>
                                   )}
-                                  {contextData.data.detalhes?.ativo !== undefined && (
+                                  {contextData.data.detalhes?.ativo !==
+                                    undefined && (
                                     <p>
-                                      <span className="text-default-500">Ativo:</span>{" "}
-                                      {contextData.data.detalhes.ativo ? "Sim" : "Não"}
+                                      <span className="text-default-500">
+                                        Ativo:
+                                      </span>{" "}
+                                      {contextData.data.detalhes.ativo
+                                        ? "Sim"
+                                        : "Não"}
                                     </p>
                                   )}
                                   {contextData.data.detalhes?.tenant ? (
                                     <p>
-                                      <span className="text-default-500">Tenant:</span>{" "}
+                                      <span className="text-default-500">
+                                        Tenant:
+                                      </span>{" "}
                                       {contextData.data.detalhes.tenant.nome}
                                       {contextData.data.detalhes.tenant.slug
                                         ? ` (${contextData.data.detalhes.tenant.slug})`
@@ -889,7 +902,8 @@ export function AuditoriaContent() {
                             </div>
                           ) : (
                             <p className="mt-2 text-sm text-default-400">
-                              Registro associado não encontrado no banco de dados.
+                              Registro associado não encontrado no banco de
+                              dados.
                             </p>
                           )
                         ) : contextData?.error ? (
@@ -916,8 +930,11 @@ export function AuditoriaContent() {
                               </p>
                               <div className="mt-2 grid gap-3 md:grid-cols-2">
                                 <div className="flex flex-col gap-1">
-                                  <span className="text-xs text-default-500">Antes</span>
-                                  {typeof entry.before === "object" && entry.before !== null ? (
+                                  <span className="text-xs text-default-500">
+                                    Antes
+                                  </span>
+                                  {typeof entry.before === "object" &&
+                                  entry.before !== null ? (
                                     <pre className="max-h-40 overflow-auto rounded-md bg-default-50/30 p-2 text-xs text-default-400">
                                       {formatValue(entry.before)}
                                     </pre>
@@ -928,8 +945,11 @@ export function AuditoriaContent() {
                                   )}
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  <span className="text-xs text-default-500">Depois</span>
-                                  {typeof entry.after === "object" && entry.after !== null ? (
+                                  <span className="text-xs text-default-500">
+                                    Depois
+                                  </span>
+                                  {typeof entry.after === "object" &&
+                                  entry.after !== null ? (
                                     <pre className="max-h-40 overflow-auto rounded-md bg-default-50/30 p-2 text-xs text-default-400">
                                       {formatValue(entry.after)}
                                     </pre>
@@ -945,7 +965,8 @@ export function AuditoriaContent() {
                         </div>
                       ) : (
                         <p className="text-sm text-default-400">
-                          Nenhuma diferença relevante identificada entre os dados antigos e novos.
+                          Nenhuma diferença relevante identificada entre os
+                          dados antigos e novos.
                         </p>
                       )}
                     </div>

@@ -6,12 +6,24 @@ import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
 import { Chip } from "@heroui/chip";
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/modal";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  useDisclosure,
+} from "@heroui/modal";
 import { Skeleton } from "@heroui/react";
 import { Plus, RefreshCw, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { listCategoriasTarefa, createCategoriaTarefa, updateCategoriaTarefa, deleteCategoriaTarefa } from "@/app/actions/categorias-tarefa";
+import {
+  listCategoriasTarefa,
+  createCategoriaTarefa,
+  updateCategoriaTarefa,
+  deleteCategoriaTarefa,
+} from "@/app/actions/categorias-tarefa";
 import { title } from "@/components/primitives";
 
 const CORES_PADRAO = [
@@ -37,9 +49,16 @@ export default function CategoriasTarefaPage() {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const { data: categoriasData, isLoading, mutate } = useSWR("categorias-tarefa-list", () => listCategoriasTarefa());
+  const {
+    data: categoriasData,
+    isLoading,
+    mutate,
+  } = useSWR("categorias-tarefa-list", () => listCategoriasTarefa());
 
-  const categorias = useMemo(() => (categoriasData?.success ? categoriasData.categorias : []), [categoriasData]);
+  const categorias = useMemo(
+    () => (categoriasData?.success ? categoriasData.categorias : []),
+    [categoriasData],
+  );
 
   const handleOpenNova = useCallback(() => {
     setCategoriaSelecionada(null);
@@ -65,7 +84,7 @@ export default function CategoriasTarefaPage() {
       });
       onOpen();
     },
-    [onOpen]
+    [onOpen],
   );
 
   const handleSalvar = useCallback(async () => {
@@ -86,10 +105,16 @@ export default function CategoriasTarefaPage() {
         ordem: formData.ordem,
       };
 
-      const result = categoriaSelecionada ? await updateCategoriaTarefa(categoriaSelecionada.id, payload) : await createCategoriaTarefa(payload);
+      const result = categoriaSelecionada
+        ? await updateCategoriaTarefa(categoriaSelecionada.id, payload)
+        : await createCategoriaTarefa(payload);
 
       if (result.success) {
-        toast.success(categoriaSelecionada ? "Categoria atualizada com sucesso!" : "Categoria criada com sucesso!");
+        toast.success(
+          categoriaSelecionada
+            ? "Categoria atualizada com sucesso!"
+            : "Categoria criada com sucesso!",
+        );
         mutate();
         onClose();
       } else {
@@ -115,7 +140,7 @@ export default function CategoriasTarefaPage() {
         toast.error(result.error || "Erro ao excluir categoria");
       }
     },
-    [mutate]
+    [mutate],
   );
 
   return (
@@ -123,13 +148,24 @@ export default function CategoriasTarefaPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className={title()}>Categorias de Tarefa</h1>
-          <p className="text-default-500">Gerencie as categorias para organizar suas tarefas</p>
+          <p className="text-default-500">
+            Gerencie as categorias para organizar suas tarefas
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button color="default" variant="flat" startContent={<RefreshCw size={18} />} onPress={() => mutate()}>
+          <Button
+            color="default"
+            startContent={<RefreshCw size={18} />}
+            variant="flat"
+            onPress={() => mutate()}
+          >
             Atualizar
           </Button>
-          <Button color="primary" startContent={<Plus size={18} />} onPress={handleOpenNova}>
+          <Button
+            color="primary"
+            startContent={<Plus size={18} />}
+            onPress={handleOpenNova}
+          >
             Nova Categoria
           </Button>
         </div>
@@ -144,31 +180,58 @@ export default function CategoriasTarefaPage() {
                 </CardBody>
               </Card>
             ))
-          : categorias && categorias.map((categoria: any) => (
+          : categorias &&
+            categorias.map((categoria: any) => (
               <Card key={categoria.id}>
                 <CardBody>
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-start gap-2 flex-1">
-                      <div className="w-4 h-4 rounded-full mt-1" style={{ backgroundColor: categoria.corHex }} />
+                      <div
+                        className="w-4 h-4 rounded-full mt-1"
+                        style={{ backgroundColor: categoria.corHex }}
+                      />
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{categoria.nome}</h3>
-                        <p className="text-xs text-default-400">Slug: {categoria.slug}</p>
+                        <h3 className="font-semibold text-lg">
+                          {categoria.nome}
+                        </h3>
+                        <p className="text-xs text-default-400">
+                          Slug: {categoria.slug}
+                        </p>
                       </div>
                     </div>
-                    <Chip size="sm" color={categoria.ativo ? "success" : "default"} variant="flat">
+                    <Chip
+                      color={categoria.ativo ? "success" : "default"}
+                      size="sm"
+                      variant="flat"
+                    >
                       {categoria.ativo ? "Ativo" : "Inativo"}
                     </Chip>
                   </div>
 
-                  {categoria.descricao && <p className="text-sm text-default-500 mb-3">{categoria.descricao}</p>}
+                  {categoria.descricao && (
+                    <p className="text-sm text-default-500 mb-3">
+                      {categoria.descricao}
+                    </p>
+                  )}
 
                   <div className="flex justify-between items-center text-xs text-default-400">
                     <span>{categoria._count?.tarefas || 0} tarefa(s)</span>
                     <div className="flex gap-2">
-                      <Button isIconOnly size="sm" variant="flat" onPress={() => handleOpenEditar(categoria)}>
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="flat"
+                        onPress={() => handleOpenEditar(categoria)}
+                      >
                         <Pencil size={14} />
                       </Button>
-                      <Button isIconOnly size="sm" color="danger" variant="flat" onPress={() => handleExcluir(categoria.id)}>
+                      <Button
+                        isIconOnly
+                        color="danger"
+                        size="sm"
+                        variant="flat"
+                        onPress={() => handleExcluir(categoria.id)}
+                      >
                         <Trash2 size={14} />
                       </Button>
                     </div>
@@ -178,17 +241,21 @@ export default function CategoriasTarefaPage() {
             ))}
       </div>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <Modal isOpen={isOpen} size="lg" onClose={onClose}>
         <ModalContent>
-          <ModalHeader>{categoriaSelecionada ? "Editar Categoria" : "Nova Categoria"}</ModalHeader>
+          <ModalHeader>
+            {categoriaSelecionada ? "Editar Categoria" : "Nova Categoria"}
+          </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
               <Input
+                isRequired
                 label="Nome"
                 placeholder="Ex: Urgente"
                 value={formData.nome}
                 onChange={(e) => {
                   const nome = e.target.value;
+
                   setFormData({
                     ...formData,
                     nome,
@@ -201,12 +268,27 @@ export default function CategoriasTarefaPage() {
                           .replace(/[^a-z0-9]+/g, "-"),
                   });
                 }}
-                isRequired
               />
 
-              <Input label="Slug" placeholder="urgente" value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} isRequired />
+              <Input
+                isRequired
+                label="Slug"
+                placeholder="urgente"
+                value={formData.slug}
+                onChange={(e) =>
+                  setFormData({ ...formData, slug: e.target.value })
+                }
+              />
 
-              <Textarea label="Descrição" placeholder="Descrição opcional" value={formData.descricao} onChange={(e) => setFormData({ ...formData, descricao: e.target.value })} minRows={3} />
+              <Textarea
+                label="Descrição"
+                minRows={3}
+                placeholder="Descrição opcional"
+                value={formData.descricao}
+                onChange={(e) =>
+                  setFormData({ ...formData, descricao: e.target.value })
+                }
+              />
 
               <div>
                 <p className="text-sm mb-2">Cor</p>
@@ -214,20 +296,22 @@ export default function CategoriasTarefaPage() {
                   {CORES_PADRAO.map((cor) => (
                     <button
                       key={cor.hex}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, corHex: cor.hex })}
                       className={`w-10 h-10 rounded-full border-2 ${formData.corHex === cor.hex ? "border-primary scale-110" : "border-transparent"}`}
                       style={{ backgroundColor: cor.hex }}
                       title={cor.nome}
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, corHex: cor.hex })
+                      }
                     />
                   ))}
                 </div>
               </div>
 
               <Input
-                type="number"
                 label="Ordem"
                 placeholder="0"
+                type="number"
                 value={formData.ordem.toString()}
                 onChange={(e) =>
                   setFormData({
@@ -242,7 +326,7 @@ export default function CategoriasTarefaPage() {
             <Button variant="light" onPress={onClose}>
               Cancelar
             </Button>
-            <Button color="primary" onPress={handleSalvar} isLoading={salvando}>
+            <Button color="primary" isLoading={salvando} onPress={handleSalvar}>
               {categoriaSelecionada ? "Atualizar" : "Criar"}
             </Button>
           </ModalFooter>

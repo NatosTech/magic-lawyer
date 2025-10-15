@@ -7,12 +7,13 @@ export function useCurrentUserAdvogado() {
     "current-user-advogado",
     async () => {
       const result = await getCurrentUserAdvogado();
+
       return result.success ? result.data : null;
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {

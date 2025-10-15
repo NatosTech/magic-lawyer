@@ -8,14 +8,48 @@ import { Chip } from "@heroui/chip";
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
-import { FileText, Plus, Search, Filter, Eye, Edit, Copy, Trash2, MoreVertical, Power, PowerOff, FileCheck, AlertCircle } from "lucide-react";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/dropdown";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
+import {
+  FileText,
+  Plus,
+  Search,
+  Filter,
+  Eye,
+  Edit,
+  Copy,
+  Trash2,
+  MoreVertical,
+  Power,
+  PowerOff,
+  FileCheck,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
-import { title } from "@/components/primitives";
-import { useModelosPeticao, useCategoriasModeloPeticao, useTiposModeloPeticao } from "@/app/hooks/use-modelos-peticao";
-import { deleteModeloPeticao, duplicateModeloPeticao, toggleModeloPeticaoStatus, type ModeloPeticaoFilters } from "@/app/actions/modelos-peticao";
+import { title, subtitle } from "@/components/primitives";
+import {
+  useModelosPeticao,
+  useCategoriasModeloPeticao,
+  useTiposModeloPeticao,
+} from "@/app/hooks/use-modelos-peticao";
+import {
+  deleteModeloPeticao,
+  duplicateModeloPeticao,
+  toggleModeloPeticaoStatus,
+  type ModeloPeticaoFilters,
+} from "@/app/actions/modelos-peticao";
 
 export default function ModelosPeticaoPage() {
   const router = useRouter();
@@ -35,13 +69,15 @@ export default function ModelosPeticaoPage() {
   const [modeloToDelete, setModeloToDelete] = useState<string | null>(null);
 
   // Hooks
-  const { modelos, isLoading, isError, error, mutate } = useModelosPeticao(filtros);
+  const { modelos, isLoading, isError, error, mutate } =
+    useModelosPeticao(filtros);
   const { categorias } = useCategoriasModeloPeticao();
   const { tipos } = useTiposModeloPeticao();
 
   const handleDuplicate = async (id: string) => {
     startTransition(async () => {
       const result = await duplicateModeloPeticao(id);
+
       if (result.success) {
         toast.success("Modelo duplicado com sucesso!");
         mutate();
@@ -54,8 +90,13 @@ export default function ModelosPeticaoPage() {
   const handleToggleStatus = async (id: string) => {
     startTransition(async () => {
       const result = await toggleModeloPeticaoStatus(id);
+
       if (result.success) {
-        toast.success(result.data?.ativo ? "Modelo ativado com sucesso!" : "Modelo desativado com sucesso!");
+        toast.success(
+          result.data?.ativo
+            ? "Modelo ativado com sucesso!"
+            : "Modelo desativado com sucesso!",
+        );
         mutate();
       } else {
         toast.error(result.error || "Erro ao alterar status do modelo");
@@ -68,6 +109,7 @@ export default function ModelosPeticaoPage() {
 
     startTransition(async () => {
       const result = await deleteModeloPeticao(modeloToDelete);
+
       if (result.success) {
         toast.success("Modelo excluído com sucesso!");
         setDeleteModalOpen(false);
@@ -88,12 +130,16 @@ export default function ModelosPeticaoPage() {
     });
   };
 
-  const temFiltrosAtivos = filtros.search || filtros.categoria || filtros.tipo || filtros.ativo !== undefined;
+  const temFiltrosAtivos =
+    filtros.search ||
+    filtros.categoria ||
+    filtros.tipo ||
+    filtros.ativo !== undefined;
 
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <Spinner size="lg" label="Carregando modelos..." />
+        <Spinner label="Carregando modelos..." size="lg" />
       </div>
     );
   }
@@ -113,18 +159,28 @@ export default function ModelosPeticaoPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className={title()}>Modelos de Petição</h1>
-          <p className="text-sm text-default-500 mt-1">
+          <h1 className={title({ size: "lg", color: "blue" })}>
+            Modelos de Petição
+          </h1>
+          <p className={subtitle({ fullWidth: true })}>
             {modelos?.length || 0} modelos cadastrados
             {temFiltrosAtivos && " (filtrados)"}
           </p>
         </div>
 
         <div className="flex gap-2">
-          <Button startContent={<Filter className="h-4 w-4" />} variant="bordered" onPress={() => setMostrarFiltros(!mostrarFiltros)}>
+          <Button
+            startContent={<Filter className="h-4 w-4" />}
+            variant="bordered"
+            onPress={() => setMostrarFiltros(!mostrarFiltros)}
+          >
             Filtros
           </Button>
-          <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={() => router.push("/modelos-peticao/novo")}>
+          <Button
+            color="primary"
+            startContent={<Plus className="h-4 w-4" />}
+            onPress={() => router.push("/modelos-peticao/novo")}
+          >
             Novo Modelo
           </Button>
         </div>
@@ -139,7 +195,9 @@ export default function ModelosPeticaoPage() {
                 placeholder="Buscar por nome ou descrição..."
                 startContent={<Search className="h-4 w-4 text-default-400" />}
                 value={filtros.search}
-                onValueChange={(value) => setFiltros((prev) => ({ ...prev, search: value }))}
+                onValueChange={(value) =>
+                  setFiltros((prev) => ({ ...prev, search: value }))
+                }
               />
 
               <Select
@@ -147,6 +205,7 @@ export default function ModelosPeticaoPage() {
                 selectedKeys={filtros.categoria ? [filtros.categoria] : []}
                 onSelectionChange={(keys) => {
                   const value = Array.from(keys)[0] as string | undefined;
+
                   setFiltros((prev) => ({ ...prev, categoria: value }));
                 }}
               >
@@ -162,6 +221,7 @@ export default function ModelosPeticaoPage() {
                 selectedKeys={filtros.tipo ? [filtros.tipo] : []}
                 onSelectionChange={(keys) => {
                   const value = Array.from(keys)[0] as string | undefined;
+
                   setFiltros((prev) => ({ ...prev, tipo: value }));
                 }}
               >
@@ -174,12 +234,22 @@ export default function ModelosPeticaoPage() {
 
               <Select
                 placeholder="Status"
-                selectedKeys={filtros.ativo !== undefined ? [filtros.ativo ? "ativo" : "inativo"] : []}
+                selectedKeys={
+                  filtros.ativo !== undefined
+                    ? [filtros.ativo ? "ativo" : "inativo"]
+                    : []
+                }
                 onSelectionChange={(keys) => {
                   const value = Array.from(keys)[0] as string | undefined;
+
                   setFiltros((prev) => ({
                     ...prev,
-                    ativo: value === "ativo" ? true : value === "inativo" ? false : undefined,
+                    ativo:
+                      value === "ativo"
+                        ? true
+                        : value === "inativo"
+                          ? false
+                          : undefined,
                   }));
                 }}
               >
@@ -208,9 +278,18 @@ export default function ModelosPeticaoPage() {
         <Card>
           <CardBody className="flex flex-col items-center justify-center py-12">
             <FileText className="h-12 w-12 text-default-400 mb-4" />
-            <p className="text-default-500">{temFiltrosAtivos ? "Nenhum modelo encontrado com os filtros aplicados" : "Nenhum modelo de petição cadastrado"}</p>
+            <p className="text-default-500">
+              {temFiltrosAtivos
+                ? "Nenhum modelo encontrado com os filtros aplicados"
+                : "Nenhum modelo de petição cadastrado"}
+            </p>
             {temFiltrosAtivos && (
-              <Button className="mt-4" size="sm" variant="light" onPress={limparFiltros}>
+              <Button
+                className="mt-4"
+                size="sm"
+                variant="light"
+                onPress={limparFiltros}
+              >
                 Limpar Filtros
               </Button>
             )}
@@ -227,7 +306,11 @@ export default function ModelosPeticaoPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate">{modelo.nome}</h3>
-                    {modelo.descricao && <p className="text-sm text-default-500 line-clamp-2 mt-1">{modelo.descricao}</p>}
+                    {modelo.descricao && (
+                      <p className="text-sm text-default-500 line-clamp-2 mt-1">
+                        {modelo.descricao}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -238,16 +321,42 @@ export default function ModelosPeticaoPage() {
                     </Button>
                   </DropdownTrigger>
                   <DropdownMenu>
-                    <DropdownItem key="view" startContent={<Eye className="h-4 w-4" />} onPress={() => router.push(`/modelos-peticao/${modelo.id}`)}>
+                    <DropdownItem
+                      key="view"
+                      startContent={<Eye className="h-4 w-4" />}
+                      onPress={() =>
+                        router.push(`/modelos-peticao/${modelo.id}`)
+                      }
+                    >
                       Ver Detalhes
                     </DropdownItem>
-                    <DropdownItem key="edit" startContent={<Edit className="h-4 w-4" />} onPress={() => router.push(`/modelos-peticao/${modelo.id}/editar`)}>
+                    <DropdownItem
+                      key="edit"
+                      startContent={<Edit className="h-4 w-4" />}
+                      onPress={() =>
+                        router.push(`/modelos-peticao/${modelo.id}/editar`)
+                      }
+                    >
                       Editar
                     </DropdownItem>
-                    <DropdownItem key="duplicate" startContent={<Copy className="h-4 w-4" />} onPress={() => handleDuplicate(modelo.id)}>
+                    <DropdownItem
+                      key="duplicate"
+                      startContent={<Copy className="h-4 w-4" />}
+                      onPress={() => handleDuplicate(modelo.id)}
+                    >
                       Duplicar
                     </DropdownItem>
-                    <DropdownItem key="toggle" startContent={modelo.ativo ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />} onPress={() => handleToggleStatus(modelo.id)}>
+                    <DropdownItem
+                      key="toggle"
+                      startContent={
+                        modelo.ativo ? (
+                          <PowerOff className="h-4 w-4" />
+                        ) : (
+                          <Power className="h-4 w-4" />
+                        )
+                      }
+                      onPress={() => handleToggleStatus(modelo.id)}
+                    >
                       {modelo.ativo ? "Desativar" : "Ativar"}
                     </DropdownItem>
                     <DropdownItem
@@ -269,20 +378,31 @@ export default function ModelosPeticaoPage() {
               <CardBody className="space-y-3 pt-0">
                 <div className="flex flex-wrap gap-2">
                   {modelo.categoria && (
-                    <Chip size="sm" variant="flat" color="primary">
+                    <Chip color="primary" size="sm" variant="flat">
                       {modelo.categoria}
                     </Chip>
                   )}
                   {modelo.tipo && (
-                    <Chip size="sm" variant="flat" color="secondary">
+                    <Chip color="secondary" size="sm" variant="flat">
                       {modelo.tipo}
                     </Chip>
                   )}
-                  <Chip size="sm" variant="flat" color={modelo.ativo ? "success" : "default"} startContent={modelo.ativo ? <Power className="h-3 w-3" /> : <PowerOff className="h-3 w-3" />}>
+                  <Chip
+                    color={modelo.ativo ? "success" : "default"}
+                    size="sm"
+                    startContent={
+                      modelo.ativo ? (
+                        <Power className="h-3 w-3" />
+                      ) : (
+                        <PowerOff className="h-3 w-3" />
+                      )
+                    }
+                    variant="flat"
+                  >
                     {modelo.ativo ? "Ativo" : "Inativo"}
                   </Chip>
                   {modelo.publico && (
-                    <Chip size="sm" variant="flat" color="warning">
+                    <Chip color="warning" size="sm" variant="flat">
                       Público
                     </Chip>
                   )}
@@ -292,12 +412,16 @@ export default function ModelosPeticaoPage() {
                   <div className="flex items-center gap-2 text-sm text-default-500">
                     <FileCheck className="h-4 w-4" />
                     <span>
-                      {modelo._count.peticoes} {modelo._count.peticoes === 1 ? "petição" : "petições"}
+                      {modelo._count.peticoes}{" "}
+                      {modelo._count.peticoes === 1 ? "petição" : "petições"}
                     </span>
                   </div>
                 )}
 
-                <div className="text-xs text-default-400">Atualizado em {new Date(modelo.updatedAt).toLocaleDateString("pt-BR")}</div>
+                <div className="text-xs text-default-400">
+                  Atualizado em{" "}
+                  {new Date(modelo.updatedAt).toLocaleDateString("pt-BR")}
+                </div>
               </CardBody>
             </Card>
           ))}
@@ -312,13 +436,20 @@ export default function ModelosPeticaoPage() {
               <ModalHeader>Confirmar Exclusão</ModalHeader>
               <ModalBody>
                 <p>Tem certeza que deseja excluir este modelo de petição?</p>
-                <p className="text-sm text-danger">Esta ação não pode ser desfeita. O modelo será removido permanentemente.</p>
+                <p className="text-sm text-danger">
+                  Esta ação não pode ser desfeita. O modelo será removido
+                  permanentemente.
+                </p>
               </ModalBody>
               <ModalFooter>
                 <Button variant="light" onPress={onClose}>
                   Cancelar
                 </Button>
-                <Button color="danger" isLoading={isPending} onPress={handleDelete}>
+                <Button
+                  color="danger"
+                  isLoading={isPending}
+                  onPress={handleDelete}
+                >
                   Excluir
                 </Button>
               </ModalFooter>
