@@ -43,6 +43,12 @@ export function useAdminNavigation() {
         description: "Gestão financeira global",
       },
       {
+        label: "Bancos",
+        href: "/admin/bancos",
+        icon: "Building",
+        description: "Gestão de bancos do sistema",
+      },
+      {
         label: "Relatórios",
         href: "/admin/relatorios",
         icon: "BarChart3",

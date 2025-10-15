@@ -37,6 +37,9 @@ import {
 import { uploadDocumentoPeticao, removerDocumentoPeticao } from "@/app/actions/upload-documento-peticao";
 import { getAllProcessos } from "@/app/actions/processos";
 import { PeticaoStatus } from "@/app/generated/prisma";
+import { useModelosPeticaoAtivos } from "@/app/hooks/use-modelos-peticao";
+import { processarTemplate } from "@/app/actions/modelos-peticao";
+import { useAssinaturas, usePeticaoAssinada } from "@/app/hooks/use-assinaturas";
 import {
   Search as MagnifyingGlassIcon,
   Plus as PlusIcon,
@@ -51,6 +54,9 @@ import {
   XCircle as XCircleIcon,
   Archive as ArchiveBoxIcon,
   Upload as ArrowUpTrayIcon,
+  PenTool as PenToolIcon,
+  Shield as ShieldCheckIcon,
+  Users as UsersIcon,
 } from "lucide-react";
 
 // ============================================
@@ -130,6 +136,11 @@ export default function PeticoesPage() {
   const [protocoloModalOpen, setProtocoloModalOpen] = useState(false);
   const [protocoloPeticaoId, setProtocoloPeticaoId] = useState<string>("");
   const [protocoloNumero, setProtocoloNumero] = useState("");
+
+  // Estado do modal de assinatura
+  const [assinaturaModalOpen, setAssinaturaModalOpen] = useState(false);
+  const [assinaturaPeticaoId, setAssinaturaPeticaoId] = useState<string>("");
+  const [assinandoPeticao, setAssinandoPeticao] = useState(false);
 
   // SWR - Fetch data
   const { data: peticoesData, mutate: mutatePeticoes, isLoading: loadingPeticoes } = useSWR(["peticoes", filters], () => listPeticoes(filters));
@@ -227,6 +238,12 @@ export default function PeticoesPage() {
     } else {
       toast.error(result.error || "Erro ao excluir");
     }
+  };
+
+  // Handler de assinatura
+  const openAssinaturaModal = (peticaoId: string) => {
+    setAssinaturaPeticaoId(peticaoId);
+    setAssinaturaModalOpen(true);
   };
 
   // Status badge
@@ -441,6 +458,12 @@ export default function PeticoesPage() {
                         </Button>
                       )}
 
+                      {peticao.documento && (
+                        <Button size="sm" color="secondary" variant="flat" startContent={<PenToolIcon size={16} />} onPress={() => openAssinaturaModal(peticao.id)}>
+                          Assinar
+                        </Button>
+                      )}
+
                       <Button size="sm" variant="light" isIconOnly onPress={() => openEditModal(peticao)}>
                         <PencilIcon size={16} />
                       </Button>
@@ -488,6 +511,16 @@ export default function PeticoesPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Modal de Assinatura */}
+      <AssinaturaModal
+        isOpen={assinaturaModalOpen}
+        onClose={() => {
+          setAssinaturaModalOpen(false);
+          setAssinandoPeticao(false);
+        }}
+        peticaoId={assinaturaPeticaoId}
+      />
     </div>
   );
 }
@@ -517,10 +550,15 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
   });
 
   const [loading, setLoading] = useState(false);
+  const [modeloSelecionado, setModeloSelecionado] = useState<string>("");
+  const [processandoModelo, setProcessandoModelo] = useState(false);
 
   // Upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  // Hook para buscar modelos ativos
+  const { modelos: modelosDisponiveis, isLoading: loadingModelos } = useModelosPeticaoAtivos();
 
   useEffect(() => {
     if (mode === "create") {
@@ -573,6 +611,64 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
     setSelectedFile(null);
   };
 
+  const handleAplicarModelo = async (modeloId: string) => {
+    if (!modeloId || !formData.processoId) {
+      if (!formData.processoId) {
+        toast.warning("Selecione um processo primeiro");
+      }
+      return;
+    }
+
+    setProcessandoModelo(true);
+
+    try {
+      // Buscar dados do processo selecionado
+      const processoSelecionado = processos.find((p: any) => p.id === formData.processoId);
+
+      if (!processoSelecionado) {
+        toast.error("Processo não encontrado");
+        return;
+      }
+
+      // Preparar variáveis para o template
+      const variaveis: Record<string, any> = {
+        processo_numero: processoSelecionado.numero || "",
+        processo_titulo: processoSelecionado.titulo || "",
+        cliente_nome: processoSelecionado.cliente?.nome || "",
+        cliente_documento: processoSelecionado.cliente?.documento || "",
+        advogado_nome: "", // TODO: Buscar do contexto do usuário
+        advogado_oab: "", // TODO: Buscar do contexto do usuário
+        tribunal_nome: processoSelecionado.tribunal?.nome || "",
+        data_atual: new Date().toLocaleDateString("pt-BR"),
+        valor: processoSelecionado.valorCausa || "",
+      };
+
+      // Processar template
+      const resultado = await processarTemplate(modeloId, variaveis);
+
+      if (resultado.success && resultado.data) {
+        // Preencher campos automaticamente
+        const modeloInfo = modelosDisponiveis?.find((m) => m.id === modeloId);
+
+        setFormData({
+          ...formData,
+          titulo: modeloInfo?.nome || formData.titulo,
+          tipo: modeloInfo?.tipo || formData.tipo,
+          descricao: resultado.data,
+        });
+
+        toast.success("Modelo aplicado com sucesso!");
+      } else {
+        toast.error(resultado.error || "Erro ao processar modelo");
+      }
+    } catch (error) {
+      console.error("Erro ao aplicar modelo:", error);
+      toast.error("Erro ao aplicar modelo");
+    } finally {
+      setProcessandoModelo(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!formData.processoId || !formData.titulo) {
       toast.error("Preencha todos os campos obrigatórios");
@@ -601,8 +697,13 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
       // Upload de documento se houver
       if (selectedFile && peticaoId) {
         setUploading(true);
-        const buffer = await selectedFile.arrayBuffer();
-        const uploadResult = await uploadDocumentoPeticao(peticaoId, Buffer.from(buffer), selectedFile.name, {
+
+        // Converter arquivo para base64
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const base64 = buffer.toString("base64");
+
+        const uploadResult = await uploadDocumentoPeticao(peticaoId, base64, selectedFile.name, {
           fileName: formData.titulo,
           description: formData.descricao || undefined,
         });
@@ -680,6 +781,36 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
               </SelectItem>
             ))}
           </Select>
+
+          {mode === "create" && (
+            <div className="space-y-2">
+              <Select
+                label="Modelo de Petição (Opcional)"
+                placeholder="Selecione um modelo para preencher automaticamente"
+                selectedKeys={modeloSelecionado ? [modeloSelecionado] : []}
+                onSelectionChange={(keys) => {
+                  const value = Array.from(keys)[0] as string;
+                  setModeloSelecionado(value);
+                  if (value) {
+                    handleAplicarModelo(value);
+                  }
+                }}
+                isLoading={loadingModelos}
+                isDisabled={!formData.processoId || processandoModelo}
+                description={!formData.processoId ? "Selecione um processo primeiro" : "O modelo preencherá automaticamente os campos"}
+              >
+                {(modelosDisponiveis || []).map((modelo) => (
+                  <SelectItem key={modelo.id} textValue={modelo.nome} description={modelo.categoria || undefined}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{modelo.nome}</span>
+                      {modelo.categoria && <span className="text-xs text-default-400">{modelo.categoria}</span>}
+                    </div>
+                  </SelectItem>
+                ))}
+              </Select>
+              {processandoModelo && <p className="text-sm text-primary">⏳ Processando modelo...</p>}
+            </div>
+          )}
 
           <Input
             label="Título da Petição"
@@ -827,6 +958,115 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
               {uploading ? "Enviando..." : mode === "create" ? "Criar" : "Salvar"}
             </Button>
           )}
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+}
+
+// ============================================
+// MODAL DE ASSINATURA
+// ============================================
+
+interface AssinaturaModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  peticaoId: string;
+}
+
+function AssinaturaModal({ isOpen, onClose, peticaoId }: AssinaturaModalProps) {
+  const { data: assinaturasData } = useAssinaturas(peticaoId);
+  const { data: peticaoAssinadaData } = usePeticaoAssinada(peticaoId);
+
+  const assinaturas = assinaturasData?.data || [];
+  const peticaoAssinada = peticaoAssinadaData?.data?.assinada || false;
+  const totalAssinaturas = peticaoAssinadaData?.data?.assinaturas || 0;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+      <ModalContent>
+        <ModalHeader className="flex items-center gap-2">
+          <PenToolIcon size={24} />
+          Assinatura Digital
+        </ModalHeader>
+        <ModalBody className="gap-6">
+          {/* Status da Petição */}
+          {peticaoAssinada && (
+            <div className="p-4 bg-success-50 rounded-lg border border-success-200">
+              <div className="flex items-center gap-2 text-success-700">
+                <CheckCircleIcon size={20} />
+                <span className="font-medium">
+                  Petição assinada por {totalAssinaturas} {totalAssinaturas === 1 ? "pessoa" : "pessoas"}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Lista de Assinaturas Existentes */}
+          {assinaturas.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-default-600 flex items-center gap-2">
+                <UsersIcon size={16} />
+                Assinaturas Registradas ({assinaturas.length})
+              </h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {assinaturas.map((assinatura) => (
+                  <div key={assinatura.id} className="p-3 bg-default-50 rounded-lg border border-default-200">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{assinatura.assinanteNome}</p>
+                        {assinatura.assinanteEmail && <p className="text-xs text-default-500">{assinatura.assinanteEmail}</p>}
+                        {assinatura.assinanteDocumento && <p className="text-xs text-default-500">CPF: {assinatura.assinanteDocumento}</p>}
+                      </div>
+                      <div className="text-right">
+                        <Chip
+                          size="sm"
+                          color={assinatura.status === "ASSINADO" ? "success" : assinatura.status === "PENDENTE" ? "warning" : assinatura.status === "EXPIRADO" ? "default" : "danger"}
+                          variant="flat"
+                        >
+                          {assinatura.status}
+                        </Chip>
+                        {assinatura.assinadaEm && <p className="text-xs text-default-400 mt-1">{new Date(assinatura.assinadaEm).toLocaleString("pt-BR")}</p>}
+                      </div>
+                    </div>
+                    {assinatura.provedorAssinatura && (
+                      <div className="mt-2 flex items-center gap-1 text-xs text-default-500">
+                        <ShieldCheckIcon size={12} />
+                        <span>{assinatura.provedorAssinatura}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Divider />
+
+          {/* Aviso - Funcionalidade Futura */}
+          <div className="p-6 bg-default-100 rounded-lg border-2 border-default-200 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="p-3 bg-default-200 rounded-full">
+                <ShieldCheckIcon size={32} className="text-default-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-default-700">Assinatura Digital</h3>
+              <p className="text-sm text-default-600 max-w-md">
+                Funcionalidade de assinatura digital será implementada em breve. O sistema está preparado para integração com soluções de assinatura eletrônica e certificados digitais.
+              </p>
+            </div>
+          </div>
+
+          {/* Informações */}
+          <div className="p-3 bg-default-50 rounded-lg">
+            <p className="text-xs text-default-600">
+              <strong>Nota:</strong> A estrutura de assinaturas está pronta. Aguardando definição da solução de assinatura digital a ser utilizada.
+            </p>
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="light" onPress={onClose}>
+            Fechar
+          </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>

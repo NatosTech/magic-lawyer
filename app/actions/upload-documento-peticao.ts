@@ -13,7 +13,7 @@ const uploadService = UploadService.getInstance();
 
 export async function uploadDocumentoPeticao(
   peticaoId: string,
-  file: Buffer,
+  fileBase64: string,
   originalName: string,
   options: {
     fileName: string;
@@ -63,6 +63,9 @@ export async function uploadDocumentoPeticao(
         error: "Petição não encontrada",
       };
     }
+
+    // Converter base64 para Buffer
+    const file = Buffer.from(fileBase64, "base64");
 
     // Fazer upload para Cloudinary usando a estrutura hierárquica
     const uploadResult = await uploadService.uploadDocumento(file, userId, originalName, tenant.slug, {

@@ -1,31 +1,31 @@
-### Correção: Select (HeroUI) não exibe valor selecionado
+# Correção: Select (HeroUI) não exibe valor selecionado
 
-Problemas observados:
+## Problemas observados
 
 - Valor é salvo no estado mas não aparece no `Select`.
 - Warnings no console:
-  - Select: Keys "..." passed to selectedKeys are not present in the collection.
-  - <Item> with non-plain text contents is unsupported... add a `textValue` prop.
+  - `Select: Keys "..." passed to selectedKeys are not present in the collection.`
+  - `<Item> with non-plain text contents is unsupported... add a textValue prop.`
 
-#### Causa raiz
+## Causa raiz
 
-- `selectedKeys` recebia uma chave que não existia na coleção renderizada (dados SWR assincronos/atualizações).
+- `selectedKeys` recebia uma chave que não existia na coleção renderizada (dados SWR assíncronos/atualizações).
 - Itens não tinham `textValue`, dificultando acessibilidade e render do valor no trigger.
 
-#### Solução (padrão definitivo)
+## Solução (padrão definitivo)
 
-1) Validar `selectedKeys` contra a coleção atual (evitar passar chave inexistente).
-2) Adicionar `textValue` em todos os `SelectItem`.
-3) Usar `onSelectionChange` (Set -> Array) e atualizar o estado com a chave.
+1. Validar `selectedKeys` contra a coleção atual (evitar passar chave inexistente).
+2. Adicionar `textValue` em todos os `SelectItem`.
+3. Usar `onSelectionChange` (Set → Array) e atualizar o estado com a chave.
 
-Referência: Documentação HeroUI Select [link](https://www.heroui.com/docs/components/select)
+**Referência:** [Documentação HeroUI Select](https://www.heroui.com/docs/components/select)
 
-#### Exemplo 1 — Select de Processo (single)
+## Exemplo 1 — Select de Processo (single)
 
 ```tsx
 import {Select, SelectItem} from "@heroui/react";
 
-// Lista assincrona
+// Lista assíncrona
 const processos = processosData?.processos ?? [];
 
 // Validar keys existentes
@@ -54,7 +54,7 @@ const selectedProcessKeys = formData.processoId && processoKeySet.has(formData.p
 </Select>
 ```
 
-#### Exemplo 2 — Select simples (status/prioridade)
+## Exemplo 2 — Select simples (status/prioridade)
 
 ```tsx
 const opcoes = [
@@ -72,21 +72,21 @@ const opcoes = [
   }}
 >
   {opcoes.map((o) => (
-    <SelectItem key={o.key} textValue={o.label}>{o.label}</SelectItem>
+    <SelectItem key={o.key} textValue={o.label}>
+      {o.label}
+    </SelectItem>
   ))}
 </Select>
 ```
 
-#### Checklist rápido
+## Checklist rápido
 
 - [ ] `selectedKeys` só com chaves existentes na coleção.
 - [ ] `SelectItem` sempre com `textValue` (string simples do rótulo).
 - [ ] `onSelectionChange`: `const value = Array.from(keys)[0]`.
 - [ ] Em listas assíncronas (SWR), derive `selectedKeys` após validar contra o array atual.
 
-#### Dicas
+## Dicas
 
-- Se o warning “keys not present” aparecer, logue `selectedKeys` e a lista atual para conferir se o id existe.
+- Se o warning "keys not present" aparecer, logue `selectedKeys` e a lista atual para conferir se o id existe.
 - Se o valor não renderizar no trigger, verifique `textValue` e se o `key` do `SelectItem` é exatamente o id usado em `selectedKeys`.
-
-

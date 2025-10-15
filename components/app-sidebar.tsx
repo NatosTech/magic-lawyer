@@ -107,6 +107,22 @@ const HelpIcon = ({ size = 18 }: IconProps) => (
   </svg>
 );
 
+const ReceiptIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z" />
+    <path d="M14 8H8" />
+    <path d="M16 12H8" />
+    <path d="M13 16H8" />
+  </svg>
+);
+
+const CreditCardIcon = ({ size = 18 }: IconProps) => (
+  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+    <rect width="20" height="14" x="2" y="5" rx="2" />
+    <line x1="2" x2="22" y1="10" y2="10" />
+  </svg>
+);
+
 const FileSignatureIcon = ({ size = 18 }: IconProps) => (
   <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
     <path d="M20 19.5v.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l4 4v13.5" />
@@ -234,6 +250,9 @@ const navIconMap: Record<string, JSX.Element> = {
   Feriados: <CalendarIcon />,
   Tarefas: <CheckSquareIcon />,
   Financeiro: <WalletIcon />,
+  Honorários: <WalletIcon />,
+  Parcelas: <ReceiptIcon />,
+  Faturas: <ReceiptIcon />,
   Juízes: <ScaleIcon />,
   "Juízes Globais": <ScaleIcon />,
   Causas: <ScaleIcon />,
@@ -247,6 +266,7 @@ const navIconMap: Record<string, JSX.Element> = {
   "Configurações do escritório": <SettingsIcon />,
   Configurações: <SettingsIcon />,
   "Categorias de Tarefa": <TagIcon />,
+  "Dados Bancários": <CreditCardIcon />,
   "Áreas de Processo": <ScaleIcon />,
   "Tipos de Contrato": <FileSignatureIcon />,
   Tribunais: <BuildingIcon />,

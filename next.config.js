@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb", // Aumentar limite para 10MB (padrão é 1MB)
+    },
+  },
 };
 
 module.exports = nextConfig;

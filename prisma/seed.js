@@ -16,6 +16,8 @@ const { seedDadosFinanceiros } = require("./seeds/dadosFinanceiros");
 const { seedContratos } = require("./seeds/contratos");
 const seedCausas = require("./seeds/causas");
 const seedRegimesPrazo = require("./seeds/regimesPrazo");
+const { seedTiposPeticao } = require("./seeds/tipos-peticao");
+const { seedBancos } = require("./seeds/bancos");
 const { seedAuditLogs } = require("./seeds/auditLogs");
 
 const prisma = new PrismaClient();
@@ -96,6 +98,14 @@ async function main() {
 
   // Seed de contratos, processos e procurações
   await seedContratos(prisma, Prisma);
+
+  console.log("\n🏛️  Criando tipos de petição padrão...\n");
+
+  // Seed de tipos de petição
+  await seedTiposPeticao();
+
+  // Seed de bancos do Brasil
+  await seedBancos();
 
   console.log("\n🚀 Aplicando otimizações enterprise...\n");
 

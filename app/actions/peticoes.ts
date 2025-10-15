@@ -701,7 +701,40 @@ export async function listTiposPeticao() {
   try {
     const tenantId = await getTenantId();
 
-    const tipos = await prisma.peticao.findMany({
+    // Tipos padrão de petição
+    const tiposPadrao = [
+      "Petição Inicial",
+      "Contestação",
+      "Réplica",
+      "Reconvenção",
+      "Recurso de Apelação",
+      "Recurso Especial",
+      "Recurso Extraordinário",
+      "Agravo de Instrumento",
+      "Embargos de Declaração",
+      "Mandado de Segurança",
+      "Habeas Corpus",
+      "Impugnação",
+      "Manifestação",
+      "Memorial",
+      "Alegações Finais",
+      "Contrarrazões",
+      "Exceção de Pré-executividade",
+      "Embargos à Execução",
+      "Cumprimento de Sentença",
+      "Execução de Título Extrajudicial",
+      "Cautelar",
+      "Tutela Antecipada",
+      "Pedido de Liminar",
+      "Aditamento",
+      "Desistência",
+      "Renúncia",
+      "Acordo/Transação",
+      "Outros",
+    ];
+
+    // Buscar tipos já usados pelo tenant
+    const tiposUsados = await prisma.peticao.findMany({
       where: {
         tenantId,
         tipo: {
@@ -717,9 +750,49 @@ export async function listTiposPeticao() {
       },
     });
 
+    // Buscar tipos disponíveis para o tenant:
+    // 1. Tipos GLOBAIS que não foram desativados pelo tenant
+    // 2. Tipos CUSTOMIZADOS criados pelo tenant
+    const tiposCadastrados = await prisma.tipoPeticao.findMany({
+      where: {
+        OR: [
+          // Tipos globais que não foram desativados pelo tenant
+          {
+            tenantId: null,
+            global: true,
+            ativo: true,
+            // Excluir se o tenant criou uma configuração desativada
+            NOT: {
+              tenant: {
+                tiposPeticao: {
+                  some: {
+                    tenantId,
+                    global: false,
+                    ativo: false,
+                  },
+                },
+              },
+            },
+          },
+          // Tipos customizados ativos do tenant
+          {
+            tenantId,
+            global: false,
+            ativo: true,
+          },
+        ],
+        deletedAt: null,
+      },
+      orderBy: [{ ordem: "asc" }, { nome: "asc" }],
+      select: {
+        nome: true,
+        global: true,
+      },
+    });
+
     return {
       success: true,
-      data: tipos.map((t) => t.tipo).filter((t): t is string => t !== null),
+      data: tiposCadastrados.map((t) => t.nome),
     };
   } catch (error) {
     console.error("Erro ao listar tipos de petição:", error);

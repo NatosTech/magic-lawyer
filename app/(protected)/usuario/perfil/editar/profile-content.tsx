@@ -11,7 +11,7 @@ import { Divider } from "@heroui/divider";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Spinner } from "@heroui/spinner";
 import { toast } from "sonner";
-import { User, Mail, Phone, Shield, Settings, BarChart3, UserCheck, Lock, Info, MapPin, Copy, CopyCheck, Briefcase, Save } from "lucide-react";
+import { User, Mail, Phone, Shield, Settings, BarChart3, UserCheck, Lock, Info, MapPin, Copy, CopyCheck, Briefcase, Save, CreditCard, Building2, PlusIcon, Pencil, Trash2, Star } from "lucide-react";
 import { Select, SelectItem, Textarea } from "@heroui/react";
 
 import { RoleSpecificInfo } from "./role-specific-info";
@@ -24,6 +24,8 @@ import { UserPermissionsInfo } from "@/components/user-permissions-info";
 import { EspecialidadeJuridica } from "@/app/generated/prisma";
 import { useEstadosBrasil } from "@/app/hooks/use-estados-brasil";
 import { useCurrentUserAdvogado } from "@/app/hooks/use-current-user-advogado";
+import { useMeusDadosBancarios, useBancosDisponiveis, useTiposConta, useTiposContaBancaria, useTiposChavePix } from "@/app/hooks/use-dados-bancarios";
+import { createDadosBancarios, updateDadosBancarios, deleteDadosBancarios } from "@/app/actions/dados-bancarios";
 
 const especialidadeLabels: Record<string, string> = {
   CIVIL: "Civil",
@@ -54,6 +56,11 @@ export function ProfileContent() {
   const { data: statsResult } = useSWR("user-stats", getUserStats);
   const { advogado, mutate: mutateAdvogado } = useCurrentUserAdvogado();
   const { ufs } = useEstadosBrasil();
+  const { dadosBancarios: minhasContas, mutate: mutateContas } = useMeusDadosBancarios();
+  const { bancos } = useBancosDisponiveis();
+  const { tipos: tiposConta } = useTiposConta();
+  const { tipos: tiposContaBancaria } = useTiposContaBancaria();
+  const { tipos: tiposChavePix } = useTiposChavePix();
 
   const profile = profileResult?.success ? profileResult.profile : null;
   const stats = statsResult?.success ? statsResult.stats : null;
@@ -670,6 +677,103 @@ export function ProfileContent() {
 
                 {/* Informações de Permissões */}
                 <UserPermissionsInfo />
+              </div>
+            </Tab>
+
+            <Tab
+              key="dados-bancarios"
+              title={
+                <div className="flex items-center space-x-2">
+                  <CreditCard className="w-4 h-4" />
+                  <span>Dados Bancários</span>
+                </div>
+              }
+            >
+              <div className="p-6 space-y-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <CreditCard className="w-5 h-5 text-primary" />
+                    <h3 className="text-lg font-semibold">Minhas Contas Bancárias</h3>
+                  </div>
+                  <Button color="primary" size="sm" startContent={<PlusIcon className="w-4 h-4" />} onPress={() => setActiveTab("dados-bancarios")}>
+                    <a href="/dados-bancarios" className="text-white">
+                      Gerenciar Contas
+                    </a>
+                  </Button>
+                </div>
+
+                {minhasContas.length === 0 ? (
+                  <div className="text-center py-8">
+                    <CreditCard size={48} className="mx-auto text-gray-400 mb-4" />
+                    <p className="text-gray-500 mb-4">Nenhuma conta bancária cadastrada</p>
+                    <Button color="primary" variant="flat" startContent={<PlusIcon className="w-4 h-4" />}>
+                      <a href="/dados-bancarios" className="text-primary">
+                        Cadastrar Primeira Conta
+                      </a>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {minhasContas.map((conta: any) => (
+                      <Card key={conta.id} className="border">
+                        <CardBody className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Building2 className="w-5 h-5 text-primary" />
+                                <span className="font-semibold">{conta.banco}</span>
+                                {conta.principal && (
+                                  <Chip size="sm" color="primary" variant="flat" startContent={<Star className="w-3 h-3" />}>
+                                    Principal
+                                  </Chip>
+                                )}
+                                <Chip size="sm" color={conta.ativo ? "success" : "default"} variant="flat">
+                                  {conta.ativo ? "Ativa" : "Inativa"}
+                                </Chip>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4 mt-3">
+                                <div>
+                                  <p className="text-xs text-gray-500">Agência</p>
+                                  <p className="font-medium">{conta.agencia}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Conta</p>
+                                  <p className="font-medium">
+                                    {conta.conta}
+                                    {conta.digitoConta && `-${conta.digitoConta}`}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-gray-500">Tipo</p>
+                                  <p className="font-medium capitalize">{conta.tipoContaBancaria.toLowerCase()}</p>
+                                </div>
+                                {conta.chavePix && (
+                                  <div>
+                                    <p className="text-xs text-gray-500">Chave PIX</p>
+                                    <p className="font-medium text-sm">{conta.chavePix}</p>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="mt-3 pt-3 border-t">
+                                <p className="text-xs text-gray-500">Titular</p>
+                                <p className="font-medium">{conta.titularNome}</p>
+                                <p className="text-sm text-gray-500">{conta.titularDocumento}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    ))}
+
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-sm text-blue-700">
+                        💡 <strong>Dica:</strong> Use a página de Dados Bancários para adicionar, editar ou remover contas.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </Tab>
 

@@ -94,7 +94,22 @@ export function useProfileNavigation() {
         href: "/peticoes",
         icon: "FileText",
         description: "Gestão de petições processuais",
+        isAccordion: true,
         section: "Atividades Jurídicas",
+        children: [
+          {
+            label: "Petições",
+            href: "/peticoes",
+            icon: "FileText",
+            description: "Gestão de petições processuais",
+          },
+          {
+            label: "Modelos",
+            href: "/modelos-peticao",
+            icon: "FileTemplate",
+            description: "Modelos de petição",
+          },
+        ],
       });
     }
 
@@ -270,7 +285,28 @@ export function useProfileNavigation() {
         href: "/financeiro",
         icon: "DollarSign",
         description: isCliente ? "Minhas faturas" : isAdvogado ? "Minhas comissões" : "Gestão financeira",
+        isAccordion: true,
         section: "Operacional",
+        children: [
+          {
+            label: "Honorários",
+            href: "/honorarios",
+            icon: "DollarSign",
+            description: "Honorários contratuais",
+          },
+          {
+            label: "Parcelas",
+            href: "/parcelas",
+            icon: "Receipt",
+            description: "Parcelas de contrato",
+          },
+          {
+            label: "Faturas",
+            href: "/financeiro",
+            icon: "Receipt",
+            description: "Gestão de faturas",
+          },
+        ],
       });
     }
 
@@ -355,6 +391,18 @@ export function useProfileNavigation() {
             href: "/configuracoes/feriados",
             icon: "Calendar",
             description: "Gestão de feriados e dias não úteis",
+          },
+          {
+            label: "Tipos de Petição",
+            href: "/configuracoes/tipos-peticao",
+            icon: "FileText",
+            description: "Configurar tipos de petição",
+          },
+          {
+            label: "Dados Bancários",
+            href: "/dados-bancarios",
+            icon: "CreditCard",
+            description: "Dados bancários de usuários e clientes",
           },
         ],
       });
