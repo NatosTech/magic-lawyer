@@ -29,7 +29,17 @@ async function getUserId(): Promise<string> {
 // LISTAR PARCELAS DE CONTRATO
 // ============================================
 
-export async function listParcelasContrato(filters?: { contratoId?: string; status?: "PENDENTE" | "PAGA" | "ATRASADA" | "CANCELADA"; dataVencimentoInicio?: Date; dataVencimentoFim?: Date }) {
+export async function listParcelasContrato(filters?: {
+  contratoId?: string;
+  status?: "PENDENTE" | "PAGA" | "ATRASADA" | "CANCELADA";
+  dataVencimentoInicio?: Date;
+  dataVencimentoFim?: Date;
+  processoId?: string;
+  valorMinimo?: number;
+  valorMaximo?: number;
+  formaPagamento?: string;
+  apenasVencidas?: boolean;
+}) {
   try {
     const tenantId = await getTenantId();
 
@@ -48,11 +58,51 @@ export async function listParcelasContrato(filters?: { contratoId?: string; stat
     if (filters?.dataVencimentoInicio || filters?.dataVencimentoFim) {
       where.dataVencimento = {};
       if (filters.dataVencimentoInicio) {
-        where.dataVencimento.gte = filters.dataVencimentoInicio;
+        // Início do dia
+        const inicio = new Date(filters.dataVencimentoInicio);
+        inicio.setHours(0, 0, 0, 0);
+        where.dataVencimento.gte = inicio;
       }
       if (filters.dataVencimentoFim) {
-        where.dataVencimento.lte = filters.dataVencimentoFim;
+        // Fim do dia (23:59:59.999)
+        const fim = new Date(filters.dataVencimentoFim);
+        fim.setHours(23, 59, 59, 999);
+        where.dataVencimento.lte = fim;
       }
+    }
+
+    // Filtro por processo (através do contrato)
+    if (filters?.processoId) {
+      where.contrato = {
+        processoId: filters.processoId,
+      };
+    }
+
+    // Filtro por valor
+    if (filters?.valorMinimo || filters?.valorMaximo) {
+      where.valor = {};
+      if (filters.valorMinimo) {
+        where.valor.gte = filters.valorMinimo;
+      }
+      if (filters.valorMaximo) {
+        where.valor.lte = filters.valorMaximo;
+      }
+    }
+
+    // Filtro por forma de pagamento
+    if (filters?.formaPagamento) {
+      where.formaPagamento = filters.formaPagamento;
+    }
+
+    // Filtro para apenas parcelas vencidas
+    if (filters?.apenasVencidas) {
+      where.dataVencimento = {
+        ...where.dataVencimento,
+        lt: new Date(), // Data de vencimento menor que hoje
+      };
+      where.status = {
+        in: ["PENDENTE", "ATRASADA"], // Apenas pendentes ou atrasadas
+      };
     }
 
     const parcelas = await prisma.contratoParcela.findMany({
@@ -541,6 +591,65 @@ export async function getDashboardParcelas() {
     return {
       success: false,
       error: "Erro ao buscar dashboard de parcelas",
+    };
+  }
+}
+
+// ============================================
+// BUSCAR PROCESSOS COM PARCELAS
+// ============================================
+
+export async function getProcessosComParcelas() {
+  try {
+    const tenantId = await getTenantId();
+
+    // Buscar processos que têm contratos com parcelas
+    const processos = await prisma.processo.findMany({
+      where: {
+        tenantId,
+        contratos: {
+          some: {
+            parcelas: {
+              some: {}, // Pelo menos uma parcela
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        numero: true,
+        titulo: true,
+        _count: {
+          select: {
+            contratos: {
+              where: {
+                parcelas: {
+                  some: {},
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        numero: "asc",
+      },
+    });
+
+    // Converter valores Decimal para number
+    const convertedData = processos.map((item) => convertAllDecimalFields(item));
+    const serialized = JSON.parse(JSON.stringify(convertedData));
+
+    return {
+      success: true,
+      data: serialized,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar processos com parcelas:", error);
+
+    return {
+      success: false,
+      error: "Erro ao buscar processos com parcelas",
     };
   }
 }

@@ -5,6 +5,7 @@ import {
   getParcelaContrato,
   getDashboardParcelas,
   getStatusParcelas,
+  getProcessosComParcelas,
 } from "@/app/actions/parcelas-contrato";
 
 // Hook para listar parcelas de contrato
@@ -13,6 +14,11 @@ export function useParcelasContrato(filters?: {
   status?: "PENDENTE" | "PAGA" | "ATRASADA" | "CANCELADA";
   dataVencimentoInicio?: Date;
   dataVencimentoFim?: Date;
+  processoId?: string;
+  valorMinimo?: number;
+  valorMaximo?: number;
+  formaPagamento?: string;
+  apenasVencidas?: boolean;
 }) {
   const { data, error, isLoading, mutate } = useSWR(
     ["parcelas-contrato", filters],
@@ -85,5 +91,26 @@ export function useStatusParcelas() {
     status: data?.data || [],
     isLoading,
     error: error || data?.error,
+  };
+}
+
+// Hook para buscar processos que têm parcelas
+export function useProcessosComParcelas() {
+  const { data, error, isLoading, mutate } = useSWR(
+    "processos-com-parcelas",
+    getProcessosComParcelas,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    },
+  );
+
+  return {
+    processos: data?.data || [],
+    isLoading,
+    isError: !!error,
+    error: error || data?.error,
+    mutate,
+    refresh: mutate,
   };
 }

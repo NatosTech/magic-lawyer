@@ -30,6 +30,9 @@ import {
   Divider,
   Tabs,
   Tab,
+  DateRangePicker,
+  Slider,
+  Switch,
 } from "@heroui/react";
 import {
   PlusIcon,
@@ -53,10 +56,18 @@ import {
   BanknoteIcon,
   ArrowUpDownIcon,
   ShieldIcon,
+  SearchIcon,
+  MinusIcon,
+  ChevronDownIcon,
+  SettingsIcon,
+  TargetIcon,
+  CalendarDaysIcon,
+  HashIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "motion/react";
 
-import { useParcelasContrato, useDashboardParcelas, useStatusParcelas } from "@/app/hooks/use-parcelas-contrato";
+import { useParcelasContrato, useDashboardParcelas, useStatusParcelas, useProcessosComParcelas } from "@/app/hooks/use-parcelas-contrato";
 import { useContratosComParcelas } from "@/app/hooks/use-contratos";
 import { createParcelaContrato, updateParcelaContrato, deleteParcelaContrato, gerarParcelasAutomaticamente } from "@/app/actions/parcelas-contrato";
 import { title, subtitle } from "@/components/primitives";
@@ -64,6 +75,15 @@ import { DadosBancariosParcela } from "@/components/dados-bancarios-parcela";
 import { ComprovantePagamentoUpload } from "@/components/comprovante-pagamento-upload";
 import { ValidacaoContaPrincipal } from "@/components/validacao-conta-principal";
 import { ContratoParcela, ContratoParcelaStatus, Contrato, Cliente, Advogado, Usuario } from "@/app/generated/prisma";
+
+interface ProcessoComParcelas {
+  id: string;
+  numero: string;
+  titulo: string;
+  _count: {
+    contratos: number;
+  };
+}
 
 interface ParcelaFormData {
   contratoId: string;
@@ -94,8 +114,16 @@ export default function ParcelasContratoPage() {
   const [filters, setFilters] = useState<{
     contratoId?: string;
     status?: ContratoParcelaStatus;
+    processoId?: string;
+    valorMinimo?: number;
+    valorMaximo?: number;
+    dataVencimentoInicio?: Date;
+    dataVencimentoFim?: Date;
+    formaPagamento?: string;
+    apenasVencidas?: boolean;
   }>({});
   const [contaValida, setContaValida] = useState<boolean | null>(null);
+  const [filtrosAvancados, setFiltrosAvancados] = useState(false);
 
   // Formulário
   const [formData, setFormData] = useState<ParcelaFormData>({
@@ -115,6 +143,29 @@ export default function ParcelasContratoPage() {
   const { dashboard, isLoading: loadingDashboard } = useDashboardParcelas();
   const { status: statusList } = useStatusParcelas();
   const { contratos, isLoading: loadingContratos } = useContratosComParcelas();
+  const { processos, isLoading: loadingProcessos } = useProcessosComParcelas();
+
+  // Funções auxiliares
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  const formasPagamento = [
+    { key: "PIX", label: "PIX" },
+    { key: "TED", label: "TED" },
+    { key: "BOLETO", label: "Boleto" },
+    { key: "DINHEIRO", label: "Dinheiro" },
+    { key: "CARTAO", label: "Cartão" },
+    { key: "CHEQUE", label: "Cheque" },
+  ];
+
+  const handleLimparFiltros = () => {
+    setFilters({});
+    setFiltrosAvancados(false);
+  };
 
   // Funções
   const handleContratoChange = (contratoId: string) => {
@@ -136,13 +187,6 @@ export default function ParcelasContratoPage() {
 
   const getContratoSelecionado = () => {
     return contratos?.find((c) => c.id === formData.contratoId);
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
   };
 
   const handleOpenModal = (parcela?: ParcelaComContrato) => {
@@ -406,25 +450,56 @@ export default function ParcelasContratoPage() {
         </Card>
       )}
 
-      {/* Filtros */}
+      {/* Filtros Avançados */}
       <Card className="border-default-200">
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <FilterIcon className="text-primary" size={20} />
-            <h3 className="text-lg font-semibold text-default-700">Filtros</h3>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-2 rounded-lg">
+                <FilterIcon className="text-white" size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-default-700">Filtros Inteligentes</h3>
+                <p className="text-sm text-default-500">Encontre exatamente o que você procura</p>
+              </div>
+            </div>
+            <Button
+              color="primary"
+              variant="flat"
+              size="sm"
+              startContent={filtrosAvancados ? <ChevronDownIcon size={16} /> : <SettingsIcon size={16} />}
+              onPress={() => setFiltrosAvancados(!filtrosAvancados)}
+            >
+              {filtrosAvancados ? "Simplificar" : "Avançado"}
+            </Button>
           </div>
         </CardHeader>
         <CardBody className="pt-0">
-          <div className="flex flex-wrap gap-4 items-end">
-            <Input
+          {/* Filtros Básicos */}
+          <div className="flex flex-wrap gap-4 items-end mb-4">
+            <Select
               className="max-w-xs"
-              label="ID do Contrato"
-              placeholder="Filtrar por contrato"
-              value={filters.contratoId || ""}
-              onChange={(e) => setFilters({ ...filters, contratoId: e.target.value })}
-              startContent={<FileTextIcon size={16} className="text-default-400" />}
+              label="Processo"
+              placeholder="Selecione um processo"
+              selectedKeys={filters.processoId ? [filters.processoId] : []}
+              onSelectionChange={(keys) => {
+                const processoId = Array.from(keys)[0] as string;
+                setFilters({ ...filters, processoId: processoId || undefined });
+              }}
               variant="bordered"
-            />
+              startContent={<FileTextIcon size={16} className="text-default-400" />}
+              isLoading={loadingProcessos}
+            >
+              {processos.map((processo: ProcessoComParcelas) => (
+                <SelectItem key={processo.id} textValue={`${processo.numero} - ${processo.titulo}`}>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{processo.numero}</span>
+                    <span className="text-xs text-default-500 truncate max-w-[200px]">{processo.titulo}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </Select>
+
             <Select
               className="max-w-xs"
               label="Status"
@@ -446,10 +521,148 @@ export default function ParcelasContratoPage() {
                 </SelectItem>
               ))}
             </Select>
-            <Button color="primary" variant="flat" startContent={<RefreshCwIcon size={16} />} onPress={() => setFilters({})} className="font-medium">
-              Limpar Filtros
+
+            <Button color="primary" variant="flat" startContent={<RefreshCwIcon size={16} />} onPress={handleLimparFiltros} className="font-medium">
+              Limpar
             </Button>
           </div>
+
+          {/* Filtros Avançados */}
+          <AnimatePresence>
+            {filtrosAvancados && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="border-t border-default-200 pt-4 overflow-hidden"
+              >
+                <motion.div initial={{ y: -20 }} animate={{ y: 0 }} transition={{ delay: 0.1, duration: 0.3 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Filtro de Valor */}
+                  <Card className="border-default-200">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center gap-2">
+                        <DollarSignIcon size={14} className="text-green-600" />
+                        <span className="text-xs font-medium">Faixa de Valor</span>
+                      </div>
+                    </CardHeader>
+                    <CardBody className="pt-0 space-y-2">
+                      <Input
+                        type="number"
+                        label="Valor mínimo"
+                        placeholder="Ex: 1000"
+                        value={filters.valorMinimo?.toString() || ""}
+                        onChange={(e) =>
+                          setFilters({
+                            ...filters,
+                            valorMinimo: e.target.value ? Number(e.target.value) : undefined,
+                          })
+                        }
+                        startContent={<DollarSignIcon size={12} className="text-default-400" />}
+                        size="sm"
+                        variant="bordered"
+                      />
+                      <Input
+                        type="number"
+                        label="Valor máximo"
+                        placeholder="Ex: 5000"
+                        value={filters.valorMaximo?.toString() || ""}
+                        onChange={(e) =>
+                          setFilters({
+                            ...filters,
+                            valorMaximo: e.target.value ? Number(e.target.value) : undefined,
+                          })
+                        }
+                        startContent={<DollarSignIcon size={12} className="text-default-400" />}
+                        size="sm"
+                        variant="bordered"
+                      />
+                    </CardBody>
+                  </Card>
+
+                  {/* Filtro de Data */}
+                  <Card className="border-default-200">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center gap-2">
+                        <CalendarDaysIcon size={14} className="text-blue-600" />
+                        <span className="text-xs font-medium">Data de Vencimento</span>
+                      </div>
+                    </CardHeader>
+                    <CardBody className="pt-0">
+                      <DateRangePicker
+                        label="Período de vencimento"
+                        placeholder="Selecione o período"
+                        variant="bordered"
+                        size="sm"
+                        onChange={(range) => {
+                          if (range && range.start && range.end) {
+                            setFilters({
+                              ...filters,
+                              dataVencimentoInicio: new Date(range.start.toString()),
+                              dataVencimentoFim: new Date(range.end.toString()),
+                            });
+                          } else {
+                            setFilters({
+                              ...filters,
+                              dataVencimentoInicio: undefined,
+                              dataVencimentoFim: undefined,
+                            });
+                          }
+                        }}
+                        startContent={<CalendarDaysIcon size={12} className="text-default-400" />}
+                      />
+                    </CardBody>
+                  </Card>
+
+                  {/* Filtro de Forma de Pagamento */}
+                  <Card className="border-default-200">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center gap-2">
+                        <CreditCardIcon size={14} className="text-purple-600" />
+                        <span className="text-xs font-medium">Forma de Pagamento</span>
+                      </div>
+                    </CardHeader>
+                    <CardBody className="pt-0">
+                      <Select
+                        label="Forma de pagamento"
+                        placeholder="Todas as formas"
+                        selectedKeys={filters.formaPagamento ? [filters.formaPagamento] : []}
+                        onSelectionChange={(keys) => {
+                          const forma = Array.from(keys)[0] as string;
+                          setFilters({ ...filters, formaPagamento: forma || undefined });
+                        }}
+                        size="sm"
+                        variant="bordered"
+                        startContent={<CreditCardIcon size={12} className="text-default-400" />}
+                      >
+                        {formasPagamento.map((forma) => (
+                          <SelectItem key={forma.key} textValue={forma.label}>
+                            {forma.label}
+                          </SelectItem>
+                        ))}
+                      </Select>
+                    </CardBody>
+                  </Card>
+
+                  {/* Filtros Especiais */}
+                  <div className="mt-4 flex flex-wrap gap-3 items-center col-span-full">
+                    <Switch isSelected={filters.apenasVencidas || false} onValueChange={(value) => setFilters({ ...filters, apenasVencidas: value })} size="sm">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangleIcon size={14} className="text-orange-600" />
+                        <span className="text-xs">Apenas parcelas vencidas</span>
+                      </div>
+                    </Switch>
+
+                    <Chip color="primary" variant="flat" size="sm" startContent={<HashIcon size={10} />}>
+                      <span className="text-xs">
+                        {parcelas.length} resultado{parcelas.length !== 1 ? "s" : ""}
+                      </span>
+                    </Chip>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </CardBody>
       </Card>
 
@@ -458,16 +671,16 @@ export default function ParcelasContratoPage() {
         <CardHeader className="border-b border-default-200">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
-              <div className="bg-blue-100 p-2 rounded-lg">
-                <ReceiptIcon className="text-blue-600" size={20} />
+              <div className="bg-blue-100 p-1.5 rounded-lg">
+                <ReceiptIcon className="text-blue-600" size={16} />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-default-800">Lista de Parcelas</h2>
-                <p className="text-sm text-default-600">Gerencie todas as parcelas dos contratos</p>
+                <h2 className="text-lg font-bold text-default-800">Lista de Parcelas</h2>
+                <p className="text-xs text-default-600">Gerencie todas as parcelas dos contratos</p>
               </div>
             </div>
-            <Chip color="primary" variant="flat" startContent={<ReceiptIcon size={16} />}>
-              {parcelas.length} parcelas
+            <Chip color="primary" variant="flat" size="sm" startContent={<ReceiptIcon size={12} />}>
+              <span className="text-xs">{parcelas.length} parcelas</span>
             </Chip>
           </div>
         </CardHeader>
@@ -480,12 +693,12 @@ export default function ParcelasContratoPage() {
           ) : (
             <div className="space-y-4">
               {parcelas.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="bg-gradient-to-br from-default-100 to-default-50 rounded-2xl p-12 border border-default-200">
-                    <ReceiptIcon className="mx-auto text-default-300 mb-6" size={80} />
-                    <h3 className="text-xl font-bold text-default-700 mb-2">Nenhuma parcela encontrada</h3>
-                    <p className="text-default-500 mb-8 max-w-md mx-auto">Comece criando sua primeira parcela para gerenciar os pagamentos dos contratos</p>
-                    <Button color="primary" size="lg" startContent={<PlusIcon size={20} />} onPress={() => handleOpenModal()} className="font-semibold">
+                <div className="text-center py-12">
+                  <div className="bg-gradient-to-br from-default-100 to-default-50 rounded-2xl p-8 border border-default-200">
+                    <ReceiptIcon className="mx-auto text-default-300 mb-4" size={48} />
+                    <h3 className="text-lg font-bold text-default-700 mb-2">Nenhuma parcela encontrada</h3>
+                    <p className="text-sm text-default-500 mb-6 max-w-md mx-auto">Comece criando sua primeira parcela para gerenciar os pagamentos dos contratos</p>
+                    <Button color="primary" size="md" startContent={<PlusIcon size={16} />} onPress={() => handleOpenModal()} className="font-semibold">
                       Criar Primeira Parcela
                     </Button>
                   </div>
@@ -498,13 +711,13 @@ export default function ParcelasContratoPage() {
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                           {/* Cliente e Contrato */}
                           <div className="lg:col-span-3">
-                            <div className="flex items-center gap-4">
-                              <div className="bg-gradient-to-br from-primary-100 to-primary-200 p-3 rounded-xl">
-                                <UsersIcon className="text-primary-600" size={20} />
+                            <div className="flex items-center gap-3">
+                              <div className="bg-gradient-to-br from-primary-100 to-primary-200 p-2 rounded-xl">
+                                <UsersIcon className="text-primary-600" size={16} />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <h4 className="font-bold text-default-800 text-lg truncate">{parcela.contrato.cliente.nome}</h4>
-                                <p className="text-sm text-default-500 truncate">
+                                <h4 className="font-bold text-default-800 text-base truncate">{parcela.contrato.cliente.nome}</h4>
+                                <p className="text-xs text-default-500 truncate">
                                   {parcela.contrato.advogadoResponsavel?.usuario
                                     ? `${parcela.contrato.advogadoResponsavel.usuario.firstName} ${parcela.contrato.advogadoResponsavel.usuario.lastName}`
                                     : "Sem advogado responsável"}
@@ -516,12 +729,12 @@ export default function ParcelasContratoPage() {
                           {/* Parcela */}
                           <div className="lg:col-span-2">
                             <div className="flex items-center gap-3">
-                              <div className="bg-gradient-to-br from-secondary-100 to-secondary-200 p-2 rounded-lg">
-                                <FileTextIcon className="text-secondary-600" size={16} />
+                              <div className="bg-gradient-to-br from-secondary-100 to-secondary-200 p-1.5 rounded-lg">
+                                <FileTextIcon className="text-secondary-600" size={14} />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="font-semibold text-default-800">{parcela.titulo || `Parcela ${parcela.numeroParcela}`}</p>
-                                {parcela.descricao && <p className="text-sm text-default-500 truncate max-w-[200px]">{parcela.descricao}</p>}
+                                <p className="font-semibold text-default-800 text-sm">{parcela.titulo || `Parcela ${parcela.numeroParcela}`}</p>
+                                {parcela.descricao && <p className="text-xs text-default-500 truncate max-w-[200px]">{parcela.descricao}</p>}
                               </div>
                             </div>
                           </div>
@@ -529,11 +742,11 @@ export default function ParcelasContratoPage() {
                           {/* Valor */}
                           <div className="lg:col-span-2">
                             <div className="flex items-center gap-3">
-                              <div className="bg-gradient-to-br from-success-100 to-success-200 p-2 rounded-lg">
-                                <DollarSignIcon className="text-success-600" size={16} />
+                              <div className="bg-gradient-to-br from-success-100 to-success-200 p-1.5 rounded-lg">
+                                <DollarSignIcon className="text-success-600" size={14} />
                               </div>
                               <div>
-                                <p className="font-bold text-success-700 text-lg">{formatCurrency(Number(parcela.valor))}</p>
+                                <p className="font-bold text-success-700 text-base">{formatCurrency(Number(parcela.valor))}</p>
                                 <p className="text-xs text-success-600">Valor da parcela</p>
                               </div>
                             </div>
