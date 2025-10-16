@@ -1,35 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Chip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Select,
-  SelectItem,
-  Divider,
-  Tooltip,
-} from "@heroui/react";
-import {
-  CreditCardIcon,
-  BuildingIcon,
-  UserIcon,
-  MapPinIcon,
-  PhoneIcon,
-  MailIcon,
-  CopyIcon,
-  CheckIcon,
-  QrCodeIcon,
-  EyeIcon,
-  EditIcon,
-} from "lucide-react";
+import { Card, CardBody, CardHeader, Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Select, SelectItem, Divider, Tooltip } from "@heroui/react";
+import { CreditCardIcon, BuildingIcon, UserIcon, MapPinIcon, PhoneIcon, MailIcon, CopyIcon, CheckIcon, QrCodeIcon, EyeIcon, EditIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { useDadosBancariosContrato, useContasDisponiveisContrato, type DadosBancariosContrato } from "@/app/hooks/use-dados-bancarios-contrato";
@@ -46,25 +19,14 @@ interface DadosBancariosParcelaProps {
   parcelaId?: string;
 }
 
-export function DadosBancariosParcela({
-  contratoId,
-  valor,
-  onContaChange,
-  contaSelecionada,
-  readonly = false,
-  descricao = "Pagamento de parcela",
-  vencimento,
-  parcelaId,
-}: DadosBancariosParcelaProps) {
+export function DadosBancariosParcela({ contratoId, valor, onContaChange, contaSelecionada, readonly = false, descricao = "Pagamento de parcela", vencimento, parcelaId }: DadosBancariosParcelaProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const { dadosBancarios, isLoading } = useDadosBancariosContrato(contratoId);
   const { contas, isLoading: loadingContas } = useContasDisponiveisContrato(contratoId);
 
-  const contaAtual = contaSelecionada 
-    ? contas.find(c => c.id === contaSelecionada) || dadosBancarios
-    : dadosBancarios;
+  const contaAtual = contaSelecionada ? contas.find((c) => c.id === contaSelecionada) || dadosBancarios : dadosBancarios;
 
   const handleCopy = async (text: string, field: string) => {
     try {
@@ -76,7 +38,6 @@ export function DadosBancariosParcela({
       toast.error("Erro ao copiar");
     }
   };
-
 
   if (isLoading || loadingContas) {
     return (
@@ -122,12 +83,7 @@ export function DadosBancariosParcela({
               </Chip>
             )}
             {!readonly && contas.length > 1 && (
-              <Button
-                size="sm"
-                variant="light"
-                startContent={<EditIcon className="h-4 w-4" />}
-                onPress={() => setModalOpen(true)}
-              >
+              <Button size="sm" variant="light" startContent={<EditIcon className="h-4 w-4" />} onPress={() => setModalOpen(true)}>
                 Alterar Conta
               </Button>
             )}
@@ -152,17 +108,8 @@ export function DadosBancariosParcela({
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm">{contaAtual.agencia}</span>
                     <Tooltip content="Copiar agência">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        onPress={() => handleCopy(contaAtual.agencia, "Agência")}
-                      >
-                        {copiedField === "Agência" ? (
-                          <CheckIcon className="h-3 w-3 text-success" />
-                        ) : (
-                          <CopyIcon className="h-3 w-3" />
-                        )}
+                      <Button isIconOnly size="sm" variant="light" onPress={() => handleCopy(contaAtual.agencia, "Agência")}>
+                        {copiedField === "Agência" ? <CheckIcon className="h-3 w-3 text-success" /> : <CopyIcon className="h-3 w-3" />}
                       </Button>
                     </Tooltip>
                   </div>
@@ -172,20 +119,12 @@ export function DadosBancariosParcela({
                   <span className="text-sm text-default-600">Conta:</span>
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm">
-                      {contaAtual.conta}{contaAtual.digitoConta ? `-${contaAtual.digitoConta}` : ""}
+                      {contaAtual.conta}
+                      {contaAtual.digitoConta ? `-${contaAtual.digitoConta}` : ""}
                     </span>
                     <Tooltip content="Copiar conta">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        onPress={() => handleCopy(`${contaAtual.conta}${contaAtual.digitoConta ? `-${contaAtual.digitoConta}` : ""}`, "Conta")}
-                      >
-                        {copiedField === "Conta" ? (
-                          <CheckIcon className="h-3 w-3 text-success" />
-                        ) : (
-                          <CopyIcon className="h-3 w-3" />
-                        )}
+                      <Button isIconOnly size="sm" variant="light" onPress={() => handleCopy(`${contaAtual.conta}${contaAtual.digitoConta ? `-${contaAtual.digitoConta}` : ""}`, "Conta")}>
+                        {copiedField === "Conta" ? <CheckIcon className="h-3 w-3 text-success" /> : <CopyIcon className="h-3 w-3" />}
                       </Button>
                     </Tooltip>
                   </div>
@@ -199,9 +138,7 @@ export function DadosBancariosParcela({
                 <UserIcon className="h-4 w-4 text-default-400" />
                 <div>
                   <p className="text-sm font-medium">{contaAtual.titularNome}</p>
-                  <p className="text-xs text-default-500">
-                    {contaAtual.titularDocumento}
-                  </p>
+                  <p className="text-xs text-default-500">{contaAtual.titularDocumento}</p>
                 </div>
               </div>
 
@@ -224,22 +161,14 @@ export function DadosBancariosParcela({
           {/* Dados de Pagamento */}
           <Divider />
           <div className="mt-4">
-            <GeradorDadosPagamento
-              dadosBancarios={contaAtual}
-              valor={valor}
-              descricao={descricao}
-              vencimento={vencimento}
-              parcelaId={parcelaId}
-            />
+            <GeradorDadosPagamento dadosBancarios={contaAtual} valor={valor} descricao={descricao} vencimento={vencimento} parcelaId={parcelaId} />
           </div>
 
           {/* Valor da Parcela */}
           <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-primary-700">Valor da Parcela:</span>
-              <span className="text-lg font-bold text-primary-800">
-                R$ {valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-              </span>
+              <span className="text-lg font-bold text-primary-800">R$ {valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
         </CardBody>

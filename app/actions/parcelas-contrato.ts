@@ -72,10 +72,15 @@ export async function listParcelasContrato(filters?: {
                 telefone: true,
               },
             },
-            advogado: {
+            advogadoResponsavel: {
               select: {
-                nome: true,
-                email: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
               },
             },
           },
@@ -129,11 +134,16 @@ export async function getParcelaContrato(id: string) {
                 telefone: true,
               },
             },
-            advogado: {
+            advogadoResponsavel: {
               select: {
                 id: true,
-                nome: true,
-                email: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
               },
             },
           },
@@ -247,10 +257,15 @@ export async function createParcelaContrato(data: {
                 email: true,
               },
             },
-            advogado: {
+            advogadoResponsavel: {
               select: {
-                nome: true,
-                email: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
               },
             },
           },
@@ -340,10 +355,15 @@ export async function updateParcelaContrato(
                 email: true,
               },
             },
-            advogado: {
+            advogadoResponsavel: {
               select: {
-                nome: true,
-                email: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
               },
             },
           },

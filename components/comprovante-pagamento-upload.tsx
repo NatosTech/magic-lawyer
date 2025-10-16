@@ -1,29 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Chip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Progress,
-  Divider,
-} from "@heroui/react";
-import {
-  UploadIcon,
-  FileIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  EyeIcon,
-  TrashIcon,
-  DownloadIcon,
-} from "lucide-react";
+import { Card, CardBody, CardHeader, Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Progress, Divider } from "@heroui/react";
+import { UploadIcon, FileIcon, CheckCircleIcon, XCircleIcon, EyeIcon, TrashIcon, DownloadIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useComprovantesPagamento, useComprovantesActions, type ComprovantePagamento } from "@/app/hooks/use-comprovantes-pagamento";
 
@@ -68,7 +47,7 @@ export function ComprovantePagamentoUpload({
     }
 
     setSelectedFile(file);
-    
+
     // Criar preview para imagens
     if (file.type.startsWith("image/")) {
       const url = URL.createObjectURL(file);
@@ -76,7 +55,7 @@ export function ComprovantePagamentoUpload({
     } else {
       setPreviewUrl(null);
     }
-    
+
     setModalOpen(true);
   };
 
@@ -89,7 +68,7 @@ export function ComprovantePagamentoUpload({
     try {
       // Simular progresso de upload
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
+        setUploadProgress((prev) => {
           if (prev >= 90) {
             clearInterval(progressInterval);
             return 90;
@@ -99,16 +78,16 @@ export function ComprovantePagamentoUpload({
       }, 200);
 
       const result = await uploadComprovante(selectedFile);
-      
+
       setUploadProgress(100);
       clearInterval(progressInterval);
-      
+
       if (result.success) {
         toast.success("Comprovante enviado com sucesso!");
         setModalOpen(false);
         setSelectedFile(null);
         setPreviewUrl(null);
-        
+
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
@@ -196,30 +175,14 @@ export function ComprovantePagamentoUpload({
         <CardBody className="space-y-4">
           {!readonly && (
             <div className="text-center py-6 border-2 border-dashed border-default-300 rounded-lg">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={acceptedTypes.join(",")}
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              
+              <input ref={fileInputRef} type="file" accept={acceptedTypes.join(",")} onChange={handleFileSelect} className="hidden" />
+
               <UploadIcon className="h-12 w-12 text-default-400 mx-auto mb-4" />
               <h4 className="text-lg font-medium mb-2">Enviar Comprovante</h4>
-              <p className="text-sm text-default-500 mb-4">
-                Faça upload do comprovante de pagamento desta parcela
-              </p>
-              <p className="text-xs text-default-400 mb-4">
-                Formatos aceitos: JPG, PNG, PDF • Máximo: {maxSize}MB
-              </p>
-              
-              <Button
-                color="primary"
-                variant="flat"
-                startContent={<UploadIcon className="h-4 w-4" />}
-                onPress={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
+              <p className="text-sm text-default-500 mb-4">Faça upload do comprovante de pagamento desta parcela</p>
+              <p className="text-xs text-default-400 mb-4">Formatos aceitos: JPG, PNG, PDF • Máximo: {maxSize}MB</p>
+
+              <Button color="primary" variant="flat" startContent={<UploadIcon className="h-4 w-4" />} onPress={() => fileInputRef.current?.click()} disabled={uploading}>
                 Selecionar Arquivo
               </Button>
             </div>
@@ -230,10 +193,7 @@ export function ComprovantePagamentoUpload({
             <div className="space-y-3">
               <h4 className="text-sm font-medium">Comprovantes Enviados</h4>
               {comprovantes.map((comprovante) => (
-                <div
-                  key={comprovante.id}
-                  className="flex items-center justify-between p-3 border border-default-200 rounded-lg"
-                >
+                <div key={comprovante.id} className="flex items-center justify-between p-3 border border-default-200 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <FileIcon className="h-8 w-8 text-default-400" />
                     <div>
@@ -251,43 +211,21 @@ export function ComprovantePagamentoUpload({
                       color={getStatusColor(comprovante.status)}
                       size="sm"
                       variant="flat"
-                      startContent={
-                        comprovante.status === "aprovado" ? (
-                          <CheckCircleIcon className="h-3 w-3" />
-                        ) : comprovante.status === "rejeitado" ? (
-                          <XCircleIcon className="h-3 w-3" />
-                        ) : null
-                      }
+                      startContent={comprovante.status === "aprovado" ? <CheckCircleIcon className="h-3 w-3" /> : comprovante.status === "rejeitado" ? <XCircleIcon className="h-3 w-3" /> : null}
                     >
                       {getStatusLabel(comprovante.status)}
                     </Chip>
 
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onPress={() => window.open(comprovante.url, "_blank")}
-                    >
+                    <Button isIconOnly size="sm" variant="light" onPress={() => window.open(comprovante.url, "_blank")}>
                       <EyeIcon className="h-4 w-4" />
                     </Button>
 
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      onPress={() => handleDownload(comprovante.id)}
-                    >
+                    <Button isIconOnly size="sm" variant="light" onPress={() => handleDownload(comprovante.id)}>
                       <DownloadIcon className="h-4 w-4" />
                     </Button>
 
                     {!readonly && (
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        color="danger"
-                        variant="light"
-                        onPress={() => handleDelete(comprovante.id)}
-                      >
+                      <Button isIconOnly size="sm" color="danger" variant="light" onPress={() => handleDelete(comprovante.id)}>
                         <TrashIcon className="h-4 w-4" />
                       </Button>
                     )}
@@ -320,11 +258,7 @@ export function ComprovantePagamentoUpload({
                 {/* Preview da Imagem */}
                 {previewUrl && (
                   <div className="text-center">
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="max-h-64 mx-auto rounded-lg border border-default-200"
-                    />
+                    <img src={previewUrl} alt="Preview" className="max-h-64 mx-auto rounded-lg border border-default-200" />
                   </div>
                 )}
 
@@ -345,9 +279,7 @@ export function ComprovantePagamentoUpload({
                     </div>
                     <div>
                       <span className="font-medium">Última modificação:</span>
-                      <p className="text-default-600">
-                        {new Date(selectedFile.lastModified).toLocaleDateString("pt-BR")}
-                      </p>
+                      <p className="text-default-600">{new Date(selectedFile.lastModified).toLocaleDateString("pt-BR")}</p>
                     </div>
                   </div>
                 </div>
@@ -366,19 +298,10 @@ export function ComprovantePagamentoUpload({
             )}
           </ModalBody>
           <ModalFooter>
-            <Button
-              variant="light"
-              onPress={() => setModalOpen(false)}
-              disabled={uploading}
-            >
+            <Button variant="light" onPress={() => setModalOpen(false)} disabled={uploading}>
               Cancelar
             </Button>
-            <Button
-              color="primary"
-              onPress={handleUpload}
-              isLoading={uploading}
-              disabled={!selectedFile || uploading}
-            >
+            <Button color="primary" onPress={handleUpload} isLoading={uploading} disabled={!selectedFile || uploading}>
               {uploading ? "Enviando..." : "Confirmar Upload"}
             </Button>
           </ModalFooter>

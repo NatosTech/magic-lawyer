@@ -39,10 +39,10 @@ export function useDadosBancariosContrato(contratoId?: string) {
     contratoId ? `dados-bancarios-contrato-${contratoId}` : null,
     async () => {
       if (!contratoId) return null;
-      
+
       const result = await getDadosBancariosContrato(contratoId);
-      if (!result.success) throw new Error(result.error || 'Erro ao buscar dados bancários');
-      
+      if (!result.success) throw new Error(result.error || "Erro ao buscar dados bancários");
+
       return result;
     },
     {
@@ -69,10 +69,10 @@ export function useContasDisponiveisContrato(contratoId?: string) {
     contratoId ? `contas-disponiveis-contrato-${contratoId}` : null,
     async () => {
       if (!contratoId) return null;
-      
+
       const result = await getContasDisponiveisContrato(contratoId);
-      if (!result.success) throw new Error(result.error || 'Erro ao buscar contas disponíveis');
-      
+      if (!result.success) throw new Error(result.error || "Erro ao buscar contas disponíveis");
+
       return result;
     },
     {
@@ -83,7 +83,7 @@ export function useContasDisponiveisContrato(contratoId?: string) {
   );
 
   return {
-    contas: data?.contas as DadosBancariosContrato[] || [],
+    contas: (data?.contas as DadosBancariosContrato[]) || [],
     isLoading,
     isError: !!error,
     error: error?.message,

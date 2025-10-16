@@ -172,9 +172,7 @@ export async function getComprovantesParcela(parcelaId: string): Promise<{
 /**
  * Deletar comprovante
  */
-export async function deleteComprovantePagamento(
-  comprovanteId: string
-): Promise<{
+export async function deleteComprovantePagamento(comprovanteId: string): Promise<{
   success: boolean;
   error?: string;
 }> {

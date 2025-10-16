@@ -1,13 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { 
-  getComprovantesParcela, 
-  uploadComprovantePagamento,
-  deleteComprovantePagamento,
-  alterarStatusComprovante,
-  type ComprovantePagamento 
-} from "@/app/actions/comprovantes-pagamento";
+import { getComprovantesParcela, uploadComprovantePagamento, deleteComprovantePagamento, alterarStatusComprovante, type ComprovantePagamento } from "@/app/actions/comprovantes-pagamento";
 
 // ============================================
 // HOOKS
@@ -21,10 +15,10 @@ export function useComprovantesPagamento(parcelaId?: string) {
     parcelaId ? `comprovantes-pagamento-${parcelaId}` : null,
     async () => {
       if (!parcelaId) return null;
-      
+
       const result = await getComprovantesParcela(parcelaId);
-      if (!result.success) throw new Error(result.error || 'Erro ao buscar comprovantes');
-      
+      if (!result.success) throw new Error(result.error || "Erro ao buscar comprovantes");
+
       return result;
     },
     {
@@ -35,7 +29,7 @@ export function useComprovantesPagamento(parcelaId?: string) {
   );
 
   return {
-    comprovantes: data?.comprovantes as ComprovantePagamento[] || [],
+    comprovantes: (data?.comprovantes as ComprovantePagamento[]) || [],
     isLoading,
     isError: !!error,
     error: error?.message,
@@ -65,10 +59,7 @@ export function useComprovantesActions(parcelaId: string) {
     return result;
   };
 
-  const alterarStatus = async (
-    comprovanteId: string, 
-    status: "pendente" | "aprovado" | "rejeitado"
-  ) => {
+  const alterarStatus = async (comprovanteId: string, status: "pendente" | "aprovado" | "rejeitado") => {
     const result = await alterarStatusComprovante(comprovanteId, status);
     if (result.success) {
       mutate();
@@ -80,13 +71,13 @@ export function useComprovantesActions(parcelaId: string) {
     // Implementar download do arquivo
     const comprovantes = await getComprovantesParcela(parcelaId);
     if (comprovantes.success) {
-      const comprovante = comprovantes.comprovantes?.find(c => c.id === comprovanteId);
+      const comprovante = comprovantes.comprovantes?.find((c) => c.id === comprovanteId);
       if (comprovante) {
-        window.open(comprovante.url, '_blank');
+        window.open(comprovante.url, "_blank");
         return { success: true };
       }
     }
-    return { success: false, error: 'Comprovante não encontrado' };
+    return { success: false, error: "Comprovante não encontrado" };
   };
 
   return {

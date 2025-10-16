@@ -29,33 +29,11 @@ import {
   Textarea,
   DatePicker,
 } from "@heroui/react";
-import {
-  PlusIcon,
-  EyeIcon,
-  PencilIcon,
-  TrashIcon,
-  ReceiptIcon,
-  CalendarIcon,
-  AlertTriangleIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  XCircleIcon,
-  FilterIcon,
-  RefreshCwIcon,
-} from "lucide-react";
+import { PlusIcon, EyeIcon, PencilIcon, TrashIcon, ReceiptIcon, CalendarIcon, AlertTriangleIcon, CheckCircleIcon, ClockIcon, XCircleIcon, FilterIcon, RefreshCwIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  useParcelasContrato,
-  useDashboardParcelas,
-  useStatusParcelas,
-} from "@/app/hooks/use-parcelas-contrato";
-import {
-  createParcelaContrato,
-  updateParcelaContrato,
-  deleteParcelaContrato,
-  gerarParcelasAutomaticamente,
-} from "@/app/actions/parcelas-contrato";
+import { useParcelasContrato, useDashboardParcelas, useStatusParcelas } from "@/app/hooks/use-parcelas-contrato";
+import { createParcelaContrato, updateParcelaContrato, deleteParcelaContrato, gerarParcelasAutomaticamente } from "@/app/actions/parcelas-contrato";
 import { title, subtitle } from "@/components/primitives";
 import { DadosBancariosParcela } from "@/components/dados-bancarios-parcela";
 import { ComprovantePagamentoUpload } from "@/components/comprovante-pagamento-upload";
@@ -117,9 +95,7 @@ export default function ParcelasContratoPage() {
         dataVencimento: new Date(parcela.dataVencimento),
         status: parcela.status,
         formaPagamento: parcela.formaPagamento || "",
-        dataPagamento: parcela.dataPagamento
-          ? new Date(parcela.dataPagamento)
-          : undefined,
+        dataPagamento: parcela.dataPagamento ? new Date(parcela.dataPagamento) : undefined,
       });
     } else {
       setEditingId(null);
@@ -287,18 +263,10 @@ export default function ParcelasContratoPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>
-            Parcelas de Contrato
-          </h1>
-          <p className={subtitle({ fullWidth: true })}>
-            Gerencie as parcelas dos contratos
-          </p>
+          <h1 className={title({ size: "lg", color: "blue" })}>Parcelas de Contrato</h1>
+          <p className={subtitle({ fullWidth: true })}>Gerencie as parcelas dos contratos</p>
         </div>
-        <Button
-          color="primary"
-          startContent={<PlusIcon size={20} />}
-          onPress={() => handleOpenModal()}
-        >
+        <Button color="primary" startContent={<PlusIcon size={20} />} onPress={() => handleOpenModal()}>
           Nova Parcela
         </Button>
       </div>
@@ -314,9 +282,7 @@ export default function ParcelasContratoPage() {
             <CardBody className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <ReceiptIcon className="text-blue-500" size={24} />
-                <span className="text-2xl font-bold">
-                  {dashboard?.totalParcelas || 0}
-                </span>
+                <span className="text-2xl font-bold">{dashboard?.totalParcelas || 0}</span>
               </div>
               <p className="text-sm text-gray-600">Total de Parcelas</p>
             </CardBody>
@@ -326,9 +292,7 @@ export default function ParcelasContratoPage() {
             <CardBody className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <ClockIcon className="text-yellow-500" size={24} />
-                <span className="text-2xl font-bold">
-                  {dashboard?.parcelasPendentes || 0}
-                </span>
+                <span className="text-2xl font-bold">{dashboard?.parcelasPendentes || 0}</span>
               </div>
               <p className="text-sm text-gray-600">Pendentes</p>
             </CardBody>
@@ -338,9 +302,7 @@ export default function ParcelasContratoPage() {
             <CardBody className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <CheckCircleIcon className="text-green-500" size={24} />
-                <span className="text-2xl font-bold">
-                  {dashboard?.parcelasPagas || 0}
-                </span>
+                <span className="text-2xl font-bold">{dashboard?.parcelasPagas || 0}</span>
               </div>
               <p className="text-sm text-gray-600">Pagas</p>
             </CardBody>
@@ -350,9 +312,7 @@ export default function ParcelasContratoPage() {
             <CardBody className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <AlertTriangleIcon className="text-red-500" size={24} />
-                <span className="text-2xl font-bold">
-                  {dashboard?.parcelasAtrasadas || 0}
-                </span>
+                <span className="text-2xl font-bold">{dashboard?.parcelasAtrasadas || 0}</span>
               </div>
               <p className="text-sm text-gray-600">Atrasadas</p>
             </CardBody>
@@ -369,9 +329,7 @@ export default function ParcelasContratoPage() {
               label="ID do Contrato"
               placeholder="Filtrar por contrato"
               value={filters.contratoId || ""}
-              onChange={(e) =>
-                setFilters({ ...filters, contratoId: e.target.value })
-              }
+              onChange={(e) => setFilters({ ...filters, contratoId: e.target.value })}
             />
             <Select
               className="max-w-xs"
@@ -393,11 +351,7 @@ export default function ParcelasContratoPage() {
                 </SelectItem>
               ))}
             </Select>
-            <Button
-              startContent={<FilterIcon size={16} />}
-              variant="light"
-              onPress={() => setFilters({})}
-            >
+            <Button startContent={<FilterIcon size={16} />} variant="light" onPress={() => setFilters({})}>
               Limpar Filtros
             </Button>
           </div>
@@ -429,55 +383,33 @@ export default function ParcelasContratoPage() {
                   <TableRow key={parcela.id}>
                     <TableCell>
                       <div>
-                        <p className="font-medium">
-                          {parcela.contrato.cliente.nome}
-                        </p>
+                        <p className="font-medium">{parcela.contrato.cliente.nome}</p>
                         <p className="text-sm text-gray-500">
-                          {parcela.contrato.advogado.nome}
+                          {parcela.contrato.advogadoResponsavel?.usuario 
+                            ? `${parcela.contrato.advogadoResponsavel.usuario.firstName} ${parcela.contrato.advogadoResponsavel.usuario.lastName}`
+                            : 'Sem advogado responsável'
+                          }
                         </p>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">
-                          {parcela.titulo || `Parcela ${parcela.numeroParcela}`}
-                        </p>
-                        {parcela.descricao && (
-                          <p className="text-sm text-gray-500">
-                            {parcela.descricao}
-                          </p>
-                        )}
+                        <p className="font-medium">{parcela.titulo || `Parcela ${parcela.numeroParcela}`}</p>
+                        {parcela.descricao && <p className="text-sm text-gray-500">{parcela.descricao}</p>}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <p className="font-medium">
-                        {formatCurrency(Number(parcela.valor))}
-                      </p>
+                      <p className="font-medium">{formatCurrency(Number(parcela.valor))}</p>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <CalendarIcon className="text-gray-400" size={16} />
-                        <span
-                          className={
-                            isVencida(parcela.dataVencimento, parcela.status)
-                              ? "text-red-600 font-medium"
-                              : ""
-                          }
-                        >
-                          {formatDate(parcela.dataVencimento)}
-                        </span>
+                        <span className={isVencida(parcela.dataVencimento, parcela.status) ? "text-red-600 font-medium" : ""}>{formatDate(parcela.dataVencimento)}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        color={getStatusColor(parcela.status)}
-                        startContent={getStatusIcon(parcela.status)}
-                        variant="flat"
-                      >
-                        {
-                          statusList.find((s) => s.value === parcela.status)
-                            ?.label
-                        }
+                      <Chip color={getStatusColor(parcela.status)} startContent={getStatusIcon(parcela.status)} variant="flat">
+                        {statusList.find((s) => s.value === parcela.status)?.label}
                       </Chip>
                     </TableCell>
                     <TableCell>
@@ -488,27 +420,13 @@ export default function ParcelasContratoPage() {
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu>
-                          <DropdownItem
-                            key="view"
-                            startContent={<EyeIcon size={16} />}
-                            onPress={() => handleOpenModal(parcela)}
-                          >
+                          <DropdownItem key="view" startContent={<EyeIcon size={16} />} onPress={() => handleOpenModal(parcela)}>
                             Ver Detalhes
                           </DropdownItem>
-                          <DropdownItem
-                            key="edit"
-                            startContent={<PencilIcon size={16} />}
-                            onPress={() => handleOpenModal(parcela)}
-                          >
+                          <DropdownItem key="edit" startContent={<PencilIcon size={16} />} onPress={() => handleOpenModal(parcela)}>
                             Editar
                           </DropdownItem>
-                          <DropdownItem
-                            key="delete"
-                            className="text-danger"
-                            color="danger"
-                            startContent={<TrashIcon size={16} />}
-                            onPress={() => handleDelete(parcela.id)}
-                          >
+                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<TrashIcon size={16} />} onPress={() => handleDelete(parcela.id)}>
                             Remover
                           </DropdownItem>
                         </DropdownMenu>
@@ -524,12 +442,7 @@ export default function ParcelasContratoPage() {
             <div className="text-center py-8">
               <ReceiptIcon className="mx-auto text-gray-400 mb-4" size={48} />
               <p className="text-gray-500">Nenhuma parcela encontrada</p>
-              <Button
-                className="mt-2"
-                color="primary"
-                variant="light"
-                onPress={() => handleOpenModal()}
-              >
+              <Button className="mt-2" color="primary" variant="light" onPress={() => handleOpenModal()}>
                 Criar Primeira Parcela
               </Button>
             </div>
@@ -540,20 +453,10 @@ export default function ParcelasContratoPage() {
       {/* Modal de Criação/Edição */}
       <Modal isOpen={modalOpen} size="4xl" onClose={handleCloseModal}>
         <ModalContent>
-          <ModalHeader>
-            {editingId ? "Editar Parcela" : "Nova Parcela"}
-          </ModalHeader>
+          <ModalHeader>{editingId ? "Editar Parcela" : "Nova Parcela"}</ModalHeader>
           <ModalBody className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <Input
-                isRequired
-                label="ID do Contrato"
-                placeholder="Digite o ID do contrato"
-                value={formData.contratoId}
-                onChange={(e) =>
-                  setFormData({ ...formData, contratoId: e.target.value })
-                }
-              />
+              <Input isRequired label="ID do Contrato" placeholder="Digite o ID do contrato" value={formData.contratoId} onChange={(e) => setFormData({ ...formData, contratoId: e.target.value })} />
               <Input
                 isRequired
                 label="Número da Parcela"
@@ -570,14 +473,7 @@ export default function ParcelasContratoPage() {
               />
             </div>
 
-            <Input
-              label="Título"
-              placeholder="Ex: Parcela 1/12"
-              value={formData.titulo}
-              onChange={(e) =>
-                setFormData({ ...formData, titulo: e.target.value })
-              }
-            />
+            <Input label="Título" placeholder="Ex: Parcela 1/12" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} />
 
             <div className="grid grid-cols-2 gap-4">
               <Input
@@ -617,52 +513,24 @@ export default function ParcelasContratoPage() {
               </Select>
             </div>
 
-            <DatePicker
-              isRequired
-              label="Data de Vencimento"
-              value={formData.dataVencimento}
-              onChange={(date) =>
-                setFormData({ ...formData, dataVencimento: date })
-              }
-            />
+            <DatePicker isRequired label="Data de Vencimento" value={formData.dataVencimento} onChange={(date) => setFormData({ ...formData, dataVencimento: date })} />
 
-            {formData.status === "PAGA" && (
-              <DatePicker
-                label="Data de Pagamento"
-                value={formData.dataPagamento}
-                onChange={(date) =>
-                  setFormData({ ...formData, dataPagamento: date })
-                }
-              />
-            )}
+            {formData.status === "PAGA" && <DatePicker label="Data de Pagamento" value={formData.dataPagamento} onChange={(date) => setFormData({ ...formData, dataPagamento: date })} />}
 
             <Input
               label="Forma de Pagamento"
               placeholder="Ex: PIX, Transferência, Boleto"
               value={formData.formaPagamento}
-              onChange={(e) =>
-                setFormData({ ...formData, formaPagamento: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, formaPagamento: e.target.value })}
             />
 
-            <Textarea
-              label="Descrição"
-              placeholder="Descrição opcional da parcela"
-              rows={3}
-              value={formData.descricao}
-              onChange={(e) =>
-                setFormData({ ...formData, descricao: e.target.value })
-              }
-            />
+            <Textarea label="Descrição" placeholder="Descrição opcional da parcela" rows={3} value={formData.descricao} onChange={(e) => setFormData({ ...formData, descricao: e.target.value })} />
 
             {/* Validação da Conta - apenas se contrato selecionado */}
             {formData.contratoId && (
               <div className="space-y-4">
                 <Divider />
-                <ValidacaoContaPrincipal
-                  contratoId={formData.contratoId}
-                  onContaValidada={setContaValida}
-                />
+                <ValidacaoContaPrincipal contratoId={formData.contratoId} onContaValidada={setContaValida} />
               </div>
             )}
 
@@ -685,14 +553,9 @@ export default function ParcelasContratoPage() {
               <div className="bg-danger-50 border border-danger-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <XCircleIcon className="h-5 w-5 text-danger" />
-                  <span className="text-sm font-medium text-danger-700">
-                    Conta Bancária Inválida
-                  </span>
+                  <span className="text-sm font-medium text-danger-700">Conta Bancária Inválida</span>
                 </div>
-                <p className="text-sm text-danger-600">
-                  A conta bancária do contrato não passou na validação. 
-                  Corrija os problemas antes de prosseguir com o pagamento.
-                </p>
+                <p className="text-sm text-danger-600">A conta bancária do contrato não passou na validação. Corrija os problemas antes de prosseguir com o pagamento.</p>
               </div>
             )}
 
@@ -700,28 +563,15 @@ export default function ParcelasContratoPage() {
             {editingId && (
               <div className="space-y-4">
                 <Divider />
-                <ComprovantePagamentoUpload
-                  parcelaId={editingId}
-                  readonly={formData.status === "PAGA"}
-                />
+                <ComprovantePagamentoUpload parcelaId={editingId} readonly={formData.status === "PAGA"} />
               </div>
             )}
 
             {!editingId && (
               <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">
-                  Gerar Parcelas Automaticamente
-                </h4>
-                <p className="text-sm text-blue-700 mb-3">
-                  Crie múltiplas parcelas baseadas nos valores informados
-                </p>
-                <Button
-                  color="primary"
-                  isLoading={loading}
-                  startContent={<RefreshCwIcon size={16} />}
-                  variant="flat"
-                  onPress={handleGerarAutomaticamente}
-                >
+                <h4 className="font-medium text-blue-900 mb-2">Gerar Parcelas Automaticamente</h4>
+                <p className="text-sm text-blue-700 mb-3">Crie múltiplas parcelas baseadas nos valores informados</p>
+                <Button color="primary" isLoading={loading} startContent={<RefreshCwIcon size={16} />} variant="flat" onPress={handleGerarAutomaticamente}>
                   Gerar 12 Parcelas
                 </Button>
               </div>

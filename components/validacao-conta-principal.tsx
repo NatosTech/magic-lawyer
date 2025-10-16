@@ -1,29 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Chip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Divider,
-  Progress,
-} from "@heroui/react";
-import {
-  AlertTriangleIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  InfoIcon,
-  SettingsIcon,
-  CreditCardIcon,
-  RefreshCwIcon,
-} from "lucide-react";
+import { Card, CardBody, CardHeader, Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Divider, Progress } from "@heroui/react";
+import { AlertTriangleIcon, CheckCircleIcon, XCircleIcon, InfoIcon, SettingsIcon, CreditCardIcon, RefreshCwIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { useDadosBancariosContrato } from "@/app/hooks/use-dados-bancarios-contrato";
@@ -43,10 +22,7 @@ interface ValidacaoItem {
   acao?: () => void;
 }
 
-export function ValidacaoContaPrincipal({
-  contratoId,
-  onContaValidada,
-}: ValidacaoContaPrincipalProps) {
+export function ValidacaoContaPrincipal({ contratoId, onContaValidada }: ValidacaoContaPrincipalProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [validacoes, setValidacoes] = useState<ValidacaoItem[]>([]);
   const [isValidating, setIsValidating] = useState(false);
@@ -80,13 +56,7 @@ export function ValidacaoContaPrincipal({
 
     // Validação 2: Dados completos
     setProgresso(40);
-    const dadosCompletos = !!(
-      dadosBancarios.banco &&
-      dadosBancarios.agencia &&
-      dadosBancarios.conta &&
-      dadosBancarios.titularNome &&
-      dadosBancarios.titularDocumento
-    );
+    const dadosCompletos = !!(dadosBancarios.banco && dadosBancarios.agencia && dadosBancarios.conta && dadosBancarios.titularNome && dadosBancarios.titularDocumento);
     novasValidacoes.push({
       id: "dados-completos",
       titulo: "Dados Completos",
@@ -131,8 +101,8 @@ export function ValidacaoContaPrincipal({
     setIsValidating(false);
 
     // Calcular status geral
-    const validacoesObrigatorias = novasValidacoes.filter(v => v.obrigatorio);
-    const aprovadas = validacoesObrigatorias.filter(v => v.status === "aprovado");
+    const validacoesObrigatorias = novasValidacoes.filter((v) => v.obrigatorio);
+    const aprovadas = validacoesObrigatorias.filter((v) => v.status === "aprovado");
     const isValid = aprovadas.length === validacoesObrigatorias.length;
 
     onContaValidada?.(isValid);
@@ -141,14 +111,14 @@ export function ValidacaoContaPrincipal({
   const validarDocumento = (documento: string): boolean => {
     // Remover caracteres não numéricos
     const numeros = documento.replace(/\D/g, "");
-    
+
     // Verificar se é CPF (11 dígitos) ou CNPJ (14 dígitos)
     if (numeros.length === 11) {
       return validarCPF(numeros);
     } else if (numeros.length === 14) {
       return validarCNPJ(numeros);
     }
-    
+
     return false;
   };
 
@@ -244,10 +214,10 @@ export function ValidacaoContaPrincipal({
     }
   };
 
-  const validacoesObrigatorias = validacoes.filter(v => v.obrigatorio);
-  const aprovadas = validacoesObrigatorias.filter(v => v.status === "aprovado");
-  const rejeitadas = validacoes.filter(v => v.status === "rejeitado");
-  const avisos = validacoes.filter(v => v.status === "aviso");
+  const validacoesObrigatorias = validacoes.filter((v) => v.obrigatorio);
+  const aprovadas = validacoesObrigatorias.filter((v) => v.status === "aprovado");
+  const rejeitadas = validacoes.filter((v) => v.status === "rejeitado");
+  const avisos = validacoes.filter((v) => v.status === "aviso");
 
   const isValid = aprovadas.length === validacoesObrigatorias.length;
 
@@ -297,12 +267,7 @@ export function ValidacaoContaPrincipal({
             >
               {isValid ? "Válida" : rejeitadas.length > 0 ? "Inválida" : "Atenção"}
             </Chip>
-            <Button
-              size="sm"
-              variant="light"
-              startContent={<InfoIcon className="h-4 w-4" />}
-              onPress={() => setModalOpen(true)}
-            >
+            <Button size="sm" variant="light" startContent={<InfoIcon className="h-4 w-4" />} onPress={() => setModalOpen(true)}>
               Ver Detalhes
             </Button>
           </div>
@@ -314,29 +279,23 @@ export function ValidacaoContaPrincipal({
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-1">
                 <CheckCircleIcon className="h-4 w-4 text-success" />
-                <span className="text-lg font-bold text-success">
-                  {aprovadas.length}
-                </span>
+                <span className="text-lg font-bold text-success">{aprovadas.length}</span>
               </div>
               <p className="text-xs text-default-500">Aprovadas</p>
             </div>
-            
+
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-1">
                 <XCircleIcon className="h-4 w-4 text-danger" />
-                <span className="text-lg font-bold text-danger">
-                  {rejeitadas.length}
-                </span>
+                <span className="text-lg font-bold text-danger">{rejeitadas.length}</span>
               </div>
               <p className="text-xs text-default-500">Rejeitadas</p>
             </div>
-            
+
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-1">
                 <AlertTriangleIcon className="h-4 w-4 text-warning" />
-                <span className="text-lg font-bold text-warning">
-                  {avisos.length}
-                </span>
+                <span className="text-lg font-bold text-warning">{avisos.length}</span>
               </div>
               <p className="text-xs text-default-500">Avisos</p>
             </div>
@@ -356,24 +315,12 @@ export function ValidacaoContaPrincipal({
           {/* Ações */}
           {!isValidating && (
             <div className="flex gap-2">
-              <Button
-                color="primary"
-                variant="flat"
-                size="sm"
-                onPress={executarValidacoes}
-                startContent={<RefreshCwIcon className="h-4 w-4" />}
-              >
+              <Button color="primary" variant="flat" size="sm" onPress={executarValidacoes} startContent={<RefreshCwIcon className="h-4 w-4" />}>
                 Revalidar
               </Button>
-              
+
               {rejeitadas.length > 0 && (
-                <Button
-                  color="warning"
-                  variant="light"
-                  size="sm"
-                  onPress={() => setModalOpen(true)}
-                  startContent={<SettingsIcon className="h-4 w-4" />}
-                >
+                <Button color="warning" variant="light" size="sm" onPress={() => setModalOpen(true)} startContent={<SettingsIcon className="h-4 w-4" />}>
                   Corrigir Problemas
                 </Button>
               )}
@@ -385,14 +332,9 @@ export function ValidacaoContaPrincipal({
             <div className="bg-danger-50 border border-danger-200 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-2">
                 <XCircleIcon className="h-4 w-4 text-danger" />
-                <span className="text-sm font-medium text-danger-700">
-                  Problemas Encontrados
-                </span>
+                <span className="text-sm font-medium text-danger-700">Problemas Encontrados</span>
               </div>
-              <p className="text-xs text-danger-600">
-                {rejeitadas.length} validação(ões) obrigatória(s) falharam. 
-                Clique em "Corrigir Problemas" para ver detalhes.
-              </p>
+              <p className="text-xs text-danger-600">{rejeitadas.length} validação(ões) obrigatória(s) falharam. Clique em "Corrigir Problemas" para ver detalhes.</p>
             </div>
           )}
 
@@ -400,13 +342,9 @@ export function ValidacaoContaPrincipal({
             <div className="bg-warning-50 border border-warning-200 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangleIcon className="h-4 w-4 text-warning" />
-                <span className="text-sm font-medium text-warning-700">
-                  Recomendações
-                </span>
+                <span className="text-sm font-medium text-warning-700">Recomendações</span>
               </div>
-              <p className="text-xs text-warning-600">
-                {avisos.length} recomendação(ões) para melhorar a conta bancária.
-              </p>
+              <p className="text-xs text-warning-600">{avisos.length} recomendação(ões) para melhorar a conta bancária.</p>
             </div>
           )}
         </CardBody>
@@ -419,21 +357,12 @@ export function ValidacaoContaPrincipal({
           <ModalBody>
             <div className="space-y-4">
               {validacoes.map((validacao) => (
-                <div
-                  key={validacao.id}
-                  className="flex items-start gap-3 p-3 border border-default-200 rounded-lg"
-                >
-                  <div className="flex-shrink-0 mt-0.5">
-                    {getStatusIcon(validacao.status)}
-                  </div>
+                <div key={validacao.id} className="flex items-start gap-3 p-3 border border-default-200 rounded-lg">
+                  <div className="flex-shrink-0 mt-0.5">{getStatusIcon(validacao.status)}</div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="text-sm font-medium">{validacao.titulo}</h4>
-                      <Chip
-                        color={getStatusColor(validacao.status)}
-                        size="sm"
-                        variant="flat"
-                      >
+                      <Chip color={getStatusColor(validacao.status)} size="sm" variant="flat">
                         {getStatusLabel(validacao.status)}
                       </Chip>
                       {validacao.obrigatorio && (
@@ -442,9 +371,7 @@ export function ValidacaoContaPrincipal({
                         </Chip>
                       )}
                     </div>
-                    <p className="text-xs text-default-500">
-                      {validacao.descricao}
-                    </p>
+                    <p className="text-xs text-default-500">{validacao.descricao}</p>
                   </div>
                 </div>
               ))}
