@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import prisma from "@/app/lib/prisma";
+import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
 
 async function getTenantId(): Promise<string> {
@@ -94,9 +94,13 @@ export async function listHonorariosContratuais(filters?: { contratoId?: string;
       orderBy: [{ createdAt: "desc" }, { tipo: "asc" }],
     });
 
+    // Converter Decimal para number e serializar
+    const convertedData = honorarios.map((item) => convertAllDecimalFields(item));
+    const serialized = JSON.parse(JSON.stringify(convertedData));
+
     return {
       success: true,
-      data: honorarios,
+      data: serialized,
     };
   } catch (error) {
     console.error("Erro ao listar honorários contratuais:", error);
@@ -146,9 +150,13 @@ export async function getHonorarioContratual(id: string) {
       };
     }
 
+    // Converter Decimal para number e serializar
+    const convertedData = convertAllDecimalFields(honorario);
+    const serialized = JSON.parse(JSON.stringify(convertedData));
+
     return {
       success: true,
-      data: honorario,
+      data: serialized,
     };
   } catch (error) {
     console.error("Erro ao buscar honorário contratual:", error);
@@ -238,10 +246,15 @@ export async function createHonorarioContratual(data: {
                 email: true,
               },
             },
-            advogado: {
-              select: {
-                nome: true,
-                email: true,
+            advogadoResponsavel: {
+              include: {
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
               },
             },
           },
@@ -252,9 +265,13 @@ export async function createHonorarioContratual(data: {
     revalidatePath("/contratos");
     revalidatePath("/honorarios");
 
+    // Converter Decimal para number e serializar
+    const convertedData = convertAllDecimalFields(honorario);
+    const serialized = JSON.parse(JSON.stringify(convertedData));
+
     return {
       success: true,
-      data: honorario,
+      data: serialized,
       message: "Honorário contratual criado com sucesso",
     };
   } catch (error) {
@@ -343,10 +360,15 @@ export async function updateHonorarioContratual(
                 email: true,
               },
             },
-            advogado: {
-              select: {
-                nome: true,
-                email: true,
+            advogadoResponsavel: {
+              include: {
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
               },
             },
           },
@@ -357,9 +379,13 @@ export async function updateHonorarioContratual(
     revalidatePath("/contratos");
     revalidatePath("/honorarios");
 
+    // Converter Decimal para number e serializar
+    const convertedData = convertAllDecimalFields(honorario);
+    const serialized = JSON.parse(JSON.stringify(convertedData));
+
     return {
       success: true,
-      data: honorario,
+      data: serialized,
       message: "Honorário contratual atualizado com sucesso",
     };
   } catch (error) {

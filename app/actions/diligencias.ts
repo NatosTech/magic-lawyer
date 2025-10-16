@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "@/app/lib/auth";
-import prisma from "@/app/lib/prisma";
+import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
 import logger from "@/lib/logger";
 
 export interface DiligenciaCreatePayload {
@@ -29,11 +29,7 @@ export interface DiligenciaUpdatePayload {
   observacoes?: string | null;
 }
 
-export async function listDiligencias(params?: {
-  status?: string;
-  processoId?: string;
-  causaId?: string;
-}) {
+export async function listDiligencias(params?: { status?: string; processoId?: string; causaId?: string }) {
   try {
     const session = await getSession();
 
@@ -67,39 +63,32 @@ export async function listDiligencias(params?: {
       where,
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
       include: {
-        processo: {
-          select: {
-            id: true,
-            numero: true,
-            titulo: true,
-          },
-        },
-        causa: {
-          select: {
-            id: true,
-            nome: true,
-          },
-        },
-        contrato: {
-          select: {
-            id: true,
-            titulo: true,
-          },
-        },
-        responsavel: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
+        processo: true,
+        causa: true,
+        contrato: true,
+        responsavel: true,
       },
+    });
+
+    // Converter valores Decimal para number recursivamente
+    const diligenciasFormatted = diligencias.map((diligencia) => {
+      const diligenciaConvertida = convertAllDecimalFields(diligencia);
+
+      // Converter também os relacionamentos
+      if (diligenciaConvertida.processo) {
+        diligenciaConvertida.processo = convertAllDecimalFields(diligenciaConvertida.processo);
+      }
+
+      if (diligenciaConvertida.contrato) {
+        diligenciaConvertida.contrato = convertAllDecimalFields(diligenciaConvertida.contrato);
+      }
+
+      return JSON.parse(JSON.stringify(diligenciaConvertida));
     });
 
     return {
       success: true,
-      diligencias,
+      diligencias: diligenciasFormatted,
     };
   } catch (error) {
     logger.error("Erro ao listar diligências:", error);
@@ -171,9 +160,23 @@ export async function createDiligencia(payload: DiligenciaCreatePayload) {
       },
     });
 
+    // Converter valores Decimal para number recursivamente
+    const diligenciaConvertida = convertAllDecimalFields(diligencia);
+
+    // Converter também os relacionamentos
+    if (diligenciaConvertida.processo) {
+      diligenciaConvertida.processo = convertAllDecimalFields(diligenciaConvertida.processo);
+    }
+
+    if (diligenciaConvertida.contrato) {
+      diligenciaConvertida.contrato = convertAllDecimalFields(diligenciaConvertida.contrato);
+    }
+
+    const serialized = JSON.parse(JSON.stringify(diligenciaConvertida));
+
     return {
       success: true,
-      diligencia,
+      diligencia: serialized,
     };
   } catch (error) {
     logger.error("Erro ao criar diligência:", error);
@@ -185,10 +188,7 @@ export async function createDiligencia(payload: DiligenciaCreatePayload) {
   }
 }
 
-export async function updateDiligencia(
-  diligenciaId: string,
-  payload: DiligenciaUpdatePayload,
-) {
+export async function updateDiligencia(diligenciaId: string, payload: DiligenciaUpdatePayload) {
   try {
     const session = await getSession();
 
@@ -279,9 +279,23 @@ export async function updateDiligencia(
       },
     });
 
+    // Converter valores Decimal para number recursivamente
+    const diligenciaConvertida = convertAllDecimalFields(updated);
+
+    // Converter também os relacionamentos
+    if (diligenciaConvertida.processo) {
+      diligenciaConvertida.processo = convertAllDecimalFields(diligenciaConvertida.processo);
+    }
+
+    if (diligenciaConvertida.contrato) {
+      diligenciaConvertida.contrato = convertAllDecimalFields(diligenciaConvertida.contrato);
+    }
+
+    const serialized = JSON.parse(JSON.stringify(diligenciaConvertida));
+
     return {
       success: true,
-      diligencia: updated,
+      diligencia: serialized,
     };
   } catch (error) {
     logger.error("Erro ao atualizar diligência:", error);

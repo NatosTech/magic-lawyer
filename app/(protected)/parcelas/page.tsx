@@ -742,13 +742,17 @@ export default function ParcelasContratoPage() {
                           <div className="text-xs space-y-1">
                             <p className="text-green-600 flex items-center gap-1">
                               <DollarSignIcon size={12} />
-                              Valor disponível: {formatCurrency(getContratoSelecionado().valorDisponivel)}
+                              <strong>Valor disponível:</strong> {formatCurrency(getContratoSelecionado().valorDisponivel)}
                             </p>
                             <p className="text-blue-600 flex items-center gap-1">
                               <FileTextIcon size={12} />
                               Total do contrato: {formatCurrency(getContratoSelecionado().valor)}
                             </p>
                             <p className="text-orange-600 flex items-center gap-1">
+                              <ReceiptIcon size={12} />
+                              Valor comprometido (pendentes): {formatCurrency(getContratoSelecionado().valorComprometido || 0)}
+                            </p>
+                            <p className="text-gray-600 flex items-center gap-1">
                               <ReceiptIcon size={12} />
                               Parcelas existentes: {getContratoSelecionado().totalParcelas} ({formatCurrency(getContratoSelecionado().valorTotalParcelas)})
                             </p>

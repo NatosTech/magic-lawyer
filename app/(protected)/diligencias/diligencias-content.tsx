@@ -2,60 +2,61 @@
 
 import { useCallback, useMemo, useState } from "react";
 import useSWR from "swr";
-import { Card, CardBody } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Input, Textarea } from "@heroui/input";
-import { Chip } from "@heroui/chip";
-import { Select, SelectItem } from "@heroui/select";
 import {
+  Card,
+  CardBody,
+  CardHeader,
+  Button,
+  Input,
+  Textarea,
+  Chip,
+  Select,
+  SelectItem,
   Modal,
   ModalBody,
   ModalContent,
   ModalFooter,
   ModalHeader,
-} from "@heroui/modal";
-import { Skeleton } from "@heroui/react";
-import { Plus, RefreshCw } from "lucide-react";
+  Skeleton,
+  Divider,
+  Tabs,
+  Tab,
+  Spinner,
+} from "@heroui/react";
+import { Plus, FileText, User, Calendar, Clock, CheckCircle, AlertTriangle, XCircle, PlayCircle, Users, Building, Scale, FileCheck, UserCheck, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  listDiligencias,
-  createDiligencia,
-  updateDiligencia,
-} from "@/app/actions/diligencias";
+import { listDiligencias, createDiligencia, updateDiligencia } from "@/app/actions/diligencias";
 import { listCausas } from "@/app/actions/causas";
 import { listRegimesPrazo } from "@/app/actions/regimes-prazo";
-import { getDocumentExplorerData } from "@/app/actions/documentos-explorer";
-import { title } from "@/components/primitives";
+import { getClientesComRelacionamentos } from "@/app/actions/clientes";
+import { getUsuariosParaSelect } from "@/app/actions/usuarios";
+import { title, subtitle } from "@/components/primitives";
+import { Diligencia, DiligenciaStatus, Cliente, Processo, Contrato, Causa, RegimePrazo, Usuario } from "@/app/generated/prisma";
 
-interface DiligenciaDto {
-  id: string;
+type DiligenciaCompleta = Diligencia & {
+  processo?: Processo | null;
+  causa?: Causa | null;
+  contrato?: Contrato | null;
+  responsavel?: Usuario | null;
+};
+
+type ClienteCompleto = Cliente & {
+  processos: Processo[];
+  contratos: Contrato[];
+};
+
+interface DiligenciaFormData {
+  clienteId: string;
+  processoId: string;
+  contratoId: string;
+  causaId: string;
+  regimePrazoId: string;
   titulo: string;
-  tipo: string | null;
-  descricao: string | null;
-  status: "PENDENTE" | "EM_ANDAMENTO" | "CONCLUIDA" | "CANCELADA";
-  prazoPrevisto: string | null;
-  prazoConclusao: string | null;
-  processo?: {
-    id: string;
-    numero: string;
-    titulo: string | null;
-  } | null;
-  causa?: {
-    id: string;
-    nome: string;
-  } | null;
-  contrato?: {
-    id: string;
-    titulo: string;
-  } | null;
-  responsavel?: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    email: string | null;
-  } | null;
-  createdAt: string;
+  tipo: string;
+  descricao: string;
+  responsavelId: string;
+  prazoPrevisto: string;
 }
 
 const diligenciasFetcher = async () => {
@@ -65,16 +66,17 @@ const diligenciasFetcher = async () => {
     throw new Error(result.error || "Erro ao carregar diligências");
   }
 
-  return result.diligencias?.map((diligencia) => ({
-    ...diligencia,
-    createdAt: diligencia.createdAt.toISOString(),
-    prazoPrevisto: diligencia.prazoPrevisto
-      ? diligencia.prazoPrevisto.toISOString()
-      : null,
-    prazoConclusao: diligencia.prazoConclusao
-      ? diligencia.prazoConclusao.toISOString()
-      : null,
-  })) as DiligenciaDto[];
+  return result.diligencias as DiligenciaCompleta[];
+};
+
+const clientesFetcher = async () => {
+  const result = await getClientesComRelacionamentos();
+
+  if (!result.success) {
+    throw new Error(result.error || "Erro ao carregar clientes");
+  }
+
+  return result.clientes || [];
 };
 
 const causasFetcher = async () => {
@@ -84,7 +86,7 @@ const causasFetcher = async () => {
     throw new Error(result.error || "Erro ao carregar causas");
   }
 
-  return result.causas ?? [];
+  return result.causas as Causa[];
 };
 
 const regimesFetcher = async () => {
@@ -94,43 +96,38 @@ const regimesFetcher = async () => {
     throw new Error(result.error || "Erro ao carregar regimes de prazo");
   }
 
-  return result.regimes ?? [];
+  return result.regimes as RegimePrazo[];
 };
 
-const explorerFetcher = async () => {
-  const result = await getDocumentExplorerData();
+const usuariosFetcher = async () => {
+  const result = await getUsuariosParaSelect();
 
-  if (!result.success || !result.data) {
-    throw new Error(result.error || "Erro ao carregar dados auxiliares");
+  if (!result.success) {
+    throw new Error(result.error || "Erro ao carregar usuários");
   }
 
-  return result.data;
+  return result.usuarios as Usuario[];
 };
 
 const STATUS_OPTIONS = [
-  { key: "PENDENTE", label: "Pendente" },
-  { key: "EM_ANDAMENTO", label: "Em andamento" },
-  { key: "CONCLUIDA", label: "Concluída" },
-  { key: "CANCELADA", label: "Cancelada" },
+  { key: "PENDENTE", label: "Pendente", icon: <Clock size={16} />, color: "warning" },
+  { key: "EM_ANDAMENTO", label: "Em andamento", icon: <PlayCircle size={16} />, color: "primary" },
+  { key: "CONCLUIDA", label: "Concluída", icon: <CheckCircle size={16} />, color: "success" },
+  { key: "CANCELADA", label: "Cancelada", icon: <XCircle size={16} />, color: "danger" },
 ];
 
 export function DiligenciasContent() {
-  const { data, mutate, isLoading, isValidating } = useSWR(
-    "diligencias",
-    diligenciasFetcher,
-  );
-  const { data: causas } = useSWR("diligencias-causas", causasFetcher);
-  const { data: regimes } = useSWR("diligencias-regimes", regimesFetcher);
-  const { data: explorerData } = useSWR(
-    "diligencias-explorer",
-    explorerFetcher,
-  );
+  const { data, mutate, isLoading } = useSWR("diligencias", diligenciasFetcher);
+  const { data: clientes, isLoading: loadingClientes } = useSWR("diligencias-clientes", clientesFetcher);
+  const { data: causas, isLoading: loadingCausas } = useSWR("diligencias-causas", causasFetcher);
+  const { data: regimes, isLoading: loadingRegimes } = useSWR("diligencias-regimes", regimesFetcher);
+  const { data: usuarios, isLoading: loadingUsuarios } = useSWR("diligencias-usuarios", usuariosFetcher);
 
   const diligencias = useMemo(() => data ?? [], [data]);
-  const clientes = explorerData?.clientes ?? [];
+  const clientesList = useMemo(() => clientes ?? [], [clientes]);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createState, setCreateState] = useState({
+  const [createState, setCreateState] = useState<DiligenciaFormData>({
     clienteId: "",
     processoId: "",
     contratoId: "",
@@ -144,19 +141,35 @@ export function DiligenciasContent() {
   });
   const [isCreating, setIsCreating] = useState(false);
 
-  const selectedCliente = useMemo(
-    () =>
-      clientes.find((cliente) => cliente.id === createState.clienteId) ?? null,
-    [clientes, createState.clienteId],
-  );
+  const selectedCliente = useMemo(() => clientesList.find((cliente) => cliente.id === createState.clienteId) ?? null, [clientesList, createState.clienteId]);
 
-  const processosDoCliente = selectedCliente?.processos ?? [];
-  const contratosDoCliente = selectedCliente?.contratos ?? [];
+  const processosDoCliente = (selectedCliente as ClienteCompleto)?.processos ?? [];
+  const contratosDoCliente = (selectedCliente as ClienteCompleto)?.contratos ?? [];
+
+  const formatDate = (date: Date | string | null): string => {
+    if (!date) return "—";
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    if (Number.isNaN(dateObj.getTime())) return "—";
+    return dateObj.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const getStatusIcon = (status: DiligenciaStatus) => {
+    const option = STATUS_OPTIONS.find((opt) => opt.key === status);
+    return option?.icon || <Clock size={16} />;
+  };
+
+  const getStatusColor = (status: DiligenciaStatus) => {
+    const option = STATUS_OPTIONS.find((opt) => opt.key === status);
+    return option?.color || "default";
+  };
 
   const handleCreateDiligencia = useCallback(async () => {
     if (!createState.titulo.trim()) {
       toast.error("Informe o título da diligência");
-
       return;
     }
 
@@ -177,7 +190,6 @@ export function DiligenciasContent() {
 
       if (!result.success) {
         toast.error(result.error || "Erro ao criar diligência");
-
         return;
       }
 
@@ -203,181 +215,174 @@ export function DiligenciasContent() {
     }
   }, [createState, mutate]);
 
+  const handleClienteChange = (clienteId: string) => {
+    setCreateState((prev) => ({
+      ...prev,
+      clienteId,
+      processoId: "",
+      contratoId: "",
+    }));
+  };
+
   const handleStatusChange = useCallback(
-    async (diligencia: DiligenciaDto, status: string) => {
+    async (diligencia: DiligenciaCompleta, status: string) => {
       if (status === diligencia.status) return;
 
       const result = await updateDiligencia(diligencia.id, {
-        status: status as DiligenciaDto["status"],
+        status: status as DiligenciaStatus,
       });
 
       if (!result.success) {
         toast.error(result.error || "Erro ao atualizar diligência");
-
         return;
       }
 
       await mutate();
       toast.success("Status atualizado");
     },
-    [mutate],
+    [mutate]
   );
 
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 py-10 px-4 sm:px-6">
-      <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
         <div>
           <h1 className={title({ size: "lg", color: "blue" })}>Diligências</h1>
-          <p className="text-sm text-default-500">
-            Acompanhe diligências internas e externas relacionadas aos
-            processos.
-          </p>
+          <p className={subtitle({ fullWidth: true })}>Acompanhe diligências internas e externas relacionadas aos processos</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            color="primary"
-            radius="full"
-            startContent={<Plus className="h-4 w-4" />}
-            variant="flat"
-            onPress={() => setIsCreateOpen(true)}
-          >
-            Nova diligência
-          </Button>
-          <Button
-            color="primary"
-            isLoading={isValidating}
-            radius="full"
-            startContent={<RefreshCw className="h-4 w-4" />}
-            variant="flat"
-            onPress={() => mutate()}
-          >
-            Atualizar
-          </Button>
-        </div>
-      </header>
+        <Button color="primary" startContent={<Plus size={20} />} onPress={() => setIsCreateOpen(true)}>
+          Nova Diligência
+        </Button>
+      </div>
 
+      {/* Lista de Diligências */}
       {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Card
-              key={`diligencia-skeleton-${index}`}
-              className="border border-default-100/30 bg-default-50/10"
-            >
-              <CardBody className="space-y-2">
-                <Skeleton className="h-5 w-56 rounded-lg" isLoaded={false} />
-                <Skeleton className="h-3 w-64 rounded-lg" isLoaded={false} />
-              </CardBody>
-            </Card>
-          ))}
+        <div className="flex justify-center py-8">
+          <Spinner size="lg" color="primary" />
         </div>
-      ) : diligencias.length ? (
-        <div className="space-y-3">
-          {diligencias.map((diligencia) => {
-            return (
-              <Card
-                key={diligencia.id}
-                className="border border-default-100/30 bg-default-50/10"
-              >
-                <CardBody className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <h3 className="text-base font-semibold text-default-700">
-                        {diligencia.titulo}
-                      </h3>
-                      <div className="flex flex-wrap gap-2 text-xs text-default-500">
-                        {diligencia.tipo && (
-                          <Chip size="sm">{diligencia.tipo}</Chip>
-                        )}
-                        {diligencia.processo && (
-                          <Chip size="sm" variant="flat">
-                            Processo {diligencia.processo.numero}
-                          </Chip>
-                        )}
-                        {diligencia.causa && (
-                          <Chip color="secondary" size="sm" variant="flat">
-                            {diligencia.causa.nome}
-                          </Chip>
-                        )}
-                        {diligencia.contrato && (
-                          <Chip color="primary" size="sm" variant="flat">
-                            {diligencia.contrato.titulo}
-                          </Chip>
-                        )}
+      ) : diligencias.length > 0 ? (
+        <div className="grid gap-4">
+          {diligencias.map((diligencia: DiligenciaCompleta) => (
+            <Card key={diligencia.id} className="border-none shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]">
+              <CardBody className="p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                  {/* Título e Tipo */}
+                  <div className="lg:col-span-4">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-gradient-to-br from-primary-100 to-primary-200 p-3 rounded-xl">
+                        <FileText className="text-primary-600" size={20} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-default-800 text-lg">{diligencia.titulo}</h4>
+                        {diligencia.tipo && <p className="text-sm text-primary-600 font-medium">{diligencia.tipo}</p>}
+                        {diligencia.descricao && <p className="text-sm text-default-500 mt-1 line-clamp-2">{diligencia.descricao}</p>}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Relacionamentos */}
+                  <div className="lg:col-span-4">
+                    <div className="flex flex-wrap gap-2">
+                      {diligencia.processo && (
+                        <Chip color="secondary" size="sm" variant="flat" startContent={<Scale size={14} />}>
+                          {diligencia.processo.numero}
+                        </Chip>
+                      )}
+                      {diligencia.causa && (
+                        <Chip color="warning" size="sm" variant="flat" startContent={<AlertTriangle size={14} />}>
+                          {diligencia.causa.nome}
+                        </Chip>
+                      )}
+                      {diligencia.contrato && (
+                        <Chip color="primary" size="sm" variant="flat" startContent={<FileCheck size={14} />}>
+                          {diligencia.contrato.titulo}
+                        </Chip>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <div className="lg:col-span-2">
                     <Select
                       aria-label="Status da diligência"
                       selectedKeys={[diligencia.status]}
                       size="sm"
+                      variant="bordered"
                       onSelectionChange={(keys) => {
                         const [value] = Array.from(keys) as string[];
-
                         handleStatusChange(diligencia, value);
                       }}
                     >
                       {STATUS_OPTIONS.map((option) => (
-                        <SelectItem key={option.key}>{option.label}</SelectItem>
+                        <SelectItem key={option.key} startContent={option.icon}>
+                          {option.label}
+                        </SelectItem>
                       ))}
                     </Select>
                   </div>
 
-                  {diligencia.descricao && (
-                    <p className="text-sm text-default-500">
-                      {diligencia.descricao}
-                    </p>
-                  )}
-
-                  <div className="flex flex-wrap gap-3 text-xs text-default-400">
-                    {diligencia.prazoPrevisto && (
-                      <span>
-                        Prazo previsto: {formatDate(diligencia.prazoPrevisto)}
-                      </span>
-                    )}
-                    {diligencia.prazoConclusao && (
-                      <span>
-                        Concluída em: {formatDate(diligencia.prazoConclusao)}
-                      </span>
-                    )}
-                    <span>Criada em: {formatDate(diligencia.createdAt)}</span>
-                    {diligencia.responsavel && (
-                      <span>
-                        Responsável:{" "}
-                        {[
-                          diligencia.responsavel.firstName,
-                          diligencia.responsavel.lastName,
-                        ]
-                          .filter(Boolean)
-                          .join(" ") || diligencia.responsavel.email}
-                      </span>
-                    )}
+                  {/* Informações */}
+                  <div className="lg:col-span-2">
+                    <div className="text-sm space-y-1">
+                      {diligencia.prazoPrevisto && (
+                        <div className="flex items-center gap-2 text-warning-600">
+                          <Calendar size={14} />
+                          <span>Prazo: {formatDate(diligencia.prazoPrevisto)}</span>
+                        </div>
+                      )}
+                      {diligencia.responsavel && (
+                        <div className="flex items-center gap-2 text-default-600">
+                          <User size={14} />
+                          <span>{[diligencia.responsavel.firstName, diligencia.responsavel.lastName].filter(Boolean).join(" ") || diligencia.responsavel.email}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 text-default-400">
+                        <Clock size={14} />
+                        <span>{formatDate(diligencia.createdAt)}</span>
+                      </div>
+                    </div>
                   </div>
-                </CardBody>
-              </Card>
-            );
-          })}
+                </div>
+              </CardBody>
+            </Card>
+          ))}
         </div>
       ) : (
-        <Card className="border border-default-100/30 bg-default-50/10">
-          <CardBody className="text-sm text-default-500">
-            Nenhuma diligência cadastrada ainda.
+        <Card className="border-none shadow-lg">
+          <CardBody className="text-center py-16">
+            <div className="bg-gradient-to-br from-default-100 to-default-50 rounded-2xl p-12 border border-default-200">
+              <FileText className="mx-auto text-default-300 mb-6" size={80} />
+              <h3 className="text-xl font-bold text-default-700 mb-2">Nenhuma diligência encontrada</h3>
+              <p className="text-default-500 mb-8 max-w-md mx-auto">Comece criando sua primeira diligência para acompanhar tarefas e prazos</p>
+              <Button color="primary" size="lg" startContent={<Plus size={20} />} onPress={() => setIsCreateOpen(true)} className="font-semibold">
+                Criar Primeira Diligência
+              </Button>
+            </div>
           </CardBody>
         </Card>
       )}
 
       <CreateDiligenciaModal
         causas={causas ?? []}
-        clientes={clientes}
+        clientes={clientesList as ClienteCompleto[]}
         contratos={contratosDoCliente}
         isOpen={isCreateOpen}
         isSubmitting={isCreating}
         processos={processosDoCliente}
         regimes={regimes ?? []}
+        usuarios={usuarios ?? []}
         setState={setCreateState}
         state={createState}
         onClose={() => setIsCreateOpen(false)}
         onSubmit={handleCreateDiligencia}
+        onClienteChange={handleClienteChange}
+        loadingClientes={loadingClientes}
+        loadingCausas={loadingCausas}
+        loadingRegimes={loadingRegimes}
+        loadingUsuarios={loadingUsuarios}
       />
-    </section>
+    </div>
   );
 }
 
@@ -385,62 +390,20 @@ interface CreateDiligenciaModalProps {
   isOpen: boolean;
   onClose: () => void;
   isSubmitting: boolean;
-  causas: Array<{ id: string; nome: string; codigoCnj?: string | null }>;
-  regimes: Array<{
-    id: string;
-    nome: string;
-    tipo: string;
-    contarDiasUteis: boolean;
-  }>;
-  clientes: Array<{
-    id: string;
-    nome: string;
-    processos: Array<{
-      id: string;
-      numero: string;
-      titulo: string | null;
-    }>;
-    contratos: Array<{
-      id: string;
-      titulo: string;
-    }>;
-  }>;
-  processos: Array<{
-    id: string;
-    numero: string;
-    titulo: string | null;
-  }>;
-  contratos: Array<{
-    id: string;
-    titulo: string;
-  }>;
-  state: {
-    clienteId: string;
-    processoId: string;
-    contratoId: string;
-    causaId: string;
-    regimePrazoId: string;
-    titulo: string;
-    tipo: string;
-    descricao: string;
-    responsavelId: string;
-    prazoPrevisto: string;
-  };
-  setState: React.Dispatch<
-    React.SetStateAction<{
-      clienteId: string;
-      processoId: string;
-      contratoId: string;
-      causaId: string;
-      regimePrazoId: string;
-      titulo: string;
-      tipo: string;
-      descricao: string;
-      responsavelId: string;
-      prazoPrevisto: string;
-    }>
-  >;
+  causas: Causa[];
+  regimes: RegimePrazo[];
+  clientes: ClienteCompleto[];
+  processos: Processo[];
+  contratos: Contrato[];
+  usuarios: Usuario[];
+  state: DiligenciaFormData;
+  setState: React.Dispatch<React.SetStateAction<DiligenciaFormData>>;
   onSubmit: () => void;
+  onClienteChange: (clienteId: string) => void;
+  loadingClientes: boolean;
+  loadingCausas: boolean;
+  loadingRegimes: boolean;
+  loadingUsuarios: boolean;
 }
 
 function CreateDiligenciaModal({
@@ -452,213 +415,314 @@ function CreateDiligenciaModal({
   clientes,
   processos,
   contratos,
+  usuarios,
   state,
   setState,
   onSubmit,
+  onClienteChange,
+  loadingClientes,
+  loadingCausas,
+  loadingRegimes,
+  loadingUsuarios,
 }: CreateDiligenciaModalProps) {
+  const selectedCliente = clientes.find((c) => c.id === state.clienteId);
+
   return (
-    <Modal
-      isOpen={isOpen}
-      size="lg"
-      onOpenChange={(open) => !open && onClose()}
-    >
+    <Modal isOpen={isOpen} scrollBehavior="inside" size="5xl" onOpenChange={(open) => !open && onClose()}>
       <ModalContent>
-        {() => (
-          <>
-            <ModalHeader className="flex flex-col gap-1">
-              <h3 className="text-lg font-semibold text-default-900">
-                Nova diligência
-              </h3>
-              <p className="text-sm text-default-500">
-                Informe os vínculos e detalhes da nova diligência.
-              </p>
-            </ModalHeader>
-            <ModalBody className="space-y-3">
-              <Select
-                label="Cliente"
-                placeholder="Selecione um cliente"
-                selectedKeys={state.clienteId ? [state.clienteId] : []}
-                onSelectionChange={(keys) => {
-                  const [value] = Array.from(keys) as string[];
+        <ModalHeader className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <FileText className="text-primary" size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">Nova Diligência</h3>
+              <p className="text-sm text-default-500">Complete as informações da diligência</p>
+            </div>
+          </div>
+        </ModalHeader>
 
-                  setState((prev) => ({
-                    ...prev,
-                    clienteId: value || "",
-                    processoId: "",
-                    contratoId: "",
-                  }));
-                }}
-              >
-                {clientes.map((cliente) => (
-                  <SelectItem key={cliente.id}>{cliente.nome}</SelectItem>
-                ))}
-              </Select>
+        <ModalBody className="px-0">
+          <Tabs
+            aria-label="Formulário de diligência"
+            classNames={{
+              tabList: "gap-8 w-full relative rounded-none p-6 pb-0 border-b border-divider",
+              cursor: "w-full bg-primary",
+              tab: "max-w-fit px-4 h-12",
+              tabContent: "group-data-[selected=true]:text-primary font-medium",
+              panel: "pt-6",
+            }}
+            color="primary"
+            variant="underlined"
+          >
+            <Tab
+              key="basico"
+              title={
+                <div className="flex items-center space-x-3">
+                  <div className="p-1 rounded-md bg-blue-100 dark:bg-blue-900">
+                    <FileText className="text-blue-600 dark:text-blue-400" size={16} />
+                  </div>
+                  <span>Básico</span>
+                </div>
+              }
+            >
+              <div className="px-6 pb-6 space-y-6">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                    <FileText size={20} />
+                    Informações Básicas
+                  </h3>
 
-              <Select
-                isDisabled={!processos.length}
-                label="Processo"
-                placeholder="Opcional"
-                selectedKeys={state.processoId ? [state.processoId] : []}
-                onSelectionChange={(keys) => {
-                  const [value] = Array.from(keys) as string[];
+                  <div className="grid grid-cols-1 gap-4">
+                    <Input
+                      isRequired
+                      label="Título"
+                      placeholder="Ex: Protocolo de petição inicial"
+                      value={state.titulo}
+                      onValueChange={(value) => setState((prev) => ({ ...prev, titulo: value }))}
+                      startContent={<FileText className="text-default-400" size={16} />}
+                    />
 
-                  setState((prev) => ({
-                    ...prev,
-                    processoId: value || "",
-                  }));
-                }}
-              >
-                {processos.map((processo) => (
-                  <SelectItem key={processo.id}>
-                    {processo.numero}
-                    {processo.titulo ? ` · ${processo.titulo}` : ""}
-                  </SelectItem>
-                ))}
-              </Select>
+                    <Input
+                      label="Tipo"
+                      placeholder="Ex: Audiência, Protocolo, Análise"
+                      value={state.tipo}
+                      onValueChange={(value) => setState((prev) => ({ ...prev, tipo: value }))}
+                      startContent={<FileCheck className="text-default-400" size={16} />}
+                    />
 
-              <Select
-                isDisabled={!contratos.length}
-                label="Contrato"
-                placeholder="Opcional"
-                selectedKeys={state.contratoId ? [state.contratoId] : []}
-                onSelectionChange={(keys) => {
-                  const [value] = Array.from(keys) as string[];
+                    <Textarea
+                      label="Descrição"
+                      placeholder="Descrição detalhada da diligência"
+                      value={state.descricao}
+                      onValueChange={(value) => setState((prev) => ({ ...prev, descricao: value }))}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+            </Tab>
 
-                  setState((prev) => ({
-                    ...prev,
-                    contratoId: value || "",
-                  }));
-                }}
-              >
-                {contratos.map((contrato) => (
-                  <SelectItem key={contrato.id}>{contrato.titulo}</SelectItem>
-                ))}
-              </Select>
+            <Tab
+              key="relacionamentos"
+              title={
+                <div className="flex items-center space-x-3">
+                  <div className="p-1 rounded-md bg-green-100 dark:bg-green-900">
+                    <Users className="text-green-600 dark:text-green-400" size={16} />
+                  </div>
+                  <span>Relacionamentos</span>
+                </div>
+              }
+            >
+              <div className="px-6 pb-6 space-y-6">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-green-700 dark:text-green-300">
+                    <Users size={20} />
+                    Cliente e Relacionamentos
+                  </h3>
 
-              <Select
-                label="Causa"
-                placeholder="Opcional"
-                selectedKeys={state.causaId ? [state.causaId] : []}
-                onSelectionChange={(keys) => {
-                  const [value] = Array.from(keys) as string[];
+                  <div className="grid grid-cols-1 gap-4">
+                    <Select
+                      label="Cliente"
+                      placeholder="Selecione um cliente"
+                      selectedKeys={state.clienteId ? [state.clienteId] : []}
+                      onSelectionChange={(keys) => {
+                        const [value] = Array.from(keys) as string[];
+                        onClienteChange(value || "");
+                      }}
+                      startContent={<User className="text-default-400" size={16} />}
+                      isLoading={loadingClientes}
+                    >
+                      {clientes.map((cliente) => (
+                        <SelectItem key={cliente.id} textValue={cliente.nome}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{cliente.nome}</span>
+                            <span className="text-sm text-default-500">
+                              {cliente.processos.length} processos • {cliente.contratos.length} contratos
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </Select>
 
-                  setState((prev) => ({
-                    ...prev,
-                    causaId: value || "",
-                  }));
-                }}
-              >
-                {causas.map((causa) => (
-                  <SelectItem key={causa.id}>{causa.nome}</SelectItem>
-                ))}
-              </Select>
+                    {selectedCliente && (
+                      <div className="bg-primary/5 rounded-lg border border-primary/20 p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 rounded-md bg-primary/10">
+                            <Building className="text-primary" size={16} />
+                          </div>
+                          <div>
+                            <p className="font-medium">Informações do Cliente</p>
+                            <p className="text-sm text-default-500">Dados relacionados ao cliente selecionado</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <p className="text-primary-600 font-medium">Processos</p>
+                            <p className="text-default-800">{selectedCliente.processos.length} cadastrados</p>
+                          </div>
+                          <div>
+                            <p className="text-primary-600 font-medium">Contratos</p>
+                            <p className="text-default-800">{selectedCliente.contratos.length} cadastrados</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-              <Select
-                label="Regime de prazo"
-                placeholder="Opcional"
-                selectedKeys={state.regimePrazoId ? [state.regimePrazoId] : []}
-                onSelectionChange={(keys) => {
-                  const [value] = Array.from(keys) as string[];
+                    <Select
+                      isDisabled={!processos.length}
+                      label="Processo"
+                      placeholder="Opcional - Selecione um processo"
+                      selectedKeys={state.processoId ? [state.processoId] : []}
+                      onSelectionChange={(keys) => {
+                        const [value] = Array.from(keys) as string[];
+                        setState((prev) => ({ ...prev, processoId: value || "" }));
+                      }}
+                      startContent={<Scale className="text-default-400" size={16} />}
+                    >
+                      {processos.map((processo) => (
+                        <SelectItem key={processo.id} textValue={processo.numero}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{processo.numero}</span>
+                            {processo.titulo && <span className="text-sm text-default-500">{processo.titulo}</span>}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </Select>
 
-                  setState((prev) => ({
-                    ...prev,
-                    regimePrazoId: value || "",
-                  }));
-                }}
-              >
-                {regimes.map((regime) => (
-                  <SelectItem key={regime.id}>{regime.nome}</SelectItem>
-                ))}
-              </Select>
+                    <Select
+                      isDisabled={!contratos.length}
+                      label="Contrato"
+                      placeholder="Opcional - Selecione um contrato"
+                      selectedKeys={state.contratoId ? [state.contratoId] : []}
+                      onSelectionChange={(keys) => {
+                        const [value] = Array.from(keys) as string[];
+                        setState((prev) => ({ ...prev, contratoId: value || "" }));
+                      }}
+                      startContent={<FileCheck className="text-default-400" size={16} />}
+                    >
+                      {contratos.map((contrato) => (
+                        <SelectItem key={contrato.id} textValue={contrato.titulo}>
+                          {contrato.titulo}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </Tab>
 
-              <Input
-                isRequired
-                label="Título"
-                value={state.titulo}
-                onValueChange={(value) =>
-                  setState((prev) => ({
-                    ...prev,
-                    titulo: value,
-                  }))
-                }
-              />
+            <Tab
+              key="detalhes"
+              title={
+                <div className="flex items-center space-x-3">
+                  <div className="p-1 rounded-md bg-orange-100 dark:bg-orange-900">
+                    <CalendarDays className="text-orange-600 dark:text-orange-400" size={16} />
+                  </div>
+                  <span>Detalhes</span>
+                </div>
+              }
+            >
+              <div className="px-6 pb-6 space-y-6">
+                <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                    <CalendarDays size={20} />
+                    Causa, Prazo e Responsável
+                  </h3>
 
-              <Input
-                label="Tipo"
-                placeholder="Ex.: Audiência, Protocolo"
-                value={state.tipo}
-                onValueChange={(value) =>
-                  setState((prev) => ({
-                    ...prev,
-                    tipo: value,
-                  }))
-                }
-              />
+                  <div className="grid grid-cols-1 gap-4">
+                    <Select
+                      label="Causa"
+                      placeholder="Opcional - Selecione uma causa"
+                      selectedKeys={state.causaId ? [state.causaId] : []}
+                      onSelectionChange={(keys) => {
+                        const [value] = Array.from(keys) as string[];
+                        setState((prev) => ({ ...prev, causaId: value || "" }));
+                      }}
+                      startContent={<AlertTriangle className="text-default-400" size={16} />}
+                      isLoading={loadingCausas}
+                    >
+                      {causas.map((causa) => (
+                        <SelectItem key={causa.id} textValue={causa.nome}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{causa.nome}</span>
+                            {causa.codigoCnj && <span className="text-sm text-default-500">{causa.codigoCnj}</span>}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </Select>
 
-              <Textarea
-                label="Descrição"
-                value={state.descricao}
-                onValueChange={(value) =>
-                  setState((prev) => ({
-                    ...prev,
-                    descricao: value,
-                  }))
-                }
-              />
+                    <Select
+                      label="Regime de Prazo"
+                      placeholder="Opcional - Selecione um regime"
+                      selectedKeys={state.regimePrazoId ? [state.regimePrazoId] : []}
+                      onSelectionChange={(keys) => {
+                        const [value] = Array.from(keys) as string[];
+                        setState((prev) => ({ ...prev, regimePrazoId: value || "" }));
+                      }}
+                      startContent={<Clock className="text-default-400" size={16} />}
+                      isLoading={loadingRegimes}
+                    >
+                      {regimes.map((regime) => (
+                        <SelectItem key={regime.id} textValue={regime.nome}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{regime.nome}</span>
+                            <span className="text-sm text-default-500">
+                              {regime.tipo} • {regime.contarDiasUteis ? "Dias úteis" : "Dias corridos"}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </Select>
 
-              <Input
-                label="Responsável (ID do usuário)"
-                value={state.responsavelId}
-                onValueChange={(value) =>
-                  setState((prev) => ({
-                    ...prev,
-                    responsavelId: value,
-                  }))
-                }
-              />
+                    <Input
+                      label="Prazo Previsto"
+                      type="date"
+                      value={state.prazoPrevisto}
+                      onChange={(e) => setState((prev) => ({ ...prev, prazoPrevisto: e.target.value }))}
+                      startContent={<Calendar className="text-orange-500" size={16} />}
+                    />
 
-              <Input
-                label="Prazo previsto"
-                placeholder="AAAA-MM-DD"
-                type="date"
-                value={state.prazoPrevisto}
-                onChange={(event) =>
-                  setState((prev) => ({
-                    ...prev,
-                    prazoPrevisto: event.target.value,
-                  }))
-                }
-              />
-            </ModalBody>
-            <ModalFooter>
-              <Button disabled={isSubmitting} variant="light" onPress={onClose}>
-                Cancelar
-              </Button>
-              <Button
-                color="primary"
-                isLoading={isSubmitting}
-                onPress={onSubmit}
-              >
-                Criar diligência
-              </Button>
-            </ModalFooter>
-          </>
-        )}
+                    <Select
+                      label="Responsável"
+                      placeholder="Selecione quem será responsável pela diligência"
+                      selectedKeys={state.responsavelId ? [state.responsavelId] : []}
+                      onSelectionChange={(keys) => {
+                        const [value] = Array.from(keys) as string[];
+                        setState((prev) => ({ ...prev, responsavelId: value || "" }));
+                      }}
+                      startContent={<UserCheck className="text-default-400" size={16} />}
+                      isLoading={loadingUsuarios}
+                    >
+                      {usuarios.map((usuario) => (
+                        <SelectItem key={usuario.id} textValue={`${usuario.firstName} ${usuario.lastName}`}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {usuario.firstName} {usuario.lastName}
+                            </span>
+                            <span className="text-sm text-default-500">
+                              {usuario.email} • {usuario.role}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </Tab>
+          </Tabs>
+        </ModalBody>
+
+        <ModalFooter className="px-6">
+          <Button variant="light" onPress={onClose}>
+            Cancelar
+          </Button>
+          <Button color="primary" isLoading={isSubmitting} startContent={!isSubmitting ? <CheckCircle size={16} /> : undefined} onPress={onSubmit}>
+            {isSubmitting ? "Criando..." : "Criar Diligência"}
+          </Button>
+        </ModalFooter>
       </ModalContent>
     </Modal>
   );
-}
-
-function formatDate(value: string | null): string {
-  if (!value) return "—";
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
 }

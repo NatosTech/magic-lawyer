@@ -832,7 +832,13 @@ export async function getContratosComParcelas(): Promise<{
 
       const valorTotalParcelas = parcelasExistentes.reduce((total, parcela) => total + Number(parcela.valor), 0);
 
-      const valorDisponivel = valorTotalContrato - valorTotalParcelas;
+      // Calcular valor já comprometido (pendentes + em andamento)
+      const parcelasComprometidas = parcelasExistentes.filter((p) => p.status === "PENDENTE" || p.status === "EM_ANDAMENTO");
+
+      const valorComprometido = parcelasComprometidas.reduce((total, parcela) => total + Number(parcela.valor), 0);
+
+      // Valor disponível = valor total - valor comprometido (não pago)
+      const valorDisponivel = valorTotalContrato - valorComprometido;
       const parcelasPendentes = parcelasExistentes.filter((p) => p.status === "PENDENTE").length;
 
       const parcelasPagas = parcelasExistentes.filter((p) => p.status === "PAGO").length;
@@ -841,6 +847,7 @@ export async function getContratosComParcelas(): Promise<{
         ...contrato,
         valor: valorTotalContrato,
         valorTotalParcelas,
+        valorComprometido,
         valorDisponivel,
         parcelasPendentes,
         parcelasPagas,

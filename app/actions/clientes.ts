@@ -3,7 +3,7 @@
 import bcrypt from "bcryptjs";
 
 import { getSession } from "@/app/lib/auth";
-import prisma, { toNumber } from "@/app/lib/prisma";
+import prisma, { toNumber, convertAllDecimalFields } from "@/app/lib/prisma";
 import { TipoPessoa, Prisma } from "@/app/generated/prisma";
 import logger from "@/lib/logger";
 
@@ -75,9 +75,7 @@ export interface ClienteComProcessos extends Cliente {
 // HELPER FUNCTIONS
 // ============================================
 
-async function getAdvogadoIdFromSession(session: {
-  user: any;
-}): Promise<string | null> {
+async function getAdvogadoIdFromSession(session: { user: any }): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   // Buscar advogado vinculado ao usuário
@@ -92,9 +90,7 @@ async function getAdvogadoIdFromSession(session: {
   return advogado?.id || null;
 }
 
-async function getClienteIdFromSession(session: {
-  user: any;
-}): Promise<string | null> {
+async function getClienteIdFromSession(session: { user: any }): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   // Buscar cliente vinculado ao usuário
@@ -462,8 +458,7 @@ export interface ClienteCreateInput {
  * Gera uma senha aleatória segura
  */
 function generatePassword(length: number = 12): string {
-  const charset =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*";
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*";
   let password = "";
 
   for (let i = 0; i < length; i++) {
@@ -501,11 +496,7 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
     }
 
     // Verificar se usuário tem permissão para criar clientes
-    if (
-      user.role !== "ADMIN" &&
-      user.role !== "ADVOGADO" &&
-      user.role !== "SUPER_ADMIN"
-    ) {
+    if (user.role !== "ADMIN" && user.role !== "ADVOGADO" && user.role !== "SUPER_ADMIN") {
       return { success: false, error: "Sem permissão para criar clientes" };
     }
 
@@ -546,8 +537,7 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
       if (superAdminExistente) {
         return {
           success: false,
-          error:
-            "Este email pertence a um Super Admin e não pode ser usado para clientes",
+          error: "Este email pertence a um Super Admin e não pode ser usado para clientes",
         };
       }
 
@@ -659,7 +649,7 @@ export interface ClienteUpdateInput {
  */
 export async function updateCliente(
   clienteId: string,
-  data: ClienteUpdateInput,
+  data: ClienteUpdateInput
 ): Promise<{
   success: boolean;
   cliente?: Cliente;
@@ -975,6 +965,89 @@ export async function getClientesParaSelect() {
   }
 }
 
+/**
+ * Busca clientes com seus processos e contratos para diligências
+ */
+export async function getClientesComRelacionamentos() {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado", clientes: [] };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado", clientes: [] };
+    }
+
+    let whereClause: Prisma.ClienteWhereInput = {
+      tenantId: user.tenantId,
+      deletedAt: null,
+    };
+
+    // Se for ADVOGADO, filtrar apenas clientes vinculados
+    if (user.role === "ADVOGADO") {
+      const advogadoId = await getAdvogadoIdFromSession(session);
+
+      if (!advogadoId) {
+        return {
+          success: false,
+          error: "Advogado não encontrado",
+          clientes: [],
+        };
+      }
+
+      whereClause.advogadoClientes = {
+        some: {
+          advogadoId: advogadoId,
+        },
+      };
+    }
+
+    const clientes = await prisma.cliente.findMany({
+      where: whereClause,
+      include: {
+        processos: true,
+        contratos: true,
+      },
+      orderBy: {
+        nome: "asc",
+      },
+    });
+
+    // Converter valores Decimal para number recursivamente
+    const clientesFormatted = clientes.map((cliente) => {
+      const clienteConvertido = convertAllDecimalFields(cliente);
+
+      // Converter também os relacionamentos
+      if (clienteConvertido.processos) {
+        clienteConvertido.processos = clienteConvertido.processos.map((processo: any) => convertAllDecimalFields(processo));
+      }
+
+      if (clienteConvertido.contratos) {
+        clienteConvertido.contratos = clienteConvertido.contratos.map((contrato: any) => convertAllDecimalFields(contrato));
+      }
+
+      return JSON.parse(JSON.stringify(clienteConvertido));
+    });
+
+    return {
+      success: true,
+      clientes: clientesFormatted,
+    };
+  } catch (error) {
+    logger.error("Erro ao buscar clientes com relacionamentos:", error);
+
+    return {
+      success: false,
+      error: "Erro ao buscar clientes",
+      clientes: [],
+    };
+  }
+}
+
 // ============================================
 // ACTIONS - ANEXAR DOCUMENTO
 // ============================================
@@ -991,10 +1064,7 @@ export interface DocumentoCreateInput {
 /**
  * Anexa um documento a um cliente
  */
-export async function anexarDocumentoCliente(
-  clienteId: string,
-  formData: FormData,
-) {
+export async function anexarDocumentoCliente(clienteId: string, formData: FormData) {
   try {
     const session = await getSession();
 
@@ -1076,15 +1146,12 @@ export async function anexarDocumentoCliente(
     const v2 = await import("cloudinary");
     const cloudinary = v2.v2;
 
-    const uploadResult = await cloudinary.uploader.upload(
-      `data:${arquivo.type};base64,${buffer.toString("base64")}`,
-      {
-        folder: folderPath,
-        resource_type: "auto",
-        public_id: `${Date.now()}_${arquivo.name.replace(/[^a-z0-9.]/gi, "_")}`,
-        tags: ["cliente", "documento", cliente.id],
-      },
-    );
+    const uploadResult = await cloudinary.uploader.upload(`data:${arquivo.type};base64,${buffer.toString("base64")}`, {
+      folder: folderPath,
+      resource_type: "auto",
+      public_id: `${Date.now()}_${arquivo.name.replace(/[^a-z0-9.]/gi, "_")}`,
+      tags: ["cliente", "documento", cliente.id],
+    });
 
     // Criar documento no banco
     const documento = await prisma.documento.create({
@@ -1354,10 +1421,7 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
     });
 
     // Registrar no log de auditoria
-    const nomeCompleto =
-      user.firstName && user.lastName
-        ? `${user.firstName} ${user.lastName}`.trim()
-        : user.email;
+    const nomeCompleto = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : user.email;
 
     await prisma.auditLog.create({
       data: {
