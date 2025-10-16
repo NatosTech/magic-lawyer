@@ -57,6 +57,9 @@ import {
   gerarParcelasAutomaticamente,
 } from "@/app/actions/parcelas-contrato";
 import { title, subtitle } from "@/components/primitives";
+import { DadosBancariosParcela } from "@/components/dados-bancarios-parcela";
+import { ComprovantePagamentoUpload } from "@/components/comprovante-pagamento-upload";
+import { ValidacaoContaPrincipal } from "@/components/validacao-conta-principal";
 
 type StatusParcela = "PENDENTE" | "PAGA" | "ATRASADA" | "CANCELADA";
 
@@ -81,6 +84,7 @@ export default function ParcelasContratoPage() {
     contratoId?: string;
     status?: StatusParcela;
   }>({});
+  const [contaValida, setContaValida] = useState<boolean | null>(null);
 
   // Formulário
   const [formData, setFormData] = useState<ParcelaFormData>({
@@ -534,7 +538,7 @@ export default function ParcelasContratoPage() {
       </Card>
 
       {/* Modal de Criação/Edição */}
-      <Modal isOpen={modalOpen} size="2xl" onClose={handleCloseModal}>
+      <Modal isOpen={modalOpen} size="4xl" onClose={handleCloseModal}>
         <ModalContent>
           <ModalHeader>
             {editingId ? "Editar Parcela" : "Nova Parcela"}
@@ -650,6 +654,58 @@ export default function ParcelasContratoPage() {
                 setFormData({ ...formData, descricao: e.target.value })
               }
             />
+
+            {/* Validação da Conta - apenas se contrato selecionado */}
+            {formData.contratoId && (
+              <div className="space-y-4">
+                <Divider />
+                <ValidacaoContaPrincipal
+                  contratoId={formData.contratoId}
+                  onContaValidada={setContaValida}
+                />
+              </div>
+            )}
+
+            {/* Dados Bancários - apenas se contrato selecionado e valor > 0 */}
+            {formData.contratoId && formData.valor > 0 && contaValida && (
+              <div className="space-y-4">
+                <Divider />
+                <DadosBancariosParcela
+                  contratoId={formData.contratoId}
+                  valor={formData.valor}
+                  descricao={formData.descricao || formData.titulo || "Pagamento de parcela"}
+                  vencimento={formData.dataVencimento}
+                  parcelaId={editingId || undefined}
+                />
+              </div>
+            )}
+
+            {/* Aviso se conta inválida */}
+            {formData.contratoId && formData.valor > 0 && contaValida === false && (
+              <div className="bg-danger-50 border border-danger-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <XCircleIcon className="h-5 w-5 text-danger" />
+                  <span className="text-sm font-medium text-danger-700">
+                    Conta Bancária Inválida
+                  </span>
+                </div>
+                <p className="text-sm text-danger-600">
+                  A conta bancária do contrato não passou na validação. 
+                  Corrija os problemas antes de prosseguir com o pagamento.
+                </p>
+              </div>
+            )}
+
+            {/* Comprovante de Pagamento - apenas para parcelas existentes */}
+            {editingId && (
+              <div className="space-y-4">
+                <Divider />
+                <ComprovantePagamentoUpload
+                  parcelaId={editingId}
+                  readonly={formData.status === "PAGA"}
+                />
+              </div>
+            )}
 
             {!editingId && (
               <div className="mt-4 p-4 bg-blue-50 rounded-lg">
