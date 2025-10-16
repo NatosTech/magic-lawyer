@@ -29,12 +29,7 @@ async function getUserId(): Promise<string> {
 // LISTAR PARCELAS DE CONTRATO
 // ============================================
 
-export async function listParcelasContrato(filters?: {
-  contratoId?: string;
-  status?: "PENDENTE" | "PAGA" | "ATRASADA" | "CANCELADA";
-  dataVencimentoInicio?: Date;
-  dataVencimentoFim?: Date;
-}) {
+export async function listParcelasContrato(filters?: { contratoId?: string; status?: "PENDENTE" | "PAGA" | "ATRASADA" | "CANCELADA"; dataVencimentoInicio?: Date; dataVencimentoFim?: Date }) {
   try {
     const tenantId = await getTenantId();
 
@@ -65,32 +60,15 @@ export async function listParcelasContrato(filters?: {
       include: {
         contrato: {
           include: {
-            cliente: {
-              select: {
-                nome: true,
-                email: true,
-                telefone: true,
-              },
-            },
+            cliente: true,
             advogadoResponsavel: {
-              select: {
-                usuario: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                    email: true,
-                  },
-                },
+              include: {
+                usuario: true,
               },
             },
           },
         },
-        responsavelUsuario: {
-          select: {
-            nome: true,
-            email: true,
-          },
-        },
+        responsavelUsuario: true,
       },
       orderBy: [{ dataVencimento: "asc" }, { numeroParcela: "asc" }],
     });
@@ -126,43 +104,16 @@ export async function getParcelaContrato(id: string) {
       include: {
         contrato: {
           include: {
-            cliente: {
-              select: {
-                id: true,
-                nome: true,
-                email: true,
-                telefone: true,
-              },
-            },
+            cliente: true,
             advogadoResponsavel: {
-              select: {
-                id: true,
-                usuario: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                    email: true,
-                  },
-                },
+              include: {
+                usuario: true,
               },
             },
           },
         },
-        responsavelUsuario: {
-          select: {
-            id: true,
-            nome: true,
-            email: true,
-          },
-        },
-        comprovanteDocumento: {
-          select: {
-            id: true,
-            nome: true,
-            url: true,
-            tipo: true,
-          },
-        },
+        responsavelUsuario: true,
+        comprovanteDocumento: true,
       },
     });
 
@@ -251,21 +202,10 @@ export async function createParcelaContrato(data: {
       include: {
         contrato: {
           include: {
-            cliente: {
-              select: {
-                nome: true,
-                email: true,
-              },
-            },
+            cliente: true,
             advogadoResponsavel: {
-              select: {
-                usuario: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                    email: true,
-                  },
-                },
+              include: {
+                usuario: true,
               },
             },
           },
@@ -306,7 +246,7 @@ export async function updateParcelaContrato(
     dataPagamento?: Date;
     formaPagamento?: string;
     responsavelUsuarioId?: string;
-  },
+  }
 ) {
   try {
     const tenantId = await getTenantId();
@@ -349,21 +289,10 @@ export async function updateParcelaContrato(
       include: {
         contrato: {
           include: {
-            cliente: {
-              select: {
-                nome: true,
-                email: true,
-              },
-            },
+            cliente: true,
             advogadoResponsavel: {
-              select: {
-                usuario: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                    email: true,
-                  },
-                },
+              include: {
+                usuario: true,
               },
             },
           },
@@ -445,7 +374,7 @@ export async function gerarParcelasAutomaticamente(
     dataPrimeiroVencimento: Date;
     intervaloDias?: number; // Padrão: 30 dias
     tituloBase?: string;
-  },
+  }
 ) {
   try {
     const tenantId = await getTenantId();
@@ -494,9 +423,7 @@ export async function gerarParcelasAutomaticamente(
           tenantId,
           contratoId,
           numeroParcela: i,
-          titulo: configuracao.tituloBase
-            ? `${configuracao.tituloBase} ${i}/${configuracao.numeroParcelas}`
-            : `Parcela ${i}/${configuracao.numeroParcelas}`,
+          titulo: configuracao.tituloBase ? `${configuracao.tituloBase} ${i}/${configuracao.numeroParcelas}` : `Parcela ${i}/${configuracao.numeroParcelas}`,
           valor: valorParcela,
           dataVencimento,
           status: "PENDENTE",
@@ -532,15 +459,7 @@ export async function getDashboardParcelas() {
   try {
     const tenantId = await getTenantId();
 
-    const [
-      totalParcelas,
-      parcelasPendentes,
-      parcelasPagas,
-      parcelasAtrasadas,
-      valorTotalPendente,
-      valorTotalPago,
-      parcelasVencendo,
-    ] = await Promise.all([
+    const [totalParcelas, parcelasPendentes, parcelasPagas, parcelasAtrasadas, valorTotalPendente, valorTotalPago, parcelasVencendo] = await Promise.all([
       // Total de parcelas
       prisma.contratoParcela.count({
         where: { tenantId },

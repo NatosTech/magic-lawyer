@@ -27,9 +27,33 @@ import {
   DropdownMenu,
   DropdownItem,
   Textarea,
-  DatePicker,
+  Divider,
+  Tabs,
+  Tab,
 } from "@heroui/react";
-import { PlusIcon, EyeIcon, PencilIcon, TrashIcon, ReceiptIcon, CalendarIcon, AlertTriangleIcon, CheckCircleIcon, ClockIcon, XCircleIcon, FilterIcon, RefreshCwIcon } from "lucide-react";
+import {
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+  ReceiptIcon,
+  CalendarIcon,
+  AlertTriangleIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  XCircleIcon,
+  FilterIcon,
+  RefreshCwIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+  DollarSignIcon,
+  UsersIcon,
+  FileTextIcon,
+  CreditCardIcon,
+  BanknoteIcon,
+  ArrowUpDownIcon,
+  ShieldIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { useParcelasContrato, useDashboardParcelas, useStatusParcelas } from "@/app/hooks/use-parcelas-contrato";
@@ -273,63 +297,96 @@ export default function ParcelasContratoPage() {
 
       {/* Dashboard */}
       {loadingDashboard ? (
-        <div className="flex justify-center py-4">
-          <Spinner size="lg" />
+        <div className="flex justify-center py-8">
+          <Spinner size="lg" color="primary" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardBody className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <ReceiptIcon className="text-blue-500" size={24} />
-                <span className="text-2xl font-bold">{dashboard?.totalParcelas || 0}</span>
+        <Card className="border border-white/10 bg-gradient-to-br from-background/80 to-background/60 backdrop-blur-xl overflow-hidden">
+          <CardHeader className="relative pb-4">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/5 to-primary/10 opacity-50" />
+            <div className="relative flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30">
+                <ReceiptIcon className="w-6 h-6 text-primary" />
               </div>
-              <p className="text-sm text-gray-600">Total de Parcelas</p>
-            </CardBody>
-          </Card>
+              <div>
+                <h2 className="text-xl font-bold text-white">Dashboard de Parcelas</h2>
+                <p className="text-sm text-primary-300">Visão geral das parcelas de contratos</p>
+              </div>
+            </div>
+          </CardHeader>
 
-          <Card>
-            <CardBody className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <ClockIcon className="text-yellow-500" size={24} />
-                <span className="text-2xl font-bold">{dashboard?.parcelasPendentes || 0}</span>
+          <CardBody className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Total de Parcelas */}
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 hover:border-blue-400/40 transition-all duration-300">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-blue-500/20 group-hover:bg-blue-400/30 transition-colors">
+                    <ReceiptIcon className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <h5 className="font-semibold text-white">Total de Parcelas</h5>
+                </div>
+                <p className="text-2xl font-bold text-blue-400 mb-1">{dashboard?.totalParcelas || 0}</p>
+                <p className="text-sm text-blue-300">Todas as parcelas cadastradas</p>
               </div>
-              <p className="text-sm text-gray-600">Pendentes</p>
-            </CardBody>
-          </Card>
 
-          <Card>
-            <CardBody className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <CheckCircleIcon className="text-green-500" size={24} />
-                <span className="text-2xl font-bold">{dashboard?.parcelasPagas || 0}</span>
+              {/* Pendentes */}
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-warning-500/10 to-warning-600/5 border border-warning-500/20 hover:border-warning-400/40 transition-all duration-300">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-warning-500/20 group-hover:bg-warning-400/30 transition-colors">
+                    <ClockIcon className="w-5 h-5 text-warning-400" />
+                  </div>
+                  <h5 className="font-semibold text-white">Pendentes</h5>
+                </div>
+                <p className="text-2xl font-bold text-warning-400 mb-1">{dashboard?.parcelasPendentes || 0}</p>
+                <p className="text-sm text-warning-300">Aguardando pagamento</p>
               </div>
-              <p className="text-sm text-gray-600">Pagas</p>
-            </CardBody>
-          </Card>
 
-          <Card>
-            <CardBody className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <AlertTriangleIcon className="text-red-500" size={24} />
-                <span className="text-2xl font-bold">{dashboard?.parcelasAtrasadas || 0}</span>
+              {/* Pagas */}
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-success-500/10 to-success-600/5 border border-success-500/20 hover:border-success-400/40 transition-all duration-300">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-success-500/20 group-hover:bg-success-400/30 transition-colors">
+                    <CheckCircleIcon className="w-5 h-5 text-success-400" />
+                  </div>
+                  <h5 className="font-semibold text-white">Pagas</h5>
+                </div>
+                <p className="text-2xl font-bold text-success-400 mb-1">{dashboard?.parcelasPagas || 0}</p>
+                <p className="text-sm text-success-300">Parcelas quitadas</p>
               </div>
-              <p className="text-sm text-gray-600">Atrasadas</p>
-            </CardBody>
-          </Card>
-        </div>
+
+              {/* Atrasadas */}
+              <div className="group p-4 rounded-xl bg-gradient-to-br from-danger-500/10 to-danger-600/5 border border-danger-500/20 hover:border-danger-400/40 transition-all duration-300">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-danger-500/20 group-hover:bg-danger-400/30 transition-colors">
+                    <AlertTriangleIcon className="w-5 h-5 text-danger-400" />
+                  </div>
+                  <h5 className="font-semibold text-white">Atrasadas</h5>
+                </div>
+                <p className="text-2xl font-bold text-danger-400 mb-1">{dashboard?.parcelasAtrasadas || 0}</p>
+                <p className="text-sm text-danger-300">Parcelas vencidas</p>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
       )}
 
       {/* Filtros */}
-      <Card>
-        <CardBody>
-          <div className="flex gap-4 items-end">
+      <Card className="border-default-200">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <FilterIcon className="text-primary" size={20} />
+            <h3 className="text-lg font-semibold text-default-700">Filtros</h3>
+          </div>
+        </CardHeader>
+        <CardBody className="pt-0">
+          <div className="flex flex-wrap gap-4 items-end">
             <Input
               className="max-w-xs"
               label="ID do Contrato"
               placeholder="Filtrar por contrato"
               value={filters.contratoId || ""}
               onChange={(e) => setFilters({ ...filters, contratoId: e.target.value })}
+              startContent={<FileTextIcon size={16} className="text-default-400" />}
+              variant="bordered"
             />
             <Select
               className="max-w-xs"
@@ -338,9 +395,10 @@ export default function ParcelasContratoPage() {
               selectedKeys={filters.status ? [filters.status] : []}
               onSelectionChange={(keys) => {
                 const status = Array.from(keys)[0] as StatusParcela;
-
                 setFilters({ ...filters, status: status || undefined });
               }}
+              variant="bordered"
+              startContent={<ArrowUpDownIcon size={16} className="text-default-400" />}
             >
               {statusList.map((status) => (
                 <SelectItem key={status.value} textValue={status.label}>
@@ -351,7 +409,7 @@ export default function ParcelasContratoPage() {
                 </SelectItem>
               ))}
             </Select>
-            <Button startContent={<FilterIcon size={16} />} variant="light" onPress={() => setFilters({})}>
+            <Button color="primary" variant="flat" startContent={<RefreshCwIcon size={16} />} onPress={() => setFilters({})} className="font-medium">
               Limpar Filtros
             </Button>
           </div>
@@ -359,229 +417,472 @@ export default function ParcelasContratoPage() {
       </Card>
 
       {/* Lista de Parcelas */}
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold">Lista de Parcelas</h2>
+      <Card className="shadow-lg border-none">
+        <CardHeader className="border-b border-default-200">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-100 p-2 rounded-lg">
+                <ReceiptIcon className="text-blue-600" size={20} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-default-800">Lista de Parcelas</h2>
+                <p className="text-sm text-default-600">Gerencie todas as parcelas dos contratos</p>
+              </div>
+            </div>
+            <Chip color="primary" variant="flat" startContent={<ReceiptIcon size={16} />}>
+              {parcelas.length} parcelas
+            </Chip>
+          </div>
         </CardHeader>
-        <CardBody>
+        <CardBody className="p-0">
           {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Spinner size="lg" />
+            <div className="flex flex-col items-center justify-center py-12">
+              <Spinner size="lg" color="primary" />
+              <p className="text-default-500 mt-4">Carregando parcelas...</p>
             </div>
           ) : (
-            <Table aria-label="Lista de parcelas de contrato">
+            <Table aria-label="Lista de parcelas de contrato" removeWrapper className="min-h-[400px]">
               <TableHeader>
-                <TableColumn>CONTRATO</TableColumn>
-                <TableColumn>PARCELA</TableColumn>
-                <TableColumn>VALOR</TableColumn>
-                <TableColumn>VENCIMENTO</TableColumn>
-                <TableColumn>STATUS</TableColumn>
-                <TableColumn>AÇÕES</TableColumn>
+                <TableColumn className="bg-default-100 text-default-700 font-semibold">
+                  <div className="flex items-center gap-2">
+                    <UsersIcon size={16} />
+                    CONTRATO
+                  </div>
+                </TableColumn>
+                <TableColumn className="bg-default-100 text-default-700 font-semibold">
+                  <div className="flex items-center gap-2">
+                    <FileTextIcon size={16} />
+                    PARCELA
+                  </div>
+                </TableColumn>
+                <TableColumn className="bg-default-100 text-default-700 font-semibold">
+                  <div className="flex items-center gap-2">
+                    <DollarSignIcon size={16} />
+                    VALOR
+                  </div>
+                </TableColumn>
+                <TableColumn className="bg-default-100 text-default-700 font-semibold">
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon size={16} />
+                    VENCIMENTO
+                  </div>
+                </TableColumn>
+                <TableColumn className="bg-default-100 text-default-700 font-semibold">
+                  <div className="flex items-center gap-2">
+                    <TrendingUpIcon size={16} />
+                    STATUS
+                  </div>
+                </TableColumn>
+                <TableColumn className="bg-default-100 text-default-700 font-semibold text-center">AÇÕES</TableColumn>
               </TableHeader>
-              <TableBody>
-                {parcelas.map((parcela) => (
-                  <TableRow key={parcela.id}>
+              <TableBody
+                emptyContent={
+                  <div className="text-center py-12">
+                    <ReceiptIcon className="mx-auto text-default-300 mb-4" size={64} />
+                    <p className="text-default-500 text-lg font-medium">Nenhuma parcela encontrada</p>
+                    <p className="text-default-400 text-sm mb-6">Comece criando sua primeira parcela</p>
+                    <Button color="primary" variant="flat" startContent={<PlusIcon size={16} />} onPress={() => handleOpenModal()} className="font-medium">
+                      Criar Primeira Parcela
+                    </Button>
+                  </div>
+                }
+              >
+                {parcelas.map((parcela, index) => (
+                  <TableRow key={parcela.id} className={`${index % 2 === 0 ? "bg-default-50" : "bg-white"} hover:bg-default-100 transition-colors`}>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{parcela.contrato.cliente.nome}</p>
-                        <p className="text-sm text-gray-500">
-                          {parcela.contrato.advogadoResponsavel?.usuario 
-                            ? `${parcela.contrato.advogadoResponsavel.usuario.firstName} ${parcela.contrato.advogadoResponsavel.usuario.lastName}`
-                            : 'Sem advogado responsável'
-                          }
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <div className="bg-primary-100 p-2 rounded-lg">
+                          <UsersIcon className="text-primary-600" size={16} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-default-800">{parcela.contrato.cliente.nome}</p>
+                          <p className="text-sm text-default-500">
+                            {parcela.contrato.advogadoResponsavel?.usuario
+                              ? `${parcela.contrato.advogadoResponsavel.usuario.firstName} ${parcela.contrato.advogadoResponsavel.usuario.lastName}`
+                              : "Sem advogado responsável"}
+                          </p>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{parcela.titulo || `Parcela ${parcela.numeroParcela}`}</p>
-                        {parcela.descricao && <p className="text-sm text-gray-500">{parcela.descricao}</p>}
+                      <div className="flex items-center gap-3">
+                        <div className="bg-secondary-100 p-2 rounded-lg">
+                          <FileTextIcon className="text-secondary-600" size={16} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-default-800">{parcela.titulo || `Parcela ${parcela.numeroParcela}`}</p>
+                          {parcela.descricao && <p className="text-sm text-default-500 line-clamp-1">{parcela.descricao}</p>}
+                        </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">{formatCurrency(Number(parcela.valor))}</p>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <CalendarIcon className="text-gray-400" size={16} />
-                        <span className={isVencida(parcela.dataVencimento, parcela.status) ? "text-red-600 font-medium" : ""}>{formatDate(parcela.dataVencimento)}</span>
+                        <div className="bg-success-100 p-2 rounded-lg">
+                          <DollarSignIcon className="text-success-600" size={16} />
+                        </div>
+                        <p className="font-bold text-success-700 text-lg">{formatCurrency(Number(parcela.valor))}</p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Chip color={getStatusColor(parcela.status)} startContent={getStatusIcon(parcela.status)} variant="flat">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${isVencida(parcela.dataVencimento, parcela.status) ? "bg-danger-100" : "bg-warning-100"}`}>
+                          <CalendarIcon className={`${isVencida(parcela.dataVencimento, parcela.status) ? "text-danger-600" : "text-warning-600"}`} size={16} />
+                        </div>
+                        <div>
+                          <p className={`font-medium ${isVencida(parcela.dataVencimento, parcela.status) ? "text-danger-600" : "text-default-800"}`}>{formatDate(parcela.dataVencimento)}</p>
+                          {isVencida(parcela.dataVencimento, parcela.status) && <p className="text-xs text-danger-500">Vencida</p>}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Chip color={getStatusColor(parcela.status)} startContent={getStatusIcon(parcela.status)} variant="flat" className="font-medium">
                         {statusList.find((s) => s.value === parcela.status)?.label}
                       </Chip>
                     </TableCell>
                     <TableCell>
-                      <Dropdown>
-                        <DropdownTrigger>
-                          <Button size="sm" variant="light">
-                            Ações
-                          </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu>
-                          <DropdownItem key="view" startContent={<EyeIcon size={16} />} onPress={() => handleOpenModal(parcela)}>
-                            Ver Detalhes
-                          </DropdownItem>
-                          <DropdownItem key="edit" startContent={<PencilIcon size={16} />} onPress={() => handleOpenModal(parcela)}>
-                            Editar
-                          </DropdownItem>
-                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<TrashIcon size={16} />} onPress={() => handleDelete(parcela.id)}>
-                            Remover
-                          </DropdownItem>
-                        </DropdownMenu>
-                      </Dropdown>
+                      <div className="flex justify-center">
+                        <Dropdown>
+                          <DropdownTrigger>
+                            <Button size="sm" variant="flat" color="primary" className="font-medium">
+                              Ações
+                            </Button>
+                          </DropdownTrigger>
+                          <DropdownMenu aria-label="Ações da parcela">
+                            <DropdownItem key="view" startContent={<EyeIcon size={16} />} onPress={() => handleOpenModal(parcela)} className="text-default-700">
+                              Ver Detalhes
+                            </DropdownItem>
+                            <DropdownItem key="edit" startContent={<PencilIcon size={16} />} onPress={() => handleOpenModal(parcela)} className="text-primary">
+                              Editar
+                            </DropdownItem>
+                            <DropdownItem key="delete" className="text-danger" color="danger" startContent={<TrashIcon size={16} />} onPress={() => handleDelete(parcela.id)}>
+                              Remover
+                            </DropdownItem>
+                          </DropdownMenu>
+                        </Dropdown>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           )}
-
-          {parcelas.length === 0 && !isLoading && (
-            <div className="text-center py-8">
-              <ReceiptIcon className="mx-auto text-gray-400 mb-4" size={48} />
-              <p className="text-gray-500">Nenhuma parcela encontrada</p>
-              <Button className="mt-2" color="primary" variant="light" onPress={() => handleOpenModal()}>
-                Criar Primeira Parcela
-              </Button>
-            </div>
-          )}
         </CardBody>
       </Card>
 
-      {/* Modal de Criação/Edição */}
-      <Modal isOpen={modalOpen} size="4xl" onClose={handleCloseModal}>
+      {/* Modal de Criação/Edição com Tabs */}
+      <Modal isOpen={modalOpen} scrollBehavior="inside" size="5xl" onClose={handleCloseModal}>
         <ModalContent>
-          <ModalHeader>{editingId ? "Editar Parcela" : "Nova Parcela"}</ModalHeader>
-          <ModalBody className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Input isRequired label="ID do Contrato" placeholder="Digite o ID do contrato" value={formData.contratoId} onChange={(e) => setFormData({ ...formData, contratoId: e.target.value })} />
-              <Input
-                isRequired
-                label="Número da Parcela"
-                min="1"
-                placeholder="1"
-                type="number"
-                value={formData.numeroParcela.toString()}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    numeroParcela: parseInt(e.target.value) || 1,
-                  })
-                }
-              />
+          <ModalHeader className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <ReceiptIcon className="text-primary" size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">{editingId ? "Editar Parcela" : "Nova Parcela"}</h3>
+                <p className="text-sm text-default-500">Complete as informações da parcela</p>
+              </div>
             </div>
+          </ModalHeader>
 
-            <Input label="Título" placeholder="Ex: Parcela 1/12" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} />
-
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                isRequired
-                label="Valor"
-                placeholder="0,00"
-                startContent="R$"
-                step="0.01"
-                type="number"
-                value={formData.valor.toString()}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    valor: parseFloat(e.target.value) || 0,
-                  })
-                }
-              />
-              <Select
-                isRequired
-                label="Status"
-                placeholder="Selecione o status"
-                selectedKeys={[formData.status]}
-                onSelectionChange={(keys) => {
-                  const status = Array.from(keys)[0] as StatusParcela;
-
-                  setFormData({ ...formData, status });
-                }}
-              >
-                {statusList.map((status) => (
-                  <SelectItem key={status.value} textValue={status.label}>
-                    <div className="flex items-center gap-2">
-                      <span>{status.icon}</span>
-                      <span>{status.label}</span>
+          <ModalBody className="px-0">
+            <Tabs
+              aria-label="Formulário de parcela"
+              classNames={{
+                tabList: "gap-8 w-full relative rounded-none p-6 pb-0 border-b border-divider",
+                cursor: "w-full bg-primary",
+                tab: "max-w-fit px-4 h-12",
+                tabContent: "group-data-[selected=true]:text-primary font-medium",
+                panel: "pt-6",
+              }}
+              color="primary"
+              variant="underlined"
+            >
+              <Tab
+                key="basico"
+                title={
+                  <div className="flex items-center space-x-3">
+                    <div className="p-1 rounded-md bg-blue-100 dark:bg-blue-900">
+                      <FileTextIcon className="text-blue-600 dark:text-blue-400" size={16} />
                     </div>
-                  </SelectItem>
-                ))}
-              </Select>
-            </div>
+                    <span>Básico</span>
+                  </div>
+                }
+              >
+                <div className="px-6 pb-6 space-y-6">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                      <FileTextIcon size={20} />
+                      Informações Básicas
+                    </h3>
 
-            <DatePicker isRequired label="Data de Vencimento" value={formData.dataVencimento} onChange={(date) => setFormData({ ...formData, dataVencimento: date })} />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input
+                        isRequired
+                        label="ID do Contrato"
+                        placeholder="Digite o ID do contrato"
+                        value={formData.contratoId}
+                        onChange={(e) => setFormData({ ...formData, contratoId: e.target.value })}
+                        startContent={<FileTextIcon className="text-default-400" size={16} />}
+                      />
+                      <Input
+                        isRequired
+                        label="Número da Parcela"
+                        min="1"
+                        placeholder="1"
+                        type="number"
+                        value={formData.numeroParcela.toString()}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            numeroParcela: parseInt(e.target.value) || 1,
+                          })
+                        }
+                        startContent={<TrendingUpIcon className="text-default-400" size={16} />}
+                      />
+                    </div>
 
-            {formData.status === "PAGA" && <DatePicker label="Data de Pagamento" value={formData.dataPagamento} onChange={(date) => setFormData({ ...formData, dataPagamento: date })} />}
-
-            <Input
-              label="Forma de Pagamento"
-              placeholder="Ex: PIX, Transferência, Boleto"
-              value={formData.formaPagamento}
-              onChange={(e) => setFormData({ ...formData, formaPagamento: e.target.value })}
-            />
-
-            <Textarea label="Descrição" placeholder="Descrição opcional da parcela" rows={3} value={formData.descricao} onChange={(e) => setFormData({ ...formData, descricao: e.target.value })} />
-
-            {/* Validação da Conta - apenas se contrato selecionado */}
-            {formData.contratoId && (
-              <div className="space-y-4">
-                <Divider />
-                <ValidacaoContaPrincipal contratoId={formData.contratoId} onContaValidada={setContaValida} />
-              </div>
-            )}
-
-            {/* Dados Bancários - apenas se contrato selecionado e valor > 0 */}
-            {formData.contratoId && formData.valor > 0 && contaValida && (
-              <div className="space-y-4">
-                <Divider />
-                <DadosBancariosParcela
-                  contratoId={formData.contratoId}
-                  valor={formData.valor}
-                  descricao={formData.descricao || formData.titulo || "Pagamento de parcela"}
-                  vencimento={formData.dataVencimento}
-                  parcelaId={editingId || undefined}
-                />
-              </div>
-            )}
-
-            {/* Aviso se conta inválida */}
-            {formData.contratoId && formData.valor > 0 && contaValida === false && (
-              <div className="bg-danger-50 border border-danger-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <XCircleIcon className="h-5 w-5 text-danger" />
-                  <span className="text-sm font-medium text-danger-700">Conta Bancária Inválida</span>
+                    <div className="mt-4">
+                      <Input
+                        label="Título"
+                        placeholder="Ex: Parcela 1/12"
+                        value={formData.titulo}
+                        onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                        startContent={<FileTextIcon className="text-default-400" size={16} />}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm text-danger-600">A conta bancária do contrato não passou na validação. Corrija os problemas antes de prosseguir com o pagamento.</p>
-              </div>
-            )}
+              </Tab>
 
-            {/* Comprovante de Pagamento - apenas para parcelas existentes */}
-            {editingId && (
-              <div className="space-y-4">
-                <Divider />
-                <ComprovantePagamentoUpload parcelaId={editingId} readonly={formData.status === "PAGA"} />
-              </div>
-            )}
+              <Tab
+                key="valores"
+                title={
+                  <div className="flex items-center space-x-3">
+                    <div className="p-1 rounded-md bg-green-100 dark:bg-green-900">
+                      <DollarSignIcon className="text-green-600 dark:text-green-400" size={16} />
+                    </div>
+                    <span>Valores</span>
+                  </div>
+                }
+              >
+                <div className="px-6 pb-6 space-y-6">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-green-700 dark:text-green-300">
+                      <DollarSignIcon size={20} />
+                      Valores e Status
+                    </h3>
 
-            {!editingId && (
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Gerar Parcelas Automaticamente</h4>
-                <p className="text-sm text-blue-700 mb-3">Crie múltiplas parcelas baseadas nos valores informados</p>
-                <Button color="primary" isLoading={loading} startContent={<RefreshCwIcon size={16} />} variant="flat" onPress={handleGerarAutomaticamente}>
-                  Gerar 12 Parcelas
-                </Button>
-              </div>
-            )}
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input
+                        isRequired
+                        label="Valor"
+                        placeholder="0,00"
+                        startContent={<DollarSignIcon className="text-green-500" size={16} />}
+                        step="0.01"
+                        type="number"
+                        value={formData.valor.toString()}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            valor: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        className="font-semibold"
+                      />
+                      <Select
+                        isRequired
+                        label="Status"
+                        placeholder="Selecione o status"
+                        selectedKeys={[formData.status]}
+                        onSelectionChange={(keys) => {
+                          const status = Array.from(keys)[0] as StatusParcela;
+                          setFormData({ ...formData, status });
+                        }}
+                        startContent={<TrendingUpIcon className="text-default-400" size={16} />}
+                      >
+                        {statusList.map((status) => (
+                          <SelectItem key={status.value} textValue={status.label}>
+                            <div className="flex items-center gap-2">
+                              <span>{status.icon}</span>
+                              <span>{status.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </Tab>
+
+              <Tab
+                key="datas"
+                title={
+                  <div className="flex items-center space-x-3">
+                    <div className="p-1 rounded-md bg-orange-100 dark:bg-orange-900">
+                      <CalendarIcon className="text-orange-600 dark:text-orange-400" size={16} />
+                    </div>
+                    <span>Datas</span>
+                  </div>
+                }
+              >
+                <div className="px-6 pb-6 space-y-6">
+                  <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                      <CalendarIcon size={20} />
+                      Datas e Pagamento
+                    </h3>
+
+                    <div className="space-y-4">
+                      <Input
+                        isRequired
+                        label="Data de Vencimento"
+                        type="date"
+                        value={formData.dataVencimento.toISOString().split("T")[0]}
+                        onChange={(e) => setFormData({ ...formData, dataVencimento: new Date(e.target.value) })}
+                        startContent={<CalendarIcon className="text-orange-500" size={16} />}
+                      />
+
+                      {formData.status === "PAGA" && (
+                        <Input
+                          label="Data de Pagamento"
+                          type="date"
+                          value={formData.dataPagamento ? formData.dataPagamento.toISOString().split("T")[0] : ""}
+                          onChange={(e) => setFormData({ ...formData, dataPagamento: e.target.value ? new Date(e.target.value) : undefined })}
+                          startContent={<CheckCircleIcon className="text-success-500" size={16} />}
+                        />
+                      )}
+
+                      <Input
+                        label="Forma de Pagamento"
+                        placeholder="Ex: PIX, Transferência, Boleto"
+                        value={formData.formaPagamento}
+                        onChange={(e) => setFormData({ ...formData, formaPagamento: e.target.value })}
+                        startContent={<CreditCardIcon className="text-default-400" size={16} />}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </Tab>
+
+              <Tab
+                key="adicional"
+                title={
+                  <div className="flex items-center space-x-3">
+                    <div className="p-1 rounded-md bg-purple-100 dark:bg-purple-900">
+                      <FileTextIcon className="text-purple-600 dark:text-purple-400" size={16} />
+                    </div>
+                    <span>Adicional</span>
+                  </div>
+                }
+              >
+                <div className="px-6 pb-6 space-y-6">
+                  <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                      <FileTextIcon size={20} />
+                      Informações Adicionais
+                    </h3>
+
+                    <Textarea
+                      classNames={{ input: "resize-none" }}
+                      label="Descrição"
+                      placeholder="Descrição opcional da parcela"
+                      rows={4}
+                      value={formData.descricao}
+                      onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                    />
+
+                    {!editingId && (
+                      <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 rounded-md bg-primary/10">
+                            <RefreshCwIcon className="text-primary" size={16} />
+                          </div>
+                          <div>
+                            <p className="font-medium">Gerar Parcelas Automaticamente</p>
+                            <p className="text-sm text-default-500">Crie múltiplas parcelas baseadas nos valores informados</p>
+                          </div>
+                        </div>
+                        <Button color="primary" isLoading={loading} startContent={!loading ? <RefreshCwIcon size={16} /> : undefined} variant="flat" onPress={handleGerarAutomaticamente}>
+                          {loading ? "Gerando..." : "Gerar 12 Parcelas"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Tab>
+
+              {/* Aba de Integração - apenas se contrato selecionado */}
+              {formData.contratoId && (
+                <Tab
+                  key="integracao"
+                  title={
+                    <div className="flex items-center space-x-3">
+                      <div className="p-1 rounded-md bg-cyan-100 dark:bg-cyan-900">
+                        <CreditCardIcon className="text-cyan-600 dark:text-cyan-400" size={16} />
+                      </div>
+                      <span>Integração</span>
+                    </div>
+                  }
+                >
+                  <div className="px-6 pb-6 space-y-6">
+                    {/* Validação da Conta */}
+                    <div className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 p-4 rounded-lg border border-cyan-200 dark:border-cyan-800">
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-cyan-700 dark:text-cyan-300">
+                        <ShieldIcon className="text-cyan-600" size={20} />
+                        Validação da Conta Bancária
+                      </h3>
+                      <ValidacaoContaPrincipal contratoId={formData.contratoId} onContaValidada={setContaValida} />
+                    </div>
+
+                    {/* Dados Bancários - apenas se valor > 0 e conta válida */}
+                    {formData.valor > 0 && contaValida && (
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-green-700 dark:text-green-300">
+                          <CreditCardIcon size={20} />
+                          Dados Bancários para Pagamento
+                        </h3>
+                        <DadosBancariosParcela
+                          contratoId={formData.contratoId}
+                          valor={formData.valor}
+                          descricao={formData.descricao || formData.titulo || "Pagamento de parcela"}
+                          vencimento={formData.dataVencimento}
+                          parcelaId={editingId || undefined}
+                        />
+                      </div>
+                    )}
+
+                    {/* Aviso se conta inválida */}
+                    {formData.valor > 0 && contaValida === false && (
+                      <div className="bg-danger-50 border border-danger-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <XCircleIcon className="h-5 w-5 text-danger" />
+                          <span className="text-sm font-medium text-danger-700">Conta Bancária Inválida</span>
+                        </div>
+                        <p className="text-sm text-danger-600">A conta bancária do contrato não passou na validação. Corrija os problemas antes de prosseguir com o pagamento.</p>
+                      </div>
+                    )}
+
+                    {/* Comprovante de Pagamento - apenas para parcelas existentes */}
+                    {editingId && (
+                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
+                          <FileTextIcon size={20} />
+                          Comprovante de Pagamento
+                        </h3>
+                        <ComprovantePagamentoUpload parcelaId={editingId} readonly={formData.status === "PAGA"} />
+                      </div>
+                    )}
+                  </div>
+                </Tab>
+              )}
+            </Tabs>
           </ModalBody>
-          <ModalFooter>
+
+          <ModalFooter className="px-6">
             <Button variant="light" onPress={handleCloseModal}>
               Cancelar
             </Button>
-            <Button color="primary" isLoading={loading} onPress={handleSubmit}>
+            <Button color="primary" isLoading={loading} startContent={!loading ? <CheckCircleIcon size={16} /> : undefined} onPress={handleSubmit}>
               {editingId ? "Atualizar" : "Criar"}
             </Button>
           </ModalFooter>
