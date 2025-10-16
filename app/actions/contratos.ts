@@ -3,7 +3,7 @@
 import { getServerSession } from "next-auth/next";
 
 import { authOptions } from "@/auth";
-import prisma, { toNumber } from "@/app/lib/prisma";
+import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
 import { ContratoStatus } from "@/app/generated/prisma";
 import logger from "@/lib/logger";
 
@@ -122,10 +122,7 @@ export async function getProcuracoesDisponiveis(clienteId: string) {
  * - Se o contrato NÃO tem processo: vincula o contrato ao primeiro processo da procuração
  * - Se a procuração não tem processos: retorna erro
  */
-export async function vincularContratoProcuracao(
-  contratoId: string,
-  procuracaoId: string,
-) {
+export async function vincularContratoProcuracao(contratoId: string, procuracaoId: string) {
   const session = await getSession();
 
   if (!session?.user?.id) {
@@ -184,9 +181,7 @@ export async function vincularContratoProcuracao(
 
     // Caso 1: Contrato JÁ tem um processo vinculado
     if (contrato.processoId) {
-      const processoVinculado = procuracao.processos.find(
-        (pp) => pp.processoId === contrato.processoId,
-      );
+      const processoVinculado = procuracao.processos.find((pp) => pp.processoId === contrato.processoId);
 
       if (!processoVinculado) {
         return {
@@ -206,8 +201,7 @@ export async function vincularContratoProcuracao(
     if (procuracao.processos.length === 0) {
       return {
         success: false,
-        error:
-          "Esta procuração não está vinculada a nenhum processo. Primeiro vincule a procuração a um processo.",
+        error: "Esta procuração não está vinculada a nenhum processo. Primeiro vincule a procuração a um processo.",
       };
     }
 
@@ -358,15 +352,9 @@ export async function createContrato(data: ContratoCreateInput) {
       advogadoResponsavel: contrato.advogadoResponsavel
         ? {
             ...contrato.advogadoResponsavel,
-            comissaoPadrao: toNumber(
-              contrato.advogadoResponsavel.comissaoPadrao,
-            ),
-            comissaoAcaoGanha: toNumber(
-              contrato.advogadoResponsavel.comissaoAcaoGanha,
-            ),
-            comissaoHonorarios: toNumber(
-              contrato.advogadoResponsavel.comissaoHonorarios,
-            ),
+            comissaoPadrao: toNumber(contrato.advogadoResponsavel.comissaoPadrao),
+            comissaoAcaoGanha: toNumber(contrato.advogadoResponsavel.comissaoAcaoGanha),
+            comissaoHonorarios: toNumber(contrato.advogadoResponsavel.comissaoHonorarios),
           }
         : null,
     };
@@ -645,7 +633,7 @@ export interface ContratoUpdateInput extends Partial<ContratoCreateInput> {
  */
 export async function updateContrato(
   contratoId: string,
-  data: Partial<ContratoCreateInput>,
+  data: Partial<ContratoCreateInput>
 ): Promise<{
   success: boolean;
   contrato?: any;
@@ -704,25 +692,17 @@ export async function updateContrato(
     if (data.status !== undefined) updateData.status = data.status;
     if (data.valor !== undefined) updateData.valor = data.valor;
     if (data.dataInicio !== undefined) {
-      updateData.dataInicio =
-        data.dataInicio instanceof Date
-          ? data.dataInicio
-          : new Date(data.dataInicio);
+      updateData.dataInicio = data.dataInicio instanceof Date ? data.dataInicio : new Date(data.dataInicio);
     }
     if (data.dataFim !== undefined) {
-      updateData.dataFim =
-        data.dataFim instanceof Date ? data.dataFim : new Date(data.dataFim);
+      updateData.dataFim = data.dataFim instanceof Date ? data.dataFim : new Date(data.dataFim);
     }
-    if (data.observacoes !== undefined)
-      updateData.observacoes = data.observacoes;
+    if (data.observacoes !== undefined) updateData.observacoes = data.observacoes;
     if (data.clienteId !== undefined) updateData.clienteId = data.clienteId;
-    if (data.advogadoId !== undefined)
-      updateData.advogadoResponsavelId = data.advogadoId;
+    if (data.advogadoId !== undefined) updateData.advogadoResponsavelId = data.advogadoId;
     if (data.processoId !== undefined) updateData.processoId = data.processoId;
-    if (data.tipoContratoId !== undefined)
-      updateData.tipoId = data.tipoContratoId;
-    if (data.dadosBancariosId !== undefined)
-      updateData.dadosBancariosId = data.dadosBancariosId;
+    if (data.tipoContratoId !== undefined) updateData.tipoId = data.tipoContratoId;
+    if (data.dadosBancariosId !== undefined) updateData.dadosBancariosId = data.dadosBancariosId;
 
     // Atualizar contrato
     const contratoAtualizado = await prisma.contrato.update({
@@ -775,6 +755,112 @@ export async function updateContrato(
     return {
       success: false,
       error: "Erro ao atualizar contrato",
+    };
+  }
+}
+
+// ============================================
+// ACTIONS - CONTRATOS COM PARCELAS
+// ============================================
+
+export async function getContratosComParcelas(): Promise<{
+  success: boolean;
+  contratos?: any[];
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Se for ADVOGADO, buscar apenas contratos onde ele é responsável
+    let whereClause: any = {
+      tenantId: user.tenantId,
+      deletedAt: null,
+    };
+
+    if (user.role === "ADVOGADO") {
+      const advogadoId = await getAdvogadoIdFromSession(session);
+
+      if (advogadoId) {
+        whereClause.advogadoResponsavelId = advogadoId;
+      }
+    }
+
+    const contratos = await prisma.contrato.findMany({
+      where: whereClause,
+      include: {
+        cliente: {
+          select: {
+            id: true,
+            nome: true,
+            tipoPessoa: true,
+            documento: true,
+          },
+        },
+        tipo: {
+          select: {
+            nome: true,
+          },
+        },
+        parcelas: {
+          select: {
+            id: true,
+            valor: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // Converter Decimal para number e calcular informações de parcelas
+    const convertedData = contratos.map((contrato) => convertAllDecimalFields(contrato));
+    const contratosComParcelas = convertedData.map((contrato) => {
+      const valorTotalContrato = Number(contrato.valor) || 0;
+      const parcelasExistentes = contrato.parcelas || [];
+
+      const valorTotalParcelas = parcelasExistentes.reduce((total, parcela) => total + Number(parcela.valor), 0);
+
+      const valorDisponivel = valorTotalContrato - valorTotalParcelas;
+      const parcelasPendentes = parcelasExistentes.filter((p) => p.status === "PENDENTE").length;
+
+      const parcelasPagas = parcelasExistentes.filter((p) => p.status === "PAGO").length;
+
+      return {
+        ...contrato,
+        valor: valorTotalContrato,
+        valorTotalParcelas,
+        valorDisponivel,
+        parcelasPendentes,
+        parcelasPagas,
+        totalParcelas: parcelasExistentes.length,
+      };
+    });
+
+    // Serializar para garantir que não há objetos não serializáveis
+    const serialized = JSON.parse(JSON.stringify(contratosComParcelas));
+
+    return {
+      success: true,
+      contratos: serialized,
+    };
+  } catch (error) {
+    logger.error("Erro ao buscar contratos com parcelas:", error);
+
+    return {
+      success: false,
+      error: "Erro ao buscar contratos",
     };
   }
 }

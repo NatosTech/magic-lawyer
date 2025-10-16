@@ -57,13 +57,13 @@ import {
 import { toast } from "sonner";
 
 import { useParcelasContrato, useDashboardParcelas, useStatusParcelas } from "@/app/hooks/use-parcelas-contrato";
+import { useContratosComParcelas } from "@/app/hooks/use-contratos";
 import { createParcelaContrato, updateParcelaContrato, deleteParcelaContrato, gerarParcelasAutomaticamente } from "@/app/actions/parcelas-contrato";
 import { title, subtitle } from "@/components/primitives";
 import { DadosBancariosParcela } from "@/components/dados-bancarios-parcela";
 import { ComprovantePagamentoUpload } from "@/components/comprovante-pagamento-upload";
 import { ValidacaoContaPrincipal } from "@/components/validacao-conta-principal";
-
-type StatusParcela = "PENDENTE" | "PAGA" | "ATRASADA" | "CANCELADA";
+import { ContratoParcela, ContratoParcelaStatus, Contrato, Cliente, Advogado, Usuario } from "@/app/generated/prisma";
 
 interface ParcelaFormData {
   contratoId: string;
@@ -72,10 +72,19 @@ interface ParcelaFormData {
   descricao?: string;
   valor: number;
   dataVencimento: Date;
-  status: StatusParcela;
+  status: ContratoParcelaStatus;
   formaPagamento?: string;
   dataPagamento?: Date;
 }
+
+type ParcelaComContrato = ContratoParcela & {
+  contrato: Contrato & {
+    cliente: Cliente;
+    advogadoResponsavel?: Advogado & {
+      usuario: Usuario;
+    };
+  };
+};
 
 export default function ParcelasContratoPage() {
   // Estados
@@ -84,7 +93,7 @@ export default function ParcelasContratoPage() {
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<{
     contratoId?: string;
-    status?: StatusParcela;
+    status?: ContratoParcelaStatus;
   }>({});
   const [contaValida, setContaValida] = useState<boolean | null>(null);
 
@@ -105,9 +114,38 @@ export default function ParcelasContratoPage() {
   const { parcelas, isLoading, mutate } = useParcelasContrato(filters);
   const { dashboard, isLoading: loadingDashboard } = useDashboardParcelas();
   const { status: statusList } = useStatusParcelas();
+  const { contratos, isLoading: loadingContratos } = useContratosComParcelas();
 
   // Funções
-  const handleOpenModal = (parcela?: any) => {
+  const handleContratoChange = (contratoId: string) => {
+    const contratoSelecionado = contratos?.find((c) => c.id === contratoId);
+    if (contratoSelecionado) {
+      setFormData({
+        ...formData,
+        contratoId,
+        valor: contratoSelecionado.valorDisponivel || 0,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        contratoId,
+        valor: 0,
+      });
+    }
+  };
+
+  const getContratoSelecionado = () => {
+    return contratos?.find((c) => c.id === formData.contratoId);
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  const handleOpenModal = (parcela?: ParcelaComContrato) => {
     if (parcela) {
       setEditingId(parcela.id);
       setFormData({
@@ -167,7 +205,13 @@ export default function ParcelasContratoPage() {
 
       if (formData.valor <= 0) {
         toast.error("Valor deve ser maior que zero");
+        return;
+      }
 
+      // Validar se o valor não excede o disponível no contrato
+      const contratoSelecionado = getContratoSelecionado();
+      if (contratoSelecionado && formData.valor > contratoSelecionado.valorDisponivel) {
+        toast.error(`Valor da parcela (${formatCurrency(formData.valor)}) não pode ser maior que o valor disponível no contrato (${formatCurrency(contratoSelecionado.valorDisponivel)})`);
         return;
       }
 
@@ -237,7 +281,7 @@ export default function ParcelasContratoPage() {
     }
   };
 
-  const getStatusIcon = (status: StatusParcela) => {
+  const getStatusIcon = (status: ContratoParcelaStatus) => {
     switch (status) {
       case "PENDENTE":
         return <ClockIcon size={16} />;
@@ -252,7 +296,7 @@ export default function ParcelasContratoPage() {
     }
   };
 
-  const getStatusColor = (status: StatusParcela) => {
+  const getStatusColor = (status: ContratoParcelaStatus) => {
     switch (status) {
       case "PENDENTE":
         return "warning";
@@ -267,18 +311,11 @@ export default function ParcelasContratoPage() {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
-
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString("pt-BR");
   };
 
-  const isVencida = (dataVencimento: Date | string, status: StatusParcela) => {
+  const isVencida = (dataVencimento: Date | string, status: ContratoParcelaStatus) => {
     return status === "PENDENTE" && new Date(dataVencimento) < new Date();
   };
 
@@ -394,7 +431,7 @@ export default function ParcelasContratoPage() {
               placeholder="Todos os status"
               selectedKeys={filters.status ? [filters.status] : []}
               onSelectionChange={(keys) => {
-                const status = Array.from(keys)[0] as StatusParcela;
+                const status = Array.from(keys)[0] as ContratoParcelaStatus;
                 setFilters({ ...filters, status: status || undefined });
               }}
               variant="bordered"
@@ -441,130 +478,123 @@ export default function ParcelasContratoPage() {
               <p className="text-default-500 mt-4">Carregando parcelas...</p>
             </div>
           ) : (
-            <Table aria-label="Lista de parcelas de contrato" removeWrapper className="min-h-[400px]">
-              <TableHeader>
-                <TableColumn className="bg-default-100 text-default-700 font-semibold">
-                  <div className="flex items-center gap-2">
-                    <UsersIcon size={16} />
-                    CONTRATO
-                  </div>
-                </TableColumn>
-                <TableColumn className="bg-default-100 text-default-700 font-semibold">
-                  <div className="flex items-center gap-2">
-                    <FileTextIcon size={16} />
-                    PARCELA
-                  </div>
-                </TableColumn>
-                <TableColumn className="bg-default-100 text-default-700 font-semibold">
-                  <div className="flex items-center gap-2">
-                    <DollarSignIcon size={16} />
-                    VALOR
-                  </div>
-                </TableColumn>
-                <TableColumn className="bg-default-100 text-default-700 font-semibold">
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon size={16} />
-                    VENCIMENTO
-                  </div>
-                </TableColumn>
-                <TableColumn className="bg-default-100 text-default-700 font-semibold">
-                  <div className="flex items-center gap-2">
-                    <TrendingUpIcon size={16} />
-                    STATUS
-                  </div>
-                </TableColumn>
-                <TableColumn className="bg-default-100 text-default-700 font-semibold text-center">AÇÕES</TableColumn>
-              </TableHeader>
-              <TableBody
-                emptyContent={
-                  <div className="text-center py-12">
-                    <ReceiptIcon className="mx-auto text-default-300 mb-4" size={64} />
-                    <p className="text-default-500 text-lg font-medium">Nenhuma parcela encontrada</p>
-                    <p className="text-default-400 text-sm mb-6">Comece criando sua primeira parcela</p>
-                    <Button color="primary" variant="flat" startContent={<PlusIcon size={16} />} onPress={() => handleOpenModal()} className="font-medium">
+            <div className="space-y-4">
+              {parcelas.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="bg-gradient-to-br from-default-100 to-default-50 rounded-2xl p-12 border border-default-200">
+                    <ReceiptIcon className="mx-auto text-default-300 mb-6" size={80} />
+                    <h3 className="text-xl font-bold text-default-700 mb-2">Nenhuma parcela encontrada</h3>
+                    <p className="text-default-500 mb-8 max-w-md mx-auto">Comece criando sua primeira parcela para gerenciar os pagamentos dos contratos</p>
+                    <Button color="primary" size="lg" startContent={<PlusIcon size={20} />} onPress={() => handleOpenModal()} className="font-semibold">
                       Criar Primeira Parcela
                     </Button>
                   </div>
-                }
-              >
-                {parcelas.map((parcela, index) => (
-                  <TableRow key={parcela.id} className={`${index % 2 === 0 ? "bg-default-50" : "bg-white"} hover:bg-default-100 transition-colors`}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="bg-primary-100 p-2 rounded-lg">
-                          <UsersIcon className="text-primary-600" size={16} />
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {parcelas.map((parcela: ParcelaComContrato, index: number) => (
+                    <Card key={parcela.id} className="border-none shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+                      <CardBody className="p-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                          {/* Cliente e Contrato */}
+                          <div className="lg:col-span-3">
+                            <div className="flex items-center gap-4">
+                              <div className="bg-gradient-to-br from-primary-100 to-primary-200 p-3 rounded-xl">
+                                <UsersIcon className="text-primary-600" size={20} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-bold text-default-800 text-lg truncate">{parcela.contrato.cliente.nome}</h4>
+                                <p className="text-sm text-default-500 truncate">
+                                  {parcela.contrato.advogadoResponsavel?.usuario
+                                    ? `${parcela.contrato.advogadoResponsavel.usuario.firstName} ${parcela.contrato.advogadoResponsavel.usuario.lastName}`
+                                    : "Sem advogado responsável"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Parcela */}
+                          <div className="lg:col-span-2">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-gradient-to-br from-secondary-100 to-secondary-200 p-2 rounded-lg">
+                                <FileTextIcon className="text-secondary-600" size={16} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-default-800">{parcela.titulo || `Parcela ${parcela.numeroParcela}`}</p>
+                                {parcela.descricao && <p className="text-sm text-default-500 truncate max-w-[200px]">{parcela.descricao}</p>}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Valor */}
+                          <div className="lg:col-span-2">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-gradient-to-br from-success-100 to-success-200 p-2 rounded-lg">
+                                <DollarSignIcon className="text-success-600" size={16} />
+                              </div>
+                              <div>
+                                <p className="font-bold text-success-700 text-lg">{formatCurrency(Number(parcela.valor))}</p>
+                                <p className="text-xs text-success-600">Valor da parcela</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Vencimento */}
+                          <div className="lg:col-span-2">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`p-2 rounded-lg ${isVencida(parcela.dataVencimento, parcela.status) ? "bg-gradient-to-br from-danger-100 to-danger-200" : "bg-gradient-to-br from-warning-100 to-warning-200"}`}
+                              >
+                                <CalendarIcon className={`${isVencida(parcela.dataVencimento, parcela.status) ? "text-danger-600" : "text-warning-600"}`} size={16} />
+                              </div>
+                              <div>
+                                <p className={`font-semibold ${isVencida(parcela.dataVencimento, parcela.status) ? "text-danger-600" : "text-default-800"}`}>{formatDate(parcela.dataVencimento)}</p>
+                                {isVencida(parcela.dataVencimento, parcela.status) ? (
+                                  <p className="text-xs text-danger-500 font-medium">Vencida</p>
+                                ) : (
+                                  <p className="text-xs text-warning-600">Data limite</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Status */}
+                          <div className="lg:col-span-2">
+                            <Chip color={getStatusColor(parcela.status)} startContent={getStatusIcon(parcela.status)} variant="flat" className="font-semibold text-sm" size="lg">
+                              {statusList.find((s) => s.value === parcela.status)?.label}
+                            </Chip>
+                          </div>
+
+                          {/* Ações */}
+                          <div className="lg:col-span-1">
+                            <div className="flex justify-end">
+                              <Dropdown>
+                                <DropdownTrigger>
+                                  <Button size="sm" variant="flat" color="primary" className="font-semibold min-w-[100px]" startContent={<ArrowUpDownIcon size={16} />}>
+                                    Ações
+                                  </Button>
+                                </DropdownTrigger>
+                                <DropdownMenu aria-label="Ações da parcela" variant="flat">
+                                  <DropdownItem key="view" startContent={<EyeIcon size={16} />} onPress={() => handleOpenModal(parcela)} className="text-default-700">
+                                    Ver Detalhes
+                                  </DropdownItem>
+                                  <DropdownItem key="edit" startContent={<PencilIcon size={16} />} onPress={() => handleOpenModal(parcela)} className="text-primary">
+                                    Editar
+                                  </DropdownItem>
+                                  <DropdownItem key="delete" className="text-danger" color="danger" startContent={<TrashIcon size={16} />} onPress={() => handleDelete(parcela.id)}>
+                                    Remover
+                                  </DropdownItem>
+                                </DropdownMenu>
+                              </Dropdown>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-default-800">{parcela.contrato.cliente.nome}</p>
-                          <p className="text-sm text-default-500">
-                            {parcela.contrato.advogadoResponsavel?.usuario
-                              ? `${parcela.contrato.advogadoResponsavel.usuario.firstName} ${parcela.contrato.advogadoResponsavel.usuario.lastName}`
-                              : "Sem advogado responsável"}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="bg-secondary-100 p-2 rounded-lg">
-                          <FileTextIcon className="text-secondary-600" size={16} />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-default-800">{parcela.titulo || `Parcela ${parcela.numeroParcela}`}</p>
-                          {parcela.descricao && <p className="text-sm text-default-500 line-clamp-1">{parcela.descricao}</p>}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="bg-success-100 p-2 rounded-lg">
-                          <DollarSignIcon className="text-success-600" size={16} />
-                        </div>
-                        <p className="font-bold text-success-700 text-lg">{formatCurrency(Number(parcela.valor))}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${isVencida(parcela.dataVencimento, parcela.status) ? "bg-danger-100" : "bg-warning-100"}`}>
-                          <CalendarIcon className={`${isVencida(parcela.dataVencimento, parcela.status) ? "text-danger-600" : "text-warning-600"}`} size={16} />
-                        </div>
-                        <div>
-                          <p className={`font-medium ${isVencida(parcela.dataVencimento, parcela.status) ? "text-danger-600" : "text-default-800"}`}>{formatDate(parcela.dataVencimento)}</p>
-                          {isVencida(parcela.dataVencimento, parcela.status) && <p className="text-xs text-danger-500">Vencida</p>}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Chip color={getStatusColor(parcela.status)} startContent={getStatusIcon(parcela.status)} variant="flat" className="font-medium">
-                        {statusList.find((s) => s.value === parcela.status)?.label}
-                      </Chip>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-center">
-                        <Dropdown>
-                          <DropdownTrigger>
-                            <Button size="sm" variant="flat" color="primary" className="font-medium">
-                              Ações
-                            </Button>
-                          </DropdownTrigger>
-                          <DropdownMenu aria-label="Ações da parcela">
-                            <DropdownItem key="view" startContent={<EyeIcon size={16} />} onPress={() => handleOpenModal(parcela)} className="text-default-700">
-                              Ver Detalhes
-                            </DropdownItem>
-                            <DropdownItem key="edit" startContent={<PencilIcon size={16} />} onPress={() => handleOpenModal(parcela)} className="text-primary">
-                              Editar
-                            </DropdownItem>
-                            <DropdownItem key="delete" className="text-danger" color="danger" startContent={<TrashIcon size={16} />} onPress={() => handleDelete(parcela.id)}>
-                              Remover
-                            </DropdownItem>
-                          </DropdownMenu>
-                        </Dropdown>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </CardBody>
       </Card>
@@ -616,14 +646,31 @@ export default function ParcelasContratoPage() {
                     </h3>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <Input
+                      <Select
                         isRequired
-                        label="ID do Contrato"
-                        placeholder="Digite o ID do contrato"
-                        value={formData.contratoId}
-                        onChange={(e) => setFormData({ ...formData, contratoId: e.target.value })}
+                        label="Contrato"
+                        placeholder="Selecione um contrato"
+                        selectedKeys={formData.contratoId ? [formData.contratoId] : []}
+                        onSelectionChange={(keys) => {
+                          const contratoId = Array.from(keys)[0] as string;
+                          if (contratoId) {
+                            handleContratoChange(contratoId);
+                          }
+                        }}
                         startContent={<FileTextIcon className="text-default-400" size={16} />}
-                      />
+                        isLoading={loadingContratos}
+                      >
+                        {(contratos || []).map((contrato) => (
+                          <SelectItem key={contrato.id} textValue={contrato.titulo}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{contrato.titulo}</span>
+                              <span className="text-sm text-default-500">
+                                {contrato.cliente.nome} - {formatCurrency(contrato.valorDisponivel)} disponível
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </Select>
                       <Input
                         isRequired
                         label="Número da Parcela"
@@ -673,29 +720,48 @@ export default function ParcelasContratoPage() {
                     </h3>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        isRequired
-                        label="Valor"
-                        placeholder="0,00"
-                        startContent={<DollarSignIcon className="text-green-500" size={16} />}
-                        step="0.01"
-                        type="number"
-                        value={formData.valor.toString()}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            valor: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                        className="font-semibold"
-                      />
+                      <div className="space-y-2">
+                        <Input
+                          isRequired
+                          label="Valor"
+                          placeholder="0,00"
+                          startContent={<DollarSignIcon className="text-green-500" size={16} />}
+                          step="0.01"
+                          type="number"
+                          value={formData.valor.toString()}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              valor: parseFloat(e.target.value) || 0,
+                            })
+                          }
+                          className="font-semibold"
+                          max={getContratoSelecionado()?.valorDisponivel || undefined}
+                        />
+                        {getContratoSelecionado() && (
+                          <div className="text-xs space-y-1">
+                            <p className="text-green-600 flex items-center gap-1">
+                              <DollarSignIcon size={12} />
+                              Valor disponível: {formatCurrency(getContratoSelecionado().valorDisponivel)}
+                            </p>
+                            <p className="text-blue-600 flex items-center gap-1">
+                              <FileTextIcon size={12} />
+                              Total do contrato: {formatCurrency(getContratoSelecionado().valor)}
+                            </p>
+                            <p className="text-orange-600 flex items-center gap-1">
+                              <ReceiptIcon size={12} />
+                              Parcelas existentes: {getContratoSelecionado().totalParcelas} ({formatCurrency(getContratoSelecionado().valorTotalParcelas)})
+                            </p>
+                          </div>
+                        )}
+                      </div>
                       <Select
                         isRequired
                         label="Status"
                         placeholder="Selecione o status"
                         selectedKeys={[formData.status]}
                         onSelectionChange={(keys) => {
-                          const status = Array.from(keys)[0] as StatusParcela;
+                          const status = Array.from(keys)[0] as ContratoParcelaStatus;
                           setFormData({ ...formData, status });
                         }}
                         startContent={<TrendingUpIcon className="text-default-400" size={16} />}

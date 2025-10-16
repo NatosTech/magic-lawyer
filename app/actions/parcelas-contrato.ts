@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import prisma from "@/app/lib/prisma";
+import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
 
 async function getTenantId(): Promise<string> {
@@ -73,9 +73,13 @@ export async function listParcelasContrato(filters?: { contratoId?: string; stat
       orderBy: [{ dataVencimento: "asc" }, { numeroParcela: "asc" }],
     });
 
+    // Converter Decimal para number e serializar
+    const convertedData = parcelas.map((item) => convertAllDecimalFields(item));
+    const serialized = JSON.parse(JSON.stringify(convertedData));
+
     return {
       success: true,
-      data: parcelas,
+      data: serialized,
     };
   } catch (error) {
     console.error("Erro ao listar parcelas de contrato:", error);
@@ -124,9 +128,13 @@ export async function getParcelaContrato(id: string) {
       };
     }
 
+    // Converter Decimal para number e serializar
+    const converted = convertAllDecimalFields(parcela);
+    const serialized = JSON.parse(JSON.stringify(converted));
+
     return {
       success: true,
-      data: parcela,
+      data: serialized,
     };
   } catch (error) {
     console.error("Erro ao buscar parcela:", error);
@@ -216,9 +224,13 @@ export async function createParcelaContrato(data: {
     revalidatePath("/contratos");
     revalidatePath("/parcelas");
 
+    // Converter Decimal para number e serializar
+    const converted = convertAllDecimalFields(parcela);
+    const serialized = JSON.parse(JSON.stringify(converted));
+
     return {
       success: true,
-      data: parcela,
+      data: serialized,
       message: "Parcela criada com sucesso",
     };
   } catch (error) {
@@ -303,9 +315,13 @@ export async function updateParcelaContrato(
     revalidatePath("/contratos");
     revalidatePath("/parcelas");
 
+    // Converter Decimal para number e serializar
+    const converted = convertAllDecimalFields(parcela);
+    const serialized = JSON.parse(JSON.stringify(converted));
+
     return {
       success: true,
-      data: parcela,
+      data: serialized,
       message: "Parcela atualizada com sucesso",
     };
   } catch (error) {
@@ -436,9 +452,13 @@ export async function gerarParcelasAutomaticamente(
     revalidatePath("/contratos");
     revalidatePath("/parcelas");
 
+    // Converter Decimal para number e serializar
+    const convertedData = parcelas.map((item) => convertAllDecimalFields(item));
+    const serialized = JSON.parse(JSON.stringify(convertedData));
+
     return {
       success: true,
-      data: parcelas,
+      data: serialized,
       message: `${configuracao.numeroParcelas} parcelas criadas com sucesso`,
     };
   } catch (error) {

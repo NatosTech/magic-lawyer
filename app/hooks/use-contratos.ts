@@ -1,6 +1,6 @@
 import useSWR from "swr";
 
-import { getAllContratos, getContratoById } from "@/app/actions/contratos";
+import { getAllContratos, getContratoById, getContratosComParcelas } from "@/app/actions/contratos";
 
 /**
  * Hook para buscar todos os contratos do tenant
@@ -20,7 +20,7 @@ export function useAllContratos() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    },
+    }
   );
 
   return {
@@ -53,11 +53,42 @@ export function useContratoDetalhado(contratoId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    },
+    }
   );
 
   return {
     contrato: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar contratos com informações de parcelas
+ */
+export function useContratosComParcelas() {
+  const { data, error, isLoading, mutate } = useSWR(
+    "contratos-com-parcelas",
+    async () => {
+      const result = await getContratosComParcelas();
+
+      if (!result.success) {
+        throw new Error(result.error || "Erro ao carregar contratos");
+      }
+
+      return result.contratos || [];
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  return {
+    contratos: data,
     isLoading,
     isError: !!error,
     error,
