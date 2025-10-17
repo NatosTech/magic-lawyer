@@ -69,7 +69,7 @@ import {
 } from "@/app/actions/parcelas-contrato";
 import { title, subtitle } from "@/components/primitives";
 import { DadosBancariosParcela } from "@/components/dados-bancarios-parcela";
-import { ComprovantePagamentoUpload } from "@/components/comprovante-pagamento-upload";
+// import { ComprovantePagamentoUpload } from "@/components/comprovante-pagamento-upload";
 import { ValidacaoContaPrincipal } from "@/components/validacao-conta-principal";
 import {
   ContratoParcela,
@@ -683,7 +683,6 @@ export default function ParcelasContratoPage() {
                     <CardBody className="pt-0">
                       <DateRangePicker
                         label="Período de vencimento"
-                        placeholder="Selecione o período"
                         size="sm"
                         startContent={
                           <CalendarDaysIcon
@@ -692,7 +691,7 @@ export default function ParcelasContratoPage() {
                           />
                         }
                         variant="bordered"
-                        onChange={(range) => {
+                        onChange={(range: any) => {
                           if (range && range.start && range.end) {
                             setFilters({
                               ...filters,
@@ -1532,10 +1531,13 @@ export default function ParcelasContratoPage() {
                           <FileTextIcon size={20} />
                           Comprovante de Pagamento
                         </h3>
-                        <ComprovantePagamentoUpload
+                        {/* <ComprovantePagamentoUpload
                           parcelaId={editingId}
                           readonly={formData.status === "PAGA"}
-                        />
+                        /> */}
+                        <div className="text-center py-8 text-default-500">
+                          Componente de comprovante temporariamente desabilitado
+                        </div>
                       </div>
                     )}
                   </div>

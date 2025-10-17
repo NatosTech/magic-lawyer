@@ -44,7 +44,7 @@ import { title, subtitle } from "@/components/primitives";
 interface TipoGlobal {
   id: string;
   nome: string;
-  categoria: string;
+  categoria: string | null;
   ordem: number;
   global: boolean;
   ativo: boolean;
@@ -53,11 +53,11 @@ interface TipoGlobal {
 interface TipoCustomizado {
   id: string;
   nome: string;
-  categoria: string;
+  categoria: string | null;
   ordem: number;
   global: boolean;
   ativo: boolean;
-  tenantId: string;
+  tenantId: string | null;
 }
 
 interface TipoFormData {
@@ -241,8 +241,15 @@ export default function ConfiguracaoTiposPeticaoPage() {
     return cat?.label || categoria;
   };
 
-  const getCategoriaColor = (categoria: string) => {
-    const colors: Record<string, string> = {
+  const getCategoriaColor = (
+    categoria: string | null,
+  ): "default" | "success" | "primary" | "warning" | "secondary" | "danger" => {
+    if (!categoria) return "default";
+
+    const colors: Record<
+      string,
+      "default" | "success" | "primary" | "warning" | "secondary" | "danger"
+    > = {
       INICIAL: "success",
       RESPOSTA: "warning",
       RECURSO: "danger",
@@ -255,7 +262,8 @@ export default function ConfiguracaoTiposPeticaoPage() {
     return colors[categoria] || "default";
   };
 
-  const formatCategoria = (categoria: string) => {
+  const formatCategoria = (categoria: string | null) => {
+    if (!categoria) return "Sem categoria";
     const labels: Record<string, string> = {
       INICIAL: "Inicial",
       RESPOSTA: "Resposta",
@@ -288,11 +296,7 @@ export default function ConfiguracaoTiposPeticaoPage() {
         selectedKey={activeTab}
         onSelectionChange={(key) => setActiveTab(key as string)}
       >
-        <Tab
-          key="globais"
-          startContent={<GlobeIcon size={16} />}
-          title="Tipos Globais"
-        >
+        <Tab key="globais" title="Tipos Globais">
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center w-full">
@@ -367,11 +371,7 @@ export default function ConfiguracaoTiposPeticaoPage() {
           </Card>
         </Tab>
 
-        <Tab
-          key="customizados"
-          startContent={<PlusIcon size={16} />}
-          title="Tipos Customizados"
-        >
+        <Tab key="customizados" title="Tipos Customizados">
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center w-full">

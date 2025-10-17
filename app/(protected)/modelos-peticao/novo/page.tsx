@@ -97,10 +97,10 @@ export default function NovoModeloPeticaoPage() {
   const [novaCategoria, setNovaCategoria] = useState("");
   const [novoTipo, setNovoTipo] = useState("");
 
-  const todasCategorias = [
-    ...new Set([...CATEGORIAS_PADRAO, ...categoriasExistentes]),
-  ];
-  const todosTipos = [...new Set([...TIPOS_PADRAO, ...tiposExistentes])];
+  const todasCategorias = Array.from(
+    new Set([...CATEGORIAS_PADRAO, ...categoriasExistentes]),
+  );
+  const todosTipos = Array.from(new Set([...TIPOS_PADRAO, ...tiposExistentes]));
 
   const handleAdicionarVariavel = (variavel: (typeof VARIAVEIS_PADRAO)[0]) => {
     if (variaveis.some((v) => v.nome === variavel.nome)) {

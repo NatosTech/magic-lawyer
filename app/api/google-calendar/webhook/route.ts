@@ -17,7 +17,10 @@ export async function POST(request: NextRequest) {
     if (!channelId || !resourceState) {
       logger.warn("Webhook do Google Calendar recebido sem dados válidos");
 
-      return NextResponse.json({ success: false, error: "Dados inválidos" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Dados inválidos" },
+        { status: 400 },
+      );
     }
 
     logger.info(`Webhook Google Calendar: ${resourceState} - ${channelId}`);
@@ -39,9 +42,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (!usuario) {
-      logger.warn(`Webhook Google Calendar: Usuário não encontrado para token ${channelToken}`);
+      logger.warn(
+        `Webhook Google Calendar: Usuário não encontrado para token ${channelToken}`,
+      );
 
-      return NextResponse.json({ success: false, error: "Usuário não encontrado" }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "Usuário não encontrado" },
+        { status: 404 },
+      );
     }
 
     // Processar diferentes tipos de notificação
@@ -70,7 +78,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error("Erro no webhook do Google Calendar:", error);
 
-    return NextResponse.json({ success: false, error: "Erro interno do servidor" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "Erro interno do servidor" },
+      { status: 500 },
+    );
   }
 }
 
@@ -86,9 +97,14 @@ async function handleChannelRemoved(userId: string) {
       },
     });
 
-    logger.info(`Sincronização desabilitada para usuário ${userId} devido a canal removido`);
+    logger.info(
+      `Sincronização desabilitada para usuário ${userId} devido a canal removido`,
+    );
   } catch (error) {
-    logger.error(`Erro ao processar remoção de canal para usuário ${userId}:`, error);
+    logger.error(
+      `Erro ao processar remoção de canal para usuário ${userId}:`,
+      error,
+    );
   }
 }
 

@@ -46,7 +46,12 @@ import {
   DateRangePicker,
 } from "@heroui/react";
 import { Calendar as CalendarComponent } from "@heroui/react";
-import { today, getLocalTimeZone, startOfWeek, startOfMonth } from "@internationalized/date";
+import {
+  today,
+  getLocalTimeZone,
+  startOfWeek,
+  startOfMonth,
+} from "@internationalized/date";
 import { useLocale } from "@react-aria/i18n";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -56,7 +61,12 @@ import { useAllClientes } from "@/app/hooks/use-clientes";
 import { useAllProcessos } from "@/app/hooks/use-processos";
 import { useAdvogadosDisponiveis } from "@/app/hooks/use-advogados";
 import { title, subtitle } from "@/components/primitives";
-import { deleteEvento, marcarEventoComoRealizado, getEventoById, confirmarParticipacaoEvento } from "@/app/actions/eventos";
+import {
+  deleteEvento,
+  marcarEventoComoRealizado,
+  getEventoById,
+  confirmarParticipacaoEvento,
+} from "@/app/actions/eventos";
 import EventoForm from "@/components/evento-form";
 import GoogleCalendarButton from "@/components/google-calendar-button";
 import GoogleCalendarStatusCard from "@/components/google-calendar-status";
@@ -118,7 +128,8 @@ export default function AgendaPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   const locale = useLocale();
-  const { permissions, isCliente, isAdvogado, isSecretaria, isAdmin } = useUserPermissions();
+  const { permissions, isCliente, isAdvogado, isSecretaria, isAdmin } =
+    useUserPermissions();
   const session = useSession();
   const userEmail = session?.data?.user?.email;
 
@@ -130,8 +141,20 @@ export default function AgendaPage() {
   // Memoizar as datas para evitar re-criação a cada render
   const datasMemo = useMemo(() => {
     const agora = new Date();
-    const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
-    const fimHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 23, 59, 59, 999);
+    const inicioHoje = new Date(
+      agora.getFullYear(),
+      agora.getMonth(),
+      agora.getDate(),
+    );
+    const fimHoje = new Date(
+      agora.getFullYear(),
+      agora.getMonth(),
+      agora.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
 
     const inicioSemana = new Date(agora.getTime() - 7 * 24 * 60 * 60 * 1000);
     const fimSemana = new Date(agora.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -159,10 +182,23 @@ export default function AgendaPage() {
       advogadoId: filtroAdvogado || undefined,
       local: filtroLocal || undefined,
       titulo: filtroTitulo || undefined,
-      dataInicio: filtroDataRange?.start ? new Date(filtroDataRange.start.toString()) : undefined,
-      dataFim: filtroDataRange?.end ? new Date(filtroDataRange.end.toString()) : undefined,
+      dataInicio: filtroDataRange?.start
+        ? new Date(filtroDataRange.start.toString())
+        : undefined,
+      dataFim: filtroDataRange?.end
+        ? new Date(filtroDataRange.end.toString())
+        : undefined,
     }),
-    [filtroTipo, filtroStatus, filtroCliente, filtroProcesso, filtroAdvogado, filtroLocal, filtroTitulo, filtroDataRange]
+    [
+      filtroTipo,
+      filtroStatus,
+      filtroCliente,
+      filtroProcesso,
+      filtroAdvogado,
+      filtroLocal,
+      filtroTitulo,
+      filtroDataRange,
+    ],
   );
 
   // Apenas UMA chamada para buscar todos os eventos
@@ -176,22 +212,32 @@ export default function AgendaPage() {
     const hoje = eventos.filter((evento) => {
       const dataEvento = new Date(evento.dataInicio);
 
-      return dataEvento >= datasMemo.inicioHoje && dataEvento <= datasMemo.fimHoje;
+      return (
+        dataEvento >= datasMemo.inicioHoje && dataEvento <= datasMemo.fimHoje
+      );
     }).length;
 
     const semana = eventos.filter((evento) => {
       const dataEvento = new Date(evento.dataInicio);
 
-      return dataEvento >= datasMemo.inicioSemana && dataEvento <= datasMemo.fimSemana;
+      return (
+        dataEvento >= datasMemo.inicioSemana &&
+        dataEvento <= datasMemo.fimSemana
+      );
     }).length;
 
     const mes = eventos.filter((evento) => {
       const dataEvento = new Date(evento.dataInicio);
 
-      return dataEvento >= datasMemo.inicioMes && dataEvento <= datasMemo.fimMes;
+      return (
+        dataEvento >= datasMemo.inicioMes && dataEvento <= datasMemo.fimMes
+      );
     }).length;
 
-    const confirmacoes = eventos.reduce((total, evento) => total + (evento.confirmacoes?.length || 0), 0);
+    const confirmacoes = eventos.reduce(
+      (total, evento) => total + (evento.confirmacoes?.length || 0),
+      0,
+    );
 
     return { hoje, semana, mes, confirmacoes };
   }, [eventos, datasMemo]);
@@ -273,11 +319,27 @@ export default function AgendaPage() {
   };
 
   // Verificar se há filtros ativos
-  const hasActiveFilters = filtroTipo || filtroStatus || filtroCliente || filtroProcesso || filtroAdvogado || filtroLocal || filtroTitulo || filtroDataRange;
+  const hasActiveFilters =
+    filtroTipo ||
+    filtroStatus ||
+    filtroCliente ||
+    filtroProcesso ||
+    filtroAdvogado ||
+    filtroLocal ||
+    filtroTitulo ||
+    filtroDataRange;
 
-  const handleConfirmarParticipacao = async (eventoId: string, participanteEmail: string, status: EventoConfirmacaoStatus) => {
+  const handleConfirmarParticipacao = async (
+    eventoId: string,
+    participanteEmail: string,
+    status: EventoConfirmacaoStatus,
+  ) => {
     try {
-      const result = await confirmarParticipacaoEvento(eventoId, participanteEmail, status);
+      const result = await confirmarParticipacaoEvento(
+        eventoId,
+        participanteEmail,
+        status,
+      );
 
       if (result.success) {
         toast.success("Confirmação atualizada com sucesso!");
@@ -316,7 +378,9 @@ export default function AgendaPage() {
     }
 
     // Verificar se o usuário atual é participante do evento
-    const userConfirmacao = evento.confirmacoes.find((c) => c.participanteEmail === userEmail);
+    const userConfirmacao = evento.confirmacoes.find(
+      (c) => c.participanteEmail === userEmail,
+    );
 
     return (
       <div className="mt-2">
@@ -325,35 +389,67 @@ export default function AgendaPage() {
         {/* Botões de confirmação para o usuário atual se for participante */}
         {userConfirmacao && (
           <div className="mb-2 p-2 bg-default-50 rounded-lg">
-            <div className="text-xs text-default-600 mb-2">Sua confirmação:</div>
+            <div className="text-xs text-default-600 mb-2">
+              Sua confirmação:
+            </div>
             <div className="flex gap-1">
               <Button
                 className="text-xs"
-                color={userConfirmacao.status === "CONFIRMADO" ? "success" : "default"}
+                color={
+                  userConfirmacao.status === "CONFIRMADO"
+                    ? "success"
+                    : "default"
+                }
                 size="sm"
                 startContent={<Check className="w-3 h-3" />}
-                variant={userConfirmacao.status === "CONFIRMADO" ? "solid" : "flat"}
-                onPress={() => handleConfirmarParticipacao(evento.id, userEmail || "", "CONFIRMADO")}
+                variant={
+                  userConfirmacao.status === "CONFIRMADO" ? "solid" : "flat"
+                }
+                onPress={() =>
+                  handleConfirmarParticipacao(
+                    evento.id,
+                    userEmail || "",
+                    "CONFIRMADO",
+                  )
+                }
               >
                 Confirmar
               </Button>
               <Button
                 className="text-xs"
-                color={userConfirmacao.status === "RECUSADO" ? "danger" : "default"}
+                color={
+                  userConfirmacao.status === "RECUSADO" ? "danger" : "default"
+                }
                 size="sm"
                 startContent={<X className="w-3 h-3" />}
-                variant={userConfirmacao.status === "RECUSADO" ? "solid" : "flat"}
-                onPress={() => handleConfirmarParticipacao(evento.id, userEmail || "", "RECUSADO")}
+                variant={
+                  userConfirmacao.status === "RECUSADO" ? "solid" : "flat"
+                }
+                onPress={() =>
+                  handleConfirmarParticipacao(
+                    evento.id,
+                    userEmail || "",
+                    "RECUSADO",
+                  )
+                }
               >
                 Recusar
               </Button>
               <Button
                 className="text-xs"
-                color={userConfirmacao.status === "TALVEZ" ? "secondary" : "default"}
+                color={
+                  userConfirmacao.status === "TALVEZ" ? "secondary" : "default"
+                }
                 size="sm"
                 startContent={<HelpCircle className="w-3 h-3" />}
                 variant={userConfirmacao.status === "TALVEZ" ? "solid" : "flat"}
-                onPress={() => handleConfirmarParticipacao(evento.id, userEmail || "", "TALVEZ")}
+                onPress={() =>
+                  handleConfirmarParticipacao(
+                    evento.id,
+                    userEmail || "",
+                    "TALVEZ",
+                  )
+                }
               >
                 Talvez
               </Button>
@@ -364,20 +460,45 @@ export default function AgendaPage() {
         {/* Lista de confirmações */}
         <div className="flex flex-wrap gap-1">
           {evento.confirmacoes.map((confirmacao) => {
-            const statusInfo = statusConfirmacao[confirmacao.status as keyof typeof statusConfirmacao];
+            const statusInfo =
+              statusConfirmacao[
+                confirmacao.status as keyof typeof statusConfirmacao
+              ];
             const IconComponent = statusInfo?.icon || AlertCircle;
 
             const tooltipContent = (
               <div className="text-xs">
-                <div className="font-semibold">{statusInfo?.label || confirmacao.status}</div>
-                {confirmacao.observacoes && <div className="text-default-400 mt-1">{confirmacao.observacoes}</div>}
-                {confirmacao.confirmadoEm && <div className="text-default-400 mt-1">Confirmado em: {new Date(confirmacao.confirmadoEm).toLocaleString("pt-BR")}</div>}
+                <div className="font-semibold">
+                  {statusInfo?.label || confirmacao.status}
+                </div>
+                {confirmacao.observacoes && (
+                  <div className="text-default-400 mt-1">
+                    {confirmacao.observacoes}
+                  </div>
+                )}
+                {confirmacao.confirmadoEm && (
+                  <div className="text-default-400 mt-1">
+                    Confirmado em:{" "}
+                    {new Date(confirmacao.confirmadoEm).toLocaleString("pt-BR")}
+                  </div>
+                )}
               </div>
             );
 
             return (
-              <Tooltip key={confirmacao.id} color={statusInfo?.color || "default"} content={tooltipContent} placement="top">
-                <Chip className="cursor-help" color={statusInfo?.color || "default"} size="sm" startContent={<IconComponent className="w-3 h-3" />} variant="flat">
+              <Tooltip
+                key={confirmacao.id}
+                color={statusInfo?.color || "default"}
+                content={tooltipContent}
+                placement="top"
+              >
+                <Chip
+                  className="cursor-help"
+                  color={statusInfo?.color || "default"}
+                  size="sm"
+                  startContent={<IconComponent className="w-3 h-3" />}
+                  variant="flat"
+                >
                   {confirmacao.participanteEmail}
                 </Chip>
               </Tooltip>
@@ -409,22 +530,35 @@ export default function AgendaPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className={title({ size: "lg", color: "blue" })}>Agenda</h1>
-          <p className={subtitle({ fullWidth: true })}>Gerencie seus compromissos e eventos</p>
+          <p className={subtitle({ fullWidth: true })}>
+            Gerencie seus compromissos e eventos
+          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <ButtonGroup className="w-full sm:w-auto">
-            <Button variant={viewMode === "calendar" ? "solid" : "bordered"} onPress={() => setViewMode("calendar")}>
+            <Button
+              variant={viewMode === "calendar" ? "solid" : "bordered"}
+              onPress={() => setViewMode("calendar")}
+            >
               Calendário
             </Button>
-            <Button variant={viewMode === "list" ? "solid" : "bordered"} onPress={() => setViewMode("list")}>
+            <Button
+              variant={viewMode === "list" ? "solid" : "bordered"}
+              onPress={() => setViewMode("list")}
+            >
               Lista
             </Button>
           </ButtonGroup>
 
           <div className="flex gap-2 w-full sm:w-auto">
             {permissions.canCreateEvents && !isCliente && (
-              <Button className="flex-1 sm:flex-none" color="primary" startContent={<Plus className="w-4 h-4" />} onPress={handleCreateEvento}>
+              <Button
+                className="flex-1 sm:flex-none"
+                color="primary"
+                startContent={<Plus className="w-4 h-4" />}
+                onPress={handleCreateEvento}
+              >
                 Novo Evento
               </Button>
             )}
@@ -441,28 +575,71 @@ export default function AgendaPage() {
             <span className="text-sm font-medium">Legenda de Confirmações</span>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Tooltip color="success" content="Participante confirmou presença no evento" placement="top">
-              <Chip className="cursor-help" color="success" size="sm" startContent={<Check className="w-3 h-3" />} variant="flat">
+            <Tooltip
+              color="success"
+              content="Participante confirmou presença no evento"
+              placement="top"
+            >
+              <Chip
+                className="cursor-help"
+                color="success"
+                size="sm"
+                startContent={<Check className="w-3 h-3" />}
+                variant="flat"
+              >
                 Confirmado
               </Chip>
             </Tooltip>
-            <Tooltip color="danger" content="Participante recusou o convite para o evento" placement="top">
-              <Chip className="cursor-help" color="danger" size="sm" startContent={<X className="w-3 h-3" />} variant="flat">
+            <Tooltip
+              color="danger"
+              content="Participante recusou o convite para o evento"
+              placement="top"
+            >
+              <Chip
+                className="cursor-help"
+                color="danger"
+                size="sm"
+                startContent={<X className="w-3 h-3" />}
+                variant="flat"
+              >
                 Recusado
               </Chip>
             </Tooltip>
-            <Tooltip color="secondary" content="Participante marcou como 'talvez' - aguardando confirmação" placement="top">
-              <Chip className="cursor-help" color="secondary" size="sm" startContent={<HelpCircle className="w-3 h-3" />} variant="flat">
+            <Tooltip
+              color="secondary"
+              content="Participante marcou como 'talvez' - aguardando confirmação"
+              placement="top"
+            >
+              <Chip
+                className="cursor-help"
+                color="secondary"
+                size="sm"
+                startContent={<HelpCircle className="w-3 h-3" />}
+                variant="flat"
+              >
                 Talvez
               </Chip>
             </Tooltip>
-            <Tooltip color="warning" content="Aguardando confirmação do participante" placement="top">
-              <Chip className="cursor-help" color="warning" size="sm" startContent={<AlertCircle className="w-3 h-3" />} variant="flat">
+            <Tooltip
+              color="warning"
+              content="Aguardando confirmação do participante"
+              placement="top"
+            >
+              <Chip
+                className="cursor-help"
+                color="warning"
+                size="sm"
+                startContent={<AlertCircle className="w-3 h-3" />}
+                variant="flat"
+              >
                 Pendente
               </Chip>
             </Tooltip>
           </div>
-          <p className="text-xs text-default-400 mt-2">Passe o mouse sobre os chips para ver mais detalhes sobre cada confirmação</p>
+          <p className="text-xs text-default-400 mt-2">
+            Passe o mouse sobre os chips para ver mais detalhes sobre cada
+            confirmação
+          </p>
         </CardBody>
       </Card>
 
@@ -470,25 +647,33 @@ export default function AgendaPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardBody className="text-center">
-            <div className="text-2xl font-bold text-primary">{estatisticas.hoje}</div>
+            <div className="text-2xl font-bold text-primary">
+              {estatisticas.hoje}
+            </div>
             <div className="text-sm text-default-500">Eventos Hoje</div>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center">
-            <div className="text-2xl font-bold text-warning">{estatisticas.semana}</div>
+            <div className="text-2xl font-bold text-warning">
+              {estatisticas.semana}
+            </div>
             <div className="text-sm text-default-500">Esta Semana</div>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center">
-            <div className="text-2xl font-bold text-success">{estatisticas.mes}</div>
+            <div className="text-2xl font-bold text-success">
+              {estatisticas.mes}
+            </div>
             <div className="text-sm text-default-500">Este Mês</div>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="text-center">
-            <div className="text-2xl font-bold text-secondary">{estatisticas.confirmacoes}</div>
+            <div className="text-2xl font-bold text-secondary">
+              {estatisticas.confirmacoes}
+            </div>
             <div className="text-sm text-default-500">Confirmações</div>
           </CardBody>
         </Card>
@@ -507,15 +692,44 @@ export default function AgendaPage() {
               <h3 className="text-lg font-semibold">Filtros</h3>
               {hasActiveFilters && (
                 <Chip color="primary" size="sm" variant="flat">
-                  {[filtroTipo, filtroStatus, filtroCliente, filtroProcesso, filtroAdvogado, filtroLocal, filtroTitulo, filtroDataRange].filter(Boolean).length} ativo(s)
+                  {
+                    [
+                      filtroTipo,
+                      filtroStatus,
+                      filtroCliente,
+                      filtroProcesso,
+                      filtroAdvogado,
+                      filtroLocal,
+                      filtroTitulo,
+                      filtroDataRange,
+                    ].filter(Boolean).length
+                  }{" "}
+                  ativo(s)
                 </Chip>
               )}
             </div>
             <div className="flex gap-2">
-              <Button isDisabled={!hasActiveFilters} size="sm" startContent={<RotateCcw className="w-4 h-4" />} variant="light" onPress={clearAllFilters}>
+              <Button
+                isDisabled={!hasActiveFilters}
+                size="sm"
+                startContent={<RotateCcw className="w-4 h-4" />}
+                variant="light"
+                onPress={clearAllFilters}
+              >
                 Limpar
               </Button>
-              <Button size="sm" startContent={showFilters ? <XCircle className="w-4 h-4" /> : <Filter className="w-4 h-4" />} variant="light" onPress={() => setShowFilters(!showFilters)}>
+              <Button
+                size="sm"
+                startContent={
+                  showFilters ? (
+                    <XCircle className="w-4 h-4" />
+                  ) : (
+                    <Filter className="w-4 h-4" />
+                  )
+                }
+                variant="light"
+                onPress={() => setShowFilters(!showFilters)}
+              >
                 {showFilters ? "Ocultar" : "Mostrar"}
               </Button>
             </div>
@@ -526,23 +740,38 @@ export default function AgendaPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {/* Filtro por Período */}
                 <div className="space-y-2">
-                  <label htmlFor="periodo" className="text-sm font-medium flex items-center gap-2">
+                  <label
+                    className="text-sm font-medium flex items-center gap-2"
+                    htmlFor="periodo"
+                  >
                     <CalendarDays className="w-4 h-4" />
                     Período
                   </label>
-                  <DateRangePicker className="w-full" label="Selecione o período" size="sm" value={filtroDataRange} variant="bordered" onChange={setFiltroDataRange} />
+                  <DateRangePicker
+                    className="w-full"
+                    label="Selecione o período"
+                    size="sm"
+                    value={filtroDataRange}
+                    variant="bordered"
+                    onChange={setFiltroDataRange}
+                  />
                 </div>
 
                 {/* Filtro por Título */}
                 <div className="space-y-2">
-                  <label htmlFor="filtro" className="text-sm font-medium flex items-center gap-2">
+                  <label
+                    className="text-sm font-medium flex items-center gap-2"
+                    htmlFor="filtro"
+                  >
                     <Search className="w-4 h-4" />
                     Título
                   </label>
                   <Input
                     placeholder="Buscar por título..."
                     size="sm"
-                    startContent={<Search className="w-4 h-4 text-default-400" />}
+                    startContent={
+                      <Search className="w-4 h-4 text-default-400" />
+                    }
                     value={filtroTitulo}
                     variant="bordered"
                     onChange={(e) => setFiltroTitulo(e.target.value)}
@@ -551,37 +780,58 @@ export default function AgendaPage() {
 
                 {/* Filtro por Cliente */}
                 <div className="space-y-2">
-                  <label htmlFor="cliente" className="text-sm font-medium flex items-center gap-2">
+                  <label
+                    className="text-sm font-medium flex items-center gap-2"
+                    htmlFor="cliente"
+                  >
                     <User className="w-4 h-4" />
                     Cliente
                   </label>
                   <Select
                     placeholder="Selecione um cliente"
                     selectedKeys={(() => {
-                      const clientesComEventos = eventos?.filter((e) => e.clienteId).map((e) => e.clienteId) || [];
+                      const clientesComEventos =
+                        eventos
+                          ?.filter((e) => e.clienteId)
+                          .map((e) => e.clienteId) || [];
                       const clienteKeySet = new Set(clientesComEventos);
 
-                      return filtroCliente && clienteKeySet.has(filtroCliente) ? [filtroCliente] : [];
+                      return filtroCliente && clienteKeySet.has(filtroCliente)
+                        ? [filtroCliente]
+                        : [];
                     })()}
                     size="sm"
                     variant="bordered"
-                    onSelectionChange={(keys) => setFiltroCliente((Array.from(keys)[0] as string) || "")}
+                    onSelectionChange={(keys) =>
+                      setFiltroCliente((Array.from(keys)[0] as string) || "")
+                    }
                   >
                     <SelectItem key="" textValue="Todos os clientes">
                       Todos os clientes
                     </SelectItem>
                     {(() => {
                       // Filtrar apenas clientes que têm eventos
-                      const clientesComEventos = eventos?.filter((e) => e.clienteId && e.cliente).map((e) => e.cliente) || [];
-                      const clientesUnicos = clientesComEventos.filter((cliente, index, self) => cliente && index === self.findIndex((c) => c && c.id === cliente.id));
+                      const clientesComEventos =
+                        eventos
+                          ?.filter((e) => e.clienteId && e.cliente)
+                          .map((e) => e.cliente) || [];
+                      const clientesUnicos = clientesComEventos.filter(
+                        (cliente, index, self) =>
+                          cliente &&
+                          index ===
+                            self.findIndex((c) => c && c.id === cliente.id),
+                      );
 
                       return clientesUnicos.map(
                         (cliente) =>
                           cliente && (
-                            <SelectItem key={cliente.id} textValue={cliente.nome}>
+                            <SelectItem
+                              key={cliente.id}
+                              textValue={cliente.nome}
+                            >
                               {cliente.nome}
                             </SelectItem>
-                          )
+                          ),
                       ) as any;
                     })()}
                   </Select>
@@ -589,37 +839,60 @@ export default function AgendaPage() {
 
                 {/* Filtro por Processo */}
                 <div className="space-y-2">
-                  <label htmlFor="filtro" className="text-sm font-medium flex items-center gap-2">
+                  <label
+                    className="text-sm font-medium flex items-center gap-2"
+                    htmlFor="filtro"
+                  >
                     <Scale className="w-4 h-4" />
                     Processo
                   </label>
                   <Select
                     placeholder="Selecione um processo"
                     selectedKeys={(() => {
-                      const processosComEventos = eventos?.filter((e) => e.processoId).map((e) => e.processoId) || [];
+                      const processosComEventos =
+                        eventos
+                          ?.filter((e) => e.processoId)
+                          .map((e) => e.processoId) || [];
                       const processoKeySet = new Set(processosComEventos);
 
-                      return filtroProcesso && processoKeySet.has(filtroProcesso) ? [filtroProcesso] : [];
+                      return filtroProcesso &&
+                        processoKeySet.has(filtroProcesso)
+                        ? [filtroProcesso]
+                        : [];
                     })()}
                     size="sm"
                     variant="bordered"
-                    onSelectionChange={(keys) => setFiltroProcesso((Array.from(keys)[0] as string) || "")}
+                    onSelectionChange={(keys) =>
+                      setFiltroProcesso((Array.from(keys)[0] as string) || "")
+                    }
                   >
                     <SelectItem key="" textValue="Todos os processos">
                       Todos os processos
                     </SelectItem>
                     {(() => {
                       // Filtrar apenas processos que têm eventos
-                      const processosComEventos = eventos?.filter((e) => e.processoId && e.processo).map((e) => e.processo) || [];
-                      const processosUnicos = processosComEventos.filter((processo, index, self) => processo && index === self.findIndex((p) => p && p.id === processo.id));
+                      const processosComEventos =
+                        eventos
+                          ?.filter((e) => e.processoId && e.processo)
+                          .map((e) => e.processo) || [];
+                      const processosUnicos = processosComEventos.filter(
+                        (processo, index, self) =>
+                          processo &&
+                          index ===
+                            self.findIndex((p) => p && p.id === processo.id),
+                      );
 
                       return processosUnicos.map(
                         (processo) =>
                           processo && (
-                            <SelectItem key={processo.id} textValue={`${processo.numero} - ${processo.titulo || "Sem título"}`}>
-                              {processo.numero} - {processo.titulo || "Sem título"}
+                            <SelectItem
+                              key={processo.id}
+                              textValue={`${processo.numero} - ${processo.titulo || "Sem título"}`}
+                            >
+                              {processo.numero} -{" "}
+                              {processo.titulo || "Sem título"}
                             </SelectItem>
-                          )
+                          ),
                       ) as any;
                     })()}
                   </Select>
@@ -628,29 +901,52 @@ export default function AgendaPage() {
                 {/* Filtro por Advogado - apenas para Admin/SuperAdmin */}
                 {!isAdvogado && (
                   <div className="space-y-2">
-                    <label htmlFor="filtro" className="text-sm font-medium flex items-center gap-2">
+                    <label
+                      className="text-sm font-medium flex items-center gap-2"
+                      htmlFor="filtro"
+                    >
                       <Building className="w-4 h-4" />
                       Advogado
                     </label>
                     <Select
                       placeholder="Selecione um advogado"
                       selectedKeys={(() => {
-                        const advogadosComEventos = eventos?.filter((e) => e.advogadoResponsavelId).map((e) => e.advogadoResponsavelId) || [];
+                        const advogadosComEventos =
+                          eventos
+                            ?.filter((e) => e.advogadoResponsavelId)
+                            .map((e) => e.advogadoResponsavelId) || [];
                         const advogadoKeySet = new Set(advogadosComEventos);
 
-                        return filtroAdvogado && advogadoKeySet.has(filtroAdvogado) ? [filtroAdvogado] : [];
+                        return filtroAdvogado &&
+                          advogadoKeySet.has(filtroAdvogado)
+                          ? [filtroAdvogado]
+                          : [];
                       })()}
                       size="sm"
                       variant="bordered"
-                      onSelectionChange={(keys) => setFiltroAdvogado((Array.from(keys)[0] as string) || "")}
+                      onSelectionChange={(keys) =>
+                        setFiltroAdvogado((Array.from(keys)[0] as string) || "")
+                      }
                     >
                       <SelectItem key="" textValue="Todos os advogados">
                         Todos os advogados
                       </SelectItem>
                       {(() => {
                         // Filtrar apenas advogados que têm eventos
-                        const advogadosComEventos = eventos?.filter((e) => e.advogadoResponsavelId && e.advogadoResponsavel).map((e) => e.advogadoResponsavel) || [];
-                        const advogadosUnicos = advogadosComEventos.filter((advogado, index, self) => advogado && index === self.findIndex((a) => a && a.id === advogado.id));
+                        const advogadosComEventos =
+                          eventos
+                            ?.filter(
+                              (e) =>
+                                e.advogadoResponsavelId &&
+                                e.advogadoResponsavel,
+                            )
+                            .map((e) => e.advogadoResponsavel) || [];
+                        const advogadosUnicos = advogadosComEventos.filter(
+                          (advogado, index, self) =>
+                            advogado &&
+                            index ===
+                              self.findIndex((a) => a && a.id === advogado.id),
+                        );
 
                         return advogadosUnicos.map(
                           (advogado: any) =>
@@ -659,11 +955,14 @@ export default function AgendaPage() {
                               const nomeCompleto = `${advogado.usuario.firstName} ${advogado.usuario.lastName}`;
 
                               return (
-                                <SelectItem key={advogado.id} textValue={nomeCompleto}>
+                                <SelectItem
+                                  key={advogado.id}
+                                  textValue={nomeCompleto}
+                                >
                                   {nomeCompleto}
                                 </SelectItem>
                               );
-                            })()
+                            })(),
                         ) as any;
                       })()}
                     </Select>
@@ -672,14 +971,19 @@ export default function AgendaPage() {
 
                 {/* Filtro por Local */}
                 <div className="space-y-2">
-                  <label htmlFor="filtro" className="text-sm font-medium flex items-center gap-2">
+                  <label
+                    className="text-sm font-medium flex items-center gap-2"
+                    htmlFor="filtro"
+                  >
                     <LocationIcon className="w-4 h-4" />
                     Local
                   </label>
                   <Input
                     placeholder="Buscar por local..."
                     size="sm"
-                    startContent={<LocationIcon className="w-4 h-4 text-default-400" />}
+                    startContent={
+                      <LocationIcon className="w-4 h-4 text-default-400" />
+                    }
                     value={filtroLocal}
                     variant="bordered"
                     onChange={(e) => setFiltroLocal(e.target.value)}
@@ -688,7 +992,10 @@ export default function AgendaPage() {
 
                 {/* Filtro por Tipo */}
                 <div className="space-y-2">
-                  <label htmlFor="filtro" className="text-sm font-medium flex items-center gap-2">
+                  <label
+                    className="text-sm font-medium flex items-center gap-2"
+                    htmlFor="filtro"
+                  >
                     <FileText className="w-4 h-4" />
                     Tipo
                   </label>
@@ -697,7 +1004,9 @@ export default function AgendaPage() {
                     selectedKeys={filtroTipo ? [filtroTipo] : []}
                     size="sm"
                     variant="bordered"
-                    onSelectionChange={(keys) => setFiltroTipo((Array.from(keys)[0] as string) || "")}
+                    onSelectionChange={(keys) =>
+                      setFiltroTipo((Array.from(keys)[0] as string) || "")
+                    }
                   >
                     <SelectItem key="" textValue="Todos os tipos">
                       Todos os tipos
@@ -714,7 +1023,10 @@ export default function AgendaPage() {
 
                 {/* Filtro por Status */}
                 <div className="space-y-2">
-                  <label htmlFor="filtro" className="text-sm font-medium flex items-center gap-2">
+                  <label
+                    className="text-sm font-medium flex items-center gap-2"
+                    htmlFor="filtro"
+                  >
                     <CheckCircle className="w-4 h-4" />
                     Status
                   </label>
@@ -723,7 +1035,9 @@ export default function AgendaPage() {
                     selectedKeys={filtroStatus ? [filtroStatus] : []}
                     size="sm"
                     variant="bordered"
-                    onSelectionChange={(keys) => setFiltroStatus((Array.from(keys)[0] as string) || "")}
+                    onSelectionChange={(keys) =>
+                      setFiltroStatus((Array.from(keys)[0] as string) || "")
+                    }
                   >
                     <SelectItem key="" textValue="Todos os status">
                       Todos os status
@@ -770,10 +1084,43 @@ export default function AgendaPage() {
                       size: "lg",
                     }}
                     topContent={
-                      <ButtonGroup fullWidth className="px-4 pb-4 pt-4 bg-content1 [&>button]:text-default-500 [&>button]:border-default-200/60" radius="full" size="lg" variant="bordered">
-                        <Button onPress={() => setSelectedDate(today(getLocalTimeZone()))}>Hoje</Button>
-                        <Button onPress={() => setSelectedDate(startOfWeek(today(getLocalTimeZone()).add({ weeks: 1 }), "pt-BR"))}>Próxima semana</Button>
-                        <Button onPress={() => setSelectedDate(startOfMonth(today(getLocalTimeZone()).add({ months: 1 })))}>Próximo mês</Button>
+                      <ButtonGroup
+                        fullWidth
+                        className="px-4 pb-4 pt-4 bg-content1 [&>button]:text-default-500 [&>button]:border-default-200/60"
+                        radius="full"
+                        size="lg"
+                        variant="bordered"
+                      >
+                        <Button
+                          onPress={() =>
+                            setSelectedDate(today(getLocalTimeZone()))
+                          }
+                        >
+                          Hoje
+                        </Button>
+                        <Button
+                          onPress={() =>
+                            setSelectedDate(
+                              startOfWeek(
+                                today(getLocalTimeZone()).add({ weeks: 1 }),
+                                "pt-BR",
+                              ),
+                            )
+                          }
+                        >
+                          Próxima semana
+                        </Button>
+                        <Button
+                          onPress={() =>
+                            setSelectedDate(
+                              startOfMonth(
+                                today(getLocalTimeZone()).add({ months: 1 }),
+                              ),
+                            )
+                          }
+                        >
+                          Próximo mês
+                        </Button>
                       </ButtonGroup>
                     }
                     value={selectedDate as any}
@@ -788,7 +1135,9 @@ export default function AgendaPage() {
             <div>
               <Card>
                 <CardHeader>
-                  <h3 className="text-lg font-semibold">Eventos - {formatarDataSelecionada(selectedDate)}</h3>
+                  <h3 className="text-lg font-semibold">
+                    Eventos - {formatarDataSelecionada(selectedDate)}
+                  </h3>
                 </CardHeader>
                 <CardBody>
                   {isLoading ? (
@@ -803,17 +1152,42 @@ export default function AgendaPage() {
                   ) : (
                     <div className="space-y-3">
                       {eventosFiltrados.map((evento) => (
-                        <Card key={evento.id} className="border-l-4 border-l-primary">
+                        <Card
+                          key={evento.id}
+                          className="border-l-4 border-l-primary"
+                        >
                           <CardBody className="p-4">
                             <div className="flex justify-between items-start mb-2">
                               <div className="flex-1">
-                                <h4 className="font-semibold text-sm">{evento.titulo}</h4>
+                                <h4 className="font-semibold text-sm">
+                                  {evento.titulo}
+                                </h4>
                                 <div className="flex items-center gap-2 mt-1">
-                                  <Chip color={tiposEvento[evento.tipo as keyof typeof tiposEvento]?.color || "default"} size="sm" variant="flat">
-                                    {tiposEvento[evento.tipo as keyof typeof tiposEvento]?.label || evento.tipo}
+                                  <Chip
+                                    color={
+                                      tiposEvento[
+                                        evento.tipo as keyof typeof tiposEvento
+                                      ]?.color || "default"
+                                    }
+                                    size="sm"
+                                    variant="flat"
+                                  >
+                                    {tiposEvento[
+                                      evento.tipo as keyof typeof tiposEvento
+                                    ]?.label || evento.tipo}
                                   </Chip>
-                                  <Chip color={statusEvento[evento.status as keyof typeof statusEvento]?.color || "default"} size="sm" variant="flat">
-                                    {statusEvento[evento.status as keyof typeof statusEvento]?.label || evento.status}
+                                  <Chip
+                                    color={
+                                      statusEvento[
+                                        evento.status as keyof typeof statusEvento
+                                      ]?.color || "default"
+                                    }
+                                    size="sm"
+                                    variant="flat"
+                                  >
+                                    {statusEvento[
+                                      evento.status as keyof typeof statusEvento
+                                    ]?.label || evento.status}
                                   </Chip>
                                 </div>
                               </div>
@@ -825,17 +1199,42 @@ export default function AgendaPage() {
                                   </Button>
                                 </DropdownTrigger>
                                 <DropdownMenu>
-                                  {permissions.canEditAllEvents && !isCliente ? (
+                                  {permissions.canEditAllEvents &&
+                                  !isCliente ? (
                                     <>
-                                      <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />} onPress={() => handleEditEvento(evento)}>
+                                      <DropdownItem
+                                        key="edit"
+                                        startContent={
+                                          <Edit className="w-4 h-4" />
+                                        }
+                                        onPress={() => handleEditEvento(evento)}
+                                      >
                                         Editar
                                       </DropdownItem>
                                       {evento.status !== "REALIZADO" && (
-                                        <DropdownItem key="realizado" startContent={<CheckCircle className="w-4 h-4" />} onPress={() => handleMarcarComoRealizado(evento.id)}>
+                                        <DropdownItem
+                                          key="realizado"
+                                          startContent={
+                                            <CheckCircle className="w-4 h-4" />
+                                          }
+                                          onPress={() =>
+                                            handleMarcarComoRealizado(evento.id)
+                                          }
+                                        >
                                           Marcar como Realizado
                                         </DropdownItem>
                                       )}
-                                      <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="w-4 h-4" />} onPress={() => handleDeleteEvento(evento.id)}>
+                                      <DropdownItem
+                                        key="delete"
+                                        className="text-danger"
+                                        color="danger"
+                                        startContent={
+                                          <Trash2 className="w-4 h-4" />
+                                        }
+                                        onPress={() =>
+                                          handleDeleteEvento(evento.id)
+                                        }
+                                      >
                                         Excluir
                                       </DropdownItem>
                                     </>
@@ -847,7 +1246,9 @@ export default function AgendaPage() {
                             <div className="space-y-1 text-xs text-default-500">
                               <div className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                {formatarHora(evento.dataInicio.toString())} - {formatarHora(evento.dataFim.toString())}
+                                {formatarHora(
+                                  evento.dataInicio.toString(),
+                                )} - {formatarHora(evento.dataFim.toString())}
                               </div>
                               {evento.local && (
                                 <div className="flex items-center gap-1">
@@ -888,36 +1289,70 @@ export default function AgendaPage() {
                 <div className="text-center py-12 text-default-500">
                   <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
                   <p className="text-lg">Nenhum evento encontrado</p>
-                  <p className="text-sm">Crie seu primeiro evento para começar</p>
+                  <p className="text-sm">
+                    Crie seu primeiro evento para começar
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {(eventos || []).map((evento) => (
-                    <Card key={evento.id} className="border-l-4 border-l-primary">
+                    <Card
+                      key={evento.id}
+                      className="border-l-4 border-l-primary"
+                    >
                       <CardBody className="p-6">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
-                              <h4 className="font-semibold text-lg">{evento.titulo}</h4>
-                              <Chip color={tiposEvento[evento.tipo as keyof typeof tiposEvento]?.color || "default"} size="sm" variant="flat">
-                                {tiposEvento[evento.tipo as keyof typeof tiposEvento]?.label || evento.tipo}
+                              <h4 className="font-semibold text-lg">
+                                {evento.titulo}
+                              </h4>
+                              <Chip
+                                color={
+                                  tiposEvento[
+                                    evento.tipo as keyof typeof tiposEvento
+                                  ]?.color || "default"
+                                }
+                                size="sm"
+                                variant="flat"
+                              >
+                                {tiposEvento[
+                                  evento.tipo as keyof typeof tiposEvento
+                                ]?.label || evento.tipo}
                               </Chip>
-                              <Chip color={statusEvento[evento.status as keyof typeof statusEvento]?.color || "default"} size="sm" variant="flat">
-                                {statusEvento[evento.status as keyof typeof statusEvento]?.label || evento.status}
+                              <Chip
+                                color={
+                                  statusEvento[
+                                    evento.status as keyof typeof statusEvento
+                                  ]?.color || "default"
+                                }
+                                size="sm"
+                                variant="flat"
+                              >
+                                {statusEvento[
+                                  evento.status as keyof typeof statusEvento
+                                ]?.label || evento.status}
                               </Chip>
                             </div>
 
-                            {evento.descricao && <p className="text-default-600 mb-3">{evento.descricao}</p>}
+                            {evento.descricao && (
+                              <p className="text-default-600 mb-3">
+                                {evento.descricao}
+                              </p>
+                            )}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                               <div className="flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-default-400" />
-                                <span>{formatarData(evento.dataInicio.toString())}</span>
+                                <span>
+                                  {formatarData(evento.dataInicio.toString())}
+                                </span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-default-400" />
                                 <span>
-                                  {formatarHora(evento.dataInicio.toString())} - {formatarHora(evento.dataFim.toString())}
+                                  {formatarHora(evento.dataInicio.toString())} -{" "}
+                                  {formatarHora(evento.dataFim.toString())}
                                 </span>
                               </div>
                               {evento.local && (
@@ -929,14 +1364,19 @@ export default function AgendaPage() {
                               {evento.participantes.length > 0 && (
                                 <div className="flex items-center gap-2">
                                   <Users className="w-4 h-4 text-default-400" />
-                                  <span>{evento.participantes.length} participante(s)</span>
+                                  <span>
+                                    {evento.participantes.length}{" "}
+                                    participante(s)
+                                  </span>
                                 </div>
                               )}
                             </div>
 
                             {(evento as any).cliente && (
                               <div className="mt-3">
-                                <span className="text-xs text-default-500">Cliente: {(evento as any).cliente?.nome}</span>
+                                <span className="text-xs text-default-500">
+                                  Cliente: {(evento as any).cliente?.nome}
+                                </span>
                               </div>
                             )}
 
@@ -952,15 +1392,37 @@ export default function AgendaPage() {
                             <DropdownMenu>
                               {permissions.canEditAllEvents && !isCliente ? (
                                 <>
-                                  <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />} onPress={() => handleEditEvento(evento)}>
+                                  <DropdownItem
+                                    key="edit"
+                                    startContent={<Edit className="w-4 h-4" />}
+                                    onPress={() => handleEditEvento(evento)}
+                                  >
                                     Editar
                                   </DropdownItem>
                                   {evento.status !== "REALIZADO" && (
-                                    <DropdownItem key="realizado" startContent={<CheckCircle className="w-4 h-4" />} onPress={() => handleMarcarComoRealizado(evento.id)}>
+                                    <DropdownItem
+                                      key="realizado"
+                                      startContent={
+                                        <CheckCircle className="w-4 h-4" />
+                                      }
+                                      onPress={() =>
+                                        handleMarcarComoRealizado(evento.id)
+                                      }
+                                    >
                                       Marcar como Realizado
                                     </DropdownItem>
                                   )}
-                                  <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="w-4 h-4" />} onPress={() => handleDeleteEvento(evento.id)}>
+                                  <DropdownItem
+                                    key="delete"
+                                    className="text-danger"
+                                    color="danger"
+                                    startContent={
+                                      <Trash2 className="w-4 h-4" />
+                                    }
+                                    onPress={() =>
+                                      handleDeleteEvento(evento.id)
+                                    }
+                                  >
                                     Excluir
                                   </DropdownItem>
                                 </>

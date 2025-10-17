@@ -114,7 +114,7 @@ export async function listarAssinaturas(
 
     return {
       success: true,
-      data: assinaturas,
+      data: assinaturas as any,
     };
   } catch (error) {
     console.error("Erro ao listar assinaturas:", error);
