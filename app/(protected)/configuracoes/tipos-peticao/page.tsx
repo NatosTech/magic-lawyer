@@ -1,44 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Chip,
-  Spinner,
-  Switch,
-  Textarea,
-  Tabs,
-  Tab,
-} from "@heroui/react";
-import {
-  PlusIcon,
-  PencilIcon,
-  TrashIcon,
-  FileTextIcon,
-  GlobeIcon,
-} from "lucide-react";
+import { Card, CardBody, CardHeader, Button, Input, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip, Spinner, Switch, Textarea, Tabs, Tab } from "@heroui/react";
+import { PlusIcon, PencilIcon, TrashIcon, FileTextIcon, GlobeIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  listarTiposGlobais,
-  configurarTiposGlobaisTenant,
-  createTipoPeticao,
-  updateTipoPeticao,
-  deleteTipoPeticao,
-  listTiposPeticao,
-  getCategoriasTipoPeticao,
-} from "@/app/actions/tipos-peticao";
+import { listarTiposGlobais, configurarTiposGlobaisTenant, createTipoPeticao, updateTipoPeticao, deleteTipoPeticao, listTiposPeticao, getCategoriasTipoPeticao } from "@/app/actions/tipos-peticao";
 import { title, subtitle } from "@/components/primitives";
 
 interface TipoGlobal {
@@ -87,9 +54,7 @@ export default function ConfiguracaoTiposPeticaoPage() {
 
   // Estados para dados
   const [tiposGlobais, setTiposGlobais] = useState<TipoGlobal[]>([]);
-  const [tiposCustomizados, setTiposCustomizados] = useState<TipoCustomizado[]>(
-    [],
-  );
+  const [tiposCustomizados, setTiposCustomizados] = useState<TipoCustomizado[]>([]);
   const [loadingTipos, setLoadingTipos] = useState(true);
 
   // Carregar dados
@@ -116,9 +81,7 @@ export default function ConfiguracaoTiposPeticaoPage() {
 
       if (customizadosResult.success) {
         // Filtrar apenas os customizados (com tenantId)
-        const customizados = customizadosResult.data.filter(
-          (tipo: any) => tipo.tenantId,
-        );
+        const customizados = customizadosResult.data.filter((tipo: any) => tipo.tenantId);
 
         setTiposCustomizados(customizados);
       }
@@ -241,15 +204,10 @@ export default function ConfiguracaoTiposPeticaoPage() {
     return cat?.label || categoria;
   };
 
-  const getCategoriaColor = (
-    categoria: string | null,
-  ): "default" | "success" | "primary" | "warning" | "secondary" | "danger" => {
+  const getCategoriaColor = (categoria: string | null): "default" | "success" | "primary" | "warning" | "secondary" | "danger" => {
     if (!categoria) return "default";
 
-    const colors: Record<
-      string,
-      "default" | "success" | "primary" | "warning" | "secondary" | "danger"
-    > = {
+    const colors: Record<string, "default" | "success" | "primary" | "warning" | "secondary" | "danger"> = {
       INICIAL: "success",
       RESPOSTA: "warning",
       RECURSO: "danger",
@@ -282,30 +240,19 @@ export default function ConfiguracaoTiposPeticaoPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>
-            Configuração de Tipos de Petição
-          </h1>
-          <p className={subtitle({ fullWidth: true })}>
-            Gerencie os tipos de petição disponíveis no sistema
-          </p>
+          <h1 className={title({ size: "lg", color: "blue" })}>Configuração de Tipos de Petição</h1>
+          <p className={subtitle({ fullWidth: true })}>Gerencie os tipos de petição disponíveis no sistema</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <Tabs
-        selectedKey={activeTab}
-        onSelectionChange={(key) => setActiveTab(key as string)}
-      >
+      <Tabs selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key as string)}>
         <Tab key="globais" title="Tipos Globais">
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center w-full">
-                <h2 className="text-lg font-semibold">
-                  Tipos Globais do Sistema
-                </h2>
-                <p className="text-sm text-gray-500">
-                  29 tipos padrão disponíveis para todos os tenants
-                </p>
+                <h2 className="text-lg font-semibold">Tipos Globais do Sistema</h2>
+                <p className="text-sm text-gray-500">29 tipos padrão disponíveis para todos os tenants</p>
               </div>
             </CardHeader>
             <CardBody>
@@ -316,20 +263,13 @@ export default function ConfiguracaoTiposPeticaoPage() {
               ) : (
                 <div className="space-y-4">
                   {tiposGlobais.map((tipo) => (
-                    <div
-                      key={tipo.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                    >
+                    <div key={tipo.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                       <div className="flex items-center gap-4">
                         <FileTextIcon className="text-gray-400" size={20} />
                         <div>
                           <p className="font-medium">{tipo.nome}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <Chip
-                              color={getCategoriaColor(tipo.categoria)}
-                              size="sm"
-                              variant="flat"
-                            >
+                            <Chip color={getCategoriaColor(tipo.categoria)} size="sm" variant="flat">
                               {formatCategoria(tipo.categoria)}
                             </Chip>
                             <Chip color="primary" size="sm" variant="flat">
@@ -339,30 +279,16 @@ export default function ConfiguracaoTiposPeticaoPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">
-                          Ativo para este tenant:
-                        </span>
-                        <Switch
-                          isDisabled={loading}
-                          isSelected={tipo.ativo}
-                          size="sm"
-                          onValueChange={(ativo) =>
-                            handleToggleGlobal(tipo.id, ativo)
-                          }
-                        />
+                        <span className="text-sm text-gray-500">Ativo para este tenant:</span>
+                        <Switch isDisabled={loading} isSelected={tipo.ativo} size="sm" onValueChange={(ativo) => handleToggleGlobal(tipo.id, ativo)} />
                       </div>
                     </div>
                   ))}
 
                   {tiposGlobais.length === 0 && (
                     <div className="text-center py-8">
-                      <GlobeIcon
-                        className="mx-auto text-gray-400 mb-4"
-                        size={48}
-                      />
-                      <p className="text-gray-500">
-                        Nenhum tipo global encontrado
-                      </p>
+                      <GlobeIcon className="mx-auto text-gray-400 mb-4" size={48} />
+                      <p className="text-gray-500">Nenhum tipo global encontrado</p>
                     </div>
                   )}
                 </div>
@@ -376,11 +302,7 @@ export default function ConfiguracaoTiposPeticaoPage() {
             <CardHeader>
               <div className="flex justify-between items-center w-full">
                 <h2 className="text-lg font-semibold">Tipos Customizados</h2>
-                <Button
-                  color="primary"
-                  startContent={<PlusIcon size={16} />}
-                  onPress={() => handleOpenModal()}
-                >
+                <Button color="primary" startContent={<PlusIcon size={16} />} onPress={() => handleOpenModal()}>
                   Novo Tipo
                 </Button>
               </div>
@@ -393,20 +315,13 @@ export default function ConfiguracaoTiposPeticaoPage() {
               ) : (
                 <div className="space-y-4">
                   {tiposCustomizados.map((tipo) => (
-                    <div
-                      key={tipo.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                    >
+                    <div key={tipo.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                       <div className="flex items-center gap-4">
                         <FileTextIcon className="text-gray-400" size={20} />
                         <div>
                           <p className="font-medium">{tipo.nome}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <Chip
-                              color={getCategoriaColor(tipo.categoria)}
-                              size="sm"
-                              variant="flat"
-                            >
+                            <Chip color={getCategoriaColor(tipo.categoria)} size="sm" variant="flat">
                               {formatCategoria(tipo.categoria)}
                             </Chip>
                             <Chip color="default" size="sm" variant="flat">
@@ -419,21 +334,10 @@ export default function ConfiguracaoTiposPeticaoPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          startContent={<PencilIcon size={14} />}
-                          variant="light"
-                          onPress={() => handleOpenModal(tipo)}
-                        >
+                        <Button size="sm" startContent={<PencilIcon size={14} />} variant="light" onPress={() => handleOpenModal(tipo)}>
                           Editar
                         </Button>
-                        <Button
-                          color="danger"
-                          size="sm"
-                          startContent={<TrashIcon size={14} />}
-                          variant="light"
-                          onPress={() => handleDelete(tipo.id)}
-                        >
+                        <Button color="danger" size="sm" startContent={<TrashIcon size={14} />} variant="light" onPress={() => handleDelete(tipo.id)}>
                           Remover
                         </Button>
                       </div>
@@ -442,19 +346,9 @@ export default function ConfiguracaoTiposPeticaoPage() {
 
                   {tiposCustomizados.length === 0 && (
                     <div className="text-center py-8">
-                      <PlusIcon
-                        className="mx-auto text-gray-400 mb-4"
-                        size={48}
-                      />
-                      <p className="text-gray-500">
-                        Nenhum tipo customizado criado
-                      </p>
-                      <Button
-                        className="mt-2"
-                        color="primary"
-                        variant="light"
-                        onPress={() => handleOpenModal()}
-                      >
+                      <PlusIcon className="mx-auto text-gray-400 mb-4" size={48} />
+                      <p className="text-gray-500">Nenhum tipo customizado criado</p>
+                      <Button className="mt-2" color="primary" variant="light" onPress={() => handleOpenModal()}>
                         Criar Primeiro Tipo
                       </Button>
                     </div>
@@ -469,19 +363,9 @@ export default function ConfiguracaoTiposPeticaoPage() {
       {/* Modal de Criação/Edição */}
       <Modal isOpen={modalOpen} size="lg" onClose={handleCloseModal}>
         <ModalContent>
-          <ModalHeader>
-            {editingId ? "Editar Tipo Customizado" : "Novo Tipo Customizado"}
-          </ModalHeader>
+          <ModalHeader>{editingId ? "Editar Tipo Customizado" : "Novo Tipo Customizado"}</ModalHeader>
           <ModalBody className="space-y-4">
-            <Input
-              isRequired
-              label="Nome do Tipo"
-              placeholder="Ex: Petição de Prestação de Contas"
-              value={formData.nome}
-              onChange={(e) =>
-                setFormData({ ...formData, nome: e.target.value })
-              }
-            />
+            <Input isRequired label="Nome do Tipo" placeholder="Ex: Petição de Prestação de Contas" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} />
 
             <div className="grid grid-cols-2 gap-4">
               <Select
@@ -525,9 +409,7 @@ export default function ConfiguracaoTiposPeticaoPage() {
               placeholder="Descrição opcional do tipo de petição"
               rows={3}
               value={formData.descricao}
-              onChange={(e) =>
-                setFormData({ ...formData, descricao: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
             />
           </ModalBody>
           <ModalFooter>
