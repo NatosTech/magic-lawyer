@@ -64,11 +64,7 @@ export class UploadService {
 
   constructor() {
     // Verificar se Cloudinary está configurado
-    this.useCloudinary = !!(
-      process.env.CLOUDINARY_CLOUD_NAME &&
-      process.env.CLOUDINARY_API_KEY &&
-      process.env.CLOUDINARY_API_SECRET
-    );
+    this.useCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
   }
 
   static getInstance(): UploadService {
@@ -79,30 +75,12 @@ export class UploadService {
     return UploadService.instance;
   }
 
-  async uploadAvatar(
-    file: Buffer,
-    userId: string,
-    originalName: string,
-    tenantSlug?: string,
-    userName?: string,
-  ): Promise<UploadResult> {
+  async uploadAvatar(file: Buffer, userId: string, originalName: string, tenantSlug?: string, userName?: string): Promise<UploadResult> {
     try {
       if (this.useCloudinary) {
-        return await this.uploadToCloudinary(
-          file,
-          userId,
-          originalName,
-          tenantSlug,
-          userName,
-        );
+        return await this.uploadToCloudinary(file, userId, originalName, tenantSlug, userName);
       } else {
-        return await this.uploadLocally(
-          file,
-          userId,
-          originalName,
-          tenantSlug,
-          userName,
-        );
+        return await this.uploadLocally(file, userId, originalName, tenantSlug, userName);
       }
     } catch (error) {
       logger.error("Erro no upload:", error);
@@ -114,13 +92,7 @@ export class UploadService {
     }
   }
 
-  private async uploadToCloudinary(
-    file: Buffer,
-    userId: string,
-    originalName: string,
-    tenantSlug?: string,
-    userName?: string,
-  ): Promise<UploadResult> {
+  private async uploadToCloudinary(file: Buffer, userId: string, originalName: string, tenantSlug?: string, userName?: string): Promise<UploadResult> {
     try {
       // Otimizar imagem com Sharp
       const optimizedBuffer = await sharp(file)
@@ -142,23 +114,18 @@ export class UploadService {
 
       // Criar estrutura de pastas hierárquica: magiclawyer/tenant/nome-id
       const userFolder = `${cleanUserName}-${userId}`;
-      const folderPath = tenantSlug
-        ? `magiclawyer/${tenantSlug}/${userFolder}`
-        : `magiclawyer/avatars/${userFolder}`;
+      const folderPath = tenantSlug ? `magiclawyer/${tenantSlug}/${userFolder}` : `magiclawyer/avatars/${userFolder}`;
 
       // Upload para Cloudinary
-      const result = await cloudinary.uploader.upload(
-        `data:image/jpeg;base64,${optimizedBuffer.toString("base64")}`,
-        {
-          folder: folderPath,
-          public_id: `avatar_${Date.now()}`,
-          resource_type: "image",
-          transformation: [
-            { width: 200, height: 200, crop: "fill", gravity: "face" },
-            { quality: "auto", fetch_format: "auto" },
-          ],
-        },
-      );
+      const result = await cloudinary.uploader.upload(`data:image/jpeg;base64,${optimizedBuffer.toString("base64")}`, {
+        folder: folderPath,
+        public_id: `avatar_${Date.now()}`,
+        resource_type: "image",
+        transformation: [
+          { width: 200, height: 200, crop: "fill", gravity: "face" },
+          { quality: "auto", fetch_format: "auto" },
+        ],
+      });
 
       return {
         success: true,
@@ -174,13 +141,7 @@ export class UploadService {
     }
   }
 
-  private async uploadLocally(
-    file: Buffer,
-    userId: string,
-    originalName: string,
-    tenantSlug?: string,
-    userName?: string,
-  ): Promise<UploadResult> {
+  private async uploadLocally(file: Buffer, userId: string, originalName: string, tenantSlug?: string, userName?: string): Promise<UploadResult> {
     try {
       // Criar nome de usuário limpo para pasta
       const cleanUserName = userName
@@ -193,23 +154,7 @@ export class UploadService {
 
       // Criar estrutura de diretórios hierárquica: magiclawyer/tenant/nome-id
       const userFolder = `${cleanUserName}-${userId}`;
-      const uploadDir = tenantSlug
-        ? join(
-            process.cwd(),
-            "public",
-            "uploads",
-            "magiclawyer",
-            tenantSlug,
-            userFolder,
-          )
-        : join(
-            process.cwd(),
-            "public",
-            "uploads",
-            "magiclawyer",
-            "avatars",
-            userFolder,
-          );
+      const uploadDir = tenantSlug ? join(process.cwd(), "public", "uploads", "magiclawyer", tenantSlug, userFolder) : join(process.cwd(), "public", "uploads", "magiclawyer", "avatars", userFolder);
 
       if (!existsSync(uploadDir)) {
         await mkdir(uploadDir, { recursive: true });
@@ -234,9 +179,7 @@ export class UploadService {
       await writeFile(filePath, new Uint8Array(optimizedBuffer));
 
       // Retornar URL pública
-      const avatarUrl = tenantSlug
-        ? `/uploads/magiclawyer/${tenantSlug}/${userFolder}/${fileName}`
-        : `/uploads/magiclawyer/avatars/${userFolder}/${fileName}`;
+      const avatarUrl = tenantSlug ? `/uploads/magiclawyer/${tenantSlug}/${userFolder}/${fileName}` : `/uploads/magiclawyer/avatars/${userFolder}/${fileName}`;
 
       return {
         success: true,
@@ -252,10 +195,7 @@ export class UploadService {
     }
   }
 
-  async deleteAvatar(
-    avatarUrl: string,
-    _userId: string,
-  ): Promise<UploadResult> {
+  async deleteAvatar(avatarUrl: string, _userId: string): Promise<UploadResult> {
     try {
       if (!avatarUrl || typeof avatarUrl !== "string") {
         return {
@@ -272,8 +212,7 @@ export class UploadService {
           // Se não está usando Cloudinary mas a URL é do Cloudinary, não pode deletar
           return {
             success: false,
-            error:
-              "Não é possível deletar imagem do Cloudinary quando usando armazenamento local",
+            error: "Não é possível deletar imagem do Cloudinary quando usando armazenamento local",
           };
         }
       } else {
@@ -333,10 +272,7 @@ export class UploadService {
     }
   }
 
-  private async deleteLocally(
-    avatarUrl: string,
-    userId: string,
-  ): Promise<UploadResult> {
+  private async deleteLocally(avatarUrl: string, userId: string): Promise<UploadResult> {
     try {
       // Extrair caminho completo do arquivo da URL
       // URL format: /uploads/magiclawyer/tenant/user/avatar_timestamp.jpg
@@ -351,11 +287,7 @@ export class UploadService {
       }
 
       // Construir caminho completo do arquivo
-      const filePath = join(
-        process.cwd(),
-        "public",
-        ...urlParts.slice(uploadsIndex + 1),
-      );
+      const filePath = join(process.cwd(), "public", ...urlParts.slice(uploadsIndex + 1));
 
       // Verificar se o arquivo existe e pertence ao usuário
       if (!existsSync(filePath)) {
@@ -397,10 +329,7 @@ export class UploadService {
     try {
       const urlObj = new URL(url);
 
-      return (
-        urlObj.hostname.includes("cloudinary.com") ||
-        urlObj.hostname.includes("res.cloudinary.com")
-      );
+      return urlObj.hostname.includes("cloudinary.com") || urlObj.hostname.includes("res.cloudinary.com");
     } catch {
       return false;
     }
@@ -410,13 +339,7 @@ export class UploadService {
    * Upload de documento para Cloudinary
    * Estrutura: magiclawyer/{tenantSlug}/{userId}/{tipo}/{identificador}/{fileName}_{timestamp}
    */
-  async uploadDocumento(
-    file: Buffer,
-    userId: string,
-    originalName: string,
-    tenantSlug: string,
-    options: DocumentUploadOptions,
-  ): Promise<UploadResult> {
+  async uploadDocumento(file: Buffer, userId: string, originalName: string, tenantSlug: string, options: DocumentUploadOptions): Promise<UploadResult> {
     try {
       if (!this.useCloudinary) {
         return {
@@ -436,12 +359,7 @@ export class UploadService {
       }
 
       // Criar estrutura de pastas hierárquica
-      const folderPath = this.getDocumentFolderPath(
-        tenantSlug,
-        userId,
-        options.tipo,
-        options.identificador,
-      );
+      const folderPath = this.getDocumentFolderPath(tenantSlug, userId, options.tipo, options.identificador);
 
       // Criar nome do arquivo limpo
       const cleanFileName = this.cleanFileName(options.fileName);
@@ -449,15 +367,12 @@ export class UploadService {
       const publicId = `${cleanFileName}_${timestamp}`;
 
       // Upload para Cloudinary
-      const result = await cloudinary.uploader.upload(
-        `data:application/pdf;base64,${file.toString("base64")}`,
-        {
-          folder: folderPath,
-          public_id: publicId,
-          resource_type: "raw",
-          tags: [options.tipo, options.identificador, userId],
-        },
-      );
+      const result = await cloudinary.uploader.upload(`data:application/pdf;base64,${file.toString("base64")}`, {
+        folder: folderPath,
+        public_id: publicId,
+        resource_type: "raw",
+        tags: [options.tipo, options.identificador, userId],
+      });
 
       return {
         success: true,
@@ -474,12 +389,7 @@ export class UploadService {
     }
   }
 
-  async uploadStructuredDocument(
-    file: Buffer,
-    userId: string,
-    originalName: string,
-    options: StructuredDocumentUploadOptions,
-  ): Promise<UploadResult & { folderPath?: string }> {
+  async uploadStructuredDocument(file: Buffer, userId: string, originalName: string, options: StructuredDocumentUploadOptions): Promise<UploadResult & { folderPath?: string }> {
     try {
       if (!this.useCloudinary) {
         return {
@@ -488,29 +398,23 @@ export class UploadService {
         };
       }
 
-      const resourceType =
-        options.resourceType ||
-        this.detectResourceType(options.contentType, originalName);
+      const resourceType = options.resourceType || this.detectResourceType(options.contentType, originalName);
       const normalizedResourceType = this.normalizeResourceType(resourceType);
       const folderPath = this.buildStructuredFolderPath(options);
       const cleanFileName = this.cleanFileName(options.fileName);
       const timestamp = Date.now();
       const publicId = `${cleanFileName || "arquivo"}_${timestamp}`;
-      const mimeType =
-        options.contentType || this.guessMimeTypeFromName(originalName);
+      const mimeType = options.contentType || this.guessMimeTypeFromName(originalName);
 
-      const uploadResult = await cloudinary.uploader.upload(
-        `data:${mimeType};base64,${file.toString("base64")}`,
-        {
-          folder: folderPath,
-          public_id: publicId,
-          resource_type: normalizedResourceType,
-          use_filename: false,
-          overwrite: false,
-          unique_filename: false,
-          tags: options.tags,
-        },
-      );
+      const uploadResult = await cloudinary.uploader.upload(`data:${mimeType};base64,${file.toString("base64")}`, {
+        folder: folderPath,
+        public_id: publicId,
+        resource_type: normalizedResourceType,
+        use_filename: false,
+        overwrite: false,
+        unique_filename: false,
+        tags: options.tags,
+      });
 
       return {
         success: true,
@@ -532,12 +436,7 @@ export class UploadService {
    * Upload de foto de juiz para Cloudinary
    * Estrutura: magiclawyer/juizes/{nome-juiz}-{juiz-id}/foto_{timestamp}
    */
-  async uploadJuizFoto(
-    file: Buffer,
-    juizId: string,
-    juizNome: string,
-    _originalName: string,
-  ): Promise<UploadResult> {
+  async uploadJuizFoto(file: Buffer, juizId: string, juizNome: string, _originalName: string): Promise<UploadResult> {
     try {
       if (!this.useCloudinary) {
         return {
@@ -652,10 +551,7 @@ export class UploadService {
     }
   }
 
-  async deleteFolderRecursive(
-    path: string,
-    resourceType: CloudinaryResourceType = "raw",
-  ): Promise<UploadResult> {
+  async deleteFolderRecursive(path: string, resourceType: CloudinaryResourceType = "raw"): Promise<UploadResult> {
     try {
       if (!this.useCloudinary) {
         return {
@@ -684,11 +580,7 @@ export class UploadService {
     }
   }
 
-  async renameResource(
-    oldPublicId: string,
-    newPublicId: string,
-    resourceType: CloudinaryResourceType = "raw",
-  ): Promise<UploadResult> {
+  async renameResource(oldPublicId: string, newPublicId: string, resourceType: CloudinaryResourceType = "raw"): Promise<UploadResult> {
     try {
       if (!this.useCloudinary) {
         return {
@@ -698,14 +590,10 @@ export class UploadService {
       }
 
       const normalizedType = this.normalizeResourceType(resourceType);
-      const result = await cloudinary.uploader.rename(
-        oldPublicId,
-        newPublicId,
-        {
-          resource_type: normalizedType,
-          overwrite: true,
-        },
-      );
+      const result = await cloudinary.uploader.rename(oldPublicId, newPublicId, {
+        resource_type: normalizedType,
+        overwrite: true,
+      });
 
       return {
         success: true,
@@ -722,10 +610,7 @@ export class UploadService {
     }
   }
 
-  async deleteResources(
-    publicIds: string[],
-    resourceType: CloudinaryResourceType = "raw",
-  ): Promise<UploadResult> {
+  async deleteResources(publicIds: string[], resourceType: CloudinaryResourceType = "raw"): Promise<UploadResult> {
     try {
       if (!this.useCloudinary) {
         return {
@@ -772,9 +657,7 @@ export class UploadService {
       }
 
       const result = await cloudinary.api.sub_folders(path);
-      const folders = Array.isArray(result.folders)
-        ? result.folders.map((folder: any) => folder.path as string)
-        : [];
+      const folders = Array.isArray(result.folders) ? result.folders.map((folder: any) => folder.path as string) : [];
 
       return {
         success: true,
@@ -805,11 +688,8 @@ export class UploadService {
         };
       }
 
-      const traverse = async (
-        currentPath: string,
-      ): Promise<CloudinaryFolderNode> => {
-        const name =
-          currentPath.split("/").filter(Boolean).pop() || currentPath;
+      const traverse = async (currentPath: string): Promise<CloudinaryFolderNode> => {
+        const name = currentPath.split("/").filter(Boolean).pop() || currentPath;
         let folders: any[] = [];
 
         try {
@@ -859,10 +739,7 @@ export class UploadService {
   /**
    * Deletar documento do Cloudinary
    */
-  async deleteDocumento(
-    documentUrl: string,
-    _userId: string,
-  ): Promise<UploadResult> {
+  async deleteDocumento(documentUrl: string, _userId: string): Promise<UploadResult> {
     try {
       if (!this.useCloudinary) {
         return {
@@ -892,16 +769,9 @@ export class UploadService {
   /**
    * Criar caminho de pasta para documentos
    */
-  private getDocumentFolderPath(
-    tenantSlug: string,
-    userId: string,
-    tipo: string,
-    identificador: string,
-  ): string {
+  private getDocumentFolderPath(tenantSlug: string, userId: string, tipo: string, identificador: string): string {
     // Usar apenas o tenantSlug, sem duplicar a estrutura
-    const basePath = tenantSlug
-      ? `magiclawyer/${tenantSlug}`
-      : `magiclawyer/documents`;
+    const basePath = tenantSlug ? `magiclawyer/${tenantSlug}` : `magiclawyer/documents`;
 
     // Criar nome descritivo para o identificador (nome-id)
     const cleanIdentificador = this.cleanFileName(identificador);
@@ -915,9 +785,7 @@ export class UploadService {
   /**
    * Verificar se arquivo existe no Cloudinary
    */
-  async checkFileExists(
-    url: string,
-  ): Promise<{ success: boolean; exists: boolean; error?: string }> {
+  async checkFileExists(url: string): Promise<{ success: boolean; exists: boolean; error?: string }> {
     try {
       if (!this.useCloudinary) {
         return {
@@ -970,9 +838,7 @@ export class UploadService {
     }
   }
 
-  private buildStructuredFolderPath(
-    options: StructuredDocumentUploadOptions,
-  ): string {
+  private buildStructuredFolderPath(options: StructuredDocumentUploadOptions): string {
     const segments = ["magiclawyer"];
     const tenantSegment = this.toPathSegment(options.tenantSlug, "tenant");
 
@@ -982,9 +848,7 @@ export class UploadService {
       case "processo": {
         if (options.cliente) {
           segments.push("clientes");
-          segments.push(
-            `${this.toPathSegment(options.cliente.nome, "cliente")}-${options.cliente.id}`,
-          );
+          segments.push(`${this.toPathSegment(options.cliente.nome, "cliente")}-${options.cliente.id}`);
         }
 
         segments.push("processos");
@@ -992,9 +856,7 @@ export class UploadService {
         if (options.processo) {
           const processTag = options.processo.numero || options.processo.id;
 
-          segments.push(
-            `${this.toPathSegment(processTag, "processo")}-${options.processo.id}`,
-          );
+          segments.push(`${this.toPathSegment(processTag, "processo")}-${options.processo.id}`);
         }
 
         break;
@@ -1003,9 +865,7 @@ export class UploadService {
         segments.push("clientes");
 
         if (options.cliente) {
-          segments.push(
-            `${this.toPathSegment(options.cliente.nome, "cliente")}-${options.cliente.id}`,
-          );
+          segments.push(`${this.toPathSegment(options.cliente.nome, "cliente")}-${options.cliente.id}`);
         }
 
         segments.push("documentos");
@@ -1015,13 +875,9 @@ export class UploadService {
         segments.push("procuracoes");
 
         if (options.referencia) {
-          const refTag =
-            options.referencia.etiqueta ||
-            `procuracao-${options.referencia.id}`;
+          const refTag = options.referencia.etiqueta || `procuracao-${options.referencia.id}`;
 
-          segments.push(
-            `${this.toPathSegment(refTag, "procuracao")}-${options.referencia.id}`,
-          );
+          segments.push(`${this.toPathSegment(refTag, "procuracao")}-${options.referencia.id}`);
         }
 
         break;
@@ -1030,12 +886,9 @@ export class UploadService {
         segments.push("contratos");
 
         if (options.referencia) {
-          const refTag =
-            options.referencia.etiqueta || `contrato-${options.referencia.id}`;
+          const refTag = options.referencia.etiqueta || `contrato-${options.referencia.id}`;
 
-          segments.push(
-            `${this.toPathSegment(refTag, "contrato")}-${options.referencia.id}`,
-          );
+          segments.push(`${this.toPathSegment(refTag, "contrato")}-${options.referencia.id}`);
         }
 
         break;
@@ -1044,13 +897,9 @@ export class UploadService {
         segments.push("documentos");
 
         if (options.referencia) {
-          const refTag =
-            options.referencia.etiqueta ||
-            `referencia-${options.referencia.id}`;
+          const refTag = options.referencia.etiqueta || `referencia-${options.referencia.id}`;
 
-          segments.push(
-            `${this.toPathSegment(refTag, "referencia")}-${options.referencia.id}`,
-          );
+          segments.push(`${this.toPathSegment(refTag, "referencia")}-${options.referencia.id}`);
         }
 
         break;
@@ -1080,9 +929,7 @@ export class UploadService {
     return normalized || fallback;
   }
 
-  private normalizeResourceType(
-    resourceType: CloudinaryResourceType,
-  ): "image" | "raw" | "video" | "auto" {
+  private normalizeResourceType(resourceType: CloudinaryResourceType): "image" | "raw" | "video" | "auto" {
     switch (resourceType) {
       case "image":
         return "image";
@@ -1095,10 +942,7 @@ export class UploadService {
     }
   }
 
-  private detectResourceType(
-    contentType?: string | null,
-    fileName?: string,
-  ): CloudinaryResourceType {
+  private detectResourceType(contentType?: string | null, fileName?: string): CloudinaryResourceType {
     if (contentType) {
       if (contentType.startsWith("image/")) {
         return "image";
@@ -1125,11 +969,7 @@ export class UploadService {
           return "video";
         }
 
-        if (
-          ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(
-            extension,
-          )
-        ) {
+        if (["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(extension)) {
           return "raw";
         }
       }
@@ -1154,14 +994,11 @@ export class UploadService {
     if (extension === "mov") return "video/quicktime";
     if (extension === "webm") return "video/webm";
     if (extension === "doc") return "application/msword";
-    if (extension === "docx")
-      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    if (extension === "docx") return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     if (extension === "xls") return "application/vnd.ms-excel";
-    if (extension === "xlsx")
-      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    if (extension === "xlsx") return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     if (extension === "ppt") return "application/vnd.ms-powerpoint";
-    if (extension === "pptx")
-      return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    if (extension === "pptx") return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
     return "application/octet-stream";
   }
