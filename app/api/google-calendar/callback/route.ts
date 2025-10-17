@@ -54,9 +54,8 @@ export async function GET(request: NextRequest) {
       // Redirecionar para o domínio original se disponível
       let redirectUrl;
       if (originalDomain && originalDomain !== "") {
-        // Usar o domínio original do state
-        const protocol = originalDomain.includes("localhost") ? "http" : "https";
-        redirectUrl = new URL("/agenda", `${protocol}://${originalDomain}`);
+        // Usar o domínio original do state (já inclui protocolo)
+        redirectUrl = new URL("/agenda", originalDomain);
       } else {
         // Fallback para o domínio atual da requisição
         const host = request.headers.get("host");
@@ -67,6 +66,7 @@ export async function GET(request: NextRequest) {
       redirectUrl.searchParams.set("google_calendar_success", "true");
       redirectUrl.searchParams.set("calendar_name", result.data.calendarName || "Calendário");
 
+      logger.info(`[DEBUG] Redirecionando para: ${redirectUrl.toString()}`);
       return NextResponse.redirect(redirectUrl);
     } else {
       logger.error(`Erro ao processar callback Google Calendar: ${result.error}`);
@@ -74,9 +74,8 @@ export async function GET(request: NextRequest) {
       // Redirecionar para o domínio original com erro
       let redirectUrl;
       if (originalDomain && originalDomain !== "") {
-        // Usar o domínio original do state
-        const protocol = originalDomain.includes("localhost") ? "http" : "https";
-        redirectUrl = new URL("/agenda", `${protocol}://${originalDomain}`);
+        // Usar o domínio original do state (já inclui protocolo)
+        redirectUrl = new URL("/agenda", originalDomain);
       } else {
         // Fallback para o domínio atual da requisição
         const host = request.headers.get("host");
@@ -86,6 +85,7 @@ export async function GET(request: NextRequest) {
 
       redirectUrl.searchParams.set("google_calendar_error", result.error || "Erro desconhecido");
 
+      logger.info(`[DEBUG] Redirecionando para (erro): ${redirectUrl.toString()}`);
       return NextResponse.redirect(redirectUrl);
     }
   } catch (error) {
