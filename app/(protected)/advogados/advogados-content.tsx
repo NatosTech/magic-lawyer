@@ -1,6 +1,14 @@
 "use client";
 
-import { Button, Card, CardBody, CardHeader, Chip, Avatar, Spinner } from "@heroui/react";
+import {
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Chip,
+  Avatar,
+  Spinner,
+} from "@heroui/react";
 import { UserIcon, MailIcon, ScaleIcon, CalendarIcon } from "lucide-react";
 import useSWR from "swr";
 
@@ -8,11 +16,15 @@ import { getAdvogadosDoTenant, type Advogado } from "@/app/actions/advogados";
 import { title, subtitle } from "@/components/primitives";
 
 export default function AdvogadosContent() {
-  const { data, error, isLoading, mutate } = useSWR("advogados-do-tenant", getAdvogadosDoTenant, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    refreshInterval: 0,
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    "advogados-do-tenant",
+    getAdvogadosDoTenant,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      refreshInterval: 0,
+    },
+  );
 
   const advogados = data?.advogados || [];
   const loading = isLoading;
@@ -67,8 +79,12 @@ export default function AdvogadosContent() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col space-y-2">
-        <h1 className={title({ size: "lg", color: "blue" })}>Advogados do Escritório</h1>
-        <p className={subtitle({ fullWidth: true })}>Gerencie os advogados do seu escritório de advocacia</p>
+        <h1 className={title({ size: "lg", color: "blue" })}>
+          Advogados do Escritório
+        </h1>
+        <p className={subtitle({ fullWidth: true })}>
+          Gerencie os advogados do seu escritório de advocacia
+        </p>
       </div>
 
       {/* Stats */}
@@ -92,7 +108,9 @@ export default function AdvogadosContent() {
             </div>
             <div>
               <p className="text-sm text-default-500">Advogados Ativos</p>
-              <p className="text-2xl font-bold">{advogados.filter((a) => a.usuario.active).length}</p>
+              <p className="text-2xl font-bold">
+                {advogados.filter((a) => a.usuario.active).length}
+              </p>
             </div>
           </CardBody>
         </Card>
@@ -104,7 +122,9 @@ export default function AdvogadosContent() {
             </div>
             <div>
               <p className="text-sm text-default-500">Com OAB</p>
-              <p className="text-2xl font-bold">{advogados.filter((a) => a.oabNumero && a.oabUf).length}</p>
+              <p className="text-2xl font-bold">
+                {advogados.filter((a) => a.oabNumero && a.oabUf).length}
+              </p>
             </div>
           </CardBody>
         </Card>
@@ -120,7 +140,9 @@ export default function AdvogadosContent() {
             <div className="text-center py-8">
               <UserIcon className="w-12 h-12 text-default-300 mx-auto mb-4" />
               <p className="text-default-500">Nenhum advogado encontrado</p>
-              <p className="text-sm text-default-400">Os advogados do seu escritório aparecerão aqui</p>
+              <p className="text-sm text-default-400">
+                Os advogados do seu escritório aparecerão aqui
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -129,13 +151,24 @@ export default function AdvogadosContent() {
                   <CardBody>
                     <div className="flex items-center space-x-4">
                       {/* Avatar */}
-                      <Avatar className="flex-shrink-0" name={getNomeCompleto(advogado)} size="lg" src={advogado.usuario.avatarUrl || undefined} />
+                      <Avatar
+                        className="flex-shrink-0"
+                        name={getNomeCompleto(advogado)}
+                        size="lg"
+                        src={advogado.usuario.avatarUrl || undefined}
+                      />
 
                       {/* Informações */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="text-lg font-semibold text-foreground truncate">{getNomeCompleto(advogado)}</h3>
-                          <Chip color={getStatusColor(advogado.usuario.active)} size="sm" variant="flat">
+                          <h3 className="text-lg font-semibold text-foreground truncate">
+                            {getNomeCompleto(advogado)}
+                          </h3>
+                          <Chip
+                            color={getStatusColor(advogado.usuario.active)}
+                            size="sm"
+                            variant="flat"
+                          >
                             {getStatusText(advogado.usuario.active)}
                           </Chip>
                         </div>
@@ -143,7 +176,9 @@ export default function AdvogadosContent() {
                         <div className="flex items-center space-x-4 text-sm text-default-500">
                           <div className="flex items-center space-x-1">
                             <MailIcon className="w-4 h-4" />
-                            <span className="truncate">{advogado.usuario.email}</span>
+                            <span className="truncate">
+                              {advogado.usuario.email}
+                            </span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <ScaleIcon className="w-4 h-4" />

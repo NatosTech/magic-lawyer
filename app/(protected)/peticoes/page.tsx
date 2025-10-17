@@ -52,12 +52,18 @@ import {
   type PeticaoFilters,
   type PeticaoCreateInput,
 } from "@/app/actions/peticoes";
-import { uploadDocumentoPeticao, removerDocumentoPeticao } from "@/app/actions/upload-documento-peticao";
+import {
+  uploadDocumentoPeticao,
+  removerDocumentoPeticao,
+} from "@/app/actions/upload-documento-peticao";
 import { getAllProcessos } from "@/app/actions/processos";
 import { PeticaoStatus } from "@/app/generated/prisma";
 import { useModelosPeticaoAtivos } from "@/app/hooks/use-modelos-peticao";
 import { processarTemplate } from "@/app/actions/modelos-peticao";
-import { useAssinaturas, usePeticaoAssinada } from "@/app/hooks/use-assinaturas";
+import {
+  useAssinaturas,
+  usePeticaoAssinada,
+} from "@/app/hooks/use-assinaturas";
 import { title, subtitle } from "@/components/primitives";
 
 // ============================================
@@ -130,7 +136,9 @@ export default function PeticoesPage() {
 
   // Estado do modal
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
+  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">(
+    "create",
+  );
   const [selectedPeticao, setSelectedPeticao] = useState<Peticao | null>(null);
 
   // Estado do modal de protocolo
@@ -144,9 +152,16 @@ export default function PeticoesPage() {
   const [assinandoPeticao, setAssinandoPeticao] = useState(false);
 
   // SWR - Fetch data
-  const { data: peticoesData, mutate: mutatePeticoes, isLoading: loadingPeticoes } = useSWR(["peticoes", filters], () => listPeticoes(filters));
+  const {
+    data: peticoesData,
+    mutate: mutatePeticoes,
+    isLoading: loadingPeticoes,
+  } = useSWR(["peticoes", filters], () => listPeticoes(filters));
 
-  const { data: dashboardData, isLoading: loadingDashboard } = useSWR("dashboard-peticoes", getDashboardPeticoes);
+  const { data: dashboardData, isLoading: loadingDashboard } = useSWR(
+    "dashboard-peticoes",
+    getDashboardPeticoes,
+  );
 
   const { data: processosData } = useSWR("processos-list", getAllProcessos);
 
@@ -282,7 +297,12 @@ export default function PeticoesPage() {
     const Icon = config.icon;
 
     return (
-      <Chip color={config.color as any} size="sm" startContent={<Icon size={16} />} variant="flat">
+      <Chip
+        color={config.color as any}
+        size="sm"
+        startContent={<Icon size={16} />}
+        variant="flat"
+      >
         {config.label}
       </Chip>
     );
@@ -294,9 +314,15 @@ export default function PeticoesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className={title({ size: "lg", color: "blue" })}>Petições</h1>
-          <p className={subtitle({ fullWidth: true })}>Gerencie petições processuais e protocolos</p>
+          <p className={subtitle({ fullWidth: true })}>
+            Gerencie petições processuais e protocolos
+          </p>
         </div>
-        <Button color="primary" startContent={<PlusIcon size={20} />} onPress={openCreateModal}>
+        <Button
+          color="primary"
+          startContent={<PlusIcon size={20} />}
+          onPress={openCreateModal}
+        >
           Nova Petição
         </Button>
       </div>
@@ -351,7 +377,9 @@ export default function PeticoesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-default-500">Protocoladas (30d)</p>
-                  <p className="text-2xl font-bold">{dashboard.protocoladasRecentes}</p>
+                  <p className="text-2xl font-bold">
+                    {dashboard.protocoladasRecentes}
+                  </p>
                 </div>
                 <CheckCircleIcon className="text-success" size={32} />
               </div>
@@ -368,7 +396,9 @@ export default function PeticoesPage() {
               isClearable
               className="flex-1 min-w-[300px]"
               placeholder="Buscar por título, descrição ou protocolo..."
-              startContent={<MagnifyingGlassIcon className="text-default-400" size={16} />}
+              startContent={
+                <MagnifyingGlassIcon className="text-default-400" size={16} />
+              }
               value={searchTerm}
               onClear={() => handleSearch("")}
               onValueChange={handleSearch}
@@ -393,7 +423,10 @@ export default function PeticoesPage() {
               <SelectItem key={PeticaoStatus.EM_ANALISE} textValue="Em Análise">
                 Em Análise
               </SelectItem>
-              <SelectItem key={PeticaoStatus.PROTOCOLADA} textValue="Protocolada">
+              <SelectItem
+                key={PeticaoStatus.PROTOCOLADA}
+                textValue="Protocolada"
+              >
                 Protocolada
               </SelectItem>
               <SelectItem key={PeticaoStatus.INDEFERIDA} textValue="Indeferida">
@@ -405,7 +438,12 @@ export default function PeticoesPage() {
             </Select>
 
             {(filters.status || filters.search) && (
-              <Button color="default" startContent={<XMarkIcon size={16} />} variant="flat" onPress={clearFilters}>
+              <Button
+                color="default"
+                startContent={<XMarkIcon size={16} />}
+                variant="flat"
+                onPress={clearFilters}
+              >
                 Limpar
               </Button>
             )}
@@ -416,7 +454,9 @@ export default function PeticoesPage() {
       {/* Lista de Petições */}
       <Card>
         <CardHeader className="px-6 py-4">
-          <h2 className="text-xl font-semibold">Petições Cadastradas ({peticoes.length})</h2>
+          <h2 className="text-xl font-semibold">
+            Petições Cadastradas ({peticoes.length})
+          </h2>
         </CardHeader>
         <Divider />
         <CardBody className="p-0">
@@ -430,7 +470,11 @@ export default function PeticoesPage() {
             <div className="p-12 text-center text-default-500">
               <DocumentTextIcon className="mx-auto mb-4 opacity-50" size={48} />
               <p className="text-lg">Nenhuma petição encontrada</p>
-              <p className="text-sm mt-2">{filters.status || filters.search ? "Tente ajustar os filtros" : "Crie sua primeira petição"}</p>
+              <p className="text-sm mt-2">
+                {filters.status || filters.search
+                  ? "Tente ajustar os filtros"
+                  : "Crie sua primeira petição"}
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-divider">
@@ -452,7 +496,9 @@ export default function PeticoesPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-lg truncate">{peticao.titulo}</h3>
+                        <h3 className="font-semibold text-lg truncate">
+                          {peticao.titulo}
+                        </h3>
                         {getStatusBadge(peticao.status)}
                         {peticao.tipo && (
                           <Chip size="sm" variant="bordered">
@@ -465,18 +511,31 @@ export default function PeticoesPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-medium">Processo:</span>
                           <span>{peticao.processo.numero}</span>
-                          {peticao.processo.titulo && <span className="text-default-400">• {peticao.processo.titulo}</span>}
+                          {peticao.processo.titulo && (
+                            <span className="text-default-400">
+                              • {peticao.processo.titulo}
+                            </span>
+                          )}
                         </div>
 
                         {peticao.protocoloNumero && (
                           <div className="flex items-center gap-2">
                             <DocumentCheckIcon size={16} />
                             <span>Protocolo: {peticao.protocoloNumero}</span>
-                            {peticao.protocoladoEm && <span className="text-default-400">• {new Date(peticao.protocoladoEm).toLocaleDateString("pt-BR")}</span>}
+                            {peticao.protocoladoEm && (
+                              <span className="text-default-400">
+                                •{" "}
+                                {new Date(
+                                  peticao.protocoladoEm,
+                                ).toLocaleDateString("pt-BR")}
+                              </span>
+                            )}
                           </div>
                         )}
 
-                        {peticao.descricao && <p className="line-clamp-2">{peticao.descricao}</p>}
+                        {peticao.descricao && (
+                          <p className="line-clamp-2">{peticao.descricao}</p>
+                        )}
 
                         {peticao.documento && (
                           <div className="flex items-center gap-2 text-primary">
@@ -489,22 +548,44 @@ export default function PeticoesPage() {
 
                     <div className="flex items-center gap-2">
                       {peticao.status === PeticaoStatus.RASCUNHO && (
-                        <Button color="success" size="sm" variant="flat" onPress={() => openProtocoloModal(peticao.id)}>
+                        <Button
+                          color="success"
+                          size="sm"
+                          variant="flat"
+                          onPress={() => openProtocoloModal(peticao.id)}
+                        >
                           Protocolar
                         </Button>
                       )}
 
                       {peticao.documento && (
-                        <Button color="secondary" size="sm" startContent={<PenToolIcon size={16} />} variant="flat" onPress={() => openAssinaturaModal(peticao.id)}>
+                        <Button
+                          color="secondary"
+                          size="sm"
+                          startContent={<PenToolIcon size={16} />}
+                          variant="flat"
+                          onPress={() => openAssinaturaModal(peticao.id)}
+                        >
                           Assinar
                         </Button>
                       )}
 
-                      <Button isIconOnly size="sm" variant="light" onPress={() => openEditModal(peticao)}>
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() => openEditModal(peticao)}
+                      >
                         <PencilIcon size={16} />
                       </Button>
 
-                      <Button isIconOnly color="danger" size="sm" variant="light" onPress={() => handleDelete(peticao.id)}>
+                      <Button
+                        isIconOnly
+                        color="danger"
+                        size="sm"
+                        variant="light"
+                        onPress={() => handleDelete(peticao.id)}
+                      >
                         <TrashIcon size={16} />
                       </Button>
                     </div>
@@ -531,14 +612,26 @@ export default function PeticoesPage() {
       />
 
       {/* Modal de Protocolo */}
-      <Modal isOpen={protocoloModalOpen} onClose={() => setProtocoloModalOpen(false)}>
+      <Modal
+        isOpen={protocoloModalOpen}
+        onClose={() => setProtocoloModalOpen(false)}
+      >
         <ModalContent>
           <ModalHeader>Protocolar Petição</ModalHeader>
           <ModalBody>
-            <Input isRequired label="Número do Protocolo" placeholder="Ex: 2025.0001.12345-6" value={protocoloNumero} onValueChange={setProtocoloNumero} />
+            <Input
+              isRequired
+              label="Número do Protocolo"
+              placeholder="Ex: 2025.0001.12345-6"
+              value={protocoloNumero}
+              onValueChange={setProtocoloNumero}
+            />
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={() => setProtocoloModalOpen(false)}>
+            <Button
+              variant="light"
+              onPress={() => setProtocoloModalOpen(false)}
+            >
               Cancelar
             </Button>
             <Button color="success" onPress={handleProtocolar}>
@@ -575,7 +668,15 @@ interface PeticaoModalProps {
   onSuccess: () => void;
 }
 
-function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSuccess }: PeticaoModalProps) {
+function PeticaoModal({
+  isOpen,
+  onClose,
+  mode,
+  peticao,
+  processos,
+  tipos,
+  onSuccess,
+}: PeticaoModalProps) {
   const [formData, setFormData] = useState<PeticaoCreateInput>({
     processoId: "",
     titulo: "",
@@ -594,7 +695,8 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
   const [uploading, setUploading] = useState(false);
 
   // Hook para buscar modelos ativos
-  const { modelos: modelosDisponiveis, isLoading: loadingModelos } = useModelosPeticaoAtivos();
+  const { modelos: modelosDisponiveis, isLoading: loadingModelos } =
+    useModelosPeticaoAtivos();
 
   useEffect(() => {
     if (mode === "create") {
@@ -663,7 +765,9 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
 
     try {
       // Buscar dados do processo selecionado
-      const processoSelecionado = processos.find((p: any) => p.id === formData.processoId);
+      const processoSelecionado = processos.find(
+        (p: any) => p.id === formData.processoId,
+      );
 
       if (!processoSelecionado) {
         toast.error("Processo não encontrado");
@@ -746,13 +850,20 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
         const buffer = Buffer.from(arrayBuffer);
         const base64 = buffer.toString("base64");
 
-        const uploadResult = await uploadDocumentoPeticao(peticaoId, base64, selectedFile.name, {
-          fileName: formData.titulo,
-          description: formData.descricao || undefined,
-        });
+        const uploadResult = await uploadDocumentoPeticao(
+          peticaoId,
+          base64,
+          selectedFile.name,
+          {
+            fileName: formData.titulo,
+            description: formData.descricao || undefined,
+          },
+        );
 
         if (!uploadResult.success) {
-          toast.warning(`Petição salva, mas erro no upload: ${uploadResult.error}`);
+          toast.warning(
+            `Petição salva, mas erro no upload: ${uploadResult.error}`,
+          );
         }
       }
 
@@ -805,22 +916,33 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
             isDisabled={isReadOnly}
             label="Processo"
             placeholder="Selecione o processo"
-            selectedKeys={formData.processoId && processos.some((p: any) => p.id === formData.processoId) ? [formData.processoId] : []}
+            selectedKeys={
+              formData.processoId &&
+              processos.some((p: any) => p.id === formData.processoId)
+                ? [formData.processoId]
+                : []
+            }
             onSelectionChange={(keys) => {
               const value = Array.from(keys)[0];
 
               console.log("🔍 Select Processo - Keys recebidas:", keys);
               console.log("🔍 Select Processo - Valor extraído:", value);
-              console.log("🔍 Select Processo - formData.processoId atual:", formData.processoId);
+              console.log(
+                "🔍 Select Processo - formData.processoId atual:",
+                formData.processoId,
+              );
               console.log(
                 "🔍 Select Processo - Processos disponíveis:",
-                processos.map((p: any) => ({ id: p.id, numero: p.numero }))
+                processos.map((p: any) => ({ id: p.id, numero: p.numero })),
               );
               setFormData({ ...formData, processoId: value as string });
             }}
           >
             {processos.map((proc: any) => (
-              <SelectItem key={proc.id} textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}>
+              <SelectItem
+                key={proc.id}
+                textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}
+              >
                 {proc.numero} {proc.titulo ? `- ${proc.titulo}` : ""}
               </SelectItem>
             ))}
@@ -829,7 +951,11 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
           {mode === "create" && (
             <div className="space-y-2">
               <Select
-                description={!formData.processoId ? "Selecione um processo primeiro" : "O modelo preencherá automaticamente os campos"}
+                description={
+                  !formData.processoId
+                    ? "Selecione um processo primeiro"
+                    : "O modelo preencherá automaticamente os campos"
+                }
                 isDisabled={!formData.processoId || processandoModelo}
                 isLoading={loadingModelos}
                 label="Modelo de Petição (Opcional)"
@@ -845,15 +971,25 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
                 }}
               >
                 {(modelosDisponiveis || []).map((modelo) => (
-                  <SelectItem key={modelo.id} description={modelo.categoria || undefined} textValue={modelo.nome}>
+                  <SelectItem
+                    key={modelo.id}
+                    description={modelo.categoria || undefined}
+                    textValue={modelo.nome}
+                  >
                     <div className="flex flex-col">
                       <span className="font-medium">{modelo.nome}</span>
-                      {modelo.categoria && <span className="text-xs text-default-400">{modelo.categoria}</span>}
+                      {modelo.categoria && (
+                        <span className="text-xs text-default-400">
+                          {modelo.categoria}
+                        </span>
+                      )}
                     </div>
                   </SelectItem>
                 ))}
               </Select>
-              {processandoModelo && <p className="text-sm text-primary">⏳ Processando modelo...</p>}
+              {processandoModelo && (
+                <p className="text-sm text-primary">⏳ Processando modelo...</p>
+              )}
             </div>
           )}
 
@@ -863,7 +999,9 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
             label="Título da Petição"
             placeholder="Ex: Contestação, Recurso de Apelação, etc"
             value={formData.titulo}
-            onValueChange={(value) => setFormData({ ...formData, titulo: value })}
+            onValueChange={(value) =>
+              setFormData({ ...formData, titulo: value })
+            }
           />
 
           <Autocomplete
@@ -872,7 +1010,9 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
             label="Tipo de Petição"
             placeholder="Selecione ou digite um tipo"
             selectedKey={formData.tipo || ""}
-            onSelectionChange={(key) => setFormData({ ...formData, tipo: key as string })}
+            onSelectionChange={(key) =>
+              setFormData({ ...formData, tipo: key as string })
+            }
           >
             {tipos.map((tipo) => (
               <AutocompleteItem key={tipo}>{tipo}</AutocompleteItem>
@@ -912,7 +1052,9 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
             minRows={3}
             placeholder="Descreva o conteúdo da petição..."
             value={formData.descricao || ""}
-            onValueChange={(value) => setFormData({ ...formData, descricao: value })}
+            onValueChange={(value) =>
+              setFormData({ ...formData, descricao: value })
+            }
           />
 
           <Textarea
@@ -921,7 +1063,9 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
             minRows={2}
             placeholder="Observações internas..."
             value={formData.observacoes || ""}
-            onValueChange={(value) => setFormData({ ...formData, observacoes: value })}
+            onValueChange={(value) =>
+              setFormData({ ...formData, observacoes: value })
+            }
           />
 
           {/* Upload de Documento */}
@@ -939,10 +1083,19 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
                       <DocumentTextIcon className="text-primary" size={20} />
                       <div>
                         <p className="font-medium">{peticao.documento.nome}</p>
-                        <p className="text-xs text-default-500">{peticao.documento.tamanhoBytes ? `${(peticao.documento.tamanhoBytes / 1024).toFixed(0)} KB` : "Tamanho desconhecido"}</p>
+                        <p className="text-xs text-default-500">
+                          {peticao.documento.tamanhoBytes
+                            ? `${(peticao.documento.tamanhoBytes / 1024).toFixed(0)} KB`
+                            : "Tamanho desconhecido"}
+                        </p>
                       </div>
                     </div>
-                    <Button color="danger" size="sm" variant="light" onPress={handleRemoverDocumento}>
+                    <Button
+                      color="danger"
+                      size="sm"
+                      variant="light"
+                      onPress={handleRemoverDocumento}
+                    >
                       Remover
                     </Button>
                   </div>
@@ -952,22 +1105,43 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
               {/* Upload de novo documento */}
               {!peticao?.documento || selectedFile ? (
                 <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
-                  <input accept=".pdf" className="hidden" id="file-upload" type="file" onChange={handleFileChange} />
+                  <input
+                    accept=".pdf"
+                    className="hidden"
+                    id="file-upload"
+                    type="file"
+                    onChange={handleFileChange}
+                  />
                   {selectedFile ? (
                     <div className="space-y-2">
-                      <DocumentTextIcon className="text-primary mx-auto" size={32} />
+                      <DocumentTextIcon
+                        className="text-primary mx-auto"
+                        size={32}
+                      />
                       <div>
                         <p className="font-medium">{selectedFile.name}</p>
-                        <p className="text-sm text-default-500">{(selectedFile.size / 1024).toFixed(0)} KB</p>
+                        <p className="text-sm text-default-500">
+                          {(selectedFile.size / 1024).toFixed(0)} KB
+                        </p>
                       </div>
-                      <Button color="danger" size="sm" variant="light" onPress={handleRemoveFile}>
+                      <Button
+                        color="danger"
+                        size="sm"
+                        variant="light"
+                        onPress={handleRemoveFile}
+                      >
                         Remover
                       </Button>
                     </div>
                   ) : (
                     <label className="cursor-pointer" htmlFor="file-upload">
-                      <ArrowUpTrayIcon className="text-default-400 mx-auto mb-2" size={32} />
-                      <p className="text-sm font-medium text-default-600">Clique para selecionar um arquivo PDF</p>
+                      <ArrowUpTrayIcon
+                        className="text-default-400 mx-auto mb-2"
+                        size={32}
+                      />
+                      <p className="text-sm font-medium text-default-600">
+                        Clique para selecionar um arquivo PDF
+                      </p>
                       <p className="text-xs text-default-400">Máximo 10MB</p>
                     </label>
                   )}
@@ -981,8 +1155,15 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
               <div className="flex items-center gap-2">
                 <DocumentTextIcon className="text-primary" size={20} />
                 <div>
-                  <p className="text-sm font-medium text-primary-700">{peticao.documento.nome}</p>
-                  <a className="text-xs text-primary-600 hover:underline" href={peticao.documento.url} rel="noopener noreferrer" target="_blank">
+                  <p className="text-sm font-medium text-primary-700">
+                    {peticao.documento.nome}
+                  </p>
+                  <a
+                    className="text-xs text-primary-600 hover:underline"
+                    href={peticao.documento.url}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
                     Visualizar documento →
                   </a>
                 </div>
@@ -992,8 +1173,15 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
 
           {mode === "view" && peticao?.protocoloNumero && (
             <div className="p-4 bg-success-50 rounded-lg">
-              <p className="text-sm font-medium text-success-700">Protocolo: {peticao.protocoloNumero}</p>
-              {peticao.protocoladoEm && <p className="text-xs text-success-600 mt-1">Protocolado em: {new Date(peticao.protocoladoEm).toLocaleString("pt-BR")}</p>}
+              <p className="text-sm font-medium text-success-700">
+                Protocolo: {peticao.protocoloNumero}
+              </p>
+              {peticao.protocoladoEm && (
+                <p className="text-xs text-success-600 mt-1">
+                  Protocolado em:{" "}
+                  {new Date(peticao.protocoladoEm).toLocaleString("pt-BR")}
+                </p>
+              )}
             </div>
           )}
         </ModalBody>
@@ -1002,8 +1190,16 @@ function PeticaoModal({ isOpen, onClose, mode, peticao, processos, tipos, onSucc
             {isReadOnly ? "Fechar" : "Cancelar"}
           </Button>
           {!isReadOnly && (
-            <Button color="primary" isLoading={loading || uploading} onPress={handleSubmit}>
-              {uploading ? "Enviando..." : mode === "create" ? "Criar" : "Salvar"}
+            <Button
+              color="primary"
+              isLoading={loading || uploading}
+              onPress={handleSubmit}
+            >
+              {uploading
+                ? "Enviando..."
+                : mode === "create"
+                  ? "Criar"
+                  : "Salvar"}
             </Button>
           )}
         </ModalFooter>
@@ -1044,7 +1240,8 @@ function AssinaturaModal({ isOpen, onClose, peticaoId }: AssinaturaModalProps) {
               <div className="flex items-center gap-2 text-success-700">
                 <CheckCircleIcon size={20} />
                 <span className="font-medium">
-                  Petição assinada por {totalAssinaturas} {totalAssinaturas === 1 ? "pessoa" : "pessoas"}
+                  Petição assinada por {totalAssinaturas}{" "}
+                  {totalAssinaturas === 1 ? "pessoa" : "pessoas"}
                 </span>
               </div>
             </div>
@@ -1059,22 +1256,49 @@ function AssinaturaModal({ isOpen, onClose, peticaoId }: AssinaturaModalProps) {
               </h3>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {assinaturas.map((assinatura) => (
-                  <div key={assinatura.id} className="p-3 bg-default-50 rounded-lg border border-default-200">
+                  <div
+                    key={assinatura.id}
+                    className="p-3 bg-default-50 rounded-lg border border-default-200"
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="font-medium text-sm">{assinatura.assinanteNome}</p>
-                        {assinatura.assinanteEmail && <p className="text-xs text-default-500">{assinatura.assinanteEmail}</p>}
-                        {assinatura.assinanteDocumento && <p className="text-xs text-default-500">CPF: {assinatura.assinanteDocumento}</p>}
+                        <p className="font-medium text-sm">
+                          {assinatura.assinanteNome}
+                        </p>
+                        {assinatura.assinanteEmail && (
+                          <p className="text-xs text-default-500">
+                            {assinatura.assinanteEmail}
+                          </p>
+                        )}
+                        {assinatura.assinanteDocumento && (
+                          <p className="text-xs text-default-500">
+                            CPF: {assinatura.assinanteDocumento}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <Chip
-                          color={assinatura.status === "ASSINADO" ? "success" : assinatura.status === "PENDENTE" ? "warning" : assinatura.status === "EXPIRADO" ? "default" : "danger"}
+                          color={
+                            assinatura.status === "ASSINADO"
+                              ? "success"
+                              : assinatura.status === "PENDENTE"
+                                ? "warning"
+                                : assinatura.status === "EXPIRADO"
+                                  ? "default"
+                                  : "danger"
+                          }
                           size="sm"
                           variant="flat"
                         >
                           {assinatura.status}
                         </Chip>
-                        {assinatura.assinadaEm && <p className="text-xs text-default-400 mt-1">{new Date(assinatura.assinadaEm).toLocaleString("pt-BR")}</p>}
+                        {assinatura.assinadaEm && (
+                          <p className="text-xs text-default-400 mt-1">
+                            {new Date(assinatura.assinadaEm).toLocaleString(
+                              "pt-BR",
+                            )}
+                          </p>
+                        )}
                       </div>
                     </div>
                     {assinatura.provedorAssinatura && (
@@ -1097,9 +1321,13 @@ function AssinaturaModal({ isOpen, onClose, peticaoId }: AssinaturaModalProps) {
               <div className="p-3 bg-default-200 rounded-full">
                 <ShieldCheckIcon className="text-default-600" size={32} />
               </div>
-              <h3 className="text-lg font-semibold text-default-700">Assinatura Digital</h3>
+              <h3 className="text-lg font-semibold text-default-700">
+                Assinatura Digital
+              </h3>
               <p className="text-sm text-default-600 max-w-md">
-                Funcionalidade de assinatura digital será implementada em breve. O sistema está preparado para integração com soluções de assinatura eletrônica e certificados digitais.
+                Funcionalidade de assinatura digital será implementada em breve.
+                O sistema está preparado para integração com soluções de
+                assinatura eletrônica e certificados digitais.
               </p>
             </div>
           </div>
@@ -1107,7 +1335,9 @@ function AssinaturaModal({ isOpen, onClose, peticaoId }: AssinaturaModalProps) {
           {/* Informações */}
           <div className="p-3 bg-default-50 rounded-lg">
             <p className="text-xs text-default-600">
-              <strong>Nota:</strong> A estrutura de assinaturas está pronta. Aguardando definição da solução de assinatura digital a ser utilizada.
+              <strong>Nota:</strong> A estrutura de assinaturas está pronta.
+              Aguardando definição da solução de assinatura digital a ser
+              utilizada.
             </p>
           </div>
         </ModalBody>

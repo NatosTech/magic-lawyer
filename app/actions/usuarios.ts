@@ -1,9 +1,9 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
-import { revalidatePath } from "next/cache";
 
 import prisma from "../lib/prisma";
+
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
 

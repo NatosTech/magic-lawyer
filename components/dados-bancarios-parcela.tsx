@@ -1,11 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardBody, CardHeader, Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Select, SelectItem, Divider, Tooltip } from "@heroui/react";
-import { CreditCardIcon, BuildingIcon, UserIcon, MapPinIcon, PhoneIcon, MailIcon, CopyIcon, CheckIcon, QrCodeIcon, EyeIcon, EditIcon } from "lucide-react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Button,
+  Chip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Select,
+  SelectItem,
+  Divider,
+  Tooltip,
+} from "@heroui/react";
+import {
+  CreditCardIcon,
+  BuildingIcon,
+  UserIcon,
+  PhoneIcon,
+  MailIcon,
+  CopyIcon,
+  CheckIcon,
+  EditIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
-import { useDadosBancariosContrato, useContasDisponiveisContrato, type DadosBancariosContrato } from "@/app/hooks/use-dados-bancarios-contrato";
+import {
+  useDadosBancariosContrato,
+  useContasDisponiveisContrato,
+} from "@/app/hooks/use-dados-bancarios-contrato";
 import { GeradorDadosPagamento } from "@/components/gerador-dados-pagamento";
 
 interface DadosBancariosParcelaProps {
@@ -19,14 +46,26 @@ interface DadosBancariosParcelaProps {
   parcelaId?: string;
 }
 
-export function DadosBancariosParcela({ contratoId, valor, onContaChange, contaSelecionada, readonly = false, descricao = "Pagamento de parcela", vencimento, parcelaId }: DadosBancariosParcelaProps) {
+export function DadosBancariosParcela({
+  contratoId,
+  valor,
+  onContaChange,
+  contaSelecionada,
+  readonly = false,
+  descricao = "Pagamento de parcela",
+  vencimento,
+  parcelaId,
+}: DadosBancariosParcelaProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const { dadosBancarios, isLoading } = useDadosBancariosContrato(contratoId);
-  const { contas, isLoading: loadingContas } = useContasDisponiveisContrato(contratoId);
+  const { contas, isLoading: loadingContas } =
+    useContasDisponiveisContrato(contratoId);
 
-  const contaAtual = contaSelecionada ? contas.find((c) => c.id === contaSelecionada) || dadosBancarios : dadosBancarios;
+  const contaAtual = contaSelecionada
+    ? contas.find((c) => c.id === contaSelecionada) || dadosBancarios
+    : dadosBancarios;
 
   const handleCopy = async (text: string, field: string) => {
     try {
@@ -45,8 +84,10 @@ export function DadosBancariosParcela({ contratoId, valor, onContaChange, contaS
         <CardBody>
           <div className="flex items-center justify-center py-4">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-              <p className="text-sm text-default-500">Carregando dados bancários...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
+              <p className="text-sm text-default-500">
+                Carregando dados bancários...
+              </p>
             </div>
           </div>
         </CardBody>
@@ -60,8 +101,12 @@ export function DadosBancariosParcela({ contratoId, valor, onContaChange, contaS
         <CardBody>
           <div className="text-center py-4">
             <CreditCardIcon className="h-12 w-12 text-default-300 mx-auto mb-2" />
-            <p className="text-default-500">Nenhuma conta bancária configurada</p>
-            <p className="text-sm text-default-400">Configure uma conta para receber pagamentos</p>
+            <p className="text-default-500">
+              Nenhuma conta bancária configurada
+            </p>
+            <p className="text-sm text-default-400">
+              Configure uma conta para receber pagamentos
+            </p>
           </div>
         </CardBody>
       </Card>
@@ -83,7 +128,12 @@ export function DadosBancariosParcela({ contratoId, valor, onContaChange, contaS
               </Chip>
             )}
             {!readonly && contas.length > 1 && (
-              <Button size="sm" variant="light" startContent={<EditIcon className="h-4 w-4" />} onPress={() => setModalOpen(true)}>
+              <Button
+                size="sm"
+                startContent={<EditIcon className="h-4 w-4" />}
+                variant="light"
+                onPress={() => setModalOpen(true)}
+              >
                 Alterar Conta
               </Button>
             )}
@@ -98,7 +148,9 @@ export function DadosBancariosParcela({ contratoId, valor, onContaChange, contaS
                 <BuildingIcon className="h-4 w-4 text-default-400" />
                 <div>
                   <p className="text-sm font-medium">{contaAtual.banco.nome}</p>
-                  <p className="text-xs text-default-500">Código: {contaAtual.banco.codigo}</p>
+                  <p className="text-xs text-default-500">
+                    Código: {contaAtual.banco.codigo}
+                  </p>
                 </div>
               </div>
 
@@ -106,10 +158,23 @@ export function DadosBancariosParcela({ contratoId, valor, onContaChange, contaS
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-default-600">Agência:</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">{contaAtual.agencia}</span>
+                    <span className="font-mono text-sm">
+                      {contaAtual.agencia}
+                    </span>
                     <Tooltip content="Copiar agência">
-                      <Button isIconOnly size="sm" variant="light" onPress={() => handleCopy(contaAtual.agencia, "Agência")}>
-                        {copiedField === "Agência" ? <CheckIcon className="h-3 w-3 text-success" /> : <CopyIcon className="h-3 w-3" />}
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() =>
+                          handleCopy(contaAtual.agencia, "Agência")
+                        }
+                      >
+                        {copiedField === "Agência" ? (
+                          <CheckIcon className="h-3 w-3 text-success" />
+                        ) : (
+                          <CopyIcon className="h-3 w-3" />
+                        )}
                       </Button>
                     </Tooltip>
                   </div>
@@ -120,11 +185,27 @@ export function DadosBancariosParcela({ contratoId, valor, onContaChange, contaS
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm">
                       {contaAtual.conta}
-                      {contaAtual.digitoConta ? `-${contaAtual.digitoConta}` : ""}
+                      {contaAtual.digitoConta
+                        ? `-${contaAtual.digitoConta}`
+                        : ""}
                     </span>
                     <Tooltip content="Copiar conta">
-                      <Button isIconOnly size="sm" variant="light" onPress={() => handleCopy(`${contaAtual.conta}${contaAtual.digitoConta ? `-${contaAtual.digitoConta}` : ""}`, "Conta")}>
-                        {copiedField === "Conta" ? <CheckIcon className="h-3 w-3 text-success" /> : <CopyIcon className="h-3 w-3" />}
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() =>
+                          handleCopy(
+                            `${contaAtual.conta}${contaAtual.digitoConta ? `-${contaAtual.digitoConta}` : ""}`,
+                            "Conta",
+                          )
+                        }
+                      >
+                        {copiedField === "Conta" ? (
+                          <CheckIcon className="h-3 w-3 text-success" />
+                        ) : (
+                          <CopyIcon className="h-3 w-3" />
+                        )}
                       </Button>
                     </Tooltip>
                   </div>
@@ -137,8 +218,12 @@ export function DadosBancariosParcela({ contratoId, valor, onContaChange, contaS
               <div className="flex items-center gap-2">
                 <UserIcon className="h-4 w-4 text-default-400" />
                 <div>
-                  <p className="text-sm font-medium">{contaAtual.titularNome}</p>
-                  <p className="text-xs text-default-500">{contaAtual.titularDocumento}</p>
+                  <p className="text-sm font-medium">
+                    {contaAtual.titularNome}
+                  </p>
+                  <p className="text-xs text-default-500">
+                    {contaAtual.titularDocumento}
+                  </p>
                 </div>
               </div>
 
@@ -161,14 +246,24 @@ export function DadosBancariosParcela({ contratoId, valor, onContaChange, contaS
           {/* Dados de Pagamento */}
           <Divider />
           <div className="mt-4">
-            <GeradorDadosPagamento dadosBancarios={contaAtual} valor={valor} descricao={descricao} vencimento={vencimento} parcelaId={parcelaId} />
+            <GeradorDadosPagamento
+              dadosBancarios={contaAtual}
+              descricao={descricao}
+              parcelaId={parcelaId}
+              valor={valor}
+              vencimento={vencimento}
+            />
           </div>
 
           {/* Valor da Parcela */}
           <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-primary-700">Valor da Parcela:</span>
-              <span className="text-lg font-bold text-primary-800">R$ {valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+              <span className="text-sm font-medium text-primary-700">
+                Valor da Parcela:
+              </span>
+              <span className="text-lg font-bold text-primary-800">
+                R$ {valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </span>
             </div>
           </div>
         </CardBody>
@@ -185,6 +280,7 @@ export function DadosBancariosParcela({ contratoId, valor, onContaChange, contaS
               selectedKeys={contaSelecionada ? [contaSelecionada] : []}
               onSelectionChange={(keys) => {
                 const selectedKey = Array.from(keys)[0] as string;
+
                 if (onContaChange) {
                   onContaChange(selectedKey);
                 }

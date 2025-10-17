@@ -75,7 +75,9 @@ export interface ClienteComProcessos extends Cliente {
 // HELPER FUNCTIONS
 // ============================================
 
-async function getAdvogadoIdFromSession(session: { user: any }): Promise<string | null> {
+async function getAdvogadoIdFromSession(session: {
+  user: any;
+}): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   // Buscar advogado vinculado ao usuário
@@ -90,7 +92,9 @@ async function getAdvogadoIdFromSession(session: { user: any }): Promise<string 
   return advogado?.id || null;
 }
 
-async function getClienteIdFromSession(session: { user: any }): Promise<string | null> {
+async function getClienteIdFromSession(session: {
+  user: any;
+}): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   // Buscar cliente vinculado ao usuário
@@ -458,7 +462,8 @@ export interface ClienteCreateInput {
  * Gera uma senha aleatória segura
  */
 function generatePassword(length: number = 12): string {
-  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*";
+  const charset =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*";
   let password = "";
 
   for (let i = 0; i < length; i++) {
@@ -496,7 +501,11 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
     }
 
     // Verificar se usuário tem permissão para criar clientes
-    if (user.role !== "ADMIN" && user.role !== "ADVOGADO" && user.role !== "SUPER_ADMIN") {
+    if (
+      user.role !== "ADMIN" &&
+      user.role !== "ADVOGADO" &&
+      user.role !== "SUPER_ADMIN"
+    ) {
       return { success: false, error: "Sem permissão para criar clientes" };
     }
 
@@ -537,7 +546,8 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
       if (superAdminExistente) {
         return {
           success: false,
-          error: "Este email pertence a um Super Admin e não pode ser usado para clientes",
+          error:
+            "Este email pertence a um Super Admin e não pode ser usado para clientes",
         };
       }
 
@@ -649,7 +659,7 @@ export interface ClienteUpdateInput {
  */
 export async function updateCliente(
   clienteId: string,
-  data: ClienteUpdateInput
+  data: ClienteUpdateInput,
 ): Promise<{
   success: boolean;
   cliente?: Cliente;
@@ -1023,11 +1033,15 @@ export async function getClientesComRelacionamentos() {
 
       // Converter também os relacionamentos
       if (clienteConvertido.processos) {
-        clienteConvertido.processos = clienteConvertido.processos.map((processo: any) => convertAllDecimalFields(processo));
+        clienteConvertido.processos = clienteConvertido.processos.map(
+          (processo: any) => convertAllDecimalFields(processo),
+        );
       }
 
       if (clienteConvertido.contratos) {
-        clienteConvertido.contratos = clienteConvertido.contratos.map((contrato: any) => convertAllDecimalFields(contrato));
+        clienteConvertido.contratos = clienteConvertido.contratos.map(
+          (contrato: any) => convertAllDecimalFields(contrato),
+        );
       }
 
       return JSON.parse(JSON.stringify(clienteConvertido));
@@ -1064,7 +1078,10 @@ export interface DocumentoCreateInput {
 /**
  * Anexa um documento a um cliente
  */
-export async function anexarDocumentoCliente(clienteId: string, formData: FormData) {
+export async function anexarDocumentoCliente(
+  clienteId: string,
+  formData: FormData,
+) {
   try {
     const session = await getSession();
 
@@ -1146,12 +1163,15 @@ export async function anexarDocumentoCliente(clienteId: string, formData: FormDa
     const v2 = await import("cloudinary");
     const cloudinary = v2.v2;
 
-    const uploadResult = await cloudinary.uploader.upload(`data:${arquivo.type};base64,${buffer.toString("base64")}`, {
-      folder: folderPath,
-      resource_type: "auto",
-      public_id: `${Date.now()}_${arquivo.name.replace(/[^a-z0-9.]/gi, "_")}`,
-      tags: ["cliente", "documento", cliente.id],
-    });
+    const uploadResult = await cloudinary.uploader.upload(
+      `data:${arquivo.type};base64,${buffer.toString("base64")}`,
+      {
+        folder: folderPath,
+        resource_type: "auto",
+        public_id: `${Date.now()}_${arquivo.name.replace(/[^a-z0-9.]/gi, "_")}`,
+        tags: ["cliente", "documento", cliente.id],
+      },
+    );
 
     // Criar documento no banco
     const documento = await prisma.documento.create({
@@ -1421,7 +1441,10 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
     });
 
     // Registrar no log de auditoria
-    const nomeCompleto = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : user.email;
+    const nomeCompleto =
+      user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`.trim()
+        : user.email;
 
     await prisma.auditLog.create({
       data: {

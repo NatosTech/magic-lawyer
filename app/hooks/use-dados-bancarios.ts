@@ -30,7 +30,7 @@ export function useDadosBancarios(filters?: {
   return {
     dadosBancarios: data?.data || [],
     isLoading,
-    error: error || data?.error,
+    error: error,
     mutate,
   };
 }
@@ -49,7 +49,7 @@ export function useDadosBancariosById(id: string) {
   return {
     dadosBancarios: data?.data,
     isLoading,
-    error: error || data?.error,
+    error: error,
     mutate,
   };
 }
@@ -68,7 +68,7 @@ export function useMeusDadosBancarios() {
   return {
     dadosBancarios: data?.data || [],
     isLoading,
-    error: error || data?.error,
+    error: error,
     mutate,
   };
 }
@@ -87,7 +87,7 @@ export function useDadosBancariosAtivos() {
   return {
     dadosBancarios: data?.data || [],
     isLoading,
-    error: error || data?.error,
+    error: error,
   };
 }
 
@@ -105,7 +105,7 @@ export function useBancosDisponiveis() {
   return {
     bancos: data?.bancos || [],
     isLoading,
-    error: error || data?.error,
+    error: error,
   };
 }
 
@@ -119,7 +119,7 @@ export function useTiposConta() {
   return {
     tipos: data?.data || [],
     isLoading,
-    error: error || data?.error,
+    error: error,
   };
 }
 
@@ -137,7 +137,7 @@ export function useTiposContaBancaria() {
   return {
     tipos: data?.data || [],
     isLoading,
-    error: error || data?.error,
+    error: error,
   };
 }
 
@@ -155,6 +155,6 @@ export function useTiposChavePix() {
   return {
     tipos: data?.data || [],
     isLoading,
-    error: error || data?.error,
+    error: error,
   };
 }

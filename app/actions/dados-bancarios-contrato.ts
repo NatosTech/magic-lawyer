@@ -92,6 +92,7 @@ export async function getDadosBancariosContrato(contratoId: string): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar dados bancários do contrato:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -102,7 +103,9 @@ export async function getDadosBancariosContrato(contratoId: string): Promise<{
 /**
  * Busca todas as contas bancárias disponíveis para um contrato
  */
-export async function getContasDisponiveisContrato(contratoId: string): Promise<{
+export async function getContasDisponiveisContrato(
+  contratoId: string,
+): Promise<{
   success: boolean;
   contas?: DadosBancariosContrato[];
   error?: string;
@@ -149,6 +152,7 @@ export async function getContasDisponiveisContrato(contratoId: string): Promise<
     };
   } catch (error) {
     console.error("Erro ao buscar contas disponíveis:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -161,7 +165,7 @@ export async function getContasDisponiveisContrato(contratoId: string): Promise<
  */
 export async function vincularContaContrato(
   contratoId: string,
-  dadosBancariosId: string
+  dadosBancariosId: string,
 ): Promise<{
   success: boolean;
   error?: string;
@@ -212,6 +216,7 @@ export async function vincularContaContrato(
     return { success: true };
   } catch (error) {
     console.error("Erro ao vincular conta ao contrato:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",

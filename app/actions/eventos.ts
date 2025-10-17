@@ -9,6 +9,10 @@ import prisma from "@/app/lib/prisma";
 import { getTenantWithBranding } from "@/app/lib/tenant";
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
+import {
+  syncEventoWithGoogle,
+  removeEventoFromGoogle,
+} from "@/app/actions/google-calendar";
 
 // Usar tipos do Prisma - sempre sincronizado com o banco!
 
@@ -117,6 +121,11 @@ export async function getEventos(filters?: {
   dataFim?: Date;
   status?: string;
   tipo?: string;
+  clienteId?: string;
+  processoId?: string;
+  advogadoId?: string;
+  local?: string;
+  titulo?: string;
 }) {
   try {
     const session = await getServerSession(authOptions);
@@ -172,6 +181,25 @@ export async function getEventos(filters?: {
       }
     }
 
+    // Se o usuário for um advogado, filtrar apenas eventos onde ele é responsável
+    if (userRole === "ADVOGADO") {
+      // Buscar o advogado pelo usuarioId
+      const advogado = await prisma.advogado.findFirst({
+        where: { usuarioId: session.user.id },
+        select: { id: true },
+      });
+
+      if (advogado) {
+        where.advogadoResponsavelId = advogado.id;
+      } else {
+        // Advogado sem registro na tabela Advogado - não tem eventos
+        return {
+          success: true,
+          data: [],
+        };
+      }
+    }
+
     if (filters?.dataInicio || filters?.dataFim) {
       where.dataInicio = {};
       if (filters.dataInicio) {
@@ -188,6 +216,32 @@ export async function getEventos(filters?: {
 
     if (filters?.tipo) {
       where.tipo = filters.tipo;
+    }
+
+    if (filters?.clienteId) {
+      where.clienteId = filters.clienteId;
+    }
+
+    if (filters?.processoId) {
+      where.processoId = filters.processoId;
+    }
+
+    if (filters?.advogadoId) {
+      where.advogadoResponsavelId = filters.advogadoId;
+    }
+
+    if (filters?.local) {
+      where.local = {
+        contains: filters.local,
+        mode: "insensitive",
+      };
+    }
+
+    if (filters?.titulo) {
+      where.titulo = {
+        contains: filters.titulo,
+        mode: "insensitive",
+      };
     }
 
     const eventos = await prisma.evento.findMany({
@@ -534,6 +588,14 @@ export async function createEvento(formData: EventoFormData) {
       });
     }
 
+    // Sincronizar com Google Calendar se estiver habilitado
+    try {
+      await syncEventoWithGoogle(evento.id);
+    } catch (error) {
+      logger.warn("Erro ao sincronizar evento com Google Calendar:", error);
+      // Não falhar a criação do evento por causa da sincronização
+    }
+
     revalidatePath("/agenda");
 
     return { success: true, data: evento };
@@ -797,6 +859,14 @@ export async function updateEvento(
       }
     }
 
+    // Sincronizar com Google Calendar se estiver habilitado
+    try {
+      await syncEventoWithGoogle(id);
+    } catch (error) {
+      logger.warn("Erro ao sincronizar evento com Google Calendar:", error);
+      // Não falhar a atualização do evento por causa da sincronização
+    }
+
     revalidatePath("/agenda");
 
     return { success: true, data: evento };
@@ -836,6 +906,16 @@ export async function deleteEvento(id: string) {
 
     if (!evento) {
       throw new Error("Evento não encontrado");
+    }
+
+    // Remover do Google Calendar se estiver sincronizado
+    if (evento.googleEventId) {
+      try {
+        await removeEventoFromGoogle(id);
+      } catch (error) {
+        logger.warn("Erro ao remover evento do Google Calendar:", error);
+        // Continuar com a exclusão local mesmo se houver erro no Google
+      }
     }
 
     await prisma.evento.delete({

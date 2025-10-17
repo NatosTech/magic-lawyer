@@ -1,7 +1,11 @@
 "use client";
 
 import useSWR from "swr";
-import { getDadosBancariosContrato, getContasDisponiveisContrato } from "@/app/actions/dados-bancarios-contrato";
+
+import {
+  getDadosBancariosContrato,
+  getContasDisponiveisContrato,
+} from "@/app/actions/dados-bancarios-contrato";
 
 // ============================================
 // TYPES
@@ -41,7 +45,9 @@ export function useDadosBancariosContrato(contratoId?: string) {
       if (!contratoId) return null;
 
       const result = await getDadosBancariosContrato(contratoId);
-      if (!result.success) throw new Error(result.error || "Erro ao buscar dados bancários");
+
+      if (!result.success)
+        throw new Error(result.error || "Erro ao buscar dados bancários");
 
       return result;
     },
@@ -49,7 +55,7 @@ export function useDadosBancariosContrato(contratoId?: string) {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       refreshInterval: 0,
-    }
+    },
   );
 
   return {
@@ -71,7 +77,9 @@ export function useContasDisponiveisContrato(contratoId?: string) {
       if (!contratoId) return null;
 
       const result = await getContasDisponiveisContrato(contratoId);
-      if (!result.success) throw new Error(result.error || "Erro ao buscar contas disponíveis");
+
+      if (!result.success)
+        throw new Error(result.error || "Erro ao buscar contas disponíveis");
 
       return result;
     },
@@ -79,7 +87,7 @@ export function useContasDisponiveisContrato(contratoId?: string) {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       refreshInterval: 0,
-    }
+    },
   );
 
   return {

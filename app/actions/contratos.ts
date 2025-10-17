@@ -122,7 +122,10 @@ export async function getProcuracoesDisponiveis(clienteId: string) {
  * - Se o contrato NÃO tem processo: vincula o contrato ao primeiro processo da procuração
  * - Se a procuração não tem processos: retorna erro
  */
-export async function vincularContratoProcuracao(contratoId: string, procuracaoId: string) {
+export async function vincularContratoProcuracao(
+  contratoId: string,
+  procuracaoId: string,
+) {
   const session = await getSession();
 
   if (!session?.user?.id) {
@@ -181,7 +184,9 @@ export async function vincularContratoProcuracao(contratoId: string, procuracaoI
 
     // Caso 1: Contrato JÁ tem um processo vinculado
     if (contrato.processoId) {
-      const processoVinculado = procuracao.processos.find((pp) => pp.processoId === contrato.processoId);
+      const processoVinculado = procuracao.processos.find(
+        (pp) => pp.processoId === contrato.processoId,
+      );
 
       if (!processoVinculado) {
         return {
@@ -201,7 +206,8 @@ export async function vincularContratoProcuracao(contratoId: string, procuracaoI
     if (procuracao.processos.length === 0) {
       return {
         success: false,
-        error: "Esta procuração não está vinculada a nenhum processo. Primeiro vincule a procuração a um processo.",
+        error:
+          "Esta procuração não está vinculada a nenhum processo. Primeiro vincule a procuração a um processo.",
       };
     }
 
@@ -345,16 +351,20 @@ export async function createContrato(data: ContratoCreateInput) {
     // Converter Decimals para number antes de retornar
     const contratoSerializado = {
       ...contrato,
-      valor: toNumber(contrato.valor),
-      comissaoAdvogado: toNumber(contrato.comissaoAdvogado),
-      percentualAcaoGanha: toNumber(contrato.percentualAcaoGanha),
-      valorAcaoGanha: toNumber(contrato.valorAcaoGanha),
+      valor: Number(contrato.valor),
+      comissaoAdvogado: Number(contrato.comissaoAdvogado),
+      percentualAcaoGanha: Number(contrato.percentualAcaoGanha),
+      valorAcaoGanha: Number(contrato.valorAcaoGanha),
       advogadoResponsavel: contrato.advogadoResponsavel
         ? {
             ...contrato.advogadoResponsavel,
-            comissaoPadrao: toNumber(contrato.advogadoResponsavel.comissaoPadrao),
-            comissaoAcaoGanha: toNumber(contrato.advogadoResponsavel.comissaoAcaoGanha),
-            comissaoHonorarios: toNumber(contrato.advogadoResponsavel.comissaoHonorarios),
+            comissaoPadrao: Number(contrato.advogadoResponsavel.comissaoPadrao),
+            comissaoAcaoGanha: Number(
+              contrato.advogadoResponsavel.comissaoAcaoGanha,
+            ),
+            comissaoHonorarios: Number(
+              contrato.advogadoResponsavel.comissaoHonorarios,
+            ),
           }
         : null,
     };
@@ -469,10 +479,10 @@ export async function getAllContratos(): Promise<{
     // Converter Decimal para number
     const contratosFormatted = contratos.map((c: any) => ({
       ...c,
-      valor: toNumber(c.valor),
-      comissaoAdvogado: toNumber(c.comissaoAdvogado),
-      percentualAcaoGanha: toNumber(c.percentualAcaoGanha),
-      valorAcaoGanha: toNumber(c.valorAcaoGanha),
+      valor: Number(c.valor),
+      comissaoAdvogado: Number(c.comissaoAdvogado),
+      percentualAcaoGanha: Number(c.percentualAcaoGanha),
+      valorAcaoGanha: Number(c.valorAcaoGanha),
     }));
 
     return {
@@ -596,13 +606,13 @@ export async function getContratoById(contratoId: string): Promise<{
     // Converter Decimal para number
     const contratoFormatted = {
       ...contrato,
-      valor: toNumber(contrato.valor),
-      comissaoAdvogado: toNumber(contrato.comissaoAdvogado),
-      percentualAcaoGanha: toNumber(contrato.percentualAcaoGanha),
-      valorAcaoGanha: toNumber(contrato.valorAcaoGanha),
+      valor: Number(contrato.valor),
+      comissaoAdvogado: Number(contrato.comissaoAdvogado),
+      percentualAcaoGanha: Number(contrato.percentualAcaoGanha),
+      valorAcaoGanha: Number(contrato.valorAcaoGanha),
       faturas: contrato.faturas.map((f: any) => ({
         ...f,
-        valor: toNumber(f.valor),
+        valor: Number(f.valor),
       })),
     };
 
@@ -633,7 +643,7 @@ export interface ContratoUpdateInput extends Partial<ContratoCreateInput> {
  */
 export async function updateContrato(
   contratoId: string,
-  data: Partial<ContratoCreateInput>
+  data: Partial<ContratoCreateInput>,
 ): Promise<{
   success: boolean;
   contrato?: any;
@@ -692,17 +702,25 @@ export async function updateContrato(
     if (data.status !== undefined) updateData.status = data.status;
     if (data.valor !== undefined) updateData.valor = data.valor;
     if (data.dataInicio !== undefined) {
-      updateData.dataInicio = data.dataInicio instanceof Date ? data.dataInicio : new Date(data.dataInicio);
+      updateData.dataInicio =
+        data.dataInicio instanceof Date
+          ? data.dataInicio
+          : new Date(data.dataInicio);
     }
     if (data.dataFim !== undefined) {
-      updateData.dataFim = data.dataFim instanceof Date ? data.dataFim : new Date(data.dataFim);
+      updateData.dataFim =
+        data.dataFim instanceof Date ? data.dataFim : new Date(data.dataFim);
     }
-    if (data.observacoes !== undefined) updateData.observacoes = data.observacoes;
+    if (data.observacoes !== undefined)
+      updateData.observacoes = data.observacoes;
     if (data.clienteId !== undefined) updateData.clienteId = data.clienteId;
-    if (data.advogadoId !== undefined) updateData.advogadoResponsavelId = data.advogadoId;
+    if (data.advogadoId !== undefined)
+      updateData.advogadoResponsavelId = data.advogadoId;
     if (data.processoId !== undefined) updateData.processoId = data.processoId;
-    if (data.tipoContratoId !== undefined) updateData.tipoId = data.tipoContratoId;
-    if (data.dadosBancariosId !== undefined) updateData.dadosBancariosId = data.dadosBancariosId;
+    if (data.tipoContratoId !== undefined)
+      updateData.tipoId = data.tipoContratoId;
+    if (data.dadosBancariosId !== undefined)
+      updateData.dadosBancariosId = data.dadosBancariosId;
 
     // Atualizar contrato
     const contratoAtualizado = await prisma.contrato.update({
@@ -739,10 +757,10 @@ export async function updateContrato(
     // Converter Decimal para number
     const contratoSerializado = {
       ...contratoAtualizado,
-      valor: toNumber(contratoAtualizado.valor),
-      comissaoAdvogado: toNumber(contratoAtualizado.comissaoAdvogado),
-      percentualAcaoGanha: toNumber(contratoAtualizado.percentualAcaoGanha),
-      valorAcaoGanha: toNumber(contratoAtualizado.valorAcaoGanha),
+      valor: Number(contratoAtualizado.valor),
+      comissaoAdvogado: Number(contratoAtualizado.comissaoAdvogado),
+      percentualAcaoGanha: Number(contratoAtualizado.percentualAcaoGanha),
+      valorAcaoGanha: Number(contratoAtualizado.valorAcaoGanha),
     };
 
     return {
@@ -825,23 +843,37 @@ export async function getContratosComParcelas(): Promise<{
     });
 
     // Converter Decimal para number e calcular informações de parcelas
-    const convertedData = contratos.map((contrato) => convertAllDecimalFields(contrato));
+    const convertedData = contratos.map((contrato) =>
+      convertAllDecimalFields(contrato),
+    );
     const contratosComParcelas = convertedData.map((contrato) => {
       const valorTotalContrato = Number(contrato.valor) || 0;
       const parcelasExistentes = contrato.parcelas || [];
 
-      const valorTotalParcelas = parcelasExistentes.reduce((total, parcela) => total + Number(parcela.valor), 0);
+      const valorTotalParcelas = parcelasExistentes.reduce(
+        (total, parcela) => total + Number(parcela.valor),
+        0,
+      );
 
       // Calcular valor já comprometido (pendentes + em andamento)
-      const parcelasComprometidas = parcelasExistentes.filter((p) => p.status === "PENDENTE" || p.status === "EM_ANDAMENTO");
+      const parcelasComprometidas = parcelasExistentes.filter(
+        (p) => p.status === "PENDENTE" || p.status === "ATRASADA",
+      );
 
-      const valorComprometido = parcelasComprometidas.reduce((total, parcela) => total + Number(parcela.valor), 0);
+      const valorComprometido = parcelasComprometidas.reduce(
+        (total, parcela) => total + Number(parcela.valor),
+        0,
+      );
 
       // Valor disponível = valor total - valor comprometido (não pago)
       const valorDisponivel = valorTotalContrato - valorComprometido;
-      const parcelasPendentes = parcelasExistentes.filter((p) => p.status === "PENDENTE").length;
+      const parcelasPendentes = parcelasExistentes.filter(
+        (p) => p.status === "PENDENTE",
+      ).length;
 
-      const parcelasPagas = parcelasExistentes.filter((p) => p.status === "PAGO").length;
+      const parcelasPagas = parcelasExistentes.filter(
+        (p) => p.status === "PAGA",
+      ).length;
 
       return {
         ...contrato,

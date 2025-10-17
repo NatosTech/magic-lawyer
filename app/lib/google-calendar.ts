@@ -5,11 +5,18 @@ import logger from "@/lib/logger";
 
 // Configuração do OAuth2 para Google Calendar
 export const createOAuth2Client = () => {
-  return new OAuth2Client(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI,
-  );
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+
+  if (!clientId || !clientSecret || !redirectUri) {
+    throw new Error(
+      "Variáveis de ambiente do Google Calendar não configuradas. " +
+        "Verifique se GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e GOOGLE_REDIRECT_URI estão definidas no arquivo .env.local",
+    );
+  }
+
+  return new OAuth2Client(clientId, clientSecret, redirectUri);
 };
 
 // Interface para dados do evento
@@ -47,7 +54,7 @@ export interface CalendarApiResponse {
 }
 
 // Função para obter URL de autorização
-export const getAuthUrl = (userId: string) => {
+export const getAuthUrl = (userId: string, currentDomain?: string) => {
   const oauth2Client = createOAuth2Client();
 
   const scopes = [
@@ -55,10 +62,19 @@ export const getAuthUrl = (userId: string) => {
     "https://www.googleapis.com/auth/calendar.events",
   ];
 
+  // Determinar o domínio base para OAuth
+  // Em desenvolvimento, sempre usar localhost:9192 para simplicidade
+  // Em produção, sempre usar o domínio principal para OAuth
+  const oauthDomain =
+    process.env.NODE_ENV === "production"
+      ? "https://magiclawyer.vercel.app"
+      : "http://localhost:9192";
+
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: scopes,
-    state: userId, // Para identificar o usuário após o callback
+    state: `${userId}|${currentDomain || ""}`, // Incluir domínio atual no state
+    redirect_uri: `${oauthDomain}/api/google-calendar/callback`,
   });
 };
 

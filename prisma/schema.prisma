@@ -258,6 +258,11 @@ model Usuario {
   observacoes                  String?
   lastLoginAt                  DateTime?
   createdById                  String?
+  // Integração Google Calendar
+  googleCalendarConnected      Boolean                @default(false)
+  googleCalendarTokens         Json?                  // { access_token, refresh_token, expiry_date }
+  googleCalendarId             String?                // ID do calendário principal do usuário
+  googleCalendarSyncEnabled    Boolean                @default(false)
   createdAt                    DateTime               @default(now())
   updatedAt                    DateTime               @updatedAt
   createdBy                    Usuario?               @relation("UsuarioCriador", fields: [createdById], references: [id])

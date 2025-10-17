@@ -25,7 +25,7 @@ export function useHonorariosContratuais(filters?: {
   return {
     honorarios: data?.data || [],
     isLoading,
-    error: error || data?.error,
+    error: error,
     mutate,
   };
 }
@@ -44,7 +44,7 @@ export function useHonorarioContratual(id: string) {
   return {
     honorario: data?.data,
     isLoading,
-    error: error || data?.error,
+    error: error,
     mutate,
   };
 }
@@ -63,7 +63,7 @@ export function useTiposHonorario() {
   return {
     tipos: data?.data || [],
     isLoading,
-    error: error || data?.error,
+    error: error,
   };
 }
 
@@ -83,7 +83,7 @@ export function useCalculoHonorario(honorarioId: string, valorBase?: number) {
   return {
     calculo: data?.data,
     isLoading,
-    error: error || data?.error,
+    error: error,
     recalcular: mutate,
   };
 }

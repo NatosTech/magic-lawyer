@@ -29,7 +29,11 @@ export interface DiligenciaUpdatePayload {
   observacoes?: string | null;
 }
 
-export async function listDiligencias(params?: { status?: string; processoId?: string; causaId?: string }) {
+export async function listDiligencias(params?: {
+  status?: string;
+  processoId?: string;
+  causaId?: string;
+}) {
   try {
     const session = await getSession();
 
@@ -76,11 +80,15 @@ export async function listDiligencias(params?: { status?: string; processoId?: s
 
       // Converter também os relacionamentos
       if (diligenciaConvertida.processo) {
-        diligenciaConvertida.processo = convertAllDecimalFields(diligenciaConvertida.processo);
+        diligenciaConvertida.processo = convertAllDecimalFields(
+          diligenciaConvertida.processo,
+        );
       }
 
       if (diligenciaConvertida.contrato) {
-        diligenciaConvertida.contrato = convertAllDecimalFields(diligenciaConvertida.contrato);
+        diligenciaConvertida.contrato = convertAllDecimalFields(
+          diligenciaConvertida.contrato,
+        );
       }
 
       return JSON.parse(JSON.stringify(diligenciaConvertida));
@@ -165,11 +173,15 @@ export async function createDiligencia(payload: DiligenciaCreatePayload) {
 
     // Converter também os relacionamentos
     if (diligenciaConvertida.processo) {
-      diligenciaConvertida.processo = convertAllDecimalFields(diligenciaConvertida.processo);
+      diligenciaConvertida.processo = convertAllDecimalFields(
+        diligenciaConvertida.processo,
+      );
     }
 
     if (diligenciaConvertida.contrato) {
-      diligenciaConvertida.contrato = convertAllDecimalFields(diligenciaConvertida.contrato);
+      diligenciaConvertida.contrato = convertAllDecimalFields(
+        diligenciaConvertida.contrato,
+      );
     }
 
     const serialized = JSON.parse(JSON.stringify(diligenciaConvertida));
@@ -188,7 +200,10 @@ export async function createDiligencia(payload: DiligenciaCreatePayload) {
   }
 }
 
-export async function updateDiligencia(diligenciaId: string, payload: DiligenciaUpdatePayload) {
+export async function updateDiligencia(
+  diligenciaId: string,
+  payload: DiligenciaUpdatePayload,
+) {
   try {
     const session = await getSession();
 
@@ -284,11 +299,15 @@ export async function updateDiligencia(diligenciaId: string, payload: Diligencia
 
     // Converter também os relacionamentos
     if (diligenciaConvertida.processo) {
-      diligenciaConvertida.processo = convertAllDecimalFields(diligenciaConvertida.processo);
+      diligenciaConvertida.processo = convertAllDecimalFields(
+        diligenciaConvertida.processo,
+      );
     }
 
     if (diligenciaConvertida.contrato) {
-      diligenciaConvertida.contrato = convertAllDecimalFields(diligenciaConvertida.contrato);
+      diligenciaConvertida.contrato = convertAllDecimalFields(
+        diligenciaConvertida.contrato,
+      );
     }
 
     const serialized = JSON.parse(JSON.stringify(diligenciaConvertida));

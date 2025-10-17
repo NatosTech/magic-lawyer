@@ -1,6 +1,10 @@
 import useSWR from "swr";
 
-import { getAllContratos, getContratoById, getContratosComParcelas } from "@/app/actions/contratos";
+import {
+  getAllContratos,
+  getContratoById,
+  getContratosComParcelas,
+} from "@/app/actions/contratos";
 
 /**
  * Hook para buscar todos os contratos do tenant
@@ -20,7 +24,7 @@ export function useAllContratos() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -53,7 +57,7 @@ export function useContratoDetalhado(contratoId: string | null) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {
@@ -84,7 +88,7 @@ export function useContratosComParcelas() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {

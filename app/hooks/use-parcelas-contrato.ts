@@ -32,7 +32,7 @@ export function useParcelasContrato(filters?: {
   return {
     parcelas: data?.data || [],
     isLoading,
-    error: error || data?.error,
+    error: error,
     mutate,
   };
 }
@@ -51,7 +51,7 @@ export function useParcelaContrato(id: string) {
   return {
     parcela: data?.data,
     isLoading,
-    error: error || data?.error,
+    error: error,
     mutate,
   };
 }
@@ -71,7 +71,7 @@ export function useDashboardParcelas() {
   return {
     dashboard: data?.data,
     isLoading,
-    error: error || data?.error,
+    error: error,
     mutate,
   };
 }
@@ -90,7 +90,7 @@ export function useStatusParcelas() {
   return {
     status: data?.data || [],
     isLoading,
-    error: error || data?.error,
+    error: error,
   };
 }
 
@@ -109,7 +109,7 @@ export function useProcessosComParcelas() {
     processos: data?.data || [],
     isLoading,
     isError: !!error,
-    error: error || data?.error,
+    error: error,
     mutate,
     refresh: mutate,
   };

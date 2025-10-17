@@ -12,6 +12,11 @@ export function useEventos(filters?: {
   dataFim?: Date;
   status?: string;
   tipo?: string;
+  clienteId?: string;
+  processoId?: string;
+  advogadoId?: string;
+  local?: string;
+  titulo?: string;
 }) {
   const { data, error, isLoading, mutate } = useSWR(
     ["eventos", filters],

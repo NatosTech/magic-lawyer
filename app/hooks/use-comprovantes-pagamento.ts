@@ -1,7 +1,14 @@
 "use client";
 
 import useSWR from "swr";
-import { getComprovantesParcela, uploadComprovantePagamento, deleteComprovantePagamento, alterarStatusComprovante, type ComprovantePagamento } from "@/app/actions/comprovantes-pagamento";
+
+import {
+  getComprovantesParcela,
+  uploadComprovantePagamento,
+  deleteComprovantePagamento,
+  alterarStatusComprovante,
+  type ComprovantePagamento,
+} from "@/app/actions/comprovantes-pagamento";
 
 // ============================================
 // HOOKS
@@ -17,7 +24,9 @@ export function useComprovantesPagamento(parcelaId?: string) {
       if (!parcelaId) return null;
 
       const result = await getComprovantesParcela(parcelaId);
-      if (!result.success) throw new Error(result.error || "Erro ao buscar comprovantes");
+
+      if (!result.success)
+        throw new Error(result.error || "Erro ao buscar comprovantes");
 
       return result;
     },
@@ -25,7 +34,7 @@ export function useComprovantesPagamento(parcelaId?: string) {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       refreshInterval: 0,
-    }
+    },
   );
 
   return {
@@ -45,38 +54,53 @@ export function useComprovantesActions(parcelaId: string) {
 
   const uploadComprovante = async (file: File) => {
     const result = await uploadComprovantePagamento(parcelaId, file);
+
     if (result.success) {
       mutate();
     }
+
     return result;
   };
 
   const deleteComprovante = async (comprovanteId: string) => {
     const result = await deleteComprovantePagamento(comprovanteId);
+
     if (result.success) {
       mutate();
     }
+
     return result;
   };
 
-  const alterarStatus = async (comprovanteId: string, status: "pendente" | "aprovado" | "rejeitado") => {
+  const alterarStatus = async (
+    comprovanteId: string,
+    status: "pendente" | "aprovado" | "rejeitado",
+  ) => {
     const result = await alterarStatusComprovante(comprovanteId, status);
+
     if (result.success) {
       mutate();
     }
+
     return result;
   };
 
   const downloadComprovante = async (comprovanteId: string) => {
     // Implementar download do arquivo
     const comprovantes = await getComprovantesParcela(parcelaId);
+
     if (comprovantes.success) {
-      const comprovante = comprovantes.comprovantes?.find((c) => c.id === comprovanteId);
+      const comprovante = comprovantes.comprovantes?.find(
+        (c) => c.id === comprovanteId,
+      );
+
       if (comprovante) {
         window.open(comprovante.url, "_blank");
+
         return { success: true };
       }
     }
+
     return { success: false, error: "Comprovante não encontrado" };
   };
 

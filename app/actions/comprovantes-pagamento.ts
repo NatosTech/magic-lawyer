@@ -1,10 +1,12 @@
 "use server";
 
-import { getServerSession } from "next-auth/next";
-import { revalidatePath } from "next/cache";
 import { writeFile, unlink } from "fs/promises";
 import { join } from "path";
-import { v4 as uuidv4 } from "uuid";
+
+import { getServerSession } from "next-auth/next";
+import { revalidatePath } from "next/cache";
+// import { v4 as uuidv4 } from "uuid";
+const uuidv4 = () => Math.random().toString(36).substring(2) + Date.now().toString(36);
 
 import { authOptions } from "@/auth";
 import prisma from "@/app/lib/prisma";
@@ -33,7 +35,7 @@ export interface ComprovantePagamento {
  */
 export async function uploadComprovantePagamento(
   parcelaId: string,
-  file: File
+  file: File,
 ): Promise<{
   success: boolean;
   comprovante?: ComprovantePagamento;
@@ -64,11 +66,13 @@ export async function uploadComprovantePagamento(
 
     // Validar arquivo
     const maxSize = 10 * 1024 * 1024; // 10MB
+
     if (file.size > maxSize) {
       return { success: false, error: "Arquivo muito grande. Máximo 10MB." };
     }
 
     const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
+
     if (!allowedTypes.includes(file.type)) {
       return { success: false, error: "Tipo de arquivo não permitido." };
     }
@@ -81,6 +85,7 @@ export async function uploadComprovantePagamento(
 
     // Criar diretório se não existir
     const { mkdir } = await import("fs/promises");
+
     try {
       await mkdir(uploadPath, { recursive: true });
     } catch (error) {
@@ -90,6 +95,7 @@ export async function uploadComprovantePagamento(
     // Salvar arquivo
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+
     await writeFile(filePath, buffer);
 
     // Salvar no banco
@@ -112,6 +118,7 @@ export async function uploadComprovantePagamento(
     };
   } catch (error) {
     console.error("Erro no upload do comprovante:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -162,6 +169,7 @@ export async function getComprovantesParcela(parcelaId: string): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar comprovantes:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -172,7 +180,9 @@ export async function getComprovantesParcela(parcelaId: string): Promise<{
 /**
  * Deletar comprovante
  */
-export async function deleteComprovantePagamento(comprovanteId: string): Promise<{
+export async function deleteComprovantePagamento(
+  comprovanteId: string,
+): Promise<{
   success: boolean;
   error?: string;
 }> {
@@ -204,6 +214,7 @@ export async function deleteComprovantePagamento(comprovanteId: string): Promise
     // Remover arquivo físico
     try {
       const filePath = join(process.cwd(), "public", comprovante.url);
+
       await unlink(filePath);
     } catch (error) {
       console.warn("Erro ao remover arquivo físico:", error);
@@ -219,6 +230,7 @@ export async function deleteComprovantePagamento(comprovanteId: string): Promise
     return { success: true };
   } catch (error) {
     console.error("Erro ao deletar comprovante:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -231,7 +243,7 @@ export async function deleteComprovantePagamento(comprovanteId: string): Promise
  */
 export async function alterarStatusComprovante(
   comprovanteId: string,
-  status: "pendente" | "aprovado" | "rejeitado"
+  status: "pendente" | "aprovado" | "rejeitado",
 ): Promise<{
   success: boolean;
   error?: string;
@@ -272,6 +284,7 @@ export async function alterarStatusComprovante(
     return { success: true };
   } catch (error) {
     console.error("Erro ao alterar status do comprovante:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",

@@ -7,9 +7,28 @@ import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import { Select, SelectItem } from "@heroui/select";
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/modal";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  useDisclosure,
+} from "@heroui/modal";
 import { Skeleton } from "@heroui/react";
-import { Plus, CheckCircle2, Circle, Clock, XCircle, AlertCircle, Calendar, Target, TrendingUp, AlertTriangle, Kanban } from "lucide-react";
+import {
+  Plus,
+  CheckCircle2,
+  Circle,
+  Clock,
+  XCircle,
+  AlertCircle,
+  Calendar,
+  Target,
+  TrendingUp,
+  AlertTriangle,
+  Kanban,
+} from "lucide-react";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
@@ -18,7 +37,14 @@ import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import { DatePicker } from "@heroui/date-picker";
 import { parseAbsoluteToLocal } from "@internationalized/date";
 
-import { listTarefas, createTarefa, updateTarefa, deleteTarefa, marcarTarefaConcluida, getDashboardTarefas } from "@/app/actions/tarefas";
+import {
+  listTarefas,
+  createTarefa,
+  updateTarefa,
+  deleteTarefa,
+  marcarTarefaConcluida,
+  getDashboardTarefas,
+} from "@/app/actions/tarefas";
 import { listCategoriasTarefa } from "@/app/actions/categorias-tarefa";
 import { getAllProcessos } from "@/app/actions/processos";
 import { searchClientes } from "@/app/actions/clientes";
@@ -112,7 +138,9 @@ export default function TarefasContent() {
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>("");
   const [filtroMinhas, setFiltroMinhas] = useState(false);
   const [filtroAtrasadas, setFiltroAtrasadas] = useState(false);
-  const [tarefaSelecionada, setTarefaSelecionada] = useState<TarefaDto | null>(null);
+  const [tarefaSelecionada, setTarefaSelecionada] = useState<TarefaDto | null>(
+    null,
+  );
   const [formData, setFormData] = useState({
     titulo: "",
     descricao: "",
@@ -129,7 +157,11 @@ export default function TarefasContent() {
   const [salvando, setSalvando] = useState(false);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
+  const {
+    isOpen: isViewOpen,
+    onOpen: onViewOpen,
+    onClose: onViewClose,
+  } = useDisclosure();
 
   const filtrosParams = useMemo(() => {
     const params: any = {};
@@ -142,15 +174,29 @@ export default function TarefasContent() {
     return params;
   }, [filtroStatus, filtroPrioridade, filtroMinhas, filtroAtrasadas]);
 
-  const { data: tarefasData, error: tarefasError, isLoading: tarefasLoading, mutate: mutateTarefas } = useSWR(["tarefas", filtrosParams], () => listTarefas(filtrosParams));
+  const {
+    data: tarefasData,
+    error: tarefasError,
+    isLoading: tarefasLoading,
+    mutate: mutateTarefas,
+  } = useSWR(["tarefas", filtrosParams], () => listTarefas(filtrosParams));
 
-  const { data: dashboardData, mutate: mutateDashboard } = useSWR("tarefas-dashboard", () => getDashboardTarefas());
+  const { data: dashboardData, mutate: mutateDashboard } = useSWR(
+    "tarefas-dashboard",
+    () => getDashboardTarefas(),
+  );
 
-  const { data: categoriasData } = useSWR("categorias-tarefa-ativas", () => listCategoriasTarefa({ ativo: true }));
+  const { data: categoriasData } = useSWR("categorias-tarefa-ativas", () =>
+    listCategoriasTarefa({ ativo: true }),
+  );
 
-  const { data: processosData } = useSWR("processos-para-tarefa", () => getAllProcessos());
+  const { data: processosData } = useSWR("processos-para-tarefa", () =>
+    getAllProcessos(),
+  );
 
-  const { data: clientesData } = useSWR("clientes-para-tarefa", () => searchClientes({}));
+  const { data: clientesData } = useSWR("clientes-para-tarefa", () =>
+    searchClientes({}),
+  );
 
   const { data: boardsData } = useSWR("boards-for-select", async () => {
     const { listBoards } = await import("@/app/actions/boards");
@@ -158,25 +204,49 @@ export default function TarefasContent() {
     return listBoards({ ativo: true });
   });
 
-  const { data: colunasData } = useSWR(formData.boardId ? ["columns-for-select", formData.boardId] : null, async () => {
-    const { listColumns } = await import("@/app/actions/board-columns");
+  const { data: colunasData } = useSWR(
+    formData.boardId ? ["columns-for-select", formData.boardId] : null,
+    async () => {
+      const { listColumns } = await import("@/app/actions/board-columns");
 
-    return listColumns(formData.boardId);
-  });
+      return listColumns(formData.boardId);
+    },
+  );
 
-  const tarefas = useMemo(() => (tarefasData?.success ? tarefasData.tarefas : []), [tarefasData]);
+  const tarefas = useMemo(
+    () => (tarefasData?.success ? tarefasData.tarefas : []),
+    [tarefasData],
+  );
 
-  const categorias = useMemo(() => (categoriasData?.success ? categoriasData.categorias : []), [categoriasData]);
+  const categorias = useMemo(
+    () => (categoriasData?.success ? categoriasData.categorias : []),
+    [categoriasData],
+  );
 
-  const processos = useMemo(() => (processosData?.success ? processosData.processos : []), [processosData]);
+  const processos = useMemo(
+    () => (processosData?.success ? processosData.processos : []),
+    [processosData],
+  );
 
-  const clientes = useMemo(() => (clientesData?.success ? clientesData.clientes : []), [clientesData]);
+  const clientes = useMemo(
+    () => (clientesData?.success ? clientesData.clientes : []),
+    [clientesData],
+  );
 
-  const dashboard = useMemo(() => (dashboardData?.success ? dashboardData.dashboard : null), [dashboardData]);
+  const dashboard = useMemo(
+    () => (dashboardData?.success ? dashboardData.dashboard : null),
+    [dashboardData],
+  );
 
-  const boards = useMemo(() => (boardsData?.success ? boardsData.boards : []), [boardsData]);
+  const boards = useMemo(
+    () => (boardsData?.success ? boardsData.boards : []),
+    [boardsData],
+  );
 
-  const colunas = useMemo(() => (colunasData?.success ? colunasData.columns : []), [colunasData]);
+  const colunas = useMemo(
+    () => (colunasData?.success ? colunasData.columns : []),
+    [colunasData],
+  );
 
   const handleOpenNova = useCallback(() => {
     setTarefaSelecionada(null);
@@ -203,8 +273,12 @@ export default function TarefasContent() {
         titulo: tarefa.titulo,
         descricao: tarefa.descricao || "",
         prioridade: tarefa.prioridade,
-        dataLimite: tarefa.dataLimite ? parseAbsoluteToLocal(new Date(tarefa.dataLimite).toISOString()) : null,
-        lembreteEm: tarefa.lembreteEm ? parseAbsoluteToLocal(new Date(tarefa.lembreteEm).toISOString()) : null,
+        dataLimite: tarefa.dataLimite
+          ? parseAbsoluteToLocal(new Date(tarefa.dataLimite).toISOString())
+          : null,
+        lembreteEm: tarefa.lembreteEm
+          ? parseAbsoluteToLocal(new Date(tarefa.lembreteEm).toISOString())
+          : null,
         categoriaId: tarefa.categoria?.id || "",
         responsavelId: tarefa.responsavel?.id || "",
         processoId: tarefa.processo?.id || "",
@@ -214,7 +288,7 @@ export default function TarefasContent() {
       });
       onOpen();
     },
-    [onOpen]
+    [onOpen],
   );
 
   const handleSalvar = useCallback(async () => {
@@ -231,8 +305,12 @@ export default function TarefasContent() {
         titulo: formData.titulo,
         descricao: formData.descricao || null,
         prioridade: formData.prioridade,
-        dataLimite: formData.dataLimite ? formData.dataLimite.toDate().toISOString() : null,
-        lembreteEm: formData.lembreteEm ? formData.lembreteEm.toDate().toISOString() : null,
+        dataLimite: formData.dataLimite
+          ? formData.dataLimite.toDate().toISOString()
+          : null,
+        lembreteEm: formData.lembreteEm
+          ? formData.lembreteEm.toDate().toISOString()
+          : null,
         categoriaId: formData.categoriaId || null,
         responsavelId: formData.responsavelId || null,
         processoId: formData.processoId || null,
@@ -241,10 +319,16 @@ export default function TarefasContent() {
         columnId: formData.columnId || null,
       };
 
-      const result = tarefaSelecionada ? await updateTarefa(tarefaSelecionada.id, payload) : await createTarefa(payload);
+      const result = tarefaSelecionada
+        ? await updateTarefa(tarefaSelecionada.id, payload)
+        : await createTarefa(payload);
 
       if (result.success) {
-        toast.success(tarefaSelecionada ? "Tarefa atualizada com sucesso!" : "Tarefa criada com sucesso!");
+        toast.success(
+          tarefaSelecionada
+            ? "Tarefa atualizada com sucesso!"
+            : "Tarefa criada com sucesso!",
+        );
         mutateTarefas();
         mutateDashboard();
         onClose();
@@ -270,7 +354,7 @@ export default function TarefasContent() {
         toast.error(result.error || "Erro ao marcar tarefa como concluída");
       }
     },
-    [mutateTarefas, mutateDashboard]
+    [mutateTarefas, mutateDashboard],
   );
 
   const handleExcluir = useCallback(
@@ -288,7 +372,7 @@ export default function TarefasContent() {
         toast.error(result.error || "Erro ao excluir tarefa");
       }
     },
-    [mutateTarefas, mutateDashboard, onViewClose]
+    [mutateTarefas, mutateDashboard, onViewClose],
   );
 
   const getDataLimiteInfo = useCallback((dataLimite: string | null) => {
@@ -343,13 +427,25 @@ export default function TarefasContent() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className={title({ size: "lg", color: "blue" })}>Tarefas</h1>
-          <p className="mt-2 text-sm text-default-500">Gerencie suas tarefas e atividades</p>
+          <p className="mt-2 text-sm text-default-500">
+            Gerencie suas tarefas e atividades
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button as="a" color="secondary" href="/tarefas/kanban" startContent={<Kanban className="h-4 w-4" />} variant="flat">
+          <Button
+            as="a"
+            color="secondary"
+            href="/tarefas/kanban"
+            startContent={<Kanban className="h-4 w-4" />}
+            variant="flat"
+          >
             Ver Kanban
           </Button>
-          <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={handleOpenNova}>
+          <Button
+            color="primary"
+            startContent={<Plus className="h-4 w-4" />}
+            onPress={handleOpenNova}
+          >
             Nova Tarefa
           </Button>
         </div>
@@ -365,8 +461,12 @@ export default function TarefasContent() {
                   <Target className="text-primary" size={24} />
                 </div>
               </div>
-              <p className="text-sm font-medium text-default-600 mb-1">Minhas Tarefas</p>
-              <p className="text-4xl font-bold text-primary">{dashboard.minhasTarefas}</p>
+              <p className="text-sm font-medium text-default-600 mb-1">
+                Minhas Tarefas
+              </p>
+              <p className="text-4xl font-bold text-primary">
+                {dashboard.minhasTarefas}
+              </p>
             </CardBody>
           </Card>
           <Card className="bg-gradient-to-br from-danger/10 to-danger/5">
@@ -376,8 +476,12 @@ export default function TarefasContent() {
                   <AlertTriangle className="text-danger" size={24} />
                 </div>
               </div>
-              <p className="text-sm font-medium text-default-600 mb-1">Atrasadas</p>
-              <p className="text-4xl font-bold text-danger">{dashboard.atrasadas}</p>
+              <p className="text-sm font-medium text-default-600 mb-1">
+                Atrasadas
+              </p>
+              <p className="text-4xl font-bold text-danger">
+                {dashboard.atrasadas}
+              </p>
             </CardBody>
           </Card>
           <Card className="bg-gradient-to-br from-warning/10 to-warning/5">
@@ -388,7 +492,9 @@ export default function TarefasContent() {
                 </div>
               </div>
               <p className="text-sm font-medium text-default-600 mb-1">Hoje</p>
-              <p className="text-4xl font-bold text-warning">{dashboard.hoje}</p>
+              <p className="text-4xl font-bold text-warning">
+                {dashboard.hoje}
+              </p>
             </CardBody>
           </Card>
           <Card className="bg-gradient-to-br from-success/10 to-success/5">
@@ -398,8 +504,12 @@ export default function TarefasContent() {
                   <TrendingUp className="text-success" size={24} />
                 </div>
               </div>
-              <p className="text-sm font-medium text-default-600 mb-1">Próximos 7 dias</p>
-              <p className="text-4xl font-bold text-success">{dashboard.proximosDias}</p>
+              <p className="text-sm font-medium text-default-600 mb-1">
+                Próximos 7 dias
+              </p>
+              <p className="text-4xl font-bold text-success">
+                {dashboard.proximosDias}
+              </p>
             </CardBody>
           </Card>
         </div>
@@ -436,7 +546,12 @@ export default function TarefasContent() {
             </Select>
 
             <div className="flex gap-2">
-              <Button color={filtroMinhas ? "primary" : "default"} startContent={<Target size={16} />} variant={filtroMinhas ? "solid" : "bordered"} onPress={() => setFiltroMinhas(!filtroMinhas)}>
+              <Button
+                color={filtroMinhas ? "primary" : "default"}
+                startContent={<Target size={16} />}
+                variant={filtroMinhas ? "solid" : "bordered"}
+                onPress={() => setFiltroMinhas(!filtroMinhas)}
+              >
                 Minhas
               </Button>
               <Button
@@ -470,7 +585,8 @@ export default function TarefasContent() {
           </Card>
         ) : (
           tarefas.map((tarefa: any) => {
-            const StatusIcon = statusConfig[tarefa.status as keyof typeof statusConfig].icon;
+            const StatusIcon =
+              statusConfig[tarefa.status as keyof typeof statusConfig].icon;
             const dataInfo = getDataLimiteInfo(tarefa.dataLimite);
 
             return (
@@ -505,14 +621,33 @@ export default function TarefasContent() {
                           }
                         }}
                       >
-                        <StatusIcon className={tarefa.status === "CONCLUIDA" ? "text-success" : "text-default-400 hover:text-success"} size={20} />
+                        <StatusIcon
+                          className={
+                            tarefa.status === "CONCLUIDA"
+                              ? "text-success"
+                              : "text-default-400 hover:text-success"
+                          }
+                          size={20}
+                        />
                       </button>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <h3 className="font-semibold">{tarefa.titulo}</h3>
-                          <Chip color={prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].color} size="sm" variant="flat">
-                            {prioridadeConfig[tarefa.prioridade as keyof typeof prioridadeConfig].label}
+                          <Chip
+                            color={
+                              prioridadeConfig[
+                                tarefa.prioridade as keyof typeof prioridadeConfig
+                              ].color
+                            }
+                            size="sm"
+                            variant="flat"
+                          >
+                            {
+                              prioridadeConfig[
+                                tarefa.prioridade as keyof typeof prioridadeConfig
+                              ].label
+                            }
                           </Chip>
                           {tarefa.categoria && (
                             <Chip
@@ -527,28 +662,49 @@ export default function TarefasContent() {
                           )}
                         </div>
 
-                        {tarefa.descricao && <p className="text-sm text-default-500 line-clamp-2 mb-2">{tarefa.descricao}</p>}
+                        {tarefa.descricao && (
+                          <p className="text-sm text-default-500 line-clamp-2 mb-2">
+                            {tarefa.descricao}
+                          </p>
+                        )}
 
                         <div className="flex items-center gap-4 text-xs text-default-400">
                           {dataInfo && (
                             <div className="flex items-center gap-1">
                               <dataInfo.icon size={14} />
-                              <span className={`text-${dataInfo.color}`}>{dataInfo.text}</span>
+                              <span className={`text-${dataInfo.color}`}>
+                                {dataInfo.text}
+                              </span>
                             </div>
                           )}
                           {tarefa.responsavel && (
                             <span>
-                              {tarefa.responsavel.firstName} {tarefa.responsavel.lastName}
+                              {tarefa.responsavel.firstName}{" "}
+                              {tarefa.responsavel.lastName}
                             </span>
                           )}
-                          {tarefa.processo && <span>Processo: {tarefa.processo.numero}</span>}
-                          {tarefa.cliente && <span>Cliente: {tarefa.cliente.nome}</span>}
+                          {tarefa.processo && (
+                            <span>Processo: {tarefa.processo.numero}</span>
+                          )}
+                          {tarefa.cliente && (
+                            <span>Cliente: {tarefa.cliente.nome}</span>
+                          )}
                         </div>
                       </div>
                     </div>
 
-                    <Chip color={statusConfig[tarefa.status as keyof typeof statusConfig].color} size="sm" variant="flat">
-                      {statusConfig[tarefa.status as keyof typeof statusConfig].label}
+                    <Chip
+                      color={
+                        statusConfig[tarefa.status as keyof typeof statusConfig]
+                          .color
+                      }
+                      size="sm"
+                      variant="flat"
+                    >
+                      {
+                        statusConfig[tarefa.status as keyof typeof statusConfig]
+                          .label
+                      }
                     </Chip>
                   </div>
                 </CardBody>
@@ -559,19 +715,36 @@ export default function TarefasContent() {
       </div>
 
       {/* Modal Criar/Editar */}
-      <Modal isOpen={isOpen} scrollBehavior="inside" size="2xl" onClose={onClose}>
+      <Modal
+        isOpen={isOpen}
+        scrollBehavior="inside"
+        size="2xl"
+        onClose={onClose}
+      >
         <ModalContent>
-          <ModalHeader>{tarefaSelecionada ? "Editar Tarefa" : "Nova Tarefa"}</ModalHeader>
+          <ModalHeader>
+            {tarefaSelecionada ? "Editar Tarefa" : "Nova Tarefa"}
+          </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <Input isRequired label="Título" placeholder="Digite o título da tarefa" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} />
+              <Input
+                isRequired
+                label="Título"
+                placeholder="Digite o título da tarefa"
+                value={formData.titulo}
+                onChange={(e) =>
+                  setFormData({ ...formData, titulo: e.target.value })
+                }
+              />
 
               <Textarea
                 label="Descrição"
                 minRows={3}
                 placeholder="Digite uma descrição (opcional)"
                 value={formData.descricao}
-                onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, descricao: e.target.value })
+                }
               />
 
               <div className="grid grid-cols-2 gap-4">
@@ -594,8 +767,12 @@ export default function TarefasContent() {
                 <Select
                   label="Categoria"
                   placeholder="Selecione uma categoria"
-                  selectedKeys={formData.categoriaId ? [formData.categoriaId] : []}
-                  onChange={(e) => setFormData({ ...formData, categoriaId: e.target.value })}
+                  selectedKeys={
+                    formData.categoriaId ? [formData.categoriaId] : []
+                  }
+                  onChange={(e) =>
+                    setFormData({ ...formData, categoriaId: e.target.value })
+                  }
                 >
                   {(categorias || []).map((cat: any) => (
                     <SelectItem key={cat.id}>{cat.nome}</SelectItem>
@@ -610,7 +787,9 @@ export default function TarefasContent() {
                   label="Data Limite"
                   value={formData.dataLimite}
                   variant="bordered"
-                  onChange={(value) => setFormData({ ...formData, dataLimite: value })}
+                  onChange={(value) =>
+                    setFormData({ ...formData, dataLimite: value })
+                  }
                 />
 
                 <DatePicker
@@ -619,7 +798,9 @@ export default function TarefasContent() {
                   label="Lembrete"
                   value={formData.lembreteEm}
                   variant="bordered"
-                  onChange={(value) => setFormData({ ...formData, lembreteEm: value })}
+                  onChange={(value) =>
+                    setFormData({ ...formData, lembreteEm: value })
+                  }
                 />
               </div>
 
@@ -627,7 +808,9 @@ export default function TarefasContent() {
                 label="Processo"
                 placeholder="Vincular a um processo (opcional)"
                 selectedKeys={formData.processoId ? [formData.processoId] : []}
-                onChange={(e) => setFormData({ ...formData, processoId: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, processoId: e.target.value })
+                }
               >
                 {(processos || []).map((proc: any) => (
                   <SelectItem key={proc.id}>
@@ -640,7 +823,9 @@ export default function TarefasContent() {
                 label="Cliente"
                 placeholder="Vincular a um cliente (opcional)"
                 selectedKeys={formData.clienteId ? [formData.clienteId] : []}
-                onChange={(e) => setFormData({ ...formData, clienteId: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, clienteId: e.target.value })
+                }
               >
                 {(clientes || []).map((cli: any) => (
                   <SelectItem key={cli.id}>{cli.nome}</SelectItem>
@@ -648,7 +833,9 @@ export default function TarefasContent() {
               </Select>
 
               <div className="border-t pt-4 mt-4">
-                <p className="text-sm font-semibold mb-3">📊 Quadro Kanban (Opcional)</p>
+                <p className="text-sm font-semibold mb-3">
+                  📊 Quadro Kanban (Opcional)
+                </p>
                 <div className="grid grid-cols-2 gap-4">
                   <Select
                     label="Board"
@@ -662,7 +849,11 @@ export default function TarefasContent() {
                       })
                     }
                   >
-                    {(boards || []).length > 0 ? (boards || []).map((b: any) => <SelectItem key={b.id}>{b.nome}</SelectItem>) : null}
+                    {(boards || []).length > 0
+                      ? (boards || []).map((b: any) => (
+                          <SelectItem key={b.id}>{b.nome}</SelectItem>
+                        ))
+                      : null}
                   </Select>
 
                   <Select
@@ -670,12 +861,21 @@ export default function TarefasContent() {
                     label="Coluna"
                     placeholder="Selecionar coluna"
                     selectedKeys={formData.columnId ? [formData.columnId] : []}
-                    onChange={(e) => setFormData({ ...formData, columnId: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, columnId: e.target.value })
+                    }
                   >
-                    {(colunas || []).length > 0 ? (colunas || []).map((col: any) => <SelectItem key={col.id}>{col.nome}</SelectItem>) : null}
+                    {(colunas || []).length > 0
+                      ? (colunas || []).map((col: any) => (
+                          <SelectItem key={col.id}>{col.nome}</SelectItem>
+                        ))
+                      : null}
                   </Select>
                 </div>
-                <p className="text-xs text-default-400 mt-2">💡 Tarefas com board/coluna aparecem automaticamente no Kanban visual</p>
+                <p className="text-xs text-default-400 mt-2">
+                  💡 Tarefas com board/coluna aparecem automaticamente no Kanban
+                  visual
+                </p>
               </div>
             </div>
           </ModalBody>
@@ -708,33 +908,58 @@ export default function TarefasContent() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-default-500 mb-1">Status</p>
-                      <Chip color={statusConfig[tarefaSelecionada.status].color}>{statusConfig[tarefaSelecionada.status].label}</Chip>
+                      <Chip
+                        color={statusConfig[tarefaSelecionada.status].color}
+                      >
+                        {statusConfig[tarefaSelecionada.status].label}
+                      </Chip>
                     </div>
                     <div>
-                      <p className="text-sm text-default-500 mb-1">Prioridade</p>
-                      <Chip color={prioridadeConfig[tarefaSelecionada.prioridade].color}>{prioridadeConfig[tarefaSelecionada.prioridade].label}</Chip>
+                      <p className="text-sm text-default-500 mb-1">
+                        Prioridade
+                      </p>
+                      <Chip
+                        color={
+                          prioridadeConfig[tarefaSelecionada.prioridade].color
+                        }
+                      >
+                        {prioridadeConfig[tarefaSelecionada.prioridade].label}
+                      </Chip>
                     </div>
                   </div>
 
                   {tarefaSelecionada.dataLimite && (
                     <div>
-                      <p className="text-sm text-default-500 mb-1">Data Limite</p>
-                      <p>{dayjs(tarefaSelecionada.dataLimite).format("DD/MM/YYYY HH:mm")}</p>
+                      <p className="text-sm text-default-500 mb-1">
+                        Data Limite
+                      </p>
+                      <p>
+                        {dayjs(tarefaSelecionada.dataLimite).format(
+                          "DD/MM/YYYY HH:mm",
+                        )}
+                      </p>
                     </div>
                   )}
 
                   {tarefaSelecionada.responsavel && (
                     <div>
-                      <p className="text-sm text-default-500 mb-1">Responsável</p>
+                      <p className="text-sm text-default-500 mb-1">
+                        Responsável
+                      </p>
                       <p>
-                        {tarefaSelecionada.responsavel.firstName} {tarefaSelecionada.responsavel.lastName}
+                        {tarefaSelecionada.responsavel.firstName}{" "}
+                        {tarefaSelecionada.responsavel.lastName}
                       </p>
                     </div>
                   )}
                 </div>
               </ModalBody>
               <ModalFooter>
-                <Button color="danger" variant="light" onPress={() => handleExcluir(tarefaSelecionada.id)}>
+                <Button
+                  color="danger"
+                  variant="light"
+                  onPress={() => handleExcluir(tarefaSelecionada.id)}
+                >
                   Excluir
                 </Button>
                 <Button

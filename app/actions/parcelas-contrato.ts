@@ -60,12 +60,14 @@ export async function listParcelasContrato(filters?: {
       if (filters.dataVencimentoInicio) {
         // Início do dia
         const inicio = new Date(filters.dataVencimentoInicio);
+
         inicio.setHours(0, 0, 0, 0);
         where.dataVencimento.gte = inicio;
       }
       if (filters.dataVencimentoFim) {
         // Fim do dia (23:59:59.999)
         const fim = new Date(filters.dataVencimentoFim);
+
         fim.setHours(23, 59, 59, 999);
         where.dataVencimento.lte = fim;
       }
@@ -308,7 +310,7 @@ export async function updateParcelaContrato(
     dataPagamento?: Date;
     formaPagamento?: string;
     responsavelUsuarioId?: string;
-  }
+  },
 ) {
   try {
     const tenantId = await getTenantId();
@@ -440,7 +442,7 @@ export async function gerarParcelasAutomaticamente(
     dataPrimeiroVencimento: Date;
     intervaloDias?: number; // Padrão: 30 dias
     tituloBase?: string;
-  }
+  },
 ) {
   try {
     const tenantId = await getTenantId();
@@ -489,7 +491,9 @@ export async function gerarParcelasAutomaticamente(
           tenantId,
           contratoId,
           numeroParcela: i,
-          titulo: configuracao.tituloBase ? `${configuracao.tituloBase} ${i}/${configuracao.numeroParcelas}` : `Parcela ${i}/${configuracao.numeroParcelas}`,
+          titulo: configuracao.tituloBase
+            ? `${configuracao.tituloBase} ${i}/${configuracao.numeroParcelas}`
+            : `Parcela ${i}/${configuracao.numeroParcelas}`,
           valor: valorParcela,
           dataVencimento,
           status: "PENDENTE",
@@ -529,7 +533,15 @@ export async function getDashboardParcelas() {
   try {
     const tenantId = await getTenantId();
 
-    const [totalParcelas, parcelasPendentes, parcelasPagas, parcelasAtrasadas, valorTotalPendente, valorTotalPago, parcelasVencendo] = await Promise.all([
+    const [
+      totalParcelas,
+      parcelasPendentes,
+      parcelasPagas,
+      parcelasAtrasadas,
+      valorTotalPendente,
+      valorTotalPago,
+      parcelasVencendo,
+    ] = await Promise.all([
       // Total de parcelas
       prisma.contratoParcela.count({
         where: { tenantId },
@@ -637,7 +649,9 @@ export async function getProcessosComParcelas() {
     });
 
     // Converter valores Decimal para number
-    const convertedData = processos.map((item) => convertAllDecimalFields(item));
+    const convertedData = processos.map((item) =>
+      convertAllDecimalFields(item),
+    );
     const serialized = JSON.parse(JSON.stringify(convertedData));
 
     return {

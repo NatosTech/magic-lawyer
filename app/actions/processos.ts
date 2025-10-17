@@ -3,7 +3,14 @@
 import { getSession } from "@/app/lib/auth";
 import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
 import logger from "@/lib/logger";
-import { Prisma, ProcessoStatus, ProcessoFase, ProcessoGrau, ProcessoPrazoStatus, ProcessoPolo } from "@/app/generated/prisma";
+import {
+  Prisma,
+  ProcessoStatus,
+  ProcessoFase,
+  ProcessoGrau,
+  ProcessoPrazoStatus,
+  ProcessoPolo,
+} from "@/app/generated/prisma";
 
 // ============================================
 // TYPES - Prisma Type Safety (Best Practice)
@@ -22,165 +29,167 @@ import { Prisma, ProcessoStatus, ProcessoFase, ProcessoGrau, ProcessoPrazoStatus
  *
  * NOTA: NÃO exportado porque "use server" files só podem exportar async functions
  */
-const processoDetalhadoInclude = Prisma.validator<Prisma.ProcessoDefaultArgs>()({
-  include: {
-    area: {
-      select: {
-        id: true,
-        nome: true,
-        slug: true,
-      },
-    },
-    cliente: {
-      select: {
-        id: true,
-        nome: true,
-        email: true,
-        telefone: true,
-        tipoPessoa: true,
-      },
-    },
-    advogadoResponsavel: {
-      select: {
-        id: true,
-        oabNumero: true,
-        oabUf: true,
-        usuario: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-            avatarUrl: true,
-          },
+const processoDetalhadoInclude = Prisma.validator<Prisma.ProcessoDefaultArgs>()(
+  {
+    include: {
+      area: {
+        select: {
+          id: true,
+          nome: true,
+          slug: true,
         },
       },
-    },
-    juiz: {
-      select: {
-        id: true,
-        nome: true,
-        nomeCompleto: true,
-        vara: true,
-        comarca: true,
-        nivel: true,
-        status: true,
-        especialidades: true,
-        tribunal: {
-          select: {
-            id: true,
-            nome: true,
-            sigla: true,
-            esfera: true,
-            uf: true,
-            siteUrl: true,
-          },
+      cliente: {
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          telefone: true,
+          tipoPessoa: true,
         },
       },
-    },
-    tribunal: {
-      select: {
-        id: true,
-        nome: true,
-        sigla: true,
-        esfera: true,
-        uf: true,
-        siteUrl: true,
-      },
-    },
-    partes: {
-      select: {
-        id: true,
-        tenantId: true,
-        processoId: true,
-        tipoPolo: true,
-        nome: true,
-        documento: true,
-        email: true,
-        telefone: true,
-        clienteId: true,
-        advogadoId: true,
-        papel: true,
-        observacoes: true,
-        cliente: {
-          select: {
-            id: true,
-            nome: true,
-          },
-        },
-        advogado: {
-          select: {
-            id: true,
-            oabNumero: true,
-            oabUf: true,
-            usuario: {
-              select: {
-                firstName: true,
-                lastName: true,
-              },
+      advogadoResponsavel: {
+        select: {
+          id: true,
+          oabNumero: true,
+          oabUf: true,
+          usuario: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+              avatarUrl: true,
             },
           },
         },
       },
-      orderBy: {
-        createdAt: "asc",
-      },
-    },
-    prazos: {
-      include: {
-        responsavel: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+      juiz: {
+        select: {
+          id: true,
+          nome: true,
+          nomeCompleto: true,
+          vara: true,
+          comarca: true,
+          nivel: true,
+          status: true,
+          especialidades: true,
+          tribunal: {
+            select: {
+              id: true,
+              nome: true,
+              sigla: true,
+              esfera: true,
+              uf: true,
+              siteUrl: true,
+            },
           },
         },
-        origemMovimentacao: {
-          select: {
-            id: true,
-            titulo: true,
-            dataMovimentacao: true,
-          },
+      },
+      tribunal: {
+        select: {
+          id: true,
+          nome: true,
+          sigla: true,
+          esfera: true,
+          uf: true,
+          siteUrl: true,
         },
       },
-      orderBy: {
-        dataVencimento: "asc",
+      partes: {
+        select: {
+          id: true,
+          tenantId: true,
+          processoId: true,
+          tipoPolo: true,
+          nome: true,
+          documento: true,
+          email: true,
+          telefone: true,
+          clienteId: true,
+          advogadoId: true,
+          papel: true,
+          observacoes: true,
+          cliente: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          advogado: {
+            select: {
+              id: true,
+              oabNumero: true,
+              oabUf: true,
+              usuario: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
       },
-    },
-    procuracoesVinculadas: {
-      include: {
-        procuracao: {
-          include: {
-            outorgados: {
-              include: {
-                advogado: {
-                  include: {
-                    usuario: {
-                      select: {
-                        firstName: true,
-                        lastName: true,
+      prazos: {
+        include: {
+          responsavel: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          origemMovimentacao: {
+            select: {
+              id: true,
+              titulo: true,
+              dataMovimentacao: true,
+            },
+          },
+        },
+        orderBy: {
+          dataVencimento: "asc",
+        },
+      },
+      procuracoesVinculadas: {
+        include: {
+          procuracao: {
+            include: {
+              outorgados: {
+                include: {
+                  advogado: {
+                    include: {
+                      usuario: {
+                        select: {
+                          firstName: true,
+                          lastName: true,
+                        },
                       },
                     },
                   },
                 },
               },
+              assinaturas: true,
+              poderes: true,
             },
-            assinaturas: true,
-            poderes: true,
           },
         },
       },
-    },
-    _count: {
-      select: {
-        documentos: true,
-        eventos: true,
-        movimentacoes: true,
-        tarefas: true,
+      _count: {
+        select: {
+          documentos: true,
+          eventos: true,
+          movimentacoes: true,
+          tarefas: true,
+        },
       },
     },
   },
-});
+);
 
 /**
  * Tipo derivado automaticamente da query do Prisma
@@ -196,7 +205,9 @@ const processoDetalhadoInclude = Prisma.validator<Prisma.ProcessoDefaultArgs>()(
  * 💡 NOTA: As interfaces legacy (Processo, ProcessoDetalhado, etc) são mantidas
  * por compatibilidade, mas futuros códigos devem preferir usar este tipo derivado.
  */
-type ProcessoDetalhadoFromPrisma = Prisma.ProcessoGetPayload<typeof processoDetalhadoInclude>;
+type ProcessoDetalhadoFromPrisma = Prisma.ProcessoGetPayload<
+  typeof processoDetalhadoInclude
+>;
 
 // ============================================
 // TYPES - Legacy Interfaces (mantidos para compatibilidade)
@@ -393,7 +404,9 @@ export interface ProcessoDetalhado extends Processo {
 // HELPER FUNCTIONS
 // ============================================
 
-async function getAdvogadoIdFromSession(session: { user: any }): Promise<string | null> {
+async function getAdvogadoIdFromSession(session: {
+  user: any;
+}): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   const advogado = await prisma.advogado.findFirst({
@@ -407,7 +420,9 @@ async function getAdvogadoIdFromSession(session: { user: any }): Promise<string 
   return advogado?.id || null;
 }
 
-async function getClienteIdFromSession(session: { user: any }): Promise<string | null> {
+async function getClienteIdFromSession(session: {
+  user: any;
+}): Promise<string | null> {
   if (!session?.user?.id || !session?.user?.tenantId) return null;
 
   const cliente = await prisma.cliente.findFirst({
@@ -422,7 +437,10 @@ async function getClienteIdFromSession(session: { user: any }): Promise<string |
   return cliente?.id || null;
 }
 
-async function ensureProcessMutationAccess(session: { user: any } | null, processoId: string) {
+async function ensureProcessMutationAccess(
+  session: { user: any } | null,
+  processoId: string,
+) {
   if (!session?.user) {
     throw new Error("Não autorizado");
   }
@@ -501,7 +519,10 @@ async function ensureProcessMutationAccess(session: { user: any } | null, proces
   throw new Error("Você não tem permissão para alterar este processo");
 }
 
-async function ensurePrazoMutationAccess(session: { user: any } | null, prazoId: string) {
+async function ensurePrazoMutationAccess(
+  session: { user: any } | null,
+  prazoId: string,
+) {
   const prazo = await prisma.processoPrazo.findFirst({
     where: {
       id: prazoId,
@@ -522,7 +543,10 @@ async function ensurePrazoMutationAccess(session: { user: any } | null, prazoId:
   return { ...context, prazo };
 }
 
-async function ensureParteMutationAccess(session: { user: any } | null, parteId: string) {
+async function ensureParteMutationAccess(
+  session: { user: any } | null,
+  parteId: string,
+) {
   const parte = await prisma.processoParte.findFirst({
     where: {
       id: parteId,
@@ -823,18 +847,25 @@ export async function getAllProcessos(): Promise<{
     });
 
     // Convert Decimal objects to numbers and serialize
-    const convertedProcessos = processos.map((p) => convertAllDecimalFields(p)) as Processo[];
+    const convertedProcessos = processos.map((p) =>
+      convertAllDecimalFields(p),
+    ) as Processo[];
 
     // Force conversion to plain objects with explicit number conversion
     const serialized = JSON.parse(
       JSON.stringify(convertedProcessos, (key, value) => {
         // If it's a Decimal-like object, convert to number
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
 
         return value;
-      })
+      }),
     );
 
     return {
@@ -957,18 +988,25 @@ export async function getProcessosDoClienteLogado(): Promise<{
       },
     });
 
-    const convertedProcessos = processos.map((p) => convertAllDecimalFields(p)) as Processo[];
+    const convertedProcessos = processos.map((p) =>
+      convertAllDecimalFields(p),
+    ) as Processo[];
 
     // Force conversion to plain objects with explicit number conversion
     const serialized = JSON.parse(
       JSON.stringify(convertedProcessos, (key, value) => {
         // If it's a Decimal-like object, convert to number
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
 
         return value;
-      })
+      }),
     );
 
     return {
@@ -1114,18 +1152,25 @@ export async function getProcessosDoCliente(clienteId: string): Promise<{
       },
     });
 
-    const convertedProcessos = processos.map((p) => convertAllDecimalFields(p)) as Processo[];
+    const convertedProcessos = processos.map((p) =>
+      convertAllDecimalFields(p),
+    ) as Processo[];
 
     // Force conversion to plain objects with explicit number conversion
     const serialized = JSON.parse(
       JSON.stringify(convertedProcessos, (key, value) => {
         // If it's a Decimal-like object, convert to number
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
 
         return value;
-      })
+      }),
     );
 
     return {
@@ -1232,7 +1277,9 @@ export async function getProcessoDetalhado(processoId: string): Promise<{
         _count: {
           select: {
             documentos: {
-              where: isCliente ? { deletedAt: null, visivelParaCliente: true } : { deletedAt: null },
+              where: isCliente
+                ? { deletedAt: null, visivelParaCliente: true }
+                : { deletedAt: null },
             },
             eventos: true,
             movimentacoes: true,
@@ -1246,18 +1293,25 @@ export async function getProcessoDetalhado(processoId: string): Promise<{
       return { success: false, error: "Processo não encontrado ou sem acesso" };
     }
 
-    const convertedProcesso = convertAllDecimalFields(processo) as any as ProcessoDetalhado;
+    const convertedProcesso = convertAllDecimalFields(
+      processo,
+    ) as any as ProcessoDetalhado;
 
     // Force conversion to plain objects with explicit number conversion
     const serialized = JSON.parse(
       JSON.stringify(convertedProcesso, (key, value) => {
         // If it's a Decimal-like object, convert to number
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
 
         return value;
-      })
+      }),
     );
 
     return {
@@ -1622,7 +1676,8 @@ export interface ProcessoParteInput {
   observacoes?: string;
 }
 
-export interface ProcessoParteUpdateInput extends Partial<Omit<ProcessoParteInput, "tipoPolo">> {
+export interface ProcessoParteUpdateInput
+  extends Partial<Omit<ProcessoParteInput, "tipoPolo">> {
   tipoPolo?: ProcessoPolo;
 }
 
@@ -1722,8 +1777,12 @@ export async function createProcesso(data: ProcessoCreateInput) {
     }
 
     const numeroCnj = data.numeroCnj || data.numero;
-    const dataDistribuicao = data.dataDistribuicao ? new Date(data.dataDistribuicao) : null;
-    const prazoPrincipal = data.prazoPrincipal ? new Date(data.prazoPrincipal) : null;
+    const dataDistribuicao = data.dataDistribuicao
+      ? new Date(data.dataDistribuicao)
+      : null;
+    const prazoPrincipal = data.prazoPrincipal
+      ? new Date(data.prazoPrincipal)
+      : null;
 
     const processo = await prisma.$transaction(async (tx) => {
       const criado = await tx.processo.create({
@@ -1784,18 +1843,25 @@ export async function createProcesso(data: ProcessoCreateInput) {
       return criado;
     });
 
-    const convertedProcesso = convertAllDecimalFields(processo) as any as ProcessoDetalhado;
+    const convertedProcesso = convertAllDecimalFields(
+      processo,
+    ) as any as ProcessoDetalhado;
 
     // Force conversion to plain objects with explicit number conversion
     const serialized = JSON.parse(
       JSON.stringify(convertedProcesso, (key, value) => {
         // If it's a Decimal-like object, convert to number
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
 
         return value;
-      })
+      }),
     );
 
     return {
@@ -1812,7 +1878,10 @@ export async function createProcesso(data: ProcessoCreateInput) {
   }
 }
 
-export async function updateProcesso(processoId: string, data: ProcessoUpdateInput) {
+export async function updateProcesso(
+  processoId: string,
+  data: ProcessoUpdateInput,
+) {
   try {
     const session = await getSession();
 
@@ -1820,7 +1889,10 @@ export async function updateProcesso(processoId: string, data: ProcessoUpdateInp
       return { success: false, error: "Não autorizado" };
     }
 
-    const { user, processo } = await ensureProcessMutationAccess(session, processoId);
+    const { user, processo } = await ensureProcessMutationAccess(
+      session,
+      processoId,
+    );
     const tenantId = user.tenantId;
 
     if (!tenantId) {
@@ -1935,32 +2007,48 @@ export async function updateProcesso(processoId: string, data: ProcessoUpdateInp
     const updatePayload: Prisma.ProcessoUncheckedUpdateInput = {};
 
     if (data.numero !== undefined) updatePayload.numero = data.numero;
-    if (data.numeroCnj !== undefined) updatePayload.numeroCnj = data.numeroCnj || null;
+    if (data.numeroCnj !== undefined)
+      updatePayload.numeroCnj = data.numeroCnj || null;
     if (data.titulo !== undefined) updatePayload.titulo = data.titulo || null;
-    if (data.descricao !== undefined) updatePayload.descricao = data.descricao || null;
+    if (data.descricao !== undefined)
+      updatePayload.descricao = data.descricao || null;
     if (data.status !== undefined) updatePayload.status = data.status;
     if (data.fase !== undefined) updatePayload.fase = data.fase;
     if (data.grau !== undefined) updatePayload.grau = data.grau;
     if (data.areaId !== undefined) updatePayload.areaId = data.areaId || null;
-    if (data.classeProcessual !== undefined) updatePayload.classeProcessual = data.classeProcessual || null;
+    if (data.classeProcessual !== undefined)
+      updatePayload.classeProcessual = data.classeProcessual || null;
     if (data.vara !== undefined) updatePayload.vara = data.vara || null;
-    if (data.comarca !== undefined) updatePayload.comarca = data.comarca || null;
+    if (data.comarca !== undefined)
+      updatePayload.comarca = data.comarca || null;
     if (data.foro !== undefined) updatePayload.foro = data.foro || null;
-    if (data.orgaoJulgador !== undefined) updatePayload.orgaoJulgador = data.orgaoJulgador || null;
+    if (data.orgaoJulgador !== undefined)
+      updatePayload.orgaoJulgador = data.orgaoJulgador || null;
     if (data.dataDistribuicao !== undefined) {
-      updatePayload.dataDistribuicao = data.dataDistribuicao ? new Date(data.dataDistribuicao) : null;
+      updatePayload.dataDistribuicao = data.dataDistribuicao
+        ? new Date(data.dataDistribuicao)
+        : null;
     }
-    if (data.segredoJustica !== undefined) updatePayload.segredoJustica = data.segredoJustica;
-    if (data.valorCausa !== undefined) updatePayload.valorCausa = data.valorCausa === null ? null : data.valorCausa;
+    if (data.segredoJustica !== undefined)
+      updatePayload.segredoJustica = data.segredoJustica;
+    if (data.valorCausa !== undefined)
+      updatePayload.valorCausa =
+        data.valorCausa === null ? null : data.valorCausa;
     if (data.rito !== undefined) updatePayload.rito = data.rito || null;
     if (data.clienteId !== undefined) updatePayload.clienteId = data.clienteId;
-    if (data.advogadoResponsavelId !== undefined) updatePayload.advogadoResponsavelId = data.advogadoResponsavelId || null;
+    if (data.advogadoResponsavelId !== undefined)
+      updatePayload.advogadoResponsavelId = data.advogadoResponsavelId || null;
     if (data.juizId !== undefined) updatePayload.juizId = data.juizId || null;
-    if (data.tribunalId !== undefined) updatePayload.tribunalId = data.tribunalId || null;
-    if (data.numeroInterno !== undefined) updatePayload.numeroInterno = data.numeroInterno || null;
-    if (data.pastaCompartilhadaUrl !== undefined) updatePayload.pastaCompartilhadaUrl = data.pastaCompartilhadaUrl || null;
+    if (data.tribunalId !== undefined)
+      updatePayload.tribunalId = data.tribunalId || null;
+    if (data.numeroInterno !== undefined)
+      updatePayload.numeroInterno = data.numeroInterno || null;
+    if (data.pastaCompartilhadaUrl !== undefined)
+      updatePayload.pastaCompartilhadaUrl = data.pastaCompartilhadaUrl || null;
     if (data.prazoPrincipal !== undefined) {
-      updatePayload.prazoPrincipal = data.prazoPrincipal ? new Date(data.prazoPrincipal) : null;
+      updatePayload.prazoPrincipal = data.prazoPrincipal
+        ? new Date(data.prazoPrincipal)
+        : null;
     }
 
     const atualizado = await prisma.$transaction(async (tx) => {
@@ -2006,16 +2094,23 @@ export async function updateProcesso(processoId: string, data: ProcessoUpdateInp
       return processoAtualizado;
     });
 
-    const converted = convertAllDecimalFields(atualizado) as any as ProcessoDetalhado;
+    const converted = convertAllDecimalFields(
+      atualizado,
+    ) as any as ProcessoDetalhado;
 
     const serialized = JSON.parse(
       JSON.stringify(converted, (key, value) => {
-        if (value && typeof value === "object" && value.constructor && value.constructor.name === "Decimal") {
+        if (
+          value &&
+          typeof value === "object" &&
+          value.constructor &&
+          value.constructor.name === "Decimal"
+        ) {
           return Number(value.toString());
         }
 
         return value;
-      })
+      }),
     );
 
     return {
@@ -2027,19 +2122,26 @@ export async function updateProcesso(processoId: string, data: ProcessoUpdateInp
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao atualizar processo",
+      error:
+        error instanceof Error ? error.message : "Erro ao atualizar processo",
     };
   }
 }
 
-export async function createProcessoParte(processoId: string, input: ProcessoParteInput) {
+export async function createProcessoParte(
+  processoId: string,
+  input: ProcessoParteInput,
+) {
   try {
     if (!input?.tipoPolo) {
       return { success: false, error: "Tipo de polo é obrigatório" };
     }
 
     const session = await getSession();
-    const { user, processo } = await ensureProcessMutationAccess(session, processoId);
+    const { user, processo } = await ensureProcessMutationAccess(
+      session,
+      processoId,
+    );
     const tenantId = user.tenantId;
 
     let cliente: {
@@ -2130,7 +2232,12 @@ export async function createProcessoParte(processoId: string, input: ProcessoPar
       }
     }
 
-    const nome = input.nome || cliente?.nome || (advogado ? `${advogado.usuario?.firstName ?? ""} ${advogado.usuario?.lastName ?? ""}`.trim() : null);
+    const nome =
+      input.nome ||
+      cliente?.nome ||
+      (advogado
+        ? `${advogado.usuario?.firstName ?? ""} ${advogado.usuario?.lastName ?? ""}`.trim()
+        : null);
 
     if (!nome || nome.length === 0) {
       return { success: false, error: "Informe o nome da parte" };
@@ -2143,8 +2250,10 @@ export async function createProcessoParte(processoId: string, input: ProcessoPar
         tipoPolo: input.tipoPolo,
         nome,
         documento: input.documento ?? cliente?.documento ?? null,
-        email: input.email ?? cliente?.email ?? advogado?.usuario?.email ?? null,
-        telefone: input.telefone ?? cliente?.telefone ?? cliente?.celular ?? null,
+        email:
+          input.email ?? cliente?.email ?? advogado?.usuario?.email ?? null,
+        telefone:
+          input.telefone ?? cliente?.telefone ?? cliente?.celular ?? null,
         clienteId: input.clienteId ?? null,
         advogadoId: input.advogadoId ?? null,
         papel: input.papel ?? null,
@@ -2167,10 +2276,16 @@ export async function createProcessoParte(processoId: string, input: ProcessoPar
   }
 }
 
-export async function updateProcessoParte(parteId: string, input: ProcessoParteUpdateInput) {
+export async function updateProcessoParte(
+  parteId: string,
+  input: ProcessoParteUpdateInput,
+) {
   try {
     const session = await getSession();
-    const { user, processo, parte } = await ensureParteMutationAccess(session, parteId);
+    const { user, processo, parte } = await ensureParteMutationAccess(
+      session,
+      parteId,
+    );
     const tenantId = user.tenantId;
 
     const updateData: Prisma.ProcessoParteUpdateInput = {};
@@ -2278,11 +2393,16 @@ export async function updateProcessoParte(parteId: string, input: ProcessoParteU
 
     if (input.tipoPolo !== undefined) updateData.tipoPolo = input.tipoPolo;
     if (input.nome !== undefined) updateData.nome = input.nome;
-    if (input.documento !== undefined) updateData.documento = input.documento ?? cliente?.documento ?? null;
-    if (input.email !== undefined) updateData.email = input.email ?? cliente?.email ?? advogadoEmail ?? null;
-    if (input.telefone !== undefined) updateData.telefone = input.telefone ?? cliente?.telefone ?? cliente?.celular ?? null;
+    if (input.documento !== undefined)
+      updateData.documento = input.documento ?? cliente?.documento ?? null;
+    if (input.email !== undefined)
+      updateData.email = input.email ?? cliente?.email ?? advogadoEmail ?? null;
+    if (input.telefone !== undefined)
+      updateData.telefone =
+        input.telefone ?? cliente?.telefone ?? cliente?.celular ?? null;
     if (input.papel !== undefined) updateData.papel = input.papel ?? null;
-    if (input.observacoes !== undefined) updateData.observacoes = input.observacoes ?? null;
+    if (input.observacoes !== undefined)
+      updateData.observacoes = input.observacoes ?? null;
 
     const atualizada = await prisma.processoParte.update({
       where: { id: parteId },
@@ -2327,7 +2447,10 @@ export async function deleteProcessoParte(parteId: string) {
   }
 }
 
-export async function createProcessoPrazo(processoId: string, input: ProcessoPrazoInput) {
+export async function createProcessoPrazo(
+  processoId: string,
+  input: ProcessoPrazoInput,
+) {
   try {
     if (!input?.titulo) {
       return { success: false, error: "Título do prazo é obrigatório" };
@@ -2386,8 +2509,12 @@ export async function createProcessoPrazo(processoId: string, input: ProcessoPra
         fundamentoLegal: input.fundamentoLegal || null,
         status: input.status || ProcessoPrazoStatus.ABERTO,
         dataVencimento: new Date(input.dataVencimento),
-        prorrogadoPara: input.prorrogadoPara ? new Date(input.prorrogadoPara) : null,
-        dataCumprimento: input.dataCumprimento ? new Date(input.dataCumprimento) : null,
+        prorrogadoPara: input.prorrogadoPara
+          ? new Date(input.prorrogadoPara)
+          : null,
+        dataCumprimento: input.dataCumprimento
+          ? new Date(input.dataCumprimento)
+          : null,
         responsavelId,
         origemMovimentacaoId: input.origemMovimentacaoId ?? null,
       },
@@ -2408,7 +2535,10 @@ export async function createProcessoPrazo(processoId: string, input: ProcessoPra
   }
 }
 
-export async function updateProcessoPrazo(prazoId: string, input: ProcessoPrazoUpdateInput) {
+export async function updateProcessoPrazo(
+  prazoId: string,
+  input: ProcessoPrazoUpdateInput,
+) {
   try {
     const session = await getSession();
     const { user, prazo } = await ensurePrazoMutationAccess(session, prazoId);
@@ -2417,15 +2547,22 @@ export async function updateProcessoPrazo(prazoId: string, input: ProcessoPrazoU
     const updateData: Prisma.ProcessoPrazoUpdateInput = {};
 
     if (input.titulo !== undefined) updateData.titulo = input.titulo;
-    if (input.descricao !== undefined) updateData.descricao = input.descricao ?? null;
-    if (input.fundamentoLegal !== undefined) updateData.fundamentoLegal = input.fundamentoLegal ?? null;
+    if (input.descricao !== undefined)
+      updateData.descricao = input.descricao ?? null;
+    if (input.fundamentoLegal !== undefined)
+      updateData.fundamentoLegal = input.fundamentoLegal ?? null;
     if (input.status !== undefined) updateData.status = input.status;
-    if (input.dataVencimento !== undefined) updateData.dataVencimento = new Date(input.dataVencimento);
+    if (input.dataVencimento !== undefined)
+      updateData.dataVencimento = new Date(input.dataVencimento);
     if (input.prorrogadoPara !== undefined) {
-      updateData.prorrogadoPara = input.prorrogadoPara ? new Date(input.prorrogadoPara) : null;
+      updateData.prorrogadoPara = input.prorrogadoPara
+        ? new Date(input.prorrogadoPara)
+        : null;
     }
     if (input.dataCumprimento !== undefined) {
-      updateData.dataCumprimento = input.dataCumprimento ? new Date(input.dataCumprimento) : null;
+      updateData.dataCumprimento = input.dataCumprimento
+        ? new Date(input.dataCumprimento)
+        : null;
     }
 
     if (input.responsavelId !== undefined) {
@@ -2519,10 +2656,16 @@ export async function deleteProcessoPrazo(prazoId: string) {
   }
 }
 
-export async function linkProcuracaoAoProcesso(processoId: string, procuracaoId: string) {
+export async function linkProcuracaoAoProcesso(
+  processoId: string,
+  procuracaoId: string,
+) {
   try {
     const session = await getSession();
-    const { user, processo } = await ensureProcessMutationAccess(session, processoId);
+    const { user, processo } = await ensureProcessMutationAccess(
+      session,
+      processoId,
+    );
     const tenantId = user.tenantId;
 
     const procuracao = await prisma.procuracao.findFirst({
@@ -2575,12 +2718,16 @@ export async function linkProcuracaoAoProcesso(processoId: string, procuracaoId:
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao vincular procuração",
+      error:
+        error instanceof Error ? error.message : "Erro ao vincular procuração",
     };
   }
 }
 
-export async function unlinkProcuracaoDoProcesso(processoId: string, procuracaoId: string) {
+export async function unlinkProcuracaoDoProcesso(
+  processoId: string,
+  procuracaoId: string,
+) {
   try {
     const session = await getSession();
 
@@ -2603,7 +2750,10 @@ export async function unlinkProcuracaoDoProcesso(processoId: string, procuracaoI
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao desvincular procuração",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro ao desvincular procuração",
     };
   }
 }

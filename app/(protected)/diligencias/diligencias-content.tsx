@@ -5,7 +5,6 @@ import useSWR from "swr";
 import {
   Card,
   CardBody,
-  CardHeader,
   Button,
   Input,
   Textarea,
@@ -17,22 +16,49 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
-  Skeleton,
-  Divider,
   Tabs,
   Tab,
   Spinner,
 } from "@heroui/react";
-import { Plus, FileText, User, Calendar, Clock, CheckCircle, AlertTriangle, XCircle, PlayCircle, Users, Building, Scale, FileCheck, UserCheck, CalendarDays } from "lucide-react";
+import {
+  Plus,
+  FileText,
+  User,
+  Calendar,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  PlayCircle,
+  Users,
+  Building,
+  Scale,
+  FileCheck,
+  UserCheck,
+  CalendarDays,
+} from "lucide-react";
 import { toast } from "sonner";
 
-import { listDiligencias, createDiligencia, updateDiligencia } from "@/app/actions/diligencias";
+import {
+  listDiligencias,
+  createDiligencia,
+  updateDiligencia,
+} from "@/app/actions/diligencias";
 import { listCausas } from "@/app/actions/causas";
 import { listRegimesPrazo } from "@/app/actions/regimes-prazo";
 import { getClientesComRelacionamentos } from "@/app/actions/clientes";
 import { getUsuariosParaSelect } from "@/app/actions/usuarios";
 import { title, subtitle } from "@/components/primitives";
-import { Diligencia, DiligenciaStatus, Cliente, Processo, Contrato, Causa, RegimePrazo, Usuario } from "@/app/generated/prisma";
+import {
+  Diligencia,
+  DiligenciaStatus,
+  Cliente,
+  Processo,
+  Contrato,
+  Causa,
+  RegimePrazo,
+  Usuario,
+} from "@/app/generated/prisma";
 
 type DiligenciaCompleta = Diligencia & {
   processo?: Processo | null;
@@ -110,18 +136,50 @@ const usuariosFetcher = async () => {
 };
 
 const STATUS_OPTIONS = [
-  { key: "PENDENTE", label: "Pendente", icon: <Clock size={16} />, color: "warning" },
-  { key: "EM_ANDAMENTO", label: "Em andamento", icon: <PlayCircle size={16} />, color: "primary" },
-  { key: "CONCLUIDA", label: "Concluída", icon: <CheckCircle size={16} />, color: "success" },
-  { key: "CANCELADA", label: "Cancelada", icon: <XCircle size={16} />, color: "danger" },
+  {
+    key: "PENDENTE",
+    label: "Pendente",
+    icon: <Clock size={16} />,
+    color: "warning",
+  },
+  {
+    key: "EM_ANDAMENTO",
+    label: "Em andamento",
+    icon: <PlayCircle size={16} />,
+    color: "primary",
+  },
+  {
+    key: "CONCLUIDA",
+    label: "Concluída",
+    icon: <CheckCircle size={16} />,
+    color: "success",
+  },
+  {
+    key: "CANCELADA",
+    label: "Cancelada",
+    icon: <XCircle size={16} />,
+    color: "danger",
+  },
 ];
 
 export function DiligenciasContent() {
   const { data, mutate, isLoading } = useSWR("diligencias", diligenciasFetcher);
-  const { data: clientes, isLoading: loadingClientes } = useSWR("diligencias-clientes", clientesFetcher);
-  const { data: causas, isLoading: loadingCausas } = useSWR("diligencias-causas", causasFetcher);
-  const { data: regimes, isLoading: loadingRegimes } = useSWR("diligencias-regimes", regimesFetcher);
-  const { data: usuarios, isLoading: loadingUsuarios } = useSWR("diligencias-usuarios", usuariosFetcher);
+  const { data: clientes, isLoading: loadingClientes } = useSWR(
+    "diligencias-clientes",
+    clientesFetcher,
+  );
+  const { data: causas, isLoading: loadingCausas } = useSWR(
+    "diligencias-causas",
+    causasFetcher,
+  );
+  const { data: regimes, isLoading: loadingRegimes } = useSWR(
+    "diligencias-regimes",
+    regimesFetcher,
+  );
+  const { data: usuarios, isLoading: loadingUsuarios } = useSWR(
+    "diligencias-usuarios",
+    usuariosFetcher,
+  );
 
   const diligencias = useMemo(() => data ?? [], [data]);
   const clientesList = useMemo(() => clientes ?? [], [clientes]);
@@ -141,15 +199,24 @@ export function DiligenciasContent() {
   });
   const [isCreating, setIsCreating] = useState(false);
 
-  const selectedCliente = useMemo(() => clientesList.find((cliente) => cliente.id === createState.clienteId) ?? null, [clientesList, createState.clienteId]);
+  const selectedCliente = useMemo(
+    () =>
+      clientesList.find((cliente) => cliente.id === createState.clienteId) ??
+      null,
+    [clientesList, createState.clienteId],
+  );
 
-  const processosDoCliente = (selectedCliente as ClienteCompleto)?.processos ?? [];
-  const contratosDoCliente = (selectedCliente as ClienteCompleto)?.contratos ?? [];
+  const processosDoCliente =
+    (selectedCliente as ClienteCompleto)?.processos ?? [];
+  const contratosDoCliente =
+    (selectedCliente as ClienteCompleto)?.contratos ?? [];
 
   const formatDate = (date: Date | string | null): string => {
     if (!date) return "—";
     const dateObj = typeof date === "string" ? new Date(date) : date;
+
     if (Number.isNaN(dateObj.getTime())) return "—";
+
     return dateObj.toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
@@ -159,17 +226,20 @@ export function DiligenciasContent() {
 
   const getStatusIcon = (status: DiligenciaStatus) => {
     const option = STATUS_OPTIONS.find((opt) => opt.key === status);
+
     return option?.icon || <Clock size={16} />;
   };
 
   const getStatusColor = (status: DiligenciaStatus) => {
     const option = STATUS_OPTIONS.find((opt) => opt.key === status);
+
     return option?.color || "default";
   };
 
   const handleCreateDiligencia = useCallback(async () => {
     if (!createState.titulo.trim()) {
       toast.error("Informe o título da diligência");
+
       return;
     }
 
@@ -190,6 +260,7 @@ export function DiligenciasContent() {
 
       if (!result.success) {
         toast.error(result.error || "Erro ao criar diligência");
+
         return;
       }
 
@@ -234,13 +305,14 @@ export function DiligenciasContent() {
 
       if (!result.success) {
         toast.error(result.error || "Erro ao atualizar diligência");
+
         return;
       }
 
       await mutate();
       toast.success("Status atualizado");
     },
-    [mutate]
+    [mutate],
   );
 
   return (
@@ -249,9 +321,15 @@ export function DiligenciasContent() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className={title({ size: "lg", color: "blue" })}>Diligências</h1>
-          <p className={subtitle({ fullWidth: true })}>Acompanhe diligências internas e externas relacionadas aos processos</p>
+          <p className={subtitle({ fullWidth: true })}>
+            Acompanhe diligências internas e externas relacionadas aos processos
+          </p>
         </div>
-        <Button color="primary" startContent={<Plus size={20} />} onPress={() => setIsCreateOpen(true)}>
+        <Button
+          color="primary"
+          startContent={<Plus size={20} />}
+          onPress={() => setIsCreateOpen(true)}
+        >
           Nova Diligência
         </Button>
       </div>
@@ -259,12 +337,15 @@ export function DiligenciasContent() {
       {/* Lista de Diligências */}
       {isLoading ? (
         <div className="flex justify-center py-8">
-          <Spinner size="lg" color="primary" />
+          <Spinner color="primary" size="lg" />
         </div>
       ) : diligencias.length > 0 ? (
         <div className="grid gap-4">
           {diligencias.map((diligencia: DiligenciaCompleta) => (
-            <Card key={diligencia.id} className="border-none shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]">
+            <Card
+              key={diligencia.id}
+              className="border-none shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]"
+            >
               <CardBody className="p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                   {/* Título e Tipo */}
@@ -274,9 +355,19 @@ export function DiligenciasContent() {
                         <FileText className="text-primary-600" size={20} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-bold text-default-800 text-lg">{diligencia.titulo}</h4>
-                        {diligencia.tipo && <p className="text-sm text-primary-600 font-medium">{diligencia.tipo}</p>}
-                        {diligencia.descricao && <p className="text-sm text-default-500 mt-1 line-clamp-2">{diligencia.descricao}</p>}
+                        <h4 className="font-bold text-default-800 text-lg">
+                          {diligencia.titulo}
+                        </h4>
+                        {diligencia.tipo && (
+                          <p className="text-sm text-primary-600 font-medium">
+                            {diligencia.tipo}
+                          </p>
+                        )}
+                        {diligencia.descricao && (
+                          <p className="text-sm text-default-500 mt-1 line-clamp-2">
+                            {diligencia.descricao}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -285,17 +376,32 @@ export function DiligenciasContent() {
                   <div className="lg:col-span-4">
                     <div className="flex flex-wrap gap-2">
                       {diligencia.processo && (
-                        <Chip color="secondary" size="sm" variant="flat" startContent={<Scale size={14} />}>
+                        <Chip
+                          color="secondary"
+                          size="sm"
+                          startContent={<Scale size={14} />}
+                          variant="flat"
+                        >
                           {diligencia.processo.numero}
                         </Chip>
                       )}
                       {diligencia.causa && (
-                        <Chip color="warning" size="sm" variant="flat" startContent={<AlertTriangle size={14} />}>
+                        <Chip
+                          color="warning"
+                          size="sm"
+                          startContent={<AlertTriangle size={14} />}
+                          variant="flat"
+                        >
                           {diligencia.causa.nome}
                         </Chip>
                       )}
                       {diligencia.contrato && (
-                        <Chip color="primary" size="sm" variant="flat" startContent={<FileCheck size={14} />}>
+                        <Chip
+                          color="primary"
+                          size="sm"
+                          startContent={<FileCheck size={14} />}
+                          variant="flat"
+                        >
                           {diligencia.contrato.titulo}
                         </Chip>
                       )}
@@ -311,6 +417,7 @@ export function DiligenciasContent() {
                       variant="bordered"
                       onSelectionChange={(keys) => {
                         const [value] = Array.from(keys) as string[];
+
                         handleStatusChange(diligencia, value);
                       }}
                     >
@@ -328,13 +435,22 @@ export function DiligenciasContent() {
                       {diligencia.prazoPrevisto && (
                         <div className="flex items-center gap-2 text-warning-600">
                           <Calendar size={14} />
-                          <span>Prazo: {formatDate(diligencia.prazoPrevisto)}</span>
+                          <span>
+                            Prazo: {formatDate(diligencia.prazoPrevisto)}
+                          </span>
                         </div>
                       )}
                       {diligencia.responsavel && (
                         <div className="flex items-center gap-2 text-default-600">
                           <User size={14} />
-                          <span>{[diligencia.responsavel.firstName, diligencia.responsavel.lastName].filter(Boolean).join(" ") || diligencia.responsavel.email}</span>
+                          <span>
+                            {[
+                              diligencia.responsavel.firstName,
+                              diligencia.responsavel.lastName,
+                            ]
+                              .filter(Boolean)
+                              .join(" ") || diligencia.responsavel.email}
+                          </span>
                         </div>
                       )}
                       <div className="flex items-center gap-2 text-default-400">
@@ -353,9 +469,20 @@ export function DiligenciasContent() {
           <CardBody className="text-center py-16">
             <div className="bg-gradient-to-br from-default-100 to-default-50 rounded-2xl p-12 border border-default-200">
               <FileText className="mx-auto text-default-300 mb-6" size={80} />
-              <h3 className="text-xl font-bold text-default-700 mb-2">Nenhuma diligência encontrada</h3>
-              <p className="text-default-500 mb-8 max-w-md mx-auto">Comece criando sua primeira diligência para acompanhar tarefas e prazos</p>
-              <Button color="primary" size="lg" startContent={<Plus size={20} />} onPress={() => setIsCreateOpen(true)} className="font-semibold">
+              <h3 className="text-xl font-bold text-default-700 mb-2">
+                Nenhuma diligência encontrada
+              </h3>
+              <p className="text-default-500 mb-8 max-w-md mx-auto">
+                Comece criando sua primeira diligência para acompanhar tarefas e
+                prazos
+              </p>
+              <Button
+                className="font-semibold"
+                color="primary"
+                size="lg"
+                startContent={<Plus size={20} />}
+                onPress={() => setIsCreateOpen(true)}
+              >
                 Criar Primeira Diligência
               </Button>
             </div>
@@ -369,18 +496,18 @@ export function DiligenciasContent() {
         contratos={contratosDoCliente}
         isOpen={isCreateOpen}
         isSubmitting={isCreating}
-        processos={processosDoCliente}
-        regimes={regimes ?? []}
-        usuarios={usuarios ?? []}
-        setState={setCreateState}
-        state={createState}
-        onClose={() => setIsCreateOpen(false)}
-        onSubmit={handleCreateDiligencia}
-        onClienteChange={handleClienteChange}
-        loadingClientes={loadingClientes}
         loadingCausas={loadingCausas}
+        loadingClientes={loadingClientes}
         loadingRegimes={loadingRegimes}
         loadingUsuarios={loadingUsuarios}
+        processos={processosDoCliente}
+        regimes={regimes ?? []}
+        setState={setCreateState}
+        state={createState}
+        usuarios={usuarios ?? []}
+        onClienteChange={handleClienteChange}
+        onClose={() => setIsCreateOpen(false)}
+        onSubmit={handleCreateDiligencia}
       />
     </div>
   );
@@ -428,7 +555,12 @@ function CreateDiligenciaModal({
   const selectedCliente = clientes.find((c) => c.id === state.clienteId);
 
   return (
-    <Modal isOpen={isOpen} scrollBehavior="inside" size="5xl" onOpenChange={(open) => !open && onClose()}>
+    <Modal
+      isOpen={isOpen}
+      scrollBehavior="inside"
+      size="5xl"
+      onOpenChange={(open) => !open && onClose()}
+    >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -437,7 +569,9 @@ function CreateDiligenciaModal({
             </div>
             <div>
               <h3 className="text-xl font-bold">Nova Diligência</h3>
-              <p className="text-sm text-default-500">Complete as informações da diligência</p>
+              <p className="text-sm text-default-500">
+                Complete as informações da diligência
+              </p>
             </div>
           </div>
         </ModalHeader>
@@ -446,7 +580,8 @@ function CreateDiligenciaModal({
           <Tabs
             aria-label="Formulário de diligência"
             classNames={{
-              tabList: "gap-8 w-full relative rounded-none p-6 pb-0 border-b border-divider",
+              tabList:
+                "gap-8 w-full relative rounded-none p-6 pb-0 border-b border-divider",
               cursor: "w-full bg-primary",
               tab: "max-w-fit px-4 h-12",
               tabContent: "group-data-[selected=true]:text-primary font-medium",
@@ -460,7 +595,10 @@ function CreateDiligenciaModal({
               title={
                 <div className="flex items-center space-x-3">
                   <div className="p-1 rounded-md bg-blue-100 dark:bg-blue-900">
-                    <FileText className="text-blue-600 dark:text-blue-400" size={16} />
+                    <FileText
+                      className="text-blue-600 dark:text-blue-400"
+                      size={16}
+                    />
                   </div>
                   <span>Básico</span>
                 </div>
@@ -478,25 +616,35 @@ function CreateDiligenciaModal({
                       isRequired
                       label="Título"
                       placeholder="Ex: Protocolo de petição inicial"
+                      startContent={
+                        <FileText className="text-default-400" size={16} />
+                      }
                       value={state.titulo}
-                      onValueChange={(value) => setState((prev) => ({ ...prev, titulo: value }))}
-                      startContent={<FileText className="text-default-400" size={16} />}
+                      onValueChange={(value) =>
+                        setState((prev) => ({ ...prev, titulo: value }))
+                      }
                     />
 
                     <Input
                       label="Tipo"
                       placeholder="Ex: Audiência, Protocolo, Análise"
+                      startContent={
+                        <FileCheck className="text-default-400" size={16} />
+                      }
                       value={state.tipo}
-                      onValueChange={(value) => setState((prev) => ({ ...prev, tipo: value }))}
-                      startContent={<FileCheck className="text-default-400" size={16} />}
+                      onValueChange={(value) =>
+                        setState((prev) => ({ ...prev, tipo: value }))
+                      }
                     />
 
                     <Textarea
                       label="Descrição"
                       placeholder="Descrição detalhada da diligência"
-                      value={state.descricao}
-                      onValueChange={(value) => setState((prev) => ({ ...prev, descricao: value }))}
                       rows={3}
+                      value={state.descricao}
+                      onValueChange={(value) =>
+                        setState((prev) => ({ ...prev, descricao: value }))
+                      }
                     />
                   </div>
                 </div>
@@ -508,7 +656,10 @@ function CreateDiligenciaModal({
               title={
                 <div className="flex items-center space-x-3">
                   <div className="p-1 rounded-md bg-green-100 dark:bg-green-900">
-                    <Users className="text-green-600 dark:text-green-400" size={16} />
+                    <Users
+                      className="text-green-600 dark:text-green-400"
+                      size={16}
+                    />
                   </div>
                   <span>Relacionamentos</span>
                 </div>
@@ -523,22 +674,26 @@ function CreateDiligenciaModal({
 
                   <div className="grid grid-cols-1 gap-4">
                     <Select
+                      isLoading={loadingClientes}
                       label="Cliente"
                       placeholder="Selecione um cliente"
                       selectedKeys={state.clienteId ? [state.clienteId] : []}
+                      startContent={
+                        <User className="text-default-400" size={16} />
+                      }
                       onSelectionChange={(keys) => {
                         const [value] = Array.from(keys) as string[];
+
                         onClienteChange(value || "");
                       }}
-                      startContent={<User className="text-default-400" size={16} />}
-                      isLoading={loadingClientes}
                     >
                       {clientes.map((cliente) => (
                         <SelectItem key={cliente.id} textValue={cliente.nome}>
                           <div className="flex flex-col">
                             <span className="font-medium">{cliente.nome}</span>
                             <span className="text-sm text-default-500">
-                              {cliente.processos.length} processos • {cliente.contratos.length} contratos
+                              {cliente.processos.length} processos •{" "}
+                              {cliente.contratos.length} contratos
                             </span>
                           </div>
                         </SelectItem>
@@ -552,18 +707,30 @@ function CreateDiligenciaModal({
                             <Building className="text-primary" size={16} />
                           </div>
                           <div>
-                            <p className="font-medium">Informações do Cliente</p>
-                            <p className="text-sm text-default-500">Dados relacionados ao cliente selecionado</p>
+                            <p className="font-medium">
+                              Informações do Cliente
+                            </p>
+                            <p className="text-sm text-default-500">
+                              Dados relacionados ao cliente selecionado
+                            </p>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <p className="text-primary-600 font-medium">Processos</p>
-                            <p className="text-default-800">{selectedCliente.processos.length} cadastrados</p>
+                            <p className="text-primary-600 font-medium">
+                              Processos
+                            </p>
+                            <p className="text-default-800">
+                              {selectedCliente.processos.length} cadastrados
+                            </p>
                           </div>
                           <div>
-                            <p className="text-primary-600 font-medium">Contratos</p>
-                            <p className="text-default-800">{selectedCliente.contratos.length} cadastrados</p>
+                            <p className="text-primary-600 font-medium">
+                              Contratos
+                            </p>
+                            <p className="text-default-800">
+                              {selectedCliente.contratos.length} cadastrados
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -574,17 +741,32 @@ function CreateDiligenciaModal({
                       label="Processo"
                       placeholder="Opcional - Selecione um processo"
                       selectedKeys={state.processoId ? [state.processoId] : []}
+                      startContent={
+                        <Scale className="text-default-400" size={16} />
+                      }
                       onSelectionChange={(keys) => {
                         const [value] = Array.from(keys) as string[];
-                        setState((prev) => ({ ...prev, processoId: value || "" }));
+
+                        setState((prev) => ({
+                          ...prev,
+                          processoId: value || "",
+                        }));
                       }}
-                      startContent={<Scale className="text-default-400" size={16} />}
                     >
                       {processos.map((processo) => (
-                        <SelectItem key={processo.id} textValue={processo.numero}>
+                        <SelectItem
+                          key={processo.id}
+                          textValue={processo.numero}
+                        >
                           <div className="flex flex-col">
-                            <span className="font-medium">{processo.numero}</span>
-                            {processo.titulo && <span className="text-sm text-default-500">{processo.titulo}</span>}
+                            <span className="font-medium">
+                              {processo.numero}
+                            </span>
+                            {processo.titulo && (
+                              <span className="text-sm text-default-500">
+                                {processo.titulo}
+                              </span>
+                            )}
                           </div>
                         </SelectItem>
                       ))}
@@ -595,14 +777,23 @@ function CreateDiligenciaModal({
                       label="Contrato"
                       placeholder="Opcional - Selecione um contrato"
                       selectedKeys={state.contratoId ? [state.contratoId] : []}
+                      startContent={
+                        <FileCheck className="text-default-400" size={16} />
+                      }
                       onSelectionChange={(keys) => {
                         const [value] = Array.from(keys) as string[];
-                        setState((prev) => ({ ...prev, contratoId: value || "" }));
+
+                        setState((prev) => ({
+                          ...prev,
+                          contratoId: value || "",
+                        }));
                       }}
-                      startContent={<FileCheck className="text-default-400" size={16} />}
                     >
                       {contratos.map((contrato) => (
-                        <SelectItem key={contrato.id} textValue={contrato.titulo}>
+                        <SelectItem
+                          key={contrato.id}
+                          textValue={contrato.titulo}
+                        >
                           {contrato.titulo}
                         </SelectItem>
                       ))}
@@ -617,7 +808,10 @@ function CreateDiligenciaModal({
               title={
                 <div className="flex items-center space-x-3">
                   <div className="p-1 rounded-md bg-orange-100 dark:bg-orange-900">
-                    <CalendarDays className="text-orange-600 dark:text-orange-400" size={16} />
+                    <CalendarDays
+                      className="text-orange-600 dark:text-orange-400"
+                      size={16}
+                    />
                   </div>
                   <span>Detalhes</span>
                 </div>
@@ -632,43 +826,61 @@ function CreateDiligenciaModal({
 
                   <div className="grid grid-cols-1 gap-4">
                     <Select
+                      isLoading={loadingCausas}
                       label="Causa"
                       placeholder="Opcional - Selecione uma causa"
                       selectedKeys={state.causaId ? [state.causaId] : []}
+                      startContent={
+                        <AlertTriangle className="text-default-400" size={16} />
+                      }
                       onSelectionChange={(keys) => {
                         const [value] = Array.from(keys) as string[];
+
                         setState((prev) => ({ ...prev, causaId: value || "" }));
                       }}
-                      startContent={<AlertTriangle className="text-default-400" size={16} />}
-                      isLoading={loadingCausas}
                     >
                       {causas.map((causa) => (
                         <SelectItem key={causa.id} textValue={causa.nome}>
                           <div className="flex flex-col">
                             <span className="font-medium">{causa.nome}</span>
-                            {causa.codigoCnj && <span className="text-sm text-default-500">{causa.codigoCnj}</span>}
+                            {causa.codigoCnj && (
+                              <span className="text-sm text-default-500">
+                                {causa.codigoCnj}
+                              </span>
+                            )}
                           </div>
                         </SelectItem>
                       ))}
                     </Select>
 
                     <Select
+                      isLoading={loadingRegimes}
                       label="Regime de Prazo"
                       placeholder="Opcional - Selecione um regime"
-                      selectedKeys={state.regimePrazoId ? [state.regimePrazoId] : []}
+                      selectedKeys={
+                        state.regimePrazoId ? [state.regimePrazoId] : []
+                      }
+                      startContent={
+                        <Clock className="text-default-400" size={16} />
+                      }
                       onSelectionChange={(keys) => {
                         const [value] = Array.from(keys) as string[];
-                        setState((prev) => ({ ...prev, regimePrazoId: value || "" }));
+
+                        setState((prev) => ({
+                          ...prev,
+                          regimePrazoId: value || "",
+                        }));
                       }}
-                      startContent={<Clock className="text-default-400" size={16} />}
-                      isLoading={loadingRegimes}
                     >
                       {regimes.map((regime) => (
                         <SelectItem key={regime.id} textValue={regime.nome}>
                           <div className="flex flex-col">
                             <span className="font-medium">{regime.nome}</span>
                             <span className="text-sm text-default-500">
-                              {regime.tipo} • {regime.contarDiasUteis ? "Dias úteis" : "Dias corridos"}
+                              {regime.tipo} •{" "}
+                              {regime.contarDiasUteis
+                                ? "Dias úteis"
+                                : "Dias corridos"}
                             </span>
                           </div>
                         </SelectItem>
@@ -677,25 +889,43 @@ function CreateDiligenciaModal({
 
                     <Input
                       label="Prazo Previsto"
+                      startContent={
+                        <Calendar className="text-orange-500" size={16} />
+                      }
                       type="date"
                       value={state.prazoPrevisto}
-                      onChange={(e) => setState((prev) => ({ ...prev, prazoPrevisto: e.target.value }))}
-                      startContent={<Calendar className="text-orange-500" size={16} />}
+                      onChange={(e) =>
+                        setState((prev) => ({
+                          ...prev,
+                          prazoPrevisto: e.target.value,
+                        }))
+                      }
                     />
 
                     <Select
+                      isLoading={loadingUsuarios}
                       label="Responsável"
                       placeholder="Selecione quem será responsável pela diligência"
-                      selectedKeys={state.responsavelId ? [state.responsavelId] : []}
+                      selectedKeys={
+                        state.responsavelId ? [state.responsavelId] : []
+                      }
+                      startContent={
+                        <UserCheck className="text-default-400" size={16} />
+                      }
                       onSelectionChange={(keys) => {
                         const [value] = Array.from(keys) as string[];
-                        setState((prev) => ({ ...prev, responsavelId: value || "" }));
+
+                        setState((prev) => ({
+                          ...prev,
+                          responsavelId: value || "",
+                        }));
                       }}
-                      startContent={<UserCheck className="text-default-400" size={16} />}
-                      isLoading={loadingUsuarios}
                     >
                       {usuarios.map((usuario) => (
-                        <SelectItem key={usuario.id} textValue={`${usuario.firstName} ${usuario.lastName}`}>
+                        <SelectItem
+                          key={usuario.id}
+                          textValue={`${usuario.firstName} ${usuario.lastName}`}
+                        >
                           <div className="flex flex-col">
                             <span className="font-medium">
                               {usuario.firstName} {usuario.lastName}
@@ -718,7 +948,12 @@ function CreateDiligenciaModal({
           <Button variant="light" onPress={onClose}>
             Cancelar
           </Button>
-          <Button color="primary" isLoading={isSubmitting} startContent={!isSubmitting ? <CheckCircle size={16} /> : undefined} onPress={onSubmit}>
+          <Button
+            color="primary"
+            isLoading={isSubmitting}
+            startContent={!isSubmitting ? <CheckCircle size={16} /> : undefined}
+            onPress={onSubmit}
+          >
             {isSubmitting ? "Criando..." : "Criar Diligência"}
           </Button>
         </ModalFooter>

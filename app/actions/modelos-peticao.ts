@@ -385,7 +385,7 @@ export async function duplicateModeloPeticao(
         conteudo: original.conteudo,
         categoria: original.categoria,
         tipo: original.tipo,
-        variaveis: original.variaveis,
+        variaveis: original.variaveis as any,
         publico: false, // Cópias não são públicas por padrão
         ativo: true,
       },

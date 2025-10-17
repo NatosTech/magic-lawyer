@@ -9,12 +9,36 @@ import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/dropdown";
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/modal";
-import { AlertCircle, Plus, Search, MoreVertical, Eye, FileText, User, Building2, Calendar, Download, Link2, Paperclip } from "lucide-react";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@heroui/modal";
+import {
+  AlertCircle,
+  Plus,
+  Search,
+  MoreVertical,
+  Eye,
+  FileText,
+  User,
+  Building2,
+  Calendar,
+  Download,
+  Link2,
+  Paperclip,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
@@ -38,7 +62,13 @@ interface ProcuracaoFiltros {
 
 export function ProcuracoesContent() {
   const router = useRouter();
-  const { procuracoes, isLoading, isError, error, mutate: mutateProcuracoes } = useAllProcuracoes();
+  const {
+    procuracoes,
+    isLoading,
+    isError,
+    error,
+    mutate: mutateProcuracoes,
+  } = useAllProcuracoes();
   const permissions = useUserPermissions();
 
   const [filtros, setFiltros] = useState<ProcuracaoFiltros>({
@@ -49,37 +79,66 @@ export function ProcuracoesContent() {
     emitidaPor: "",
   });
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
-  const [selectedProcuracao, setSelectedProcuracao] = useState<ProcuracaoListItem | null>(null);
+  const [selectedProcuracao, setSelectedProcuracao] =
+    useState<ProcuracaoListItem | null>(null);
   const [selectedProcessoId, setSelectedProcessoId] = useState<string>("");
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [clienteNovaProcuracaoId, setClienteNovaProcuracaoId] = useState<string>("");
-  const [processosNovaProcuracaoIds, setProcessosNovaProcuracaoIds] = useState<Set<string>>(new Set());
+  const [clienteNovaProcuracaoId, setClienteNovaProcuracaoId] =
+    useState<string>("");
+  const [processosNovaProcuracaoIds, setProcessosNovaProcuracaoIds] = useState<
+    Set<string>
+  >(new Set());
   const [isLinking, startTransition] = useTransition();
 
   const { clientes, isLoading: isLoadingClientes } = useClientesParaSelect();
 
-  const { processos: processosClienteSelecionado, isLoading: isLoadingProcessosSelecionado, mutate: mutateProcessosCliente } = useProcessosCliente(selectedProcuracao?.cliente?.id ?? null);
+  const {
+    processos: processosClienteSelecionado,
+    isLoading: isLoadingProcessosSelecionado,
+    mutate: mutateProcessosCliente,
+  } = useProcessosCliente(selectedProcuracao?.cliente?.id ?? null);
 
-  const { processos: processosParaNovaProcuracao, isLoading: isLoadingProcessosNovaProcuracao } = useProcessosCliente(clienteNovaProcuracaoId || null);
+  const {
+    processos: processosParaNovaProcuracao,
+    isLoading: isLoadingProcessosNovaProcuracao,
+  } = useProcessosCliente(clienteNovaProcuracaoId || null);
 
   const processosDisponiveis = useMemo<ProcessoDTO[]>(() => {
-    const vinculados = new Set((selectedProcuracao?.processos || []).map((procuracaoProcesso) => procuracaoProcesso.processoId));
+    const vinculados = new Set(
+      (selectedProcuracao?.processos || []).map(
+        (procuracaoProcesso) => procuracaoProcesso.processoId,
+      ),
+    );
 
-    return (processosClienteSelecionado ?? []).filter((processo) => !vinculados.has(processo.id));
+    return (processosClienteSelecionado ?? []).filter(
+      (processo) => !vinculados.has(processo.id),
+    );
   }, [processosClienteSelecionado, selectedProcuracao]);
 
   // Filtros únicos para selects
   const statusUnicos = useMemo<ProcuracaoStatus[]>(() => {
     if (!procuracoes) return [];
 
-    return Array.from(new Set(procuracoes.map((procuracao) => procuracao.status).filter(Boolean) as ProcuracaoStatus[]));
+    return Array.from(
+      new Set(
+        procuracoes
+          .map((procuracao) => procuracao.status)
+          .filter(Boolean) as ProcuracaoStatus[],
+      ),
+    );
   }, [procuracoes]);
 
   const emitidaPorUnicos = useMemo<ProcuracaoEmitidaPor[]>(() => {
     if (!procuracoes) return [];
 
-    return Array.from(new Set(procuracoes.map((procuracao) => procuracao.emitidaPor).filter(Boolean) as ProcuracaoEmitidaPor[]));
+    return Array.from(
+      new Set(
+        procuracoes
+          .map((procuracao) => procuracao.emitidaPor)
+          .filter(Boolean) as ProcuracaoEmitidaPor[],
+      ),
+    );
   }, [procuracoes]);
 
   // Aplicar filtros
@@ -140,7 +199,10 @@ export function ProcuracoesContent() {
     if (!selectedProcuracao || !selectedProcessoId) return;
 
     startTransition(async () => {
-      const result = await linkProcuracaoAoProcesso(selectedProcessoId, selectedProcuracao.id);
+      const result = await linkProcuracaoAoProcesso(
+        selectedProcessoId,
+        selectedProcuracao.id,
+      );
 
       if (result.success) {
         toast.success("Procuração vinculada ao processo");
@@ -171,7 +233,8 @@ export function ProcuracoesContent() {
 
   const handleProcessoSelectionChange = (keys: Selection) => {
     if (keys === "all") {
-      const todosProcessos = processosParaNovaProcuracao?.map((processo) => processo.id) ?? [];
+      const todosProcessos =
+        processosParaNovaProcuracao?.map((processo) => processo.id) ?? [];
 
       setProcessosNovaProcuracaoIds(new Set(todosProcessos));
 
@@ -189,7 +252,10 @@ export function ProcuracoesContent() {
     params.set("clienteId", clienteNovaProcuracaoId);
 
     if (processosNovaProcuracaoIds.size > 0) {
-      params.set("processoIds", Array.from(processosNovaProcuracaoIds).join(","));
+      params.set(
+        "processoIds",
+        Array.from(processosNovaProcuracaoIds).join(","),
+      );
     }
 
     closeCreateModal();
@@ -281,12 +347,20 @@ export function ProcuracoesContent() {
         </div>
 
         <div className="flex gap-2">
-          <Button startContent={<Search className="h-4 w-4" />} variant="bordered" onPress={() => setMostrarFiltros(!mostrarFiltros)}>
+          <Button
+            startContent={<Search className="h-4 w-4" />}
+            variant="bordered"
+            onPress={() => setMostrarFiltros(!mostrarFiltros)}
+          >
             Filtros
           </Button>
 
           {!permissions.isCliente && (
-            <Button color="primary" startContent={<Plus className="h-4 w-4" />} onPress={openCreateModal}>
+            <Button
+              color="primary"
+              startContent={<Plus className="h-4 w-4" />}
+              onPress={openCreateModal}
+            >
               Nova Procuração
             </Button>
           )}
@@ -302,7 +376,9 @@ export function ProcuracoesContent() {
                 placeholder="Buscar por número ou cliente..."
                 startContent={<Search className="h-4 w-4 text-default-400" />}
                 value={filtros.search}
-                onValueChange={(value) => setFiltros((prev) => ({ ...prev, search: value }))}
+                onValueChange={(value) =>
+                  setFiltros((prev) => ({ ...prev, search: value }))
+                }
               />
 
               <Select
@@ -335,7 +411,9 @@ export function ProcuracoesContent() {
                 }}
               >
                 {emitidaPorUnicos.map((emitidaPor) => (
-                  <SelectItem key={emitidaPor}>{getEmitidaPorLabel(emitidaPor)}</SelectItem>
+                  <SelectItem key={emitidaPor}>
+                    {getEmitidaPorLabel(emitidaPor)}
+                  </SelectItem>
                 ))}
               </Select>
             </div>
@@ -354,11 +432,16 @@ export function ProcuracoesContent() {
       {/* Lista de Procurações */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {procuracoesFiltradas.map((procuracao) => (
-          <Card key={procuracao.id} className="hover:shadow-md transition-shadow">
+          <Card
+            key={procuracao.id}
+            className="hover:shadow-md transition-shadow"
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div className="flex items-center space-x-2">
                 <FileText className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">{procuracao.numero || "Sem número"}</span>
+                <span className="text-sm font-medium">
+                  {procuracao.numero || "Sem número"}
+                </span>
               </div>
 
               <Dropdown>
@@ -368,16 +451,30 @@ export function ProcuracoesContent() {
                   </Button>
                 </DropdownTrigger>
                 <DropdownMenu>
-                  <DropdownItem key="view" startContent={<Eye className="h-4 w-4" />} onPress={() => router.push(`/procuracoes/${procuracao.id}`)}>
+                  <DropdownItem
+                    key="view"
+                    startContent={<Eye className="h-4 w-4" />}
+                    onPress={() => router.push(`/procuracoes/${procuracao.id}`)}
+                  >
                     Ver Detalhes
                   </DropdownItem>
                   {!permissions.isCliente ? (
-                    <DropdownItem key="link" startContent={<Link2 className="h-4 w-4" />} onPress={() => openLinkModal(procuracao)}>
+                    <DropdownItem
+                      key="link"
+                      startContent={<Link2 className="h-4 w-4" />}
+                      onPress={() => openLinkModal(procuracao)}
+                    >
                       Vincular a Processo
                     </DropdownItem>
                   ) : null}
                   {!permissions.isCliente ? (
-                    <DropdownItem key="documents" startContent={<Paperclip className="h-4 w-4" />} onPress={() => router.push(`/procuracoes/${procuracao.id}#documentos`)}>
+                    <DropdownItem
+                      key="documents"
+                      startContent={<Paperclip className="h-4 w-4" />}
+                      onPress={() =>
+                        router.push(`/procuracoes/${procuracao.id}#documentos`)
+                      }
+                    >
                       Anexar Documentos
                     </DropdownItem>
                   ) : null}
@@ -397,12 +494,22 @@ export function ProcuracoesContent() {
 
             <CardBody className="space-y-3">
               <div className="flex items-center space-x-2">
-                {procuracao.cliente.tipoPessoa === "FISICA" ? <User className="h-4 w-4 text-default-400" /> : <Building2 className="h-4 w-4 text-default-400" />}
-                <span className="text-sm font-medium">{procuracao.cliente.nome}</span>
+                {procuracao.cliente.tipoPessoa === "FISICA" ? (
+                  <User className="h-4 w-4 text-default-400" />
+                ) : (
+                  <Building2 className="h-4 w-4 text-default-400" />
+                )}
+                <span className="text-sm font-medium">
+                  {procuracao.cliente.nome}
+                </span>
               </div>
 
               <div className="flex items-center justify-between">
-                <Chip color={getStatusColor(procuracao.status)} size="sm" variant="flat">
+                <Chip
+                  color={getStatusColor(procuracao.status)}
+                  size="sm"
+                  variant="flat"
+                >
                   {getStatusLabel(procuracao.status)}
                 </Chip>
 
@@ -414,21 +521,30 @@ export function ProcuracoesContent() {
               {procuracao.emitidaEm && (
                 <div className="flex items-center space-x-2 text-small text-default-500">
                   <Calendar className="h-3 w-3" />
-                  <span>Emitida em {DateUtils.formatDate(procuracao.emitidaEm)}</span>
+                  <span>
+                    Emitida em {DateUtils.formatDate(procuracao.emitidaEm)}
+                  </span>
                 </div>
               )}
 
               {procuracao.validaAte && (
                 <div className="flex items-center space-x-2 text-small text-default-500">
                   <Calendar className="h-3 w-3" />
-                  <span>Válida até {DateUtils.formatDate(procuracao.validaAte)}</span>
+                  <span>
+                    Válida até {DateUtils.formatDate(procuracao.validaAte)}
+                  </span>
                 </div>
               )}
 
               {procuracao.outorgados && procuracao.outorgados.length > 0 && (
                 <div className="text-small text-default-500">
                   <span className="font-medium">Advogados:</span>{" "}
-                  {procuracao.outorgados.map((outorgado) => `${outorgado.advogado.usuario.firstName} ${outorgado.advogado.usuario.lastName}`).join(", ")}
+                  {procuracao.outorgados
+                    .map(
+                      (outorgado) =>
+                        `${outorgado.advogado.usuario.firstName} ${outorgado.advogado.usuario.lastName}`,
+                    )
+                    .join(", ")}
                 </div>
               )}
             </CardBody>
@@ -439,7 +555,9 @@ export function ProcuracoesContent() {
       {procuracoesFiltradas.length === 0 && temFiltrosAtivos && (
         <div className="flex flex-col items-center justify-center h-32 space-y-2">
           <Search className="h-8 w-8 text-default-400" />
-          <p className="text-default-500">Nenhuma procuração encontrada com os filtros aplicados</p>
+          <p className="text-default-500">
+            Nenhuma procuração encontrada com os filtros aplicados
+          </p>
           <Button size="sm" variant="light" onPress={limparFiltros}>
             Limpar Filtros
           </Button>
@@ -460,7 +578,10 @@ export function ProcuracoesContent() {
             <>
               <ModalHeader className="flex flex-col gap-1">
                 <h3 className="text-lg font-semibold">Nova Procuração</h3>
-                <p className="text-sm text-default-500">Selecione o cliente e processos que serão vinculados ao criar a procuração.</p>
+                <p className="text-sm text-default-500">
+                  Selecione o cliente e processos que serão vinculados ao criar
+                  a procuração.
+                </p>
               </ModalHeader>
               <ModalBody>
                 {isLoadingClientes ? (
@@ -468,13 +589,17 @@ export function ProcuracoesContent() {
                     <Spinner label="Carregando clientes..." size="lg" />
                   </div>
                 ) : clientes.length === 0 ? (
-                  <p className="text-sm text-default-500">Nenhum cliente disponível para seleção.</p>
+                  <p className="text-sm text-default-500">
+                    Nenhum cliente disponível para seleção.
+                  </p>
                 ) : (
                   <div className="space-y-4">
                     <Select
                       label="Cliente"
                       placeholder="Selecione o cliente"
-                      selectedKeys={clienteNovaProcuracaoId ? [clienteNovaProcuracaoId] : []}
+                      selectedKeys={
+                        clienteNovaProcuracaoId ? [clienteNovaProcuracaoId] : []
+                      }
                       onSelectionChange={(keys) => {
                         const [key] = Array.from(keys);
                         const novoClienteId = (key as string | undefined) ?? "";
@@ -486,31 +611,56 @@ export function ProcuracoesContent() {
                       {clientes.map((cliente) => (
                         <SelectItem key={cliente.id}>
                           <div className="flex flex-col">
-                            <span className="text-sm font-semibold text-default-700">{cliente.nome}</span>
-                            {cliente.documento && <span className="text-xs text-default-400">{cliente.documento}</span>}
+                            <span className="text-sm font-semibold text-default-700">
+                              {cliente.nome}
+                            </span>
+                            {cliente.documento && (
+                              <span className="text-xs text-default-400">
+                                {cliente.documento}
+                              </span>
+                            )}
                           </div>
                         </SelectItem>
                       ))}
                     </Select>
 
                     <div className="space-y-2">
-                      <p className="text-xs font-medium uppercase text-default-400">Vincular a processos</p>
+                      <p className="text-xs font-medium uppercase text-default-400">
+                        Vincular a processos
+                      </p>
 
                       {!clienteNovaProcuracaoId ? (
-                        <p className="text-sm text-default-500">Selecione um cliente para listar processos disponíveis.</p>
+                        <p className="text-sm text-default-500">
+                          Selecione um cliente para listar processos
+                          disponíveis.
+                        </p>
                       ) : isLoadingProcessosNovaProcuracao ? (
                         <div className="flex justify-center py-4">
                           <Spinner label="Carregando processos..." size="md" />
                         </div>
-                      ) : !processosParaNovaProcuracao || processosParaNovaProcuracao.length === 0 ? (
-                        <p className="text-sm text-default-500">Este cliente não possui processos cadastrados.</p>
+                      ) : !processosParaNovaProcuracao ||
+                        processosParaNovaProcuracao.length === 0 ? (
+                        <p className="text-sm text-default-500">
+                          Este cliente não possui processos cadastrados.
+                        </p>
                       ) : (
-                        <Select placeholder="Selecione os processos (opcional)" selectedKeys={processosNovaProcuracaoIds} selectionMode="multiple" onSelectionChange={handleProcessoSelectionChange}>
+                        <Select
+                          placeholder="Selecione os processos (opcional)"
+                          selectedKeys={processosNovaProcuracaoIds}
+                          selectionMode="multiple"
+                          onSelectionChange={handleProcessoSelectionChange}
+                        >
                           {processosParaNovaProcuracao.map((processo) => (
                             <SelectItem key={processo.id}>
                               <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-default-700">{processo.numero}</span>
-                                {processo.titulo && <span className="text-xs text-default-400">{processo.titulo}</span>}
+                                <span className="text-sm font-semibold text-default-700">
+                                  {processo.numero}
+                                </span>
+                                {processo.titulo && (
+                                  <span className="text-xs text-default-400">
+                                    {processo.titulo}
+                                  </span>
+                                )}
                               </div>
                             </SelectItem>
                           ))}
@@ -533,7 +683,11 @@ export function ProcuracoesContent() {
                 >
                   Abrir formulário em branco
                 </Button>
-                <Button color="primary" isDisabled={!clienteNovaProcuracaoId} onPress={handleCreateProcuracao}>
+                <Button
+                  color="primary"
+                  isDisabled={!clienteNovaProcuracaoId}
+                  onPress={handleCreateProcuracao}
+                >
                   Continuar
                 </Button>
               </ModalFooter>
@@ -560,7 +714,8 @@ export function ProcuracoesContent() {
                 <h3 className="text-lg font-semibold">Vincular Procuração</h3>
                 {selectedProcuracao && (
                   <p className="text-sm text-default-500">
-                    {selectedProcuracao.numero || "Sem número"} • {selectedProcuracao.cliente?.nome}
+                    {selectedProcuracao.numero || "Sem número"} •{" "}
+                    {selectedProcuracao.cliente?.nome}
                   </p>
                 )}
               </ModalHeader>
@@ -570,12 +725,16 @@ export function ProcuracoesContent() {
                     <Spinner label="Carregando processos..." size="lg" />
                   </div>
                 ) : processosDisponiveis.length === 0 ? (
-                  <p className="text-sm text-default-500">Nenhum processo disponível para este cliente.</p>
+                  <p className="text-sm text-default-500">
+                    Nenhum processo disponível para este cliente.
+                  </p>
                 ) : (
                   <Select
                     label="Processo"
                     placeholder="Selecione o processo"
-                    selectedKeys={selectedProcessoId ? [selectedProcessoId] : []}
+                    selectedKeys={
+                      selectedProcessoId ? [selectedProcessoId] : []
+                    }
                     onSelectionChange={(keys) => {
                       const key = Array.from(keys)[0] as string | undefined;
 
@@ -585,8 +744,14 @@ export function ProcuracoesContent() {
                     {processosDisponiveis.map((processo) => (
                       <SelectItem key={processo.id}>
                         <div className="flex flex-col">
-                          <span className="text-sm font-semibold">{processo.numero}</span>
-                          {processo.titulo && <span className="text-xs text-default-400">{processo.titulo}</span>}
+                          <span className="text-sm font-semibold">
+                            {processo.numero}
+                          </span>
+                          {processo.titulo && (
+                            <span className="text-xs text-default-400">
+                              {processo.titulo}
+                            </span>
+                          )}
                         </div>
                       </SelectItem>
                     ))}
@@ -597,7 +762,14 @@ export function ProcuracoesContent() {
                 <Button variant="light" onPress={closeLinkModal}>
                   Cancelar
                 </Button>
-                <Button color="primary" isDisabled={!selectedProcessoId || processosDisponiveis.length === 0} isLoading={isLinking} onPress={handleLinkProcuracao}>
+                <Button
+                  color="primary"
+                  isDisabled={
+                    !selectedProcessoId || processosDisponiveis.length === 0
+                  }
+                  isLoading={isLinking}
+                  onPress={handleLinkProcuracao}
+                >
                   Vincular
                 </Button>
               </ModalFooter>
