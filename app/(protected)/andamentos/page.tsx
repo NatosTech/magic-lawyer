@@ -1,10 +1,97 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import useSWR from "swr";
-import { Card, CardBody, CardHeader, Button, Input, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Chip, Tooltip, Skeleton } from "@heroui/react";
+import { Card, CardBody, CardHeader, Button, Input, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Chip, Tooltip, Skeleton, DatePicker } from "@heroui/react";
+import { parseDate, getLocalTimeZone, today } from "@internationalized/date";
 import { toast } from "sonner";
-import { Clock, FileText, Calendar, Plus, Search, Filter, X, Pencil, Trash2, AlertCircle, Activity, Bell, Paperclip } from "lucide-react";
+import {
+  Clock,
+  FileText,
+  Calendar,
+  Plus,
+  Search,
+  Filter,
+  X,
+  Pencil,
+  Trash2,
+  AlertCircle,
+  Activity,
+  Bell,
+  Paperclip,
+  MessageSquare,
+  Mail,
+  Smartphone,
+  CheckCircle,
+  AlertTriangle,
+  Info,
+  Zap,
+  Users,
+  Scale,
+  Gavel,
+  FileCheck,
+  Timer,
+  Megaphone,
+  CalendarDays,
+  FolderOpen,
+  Star,
+  TrendingUp,
+  Target,
+  Shield,
+  Award,
+  BookOpen,
+  Briefcase,
+  Building,
+  UserCheck,
+  Send,
+  Eye,
+  Edit3,
+  Save,
+  RefreshCw,
+  Download,
+  Upload,
+  Link,
+  Copy,
+  Share,
+  Heart,
+  ThumbsUp,
+  Flag,
+  MapPin,
+  Phone,
+  Globe,
+  Lock,
+  Unlock,
+  Settings,
+  MoreHorizontal,
+  ChevronRight,
+  ChevronDown,
+  ArrowRight,
+  ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  Sparkles,
+  Rocket,
+  Crown,
+  Gem,
+  Flame,
+  Sun,
+  Moon,
+  Cloud,
+  Rainbow,
+  CheckSquare,
+  Coffee,
+  Lightbulb,
+  Gift,
+  Trophy,
+  Medal,
+  Diamond,
+  Leaf,
+  Flower,
+  TreePine,
+  Mountain,
+  Waves,
+  Tag,
+} from "lucide-react";
 
 import {
   listAndamentos,
@@ -55,6 +142,11 @@ interface Andamento {
     status: string;
   }>;
   createdAt: Date | string;
+  // Campos para notificações
+  notificarCliente?: boolean;
+  notificarEmail?: boolean;
+  notificarWhatsapp?: boolean;
+  mensagemPersonalizada?: string;
 }
 
 interface DashboardData {
@@ -163,6 +255,8 @@ export default function AndamentosPage() {
       case "AUDIENCIA":
         return "secondary";
       case "ANEXO":
+        return "success";
+      case "OUTRO":
         return "default";
       default:
         return "default";
@@ -172,17 +266,19 @@ export default function AndamentosPage() {
   const getTipoIcon = (tipo: MovimentacaoTipo | null) => {
     switch (tipo) {
       case "ANDAMENTO":
-        return <Activity size={16} />;
+        return <Activity size={16} className="text-blue-600 dark:text-blue-400" />;
       case "PRAZO":
-        return <Clock size={16} />;
+        return <Timer size={16} className="text-amber-600 dark:text-amber-400" />;
       case "INTIMACAO":
-        return <Bell size={16} />;
+        return <Megaphone size={16} className="text-red-600 dark:text-red-400" />;
       case "AUDIENCIA":
-        return <Calendar size={16} />;
+        return <CalendarDays size={16} className="text-purple-600 dark:text-purple-400" />;
       case "ANEXO":
-        return <Paperclip size={16} />;
+        return <Paperclip size={16} className="text-green-600 dark:text-green-400" />;
+      case "OUTRO":
+        return <Sparkles size={16} className="text-gray-600 dark:text-gray-400" />;
       default:
-        return <FileText size={16} />;
+        return <FileText size={16} className="text-gray-500" />;
     }
   };
 
@@ -202,7 +298,11 @@ export default function AndamentosPage() {
           <h1 className={title({ size: "lg", color: "blue" })}>Andamentos Processuais</h1>
           <p className={subtitle({ fullWidth: true })}>Timeline completa de movimentações processuais</p>
         </div>
-        <Button color="primary" startContent={<Plus size={20} />} onPress={openCreateModal}>
+        <Button
+          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+          startContent={<Plus size={20} />}
+          onPress={openCreateModal}
+        >
           Novo Andamento
         </Button>
       </div>
@@ -215,73 +315,144 @@ export default function AndamentosPage() {
           ))}
         </div>
       ) : dashboard ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-800/20 border-blue-200 dark:border-blue-700 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardBody className="flex flex-row items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total de Andamentos</p>
-                <p className="text-2xl font-bold">{dashboard.total}</p>
+                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium flex items-center gap-2">
+                  <Sparkles className="text-blue-500" size={16} />
+                  Total de Andamentos
+                </p>
+                <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{dashboard.total}</p>
               </div>
-              <Activity className="text-primary" size={32} />
+              <div className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-lg">
+                <Activity className="text-white" size={28} />
+              </div>
             </CardBody>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-900/20 dark:to-orange-800/20 border-amber-200 dark:border-amber-700 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardBody className="flex flex-row items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Com Prazo</p>
-                <p className="text-2xl font-bold">{dashboard.porTipo.find((t) => t.tipo === "PRAZO")?._count || 0}</p>
+                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium flex items-center gap-2">
+                  <Timer className="text-amber-500" size={16} />
+                  Com Prazo
+                </p>
+                <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">{dashboard.porTipo.find((t) => t.tipo === "PRAZO")?._count || 0}</p>
               </div>
-              <Clock className="text-warning" size={32} />
+              <div className="p-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full shadow-lg">
+                <Clock className="text-white" size={28} />
+              </div>
             </CardBody>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-red-50 to-pink-100 dark:from-red-900/20 dark:to-pink-800/20 border-red-200 dark:border-red-700 shadow-lg hover:shadow-xl transition-all duration-300">
             <CardBody className="flex flex-row items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Intimações</p>
-                <p className="text-2xl font-bold">{dashboard.porTipo.find((t) => t.tipo === "INTIMACAO")?._count || 0}</p>
+                <p className="text-sm text-red-600 dark:text-red-400 font-medium flex items-center gap-2">
+                  <Megaphone className="text-red-500" size={16} />
+                  Intimações
+                </p>
+                <p className="text-3xl font-bold text-red-700 dark:text-red-300">{dashboard.porTipo.find((t) => t.tipo === "INTIMACAO")?._count || 0}</p>
               </div>
-              <Bell className="text-danger" size={32} />
+              <div className="p-4 bg-gradient-to-br from-red-500 to-pink-600 rounded-full shadow-lg">
+                <Bell className="text-white" size={28} />
+              </div>
+            </CardBody>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-800/20 border-green-200 dark:border-green-700 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardBody className="flex flex-row items-center justify-between">
+              <div>
+                <p className="text-sm text-green-600 dark:text-green-400 font-medium flex items-center gap-2">
+                  <CalendarDays className="text-green-500" size={16} />
+                  Audiências
+                </p>
+                <p className="text-3xl font-bold text-green-700 dark:text-green-300">{dashboard.porTipo.find((t) => t.tipo === "AUDIENCIA")?._count || 0}</p>
+              </div>
+              <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full shadow-lg">
+                <Calendar className="text-white" size={28} />
+              </div>
             </CardBody>
           </Card>
         </div>
       ) : null}
 
       {/* Filtros */}
-      <Card>
+      <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
         <CardHeader className="flex flex-col gap-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Filter className="text-slate-500" size={18} />
+            <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">Filtros e Busca</h3>
+          </div>
           <div className="flex gap-2 w-full">
-            <Input className="flex-1" placeholder="Buscar por título ou descrição..." startContent={<Search size={18} />} value={searchTerm} onValueChange={handleSearch} />
-            <Button color={showFilters ? "primary" : "default"} startContent={<Filter size={18} />} variant={showFilters ? "solid" : "flat"} onPress={() => setShowFilters(!showFilters)}>
+            <Input
+              className="flex-1"
+              placeholder="Buscar por título ou descrição..."
+              startContent={<Search size={18} className="text-slate-400" />}
+              value={searchTerm}
+              onValueChange={handleSearch}
+              classNames={{
+                input: "text-slate-700 dark:text-slate-300",
+                inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+              }}
+            />
+            <Button color={showFilters ? "primary" : "default"} startContent={<Filter size={18} />} variant={showFilters ? "solid" : "flat"} onPress={() => setShowFilters(!showFilters)} size="sm">
               Filtros
             </Button>
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full pt-3 border-t">
-              <Select
-                label="Processo"
-                placeholder="Todos os processos"
-                selectedKeys={filters.processoId ? [filters.processoId] : []}
-                onChange={(e) => handleFilterChange("processoId", e.target.value)}
-              >
-                {processos.map((proc: any) => (
-                  <SelectItem key={proc.id}>
-                    {proc.numero} {proc.titulo ? `- ${proc.titulo}` : ""}
-                  </SelectItem>
-                ))}
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full pt-3 border-t border-slate-200 dark:border-slate-600">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-500 dark:text-slate-500">Processo</label>
+                <Select
+                  placeholder="Todos os processos"
+                  selectedKeys={filters.processoId ? [filters.processoId] : []}
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0] as string;
+                    handleFilterChange("processoId", value);
+                  }}
+                  size="sm"
+                  classNames={{
+                    trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                  }}
+                >
+                  {processos.map((proc: any) => (
+                    <SelectItem key={proc.id} textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}>
+                      {proc.numero} {proc.titulo ? `- ${proc.titulo}` : ""}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
 
-              <Select label="Tipo" placeholder="Todos os tipos" selectedKeys={filters.tipo ? [filters.tipo] : []} onChange={(e) => handleFilterChange("tipo", e.target.value)}>
-                {tipos.map((tipo) => (
-                  <SelectItem key={tipo}>{tipo}</SelectItem>
-                ))}
-              </Select>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-500 dark:text-slate-500">Tipo</label>
+                <Select
+                  placeholder="Todos os tipos"
+                  selectedKeys={filters.tipo ? [filters.tipo] : []}
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0] as string;
+                    handleFilterChange("tipo", value);
+                  }}
+                  size="sm"
+                  classNames={{
+                    trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                  }}
+                >
+                  {tipos.map((tipo) => (
+                    <SelectItem key={tipo} textValue={tipo}>
+                      {tipo}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
 
-              <Button color="danger" startContent={<X size={18} />} variant="flat" onPress={clearFilters}>
-                Limpar Filtros
-              </Button>
+              <div className="flex items-end">
+                <Button color="danger" variant="light" startContent={<X size={16} />} onPress={clearFilters} size="sm" className="w-full">
+                  Limpar
+                </Button>
+              </div>
             </div>
           )}
         </CardHeader>
@@ -312,13 +483,43 @@ export default function AndamentosPage() {
               {andamentos.map((andamento) => (
                 <div key={andamento.id} className="relative flex gap-6">
                   {/* Ícone da timeline */}
-                  <div className="relative z-10 flex-shrink-0 w-12 h-12 rounded-full bg-white dark:bg-gray-800 border-4 border-primary flex items-center justify-center">
+                  <div
+                    className={`relative z-10 flex-shrink-0 w-12 h-12 rounded-full bg-white dark:bg-gray-800 border-4 flex items-center justify-center shadow-lg ${
+                      andamento.tipo === "ANDAMENTO"
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                        : andamento.tipo === "PRAZO"
+                          ? "border-amber-500 bg-amber-50 dark:bg-amber-900/20"
+                          : andamento.tipo === "INTIMACAO"
+                            ? "border-red-500 bg-red-50 dark:bg-red-900/20"
+                            : andamento.tipo === "AUDIENCIA"
+                              ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20"
+                              : andamento.tipo === "ANEXO"
+                                ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                                : "border-gray-500 bg-gray-50 dark:bg-gray-900/20"
+                    }`}
+                  >
                     {getTipoIcon(andamento.tipo)}
                   </div>
 
                   {/* Card do andamento */}
-                  <Card isPressable className="flex-1 hover:shadow-lg transition-shadow cursor-pointer" onPress={() => openViewModal(andamento)}>
-                    <CardBody>
+                  <Card
+                    isPressable
+                    className={`flex-1 hover:shadow-xl transition-all duration-300 cursor-pointer border-l-4 ${
+                      andamento.tipo === "ANDAMENTO"
+                        ? "border-l-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10"
+                        : andamento.tipo === "PRAZO"
+                          ? "border-l-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/10"
+                          : andamento.tipo === "INTIMACAO"
+                            ? "border-l-red-500 hover:bg-red-50 dark:hover:bg-red-900/10"
+                            : andamento.tipo === "AUDIENCIA"
+                              ? "border-l-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/10"
+                              : andamento.tipo === "ANEXO"
+                                ? "border-l-green-500 hover:bg-green-50 dark:hover:bg-green-900/10"
+                                : "border-l-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900/10"
+                    }`}
+                    onPress={() => openViewModal(andamento)}
+                  >
+                    <CardBody className="p-4">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -373,14 +574,27 @@ export default function AndamentosPage() {
                         </div>
 
                         <div className="flex gap-2">
-                          <Tooltip content="Editar">
-                            <Button isIconOnly size="sm" variant="light" onPress={() => openEditModal(andamento)}>
-                              <Pencil size={16} />
+                          <Tooltip content="Editar" color="primary">
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              variant="light"
+                              onPress={() => openEditModal(andamento)}
+                              className="text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/20 hover:scale-110 transition-transform duration-200"
+                            >
+                              <Edit3 size={16} />
                             </Button>
                           </Tooltip>
 
-                          <Tooltip content="Excluir">
-                            <Button isIconOnly color="danger" size="sm" variant="light" onPress={() => handleDelete(andamento.id)}>
+                          <Tooltip content="Excluir" color="danger">
+                            <Button
+                              isIconOnly
+                              color="danger"
+                              size="sm"
+                              variant="light"
+                              onPress={() => handleDelete(andamento.id)}
+                              className="text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/20 hover:scale-110 transition-transform duration-200"
+                            >
                               <Trash2 size={16} />
                             </Button>
                           </Tooltip>
@@ -418,58 +632,56 @@ interface AndamentoModalProps {
 function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, onSuccess }: AndamentoModalProps) {
   const isReadOnly = mode === "view";
 
-  const [formData, setFormData] = useState<any>({
-    processoId: "",
-    titulo: "",
-    descricao: "",
-    tipo: "",
-    dataMovimentacao: new Date().toISOString().slice(0, 16),
-    prazo: "",
-    geraPrazo: false,
-    // Campos para notificações
-    notificarCliente: false,
-    notificarEmail: false,
-    notificarWhatsapp: false,
-    mensagemPersonalizada: "",
-  });
-  const [saving, setSaving] = useState(false);
-
-  // Resetar formulário quando modal abre/fecha
-  useState(() => {
-    if (isOpen) {
-      if (mode === "create") {
-        setFormData({
-          processoId: "",
-          titulo: "",
-          descricao: "",
-          tipo: "",
-          dataMovimentacao: new Date().toISOString().slice(0, 16),
-          prazo: "",
-          geraPrazo: false,
-          // Campos para notificações
-          notificarCliente: false,
-          notificarEmail: false,
-          notificarWhatsapp: false,
-          mensagemPersonalizada: "",
-        });
-      } else if (andamento) {
-        setFormData({
-          processoId: andamento.processo.id,
-          titulo: andamento.titulo,
-          descricao: andamento.descricao || "",
-          tipo: andamento.tipo || "",
-          dataMovimentacao: new Date(andamento.dataMovimentacao).toISOString().slice(0, 16),
-          prazo: andamento.prazo ? new Date(andamento.prazo).toISOString().slice(0, 16) : "",
-          geraPrazo: false,
-          // Campos para notificações
-          notificarCliente: false,
-          notificarEmail: false,
-          notificarWhatsapp: false,
-          mensagemPersonalizada: "",
-        });
-      }
+  // Calcular dados iniciais do formulário
+  const initialFormData = useMemo(() => {
+    if (mode === "create") {
+      return {
+        processoId: "",
+        titulo: "",
+        descricao: "",
+        tipo: "",
+        dataMovimentacao: today(getLocalTimeZone()),
+        prazo: null,
+        geraPrazo: false,
+        // Campos para notificações
+        notificarCliente: false,
+        notificarEmail: false,
+        notificarWhatsapp: false,
+        mensagemPersonalizada: "",
+      };
+    } else if (andamento) {
+      return {
+        processoId: andamento.processo.id,
+        titulo: andamento.titulo,
+        descricao: andamento.descricao || "",
+        tipo: andamento.tipo || "",
+        dataMovimentacao: parseDate(new Date(andamento.dataMovimentacao).toISOString().split("T")[0]),
+        prazo: andamento.prazo ? parseDate(new Date(andamento.prazo).toISOString().split("T")[0]) : null,
+        geraPrazo: false,
+        // Campos para notificações
+        notificarCliente: andamento.notificarCliente || false,
+        notificarEmail: andamento.notificarEmail || false,
+        notificarWhatsapp: andamento.notificarWhatsapp || false,
+        mensagemPersonalizada: andamento.mensagemPersonalizada || "",
+      };
     }
-  });
+    return {
+      processoId: "",
+      titulo: "",
+      descricao: "",
+      tipo: "",
+      dataMovimentacao: today(getLocalTimeZone()),
+      prazo: null,
+      geraPrazo: false,
+      notificarCliente: false,
+      notificarEmail: false,
+      notificarWhatsapp: false,
+      mensagemPersonalizada: "",
+    };
+  }, [mode, andamento]);
+
+  const [formData, setFormData] = useState<any>(initialFormData);
+  const [saving, setSaving] = useState(false);
 
   const handleSubmit = async () => {
     if (!formData.processoId || !formData.titulo) {
@@ -485,8 +697,8 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
       titulo: formData.titulo,
       descricao: formData.descricao || undefined,
       tipo: formData.tipo || undefined,
-      dataMovimentacao: formData.dataMovimentacao ? new Date(formData.dataMovimentacao) : undefined,
-      prazo: formData.prazo ? new Date(formData.prazo) : undefined,
+      dataMovimentacao: formData.dataMovimentacao ? new Date(formData.dataMovimentacao.toString()) : undefined,
+      prazo: formData.prazo ? new Date(formData.prazo.toString()) : undefined,
       geraPrazo: formData.geraPrazo,
       // Campos para notificações
       notificarCliente: formData.notificarCliente,
@@ -512,72 +724,135 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
     <Modal isOpen={isOpen} scrollBehavior="inside" size="2xl" onClose={onClose}>
       <ModalContent>
         <ModalHeader>
-          {mode === "create" && "Novo Andamento"}
-          {mode === "edit" && "Editar Andamento"}
-          {mode === "view" && "Detalhes do Andamento"}
+          <div className="flex items-center gap-3">
+            {mode === "create" && (
+              <>
+                <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg">
+                  <Plus className="text-white" size={20} />
+                </div>
+                <span className="text-xl font-semibold">Novo Andamento</span>
+              </>
+            )}
+            {mode === "edit" && (
+              <>
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                  <Edit3 className="text-white" size={20} />
+                </div>
+                <span className="text-xl font-semibold">Editar Andamento</span>
+              </>
+            )}
+            {mode === "view" && (
+              <>
+                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg">
+                  <Eye className="text-white" size={20} />
+                </div>
+                <span className="text-xl font-semibold">Detalhes do Andamento</span>
+              </>
+            )}
+          </div>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
-            <Select
-              isRequired
-              isDisabled={isReadOnly || mode === "edit"}
-              label="Processo"
-              placeholder="Selecione o processo"
-              selectedKeys={formData.processoId ? [formData.processoId] : []}
-              onChange={(e) => setFormData({ ...formData, processoId: e.target.value })}
-            >
-              {processos.map((proc: any) => (
-                <SelectItem key={proc.id}>
-                  {proc.numero} {proc.titulo ? `- ${proc.titulo}` : ""}
-                </SelectItem>
-              ))}
-            </Select>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <FileText className="text-blue-500" size={16} />
+                Processo
+              </label>
+              <Select
+                isRequired
+                isDisabled={isReadOnly || mode === "edit"}
+                placeholder="Selecione o processo"
+                selectedKeys={formData.processoId ? [formData.processoId] : []}
+                onSelectionChange={(keys) => {
+                  const value = Array.from(keys)[0] as string;
+                  setFormData({ ...formData, processoId: value });
+                }}
+                classNames={{
+                  trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                }}
+              >
+                {processos.map((proc: any) => (
+                  <SelectItem key={proc.id} textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}>
+                    {proc.numero} {proc.titulo ? `- ${proc.titulo}` : ""}
+                  </SelectItem>
+                ))}
+              </Select>
+            </div>
 
-            <Input
-              isRequired
-              isReadOnly={isReadOnly}
-              label="Título"
-              placeholder="Ex: Sentença proferida, Intimação recebida, etc"
-              value={formData.titulo}
-              onValueChange={(value) => setFormData({ ...formData, titulo: value })}
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <Star className="text-yellow-500" size={16} />
+                Título
+              </label>
+              <Input
+                isRequired
+                isReadOnly={isReadOnly}
+                placeholder="Ex: Sentença proferida, Intimação recebida, etc"
+                value={formData.titulo}
+                onValueChange={(value) => setFormData({ ...formData, titulo: value })}
+                classNames={{
+                  input: "text-slate-700 dark:text-slate-300",
+                  inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                }}
+              />
+            </div>
 
-            <Textarea
-              isReadOnly={isReadOnly}
-              label="Descrição"
-              minRows={3}
-              placeholder="Descreva o andamento em detalhes..."
-              value={formData.descricao}
-              onValueChange={(value) => setFormData({ ...formData, descricao: value })}
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <FileText className="text-green-500" size={16} />
+                Descrição
+              </label>
+              <Textarea
+                isReadOnly={isReadOnly}
+                minRows={3}
+                placeholder="Descreva o andamento em detalhes..."
+                value={formData.descricao}
+                onValueChange={(value) => setFormData({ ...formData, descricao: value })}
+                classNames={{
+                  input: "text-slate-700 dark:text-slate-300",
+                  inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                }}
+              />
+            </div>
 
             <Select
               isDisabled={isReadOnly}
               label="Tipo"
               placeholder="Selecione o tipo"
               selectedKeys={formData.tipo ? [formData.tipo] : []}
-              onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+              onSelectionChange={(keys) => {
+                const value = Array.from(keys)[0] as string;
+                setFormData({ ...formData, tipo: value });
+              }}
             >
               {tipos.map((tipo) => (
-                <SelectItem key={tipo}>{tipo}</SelectItem>
+                <SelectItem key={tipo} textValue={tipo}>
+                  {tipo}
+                </SelectItem>
               ))}
             </Select>
 
-            <Input
+            <DatePicker
               isReadOnly={isReadOnly}
               label="Data da Movimentação"
-              type="datetime-local"
               value={formData.dataMovimentacao}
-              onValueChange={(value) => setFormData({ ...formData, dataMovimentacao: value })}
+              onChange={(date) => {
+                if (date) {
+                  setFormData({ ...formData, dataMovimentacao: date });
+                }
+              }}
+              className="w-full"
             />
 
-            <Input
+            <DatePicker
               description="Se houver prazo relacionado a este andamento"
               isReadOnly={isReadOnly}
               label="Prazo (opcional)"
-              type="datetime-local"
               value={formData.prazo}
-              onValueChange={(value) => setFormData({ ...formData, prazo: value })}
+              onChange={(date) => {
+                setFormData({ ...formData, prazo: date });
+              }}
+              className="w-full"
             />
 
             {!isReadOnly && formData.prazo && mode === "create" && (
@@ -589,36 +864,67 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
 
             {/* Seção de Notificações */}
             {!isReadOnly && (
-              <div className="space-y-4 pt-4 border-t">
-                <h3 className="text-lg font-semibold">Notificações</h3>
-
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input checked={formData.notificarCliente} className="w-4 h-4" type="checkbox" onChange={(e) => setFormData({ ...formData, notificarCliente: e.target.checked })} />
-                  <span className="text-sm font-medium">Notificar cliente sobre este andamento</span>
-                </label>
-
-                {formData.notificarCliente && (
-                  <div className="ml-6 space-y-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input checked={formData.notificarEmail} className="w-4 h-4" type="checkbox" onChange={(e) => setFormData({ ...formData, notificarEmail: e.target.checked })} />
-                      <span className="text-sm">Enviar notificação por email</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input checked={formData.notificarWhatsapp} className="w-4 h-4" type="checkbox" onChange={(e) => setFormData({ ...formData, notificarWhatsapp: e.target.checked })} />
-                      <span className="text-sm">Enviar notificação por WhatsApp</span>
-                    </label>
-
-                    <Textarea
-                      isReadOnly={isReadOnly}
-                      label="Mensagem personalizada (opcional)"
-                      placeholder="Deixe em branco para usar mensagem padrão..."
-                      minRows={2}
-                      value={formData.mensagemPersonalizada}
-                      onValueChange={(value) => setFormData({ ...formData, mensagemPersonalizada: value })}
-                    />
+              <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                    <Bell className="text-blue-600 dark:text-blue-400" size={20} />
                   </div>
-                )}
+                  <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Notificações</h3>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3">
+                  <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                    <input
+                      checked={formData.notificarCliente}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                      type="checkbox"
+                      onChange={(e) => setFormData({ ...formData, notificarCliente: e.target.checked })}
+                    />
+                    <MessageSquare className="text-slate-600 dark:text-slate-400" size={18} />
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Notificar cliente sobre este andamento</span>
+                  </label>
+
+                  {formData.notificarCliente && (
+                    <div className="ml-6 space-y-3 border-l-2 border-blue-200 dark:border-blue-700 pl-4">
+                      <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                        <input
+                          checked={formData.notificarEmail}
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          type="checkbox"
+                          onChange={(e) => setFormData({ ...formData, notificarEmail: e.target.checked })}
+                        />
+                        <Mail className="text-blue-600 dark:text-blue-400" size={18} />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">Enviar notificação por email</span>
+                      </label>
+
+                      <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                        <input
+                          checked={formData.notificarWhatsapp}
+                          className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          type="checkbox"
+                          onChange={(e) => setFormData({ ...formData, notificarWhatsapp: e.target.checked })}
+                        />
+                        <Smartphone className="text-green-600 dark:text-green-400" size={18} />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">Enviar notificação por WhatsApp</span>
+                      </label>
+
+                      <div className="mt-4">
+                        <Textarea
+                          isReadOnly={isReadOnly}
+                          label="Mensagem personalizada (opcional)"
+                          placeholder="Deixe em branco para usar mensagem padrão..."
+                          minRows={2}
+                          value={formData.mensagemPersonalizada}
+                          onValueChange={(value) => setFormData({ ...formData, mensagemPersonalizada: value })}
+                          classNames={{
+                            input: "text-slate-700 dark:text-slate-300",
+                            inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
