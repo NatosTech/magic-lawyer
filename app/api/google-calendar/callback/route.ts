@@ -43,6 +43,8 @@ export async function GET(request: NextRequest) {
 
     // Extrair userId e domínio original do state
     const [userId, originalDomain] = state.split("|");
+    
+    logger.info(`Callback Google Calendar - userId: ${userId}, originalDomain: ${originalDomain}`);
 
     // Processar o callback
     const result = await handleGoogleCalendarCallback(code, userId);
@@ -53,9 +55,17 @@ export async function GET(request: NextRequest) {
       );
 
       // Redirecionar para o domínio original se disponível
-      const redirectDomain = originalDomain || request.url.split("/")[2];
-      const protocol = redirectDomain?.includes("localhost") ? "http" : "https";
-      const redirectUrl = new URL("/agenda", `${protocol}://${redirectDomain}`);
+      let redirectUrl;
+      if (originalDomain && originalDomain !== "") {
+        // Usar o domínio original do state
+        const protocol = originalDomain.includes("localhost") ? "http" : "https";
+        redirectUrl = new URL("/agenda", `${protocol}://${originalDomain}`);
+      } else {
+        // Fallback para o domínio atual da requisição
+        const host = request.headers.get("host");
+        const protocol = request.headers.get("x-forwarded-proto") || "https";
+        redirectUrl = new URL("/agenda", `${protocol}://${host}`);
+      }
 
       redirectUrl.searchParams.set("google_calendar_success", "true");
       redirectUrl.searchParams.set(
@@ -70,9 +80,17 @@ export async function GET(request: NextRequest) {
       );
 
       // Redirecionar para o domínio original com erro
-      const redirectDomain = originalDomain || request.url.split("/")[2];
-      const protocol = redirectDomain?.includes("localhost") ? "http" : "https";
-      const redirectUrl = new URL("/agenda", `${protocol}://${redirectDomain}`);
+      let redirectUrl;
+      if (originalDomain && originalDomain !== "") {
+        // Usar o domínio original do state
+        const protocol = originalDomain.includes("localhost") ? "http" : "https";
+        redirectUrl = new URL("/agenda", `${protocol}://${originalDomain}`);
+      } else {
+        // Fallback para o domínio atual da requisição
+        const host = request.headers.get("host");
+        const protocol = request.headers.get("x-forwarded-proto") || "https";
+        redirectUrl = new URL("/agenda", `${protocol}://${host}`);
+      }
 
       redirectUrl.searchParams.set(
         "google_calendar_error",
