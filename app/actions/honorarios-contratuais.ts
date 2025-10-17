@@ -29,11 +29,7 @@ async function getUserId(): Promise<string> {
 // LISTAR HONORÁRIOS CONTRATUAIS
 // ============================================
 
-export async function listHonorariosContratuais(filters?: {
-  contratoId?: string;
-  tipo?: "FIXO" | "SUCESSO" | "HIBRIDO";
-  ativo?: boolean;
-}) {
+export async function listHonorariosContratuais(filters?: { contratoId?: string; tipo?: "FIXO" | "SUCESSO" | "HIBRIDO"; ativo?: boolean }) {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -73,11 +69,7 @@ export async function listHonorariosContratuais(filters?: {
     // 2. Honorários PRIVADOS onde ele é o advogado vinculado
     // 3. Honorários sem advogado específico (gerais do contrato)
     if (userRole === "ADVOGADO" && advogadoId) {
-      where.OR = [
-        { visibilidade: "PUBLICO" },
-        { advogadoId: advogadoId },
-        { advogadoId: null },
-      ];
+      where.OR = [{ visibilidade: "PUBLICO" }, { advogadoId: advogadoId }, { advogadoId: null }];
     }
 
     const honorarios = await prisma.contratoHonorario.findMany({
@@ -103,9 +95,7 @@ export async function listHonorariosContratuais(filters?: {
     });
 
     // Converter Decimal para number e serializar
-    const convertedData = honorarios.map((item) =>
-      convertAllDecimalFields(item),
-    );
+    const convertedData = honorarios.map((item) => convertAllDecimalFields(item));
     const serialized = JSON.parse(JSON.stringify(convertedData));
 
     return {
@@ -217,25 +207,17 @@ export async function createHonorarioContratual(data: {
       };
     }
 
-    if (
-      data.tipo === "SUCESSO" &&
-      (!data.percentualSucesso || !data.valorMinimoSucesso)
-    ) {
+    if (data.tipo === "SUCESSO" && (!data.percentualSucesso || !data.valorMinimoSucesso)) {
       return {
         success: false,
-        error:
-          "Percentual de sucesso e valor mínimo são obrigatórios para honorários por sucesso",
+        error: "Percentual de sucesso e valor mínimo são obrigatórios para honorários por sucesso",
       };
     }
 
-    if (
-      data.tipo === "HIBRIDO" &&
-      (!data.valorFixo || !data.percentualSucesso)
-    ) {
+    if (data.tipo === "HIBRIDO" && (!data.valorFixo || !data.percentualSucesso)) {
       return {
         success: false,
-        error:
-          "Valor fixo e percentual de sucesso são obrigatórios para honorários híbridos",
+        error: "Valor fixo e percentual de sucesso são obrigatórios para honorários híbridos",
       };
     }
 
@@ -246,12 +228,8 @@ export async function createHonorarioContratual(data: {
         advogadoId: data.advogadoId,
         tipo: data.tipo,
         valorFixo: data.valorFixo ? Number(data.valorFixo) : null,
-        percentualSucesso: data.percentualSucesso
-          ? Number(data.percentualSucesso)
-          : null,
-        valorMinimoSucesso: data.valorMinimoSucesso
-          ? Number(data.valorMinimoSucesso)
-          : null,
+        percentualSucesso: data.percentualSucesso ? Number(data.percentualSucesso) : null,
+        valorMinimoSucesso: data.valorMinimoSucesso ? Number(data.valorMinimoSucesso) : null,
         baseCalculo: data.baseCalculo,
         observacoes: data.observacoes,
         visibilidade: data.visibilidade || "PRIVADO",
@@ -316,7 +294,7 @@ export async function updateHonorarioContratual(
     valorMinimoSucesso?: number;
     baseCalculo?: string;
     observacoes?: string;
-  },
+  }
 ) {
   try {
     const tenantId = await getTenantId();
@@ -346,28 +324,17 @@ export async function updateHonorarioContratual(
       };
     }
 
-    if (
-      (tipo === "SUCESSO" &&
-        !data.percentualSucesso &&
-        !honorarioExistente.percentualSucesso) ||
-      (!data.valorMinimoSucesso && !honorarioExistente.valorMinimoSucesso)
-    ) {
+    if ((tipo === "SUCESSO" && !data.percentualSucesso && !honorarioExistente.percentualSucesso) || (!data.valorMinimoSucesso && !honorarioExistente.valorMinimoSucesso)) {
       return {
         success: false,
-        error:
-          "Percentual de sucesso e valor mínimo são obrigatórios para honorários por sucesso",
+        error: "Percentual de sucesso e valor mínimo são obrigatórios para honorários por sucesso",
       };
     }
 
-    if (
-      tipo === "HIBRIDO" &&
-      ((!data.valorFixo && !honorarioExistente.valorFixo) ||
-        (!data.percentualSucesso && !honorarioExistente.percentualSucesso))
-    ) {
+    if (tipo === "HIBRIDO" && ((!data.valorFixo && !honorarioExistente.valorFixo) || (!data.percentualSucesso && !honorarioExistente.percentualSucesso))) {
       return {
         success: false,
-        error:
-          "Valor fixo e percentual de sucesso são obrigatórios para honorários híbridos",
+        error: "Valor fixo e percentual de sucesso são obrigatórios para honorários híbridos",
       };
     }
 
@@ -375,18 +342,9 @@ export async function updateHonorarioContratual(
       where: { id },
       data: {
         tipo,
-        valorFixo:
-          data.valorFixo !== undefined
-            ? Number(data.valorFixo)
-            : honorarioExistente.valorFixo,
-        percentualSucesso:
-          data.percentualSucesso !== undefined
-            ? Number(data.percentualSucesso)
-            : honorarioExistente.percentualSucesso,
-        valorMinimoSucesso:
-          data.valorMinimoSucesso !== undefined
-            ? Number(data.valorMinimoSucesso)
-            : honorarioExistente.valorMinimoSucesso,
+        valorFixo: data.valorFixo !== undefined ? Number(data.valorFixo) : honorarioExistente.valorFixo,
+        percentualSucesso: data.percentualSucesso !== undefined ? Number(data.percentualSucesso) : honorarioExistente.percentualSucesso,
+        valorMinimoSucesso: data.valorMinimoSucesso !== undefined ? Number(data.valorMinimoSucesso) : honorarioExistente.valorMinimoSucesso,
         baseCalculo: data.baseCalculo,
         observacoes: data.observacoes,
       },
@@ -517,10 +475,7 @@ export async function getTiposHonorario() {
 // CALCULAR VALOR DO HONORÁRIO
 // ============================================
 
-export async function calcularValorHonorario(
-  honorarioId: string,
-  valorBase?: number,
-) {
+export async function calcularValorHonorario(honorarioId: string, valorBase?: number) {
   try {
     const tenantId = await getTenantId();
 
@@ -551,8 +506,7 @@ export async function calcularValorHonorario(
         if (!valorBase) {
           return {
             success: false,
-            error:
-              "Valor base é necessário para calcular honorário por sucesso",
+            error: "Valor base é necessário para calcular honorário por sucesso",
           };
         }
         const percentual = Number(honorario.percentualSucesso || 0);

@@ -96,9 +96,7 @@ async function getUserId(): Promise<string> {
 // CRUD - LISTAR
 // ============================================
 
-export async function listModelosPeticao(
-  filters: ModeloPeticaoFilters = {},
-): Promise<ActionResponse<ModeloPeticaoListItem[]>> {
+export async function listModelosPeticao(filters: ModeloPeticaoFilters = {}): Promise<ActionResponse<ModeloPeticaoListItem[]>> {
   try {
     const tenantId = await getTenantId();
 
@@ -161,9 +159,7 @@ export async function listModelosPeticao(
 // CRUD - BUSCAR POR ID
 // ============================================
 
-export async function getModeloPeticao(
-  id: string,
-): Promise<ActionResponse<ModeloPeticaoDetail>> {
+export async function getModeloPeticao(id: string): Promise<ActionResponse<ModeloPeticaoDetail>> {
   try {
     const tenantId = await getTenantId();
 
@@ -207,9 +203,7 @@ export async function getModeloPeticao(
 // CRUD - CRIAR
 // ============================================
 
-export async function createModeloPeticao(
-  input: ModeloPeticaoCreateInput,
-): Promise<ActionResponse<ModeloPeticao>> {
+export async function createModeloPeticao(input: ModeloPeticaoCreateInput): Promise<ActionResponse<ModeloPeticao>> {
   try {
     const tenantId = await getTenantId();
 
@@ -247,10 +241,7 @@ export async function createModeloPeticao(
 // CRUD - ATUALIZAR
 // ============================================
 
-export async function updateModeloPeticao(
-  id: string,
-  input: ModeloPeticaoUpdateInput,
-): Promise<ActionResponse<ModeloPeticao>> {
+export async function updateModeloPeticao(id: string, input: ModeloPeticaoUpdateInput): Promise<ActionResponse<ModeloPeticao>> {
   try {
     const tenantId = await getTenantId();
 
@@ -356,9 +347,7 @@ export async function deleteModeloPeticao(id: string): Promise<ActionResponse> {
 /**
  * Duplicar um modelo de petição
  */
-export async function duplicateModeloPeticao(
-  id: string,
-): Promise<ActionResponse<ModeloPeticao>> {
+export async function duplicateModeloPeticao(id: string): Promise<ActionResponse<ModeloPeticao>> {
   try {
     const tenantId = await getTenantId();
 
@@ -410,9 +399,7 @@ export async function duplicateModeloPeticao(
 /**
  * Ativar/Desativar modelo
  */
-export async function toggleModeloPeticaoStatus(
-  id: string,
-): Promise<ActionResponse<ModeloPeticao>> {
+export async function toggleModeloPeticaoStatus(id: string): Promise<ActionResponse<ModeloPeticao>> {
   try {
     const tenantId = await getTenantId();
 
@@ -457,9 +444,7 @@ export async function toggleModeloPeticaoStatus(
 /**
  * Buscar categorias únicas
  */
-export async function getCategoriasModeloPeticao(): Promise<
-  ActionResponse<string[]>
-> {
+export async function getCategoriasModeloPeticao(): Promise<ActionResponse<string[]>> {
   try {
     const tenantId = await getTenantId();
 
@@ -497,9 +482,7 @@ export async function getCategoriasModeloPeticao(): Promise<
 /**
  * Buscar tipos únicos
  */
-export async function getTiposModeloPeticao(): Promise<
-  ActionResponse<string[]>
-> {
+export async function getTiposModeloPeticao(): Promise<ActionResponse<string[]>> {
   try {
     const tenantId = await getTenantId();
 
@@ -537,10 +520,7 @@ export async function getTiposModeloPeticao(): Promise<
 /**
  * Processar template com variáveis
  */
-export async function processarTemplate(
-  modeloId: string,
-  variaveis: Record<string, any>,
-): Promise<ActionResponse<string>> {
+export async function processarTemplate(modeloId: string, variaveis: Record<string, any>): Promise<ActionResponse<string>> {
   try {
     const tenantId = await getTenantId();
 

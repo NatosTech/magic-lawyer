@@ -35,7 +35,7 @@ export interface ComprovantePagamento {
  */
 export async function uploadComprovantePagamento(
   parcelaId: string,
-  file: File,
+  file: File
 ): Promise<{
   success: boolean;
   comprovante?: ComprovantePagamento;
@@ -180,9 +180,7 @@ export async function getComprovantesParcela(parcelaId: string): Promise<{
 /**
  * Deletar comprovante
  */
-export async function deleteComprovantePagamento(
-  comprovanteId: string,
-): Promise<{
+export async function deleteComprovantePagamento(comprovanteId: string): Promise<{
   success: boolean;
   error?: string;
 }> {
@@ -243,7 +241,7 @@ export async function deleteComprovantePagamento(
  */
 export async function alterarStatusComprovante(
   comprovanteId: string,
-  status: "pendente" | "aprovado" | "rejeitado",
+  status: "pendente" | "aprovado" | "rejeitado"
 ): Promise<{
   success: boolean;
   error?: string;

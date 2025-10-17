@@ -1,12 +1,6 @@
 import useSWR from "swr";
 
-import {
-  listParcelasContrato,
-  getParcelaContrato,
-  getDashboardParcelas,
-  getStatusParcelas,
-  getProcessosComParcelas,
-} from "@/app/actions/parcelas-contrato";
+import { listParcelasContrato, getParcelaContrato, getDashboardParcelas, getStatusParcelas, getProcessosComParcelas } from "@/app/actions/parcelas-contrato";
 
 // Hook para listar parcelas de contrato
 export function useParcelasContrato(filters?: {
@@ -20,14 +14,10 @@ export function useParcelasContrato(filters?: {
   formaPagamento?: string;
   apenasVencidas?: boolean;
 }) {
-  const { data, error, isLoading, mutate } = useSWR(
-    ["parcelas-contrato", filters],
-    () => listParcelasContrato(filters),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    },
-  );
+  const { data, error, isLoading, mutate } = useSWR(["parcelas-contrato", filters], () => listParcelasContrato(filters), {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+  });
 
   return {
     parcelas: data?.data || [],
@@ -39,14 +29,10 @@ export function useParcelasContrato(filters?: {
 
 // Hook para buscar parcela específica
 export function useParcelaContrato(id: string) {
-  const { data, error, isLoading, mutate } = useSWR(
-    id ? ["parcela-contrato", id] : null,
-    () => getParcelaContrato(id),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    },
-  );
+  const { data, error, isLoading, mutate } = useSWR(id ? ["parcela-contrato", id] : null, () => getParcelaContrato(id), {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+  });
 
   return {
     parcela: data?.data,
@@ -58,15 +44,11 @@ export function useParcelaContrato(id: string) {
 
 // Hook para dashboard de parcelas
 export function useDashboardParcelas() {
-  const { data, error, isLoading, mutate } = useSWR(
-    "dashboard-parcelas",
-    getDashboardParcelas,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      refreshInterval: 30000, // Atualizar a cada 30 segundos
-    },
-  );
+  const { data, error, isLoading, mutate } = useSWR("dashboard-parcelas", getDashboardParcelas, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    refreshInterval: 30000, // Atualizar a cada 30 segundos
+  });
 
   return {
     dashboard: data?.data,
@@ -78,14 +60,10 @@ export function useDashboardParcelas() {
 
 // Hook para status de parcelas
 export function useStatusParcelas() {
-  const { data, error, isLoading } = useSWR(
-    "status-parcelas",
-    getStatusParcelas,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    },
-  );
+  const { data, error, isLoading } = useSWR("status-parcelas", getStatusParcelas, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
 
   return {
     status: data?.data || [],
@@ -96,14 +74,10 @@ export function useStatusParcelas() {
 
 // Hook para buscar processos que têm parcelas
 export function useProcessosComParcelas() {
-  const { data, error, isLoading, mutate } = useSWR(
-    "processos-com-parcelas",
-    getProcessosComParcelas,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    },
-  );
+  const { data, error, isLoading, mutate } = useSWR("processos-com-parcelas", getProcessosComParcelas, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+  });
 
   return {
     processos: data?.data || [],
