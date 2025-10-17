@@ -1,10 +1,12 @@
 "use server";
 
-import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/auth";
+import prisma from "@/app/lib/prisma";
 import { whatsappService, sendAndamentoNotification } from "@/lib/whatsapp-service";
 import { emailService, sendAndamentoEmailNotification } from "@/lib/email-service";
-import { revalidatePath } from "next/cache";
 
 export interface NotificacaoResult {
   success: boolean;
@@ -33,7 +35,8 @@ export async function enviarNotificacaoAndamento(
   } = {}
 ): Promise<NotificacaoResult> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.tenantId) {
       return {
         success: false,
@@ -125,7 +128,7 @@ export async function enviarNotificacaoAndamento(
             dataMovimentacao: andamento.dataMovimentacao,
           },
           cliente.nome,
-          session.user.tenant?.name || "Escritório de Advocacia"
+          session.user.tenantName || "Escritório de Advocacia"
         );
 
         resultado.email = {
@@ -160,12 +163,15 @@ export async function enviarNotificacaoAndamento(
     // Verifica se pelo menos uma notificação foi enviada com sucesso
     const whatsappSuccess = resultado.whatsapp?.success ?? true;
     const emailSuccess = resultado.email?.success ?? true;
+
     resultado.success = whatsappSuccess && emailSuccess;
 
     revalidatePath("/andamentos");
+
     return resultado;
   } catch (error) {
     console.error("Erro ao enviar notificação de andamento:", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro interno do servidor",
@@ -178,7 +184,8 @@ export async function enviarNotificacaoAndamento(
  */
 export async function testarWhatsApp(numero: string, mensagem: string = "Teste de integração WhatsApp - Magic Lawyer"): Promise<{ success: boolean; error?: string; provider?: string }> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.tenantId) {
       return {
         success: false,
@@ -188,7 +195,7 @@ export async function testarWhatsApp(numero: string, mensagem: string = "Teste d
 
     const resultado = await whatsappService.sendMessage({
       to: whatsappService.formatPhoneNumber(numero),
-      message,
+      message: mensagem,
       type: "text",
     });
 
@@ -214,7 +221,8 @@ export async function testarEmail(
   mensagem: string = "Este é um teste de integração do sistema de emails do Magic Lawyer."
 ): Promise<{ success: boolean; error?: string; provider?: string }> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.tenantId) {
       return {
         success: false,
@@ -229,9 +237,9 @@ export async function testarEmail(
         <h2>Teste de Integração</h2>
         <p>${mensagem}</p>
         <p><strong>Data/Hora:</strong> ${new Date().toLocaleString("pt-BR")}</p>
-        <p><strong>Tenant:</strong> ${session.user.tenant?.name || "N/A"}</p>
+        <p><strong>Tenant:</strong> ${session.user.tenantName || "N/A"}</p>
       `,
-      text: `${mensagem}\n\nData/Hora: ${new Date().toLocaleString("pt-BR")}\nTenant: ${session.user.tenant?.name || "N/A"}`,
+      text: `${mensagem}\n\nData/Hora: ${new Date().toLocaleString("pt-BR")}\nTenant: ${session.user.tenantName || "N/A"}`,
     });
 
     return {
@@ -255,7 +263,8 @@ export async function obterStatusProvedores(): Promise<{
   email: Array<{ name: string; configured: boolean }>;
 }> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.tenantId) {
       throw new Error("Usuário não autenticado");
     }
@@ -266,6 +275,7 @@ export async function obterStatusProvedores(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao obter status dos provedores:", error);
+
     return {
       whatsapp: [],
       email: [],
@@ -297,7 +307,8 @@ export async function enviarNotificacoesLote(
   };
 }> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.tenantId) {
       return {
         success: false,
@@ -313,6 +324,7 @@ export async function enviarNotificacoesLote(
     for (const andamentoId of andamentoIds) {
       try {
         const resultado = await enviarNotificacaoAndamento(andamentoId, options);
+
         resultados.push({
           andamentoId,
           success: resultado.success,
@@ -345,6 +357,7 @@ export async function enviarNotificacoesLote(
     };
   } catch (error) {
     console.error("Erro ao enviar notificações em lote:", error);
+
     return {
       success: false,
       resultados: [],
@@ -363,7 +376,8 @@ export async function obterEstatisticasNotificacoes(): Promise<{
   andamentosComNotificacao: number;
 }> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.tenantId) {
       throw new Error("Usuário não autenticado");
     }
@@ -400,6 +414,7 @@ export async function obterEstatisticasNotificacoes(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao obter estatísticas de notificações:", error);
+
     return {
       totalAndamentos: 0,
       andamentosComWhatsapp: 0,

@@ -1,8 +1,9 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
+
 import { authOptions } from "@/auth";
-import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
+import prisma from "@/app/lib/prisma";
 import { UserRole, ContratoParcelaStatus, HonorarioVisibilidade } from "@/app/generated/prisma";
 import logger from "@/lib/logger";
 
@@ -71,6 +72,7 @@ async function getSession() {
   }
 
   const user = session.user as any;
+
   return {
     userId: user.id,
     tenantId: user.tenantId,
@@ -239,6 +241,7 @@ export async function getGraficoParcelas(filtros?: FiltrosDashboard): Promise<Gr
         }
 
         const valor = Number(parcela.valor);
+
         acc[mes].total += valor;
 
         switch (parcela.status) {
@@ -339,17 +342,20 @@ export async function getHonorariosPorAdvogado(filtros?: FiltrosDashboard): Prom
 
         // Calcular valor do honorário baseado no tipo
         let valorHonorario = 0;
+
         if (honorario.tipo === "FIXO" && honorario.valorFixo) {
           valorHonorario = Number(honorario.valorFixo);
         } else if (honorario.tipo === "SUCESSO" && honorario.percentualSucesso) {
           // Para honorários de sucesso, usar percentual do valor do contrato
           const valorContrato = Number(honorario.contrato.valor || 0);
+
           valorHonorario = (valorContrato * Number(honorario.percentualSucesso)) / 100;
         } else if (honorario.tipo === "HIBRIDO") {
           // Para híbrido, somar valor fixo + percentual
           const valorFixo = Number(honorario.valorFixo || 0);
           const valorContrato = Number(honorario.contrato.valor || 0);
           const percentual = Number(honorario.percentualSucesso || 0);
+
           valorHonorario = valorFixo + (valorContrato * percentual) / 100;
         }
 
@@ -362,6 +368,7 @@ export async function getHonorariosPorAdvogado(filtros?: FiltrosDashboard): Prom
 
         // Proporção de honorários recebidos vs pendentes
         const totalParcelas = parcelas.length;
+
         if (totalParcelas > 0) {
           const proporcaoRecebida = parcelasRecebidas.length / totalParcelas;
           const proporcaoPendente = parcelasPendentes.length / totalParcelas;
@@ -421,7 +428,7 @@ export async function getDadosBancariosAtivos(): Promise<
       bancoNome: db.banco?.nome || "Banco não encontrado",
       agencia: db.agencia,
       conta: `${db.conta}${db.digitoConta ? `-${db.digitoConta}` : ""}`,
-      chavePix: db.chavePix,
+      chavePix: db.chavePix || undefined,
       principal: db.principal,
     }));
   } catch (error) {
@@ -501,7 +508,7 @@ export async function getClientesAtivos(): Promise<
     return clientes.map((cliente) => ({
       id: cliente.id,
       nome: cliente.nome,
-      documento: cliente.documento,
+      documento: cliente.documento || "",
     }));
   } catch (error) {
     logger.error("Erro ao buscar clientes ativos:", error);

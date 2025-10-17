@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Card, CardBody, CardHeader, Button, Spinner, Divider, Skeleton } from "@heroui/react";
-import { Download, TrendingUp } from "lucide-react";
+import { Card, CardBody, CardHeader, Button, Divider, Skeleton } from "@heroui/react";
+import { Download } from "lucide-react";
+
 import { useDashboardFinanceiro } from "@/app/hooks/use-dashboard-financeiro";
 import { MetricasCards } from "@/components/dashboard-financeiro/metricas-cards";
 import { GraficoParcelasComponent } from "@/components/dashboard-financeiro/grafico-parcelas";
@@ -43,27 +44,27 @@ export default function DashboardFinanceiroPage() {
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 py-12 px-3 sm:px-6">
       {/* Header */}
-      <motion.header className="space-y-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <motion.header animate={{ opacity: 1, y: 0 }} className="space-y-4" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5 }}>
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Visão geral</p>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 flex-1">
             <h1 className={title({ size: "lg", color: "blue" })}>Dashboard Financeiro</h1>
             <p className={subtitle({ fullWidth: true })}>Visão geral das receitas, despesas e performance financeira</p>
           </div>
-          <Button color="primary" variant="flat" startContent={<Download className="h-4 w-4" />} onPress={handleExport}>
+          <Button color="primary" startContent={<Download className="h-4 w-4" />} variant="flat" onPress={handleExport}>
             Exportar
           </Button>
         </div>
       </motion.header>
 
       {/* Filtros */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-        <FiltrosDashboardComponent filtros={filtros} onFiltrosChange={setFiltros} advogados={advogados} clientes={clientes} dadosBancarios={dadosBancarios} isLoading={isLoading} />
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.1 }}>
+        <FiltrosDashboardComponent advogados={advogados} clientes={clientes} dadosBancarios={dadosBancarios} filtros={filtros} isLoading={isLoading} onFiltrosChange={setFiltros} />
       </motion.div>
 
       {/* Loading State */}
       {isLoading && (
-        <motion.div className="space-y-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+        <motion.div animate={{ opacity: 1 }} className="space-y-8" initial={{ opacity: 0 }} transition={{ duration: 0.3 }}>
           {/* Skeleton para Métricas */}
           <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
             <CardHeader className="flex flex-col gap-2 pb-2">
@@ -112,7 +113,7 @@ export default function DashboardFinanceiroPage() {
 
       {/* Content */}
       {!isLoading && (
-        <motion.div className="space-y-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}>
+        <motion.div animate={{ opacity: 1 }} className="space-y-8" initial={{ opacity: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
           {/* Métricas Cards */}
           <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
             <CardHeader className="flex flex-col gap-2 pb-2">
@@ -121,7 +122,17 @@ export default function DashboardFinanceiroPage() {
             </CardHeader>
             <Divider className="border-white/10" />
             <CardBody>
-              <MetricasCards metricas={metricas} isLoading={isLoading} />
+              <MetricasCards
+                isLoading={isLoading}
+                metricas={
+                  metricas || {
+                    receitas: { total: 0, recebido: 0, pendente: 0, atrasado: 0 },
+                    despesas: { total: 0, pago: 0, pendente: 0 },
+                    saldo: { atual: 0, previsto: 0 },
+                    performance: { taxaInadimplencia: 0, conversaoContratos: 0, ticketMedio: 0 },
+                  }
+                }
+              />
             </CardBody>
           </Card>
 

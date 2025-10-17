@@ -318,7 +318,7 @@ export async function updateParcelaContrato(
     dataPagamento?: Date;
     formaPagamento?: string;
     responsavelUsuarioId?: string;
-  }
+  },
 ) {
   try {
     const tenantId = await getTenantId();
@@ -450,7 +450,7 @@ export async function gerarParcelasAutomaticamente(
     dataPrimeiroVencimento: Date;
     intervaloDias?: number; // Padrão: 30 dias
     tituloBase?: string;
-  }
+  },
 ) {
   try {
     const tenantId = await getTenantId();
@@ -503,7 +503,9 @@ export async function gerarParcelasAutomaticamente(
           contratoId,
           dadosBancariosId: contrato.dadosBancariosId, // Herdar conta bancária do contrato
           numeroParcela: i,
-          titulo: configuracao.tituloBase ? `${configuracao.tituloBase} ${i}/${configuracao.numeroParcelas}` : `Parcela ${i}/${configuracao.numeroParcelas}`,
+          titulo: configuracao.tituloBase
+            ? `${configuracao.tituloBase} ${i}/${configuracao.numeroParcelas}`
+            : `Parcela ${i}/${configuracao.numeroParcelas}`,
           valor: valorParcela,
           dataVencimento,
           status: "PENDENTE",
@@ -543,7 +545,15 @@ export async function getDashboardParcelas() {
   try {
     const tenantId = await getTenantId();
 
-    const [totalParcelas, parcelasPendentes, parcelasPagas, parcelasAtrasadas, valorTotalPendente, valorTotalPago, parcelasVencendo] = await Promise.all([
+    const [
+      totalParcelas,
+      parcelasPendentes,
+      parcelasPagas,
+      parcelasAtrasadas,
+      valorTotalPendente,
+      valorTotalPago,
+      parcelasVencendo,
+    ] = await Promise.all([
       // Total de parcelas
       prisma.contratoParcela.count({
         where: { tenantId },
@@ -651,7 +661,9 @@ export async function getProcessosComParcelas() {
     });
 
     // Converter valores Decimal para number
-    const convertedData = processos.map((item) => convertAllDecimalFields(item));
+    const convertedData = processos.map((item) =>
+      convertAllDecimalFields(item),
+    );
     const serialized = JSON.parse(JSON.stringify(convertedData));
 
     return {
@@ -744,7 +756,8 @@ export async function getDadosPagamentoParcela(parcelaId: string) {
     }
 
     // Usar dados bancários da parcela ou do contrato (herança)
-    const dadosBancarios = parcela.dadosBancarios || parcela.contrato.dadosBancarios;
+    const dadosBancarios =
+      parcela.dadosBancarios || parcela.contrato.dadosBancarios;
 
     if (!dadosBancarios) {
       return {
@@ -792,7 +805,11 @@ export async function getDadosPagamentoParcela(parcelaId: string) {
           valor: Number(parcela.valor),
           vencimento: parcela.dataVencimento,
           beneficiario: dadosBancarios.banco?.nome || "Banco não informado",
-          instrucoes: [`Parcela ${parcela.numeroParcela} do contrato ${parcela.contrato.titulo}`, `Cliente: ${parcela.contrato.cliente.nome}`, "Não receber após o vencimento"],
+          instrucoes: [
+            `Parcela ${parcela.numeroParcela} do contrato ${parcela.contrato.titulo}`,
+            `Cliente: ${parcela.contrato.cliente.nome}`,
+            "Não receber após o vencimento",
+          ],
         },
       },
     };

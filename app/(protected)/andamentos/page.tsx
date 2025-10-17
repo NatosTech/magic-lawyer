@@ -3,7 +3,25 @@
 import { useState, useMemo } from "react";
 import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardBody, CardHeader, Button, Input, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Chip, Tooltip, Skeleton, DatePicker } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Button,
+  Input,
+  Select,
+  SelectItem,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Textarea,
+  Chip,
+  Tooltip,
+  Skeleton,
+  DatePicker,
+} from "@heroui/react";
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date";
 import { toast } from "sonner";
 import {
@@ -110,17 +128,31 @@ export default function AndamentosPage() {
 
   // Estado do modal
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
-  const [selectedAndamento, setSelectedAndamento] = useState<Andamento | null>(null);
+  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">(
+    "create",
+  );
+  const [selectedAndamento, setSelectedAndamento] = useState<Andamento | null>(
+    null,
+  );
 
   // SWR - Fetch data
-  const { data: andamentosData, mutate: mutateAndamentos, isLoading: loadingAndamentos } = useSWR(["andamentos", filters], () => listAndamentos(filters));
+  const {
+    data: andamentosData,
+    mutate: mutateAndamentos,
+    isLoading: loadingAndamentos,
+  } = useSWR(["andamentos", filters], () => listAndamentos(filters));
 
-  const { data: dashboardData, isLoading: loadingDashboard } = useSWR("dashboard-andamentos", getDashboardAndamentos);
+  const { data: dashboardData, isLoading: loadingDashboard } = useSWR(
+    "dashboard-andamentos",
+    getDashboardAndamentos,
+  );
 
   const { data: processosData } = useSWR("processos-list", getAllProcessos);
 
-  const { data: tiposData } = useSWR("tipos-movimentacao", getTiposMovimentacao);
+  const { data: tiposData } = useSWR(
+    "tipos-movimentacao",
+    getTiposMovimentacao,
+  );
 
   const andamentos = (andamentosData?.data || []) as Andamento[];
   const dashboard = dashboardData?.data as DashboardData | undefined;
@@ -209,19 +241,34 @@ export default function AndamentosPage() {
   const getTipoIcon = (tipo: MovimentacaoTipo | null) => {
     switch (tipo) {
       case "ANDAMENTO":
-        return <Activity size={16} className="text-blue-600 dark:text-blue-400" />;
+        return (
+          <Activity className="text-blue-600 dark:text-blue-400" size={16} />
+        );
       case "PRAZO":
-        return <Timer size={16} className="text-amber-600 dark:text-amber-400" />;
+        return (
+          <Timer className="text-amber-600 dark:text-amber-400" size={16} />
+        );
       case "INTIMACAO":
-        return <Megaphone size={16} className="text-red-600 dark:text-red-400" />;
+        return (
+          <Megaphone className="text-red-600 dark:text-red-400" size={16} />
+        );
       case "AUDIENCIA":
-        return <CalendarDays size={16} className="text-purple-600 dark:text-purple-400" />;
+        return (
+          <CalendarDays
+            className="text-purple-600 dark:text-purple-400"
+            size={16}
+          />
+        );
       case "ANEXO":
-        return <Paperclip size={16} className="text-green-600 dark:text-green-400" />;
+        return (
+          <Paperclip className="text-green-600 dark:text-green-400" size={16} />
+        );
       case "OUTRO":
-        return <Sparkles size={16} className="text-gray-600 dark:text-gray-400" />;
+        return (
+          <Sparkles className="text-gray-600 dark:text-gray-400" size={16} />
+        );
       default:
-        return <FileText size={16} className="text-gray-500" />;
+        return <FileText className="text-gray-500" size={16} />;
     }
   };
 
@@ -238,8 +285,12 @@ export default function AndamentosPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>Andamentos Processuais</h1>
-          <p className={subtitle({ fullWidth: true })}>Timeline completa de movimentações processuais</p>
+          <h1 className={title({ size: "lg", color: "blue" })}>
+            Andamentos Processuais
+          </h1>
+          <p className={subtitle({ fullWidth: true })}>
+            Timeline completa de movimentações processuais
+          </p>
         </div>
         <Button
           className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300"
@@ -266,7 +317,9 @@ export default function AndamentosPage() {
                   <Sparkles className="text-blue-500" size={16} />
                   Total de Andamentos
                 </p>
-                <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{dashboard.total}</p>
+                <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">
+                  {dashboard.total}
+                </p>
               </div>
               <div className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-lg">
                 <Activity className="text-white" size={28} />
@@ -281,7 +334,10 @@ export default function AndamentosPage() {
                   <Timer className="text-amber-500" size={16} />
                   Com Prazo
                 </p>
-                <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">{dashboard.porTipo.find((t) => t.tipo === "PRAZO")?._count || 0}</p>
+                <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">
+                  {dashboard.porTipo.find((t) => t.tipo === "PRAZO")?._count ||
+                    0}
+                </p>
               </div>
               <div className="p-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full shadow-lg">
                 <Clock className="text-white" size={28} />
@@ -296,7 +352,10 @@ export default function AndamentosPage() {
                   <Megaphone className="text-red-500" size={16} />
                   Intimações
                 </p>
-                <p className="text-3xl font-bold text-red-700 dark:text-red-300">{dashboard.porTipo.find((t) => t.tipo === "INTIMACAO")?._count || 0}</p>
+                <p className="text-3xl font-bold text-red-700 dark:text-red-300">
+                  {dashboard.porTipo.find((t) => t.tipo === "INTIMACAO")
+                    ?._count || 0}
+                </p>
               </div>
               <div className="p-4 bg-gradient-to-br from-red-500 to-pink-600 rounded-full shadow-lg">
                 <Bell className="text-white" size={28} />
@@ -311,7 +370,10 @@ export default function AndamentosPage() {
                   <CalendarDays className="text-green-500" size={16} />
                   Audiências
                 </p>
-                <p className="text-3xl font-bold text-green-700 dark:text-green-300">{dashboard.porTipo.find((t) => t.tipo === "AUDIENCIA")?._count || 0}</p>
+                <p className="text-3xl font-bold text-green-700 dark:text-green-300">
+                  {dashboard.porTipo.find((t) => t.tipo === "AUDIENCIA")
+                    ?._count || 0}
+                </p>
               </div>
               <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full shadow-lg">
                 <Calendar className="text-white" size={28} />
@@ -322,7 +384,11 @@ export default function AndamentosPage() {
       ) : null}
 
       {/* Filtros Avançados */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.3 }}
+      >
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
@@ -330,15 +396,37 @@ export default function AndamentosPage() {
               <h3 className="text-lg font-semibold">Filtros</h3>
               {hasActiveFilters && (
                 <Chip color="primary" size="sm" variant="flat">
-                  {[filters.processoId, filters.tipo, searchTerm].filter(Boolean).length} ativo(s)
+                  {
+                    [filters.processoId, filters.tipo, searchTerm].filter(
+                      Boolean,
+                    ).length
+                  }{" "}
+                  ativo(s)
                 </Chip>
               )}
             </div>
             <div className="flex gap-2">
-              <Button isDisabled={!hasActiveFilters} size="sm" startContent={<RotateCcw className="w-4 h-4" />} variant="light" onPress={clearFilters}>
+              <Button
+                isDisabled={!hasActiveFilters}
+                size="sm"
+                startContent={<RotateCcw className="w-4 h-4" />}
+                variant="light"
+                onPress={clearFilters}
+              >
                 Limpar
               </Button>
-              <Button size="sm" startContent={showFilters ? <XCircle className="w-4 h-4" /> : <Filter className="w-4 h-4" />} variant="light" onPress={() => setShowFilters(!showFilters)}>
+              <Button
+                size="sm"
+                startContent={
+                  showFilters ? (
+                    <XCircle className="w-4 h-4" />
+                  ) : (
+                    <Filter className="w-4 h-4" />
+                  )
+                }
+                variant="light"
+                onPress={() => setShowFilters(!showFilters)}
+              >
                 {showFilters ? "Ocultar" : "Mostrar"}
               </Button>
             </div>
@@ -346,12 +434,20 @@ export default function AndamentosPage() {
 
           <AnimatePresence>
             {showFilters && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
+              <motion.div
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                initial={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
                 <CardBody>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Filtro por Título */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="filtro-titulo">
+                      <label
+                        className="text-sm font-medium flex items-center gap-2"
+                        htmlFor="filtro-titulo"
+                      >
                         <Search className="w-4 h-4" />
                         Título
                       </label>
@@ -359,7 +455,9 @@ export default function AndamentosPage() {
                         id="filtro-titulo"
                         placeholder="Buscar por título..."
                         size="sm"
-                        startContent={<Search className="w-4 h-4 text-default-400" />}
+                        startContent={
+                          <Search className="w-4 h-4 text-default-400" />
+                        }
                         value={searchTerm}
                         variant="bordered"
                         onValueChange={handleSearch}
@@ -368,24 +466,34 @@ export default function AndamentosPage() {
 
                     {/* Filtro por Processo */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="filtro-processo">
+                      <label
+                        className="text-sm font-medium flex items-center gap-2"
+                        htmlFor="filtro-processo"
+                      >
                         <FileText className="w-4 h-4" />
                         Processo
                       </label>
                       <Select
                         id="filtro-processo"
                         placeholder="Todos os processos"
+                        selectedKeys={
+                          filters.processoId ? [filters.processoId] : []
+                        }
                         size="sm"
                         variant="bordered"
-                        selectedKeys={filters.processoId ? [filters.processoId] : []}
                         onSelectionChange={(keys) => {
                           const value = Array.from(keys)[0] as string;
+
                           handleFilterChange("processoId", value);
                         }}
                       >
                         {processos.map((proc: any) => (
-                          <SelectItem key={proc.id} textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}>
-                            {proc.numero} {proc.titulo ? `- ${proc.titulo}` : ""}
+                          <SelectItem
+                            key={proc.id}
+                            textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}
+                          >
+                            {proc.numero}{" "}
+                            {proc.titulo ? `- ${proc.titulo}` : ""}
                           </SelectItem>
                         ))}
                       </Select>
@@ -393,18 +501,22 @@ export default function AndamentosPage() {
 
                     {/* Filtro por Tipo */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="filtro-tipo">
+                      <label
+                        className="text-sm font-medium flex items-center gap-2"
+                        htmlFor="filtro-tipo"
+                      >
                         <Tag className="w-4 h-4" />
                         Tipo
                       </label>
                       <Select
                         id="filtro-tipo"
                         placeholder="Todos os tipos"
+                        selectedKeys={filters.tipo ? [filters.tipo] : []}
                         size="sm"
                         variant="bordered"
-                        selectedKeys={filters.tipo ? [filters.tipo] : []}
                         onSelectionChange={(keys) => {
                           const value = Array.from(keys)[0] as string;
+
                           handleFilterChange("tipo", value);
                         }}
                       >
@@ -424,7 +536,11 @@ export default function AndamentosPage() {
       </motion.div>
 
       {/* Timeline de Andamentos */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 20 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
         <Card>
           <CardHeader>
             <h2 className="text-xl font-semibold">Timeline</h2>
@@ -437,9 +553,16 @@ export default function AndamentosPage() {
                 ))}
               </div>
             ) : andamentos.length === 0 ? (
-              <motion.div className="text-center py-12" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
+              <motion.div
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-12"
+                initial={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.3 }}
+              >
                 <Activity className="mx-auto text-gray-400 mb-4" size={48} />
-                <p className="text-gray-600 dark:text-gray-400">Nenhum andamento encontrado</p>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Nenhum andamento encontrado
+                </p>
               </motion.div>
             ) : (
               <div className="relative space-y-6">
@@ -450,10 +573,10 @@ export default function AndamentosPage() {
                   {andamentos.map((andamento, index) => (
                     <motion.div
                       key={andamento.id}
-                      className="relative flex gap-6"
-                      initial={{ opacity: 0, x: -50 }}
                       animate={{ opacity: 1, x: 0 }}
+                      className="relative flex gap-6"
                       exit={{ opacity: 0, x: 50 }}
+                      initial={{ opacity: 0, x: -50 }}
                       transition={{ duration: 0.3, delay: index * 0.1 }}
                       whileHover={{ scale: 1.02 }}
                     >
@@ -498,9 +621,15 @@ export default function AndamentosPage() {
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold text-lg">{andamento.titulo}</h3>
+                                <h3 className="font-semibold text-lg">
+                                  {andamento.titulo}
+                                </h3>
                                 {andamento.tipo && (
-                                  <Chip color={getTipoColor(andamento.tipo)} size="sm" variant="flat">
+                                  <Chip
+                                    color={getTipoColor(andamento.tipo)}
+                                    size="sm"
+                                    variant="flat"
+                                  >
                                     {andamento.tipo}
                                   </Chip>
                                 )}
@@ -508,10 +637,15 @@ export default function AndamentosPage() {
 
                               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                                 Processo: {andamento.processo.numero}
-                                {andamento.processo.titulo && ` - ${andamento.processo.titulo}`}
+                                {andamento.processo.titulo &&
+                                  ` - ${andamento.processo.titulo}`}
                               </p>
 
-                              {andamento.descricao && <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">{andamento.descricao}</p>}
+                              {andamento.descricao && (
+                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                                  {andamento.descricao}
+                                </p>
+                              )}
 
                               <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-400">
                                 <span className="flex items-center gap-1">
@@ -536,39 +670,41 @@ export default function AndamentosPage() {
                                 {andamento.prazosRelacionados.length > 0 && (
                                   <span className="flex items-center gap-1">
                                     <AlertCircle size={14} />
-                                    {andamento.prazosRelacionados.length} prazo(s)
+                                    {andamento.prazosRelacionados.length}{" "}
+                                    prazo(s)
                                   </span>
                                 )}
 
                                 {andamento.criadoPor && (
                                   <span>
-                                    Por: {andamento.criadoPor.firstName} {andamento.criadoPor.lastName}
+                                    Por: {andamento.criadoPor.firstName}{" "}
+                                    {andamento.criadoPor.lastName}
                                   </span>
                                 )}
                               </div>
                             </div>
 
                             <div className="flex gap-2">
-                              <Tooltip content="Editar" color="primary">
+                              <Tooltip color="primary" content="Editar">
                                 <Button
                                   isIconOnly
+                                  className="text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/20 hover:scale-110 transition-transform duration-200"
                                   size="sm"
                                   variant="light"
                                   onPress={() => openEditModal(andamento)}
-                                  className="text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/20 hover:scale-110 transition-transform duration-200"
                                 >
                                   <Edit3 size={16} />
                                 </Button>
                               </Tooltip>
 
-                              <Tooltip content="Excluir" color="danger">
+                              <Tooltip color="danger" content="Excluir">
                                 <Button
                                   isIconOnly
+                                  className="text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/20 hover:scale-110 transition-transform duration-200"
                                   color="danger"
                                   size="sm"
                                   variant="light"
                                   onPress={() => handleDelete(andamento.id)}
-                                  className="text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/20 hover:scale-110 transition-transform duration-200"
                                 >
                                   <Trash2 size={16} />
                                 </Button>
@@ -587,7 +723,15 @@ export default function AndamentosPage() {
       </motion.div>
 
       {/* Modal de Criar/Editar/Visualizar */}
-      <AndamentoModal andamento={selectedAndamento} isOpen={modalOpen} mode={modalMode} processos={processos} tipos={tipos} onClose={closeModal} onSuccess={mutateAndamentos} />
+      <AndamentoModal
+        andamento={selectedAndamento}
+        isOpen={modalOpen}
+        mode={modalMode}
+        processos={processos}
+        tipos={tipos}
+        onClose={closeModal}
+        onSuccess={mutateAndamentos}
+      />
     </div>
   );
 }
@@ -606,7 +750,15 @@ interface AndamentoModalProps {
   onSuccess: () => void;
 }
 
-function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, onSuccess }: AndamentoModalProps) {
+function AndamentoModal({
+  isOpen,
+  onClose,
+  mode,
+  andamento,
+  processos,
+  tipos,
+  onSuccess,
+}: AndamentoModalProps) {
   const isReadOnly = mode === "view";
 
   // Calcular dados iniciais do formulário
@@ -632,8 +784,12 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
         titulo: andamento.titulo,
         descricao: andamento.descricao || "",
         tipo: andamento.tipo || "",
-        dataMovimentacao: parseDate(new Date(andamento.dataMovimentacao).toISOString().split("T")[0]),
-        prazo: andamento.prazo ? parseDate(new Date(andamento.prazo).toISOString().split("T")[0]) : null,
+        dataMovimentacao: parseDate(
+          new Date(andamento.dataMovimentacao).toISOString().split("T")[0],
+        ),
+        prazo: andamento.prazo
+          ? parseDate(new Date(andamento.prazo).toISOString().split("T")[0])
+          : null,
         geraPrazo: false,
         // Campos para notificações
         notificarCliente: andamento.notificarCliente || false,
@@ -642,6 +798,7 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
         mensagemPersonalizada: andamento.mensagemPersonalizada || "",
       };
     }
+
     return {
       processoId: "",
       titulo: "",
@@ -674,7 +831,9 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
       titulo: formData.titulo,
       descricao: formData.descricao || undefined,
       tipo: formData.tipo || undefined,
-      dataMovimentacao: formData.dataMovimentacao ? new Date(formData.dataMovimentacao.toString()) : undefined,
+      dataMovimentacao: formData.dataMovimentacao
+        ? new Date(formData.dataMovimentacao.toString())
+        : undefined,
       prazo: formData.prazo ? new Date(formData.prazo.toString()) : undefined,
       geraPrazo: formData.geraPrazo,
       // Campos para notificações
@@ -684,12 +843,19 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
       mensagemPersonalizada: formData.mensagemPersonalizada || undefined,
     };
 
-    const result = mode === "create" ? await createAndamento(input) : await updateAndamento(andamento!.id, input);
+    const result =
+      mode === "create"
+        ? await createAndamento(input)
+        : await updateAndamento(andamento!.id, input);
 
     setSaving(false);
 
     if (result.success) {
-      toast.success(mode === "create" ? "Andamento criado com sucesso!" : "Andamento atualizado com sucesso!");
+      toast.success(
+        mode === "create"
+          ? "Andamento criado com sucesso!"
+          : "Andamento atualizado com sucesso!",
+      );
       onSuccess();
       onClose();
     } else {
@@ -699,7 +865,12 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
 
   return (
     <Modal isOpen={isOpen} scrollBehavior="inside" size="2xl" onClose={onClose}>
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.2 }}>
+      <motion.div
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.2 }}
+      >
         <ModalContent>
           <ModalHeader>
             <div className="flex items-center gap-3">
@@ -716,7 +887,9 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                   <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
                     <Edit3 className="text-white" size={20} />
                   </div>
-                  <span className="text-xl font-semibold">Editar Andamento</span>
+                  <span className="text-xl font-semibold">
+                    Editar Andamento
+                  </span>
                 </>
               )}
               {mode === "view" && (
@@ -724,7 +897,9 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                   <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg">
                     <Eye className="text-white" size={20} />
                   </div>
-                  <span className="text-xl font-semibold">Detalhes do Andamento</span>
+                  <span className="text-xl font-semibold">
+                    Detalhes do Andamento
+                  </span>
                 </>
               )}
             </div>
@@ -732,26 +907,36 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
           <ModalBody>
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-processo">
+                <label
+                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                  htmlFor="modal-processo"
+                >
                   <FileText className="text-blue-500" size={16} />
                   Processo
                 </label>
                 <Select
-                  id="modal-processo"
                   isRequired
+                  classNames={{
+                    trigger:
+                      "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                  }}
+                  id="modal-processo"
                   isDisabled={isReadOnly || mode === "edit"}
                   placeholder="Selecione o processo"
-                  selectedKeys={formData.processoId ? [formData.processoId] : []}
+                  selectedKeys={
+                    formData.processoId ? [formData.processoId] : []
+                  }
                   onSelectionChange={(keys) => {
                     const value = Array.from(keys)[0] as string;
+
                     setFormData({ ...formData, processoId: value });
-                  }}
-                  classNames={{
-                    trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
                   }}
                 >
                   {processos.map((proc: any) => (
-                    <SelectItem key={proc.id} textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}>
+                    <SelectItem
+                      key={proc.id}
+                      textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}
+                    >
                       {proc.numero} {proc.titulo ? `- ${proc.titulo}` : ""}
                     </SelectItem>
                   ))}
@@ -759,45 +944,60 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-titulo">
+                <label
+                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                  htmlFor="modal-titulo"
+                >
                   <Star className="text-yellow-500" size={16} />
                   Título
                 </label>
                 <Input
-                  id="modal-titulo"
                   isRequired
+                  classNames={{
+                    input: "text-slate-700 dark:text-slate-300",
+                    inputWrapper:
+                      "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                  }}
+                  id="modal-titulo"
                   isReadOnly={isReadOnly}
                   placeholder="Ex: Sentença proferida, Intimação recebida, etc"
                   value={formData.titulo}
-                  onValueChange={(value) => setFormData({ ...formData, titulo: value })}
-                  classNames={{
-                    input: "text-slate-700 dark:text-slate-300",
-                    inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
-                  }}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, titulo: value })
+                  }
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-descricao">
+                <label
+                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                  htmlFor="modal-descricao"
+                >
                   <FileText className="text-green-500" size={16} />
                   Descrição
                 </label>
                 <Textarea
+                  classNames={{
+                    input: "text-slate-700 dark:text-slate-300",
+                    inputWrapper:
+                      "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                  }}
                   id="modal-descricao"
                   isReadOnly={isReadOnly}
                   minRows={3}
                   placeholder="Descreva o andamento em detalhes..."
                   value={formData.descricao}
-                  onValueChange={(value) => setFormData({ ...formData, descricao: value })}
-                  classNames={{
-                    input: "text-slate-700 dark:text-slate-300",
-                    inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
-                  }}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, descricao: value })
+                  }
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-tipo">
+                <label
+                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                  htmlFor="modal-tipo"
+                >
                   <Tag className="text-purple-500" size={16} />
                   Tipo
                 </label>
@@ -808,6 +1008,7 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                   selectedKeys={formData.tipo ? [formData.tipo] : []}
                   onSelectionChange={(keys) => {
                     const value = Array.from(keys)[0] as string;
+
                     setFormData({ ...formData, tipo: value });
                   }}
                 >
@@ -820,11 +1021,15 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-data-movimentacao">
+                <label
+                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                  htmlFor="modal-data-movimentacao"
+                >
                   <Calendar className="text-blue-500" size={16} />
                   Data da Movimentação
                 </label>
                 <DatePicker
+                  className="w-full"
                   id="modal-data-movimentacao"
                   isReadOnly={isReadOnly}
                   value={formData.dataMovimentacao}
@@ -833,31 +1038,46 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                       setFormData({ ...formData, dataMovimentacao: date });
                     }
                   }}
-                  className="w-full"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-prazo">
+                <label
+                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                  htmlFor="modal-prazo"
+                >
                   <Clock className="text-amber-500" size={16} />
                   Prazo (opcional)
                 </label>
                 <DatePicker
-                  id="modal-prazo"
+                  className="w-full"
                   description="Se houver prazo relacionado a este andamento"
+                  id="modal-prazo"
                   isReadOnly={isReadOnly}
                   value={formData.prazo}
                   onChange={(date) => {
                     setFormData({ ...formData, prazo: date });
                   }}
-                  className="w-full"
                 />
               </div>
 
               {!isReadOnly && formData.prazo && mode === "create" && (
-                <label className="flex items-center gap-2 cursor-pointer" htmlFor="gera-prazo">
-                  <input id="gera-prazo" checked={formData.geraPrazo} className="w-4 h-4" type="checkbox" onChange={(e) => setFormData({ ...formData, geraPrazo: e.target.checked })} />
-                  <span className="text-sm">Gerar prazo automático no sistema</span>
+                <label
+                  className="flex items-center gap-2 cursor-pointer"
+                  htmlFor="gera-prazo"
+                >
+                  <input
+                    checked={formData.geraPrazo}
+                    className="w-4 h-4"
+                    id="gera-prazo"
+                    type="checkbox"
+                    onChange={(e) =>
+                      setFormData({ ...formData, geraPrazo: e.target.checked })
+                    }
+                  />
+                  <span className="text-sm">
+                    Gerar prazo automático no sistema
+                  </span>
                 </label>
               )}
 
@@ -866,66 +1086,122 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                 <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-2">
                     <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                      <Bell className="text-blue-600 dark:text-blue-400" size={20} />
+                      <Bell
+                        className="text-blue-600 dark:text-blue-400"
+                        size={20}
+                      />
                     </div>
-                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Notificações</h3>
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">
+                      Notificações
+                    </h3>
                   </div>
 
                   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3">
-                    <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" htmlFor="notificar-cliente">
+                    <label
+                      className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                      htmlFor="notificar-cliente"
+                    >
                       <input
-                        id="notificar-cliente"
                         checked={formData.notificarCliente}
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        id="notificar-cliente"
                         type="checkbox"
-                        onChange={(e) => setFormData({ ...formData, notificarCliente: e.target.checked })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            notificarCliente: e.target.checked,
+                          })
+                        }
                       />
-                      <MessageSquare className="text-slate-600 dark:text-slate-400" size={18} />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Notificar cliente sobre este andamento</span>
+                      <MessageSquare
+                        className="text-slate-600 dark:text-slate-400"
+                        size={18}
+                      />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        Notificar cliente sobre este andamento
+                      </span>
                     </label>
 
                     {formData.notificarCliente && (
                       <div className="ml-6 space-y-3 border-l-2 border-blue-200 dark:border-blue-700 pl-4">
-                        <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" htmlFor="notificar-email">
+                        <label
+                          className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                          htmlFor="notificar-email"
+                        >
                           <input
-                            id="notificar-email"
                             checked={formData.notificarEmail}
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            id="notificar-email"
                             type="checkbox"
-                            onChange={(e) => setFormData({ ...formData, notificarEmail: e.target.checked })}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                notificarEmail: e.target.checked,
+                              })
+                            }
                           />
-                          <Mail className="text-blue-600 dark:text-blue-400" size={18} />
-                          <span className="text-sm text-slate-700 dark:text-slate-300">Enviar notificação por email</span>
+                          <Mail
+                            className="text-blue-600 dark:text-blue-400"
+                            size={18}
+                          />
+                          <span className="text-sm text-slate-700 dark:text-slate-300">
+                            Enviar notificação por email
+                          </span>
                         </label>
 
-                        <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" htmlFor="notificar-whatsapp">
+                        <label
+                          className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                          htmlFor="notificar-whatsapp"
+                        >
                           <input
-                            id="notificar-whatsapp"
                             checked={formData.notificarWhatsapp}
                             className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                            id="notificar-whatsapp"
                             type="checkbox"
-                            onChange={(e) => setFormData({ ...formData, notificarWhatsapp: e.target.checked })}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                notificarWhatsapp: e.target.checked,
+                              })
+                            }
                           />
-                          <Smartphone className="text-green-600 dark:text-green-400" size={18} />
-                          <span className="text-sm text-slate-700 dark:text-slate-300">Enviar notificação por WhatsApp</span>
+                          <Smartphone
+                            className="text-green-600 dark:text-green-400"
+                            size={18}
+                          />
+                          <span className="text-sm text-slate-700 dark:text-slate-300">
+                            Enviar notificação por WhatsApp
+                          </span>
                         </label>
 
                         <div className="mt-4 space-y-2">
-                          <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-mensagem-personalizada">
-                            <MessageSquare className="text-purple-500" size={16} />
+                          <label
+                            className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                            htmlFor="modal-mensagem-personalizada"
+                          >
+                            <MessageSquare
+                              className="text-purple-500"
+                              size={16}
+                            />
                             Mensagem personalizada (opcional)
                           </label>
                           <Textarea
-                            id="modal-mensagem-personalizada"
-                            isReadOnly={isReadOnly}
-                            placeholder="Deixe em branco para usar mensagem padrão..."
-                            minRows={2}
-                            value={formData.mensagemPersonalizada}
-                            onValueChange={(value) => setFormData({ ...formData, mensagemPersonalizada: value })}
                             classNames={{
                               input: "text-slate-700 dark:text-slate-300",
-                              inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                              inputWrapper:
+                                "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
                             }}
+                            id="modal-mensagem-personalizada"
+                            isReadOnly={isReadOnly}
+                            minRows={2}
+                            placeholder="Deixe em branco para usar mensagem padrão..."
+                            value={formData.mensagemPersonalizada}
+                            onValueChange={(value) =>
+                              setFormData({
+                                ...formData,
+                                mensagemPersonalizada: value,
+                              })
+                            }
                           />
                         </div>
                       </div>
@@ -938,10 +1214,18 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                 <>
                   {andamento.documentos.length > 0 && (
                     <div>
-                      <p className="text-sm font-semibold mb-2">Documentos Anexados:</p>
+                      <p className="text-sm font-semibold mb-2">
+                        Documentos Anexados:
+                      </p>
                       <div className="space-y-1">
                         {andamento.documentos.map((doc) => (
-                          <a key={doc.id} className="flex items-center gap-2 text-sm text-primary hover:underline" href={doc.url} rel="noopener noreferrer" target="_blank">
+                          <a
+                            key={doc.id}
+                            className="flex items-center gap-2 text-sm text-primary hover:underline"
+                            href={doc.url}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                          >
                             <Paperclip size={14} />
                             {doc.nome}
                           </a>
@@ -952,13 +1236,32 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
 
                   {andamento.prazosRelacionados.length > 0 && (
                     <div>
-                      <p className="text-sm font-semibold mb-2">Prazos Relacionados:</p>
+                      <p className="text-sm font-semibold mb-2">
+                        Prazos Relacionados:
+                      </p>
                       <div className="space-y-2">
                         {andamento.prazosRelacionados.map((prazo) => (
-                          <div key={prazo.id} className="p-2 bg-gray-100 dark:bg-gray-800 rounded">
-                            <p className="text-sm font-medium">{prazo.titulo}</p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Vencimento: {new Date(prazo.dataVencimento).toLocaleDateString("pt-BR")}</p>
-                            <Chip color={prazo.status === "ABERTO" ? "warning" : "success"} size="sm">
+                          <div
+                            key={prazo.id}
+                            className="p-2 bg-gray-100 dark:bg-gray-800 rounded"
+                          >
+                            <p className="text-sm font-medium">
+                              {prazo.titulo}
+                            </p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              Vencimento:{" "}
+                              {new Date(
+                                prazo.dataVencimento,
+                              ).toLocaleDateString("pt-BR")}
+                            </p>
+                            <Chip
+                              color={
+                                prazo.status === "ABERTO"
+                                  ? "warning"
+                                  : "success"
+                              }
+                              size="sm"
+                            >
                               {prazo.status}
                             </Chip>
                           </div>
