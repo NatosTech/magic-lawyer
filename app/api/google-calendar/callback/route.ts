@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     logger.info(`Callback Google Calendar - userId: ${userId}, originalDomain: ${originalDomain}`);
 
     // Processar o callback
-    const result = await handleGoogleCalendarCallback(code, userId);
+    const result = await handleGoogleCalendarCallback(code, state);
 
     if (result.success && result.data) {
       logger.info(`Google Calendar conectado com sucesso para usuário ${userId}`);

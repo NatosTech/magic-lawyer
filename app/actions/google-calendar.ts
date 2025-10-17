@@ -72,10 +72,21 @@ export async function handleGoogleCalendarCallback(
   state: string,
 ) {
   try {
+    // Extrair userId do state (formato: userId|domain)
+    const [userId, originalDomain] = state.split("|");
+    
+    console.log(`[DEBUG] handleGoogleCalendarCallback - state: ${state}, userId: ${userId}, originalDomain: ${originalDomain}`);
+    
+    if (!userId) {
+      throw new Error("Estado de autorização inválido - userId não encontrado");
+    }
+
     // Verificar se o state corresponde ao usuário atual
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id || session.user.id !== state) {
+    console.log(`[DEBUG] Session userId: ${session?.user?.id}, expected userId: ${userId}`);
+
+    if (!session?.user?.id || session.user.id !== userId) {
       throw new Error("Estado de autorização inválido");
     }
 
