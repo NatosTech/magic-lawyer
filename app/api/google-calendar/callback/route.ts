@@ -15,9 +15,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       const errorDescription = searchParams.get("error_description") || error;
 
-      logger.warn(
-        `Erro na autorização Google Calendar: ${error} - ${errorDescription}`,
-      );
+      logger.warn(`Erro na autorização Google Calendar: ${error} - ${errorDescription}`);
 
       // Redirecionar para a agenda com erro
       const redirectUrl = new URL("/agenda", request.url);
@@ -33,26 +31,21 @@ export async function GET(request: NextRequest) {
 
       const redirectUrl = new URL("/agenda", request.url);
 
-      redirectUrl.searchParams.set(
-        "google_calendar_error",
-        "Dados de autorização inválidos",
-      );
+      redirectUrl.searchParams.set("google_calendar_error", "Dados de autorização inválidos");
 
       return NextResponse.redirect(redirectUrl);
     }
 
     // Extrair userId e domínio original do state
     const [userId, originalDomain] = state.split("|");
-    
+
     logger.info(`Callback Google Calendar - userId: ${userId}, originalDomain: ${originalDomain}`);
 
     // Processar o callback
     const result = await handleGoogleCalendarCallback(code, userId);
 
     if (result.success && result.data) {
-      logger.info(
-        `Google Calendar conectado com sucesso para usuário ${userId}`,
-      );
+      logger.info(`Google Calendar conectado com sucesso para usuário ${userId}`);
 
       // Redirecionar para o domínio original se disponível
       let redirectUrl;
@@ -68,16 +61,11 @@ export async function GET(request: NextRequest) {
       }
 
       redirectUrl.searchParams.set("google_calendar_success", "true");
-      redirectUrl.searchParams.set(
-        "calendar_name",
-        result.data.calendarName || "Calendário",
-      );
+      redirectUrl.searchParams.set("calendar_name", result.data.calendarName || "Calendário");
 
       return NextResponse.redirect(redirectUrl);
     } else {
-      logger.error(
-        `Erro ao processar callback Google Calendar: ${result.error}`,
-      );
+      logger.error(`Erro ao processar callback Google Calendar: ${result.error}`);
 
       // Redirecionar para o domínio original com erro
       let redirectUrl;
@@ -92,10 +80,7 @@ export async function GET(request: NextRequest) {
         redirectUrl = new URL("/agenda", `${protocol}://${host}`);
       }
 
-      redirectUrl.searchParams.set(
-        "google_calendar_error",
-        result.error || "Erro desconhecido",
-      );
+      redirectUrl.searchParams.set("google_calendar_error", result.error || "Erro desconhecido");
 
       return NextResponse.redirect(redirectUrl);
     }
@@ -105,10 +90,7 @@ export async function GET(request: NextRequest) {
     // Redirecionar para a agenda com erro
     const redirectUrl = new URL("/agenda", request.url);
 
-    redirectUrl.searchParams.set(
-      "google_calendar_error",
-      "Erro interno do servidor",
-    );
+    redirectUrl.searchParams.set("google_calendar_error", "Erro interno do servidor");
 
     return NextResponse.redirect(redirectUrl);
   }
