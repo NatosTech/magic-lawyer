@@ -3,25 +3,7 @@
 import { useState, useMemo } from "react";
 import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Textarea,
-  Chip,
-  Tooltip,
-  Skeleton,
-  DatePicker,
-} from "@heroui/react";
+import { Card, CardBody, CardHeader, Button, Input, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Chip, Tooltip, Skeleton, DatePicker } from "@heroui/react";
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date";
 import { toast } from "sonner";
 import {
@@ -749,25 +731,25 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
           </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-               <div className="space-y-2">
-                 <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-processo">
-                   <FileText className="text-blue-500" size={16} />
-                   Processo
-                 </label>
-                 <Select
-                   id="modal-processo"
-                   isRequired
-                   isDisabled={isReadOnly || mode === "edit"}
-                   placeholder="Selecione o processo"
-                   selectedKeys={formData.processoId ? [formData.processoId] : []}
-                   onSelectionChange={(keys) => {
-                     const value = Array.from(keys)[0] as string;
-                     setFormData({ ...formData, processoId: value });
-                   }}
-                   classNames={{
-                     trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
-                   }}
-                 >
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-processo">
+                  <FileText className="text-blue-500" size={16} />
+                  Processo
+                </label>
+                <Select
+                  id="modal-processo"
+                  isRequired
+                  isDisabled={isReadOnly || mode === "edit"}
+                  placeholder="Selecione o processo"
+                  selectedKeys={formData.processoId ? [formData.processoId] : []}
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0] as string;
+                    setFormData({ ...formData, processoId: value });
+                  }}
+                  classNames={{
+                    trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                  }}
+                >
                   {processos.map((proc: any) => (
                     <SelectItem key={proc.id} textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}>
                       {proc.numero} {proc.titulo ? `- ${proc.titulo}` : ""}
@@ -776,24 +758,24 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                 </Select>
               </div>
 
-               <div className="space-y-2">
-                 <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-titulo">
-                   <Star className="text-yellow-500" size={16} />
-                   Título
-                 </label>
-                 <Input
-                   id="modal-titulo"
-                   isRequired
-                   isReadOnly={isReadOnly}
-                   placeholder="Ex: Sentença proferida, Intimação recebida, etc"
-                   value={formData.titulo}
-                   onValueChange={(value) => setFormData({ ...formData, titulo: value })}
-                   classNames={{
-                     input: "text-slate-700 dark:text-slate-300",
-                     inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
-                   }}
-                 />
-               </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-titulo">
+                  <Star className="text-yellow-500" size={16} />
+                  Título
+                </label>
+                <Input
+                  id="modal-titulo"
+                  isRequired
+                  isReadOnly={isReadOnly}
+                  placeholder="Ex: Sentença proferida, Intimação recebida, etc"
+                  value={formData.titulo}
+                  onValueChange={(value) => setFormData({ ...formData, titulo: value })}
+                  classNames={{
+                    input: "text-slate-700 dark:text-slate-300",
+                    inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                  }}
+                />
+              </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-descricao">
@@ -829,45 +811,55 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                     setFormData({ ...formData, tipo: value });
                   }}
                 >
-                {tipos.map((tipo) => (
-                  <SelectItem key={tipo} textValue={tipo}>
-                    {tipo}
-                  </SelectItem>
-                ))}
+                  {tipos.map((tipo) => (
+                    <SelectItem key={tipo} textValue={tipo}>
+                      {tipo}
+                    </SelectItem>
+                  ))}
                 </Select>
               </div>
 
-              <DatePicker
-                id="modal-data-movimentacao"
-                isReadOnly={isReadOnly}
-                label="Data da Movimentação"
-                value={formData.dataMovimentacao}
-                onChange={(date) => {
-                  if (date) {
-                    setFormData({ ...formData, dataMovimentacao: date });
-                  }
-                }}
-                className="w-full"
-              />
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-data-movimentacao">
+                  <Calendar className="text-blue-500" size={16} />
+                  Data da Movimentação
+                </label>
+                <DatePicker
+                  id="modal-data-movimentacao"
+                  isReadOnly={isReadOnly}
+                  value={formData.dataMovimentacao}
+                  onChange={(date) => {
+                    if (date) {
+                      setFormData({ ...formData, dataMovimentacao: date });
+                    }
+                  }}
+                  className="w-full"
+                />
+              </div>
 
-              <DatePicker
-                id="modal-prazo"
-                description="Se houver prazo relacionado a este andamento"
-                isReadOnly={isReadOnly}
-                label="Prazo (opcional)"
-                value={formData.prazo}
-                onChange={(date) => {
-                  setFormData({ ...formData, prazo: date });
-                }}
-                className="w-full"
-              />
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-prazo">
+                  <Clock className="text-amber-500" size={16} />
+                  Prazo (opcional)
+                </label>
+                <DatePicker
+                  id="modal-prazo"
+                  description="Se houver prazo relacionado a este andamento"
+                  isReadOnly={isReadOnly}
+                  value={formData.prazo}
+                  onChange={(date) => {
+                    setFormData({ ...formData, prazo: date });
+                  }}
+                  className="w-full"
+                />
+              </div>
 
-               {!isReadOnly && formData.prazo && mode === "create" && (
-                 <label className="flex items-center gap-2 cursor-pointer" htmlFor="gera-prazo">
-                   <input id="gera-prazo" checked={formData.geraPrazo} className="w-4 h-4" type="checkbox" onChange={(e) => setFormData({ ...formData, geraPrazo: e.target.checked })} />
-                   <span className="text-sm">Gerar prazo automático no sistema</span>
-                 </label>
-               )}
+              {!isReadOnly && formData.prazo && mode === "create" && (
+                <label className="flex items-center gap-2 cursor-pointer" htmlFor="gera-prazo">
+                  <input id="gera-prazo" checked={formData.geraPrazo} className="w-4 h-4" type="checkbox" onChange={(e) => setFormData({ ...formData, geraPrazo: e.target.checked })} />
+                  <span className="text-sm">Gerar prazo automático no sistema</span>
+                </label>
+              )}
 
               {/* Seção de Notificações */}
               {!isReadOnly && (
@@ -879,18 +871,18 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                     <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Notificações</h3>
                   </div>
 
-                   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3">
-                     <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" htmlFor="notificar-cliente">
-                       <input
-                         id="notificar-cliente"
-                         checked={formData.notificarCliente}
-                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                         type="checkbox"
-                         onChange={(e) => setFormData({ ...formData, notificarCliente: e.target.checked })}
-                       />
-                       <MessageSquare className="text-slate-600 dark:text-slate-400" size={18} />
-                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Notificar cliente sobre este andamento</span>
-                     </label>
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3">
+                    <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" htmlFor="notificar-cliente">
+                      <input
+                        id="notificar-cliente"
+                        checked={formData.notificarCliente}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        type="checkbox"
+                        onChange={(e) => setFormData({ ...formData, notificarCliente: e.target.checked })}
+                      />
+                      <MessageSquare className="text-slate-600 dark:text-slate-400" size={18} />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Notificar cliente sobre este andamento</span>
+                    </label>
 
                     {formData.notificarCliente && (
                       <div className="ml-6 space-y-3 border-l-2 border-blue-200 dark:border-blue-700 pl-4">
@@ -918,11 +910,14 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                           <span className="text-sm text-slate-700 dark:text-slate-300">Enviar notificação por WhatsApp</span>
                         </label>
 
-                        <div className="mt-4">
+                        <div className="mt-4 space-y-2">
+                          <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-mensagem-personalizada">
+                            <MessageSquare className="text-purple-500" size={16} />
+                            Mensagem personalizada (opcional)
+                          </label>
                           <Textarea
                             id="modal-mensagem-personalizada"
                             isReadOnly={isReadOnly}
-                            label="Mensagem personalizada (opcional)"
                             placeholder="Deixe em branco para usar mensagem padrão..."
                             minRows={2}
                             value={formData.mensagemPersonalizada}
