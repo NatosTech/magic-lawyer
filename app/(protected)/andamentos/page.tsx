@@ -3,7 +3,25 @@
 import { useState, useMemo } from "react";
 import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardBody, CardHeader, Button, Input, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Chip, Tooltip, Skeleton, DatePicker } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Button,
+  Input,
+  Select,
+  SelectItem,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Textarea,
+  Chip,
+  Tooltip,
+  Skeleton,
+  DatePicker,
+} from "@heroui/react";
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date";
 import { toast } from "sonner";
 import {
@@ -13,8 +31,6 @@ import {
   Plus,
   Search,
   Filter,
-  X,
-  Pencil,
   Trash2,
   AlertCircle,
   Activity,
@@ -23,77 +39,16 @@ import {
   MessageSquare,
   Mail,
   Smartphone,
-  CheckCircle,
-  AlertTriangle,
-  Info,
-  Zap,
-  Users,
-  Scale,
-  Gavel,
-  FileCheck,
   Timer,
   Megaphone,
   CalendarDays,
-  FolderOpen,
   Star,
-  TrendingUp,
-  Target,
-  Shield,
-  Award,
-  BookOpen,
-  Briefcase,
-  Building,
-  UserCheck,
-  Send,
   Eye,
   Edit3,
-  Save,
-  RefreshCw,
-  Download,
-  Upload,
-  Link,
-  Copy,
-  Share,
-  Heart,
-  ThumbsUp,
-  Flag,
-  MapPin,
-  Phone,
-  Globe,
-  Lock,
-  Unlock,
-  Settings,
-  MoreHorizontal,
-  ChevronRight,
-  ChevronDown,
-  ArrowRight,
-  ArrowLeft,
-  ArrowUp,
-  ArrowDown,
-  Sparkles,
-  Rocket,
-  Crown,
-  Gem,
-  Flame,
-  Sun,
-  Moon,
-  Cloud,
-  Rainbow,
-  CheckSquare,
-  Coffee,
-  Lightbulb,
-  Gift,
-  Trophy,
-  Medal,
-  Diamond,
-  Leaf,
-  Flower,
-  TreePine,
-  Mountain,
-  Waves,
   Tag,
   RotateCcw,
   XCircle,
+  Sparkles,
 } from "lucide-react";
 
 import {
@@ -414,11 +369,12 @@ export default function AndamentosPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Filtro por Título */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="filtro">
+                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="filtro-titulo">
                         <Search className="w-4 h-4" />
                         Título
                       </label>
                       <Input
+                        id="filtro-titulo"
                         placeholder="Buscar por título..."
                         size="sm"
                         startContent={<Search className="w-4 h-4 text-default-400" />}
@@ -430,11 +386,12 @@ export default function AndamentosPage() {
 
                     {/* Filtro por Processo */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="processo">
+                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="filtro-processo">
                         <FileText className="w-4 h-4" />
                         Processo
                       </label>
                       <Select
+                        id="filtro-processo"
                         placeholder="Todos os processos"
                         size="sm"
                         variant="bordered"
@@ -454,11 +411,12 @@ export default function AndamentosPage() {
 
                     {/* Filtro por Tipo */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="tipo">
+                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="filtro-tipo">
                         <Tag className="w-4 h-4" />
                         Tipo
                       </label>
                       <Select
+                        id="filtro-tipo"
                         placeholder="Todos os tipos"
                         size="sm"
                         variant="bordered"
@@ -791,24 +749,25 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
           </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                  <FileText className="text-blue-500" size={16} />
-                  Processo
-                </label>
-                <Select
-                  isRequired
-                  isDisabled={isReadOnly || mode === "edit"}
-                  placeholder="Selecione o processo"
-                  selectedKeys={formData.processoId ? [formData.processoId] : []}
-                  onSelectionChange={(keys) => {
-                    const value = Array.from(keys)[0] as string;
-                    setFormData({ ...formData, processoId: value });
-                  }}
-                  classNames={{
-                    trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
-                  }}
-                >
+               <div className="space-y-2">
+                 <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-processo">
+                   <FileText className="text-blue-500" size={16} />
+                   Processo
+                 </label>
+                 <Select
+                   id="modal-processo"
+                   isRequired
+                   isDisabled={isReadOnly || mode === "edit"}
+                   placeholder="Selecione o processo"
+                   selectedKeys={formData.processoId ? [formData.processoId] : []}
+                   onSelectionChange={(keys) => {
+                     const value = Array.from(keys)[0] as string;
+                     setFormData({ ...formData, processoId: value });
+                   }}
+                   classNames={{
+                     trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                   }}
+                 >
                   {processos.map((proc: any) => (
                     <SelectItem key={proc.id} textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}>
                       {proc.numero} {proc.titulo ? `- ${proc.titulo}` : ""}
@@ -817,30 +776,32 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                  <Star className="text-yellow-500" size={16} />
-                  Título
-                </label>
-                <Input
-                  isRequired
-                  isReadOnly={isReadOnly}
-                  placeholder="Ex: Sentença proferida, Intimação recebida, etc"
-                  value={formData.titulo}
-                  onValueChange={(value) => setFormData({ ...formData, titulo: value })}
-                  classNames={{
-                    input: "text-slate-700 dark:text-slate-300",
-                    inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
-                  }}
-                />
-              </div>
+               <div className="space-y-2">
+                 <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-titulo">
+                   <Star className="text-yellow-500" size={16} />
+                   Título
+                 </label>
+                 <Input
+                   id="modal-titulo"
+                   isRequired
+                   isReadOnly={isReadOnly}
+                   placeholder="Ex: Sentença proferida, Intimação recebida, etc"
+                   value={formData.titulo}
+                   onValueChange={(value) => setFormData({ ...formData, titulo: value })}
+                   classNames={{
+                     input: "text-slate-700 dark:text-slate-300",
+                     inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                   }}
+                 />
+               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-descricao">
                   <FileText className="text-green-500" size={16} />
                   Descrição
                 </label>
                 <Textarea
+                  id="modal-descricao"
                   isReadOnly={isReadOnly}
                   minRows={3}
                   placeholder="Descreva o andamento em detalhes..."
@@ -893,12 +854,12 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                 className="w-full"
               />
 
-              {!isReadOnly && formData.prazo && mode === "create" && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input checked={formData.geraPrazo} className="w-4 h-4" type="checkbox" onChange={(e) => setFormData({ ...formData, geraPrazo: e.target.checked })} />
-                  <span className="text-sm">Gerar prazo automático no sistema</span>
-                </label>
-              )}
+               {!isReadOnly && formData.prazo && mode === "create" && (
+                 <label className="flex items-center gap-2 cursor-pointer" htmlFor="gera-prazo">
+                   <input id="gera-prazo" checked={formData.geraPrazo} className="w-4 h-4" type="checkbox" onChange={(e) => setFormData({ ...formData, geraPrazo: e.target.checked })} />
+                   <span className="text-sm">Gerar prazo automático no sistema</span>
+                 </label>
+               )}
 
               {/* Seção de Notificações */}
               {!isReadOnly && (
@@ -910,22 +871,24 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                     <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Notificações</h3>
                   </div>
 
-                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3">
-                    <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                      <input
-                        checked={formData.notificarCliente}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                        type="checkbox"
-                        onChange={(e) => setFormData({ ...formData, notificarCliente: e.target.checked })}
-                      />
-                      <MessageSquare className="text-slate-600 dark:text-slate-400" size={18} />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Notificar cliente sobre este andamento</span>
-                    </label>
+                   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3">
+                     <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" htmlFor="notificar-cliente">
+                       <input
+                         id="notificar-cliente"
+                         checked={formData.notificarCliente}
+                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                         type="checkbox"
+                         onChange={(e) => setFormData({ ...formData, notificarCliente: e.target.checked })}
+                       />
+                       <MessageSquare className="text-slate-600 dark:text-slate-400" size={18} />
+                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Notificar cliente sobre este andamento</span>
+                     </label>
 
                     {formData.notificarCliente && (
                       <div className="ml-6 space-y-3 border-l-2 border-blue-200 dark:border-blue-700 pl-4">
-                        <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                        <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" htmlFor="notificar-email">
                           <input
+                            id="notificar-email"
                             checked={formData.notificarEmail}
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                             type="checkbox"
@@ -935,8 +898,9 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                           <span className="text-sm text-slate-700 dark:text-slate-300">Enviar notificação por email</span>
                         </label>
 
-                        <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                        <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" htmlFor="notificar-whatsapp">
                           <input
+                            id="notificar-whatsapp"
                             checked={formData.notificarWhatsapp}
                             className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                             type="checkbox"
