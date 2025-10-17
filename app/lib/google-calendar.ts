@@ -70,10 +70,14 @@ export const getAuthUrl = (userId: string, currentDomain?: string) => {
       ? "https://magiclawyer.vercel.app"
       : "http://localhost:9192";
 
+  const state = `${userId}|${currentDomain || ""}`;
+  
+  console.log(`[DEBUG] Google OAuth - userId: ${userId}, currentDomain: ${currentDomain}, state: ${state}`);
+  
   return oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: scopes,
-    state: `${userId}|${currentDomain || ""}`, // Incluir domínio atual no state
+    state: state,
     redirect_uri: `${oauthDomain}/api/google-calendar/callback`,
   });
 };

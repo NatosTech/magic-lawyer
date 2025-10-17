@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
       logger.warn(`Erro na autorização Google Calendar: ${error} - ${errorDescription}`);
 
       // Redirecionar para a agenda com erro
-      const redirectUrl = new URL("/agenda", request.url);
+      const host = request.headers.get("host");
+      const protocol = request.headers.get("x-forwarded-proto") || "https";
+      const redirectUrl = new URL("/agenda", `${protocol}://${host}`);
 
       redirectUrl.searchParams.set("google_calendar_error", errorDescription);
 
@@ -29,7 +31,9 @@ export async function GET(request: NextRequest) {
     if (!code || !state) {
       logger.warn("Callback Google Calendar sem código ou state");
 
-      const redirectUrl = new URL("/agenda", request.url);
+      const host = request.headers.get("host");
+      const protocol = request.headers.get("x-forwarded-proto") || "https";
+      const redirectUrl = new URL("/agenda", `${protocol}://${host}`);
 
       redirectUrl.searchParams.set("google_calendar_error", "Dados de autorização inválidos");
 
@@ -88,7 +92,9 @@ export async function GET(request: NextRequest) {
     logger.error("Erro no callback do Google Calendar:", error);
 
     // Redirecionar para a agenda com erro
-    const redirectUrl = new URL("/agenda", request.url);
+    const host = request.headers.get("host");
+    const protocol = request.headers.get("x-forwarded-proto") || "https";
+    const redirectUrl = new URL("/agenda", `${protocol}://${host}`);
 
     redirectUrl.searchParams.set("google_calendar_error", "Erro interno do servidor");
 
