@@ -252,7 +252,10 @@ export class UploadService {
     }
   }
 
-  async deleteAvatar(avatarUrl: string, userId: string): Promise<UploadResult> {
+  async deleteAvatar(
+    avatarUrl: string,
+    _userId: string,
+  ): Promise<UploadResult> {
     try {
       if (!avatarUrl || typeof avatarUrl !== "string") {
         return {
@@ -533,7 +536,7 @@ export class UploadService {
     file: Buffer,
     juizId: string,
     juizNome: string,
-    originalName: string,
+    _originalName: string,
   ): Promise<UploadResult> {
     try {
       if (!this.useCloudinary) {
@@ -858,7 +861,7 @@ export class UploadService {
    */
   async deleteDocumento(
     documentUrl: string,
-    userId: string,
+    _userId: string,
   ): Promise<UploadResult> {
     try {
       if (!this.useCloudinary) {

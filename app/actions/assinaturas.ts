@@ -75,7 +75,9 @@ async function getUserInfo() {
 // LISTAR ASSINATURAS
 // ============================================
 
-export async function listarAssinaturas(peticaoId: string): Promise<ActionResponse<AssinaturaInfo[]>> {
+export async function listarAssinaturas(
+  peticaoId: string,
+): Promise<ActionResponse<AssinaturaInfo[]>> {
   try {
     const tenantId = await getTenantId();
 
@@ -128,7 +130,9 @@ export async function listarAssinaturas(peticaoId: string): Promise<ActionRespon
 // VERIFICAR STATUS
 // ============================================
 
-export async function verificarStatusAssinatura(assinaturaId: string): Promise<ActionResponse<AssinaturaPeticao>> {
+export async function verificarStatusAssinatura(
+  assinaturaId: string,
+): Promise<ActionResponse<AssinaturaPeticao>> {
   try {
     const tenantId = await getTenantId();
 
@@ -147,7 +151,11 @@ export async function verificarStatusAssinatura(assinaturaId: string): Promise<A
     }
 
     // Verificar se expirou
-    if (assinatura.status === "PENDENTE" && assinatura.expiradaEm && assinatura.expiradaEm < new Date()) {
+    if (
+      assinatura.status === "PENDENTE" &&
+      assinatura.expiradaEm &&
+      assinatura.expiradaEm < new Date()
+    ) {
       const assinaturaAtualizada = await prisma.assinaturaPeticao.update({
         where: { id: assinaturaId },
         data: { status: "EXPIRADO" },
@@ -177,7 +185,9 @@ export async function verificarStatusAssinatura(assinaturaId: string): Promise<A
 // CANCELAR ASSINATURA
 // ============================================
 
-export async function cancelarAssinatura(assinaturaId: string): Promise<ActionResponse> {
+export async function cancelarAssinatura(
+  assinaturaId: string,
+): Promise<ActionResponse> {
   try {
     const tenantId = await getTenantId();
 
@@ -220,7 +230,9 @@ export async function cancelarAssinatura(assinaturaId: string): Promise<ActionRe
 // VERIFICAR SE PETIÇÃO ESTÁ ASSINADA
 // ============================================
 
-export async function verificarPeticaoAssinada(peticaoId: string): Promise<ActionResponse<{ assinada: boolean; assinaturas: number }>> {
+export async function verificarPeticaoAssinada(
+  peticaoId: string,
+): Promise<ActionResponse<{ assinada: boolean; assinaturas: number }>> {
   try {
     const tenantId = await getTenantId();
 

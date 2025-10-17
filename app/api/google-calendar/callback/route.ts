@@ -15,7 +15,9 @@ export async function GET(request: NextRequest) {
     if (error) {
       const errorDescription = searchParams.get("error_description") || error;
 
-      logger.warn(`Erro na autorização Google Calendar: ${error} - ${errorDescription}`);
+      logger.warn(
+        `Erro na autorização Google Calendar: ${error} - ${errorDescription}`,
+      );
 
       // Redirecionar para a agenda com erro
       const host = request.headers.get("host");
@@ -35,7 +37,10 @@ export async function GET(request: NextRequest) {
       const protocol = request.headers.get("x-forwarded-proto") || "https";
       const redirectUrl = new URL("/agenda", `${protocol}://${host}`);
 
-      redirectUrl.searchParams.set("google_calendar_error", "Dados de autorização inválidos");
+      redirectUrl.searchParams.set(
+        "google_calendar_error",
+        "Dados de autorização inválidos",
+      );
 
       return NextResponse.redirect(redirectUrl);
     }
@@ -43,16 +48,21 @@ export async function GET(request: NextRequest) {
     // Extrair userId e domínio original do state
     const [userId, originalDomain] = state.split("|");
 
-    logger.info(`Callback Google Calendar - userId: ${userId}, originalDomain: ${originalDomain}`);
+    logger.info(
+      `Callback Google Calendar - userId: ${userId}, originalDomain: ${originalDomain}`,
+    );
 
     // Processar o callback
     const result = await handleGoogleCalendarCallback(code, state);
 
     if (result.success && result.data) {
-      logger.info(`Google Calendar conectado com sucesso para usuário ${userId}`);
+      logger.info(
+        `Google Calendar conectado com sucesso para usuário ${userId}`,
+      );
 
       // Redirecionar para o domínio original se disponível
       let redirectUrl;
+
       if (originalDomain && originalDomain !== "") {
         // Usar o domínio original do state (já inclui protocolo)
         redirectUrl = new URL("/agenda", originalDomain);
@@ -60,19 +70,27 @@ export async function GET(request: NextRequest) {
         // Fallback para o domínio atual da requisição
         const host = request.headers.get("host");
         const protocol = request.headers.get("x-forwarded-proto") || "https";
+
         redirectUrl = new URL("/agenda", `${protocol}://${host}`);
       }
 
       redirectUrl.searchParams.set("google_calendar_success", "true");
-      redirectUrl.searchParams.set("calendar_name", result.data.calendarName || "Calendário");
+      redirectUrl.searchParams.set(
+        "calendar_name",
+        result.data.calendarName || "Calendário",
+      );
 
       logger.info(`[DEBUG] Redirecionando para: ${redirectUrl.toString()}`);
+
       return NextResponse.redirect(redirectUrl);
     } else {
-      logger.error(`Erro ao processar callback Google Calendar: ${result.error}`);
+      logger.error(
+        `Erro ao processar callback Google Calendar: ${result.error}`,
+      );
 
       // Redirecionar para o domínio original com erro
       let redirectUrl;
+
       if (originalDomain && originalDomain !== "") {
         // Usar o domínio original do state (já inclui protocolo)
         redirectUrl = new URL("/agenda", originalDomain);
@@ -80,12 +98,19 @@ export async function GET(request: NextRequest) {
         // Fallback para o domínio atual da requisição
         const host = request.headers.get("host");
         const protocol = request.headers.get("x-forwarded-proto") || "https";
+
         redirectUrl = new URL("/agenda", `${protocol}://${host}`);
       }
 
-      redirectUrl.searchParams.set("google_calendar_error", result.error || "Erro desconhecido");
+      redirectUrl.searchParams.set(
+        "google_calendar_error",
+        result.error || "Erro desconhecido",
+      );
 
-      logger.info(`[DEBUG] Redirecionando para (erro): ${redirectUrl.toString()}`);
+      logger.info(
+        `[DEBUG] Redirecionando para (erro): ${redirectUrl.toString()}`,
+      );
+
       return NextResponse.redirect(redirectUrl);
     }
   } catch (error) {
@@ -96,7 +121,10 @@ export async function GET(request: NextRequest) {
     const protocol = request.headers.get("x-forwarded-proto") || "https";
     const redirectUrl = new URL("/agenda", `${protocol}://${host}`);
 
-    redirectUrl.searchParams.set("google_calendar_error", "Erro interno do servidor");
+    redirectUrl.searchParams.set(
+      "google_calendar_error",
+      "Erro interno do servidor",
+    );
 
     return NextResponse.redirect(redirectUrl);
   }
