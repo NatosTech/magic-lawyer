@@ -815,6 +815,7 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
               </div>
 
               <Select
+                id="modal-tipo"
                 isDisabled={isReadOnly}
                 label="Tipo"
                 placeholder="Selecione o tipo"
@@ -832,6 +833,7 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
               </Select>
 
               <DatePicker
+                id="modal-data-movimentacao"
                 isReadOnly={isReadOnly}
                 label="Data da Movimentação"
                 value={formData.dataMovimentacao}
@@ -844,6 +846,7 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
               />
 
               <DatePicker
+                id="modal-prazo"
                 description="Se houver prazo relacionado a este andamento"
                 isReadOnly={isReadOnly}
                 label="Prazo (opcional)"
@@ -912,6 +915,7 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
 
                         <div className="mt-4">
                           <Textarea
+                            id="modal-mensagem-personalizada"
                             isReadOnly={isReadOnly}
                             label="Mensagem personalizada (opcional)"
                             placeholder="Deixe em branco para usar mensagem padrão..."
