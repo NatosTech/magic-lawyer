@@ -26,6 +26,11 @@ export interface AndamentoCreateInput {
   dataMovimentacao?: Date;
   prazo?: Date;
   geraPrazo?: boolean; // Flag para indicar se deve gerar prazo automático
+  // Campos para notificações
+  notificarCliente?: boolean;
+  notificarEmail?: boolean;
+  notificarWhatsapp?: boolean;
+  mensagemPersonalizada?: string;
 }
 
 export interface AndamentoUpdateInput {
@@ -34,6 +39,11 @@ export interface AndamentoUpdateInput {
   tipo?: MovimentacaoTipo;
   dataMovimentacao?: Date;
   prazo?: Date;
+  // Campos para notificações
+  notificarCliente?: boolean;
+  notificarEmail?: boolean;
+  notificarWhatsapp?: boolean;
+  mensagemPersonalizada?: string;
 }
 
 export interface ActionResponse<T> {
@@ -70,9 +80,7 @@ async function getUserId(): Promise<string> {
 // LISTAGEM
 // ============================================
 
-export async function listAndamentos(
-  filters: AndamentoFilters,
-): Promise<ActionResponse<any[]>> {
+export async function listAndamentos(filters: AndamentoFilters): Promise<ActionResponse<any[]>> {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -96,10 +104,7 @@ export async function listAndamentos(
 
     // Busca textual
     if (filters.searchTerm) {
-      where.OR = [
-        { titulo: { contains: filters.searchTerm, mode: "insensitive" } },
-        { descricao: { contains: filters.searchTerm, mode: "insensitive" } },
-      ];
+      where.OR = [{ titulo: { contains: filters.searchTerm, mode: "insensitive" } }, { descricao: { contains: filters.searchTerm, mode: "insensitive" } }];
     }
 
     const andamentos = await prisma.movimentacaoProcesso.findMany({
@@ -160,9 +165,7 @@ export async function listAndamentos(
 // BUSCAR INDIVIDUAL
 // ============================================
 
-export async function getAndamento(
-  andamentoId: string,
-): Promise<ActionResponse<any>> {
+export async function getAndamento(andamentoId: string): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -246,9 +249,7 @@ export async function getAndamento(
 // CRIAR ANDAMENTO
 // ============================================
 
-export async function createAndamento(
-  input: AndamentoCreateInput,
-): Promise<ActionResponse<any>> {
+export async function createAndamento(input: AndamentoCreateInput): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -278,6 +279,11 @@ export async function createAndamento(
         dataMovimentacao: input.dataMovimentacao || new Date(),
         prazo: input.prazo,
         criadoPorId: userId,
+        // Campos para notificações
+        notificarCliente: input.notificarCliente || false,
+        notificarEmail: input.notificarEmail || false,
+        notificarWhatsapp: input.notificarWhatsapp || false,
+        mensagemPersonalizada: input.mensagemPersonalizada,
       },
       include: {
         criadoPor: {
@@ -334,10 +340,7 @@ export async function createAndamento(
 // ATUALIZAR ANDAMENTO
 // ============================================
 
-export async function updateAndamento(
-  andamentoId: string,
-  input: AndamentoUpdateInput,
-): Promise<ActionResponse<any>> {
+export async function updateAndamento(andamentoId: string, input: AndamentoUpdateInput): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -364,6 +367,11 @@ export async function updateAndamento(
         tipo: input.tipo,
         dataMovimentacao: input.dataMovimentacao,
         prazo: input.prazo,
+        // Campos para notificações
+        notificarCliente: input.notificarCliente,
+        notificarEmail: input.notificarEmail,
+        notificarWhatsapp: input.notificarWhatsapp,
+        mensagemPersonalizada: input.mensagemPersonalizada,
       },
       include: {
         criadoPor: {
@@ -405,9 +413,7 @@ export async function updateAndamento(
 // EXCLUIR ANDAMENTO
 // ============================================
 
-export async function deleteAndamento(
-  andamentoId: string,
-): Promise<ActionResponse<null>> {
+export async function deleteAndamento(andamentoId: string): Promise<ActionResponse<null>> {
   try {
     const tenantId = await getTenantId();
 
@@ -451,9 +457,7 @@ export async function deleteAndamento(
 // DASHBOARD/MÉTRICAS
 // ============================================
 
-export async function getDashboardAndamentos(
-  processoId?: string,
-): Promise<ActionResponse<any>> {
+export async function getDashboardAndamentos(processoId?: string): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -515,19 +519,10 @@ export async function getDashboardAndamentos(
 // TIPOS DE MOVIMENTAÇÃO
 // ============================================
 
-export async function getTiposMovimentacao(): Promise<
-  ActionResponse<MovimentacaoTipo[]>
-> {
+export async function getTiposMovimentacao(): Promise<ActionResponse<MovimentacaoTipo[]>> {
   try {
     // Retornar os tipos do enum
-    const tipos: MovimentacaoTipo[] = [
-      "ANDAMENTO",
-      "PRAZO",
-      "INTIMACAO",
-      "AUDIENCIA",
-      "ANEXO",
-      "OUTRO",
-    ];
+    const tipos: MovimentacaoTipo[] = ["ANDAMENTO", "PRAZO", "INTIMACAO", "AUDIENCIA", "ANEXO", "OUTRO"];
 
     return {
       success: true,

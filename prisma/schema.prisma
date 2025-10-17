@@ -827,6 +827,11 @@ model MovimentacaoProcesso {
   dataMovimentacao   DateTime          @default(now())
   prazo              DateTime?
   criadoPorId        String?
+  // Campos para notificações
+  notificarCliente   Boolean           @default(false)
+  notificarEmail     Boolean           @default(false)
+  notificarWhatsapp  Boolean           @default(false)
+  mensagemPersonalizada String?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   documentos         Documento[]       @relation("MovimentacaoDocumentos")
@@ -837,6 +842,7 @@ model MovimentacaoProcesso {
 
   @@index([processoId])
   @@index([dataMovimentacao])
+  @@index([tenantId, notificarCliente])
   @@schema("magiclawyer")
 }
 

@@ -118,8 +118,10 @@ export async function listParcelasContrato(filters?: {
                 usuario: true,
               },
             },
+            dadosBancarios: true, // Incluir dados bancários do contrato
           },
         },
+        dadosBancarios: true, // Incluir dados bancários específicos da parcela
         responsavelUsuario: true,
       },
       orderBy: [{ dataVencimento: "asc" }, { numeroParcela: "asc" }],
@@ -166,8 +168,10 @@ export async function getParcelaContrato(id: string) {
                 usuario: true,
               },
             },
+            dadosBancarios: true, // Incluir dados bancários do contrato
           },
         },
+        dadosBancarios: true, // Incluir dados bancários específicos da parcela
         responsavelUsuario: true,
         comprovanteDocumento: true,
       },
@@ -221,6 +225,9 @@ export async function createParcelaContrato(data: {
         id: data.contratoId,
         tenantId,
       },
+      include: {
+        dadosBancarios: true, // Incluir dados bancários do contrato
+      },
     });
 
     if (!contrato) {
@@ -251,6 +258,7 @@ export async function createParcelaContrato(data: {
       data: {
         tenantId,
         contratoId: data.contratoId,
+        dadosBancariosId: contrato.dadosBancariosId, // Herdar conta bancária do contrato
         numeroParcela: data.numeroParcela,
         titulo: data.titulo,
         descricao: data.descricao,
@@ -310,7 +318,7 @@ export async function updateParcelaContrato(
     dataPagamento?: Date;
     formaPagamento?: string;
     responsavelUsuarioId?: string;
-  },
+  }
 ) {
   try {
     const tenantId = await getTenantId();
@@ -442,7 +450,7 @@ export async function gerarParcelasAutomaticamente(
     dataPrimeiroVencimento: Date;
     intervaloDias?: number; // Padrão: 30 dias
     tituloBase?: string;
-  },
+  }
 ) {
   try {
     const tenantId = await getTenantId();
@@ -452,6 +460,9 @@ export async function gerarParcelasAutomaticamente(
       where: {
         id: contratoId,
         tenantId,
+      },
+      include: {
+        dadosBancarios: true, // Incluir dados bancários do contrato
       },
     });
 
@@ -490,10 +501,9 @@ export async function gerarParcelasAutomaticamente(
         data: {
           tenantId,
           contratoId,
+          dadosBancariosId: contrato.dadosBancariosId, // Herdar conta bancária do contrato
           numeroParcela: i,
-          titulo: configuracao.tituloBase
-            ? `${configuracao.tituloBase} ${i}/${configuracao.numeroParcelas}`
-            : `Parcela ${i}/${configuracao.numeroParcelas}`,
+          titulo: configuracao.tituloBase ? `${configuracao.tituloBase} ${i}/${configuracao.numeroParcelas}` : `Parcela ${i}/${configuracao.numeroParcelas}`,
           valor: valorParcela,
           dataVencimento,
           status: "PENDENTE",
@@ -533,15 +543,7 @@ export async function getDashboardParcelas() {
   try {
     const tenantId = await getTenantId();
 
-    const [
-      totalParcelas,
-      parcelasPendentes,
-      parcelasPagas,
-      parcelasAtrasadas,
-      valorTotalPendente,
-      valorTotalPago,
-      parcelasVencendo,
-    ] = await Promise.all([
+    const [totalParcelas, parcelasPendentes, parcelasPagas, parcelasAtrasadas, valorTotalPendente, valorTotalPago, parcelasVencendo] = await Promise.all([
       // Total de parcelas
       prisma.contratoParcela.count({
         where: { tenantId },
@@ -649,9 +651,7 @@ export async function getProcessosComParcelas() {
     });
 
     // Converter valores Decimal para number
-    const convertedData = processos.map((item) =>
-      convertAllDecimalFields(item),
-    );
+    const convertedData = processos.map((item) => convertAllDecimalFields(item));
     const serialized = JSON.parse(JSON.stringify(convertedData));
 
     return {
@@ -702,4 +702,111 @@ export async function getStatusParcelas() {
       },
     ],
   };
+}
+
+// ============================================
+// GERAR DADOS DE PAGAMENTO
+// ============================================
+
+export async function getDadosPagamentoParcela(parcelaId: string) {
+  try {
+    const tenantId = await getTenantId();
+
+    const parcela = await prisma.contratoParcela.findFirst({
+      where: {
+        id: parcelaId,
+        tenantId,
+      },
+      include: {
+        contrato: {
+          include: {
+            cliente: true,
+            dadosBancarios: {
+              include: {
+                banco: true,
+              },
+            },
+          },
+        },
+        dadosBancarios: {
+          include: {
+            banco: true,
+          },
+        },
+      },
+    });
+
+    if (!parcela) {
+      return {
+        success: false,
+        error: "Parcela não encontrada",
+      };
+    }
+
+    // Usar dados bancários da parcela ou do contrato (herança)
+    const dadosBancarios = parcela.dadosBancarios || parcela.contrato.dadosBancarios;
+
+    if (!dadosBancarios) {
+      return {
+        success: false,
+        error: "Nenhuma conta bancária configurada para esta parcela",
+      };
+    }
+
+    // Gerar dados de pagamento
+    const dadosPagamento = {
+      parcela: {
+        id: parcela.id,
+        numeroParcela: parcela.numeroParcela,
+        titulo: parcela.titulo,
+        valor: Number(parcela.valor),
+        dataVencimento: parcela.dataVencimento,
+        status: parcela.status,
+      },
+      cliente: {
+        nome: parcela.contrato.cliente.nome,
+        documento: parcela.contrato.cliente.documento,
+        email: parcela.contrato.cliente.email,
+        telefone: parcela.contrato.cliente.telefone,
+      },
+      dadosBancarios: {
+        banco: dadosBancarios.banco?.nome || "Banco não informado",
+        agencia: dadosBancarios.agencia,
+        conta: dadosBancarios.conta,
+        chavePix: dadosBancarios.chavePix,
+        principal: dadosBancarios.principal,
+      },
+      pagamento: {
+        pix: dadosBancarios.chavePix
+          ? {
+              chave: dadosBancarios.chavePix,
+              valor: Number(parcela.valor),
+              descricao: `Parcela ${parcela.numeroParcela} - ${parcela.contrato.cliente.nome}`,
+              beneficiario: dadosBancarios.banco?.nome || "Banco não informado",
+            }
+          : null,
+        boleto: {
+          banco: dadosBancarios.banco?.nome || "Banco não informado",
+          agencia: dadosBancarios.agencia,
+          conta: dadosBancarios.conta,
+          valor: Number(parcela.valor),
+          vencimento: parcela.dataVencimento,
+          beneficiario: dadosBancarios.banco?.nome || "Banco não informado",
+          instrucoes: [`Parcela ${parcela.numeroParcela} do contrato ${parcela.contrato.titulo}`, `Cliente: ${parcela.contrato.cliente.nome}`, "Não receber após o vencimento"],
+        },
+      },
+    };
+
+    return {
+      success: true,
+      data: dadosPagamento,
+    };
+  } catch (error) {
+    console.error("Erro ao gerar dados de pagamento:", error);
+
+    return {
+      success: false,
+      error: "Erro ao gerar dados de pagamento",
+    };
+  }
 }
