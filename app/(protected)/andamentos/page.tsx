@@ -814,23 +814,28 @@ function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, on
                 />
               </div>
 
-              <Select
-                id="modal-tipo"
-                isDisabled={isReadOnly}
-                label="Tipo"
-                placeholder="Selecione o tipo"
-                selectedKeys={formData.tipo ? [formData.tipo] : []}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
-                  setFormData({ ...formData, tipo: value });
-                }}
-              >
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-tipo">
+                  <Tag className="text-purple-500" size={16} />
+                  Tipo
+                </label>
+                <Select
+                  id="modal-tipo"
+                  isDisabled={isReadOnly}
+                  placeholder="Selecione o tipo"
+                  selectedKeys={formData.tipo ? [formData.tipo] : []}
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0] as string;
+                    setFormData({ ...formData, tipo: value });
+                  }}
+                >
                 {tipos.map((tipo) => (
                   <SelectItem key={tipo} textValue={tipo}>
                     {tipo}
                   </SelectItem>
                 ))}
-              </Select>
+                </Select>
+              </div>
 
               <DatePicker
                 id="modal-data-movimentacao"
