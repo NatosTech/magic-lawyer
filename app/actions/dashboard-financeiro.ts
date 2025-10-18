@@ -73,15 +73,30 @@ async function getSession() {
 
   const user = session.user as any;
 
+  // Buscar cliente vinculado ao usuário se for CLIENTE
+  let clienteId: string | undefined;
+  if (user.role === UserRole.CLIENTE) {
+    const cliente = await prisma.cliente.findFirst({
+      where: {
+        usuarioId: user.id,
+        tenantId: user.tenantId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    clienteId = cliente?.id;
+  }
+
   return {
     userId: user.id,
     tenantId: user.tenantId,
     role: user.role as UserRole,
     advogadoId: user.advogadoId,
+    clienteId,
   };
 }
 
-function buildWhereClause(tenantId: string, role: UserRole, advogadoId?: string, filtros?: FiltrosDashboard) {
+function buildWhereClause(tenantId: string, role: UserRole, advogadoId?: string, clienteId?: string, filtros?: FiltrosDashboard) {
   const where: any = {
     tenantId,
     deletedAt: null,
@@ -113,6 +128,17 @@ function buildWhereClause(tenantId: string, role: UserRole, advogadoId?: string,
     where.advogadoResponsavelId = advogadoId;
   }
 
+  // Controle de acesso para CLIENTE - só vê seus próprios contratos
+  if (role === UserRole.CLIENTE && clienteId) {
+    where.clienteId = clienteId;
+  }
+
+  // Controle de acesso para SECRETARIA - pode ver todos os contratos, mas com restrições
+  // (implementado nas queries específicas de honorários)
+
+  // Controle de acesso para FINANCEIRO - pode ver todos os dados financeiros
+  // (implementado nas queries específicas de honorários)
+
   return where;
 }
 
@@ -122,9 +148,9 @@ function buildWhereClause(tenantId: string, role: UserRole, advogadoId?: string,
 
 export async function getMetricasFinanceiras(filtros?: FiltrosDashboard): Promise<MetricasFinanceiras> {
   try {
-    const { tenantId, role, advogadoId } = await getSession();
+    const { tenantId, role, advogadoId, clienteId } = await getSession();
 
-    const whereContratos = buildWhereClause(tenantId, role, advogadoId, filtros);
+    const whereContratos = buildWhereClause(tenantId, role, advogadoId, clienteId, filtros);
 
     // Buscar parcelas com filtros
     const parcelas = await prisma.contratoParcela.findMany({
@@ -200,9 +226,9 @@ export async function getMetricasFinanceiras(filtros?: FiltrosDashboard): Promis
 
 export async function getGraficoParcelas(filtros?: FiltrosDashboard): Promise<GraficoParcelas[]> {
   try {
-    const { tenantId, role, advogadoId } = await getSession();
+    const { tenantId, role, advogadoId, clienteId } = await getSession();
 
-    const whereContratos = buildWhereClause(tenantId, role, advogadoId, filtros);
+    const whereContratos = buildWhereClause(tenantId, role, advogadoId, clienteId, filtros);
 
     // Buscar parcelas agrupadas por mês
     const parcelas = await prisma.contratoParcela.findMany({
@@ -276,16 +302,16 @@ export async function getGraficoParcelas(filtros?: FiltrosDashboard): Promise<Gr
 
 export async function getHonorariosPorAdvogado(filtros?: FiltrosDashboard): Promise<HonorariosPorAdvogado[]> {
   try {
-    const { tenantId, role, advogadoId } = await getSession();
+    const { tenantId, role, advogadoId, clienteId } = await getSession();
 
-    const whereContratos = buildWhereClause(tenantId, role, advogadoId, filtros);
+    const whereContratos = buildWhereClause(tenantId, role, advogadoId, clienteId, filtros);
 
-    // Buscar honorários com controle de privacidade
+    // Buscar honorários com controle de privacidade por role
     const honorarios = await prisma.contratoHonorario.findMany({
       where: {
         tenantId,
         contrato: whereContratos,
-        // Controle de privacidade: ADVOGADO só vê seus próprios honorários privados
+        // Controle de privacidade por role
         ...(role === UserRole.ADVOGADO &&
           advogadoId && {
             OR: [
@@ -297,6 +323,28 @@ export async function getHonorariosPorAdvogado(filtros?: FiltrosDashboard): Prom
               { advogadoId: null }, // Honorários gerais do contrato
             ],
           }),
+        // SECRETARIA: só vê honorários públicos
+        ...(role === UserRole.SECRETARIA && {
+          OR: [
+            { visibilidade: HonorarioVisibilidade.PUBLICO },
+            { advogadoId: null }, // Honorários gerais do contrato
+          ],
+        }),
+        // FINANCEIRO: vê honorários públicos e gerais
+        ...(role === UserRole.FINANCEIRO && {
+          OR: [
+            { visibilidade: HonorarioVisibilidade.PUBLICO },
+            { advogadoId: null }, // Honorários gerais do contrato
+          ],
+        }),
+        // CLIENTE: só vê honorários públicos
+        ...(role === UserRole.CLIENTE && {
+          OR: [
+            { visibilidade: HonorarioVisibilidade.PUBLICO },
+            { advogadoId: null }, // Honorários gerais do contrato
+          ],
+        }),
+        // ADMIN: vê todos os honorários (sem restrições)
       },
       include: {
         advogado: {
