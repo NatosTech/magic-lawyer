@@ -29,11 +29,7 @@ async function getUserId(): Promise<string> {
 // LISTAR HONORÁRIOS CONTRATUAIS
 // ============================================
 
-export async function listHonorariosContratuais(filters?: {
-  contratoId?: string;
-  tipo?: "FIXO" | "SUCESSO" | "HIBRIDO";
-  ativo?: boolean;
-}) {
+export async function listHonorariosContratuais(filters?: { contratoId?: string; tipo?: "FIXO" | "SUCESSO" | "HIBRIDO"; ativo?: boolean }) {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -73,11 +69,7 @@ export async function listHonorariosContratuais(filters?: {
     // 2. Honorários PRIVADOS onde ele é o advogado vinculado
     // 3. Honorários sem advogado específico (gerais do contrato)
     if (userRole === "ADVOGADO" && advogadoId) {
-      where.OR = [
-        { visibilidade: "PUBLICO" },
-        { advogadoId: advogadoId },
-        { advogadoId: null },
-      ];
+      where.OR = [{ visibilidade: "PUBLICO" }, { advogadoId: advogadoId }, { advogadoId: null }];
     }
 
     const honorarios = await prisma.contratoHonorario.findMany({
@@ -91,6 +83,11 @@ export async function listHonorariosContratuais(filters?: {
                 usuario: true,
               },
             },
+            dadosBancarios: {
+              include: {
+                banco: true,
+              },
+            },
           },
         },
         advogado: {
@@ -98,14 +95,17 @@ export async function listHonorariosContratuais(filters?: {
             usuario: true,
           },
         },
+        dadosBancarios: {
+          include: {
+            banco: true,
+          },
+        },
       },
       orderBy: [{ createdAt: "desc" }, { tipo: "asc" }],
     });
 
     // Converter Decimal para number e serializar
-    const convertedData = honorarios.map((item) =>
-      convertAllDecimalFields(item),
-    );
+    const convertedData = honorarios.map((item) => convertAllDecimalFields(item));
     const serialized = JSON.parse(JSON.stringify(convertedData));
 
     return {
@@ -145,6 +145,16 @@ export async function getHonorarioContratual(id: string) {
                 usuario: true,
               },
             },
+            dadosBancarios: {
+              include: {
+                banco: true,
+              },
+            },
+          },
+        },
+        dadosBancarios: {
+          include: {
+            banco: true,
           },
         },
       },
@@ -182,6 +192,7 @@ export async function getHonorarioContratual(id: string) {
 export async function createHonorarioContratual(data: {
   contratoId: string;
   advogadoId?: string;
+  dadosBancariosId?: string;
   tipo: "FIXO" | "SUCESSO" | "HIBRIDO";
   valorFixo?: number;
   percentualSucesso?: number;
@@ -200,6 +211,9 @@ export async function createHonorarioContratual(data: {
         id: data.contratoId,
         tenantId,
       },
+      include: {
+        dadosBancarios: true,
+      },
     });
 
     if (!contrato) {
@@ -207,6 +221,27 @@ export async function createHonorarioContratual(data: {
         success: false,
         error: "Contrato não encontrado",
       };
+    }
+
+    // Se não especificou conta bancária, usar a do contrato
+    const dadosBancariosId = data.dadosBancariosId || contrato.dadosBancariosId;
+
+    // Validar conta bancária se especificada
+    if (dadosBancariosId) {
+      const contaBancaria = await prisma.dadosBancarios.findFirst({
+        where: {
+          id: dadosBancariosId,
+          tenantId,
+          ativo: true,
+        },
+      });
+
+      if (!contaBancaria) {
+        return {
+          success: false,
+          error: "Conta bancária não encontrada ou inativa",
+        };
+      }
     }
 
     // Validar campos baseado no tipo
@@ -217,25 +252,17 @@ export async function createHonorarioContratual(data: {
       };
     }
 
-    if (
-      data.tipo === "SUCESSO" &&
-      (!data.percentualSucesso || !data.valorMinimoSucesso)
-    ) {
+    if (data.tipo === "SUCESSO" && (!data.percentualSucesso || !data.valorMinimoSucesso)) {
       return {
         success: false,
-        error:
-          "Percentual de sucesso e valor mínimo são obrigatórios para honorários por sucesso",
+        error: "Percentual de sucesso e valor mínimo são obrigatórios para honorários por sucesso",
       };
     }
 
-    if (
-      data.tipo === "HIBRIDO" &&
-      (!data.valorFixo || !data.percentualSucesso)
-    ) {
+    if (data.tipo === "HIBRIDO" && (!data.valorFixo || !data.percentualSucesso)) {
       return {
         success: false,
-        error:
-          "Valor fixo e percentual de sucesso são obrigatórios para honorários híbridos",
+        error: "Valor fixo e percentual de sucesso são obrigatórios para honorários híbridos",
       };
     }
 
@@ -244,14 +271,11 @@ export async function createHonorarioContratual(data: {
         tenantId,
         contratoId: data.contratoId,
         advogadoId: data.advogadoId,
+        dadosBancariosId,
         tipo: data.tipo,
         valorFixo: data.valorFixo ? Number(data.valorFixo) : null,
-        percentualSucesso: data.percentualSucesso
-          ? Number(data.percentualSucesso)
-          : null,
-        valorMinimoSucesso: data.valorMinimoSucesso
-          ? Number(data.valorMinimoSucesso)
-          : null,
+        percentualSucesso: data.percentualSucesso ? Number(data.percentualSucesso) : null,
+        valorMinimoSucesso: data.valorMinimoSucesso ? Number(data.valorMinimoSucesso) : null,
         baseCalculo: data.baseCalculo,
         observacoes: data.observacoes,
         visibilidade: data.visibilidade || "PRIVADO",
@@ -276,6 +300,16 @@ export async function createHonorarioContratual(data: {
                 },
               },
             },
+            dadosBancarios: {
+              include: {
+                banco: true,
+              },
+            },
+          },
+        },
+        dadosBancarios: {
+          include: {
+            banco: true,
           },
         },
       },
@@ -310,13 +344,14 @@ export async function createHonorarioContratual(data: {
 export async function updateHonorarioContratual(
   id: string,
   data: {
+    dadosBancariosId?: string;
     tipo?: "FIXO" | "SUCESSO" | "HIBRIDO";
     valorFixo?: number;
     percentualSucesso?: number;
     valorMinimoSucesso?: number;
     baseCalculo?: string;
     observacoes?: string;
-  },
+  }
 ) {
   try {
     const tenantId = await getTenantId();
@@ -327,6 +362,13 @@ export async function updateHonorarioContratual(
         id,
         tenantId,
       },
+      include: {
+        contrato: {
+          include: {
+            dadosBancarios: true,
+          },
+        },
+      },
     });
 
     if (!honorarioExistente) {
@@ -334,6 +376,27 @@ export async function updateHonorarioContratual(
         success: false,
         error: "Honorário contratual não encontrado",
       };
+    }
+
+    // Se não especificou conta bancária, usar a do contrato
+    const dadosBancariosId = data.dadosBancariosId || honorarioExistente.contrato.dadosBancariosId;
+
+    // Validar conta bancária se especificada
+    if (dadosBancariosId) {
+      const contaBancaria = await prisma.dadosBancarios.findFirst({
+        where: {
+          id: dadosBancariosId,
+          tenantId,
+          ativo: true,
+        },
+      });
+
+      if (!contaBancaria) {
+        return {
+          success: false,
+          error: "Conta bancária não encontrada ou inativa",
+        };
+      }
     }
 
     const tipo = data.tipo || honorarioExistente.tipo;
@@ -346,47 +409,28 @@ export async function updateHonorarioContratual(
       };
     }
 
-    if (
-      (tipo === "SUCESSO" &&
-        !data.percentualSucesso &&
-        !honorarioExistente.percentualSucesso) ||
-      (!data.valorMinimoSucesso && !honorarioExistente.valorMinimoSucesso)
-    ) {
+    if ((tipo === "SUCESSO" && !data.percentualSucesso && !honorarioExistente.percentualSucesso) || (!data.valorMinimoSucesso && !honorarioExistente.valorMinimoSucesso)) {
       return {
         success: false,
-        error:
-          "Percentual de sucesso e valor mínimo são obrigatórios para honorários por sucesso",
+        error: "Percentual de sucesso e valor mínimo são obrigatórios para honorários por sucesso",
       };
     }
 
-    if (
-      tipo === "HIBRIDO" &&
-      ((!data.valorFixo && !honorarioExistente.valorFixo) ||
-        (!data.percentualSucesso && !honorarioExistente.percentualSucesso))
-    ) {
+    if (tipo === "HIBRIDO" && ((!data.valorFixo && !honorarioExistente.valorFixo) || (!data.percentualSucesso && !honorarioExistente.percentualSucesso))) {
       return {
         success: false,
-        error:
-          "Valor fixo e percentual de sucesso são obrigatórios para honorários híbridos",
+        error: "Valor fixo e percentual de sucesso são obrigatórios para honorários híbridos",
       };
     }
 
     const honorario = await prisma.contratoHonorario.update({
       where: { id },
       data: {
+        dadosBancariosId,
         tipo,
-        valorFixo:
-          data.valorFixo !== undefined
-            ? Number(data.valorFixo)
-            : honorarioExistente.valorFixo,
-        percentualSucesso:
-          data.percentualSucesso !== undefined
-            ? Number(data.percentualSucesso)
-            : honorarioExistente.percentualSucesso,
-        valorMinimoSucesso:
-          data.valorMinimoSucesso !== undefined
-            ? Number(data.valorMinimoSucesso)
-            : honorarioExistente.valorMinimoSucesso,
+        valorFixo: data.valorFixo !== undefined ? Number(data.valorFixo) : honorarioExistente.valorFixo,
+        percentualSucesso: data.percentualSucesso !== undefined ? Number(data.percentualSucesso) : honorarioExistente.percentualSucesso,
+        valorMinimoSucesso: data.valorMinimoSucesso !== undefined ? Number(data.valorMinimoSucesso) : honorarioExistente.valorMinimoSucesso,
         baseCalculo: data.baseCalculo,
         observacoes: data.observacoes,
       },
@@ -410,6 +454,16 @@ export async function updateHonorarioContratual(
                 },
               },
             },
+            dadosBancarios: {
+              include: {
+                banco: true,
+              },
+            },
+          },
+        },
+        dadosBancarios: {
+          include: {
+            banco: true,
           },
         },
       },
@@ -517,10 +571,7 @@ export async function getTiposHonorario() {
 // CALCULAR VALOR DO HONORÁRIO
 // ============================================
 
-export async function calcularValorHonorario(
-  honorarioId: string,
-  valorBase?: number,
-) {
+export async function calcularValorHonorario(honorarioId: string, valorBase?: number) {
   try {
     const tenantId = await getTenantId();
 
@@ -551,8 +602,7 @@ export async function calcularValorHonorario(
         if (!valorBase) {
           return {
             success: false,
-            error:
-              "Valor base é necessário para calcular honorário por sucesso",
+            error: "Valor base é necessário para calcular honorário por sucesso",
           };
         }
         const percentual = Number(honorario.percentualSucesso || 0);
@@ -598,6 +648,107 @@ export async function calcularValorHonorario(
     return {
       success: false,
       error: "Erro ao calcular valor do honorário",
+    };
+  }
+}
+
+// ============================================
+// OBTER DADOS DE PAGAMENTO DO HONORÁRIO
+// ============================================
+
+export async function getDadosPagamentoHonorario(honorarioId: string) {
+  try {
+    const tenantId = await getTenantId();
+
+    const honorario = await prisma.contratoHonorario.findFirst({
+      where: {
+        id: honorarioId,
+        tenantId,
+      },
+      include: {
+        contrato: {
+          include: {
+            cliente: true,
+            dadosBancarios: {
+              include: {
+                banco: true,
+              },
+            },
+          },
+        },
+        dadosBancarios: {
+          include: {
+            banco: true,
+          },
+        },
+      },
+    });
+
+    if (!honorario) {
+      return {
+        success: false,
+        error: "Honorário não encontrado",
+      };
+    }
+
+    // Usar conta específica do honorário ou herdar do contrato
+    const contaBancaria = honorario.dadosBancarios || honorario.contrato.dadosBancarios;
+
+    if (!contaBancaria) {
+      return {
+        success: false,
+        error: "Nenhuma conta bancária configurada para este honorário",
+      };
+    }
+
+    // Calcular valor do honorário
+    const valorCalculado = await calcularValorHonorario(honorarioId);
+
+    if (!valorCalculado.success) {
+      return valorCalculado;
+    }
+
+    const dadosPagamento = {
+      honorario: {
+        id: honorario.id,
+        tipo: honorario.tipo,
+        valorCalculado: valorCalculado.data?.valorCalculado || 0,
+        detalhes: valorCalculado.data?.detalhes || "",
+      },
+      contaBancaria: {
+        id: contaBancaria.id,
+        banco: contaBancaria.banco?.nome || "Banco não informado",
+        agencia: contaBancaria.agencia,
+        conta: contaBancaria.conta,
+        tipoConta: contaBancaria.tipoConta,
+        tipoContaBancaria: contaBancaria.tipoContaBancaria,
+        chavePix: contaBancaria.chavePix,
+        tipoChavePix: contaBancaria.tipoChavePix,
+        titular: contaBancaria.titularNome,
+        documento: contaBancaria.titularDocumento,
+      },
+      cliente: {
+        nome: honorario.contrato.cliente.nome,
+        email: honorario.contrato.cliente.email,
+        telefone: honorario.contrato.cliente.telefone,
+      },
+      contrato: {
+        id: honorario.contrato.id,
+        titulo: honorario.contrato.titulo,
+        valor: Number(honorario.contrato.valor),
+      },
+    };
+
+    return {
+      success: true,
+      data: dadosPagamento,
+    };
+  } catch (error) {
+    console.error("Erro ao obter dados de pagamento do honorário:", error);
+
+    return {
+      success: false,
+      error: "Erro ao obter dados de pagamento",
     };
   }
 }

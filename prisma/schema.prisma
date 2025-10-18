@@ -1265,6 +1265,7 @@ model ContratoHonorario {
   tenantId           String
   contratoId         String
   advogadoId         String?               // Advogado específico (NULL = honorário geral do contrato)
+  dadosBancariosId   String?               // Conta específica para recebimento (herda do contrato se NULL)
   tipo               ContratoHonorarioTipo
   valorFixo          Decimal?              @db.Decimal(14, 2)
   percentualSucesso  Decimal?              @db.Decimal(5, 2)
@@ -1277,10 +1278,12 @@ model ContratoHonorario {
   contrato           Contrato              @relation(fields: [contratoId], references: [id], onDelete: Cascade)
   tenant             Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   advogado           Advogado?             @relation(fields: [advogadoId], references: [id])
+  dadosBancarios     DadosBancarios?       @relation(fields: [dadosBancariosId], references: [id])
 
   @@index([tenantId, tipo])
   @@index([contratoId])
   @@index([advogadoId])
+  @@index([dadosBancariosId])
   @@schema("magiclawyer")
 }
 
@@ -2609,6 +2612,7 @@ model DadosBancarios {
   banco         Banco              @relation(fields: [bancoCodigo], references: [codigo])
   contratos     Contrato[]
   parcelas      ContratoParcela[]
+  honorarios    ContratoHonorario[]
 
   @@index([tenantId, usuarioId])
   @@index([tenantId, clienteId])

@@ -29,40 +29,20 @@ import {
   DropdownItem,
   Textarea,
 } from "@heroui/react";
-import {
-  PlusIcon,
-  EyeIcon,
-  PencilIcon,
-  TrashIcon,
-  CalculatorIcon,
-  DollarSignIcon,
-  FilterIcon,
-} from "lucide-react";
+import { PlusIcon, EyeIcon, PencilIcon, TrashIcon, CalculatorIcon, DollarSignIcon, FilterIcon, CreditCardIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  useHonorariosContratuais,
-  useTiposHonorario,
-} from "@/app/hooks/use-honorarios-contratuais";
+import { useHonorariosContratuais, useTiposHonorario } from "@/app/hooks/use-honorarios-contratuais";
 import { useContratosComParcelas } from "@/app/hooks/use-contratos";
-import {
-  createHonorarioContratual,
-  updateHonorarioContratual,
-  deleteHonorarioContratual,
-  calcularValorHonorario,
-} from "@/app/actions/honorarios-contratuais";
+import { useDadosBancariosAtivos } from "@/app/hooks/use-dados-bancarios";
+import { createHonorarioContratual, updateHonorarioContratual, deleteHonorarioContratual, calcularValorHonorario } from "@/app/actions/honorarios-contratuais";
+import { DadosBancariosHonorario } from "@/components/dados-bancarios-honorario";
 import { title, subtitle } from "@/components/primitives";
-import {
-  ContratoHonorario,
-  ContratoHonorarioTipo,
-  Contrato,
-  Cliente,
-  Advogado,
-  Usuario,
-} from "@/app/generated/prisma";
+import { ContratoHonorario, ContratoHonorarioTipo, Contrato, Cliente, Advogado, Usuario } from "@/app/generated/prisma";
 
 interface HonorarioFormData {
   contratoId: string;
+  dadosBancariosId?: string;
   tipo: ContratoHonorarioTipo;
   valorFixo?: number;
   percentualSucesso?: number;
@@ -87,6 +67,8 @@ export default function HonorariosContratuaisPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [cobrancaModalOpen, setCobrancaModalOpen] = useState(false);
+  const [honorarioSelecionado, setHonorarioSelecionado] = useState<string | null>(null);
   const [filters, setFilters] = useState<{
     contratoId?: string;
     tipo?: ContratoHonorarioTipo;
@@ -95,6 +77,7 @@ export default function HonorariosContratuaisPage() {
   // Formulário
   const [formData, setFormData] = useState<HonorarioFormData>({
     contratoId: "",
+    dadosBancariosId: "",
     tipo: "FIXO",
     valorFixo: undefined,
     percentualSucesso: undefined,
@@ -107,6 +90,7 @@ export default function HonorariosContratuaisPage() {
   const { honorarios, isLoading, mutate } = useHonorariosContratuais(filters);
   const { tipos } = useTiposHonorario();
   const { contratos, isLoading: loadingContratos } = useContratosComParcelas();
+  const { dadosBancarios, isLoading: loadingDadosBancarios } = useDadosBancariosAtivos();
 
   // Funções
   const handleContratoChange = (contratoId: string) => {
@@ -116,6 +100,8 @@ export default function HonorariosContratuaisPage() {
       setFormData({
         ...formData,
         contratoId,
+        // Se o contrato tem conta bancária, usar como padrão
+        dadosBancariosId: contratoSelecionado.dadosBancariosId || formData.dadosBancariosId,
       });
     } else {
       setFormData({
@@ -141,6 +127,7 @@ export default function HonorariosContratuaisPage() {
       setEditingId(honorario.id);
       setFormData({
         contratoId: honorario.contratoId,
+        dadosBancariosId: honorario.dadosBancariosId || "",
         tipo: honorario.tipo,
         valorFixo: Number(honorario.valorFixo) || undefined,
         percentualSucesso: Number(honorario.percentualSucesso) || undefined,
@@ -152,6 +139,7 @@ export default function HonorariosContratuaisPage() {
       setEditingId(null);
       setFormData({
         contratoId: "",
+        dadosBancariosId: "",
         tipo: "FIXO",
         valorFixo: undefined,
         percentualSucesso: undefined,
@@ -168,6 +156,7 @@ export default function HonorariosContratuaisPage() {
     setEditingId(null);
     setFormData({
       contratoId: "",
+      dadosBancariosId: "",
       tipo: "FIXO",
       valorFixo: undefined,
       percentualSucesso: undefined,
@@ -194,19 +183,13 @@ export default function HonorariosContratuaisPage() {
         return;
       }
 
-      if (
-        formData.tipo === "SUCESSO" &&
-        (!formData.percentualSucesso || !formData.valorMinimoSucesso)
-      ) {
+      if (formData.tipo === "SUCESSO" && (!formData.percentualSucesso || !formData.valorMinimoSucesso)) {
         toast.error("Percentual e valor mínimo são obrigatórios");
 
         return;
       }
 
-      if (
-        formData.tipo === "HIBRIDO" &&
-        (!formData.valorFixo || !formData.percentualSucesso)
-      ) {
+      if (formData.tipo === "HIBRIDO" && (!formData.valorFixo || !formData.percentualSucesso)) {
         toast.error("Valor fixo e percentual são obrigatórios");
 
         return;
@@ -272,6 +255,11 @@ export default function HonorariosContratuaisPage() {
     }
   };
 
+  const handleCobrar = (honorario: HonorarioComContrato) => {
+    setHonorarioSelecionado(honorario.id);
+    setCobrancaModalOpen(true);
+  };
+
   const getTipoIcon = (tipo: ContratoHonorarioTipo) => {
     switch (tipo) {
       case "FIXO":
@@ -303,18 +291,10 @@ export default function HonorariosContratuaisPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>
-            Honorários Contratuais
-          </h1>
-          <p className={subtitle({ fullWidth: true })}>
-            Gerencie os honorários dos contratos
-          </p>
+          <h1 className={title({ size: "lg", color: "blue" })}>Honorários Contratuais</h1>
+          <p className={subtitle({ fullWidth: true })}>Gerencie os honorários dos contratos</p>
         </div>
-        <Button
-          color="primary"
-          startContent={<PlusIcon size={20} />}
-          onPress={() => handleOpenModal()}
-        >
+        <Button color="primary" startContent={<PlusIcon size={20} />} onPress={() => handleOpenModal()}>
           Novo Honorário
         </Button>
       </div>
@@ -328,9 +308,7 @@ export default function HonorariosContratuaisPage() {
               label="ID do Contrato"
               placeholder="Filtrar por contrato"
               value={filters.contratoId || ""}
-              onChange={(e) =>
-                setFilters({ ...filters, contratoId: e.target.value })
-              }
+              onChange={(e) => setFilters({ ...filters, contratoId: e.target.value })}
             />
             <Select
               className="max-w-xs"
@@ -352,11 +330,7 @@ export default function HonorariosContratuaisPage() {
                 </SelectItem>
               ))}
             </Select>
-            <Button
-              startContent={<FilterIcon size={16} />}
-              variant="light"
-              onPress={() => setFilters({})}
-            >
+            <Button startContent={<FilterIcon size={16} />} variant="light" onPress={() => setFilters({})}>
               Limpar Filtros
             </Button>
           </div>
@@ -387,22 +361,14 @@ export default function HonorariosContratuaisPage() {
                 {honorarios.map((honorario: HonorarioComContrato) => (
                   <TableRow key={honorario.id}>
                     <TableCell>
-                      <Chip
-                        color={getTipoColor(honorario.tipo)}
-                        startContent={getTipoIcon(honorario.tipo)}
-                        variant="flat"
-                      >
+                      <Chip color={getTipoColor(honorario.tipo)} startContent={getTipoIcon(honorario.tipo)} variant="flat">
                         {tipos.find((t) => t.value === honorario.tipo)?.label}
                       </Chip>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">
-                          {honorario.contrato.cliente.nome}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {honorario.contrato.cliente.email || "Sem email"}
-                        </p>
+                        <p className="font-medium">{honorario.contrato.cliente.nome}</p>
+                        <p className="text-sm text-gray-500">{honorario.contrato.cliente.email || "Sem email"}</p>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -412,40 +378,22 @@ export default function HonorariosContratuaisPage() {
                             ? `${honorario.contrato.advogadoResponsavel.usuario.firstName} ${honorario.contrato.advogadoResponsavel.usuario.lastName}`
                             : "Sem advogado responsável"}
                         </p>
-                        <p className="text-sm text-gray-500">
-                          {honorario.contrato.advogadoResponsavel?.usuario
-                            ?.email || "Sem email"}
-                        </p>
+                        <p className="text-sm text-gray-500">{honorario.contrato.advogadoResponsavel?.usuario?.email || "Sem email"}</p>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {honorario.tipo === "FIXO" && honorario.valorFixo && (
-                          <p className="font-medium">
-                            {formatCurrency(Number(honorario.valorFixo))}
-                          </p>
-                        )}
+                        {honorario.tipo === "FIXO" && honorario.valorFixo && <p className="font-medium">{formatCurrency(Number(honorario.valorFixo))}</p>}
                         {honorario.tipo === "SUCESSO" && (
                           <div>
-                            <p className="font-medium">
-                              {Number(honorario.percentualSucesso || 0)}%
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Mín:{" "}
-                              {formatCurrency(
-                                Number(honorario.valorMinimoSucesso || 0),
-                              )}
-                            </p>
+                            <p className="font-medium">{Number(honorario.percentualSucesso || 0)}%</p>
+                            <p className="text-xs text-gray-500">Mín: {formatCurrency(Number(honorario.valorMinimoSucesso || 0))}</p>
                           </div>
                         )}
                         {honorario.tipo === "HIBRIDO" && (
                           <div>
-                            <p className="font-medium">
-                              {formatCurrency(Number(honorario.valorFixo || 0))}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              + {Number(honorario.percentualSucesso || 0)}%
-                            </p>
+                            <p className="font-medium">{formatCurrency(Number(honorario.valorFixo || 0))}</p>
+                            <p className="text-xs text-gray-500">+ {Number(honorario.percentualSucesso || 0)}%</p>
                           </div>
                         )}
                       </div>
@@ -463,34 +411,19 @@ export default function HonorariosContratuaisPage() {
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu>
-                          <DropdownItem
-                            key="view"
-                            startContent={<EyeIcon size={16} />}
-                            onPress={() => handleOpenModal(honorario)}
-                          >
+                          <DropdownItem key="view" startContent={<EyeIcon size={16} />} onPress={() => handleOpenModal(honorario)}>
                             Ver Detalhes
                           </DropdownItem>
-                          <DropdownItem
-                            key="edit"
-                            startContent={<PencilIcon size={16} />}
-                            onPress={() => handleOpenModal(honorario)}
-                          >
+                          <DropdownItem key="edit" startContent={<PencilIcon size={16} />} onPress={() => handleOpenModal(honorario)}>
                             Editar
                           </DropdownItem>
-                          <DropdownItem
-                            key="calculate"
-                            startContent={<CalculatorIcon size={16} />}
-                            onPress={() => handleCalcular(honorario)}
-                          >
+                          <DropdownItem key="calculate" startContent={<CalculatorIcon size={16} />} onPress={() => handleCalcular(honorario)}>
                             Calcular Valor
                           </DropdownItem>
-                          <DropdownItem
-                            key="delete"
-                            className="text-danger"
-                            color="danger"
-                            startContent={<TrashIcon size={16} />}
-                            onPress={() => handleDelete(honorario.id)}
-                          >
+                          <DropdownItem key="charge" startContent={<CreditCardIcon size={16} />} onPress={() => handleCobrar(honorario)}>
+                            Cobrar Honorário
+                          </DropdownItem>
+                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<TrashIcon size={16} />} onPress={() => handleDelete(honorario.id)}>
                             Remover
                           </DropdownItem>
                         </DropdownMenu>
@@ -504,17 +437,9 @@ export default function HonorariosContratuaisPage() {
 
           {honorarios.length === 0 && !isLoading && (
             <div className="text-center py-8">
-              <DollarSignIcon
-                className="mx-auto text-gray-400 mb-4"
-                size={48}
-              />
+              <DollarSignIcon className="mx-auto text-gray-400 mb-4" size={48} />
               <p className="text-gray-500">Nenhum honorário encontrado</p>
-              <Button
-                className="mt-2"
-                color="primary"
-                variant="light"
-                onPress={() => handleOpenModal()}
-              >
+              <Button className="mt-2" color="primary" variant="light" onPress={() => handleOpenModal()}>
                 Criar Primeiro Honorário
               </Button>
             </div>
@@ -525,9 +450,7 @@ export default function HonorariosContratuaisPage() {
       {/* Modal de Criação/Edição */}
       <Modal isOpen={modalOpen} size="2xl" onClose={handleCloseModal}>
         <ModalContent>
-          <ModalHeader>
-            {editingId ? "Editar Honorário" : "Novo Honorário"}
-          </ModalHeader>
+          <ModalHeader>{editingId ? "Editar Honorário" : "Novo Honorário"}</ModalHeader>
           <ModalBody className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <Select
@@ -536,9 +459,7 @@ export default function HonorariosContratuaisPage() {
                 label="Contrato"
                 placeholder="Selecione um contrato"
                 selectedKeys={formData.contratoId ? [formData.contratoId] : []}
-                startContent={
-                  <CalculatorIcon className="text-default-400" size={16} />
-                }
+                startContent={<CalculatorIcon className="text-default-400" size={16} />}
                 onSelectionChange={(keys) => {
                   const contratoId = Array.from(keys)[0] as string;
 
@@ -552,8 +473,7 @@ export default function HonorariosContratuaisPage() {
                     <div className="flex flex-col">
                       <span className="font-medium">{contrato.titulo}</span>
                       <span className="text-sm text-default-500">
-                        {contrato.cliente.nome} -{" "}
-                        {formatCurrency(contrato.valor)}
+                        {contrato.cliente.nome} - {formatCurrency(contrato.valor)}
                       </span>
                     </div>
                   </SelectItem>
@@ -582,15 +502,49 @@ export default function HonorariosContratuaisPage() {
                       <span>{tipo.icon}</span>
                       <div>
                         <p className="font-medium">{tipo.label}</p>
-                        <p className="text-xs text-gray-500">
-                          {tipo.description}
-                        </p>
+                        <p className="text-xs text-gray-500">{tipo.description}</p>
                       </div>
                     </div>
                   </SelectItem>
                 ))}
               </Select>
             </div>
+
+            {/* Select de Conta Bancária */}
+            <Select
+              label="Conta Bancária para Recebimento"
+              placeholder="Selecione uma conta (opcional)"
+              isLoading={loadingDadosBancarios}
+              selectedKeys={formData.dadosBancariosId ? [formData.dadosBancariosId] : []}
+              startContent={<DollarSignIcon className="text-default-400" size={16} />}
+              onSelectionChange={(keys) => {
+                const dadosBancariosId = Array.from(keys)[0] as string;
+                setFormData({
+                  ...formData,
+                  dadosBancariosId: dadosBancariosId || "",
+                });
+              }}
+            >
+              <SelectItem key="" textValue="Usar conta do contrato">
+                <div className="flex flex-col">
+                  <span className="font-medium">Usar conta do contrato</span>
+                  <span className="text-sm text-default-500">Herda automaticamente a conta bancária do contrato</span>
+                </div>
+              </SelectItem>
+              {(dadosBancarios || []).map((conta) => (
+                <SelectItem key={conta.id} textValue={`${conta.banco?.nome} - ${conta.agencia}/${conta.conta}`}>
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {conta.banco?.nome} - {conta.agencia}/{conta.conta}
+                    </span>
+                    <span className="text-sm text-default-500">
+                      {conta.titular} • {conta.tipoConta}
+                      {conta.principal && " • Conta Principal"}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </Select>
 
             {/* Informações do Contrato Selecionado */}
             {getContratoSelecionado() && (
@@ -601,32 +555,32 @@ export default function HonorariosContratuaisPage() {
                   </div>
                   <div>
                     <p className="font-medium">Informações do Contrato</p>
-                    <p className="text-sm text-default-500">
-                      Detalhes do contrato selecionado
-                    </p>
+                    <p className="text-sm text-default-500">Detalhes do contrato selecionado</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-primary-600 font-medium">Cliente</p>
-                    <p className="text-default-800">
-                      {getContratoSelecionado().cliente.nome}
-                    </p>
+                    <p className="text-default-800">{getContratoSelecionado().cliente.nome}</p>
                   </div>
                   <div>
                     <p className="text-primary-600 font-medium">Valor Total</p>
-                    <p className="text-default-800">
-                      {formatCurrency(getContratoSelecionado().valor)}
-                    </p>
+                    <p className="text-default-800">{formatCurrency(getContratoSelecionado().valor)}</p>
                   </div>
                   <div>
-                    <p className="text-primary-600 font-medium">
-                      Advogado Responsável
-                    </p>
+                    <p className="text-primary-600 font-medium">Advogado Responsável</p>
                     <p className="text-default-800">
                       {getContratoSelecionado().advogadoResponsavel?.usuario
                         ? `${getContratoSelecionado().advogadoResponsavel.usuario.firstName} ${getContratoSelecionado().advogadoResponsavel.usuario.lastName}`
                         : "Não definido"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-primary-600 font-medium">Conta Bancária</p>
+                    <p className="text-default-800">
+                      {getContratoSelecionado().dadosBancarios
+                        ? `${getContratoSelecionado().dadosBancarios.banco?.nome} - ${getContratoSelecionado().dadosBancarios.agencia}/${getContratoSelecionado().dadosBancarios.conta}`
+                        : "Não configurada"}
                     </p>
                   </div>
                 </div>
@@ -667,8 +621,7 @@ export default function HonorariosContratuaisPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      percentualSucesso:
-                        parseFloat(e.target.value) || undefined,
+                      percentualSucesso: parseFloat(e.target.value) || undefined,
                     })
                   }
                 />
@@ -683,8 +636,7 @@ export default function HonorariosContratuaisPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      valorMinimoSucesso:
-                        parseFloat(e.target.value) || undefined,
+                      valorMinimoSucesso: parseFloat(e.target.value) || undefined,
                     })
                   }
                 />
@@ -719,8 +671,7 @@ export default function HonorariosContratuaisPage() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      percentualSucesso:
-                        parseFloat(e.target.value) || undefined,
+                      percentualSucesso: parseFloat(e.target.value) || undefined,
                     })
                   }
                 />
@@ -731,9 +682,7 @@ export default function HonorariosContratuaisPage() {
               label="Base de Cálculo"
               placeholder="Ex: Valor da causa, valor do acordo, etc."
               value={formData.baseCalculo || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, baseCalculo: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, baseCalculo: e.target.value })}
             />
 
             <Textarea
@@ -741,9 +690,7 @@ export default function HonorariosContratuaisPage() {
               placeholder="Observações adicionais sobre o honorário"
               rows={3}
               value={formData.observacoes || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, observacoes: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
             />
           </ModalBody>
           <ModalFooter>
@@ -752,6 +699,37 @@ export default function HonorariosContratuaisPage() {
             </Button>
             <Button color="primary" isLoading={loading} onPress={handleSubmit}>
               {editingId ? "Atualizar" : "Criar"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal de Cobrança */}
+      <Modal
+        isOpen={cobrancaModalOpen}
+        size="5xl"
+        onClose={() => {
+          setCobrancaModalOpen(false);
+          setHonorarioSelecionado(null);
+        }}
+      >
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-2">
+              <CreditCardIcon className="h-5 w-5 text-primary" />
+              <span>Cobrança de Honorário</span>
+            </div>
+          </ModalHeader>
+          <ModalBody>{honorarioSelecionado && <DadosBancariosHonorario honorarioId={honorarioSelecionado} readonly={false} />}</ModalBody>
+          <ModalFooter>
+            <Button
+              variant="light"
+              onPress={() => {
+                setCobrancaModalOpen(false);
+                setHonorarioSelecionado(null);
+              }}
+            >
+              Fechar
             </Button>
           </ModalFooter>
         </ModalContent>

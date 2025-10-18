@@ -18,6 +18,11 @@ interface FiltrosDashboardProps {
 export function FiltrosDashboardComponent({ filtros, onFiltrosChange, advogados, clientes, dadosBancarios, isLoading }: FiltrosDashboardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Garantir que sempre temos arrays válidos
+  const safeAdvogados = Array.isArray(advogados) ? advogados : [];
+  const safeClientes = Array.isArray(clientes) ? clientes : [];
+  const safeDadosBancarios = Array.isArray(dadosBancarios) ? dadosBancarios : [];
+
   const resetFiltros = () => {
     onFiltrosChange({});
   };
@@ -32,9 +37,9 @@ export function FiltrosDashboardComponent({ filtros, onFiltrosChange, advogados,
   const hasActiveFilters = Object.values(filtros).some((value) => value !== undefined && value !== null && value !== "");
 
   // Validar keys existentes para evitar warnings
-  const advogadoKeySet = new Set(advogados.map((a) => a.id));
-  const clienteKeySet = new Set(clientes.map((c) => c.id));
-  const dadosBancariosKeySet = new Set(dadosBancarios.map((d) => d.id));
+  const advogadoKeySet = new Set(safeAdvogados.map((a) => a.id));
+  const clienteKeySet = new Set(safeClientes.map((c) => c.id));
+  const dadosBancariosKeySet = new Set(safeDadosBancarios.map((d) => d.id));
 
   const selectedAdvogadoKeys = filtros.advogadoId && advogadoKeySet.has(filtros.advogadoId) ? [filtros.advogadoId] : [];
   const selectedClienteKeys = filtros.clienteId && clienteKeySet.has(filtros.clienteId) ? [filtros.clienteId] : [];
@@ -116,7 +121,7 @@ export function FiltrosDashboardComponent({ filtros, onFiltrosChange, advogados,
             startContent={<User className="h-4 w-4 text-default-400" />}
             className="w-full"
           >
-            {advogados.map((advogado) => (
+            {safeAdvogados.map((advogado) => (
               <SelectItem key={advogado.id} textValue={`${advogado.nome} - ${advogado.oab}`}>
                 {advogado.nome} - {advogado.oab}
               </SelectItem>
@@ -139,7 +144,7 @@ export function FiltrosDashboardComponent({ filtros, onFiltrosChange, advogados,
             startContent={<Building className="h-4 w-4 text-default-400" />}
             className="w-full"
           >
-            {clientes.map((cliente) => (
+            {safeClientes.map((cliente) => (
               <SelectItem key={cliente.id} textValue={`${cliente.nome} - ${cliente.documento}`}>
                 {cliente.nome} - {cliente.documento}
               </SelectItem>
@@ -174,7 +179,7 @@ export function FiltrosDashboardComponent({ filtros, onFiltrosChange, advogados,
                   startContent={<CreditCard className="h-4 w-4 text-default-400" />}
                   className="w-full"
                 >
-                  {dadosBancarios.map((conta) => (
+                  {safeDadosBancarios.map((conta) => (
                     <SelectItem key={conta.id} textValue={`${conta.bancoNome} - ${conta.agencia}/${conta.conta}`}>
                       <div className="flex flex-col">
                         <span>
@@ -204,15 +209,17 @@ export function FiltrosDashboardComponent({ filtros, onFiltrosChange, advogados,
             )}
             {filtros.advogadoId && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success/20 text-success">
-                Advogado: {advogados.find((a) => a.id === filtros.advogadoId)?.nome}
+                Advogado: {safeAdvogados.find((a) => a.id === filtros.advogadoId)?.nome}
               </span>
             )}
             {filtros.clienteId && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning/20 text-warning">Cliente: {clientes.find((c) => c.id === filtros.clienteId)?.nome}</span>
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning/20 text-warning">
+                Cliente: {safeClientes.find((c) => c.id === filtros.clienteId)?.nome}
+              </span>
             )}
             {filtros.dadosBancariosId && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary/20 text-secondary">
-                Conta: {dadosBancarios.find((c) => c.id === filtros.dadosBancariosId)?.bancoNome}
+                Conta: {safeDadosBancarios.find((c) => c.id === filtros.dadosBancariosId)?.bancoNome}
               </span>
             )}
           </div>

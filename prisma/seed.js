@@ -18,6 +18,7 @@ const seedCausas = require("./seeds/causas");
 const seedRegimesPrazo = require("./seeds/regimesPrazo");
 const { seedTiposPeticao } = require("./seeds/tipos-peticao");
 const { seedBancos } = require("./seeds/bancos");
+const { seedDadosBancarios } = require("./seeds/dadosBancarios");
 const { seedAuditLogs } = require("./seeds/auditLogs");
 
 const prisma = new PrismaClient();
@@ -106,6 +107,9 @@ async function main() {
 
   // Seed de bancos do Brasil
   await seedBancos();
+
+  // Seed de dados bancários para usuários
+  await seedDadosBancarios(prisma);
 
   console.log("\n🚀 Aplicando otimizações enterprise...\n");
 

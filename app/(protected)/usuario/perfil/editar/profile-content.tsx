@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { Card, CardBody } from "@heroui/card";
@@ -11,55 +11,20 @@ import { Divider } from "@heroui/divider";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Spinner } from "@heroui/spinner";
 import { toast } from "sonner";
-import {
-  User,
-  Mail,
-  Phone,
-  Shield,
-  Settings,
-  BarChart3,
-  UserCheck,
-  Lock,
-  Info,
-  MapPin,
-  Copy,
-  CopyCheck,
-  Briefcase,
-  Save,
-  CreditCard,
-  Building2,
-  PlusIcon,
-  Star,
-} from "lucide-react";
+import { User, Mail, Phone, Shield, Settings, BarChart3, UserCheck, Lock, Info, MapPin, Copy, CopyCheck, Briefcase, Save, CreditCard, Building2, PlusIcon, Star } from "lucide-react";
 import { Select, SelectItem, Textarea } from "@heroui/react";
 
 import { RoleSpecificInfo } from "./role-specific-info";
 
-import {
-  getCurrentUserProfile,
-  updateUserProfile,
-  changePassword,
-  getUserStats,
-  type UpdateProfileData,
-  type ChangePasswordData,
-} from "@/app/actions/profile";
-import {
-  updateCurrentUserAdvogado,
-  type UpdateAdvogadoInput,
-} from "@/app/actions/advogados";
+import { getCurrentUserProfile, updateUserProfile, changePassword, getUserStats, type UpdateProfileData, type ChangePasswordData } from "@/app/actions/profile";
+import { updateCurrentUserAdvogado, type UpdateAdvogadoInput } from "@/app/actions/advogados";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { EnderecoManager } from "@/components/endereco-manager";
 import { UserPermissionsInfo } from "@/components/user-permissions-info";
 import { EspecialidadeJuridica } from "@/app/generated/prisma";
 import { useEstadosBrasil } from "@/app/hooks/use-estados-brasil";
 import { useCurrentUserAdvogado } from "@/app/hooks/use-current-user-advogado";
-import {
-  useMeusDadosBancarios,
-  useBancosDisponiveis,
-  useTiposConta,
-  useTiposContaBancaria,
-  useTiposChavePix,
-} from "@/app/hooks/use-dados-bancarios";
+import { useMeusDadosBancarios, useBancosDisponiveis, useTiposConta, useTiposContaBancaria, useTiposChavePix } from "@/app/hooks/use-dados-bancarios";
 
 const especialidadeLabels: Record<string, string> = {
   CIVIL: "Civil",
@@ -86,15 +51,12 @@ export function ProfileContent() {
   const [copied, setCopied] = useState(false);
 
   // Buscar dados com SWR
-  const { data: profileResult, mutate: mutateProfile } = useSWR(
-    "current-user-profile",
-    getCurrentUserProfile,
-  );
+  const { data: profileResult, mutate: mutateProfile } = useSWR("current-user-profile", getCurrentUserProfile);
   const { data: statsResult } = useSWR("user-stats", getUserStats);
   const { advogado, mutate: mutateAdvogado } = useCurrentUserAdvogado();
   const { ufs } = useEstadosBrasil();
-  const { dadosBancarios: minhasContas, mutate: mutateContas } =
-    useMeusDadosBancarios();
+  const { dadosBancarios: minhasContas, mutate: mutateContas } = useMeusDadosBancarios();
+
   const { bancos } = useBancosDisponiveis();
   const { tipos: tiposConta } = useTiposConta();
   const { tipos: tiposContaBancaria } = useTiposContaBancaria();
@@ -275,17 +237,9 @@ export function ProfileContent() {
       {/* Header do Perfil */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardBody className="flex flex-row items-center gap-6 p-6">
-          <AvatarUpload
-            currentAvatarUrl={profile.avatarUrl}
-            userName={profile.firstName || profile.email}
-            onAvatarChange={handleAvatarChange}
-          />
+          <AvatarUpload currentAvatarUrl={profile.avatarUrl} userName={profile.firstName || profile.email} onAvatarChange={handleAvatarChange} />
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-white">
-              {profile.firstName && profile.lastName
-                ? `${profile.firstName} ${profile.lastName}`
-                : profile.email}
-            </h1>
+            <h1 className="text-2xl font-bold text-white">{profile.firstName && profile.lastName ? `${profile.firstName} ${profile.lastName}` : profile.email}</h1>
             <p className="text-default-400">{profile.email}</p>
             <div className="flex items-center gap-2 mt-2">
               <Chip color="primary" size="sm" variant="flat">
@@ -310,36 +264,28 @@ export function ProfileContent() {
           <Card className="border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-xl">
             <CardBody className="text-center p-4">
               <BarChart3 className="w-8 h-8 mx-auto mb-2 text-primary" />
-              <p className="text-2xl font-bold text-white">
-                {stats.totalProcessos}
-              </p>
+              <p className="text-2xl font-bold text-white">{stats.totalProcessos}</p>
               <p className="text-sm text-primary-300">Processos</p>
             </CardBody>
           </Card>
           <Card className="border border-secondary/20 bg-gradient-to-br from-secondary/10 to-secondary/5 backdrop-blur-xl">
             <CardBody className="text-center p-4">
               <User className="w-8 h-8 mx-auto mb-2 text-secondary" />
-              <p className="text-2xl font-bold text-white">
-                {stats.totalDocumentos}
-              </p>
+              <p className="text-2xl font-bold text-white">{stats.totalDocumentos}</p>
               <p className="text-sm text-secondary-300">Documentos</p>
             </CardBody>
           </Card>
           <Card className="border border-success/20 bg-gradient-to-br from-success/10 to-success/5 backdrop-blur-xl">
             <CardBody className="text-center p-4">
               <Settings className="w-8 h-8 mx-auto mb-2 text-success" />
-              <p className="text-2xl font-bold text-white">
-                {stats.totalEventos}
-              </p>
+              <p className="text-2xl font-bold text-white">{stats.totalEventos}</p>
               <p className="text-sm text-success-300">Eventos</p>
             </CardBody>
           </Card>
           <Card className="border border-warning/20 bg-gradient-to-br from-warning/10 to-warning/5 backdrop-blur-xl">
             <CardBody className="text-center p-4">
               <Shield className="w-8 h-8 mx-auto mb-2 text-warning" />
-              <p className="text-2xl font-bold text-white">
-                {stats.totalTarefas}
-              </p>
+              <p className="text-2xl font-bold text-white">{stats.totalTarefas}</p>
               <p className="text-sm text-warning-300">Tarefas</p>
             </CardBody>
           </Card>
@@ -418,20 +364,13 @@ export function ProfileContent() {
                   placeholder="(11) 99999-9999"
                   startContent={<Phone className="w-4 h-4 text-default-400" />}
                   value={profileData.phone || ""}
-                  onChange={(e) =>
-                    setProfileData({ ...profileData, phone: e.target.value })
-                  }
+                  onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                 />
 
                 <Divider />
 
                 <div className="flex justify-end">
-                  <Button
-                    color="primary"
-                    disabled={saving}
-                    isLoading={saving}
-                    onPress={handleUpdateProfile}
-                  >
+                  <Button color="primary" disabled={saving} isLoading={saving} onPress={handleUpdateProfile}>
                     Salvar Alterações
                   </Button>
                 </div>
@@ -451,9 +390,7 @@ export function ProfileContent() {
                 <div className="p-6 space-y-6">
                   <div className="flex items-center gap-3 mb-4">
                     <Briefcase className="w-5 h-5 text-primary" />
-                    <h3 className="text-lg font-semibold">
-                      Informações da OAB
-                    </h3>
+                    <h3 className="text-lg font-semibold">Informações da OAB</h3>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -471,11 +408,7 @@ export function ProfileContent() {
                     <Select
                       label="UF da OAB"
                       placeholder="Selecione o estado"
-                      selectedKeys={
-                        advogadoData.oabUf
-                          ? new Set([advogadoData.oabUf])
-                          : new Set()
-                      }
+                      selectedKeys={advogadoData.oabUf ? new Set([advogadoData.oabUf]) : new Set()}
                       onSelectionChange={(keys) => {
                         const [value] = Array.from(keys);
 
@@ -495,9 +428,7 @@ export function ProfileContent() {
                     <Input
                       label="Telefone Profissional"
                       placeholder="(11) 3333-3333"
-                      startContent={
-                        <Phone className="w-4 h-4 text-default-400" />
-                      }
+                      startContent={<Phone className="w-4 h-4 text-default-400" />}
                       value={advogadoData.telefone || ""}
                       onChange={(e) =>
                         setAdvogadoData({
@@ -509,9 +440,7 @@ export function ProfileContent() {
                     <Input
                       label="WhatsApp"
                       placeholder="(11) 99999-9999"
-                      startContent={
-                        <Phone className="w-4 h-4 text-default-400" />
-                      }
+                      startContent={<Phone className="w-4 h-4 text-default-400" />}
                       value={advogadoData.whatsapp || ""}
                       onChange={(e) =>
                         setAdvogadoData({
@@ -537,9 +466,7 @@ export function ProfileContent() {
                     }}
                   >
                     {Object.values(EspecialidadeJuridica).map((esp) => (
-                      <SelectItem key={esp}>
-                        {especialidadeLabels[esp]}
-                      </SelectItem>
+                      <SelectItem key={esp}>{especialidadeLabels[esp]}</SelectItem>
                     ))}
                   </Select>
 
@@ -563,9 +490,7 @@ export function ProfileContent() {
                       <Settings className="w-4 h-4 text-primary" />
                       Configurações de Comissão
                     </h4>
-                    <p className="text-xs text-default-500">
-                      Percentuais padrão para cálculos automáticos
-                    </p>
+                    <p className="text-xs text-default-500">Percentuais padrão para cálculos automáticos</p>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <Input
@@ -599,9 +524,7 @@ export function ProfileContent() {
                         label="Honorários (%)"
                         placeholder="0.00"
                         type="number"
-                        value={
-                          advogadoData.comissaoHonorarios?.toString() || ""
-                        }
+                        value={advogadoData.comissaoHonorarios?.toString() || ""}
                         onChange={(e) =>
                           setAdvogadoData({
                             ...advogadoData,
@@ -615,13 +538,7 @@ export function ProfileContent() {
                   <Divider />
 
                   <div className="flex justify-end">
-                    <Button
-                      color="primary"
-                      disabled={saving}
-                      isLoading={saving}
-                      startContent={<Save className="w-4 h-4" />}
-                      onPress={handleUpdateAdvogado}
-                    >
+                    <Button color="primary" disabled={saving} isLoading={saving} startContent={<Save className="w-4 h-4" />} onPress={handleUpdateAdvogado}>
                       Salvar Dados Profissionais
                     </Button>
                   </div>
@@ -673,12 +590,7 @@ export function ProfileContent() {
                 <Divider />
 
                 <div className="flex justify-end">
-                  <Button
-                    color="primary"
-                    disabled={saving}
-                    isLoading={saving}
-                    onPress={handleChangePassword}
-                  >
+                  <Button color="primary" disabled={saving} isLoading={saving} onPress={handleChangePassword}>
                     Alterar Senha
                   </Button>
                 </div>
@@ -697,9 +609,7 @@ export function ProfileContent() {
               <div className="p-6 space-y-6">
                 <div className="flex items-center gap-3 mb-4">
                   <Settings className="w-5 h-5 text-primary" />
-                  <h3 className="text-lg font-semibold">
-                    Informações da Conta
-                  </h3>
+                  <h3 className="text-lg font-semibold">Informações da Conta</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -707,9 +617,7 @@ export function ProfileContent() {
                     <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
                       <div className="flex items-center gap-2 mb-2">
                         <Shield className="w-4 h-4 text-primary" />
-                        <p className="text-sm font-medium text-primary-300">
-                          Função
-                        </p>
+                        <p className="text-sm font-medium text-primary-300">Função</p>
                       </div>
                       <Chip color="primary" size="sm" variant="flat">
                         {getRoleLabel(profile.role)}
@@ -719,15 +627,9 @@ export function ProfileContent() {
                     <div className="p-4 rounded-lg bg-gradient-to-r from-success/10 to-success/5 border border-success/20">
                       <div className="flex items-center gap-2 mb-2">
                         <UserCheck className="w-4 h-4 text-success" />
-                        <p className="text-sm font-medium text-success-300">
-                          Status
-                        </p>
+                        <p className="text-sm font-medium text-success-300">Status</p>
                       </div>
-                      <Chip
-                        color={profile.active ? "success" : "danger"}
-                        size="sm"
-                        variant="flat"
-                      >
+                      <Chip color={profile.active ? "success" : "danger"} size="sm" variant="flat">
                         {profile.active ? "Ativo" : "Inativo"}
                       </Chip>
                     </div>
@@ -735,13 +637,9 @@ export function ProfileContent() {
                     <div className="p-4 rounded-lg bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/20">
                       <div className="flex items-center gap-2 mb-2">
                         <Settings className="w-4 h-4 text-warning" />
-                        <p className="text-sm font-medium text-warning-300">
-                          Último Login
-                        </p>
+                        <p className="text-sm font-medium text-warning-300">Último Login</p>
                       </div>
-                      <p className="text-white font-medium">
-                        {formatDate(profile.lastLoginAt)}
-                      </p>
+                      <p className="text-white font-medium">{formatDate(profile.lastLoginAt)}</p>
                     </div>
                   </div>
 
@@ -749,22 +647,16 @@ export function ProfileContent() {
                     <div className="p-4 rounded-lg bg-gradient-to-r from-secondary/10 to-secondary/5 border border-secondary/20">
                       <div className="flex items-center gap-2 mb-2">
                         <User className="w-4 h-4 text-secondary" />
-                        <p className="text-sm font-medium text-secondary-300">
-                          Membro desde
-                        </p>
+                        <p className="text-sm font-medium text-secondary-300">Membro desde</p>
                       </div>
-                      <p className="text-white font-medium">
-                        {formatDate(profile.createdAt)}
-                      </p>
+                      <p className="text-white font-medium">{formatDate(profile.createdAt)}</p>
                     </div>
 
                     {profile.tenant && (
                       <div className="p-4 rounded-lg bg-gradient-to-r from-info/10 to-info/5 border border-info/20">
                         <div className="flex items-center gap-2 mb-2">
                           <Mail className="w-4 h-4 text-info" />
-                          <p className="text-sm font-medium text-info-300">
-                            Escritório
-                          </p>
+                          <p className="text-sm font-medium text-info-300">Escritório</p>
                         </div>
                         <Chip color="secondary" size="sm" variant="flat">
                           {profile.tenant.name}
@@ -775,25 +667,12 @@ export function ProfileContent() {
                     <div className="p-4 rounded-lg bg-gradient-to-r from-default/10 to-default/5 border border-default/20">
                       <div className="flex items-center gap-2 mb-2">
                         <Info className="w-4 h-4 text-default-400" />
-                        <p className="text-sm font-medium text-default-400">
-                          ID do Usuário
-                        </p>
-                        <button
-                          className="ml-2 p-1 rounded hover:bg-default-200 transition cursor-pointer"
-                          title="Copiar ID"
-                          type="button"
-                          onClick={handleCopyId}
-                        >
-                          {copied ? (
-                            <CopyCheck className="w-4 h-4 text-success" />
-                          ) : (
-                            <Copy className="w-4 h-4 text-default-400" />
-                          )}
+                        <p className="text-sm font-medium text-default-400">ID do Usuário</p>
+                        <button className="ml-2 p-1 rounded hover:bg-default-200 transition cursor-pointer" title="Copiar ID" type="button" onClick={handleCopyId}>
+                          {copied ? <CopyCheck className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4 text-default-400" />}
                         </button>
                       </div>
-                      <p className="text-white font-mono text-xs">
-                        {profile.id}
-                      </p>
+                      <p className="text-white font-mono text-xs">{profile.id}</p>
                     </div>
                   </div>
                 </div>
@@ -816,16 +695,9 @@ export function ProfileContent() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <CreditCard className="w-5 h-5 text-primary" />
-                    <h3 className="text-lg font-semibold">
-                      Minhas Contas Bancárias
-                    </h3>
+                    <h3 className="text-lg font-semibold">Minhas Contas Bancárias</h3>
                   </div>
-                  <Button
-                    color="primary"
-                    size="sm"
-                    startContent={<PlusIcon className="w-4 h-4" />}
-                    onPress={() => setActiveTab("dados-bancarios")}
-                  >
+                  <Button color="primary" size="sm" startContent={<PlusIcon className="w-4 h-4" />} onPress={() => setActiveTab("dados-bancarios")}>
                     <a className="text-white" href="/dados-bancarios">
                       Gerenciar Contas
                     </a>
@@ -834,18 +706,9 @@ export function ProfileContent() {
 
                 {minhasContas.length === 0 ? (
                   <div className="text-center py-8">
-                    <CreditCard
-                      className="mx-auto text-gray-400 mb-4"
-                      size={48}
-                    />
-                    <p className="text-gray-500 mb-4">
-                      Nenhuma conta bancária cadastrada
-                    </p>
-                    <Button
-                      color="primary"
-                      startContent={<PlusIcon className="w-4 h-4" />}
-                      variant="flat"
-                    >
+                    <CreditCard className="mx-auto text-gray-400 mb-4" size={48} />
+                    <p className="text-gray-500 mb-4">Nenhuma conta bancária cadastrada</p>
+                    <Button color="primary" startContent={<PlusIcon className="w-4 h-4" />} variant="flat">
                       <a className="text-primary" href="/dados-bancarios">
                         Cadastrar Primeira Conta
                       </a>
@@ -860,69 +723,45 @@ export function ProfileContent() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
                                 <Building2 className="w-5 h-5 text-primary" />
-                                <span className="font-semibold">
-                                  {conta.banco}
-                                </span>
+                                <span className="font-semibold">{conta.banco?.nome || conta.bancoCodigo}</span>
                                 {conta.principal && (
-                                  <Chip
-                                    color="primary"
-                                    size="sm"
-                                    startContent={<Star className="w-3 h-3" />}
-                                    variant="flat"
-                                  >
+                                  <Chip color="primary" size="sm" startContent={<Star className="w-3 h-3" />} variant="flat">
                                     Principal
                                   </Chip>
                                 )}
-                                <Chip
-                                  color={conta.ativo ? "success" : "default"}
-                                  size="sm"
-                                  variant="flat"
-                                >
+                                <Chip color={conta.ativo ? "success" : "default"} size="sm" variant="flat">
                                   {conta.ativo ? "Ativa" : "Inativa"}
                                 </Chip>
                               </div>
 
                               <div className="grid grid-cols-2 gap-4 mt-3">
                                 <div>
-                                  <p className="text-xs text-gray-500">
-                                    Agência
-                                  </p>
+                                  <p className="text-xs text-gray-500">Agência</p>
                                   <p className="font-medium">{conta.agencia}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-500">Conta</p>
                                   <p className="font-medium">
                                     {conta.conta}
-                                    {conta.digitoConta &&
-                                      `-${conta.digitoConta}`}
+                                    {conta.digitoConta && `-${conta.digitoConta}`}
                                   </p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-500">Tipo</p>
-                                  <p className="font-medium capitalize">
-                                    {conta.tipoContaBancaria.toLowerCase()}
-                                  </p>
+                                  <p className="font-medium capitalize">{conta.tipoContaBancaria.toLowerCase()}</p>
                                 </div>
                                 {conta.chavePix && (
                                   <div>
-                                    <p className="text-xs text-gray-500">
-                                      Chave PIX
-                                    </p>
-                                    <p className="font-medium text-sm">
-                                      {conta.chavePix}
-                                    </p>
+                                    <p className="text-xs text-gray-500">Chave PIX</p>
+                                    <p className="font-medium text-sm">{conta.chavePix}</p>
                                   </div>
                                 )}
                               </div>
 
                               <div className="mt-3 pt-3 border-t">
                                 <p className="text-xs text-gray-500">Titular</p>
-                                <p className="font-medium">
-                                  {conta.titularNome}
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  {conta.titularDocumento}
-                                </p>
+                                <p className="font-medium">{conta.titularNome}</p>
+                                <p className="text-sm text-gray-500">{conta.titularDocumento}</p>
                               </div>
                             </div>
                           </div>
@@ -932,8 +771,7 @@ export function ProfileContent() {
 
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <p className="text-sm text-blue-700">
-                        💡 <strong>Dica:</strong> Use a página de Dados
-                        Bancários para adicionar, editar ou remover contas.
+                        💡 <strong>Dica:</strong> Use a página de Dados Bancários para adicionar, editar ou remover contas.
                       </p>
                     </div>
                   </div>

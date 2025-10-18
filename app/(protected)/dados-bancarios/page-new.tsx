@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Card,
   CardBody,
@@ -54,17 +54,12 @@ import {
   SearchIcon,
   RotateCcwIcon,
   XCircle,
-  CheckCircle,
-  Star,
-  Smartphone,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useDadosBancarios, useTiposConta, useTiposContaBancaria, useTiposChavePix } from "@/app/hooks/use-dados-bancarios";
 import { useBancosDisponiveis } from "@/app/hooks/use-bancos";
 import { createDadosBancarios, updateDadosBancarios, deleteDadosBancarios } from "@/app/actions/dados-bancarios";
-import { getClientesParaSelect } from "@/app/actions/clientes";
-import { getAdvogados } from "@/app/actions/advogados";
 import { useSession } from "next-auth/react";
 import { CepInput } from "@/components/cep-input";
 import { type CepData } from "@/types/brazil";
@@ -121,8 +116,6 @@ export default function DadosBancariosPage() {
   const [filtroTipoContaBancaria, setFiltroTipoContaBancaria] = useState<string>("");
   const [filtroDocumento, setFiltroDocumento] = useState<string>("");
   const [filtroChavePix, setFiltroChavePix] = useState<string>("");
-  const [filtroCliente, setFiltroCliente] = useState<string>("");
-  const [filtroAdvogado, setFiltroAdvogado] = useState<string>("");
 
   // Formulário
   const [formData, setFormData] = useState<DadosBancariosFormData>({
@@ -154,46 +147,6 @@ export default function DadosBancariosPage() {
   const { tipos: tiposContaBancaria } = useTiposContaBancaria();
   const { tipos: tiposChavePix } = useTiposChavePix();
 
-  // Buscar clientes e advogados para filtros
-  const [clientes, setClientes] = useState<any[]>([]);
-  const [advogados, setAdvogados] = useState<any[]>([]);
-  const [loadingClientes, setLoadingClientes] = useState(false);
-  const [loadingAdvogados, setLoadingAdvogados] = useState(false);
-
-  // Carregar clientes e advogados
-  React.useEffect(() => {
-    const loadClientes = async () => {
-      setLoadingClientes(true);
-      try {
-        const result = await getClientesParaSelect();
-        if (result.success) {
-          setClientes(result.clientes || []);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar clientes:", error);
-      } finally {
-        setLoadingClientes(false);
-      }
-    };
-
-    const loadAdvogados = async () => {
-      setLoadingAdvogados(true);
-      try {
-        const result = await getAdvogados();
-        if (result.success) {
-          setAdvogados(result.data || []);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar advogados:", error);
-      } finally {
-        setLoadingAdvogados(false);
-      }
-    };
-
-    loadClientes();
-    loadAdvogados();
-  }, []);
-
   // Função para limpar todos os filtros
   const clearAllFilters = () => {
     setFilters({});
@@ -203,8 +156,6 @@ export default function DadosBancariosPage() {
     setFiltroTipoContaBancaria("");
     setFiltroDocumento("");
     setFiltroChavePix("");
-    setFiltroCliente("");
-    setFiltroAdvogado("");
     setCurrentPage(1);
   };
 
@@ -220,11 +171,9 @@ export default function DadosBancariosPage() {
       filtroTipoConta ||
       filtroTipoContaBancaria ||
       filtroDocumento ||
-      filtroChavePix ||
-      filtroCliente ||
-      filtroAdvogado
+      filtroChavePix
     );
-  }, [filters, filtroTitular, filtroBanco, filtroTipoConta, filtroTipoContaBancaria, filtroDocumento, filtroChavePix, filtroCliente, filtroAdvogado]);
+  }, [filters, filtroTitular, filtroBanco, filtroTipoConta, filtroTipoContaBancaria, filtroDocumento, filtroChavePix]);
 
   // Filtrar dados bancários localmente
   const dadosBancariosFiltrados = useMemo(() => {
@@ -261,32 +210,15 @@ export default function DadosBancariosPage() {
         return false;
       }
 
-      // Filtro por cliente
-      if (filtroCliente && dados.clienteId !== filtroCliente) {
-        return false;
-      }
-
-      // Filtro por advogado (usuarioId)
-      if (filtroAdvogado && dados.usuarioId !== filtroAdvogado) {
-        return false;
-      }
-
       return true;
     });
-  }, [dadosBancarios, filtroTitular, filtroBanco, filtroTipoConta, filtroTipoContaBancaria, filtroDocumento, filtroChavePix, filtroCliente, filtroAdvogado]);
+  }, [dadosBancarios, filtroTitular, filtroBanco, filtroTipoConta, filtroTipoContaBancaria, filtroDocumento, filtroChavePix]);
 
   // Paginação
   const totalPages = Math.ceil(dadosBancariosFiltrados.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const dadosBancariosPaginados = dadosBancariosFiltrados.slice(startIndex, endIndex);
-
-  // Resetar página quando filtros mudarem
-  useMemo(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, totalPages]);
 
   // Contar filtros ativos
   const activeFiltersCount = useMemo(() => {
@@ -301,41 +233,8 @@ export default function DadosBancariosPage() {
     if (filtroTipoContaBancaria) count++;
     if (filtroDocumento) count++;
     if (filtroChavePix) count++;
-    if (filtroCliente) count++;
-    if (filtroAdvogado) count++;
     return count;
-  }, [filters, filtroTitular, filtroBanco, filtroTipoConta, filtroTipoContaBancaria, filtroDocumento, filtroChavePix, filtroCliente, filtroAdvogado]);
-
-  // Obter bancos únicos dos dados bancários
-  const bancosUnicos = useMemo(() => {
-    if (!dadosBancarios || !bancos) return [];
-
-    const bancosUsados = new Set(dadosBancarios.map((d) => d.bancoCodigo));
-    return bancos.filter((banco) => bancosUsados.has(banco.codigo));
-  }, [dadosBancarios, bancos]);
-
-  // Calcular métricas
-  const metricas = useMemo(() => {
-    if (!dadosBancarios) return null;
-
-    const total = dadosBancarios.length;
-    const ativos = dadosBancarios.filter((d) => d.ativo).length;
-    const principais = dadosBancarios.filter((d) => d.principal).length;
-    const comPix = dadosBancarios.filter((d) => d.chavePix).length;
-    const usuarios = new Set(dadosBancarios.map((d) => d.usuarioId).filter(Boolean)).size;
-    const clientes = new Set(dadosBancarios.map((d) => d.clienteId).filter(Boolean)).size;
-
-    return {
-      total,
-      ativos,
-      principais,
-      comPix,
-      usuarios,
-      clientes,
-      percentualAtivos: total > 0 ? Math.round((ativos / total) * 100) : 0,
-      percentualPrincipais: total > 0 ? Math.round((principais / total) * 100) : 0,
-    };
-  }, [dadosBancarios]);
+  }, [filters, filtroTitular, filtroBanco, filtroTipoConta, filtroTipoContaBancaria, filtroDocumento, filtroChavePix]);
 
   // Funções
   const handleCepFound = (cepData: CepData) => {
@@ -544,70 +443,6 @@ export default function DadosBancariosPage() {
         </Button>
       </div>
 
-      {/* Cards de Métricas */}
-      {metricas && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-success/20 bg-success/5">
-            <CardBody className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-success/20">
-                  <CreditCardIcon className="w-5 h-5 text-success" />
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-success/70">Total de Contas</p>
-                  <p className="text-xl font-bold text-success">{metricas.total}</p>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card className="border-primary/20 bg-primary/5">
-            <CardBody className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-primary/20">
-                  <CheckCircle className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-primary/70">Contas Ativas</p>
-                  <p className="text-xl font-bold text-primary">{metricas.ativos}</p>
-                  <p className="text-xs text-primary/60">{metricas.percentualAtivos}% do total</p>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card className="border-warning/20 bg-warning/5">
-            <CardBody className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-warning/20">
-                  <Star className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-warning/70">Contas Principais</p>
-                  <p className="text-xl font-bold text-warning">{metricas.principais}</p>
-                  <p className="text-xs text-warning/60">{metricas.percentualPrincipais}% do total</p>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card className="border-secondary/20 bg-secondary/5">
-            <CardBody className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-secondary/20">
-                  <Smartphone className="w-5 h-5 text-secondary" />
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-secondary/70">Com PIX</p>
-                  <p className="text-xl font-bold text-secondary">{metricas.comPix}</p>
-                  <p className="text-xs text-secondary/60">{metricas.total > 0 ? Math.round((metricas.comPix / metricas.total) * 100) : 0}% do total</p>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-        </div>
-      )}
-
       {/* Filtros Avançados */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -642,10 +477,9 @@ export default function DadosBancariosPage() {
                 <Input
                   placeholder="Buscar por titular..."
                   size="sm"
-                  startContent={<SearchIcon className="w-4 h-4 text-primary" />}
+                  startContent={<SearchIcon className="w-4 h-4 text-default-400" />}
                   value={filtroTitular}
                   variant="bordered"
-                  color="primary"
                   onChange={(e) => setFiltroTitular(e.target.value)}
                 />
               </div>
@@ -661,19 +495,16 @@ export default function DadosBancariosPage() {
                   selectedKeys={filtroBanco ? [filtroBanco] : []}
                   size="sm"
                   variant="bordered"
-                  color="secondary"
                   onSelectionChange={(keys) => setFiltroBanco((Array.from(keys)[0] as string) || "")}
                 >
                   <SelectItem key="" textValue="Todos os bancos">
                     Todos os bancos
                   </SelectItem>
-                  {
-                    bancosUnicos.map((banco) => (
-                      <SelectItem key={banco.codigo} textValue={banco.nome}>
-                        {banco.nome}
-                      </SelectItem>
-                    )) as any
-                  }
+                  {bancos.map((banco) => (
+                    <SelectItem key={banco.codigo} textValue={banco.nome}>
+                      {banco.nome}
+                    </SelectItem>
+                  ))}
                 </Select>
               </div>
 
@@ -688,19 +519,19 @@ export default function DadosBancariosPage() {
                   selectedKeys={filtroTipoConta ? [filtroTipoConta] : []}
                   size="sm"
                   variant="bordered"
-                  color="success"
                   onSelectionChange={(keys) => setFiltroTipoConta((Array.from(keys)[0] as string) || "")}
                 >
                   <SelectItem key="" textValue="Todos os tipos">
                     Todos os tipos
                   </SelectItem>
-                  {
-                    tiposConta.map((tipo) => (
-                      <SelectItem key={tipo.value} textValue={tipo.label}>
-                        {tipo.label}
-                      </SelectItem>
-                    )) as any
-                  }
+                  {tiposConta.map((tipo) => (
+                    <SelectItem key={tipo.value} textValue={tipo.label}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{tipo.icon}</span>
+                        <span>{tipo.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </Select>
               </div>
 
@@ -715,19 +546,22 @@ export default function DadosBancariosPage() {
                   selectedKeys={filtroTipoContaBancaria ? [filtroTipoContaBancaria] : []}
                   size="sm"
                   variant="bordered"
-                  color="warning"
                   onSelectionChange={(keys) => setFiltroTipoContaBancaria((Array.from(keys)[0] as string) || "")}
                 >
                   <SelectItem key="" textValue="Todos os tipos">
                     Todos os tipos
                   </SelectItem>
-                  {
-                    tiposContaBancaria.map((tipo) => (
-                      <SelectItem key={tipo.value} textValue={tipo.label}>
-                        {tipo.label}
-                      </SelectItem>
-                    )) as any
-                  }
+                  {tiposContaBancaria.map((tipo) => (
+                    <SelectItem key={tipo.value} textValue={tipo.label}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{tipo.icon}</span>
+                        <div>
+                          <p className="font-medium">{tipo.label}</p>
+                          <p className="text-xs text-gray-500">{tipo.description}</p>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </Select>
               </div>
 
@@ -740,10 +574,9 @@ export default function DadosBancariosPage() {
                 <Input
                   placeholder="Buscar por documento..."
                   size="sm"
-                  startContent={<SearchIcon className="w-4 h-4 text-danger" />}
+                  startContent={<SearchIcon className="w-4 h-4 text-default-400" />}
                   value={filtroDocumento}
                   variant="bordered"
-                  color="danger"
                   onChange={(e) => setFiltroDocumento(e.target.value)}
                 />
               </div>
@@ -757,68 +590,11 @@ export default function DadosBancariosPage() {
                 <Input
                   placeholder="Buscar por chave PIX..."
                   size="sm"
-                  startContent={<SearchIcon className="w-4 h-4 text-secondary" />}
+                  startContent={<SearchIcon className="w-4 h-4 text-default-400" />}
                   value={filtroChavePix}
                   variant="bordered"
-                  color="secondary"
                   onChange={(e) => setFiltroChavePix(e.target.value)}
                 />
-              </div>
-
-              {/* Filtro por Cliente */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2" htmlFor="cliente">
-                  <UserIcon className="w-4 h-4" />
-                  Cliente
-                </label>
-                <Select
-                  placeholder="Selecione um cliente"
-                  selectedKeys={filtroCliente ? [filtroCliente] : []}
-                  size="sm"
-                  variant="bordered"
-                  color="success"
-                  isLoading={loadingClientes}
-                  onSelectionChange={(keys) => setFiltroCliente((Array.from(keys)[0] as string) || "")}
-                >
-                  <SelectItem key="" textValue="Todos os clientes">
-                    Todos os clientes
-                  </SelectItem>
-                  {
-                    clientes.map((cliente) => (
-                      <SelectItem key={cliente.id} textValue={cliente.nome}>
-                        {cliente.nome}
-                      </SelectItem>
-                    )) as any
-                  }
-                </Select>
-              </div>
-
-              {/* Filtro por Advogado */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2" htmlFor="advogado">
-                  <ShieldIcon className="w-4 h-4" />
-                  Advogado
-                </label>
-                <Select
-                  placeholder="Selecione um advogado"
-                  selectedKeys={filtroAdvogado ? [filtroAdvogado] : []}
-                  size="sm"
-                  variant="bordered"
-                  color="primary"
-                  isLoading={loadingAdvogados}
-                  onSelectionChange={(keys) => setFiltroAdvogado((Array.from(keys)[0] as string) || "")}
-                >
-                  <SelectItem key="" textValue="Todos os advogados">
-                    Todos os advogados
-                  </SelectItem>
-                  {
-                    advogados.map((advogado) => (
-                      <SelectItem key={advogado.usuarioId} textValue={`${advogado.usuario.firstName} ${advogado.usuario.lastName}`}>
-                        {advogado.usuario.firstName} {advogado.usuario.lastName}
-                      </SelectItem>
-                    )) as any
-                  }
-                </Select>
               </div>
             </div>
           </CardBody>
@@ -1013,7 +789,7 @@ export default function DadosBancariosPage() {
           {/* Paginação */}
           {dadosBancariosFiltrados.length > 0 && totalPages > 1 && (
             <div className="flex justify-center mt-6">
-              <Pagination total={totalPages} page={currentPage} onChange={setCurrentPage} showControls color="primary" variant="flat" />
+              <Pagination total={totalPages} page={currentPage} onChange={setCurrentPage} showControls showShadow color="primary" />
             </div>
           )}
 
@@ -1114,7 +890,10 @@ export default function DadosBancariosPage() {
                       >
                         {tiposConta.map((tipo) => (
                           <SelectItem key={tipo.value} textValue={tipo.label}>
-                            {tipo.label}
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{tipo.icon}</span>
+                              <span>{tipo.label}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </Select>
@@ -1165,7 +944,13 @@ export default function DadosBancariosPage() {
                       >
                         {tiposContaBancaria.map((tipo) => (
                           <SelectItem key={tipo.value} textValue={tipo.label}>
-                            {tipo.label}
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl">{tipo.icon}</span>
+                              <div>
+                                <p className="font-medium">{tipo.label}</p>
+                                <p className="text-xs text-gray-500">{tipo.description}</p>
+                              </div>
+                            </div>
                           </SelectItem>
                         ))}
                       </Select>
@@ -1205,7 +990,10 @@ export default function DadosBancariosPage() {
                       >
                         {tiposChavePix.map((tipo) => (
                           <SelectItem key={tipo.value} textValue={tipo.label}>
-                            {tipo.label}
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{tipo.icon}</span>
+                              <span>{tipo.label}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </Select>

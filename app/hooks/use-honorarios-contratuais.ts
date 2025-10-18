@@ -1,26 +1,13 @@
 import useSWR from "swr";
 
-import {
-  listHonorariosContratuais,
-  getHonorarioContratual,
-  getTiposHonorario,
-  calcularValorHonorario,
-} from "@/app/actions/honorarios-contratuais";
+import { listHonorariosContratuais, getHonorarioContratual, getTiposHonorario, calcularValorHonorario, getDadosPagamentoHonorario } from "@/app/actions/honorarios-contratuais";
 
 // Hook para listar honorários contratuais
-export function useHonorariosContratuais(filters?: {
-  contratoId?: string;
-  tipo?: "FIXO" | "SUCESSO" | "HIBRIDO";
-  ativo?: boolean;
-}) {
-  const { data, error, isLoading, mutate } = useSWR(
-    ["honorarios-contratuais", filters],
-    () => listHonorariosContratuais(filters),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    },
-  );
+export function useHonorariosContratuais(filters?: { contratoId?: string; tipo?: "FIXO" | "SUCESSO" | "HIBRIDO"; ativo?: boolean }) {
+  const { data, error, isLoading, mutate } = useSWR(["honorarios-contratuais", filters], () => listHonorariosContratuais(filters), {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+  });
 
   return {
     honorarios: data?.data || [],
@@ -32,14 +19,10 @@ export function useHonorariosContratuais(filters?: {
 
 // Hook para buscar honorário específico
 export function useHonorarioContratual(id: string) {
-  const { data, error, isLoading, mutate } = useSWR(
-    id ? ["honorario-contratual", id] : null,
-    () => getHonorarioContratual(id),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    },
-  );
+  const { data, error, isLoading, mutate } = useSWR(id ? ["honorario-contratual", id] : null, () => getHonorarioContratual(id), {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+  });
 
   return {
     honorario: data?.data,
@@ -51,14 +34,10 @@ export function useHonorarioContratual(id: string) {
 
 // Hook para tipos de honorário
 export function useTiposHonorario() {
-  const { data, error, isLoading } = useSWR(
-    "tipos-honorario",
-    getTiposHonorario,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    },
-  );
+  const { data, error, isLoading } = useSWR("tipos-honorario", getTiposHonorario, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
 
   return {
     tipos: data?.data || [],
@@ -69,21 +48,30 @@ export function useTiposHonorario() {
 
 // Hook para calcular valor do honorário
 export function useCalculoHonorario(honorarioId: string, valorBase?: number) {
-  const { data, error, isLoading, mutate } = useSWR(
-    honorarioId && valorBase
-      ? ["calculo-honorario", honorarioId, valorBase]
-      : null,
-    () => calcularValorHonorario(honorarioId, valorBase),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    },
-  );
+  const { data, error, isLoading, mutate } = useSWR(honorarioId && valorBase ? ["calculo-honorario", honorarioId, valorBase] : null, () => calcularValorHonorario(honorarioId, valorBase), {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
 
   return {
     calculo: data?.data,
     isLoading,
     error: error,
     recalcular: mutate,
+  };
+}
+
+// Hook para obter dados de pagamento do honorário
+export function useDadosPagamentoHonorario(honorarioId: string) {
+  const { data, error, isLoading, mutate } = useSWR(honorarioId ? ["dados-pagamento-honorario", honorarioId] : null, () => getDadosPagamentoHonorario(honorarioId), {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+  });
+
+  return {
+    dadosPagamento: data?.success ? data.data : null,
+    isLoading,
+    error: error,
+    recarregar: mutate,
   };
 }

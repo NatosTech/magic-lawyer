@@ -433,7 +433,7 @@ export async function getDadosBancariosAtivos(): Promise<
     }));
   } catch (error) {
     logger.error("Erro ao buscar dados bancários ativos:", error);
-    throw new Error("Erro ao buscar dados bancários ativos");
+    return [];
   }
 }
 
@@ -476,7 +476,7 @@ export async function getAdvogadosAtivos(): Promise<
     }));
   } catch (error) {
     logger.error("Erro ao buscar advogados ativos:", error);
-    throw new Error("Erro ao buscar advogados ativos");
+    return [];
   }
 }
 
@@ -512,6 +512,6 @@ export async function getClientesAtivos(): Promise<
     }));
   } catch (error) {
     logger.error("Erro ao buscar clientes ativos:", error);
-    throw new Error("Erro ao buscar clientes ativos");
+    return [];
   }
 }

@@ -29,12 +29,7 @@ async function getUserId(): Promise<string> {
 // LISTAR DADOS BANCÁRIOS
 // ============================================
 
-export async function listDadosBancarios(filters?: {
-  usuarioId?: string;
-  clienteId?: string;
-  ativo?: boolean;
-  principal?: boolean;
-}) {
+export async function listDadosBancarios(filters?: { usuarioId?: string; clienteId?: string; ativo?: boolean; principal?: boolean }) {
   try {
     const tenantId = await getTenantId();
 
@@ -85,11 +80,7 @@ export async function listDadosBancarios(filters?: {
           },
         },
       },
-      orderBy: [
-        { principal: "desc" },
-        { ativo: "desc" },
-        { createdAt: "desc" },
-      ],
+      orderBy: [{ principal: "desc" }, { ativo: "desc" }, { createdAt: "desc" }],
     });
 
     return {
@@ -197,16 +188,8 @@ export async function createDadosBancarios(data: {
   observacoes?: string;
 }) {
   try {
-    console.log("🔍 DEBUG BACKEND - Dados recebidos:", {
-      bancoCodigo: data.bancoCodigo,
-      agencia: data.agencia,
-      conta: data.conta,
-      titularNome: data.titularNome,
-      titularDocumento: data.titularDocumento,
-      dataCompleto: data,
-    });
-
     const tenantId = await getTenantId();
+    const userId = await getUserId(); // ✅ ADICIONADO: Pegar o usuário logado
 
     // Permitir dados bancários do tenant (escritório) quando não há usuário/cliente específico
     // A validação foi removida para permitir dados bancários do próprio escritório
@@ -216,7 +199,7 @@ export async function createDadosBancarios(data: {
       await prisma.dadosBancarios.updateMany({
         where: {
           tenantId,
-          usuarioId: data.usuarioId || null,
+          usuarioId: data.usuarioId || userId, // ✅ CORRIGIDO: Usar userId se não especificado
           clienteId: data.clienteId || null,
           principal: true,
         },
@@ -226,19 +209,10 @@ export async function createDadosBancarios(data: {
       });
     }
 
-    console.log("🔍 DEBUG BACKEND - Dados para criar no banco:", {
-      tenantId,
-      bancoCodigo: data.bancoCodigo,
-      agencia: data.agencia,
-      conta: data.conta,
-      titularNome: data.titularNome,
-      titularDocumento: data.titularDocumento,
-    });
-
     const dadosBancarios = await prisma.dadosBancarios.create({
       data: {
         tenantId,
-        usuarioId: data.usuarioId,
+        usuarioId: data.usuarioId || userId, // ✅ CORRIGIDO: Usar userId se não especificado
         clienteId: data.clienteId,
         tipoConta: data.tipoConta,
         bancoCodigo: data.bancoCodigo,
@@ -326,7 +300,7 @@ export async function updateDadosBancarios(
     ativo?: boolean;
     principal?: boolean;
     observacoes?: string;
-  },
+  }
 ) {
   try {
     const tenantId = await getTenantId();
@@ -536,11 +510,15 @@ export async function getMeusDadosBancarios() {
         usuarioId: userId,
         deletedAt: null,
       },
-      orderBy: [
-        { principal: "desc" },
-        { ativo: "desc" },
-        { createdAt: "desc" },
-      ],
+      include: {
+        banco: {
+          select: {
+            codigo: true,
+            nome: true,
+          },
+        },
+      },
+      orderBy: [{ principal: "desc" }, { ativo: "desc" }, { createdAt: "desc" }],
     });
 
     return {
