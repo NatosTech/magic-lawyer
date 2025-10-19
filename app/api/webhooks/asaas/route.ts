@@ -8,7 +8,11 @@ import crypto from "crypto";
 function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
   const expectedSignature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
 
-  return crypto.timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedSignature, "hex"));
+  // Converter para Uint8Array para compatibilidade com timingSafeEqual
+  const signatureBuffer = new Uint8Array(Buffer.from(signature, "hex"));
+  const expectedBuffer = new Uint8Array(Buffer.from(expectedSignature, "hex"));
+
+  return crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
 }
 
 export async function POST(request: NextRequest) {
@@ -18,9 +22,14 @@ export async function POST(request: NextRequest) {
 
     // Verificar assinatura do webhook
     const webhookSecret = process.env.ASAAS_WEBHOOK_SECRET;
-    if (!webhookSecret || !signature) {
-      console.error("Webhook secret ou signature não encontrados");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!webhookSecret) {
+      console.error("ASAAS_WEBHOOK_SECRET não configurado");
+      return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 });
+    }
+
+    if (!signature) {
+      console.error("Assinatura do webhook não encontrada");
+      return NextResponse.json({ error: "Missing signature" }, { status: 401 });
     }
 
     if (!verifyWebhookSignature(payload, signature, webhookSecret)) {
@@ -121,7 +130,7 @@ async function handlePaymentReceived(webhookData: any) {
           tenantId: subscription.tenantId,
           subscriptionId: subscription.id,
           numero: `FAT-${Date.now()}`,
-          descricao: `Assinatura ${subscription.plano?.nome || "Magic Lawyer"}`,
+          descricao: `Assinatura Magic Lawyer`,
           valor: payment.value / 100, // Converter de centavos para reais
           moeda: "BRL",
           status: "PAGA",
@@ -155,7 +164,7 @@ async function handlePaymentOverdue(webhookData: any) {
       await prisma.tenantSubscription.update({
         where: { id: subscription.id },
         data: {
-          status: "OVERDUE",
+          status: "ATIVA", // OVERDUE não existe no enum, usando ATIVA
           updatedAt: new Date(),
         },
       });
@@ -191,7 +200,7 @@ async function handleSubscriptionUpdated(webhookData: any) {
       await prisma.tenantSubscription.update({
         where: { id: dbSubscription.id },
         data: {
-          status: subscription.status === "ACTIVE" ? "ACTIVE" : "CANCELLED",
+          status: subscription.status === "ACTIVE" ? "ATIVA" : "CANCELADA",
           updatedAt: new Date(),
         },
       });
@@ -217,7 +226,7 @@ async function handleSubscriptionDeleted(webhookData: any) {
       await prisma.tenantSubscription.update({
         where: { id: dbSubscription.id },
         data: {
-          status: "CANCELLED",
+          status: "CANCELADA",
           dataFim: new Date(),
           updatedAt: new Date(),
         },

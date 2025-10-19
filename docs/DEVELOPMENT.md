@@ -1,6 +1,6 @@
 # 🚀 Guia de Desenvolvimento - Magic Lawyer
 
-Este guia contém instruções específicas para configurar e executar o projeto em diferentes sistemas operacionais.
+Este guia contém instruções completas para configurar e executar o projeto, incluindo integração com Asaas e webhooks.
 
 ## 📋 Pré-requisitos
 
@@ -9,6 +9,7 @@ Este guia contém instruções específicas para configurar e executar o projeto
 - **npm** (versão 9 ou superior)
 - **Docker** e **Docker Compose**
 - **Git**
+- **ngrok** (para webhooks em desenvolvimento)
 
 ### Verificar Instalações
 ```bash
@@ -17,6 +18,21 @@ npm --version
 docker --version
 docker compose version
 git --version
+ngrok version
+```
+
+### Instalar ngrok (se necessário)
+```bash
+# macOS (Homebrew)
+brew install ngrok
+
+# Windows (Chocolatey)
+choco install ngrok
+
+# Linux
+curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+sudo apt update && sudo apt install ngrok
 ```
 
 ## 🛠️ Configuração Inicial
@@ -48,20 +64,63 @@ npm run prisma:seed
 ```
 
 ### 4. Configurar Variáveis de Ambiente
-Crie um arquivo `.env.local` na raiz do projeto:
+Crie um arquivo `.env` na raiz do projeto (veja `.env.example`):
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/magic_lawyer?schema=public"
+# Database
+DATABASE_URL="postgresql://postgres:postgres@localhost:8567/magic_lawyer?schema=magiclawyer"
+
+# NextAuth
 NEXTAUTH_SECRET="seu-secret-aqui"
 NEXTAUTH_URL="http://localhost:9192"
+
+# Asaas Integration (Sistema de Pagamentos)
+ASAAS_API_KEY="\$aact_hmlg_sua-api-key-aqui"
+ASAAS_ENVIRONMENT="sandbox"
+ASAAS_WEBHOOK_SECRET="seu-webhook-secret-aqui"
+
+# Email (Resend)
+RESEND_API_KEY="re_sua-api-key-aqui"
+
+# Encryption
+ENCRYPTION_KEY="sua-chave-de-criptografia"
 ```
+
+**⚠️ IMPORTANTE**: A API key do Asaas deve começar com `\$` (barra invertida + cifrão) para funcionar corretamente com o Next.js.
 
 ## 🏃‍♂️ Executando o Projeto
 
-### 🎯 Método Universal (Recomendado)
+### 🚀 Setup Completo (Primeira Vez)
 ```bash
-npm run dev
+# Comando único para setup completo - MATA TUDO E RECRIA
+npm run setup:dev
 ```
-Este comando funciona em **todos os sistemas operacionais** graças ao `cross-env`.
+
+Este comando executa:
+1. **MATA TODOS** os processos (next, ngrok, node)
+2. Instala dependências
+3. Inicia banco de dados
+4. Reseta banco (remove migrações antigas)
+5. Aplica schema atual
+6. Popula com dados de teste
+7. Inicia servidor de desenvolvimento
+8. Inicia **UM ÚNICO** ngrok para webhooks
+
+**⚠️ IMPORTANTE**: Este comando mata TODOS os processos antes de iniciar!
+
+### 🎯 Desenvolvimento Diário
+```bash
+# Método universal (recomendado) - Para processos existentes automaticamente
+npm run dev
+
+# Com ngrok para webhooks - Para processos existentes automaticamente
+npm run dev:with-ngrok
+
+# Parar todos os processos
+npm run stop
+
+# Parar tudo (servidor + ngrok + banco)
+npm run stop:all
+```
 
 ### 🍎 macOS / Linux
 ```bash
@@ -75,6 +134,32 @@ npm run dev
 npm run dev:windows
 # ou
 npm run dev
+```
+
+### 🔄 Reset Completo (Durante Desenvolvimento)
+```bash
+# Reset completo do banco (remove migrações antigas)
+npm run db:reset-dev
+```
+
+Este comando:
+1. Para servidor e ngrok automaticamente
+2. Remove pasta de migrações
+3. Reseta banco de dados
+4. Aplica schema atual
+5. Popula com dados de teste
+6. Reinicia servidor + ngrok
+
+### 🛑 Comandos de Parada
+```bash
+# Parar apenas servidor e ngrok
+npm run stop
+
+# Parar tudo (servidor + ngrok + banco)
+npm run stop:all
+
+# Parar apenas banco
+npm run db:down
 ```
 
 ## 📊 Comandos Úteis
@@ -120,9 +205,10 @@ npm run clean
 ### 🏠 Aplicação
 - **URL**: http://localhost:9192
 - **Login**: http://localhost:9192/login
+- **Preços**: http://localhost:9192/precos
 
 ### 🗄️ Banco de Dados
-- **Host**: localhost:5432
+- **Host**: localhost:8567
 - **Database**: magic_lawyer
 - **User**: postgres
 - **Password**: postgres
@@ -132,6 +218,81 @@ npm run clean
 npm run prisma:studio
 # Abre em: http://localhost:5555
 ```
+
+### 🔗 ngrok (Webhooks)
+```bash
+# Dashboard do ngrok
+http://localhost:4040
+
+# URL pública (muda a cada reinicialização)
+https://xxxxx.ngrok-free.app
+```
+
+## 🔗 Configuração de Webhooks (Asaas)
+
+### 1. Iniciar ngrok
+```bash
+# Terminal separado
+ngrok http 9192
+
+# Ou usar o comando integrado
+npm run dev:with-ngrok
+```
+
+### 2. Configurar no Asaas
+1. **Acesse**: Painel do Asaas → Integrações → Webhooks
+2. **URL do Webhook**: `https://SEU-NGROK-URL.ngrok-free.app/api/webhooks/asaas`
+3. **Eventos**:
+   - ✅ `PAYMENT_CREATED`
+   - ✅ `PAYMENT_RECEIVED` ⭐ (ESSENCIAL!)
+   - ✅ `PAYMENT_OVERDUE`
+   - ✅ `SUBSCRIPTION_CREATED`
+   - ✅ `SUBSCRIPTION_UPDATED`
+   - ✅ `SUBSCRIPTION_DELETED`
+4. **Tipo de envio**: Não sequencial
+5. **Salvar**
+
+### 3. Quando o ngrok mudar de URL
+**Sempre que reiniciar o ngrok, a URL muda!**
+
+**Para atualizar no Asaas:**
+1. **Copie a nova URL** do ngrok
+2. **Vá para**: Asaas → Integrações → Webhooks
+3. **Edite o webhook** existente
+4. **Atualize a URL**: `https://NOVA-URL.ngrok-free.app/api/webhooks/asaas`
+5. **Salve**
+
+**💡 Dica**: Use o dashboard do ngrok (`http://localhost:4040`) para copiar a URL facilmente.
+
+## 🧪 Testando o Fluxo de Pagamento
+
+### 1. Teste Completo
+1. **Acesse**: http://localhost:9192/precos
+2. **Clique**: "Começar Teste" (qualquer plano)
+3. **Preencha**: Formulário completo
+4. **Selecione**: PIX ou Boleto
+5. **Clique**: "Concluir Checkout"
+6. **Clique**: "🧪 Simular Pagamento Confirmado (TESTE)"
+
+### 2. O que deve acontecer
+- ✅ Cliente criado no Asaas
+- ✅ Pagamento gerado (PIX/Boleto)
+- ✅ Webhook disparado
+- ✅ Conta criada no sistema
+- ✅ Emails enviados (confirmação + credenciais)
+- ✅ Redirecionamento para página de sucesso
+
+### 3. Verificações
+- **Console do servidor**: Logs do webhook
+- **Dashboard ngrok**: `http://localhost:4040` (requisições)
+- **Email**: Credenciais recebidas
+- **Banco de dados**: Tenant criado
+
+### 4. Teste com Pagamento Real
+1. **Faça checkout** normalmente
+2. **Pague realmente** o PIX/Boleto
+3. **Aguarde** o Asaas detectar (pode demorar alguns minutos)
+4. **Verifique** se a conta foi criada automaticamente
 
 ## 👥 Credenciais de Teste
 
