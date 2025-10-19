@@ -1,10 +1,13 @@
 "use server";
 
-import prisma from "@/app/lib/prisma";
-import { AsaasClient, formatCpfCnpjForAsaas, formatValueForAsaas, formatDateForAsaas } from "@/lib/asaas";
-import { enviarEmailCredenciais, enviarEmailConfirmacao } from "@/lib/email-service";
 import { nanoid } from "nanoid";
-import bcrypt from "bcryptjs";
+
+import prisma from "@/app/lib/prisma";
+import {
+  AsaasClient,
+  formatCpfCnpjForAsaas,
+  formatDateForAsaas,
+} from "@/lib/asaas";
 
 interface CheckoutData {
   // Dados da empresa
@@ -45,58 +48,90 @@ export async function processarCheckout(data: CheckoutData) {
     // Verificar se já existe um tenant com este CNPJ ou email
     const existingTenant = await prisma.tenant.findFirst({
       where: {
-        OR: [{ documento: data.cnpj.replace(/\D/g, "") }, { email: data.email }],
+        OR: [
+          { documento: data.cnpj.replace(/\D/g, "") },
+          { email: data.email },
+        ],
       },
     });
 
     if (existingTenant) {
-      return { success: false, error: "Já existe uma conta com este CNPJ ou email" };
+      return {
+        success: false,
+        error: "Já existe uma conta com este CNPJ ou email",
+      };
     }
 
     // Gerar dados únicos para o tenant
     const tenantSlug = nanoid(8);
     const tenantDomain = `${tenantSlug}.magiclawyer.com`;
 
+    // Validar credenciais do Asaas
+    const apiKey = process.env.ASAAS_API_KEY;
+
+    console.log("[checkout] ASAAS_API_KEY presente?", apiKey ? `sim (${apiKey.slice(0, 10)}...)` : "não");
+
+    if (!apiKey) {
+      return {
+        success: false,
+        error: "Configuração do sistema de pagamento não encontrada.",
+      };
+    }
+
+    const asaasEnvironment: "sandbox" | "production" =
+      process.env.ASAAS_ENVIRONMENT?.toLowerCase() === "production"
+        ? "production"
+        : "sandbox";
+
     // Criar cliente no Asaas
-    const asaasClient = new AsaasClient(process.env.ASAAS_API_KEY || "", "sandbox");
+    const asaasClient = new AsaasClient(apiKey, asaasEnvironment);
+
+    const sanitizedPhone = data.telefone?.replace(/\D/g, "");
+    const sanitizedCep = data.cep.replace(/\D/g, "");
 
     const customerData = {
       name: data.nomeEmpresa,
       email: data.email,
-      phone: data.telefone,
-      cpfCnpj: data.cnpj.replace(/\D/g, ""),
-      personType: "JURIDICA",
+      phone: sanitizedPhone,
+      mobilePhone: sanitizedPhone,
+      cpfCnpj: formatCpfCnpjForAsaas(data.cnpj),
       address: data.endereco,
       addressNumber: data.numero,
       complement: data.complemento,
       province: data.bairro,
       city: data.cidade,
       state: data.estado,
-      postalCode: data.cep.replace(/\D/g, ""),
+      postalCode: sanitizedCep,
+      country: "Brasil",
     };
 
     const customer = await asaasClient.createCustomer(customerData);
 
-    if (!customer.success) {
-      console.error("Erro ao criar cliente:", customer);
-      return { success: false, error: "Erro ao criar cliente no sistema de pagamento" };
+    if (!customer?.id) {
+      return {
+        success: false,
+        error: "Erro ao criar cliente no sistema de pagamento",
+      };
     }
 
     // Criar cobrança no Asaas
+    const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const paymentData = {
-      customer: customer.data.id,
+      customer: customer.id,
       billingType: data.formaPagamento,
       value: Number(plano.valorMensal),
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 7 dias no futuro
+      dueDate: formatDateForAsaas(dueDate), // 7 dias no futuro
       description: `Assinatura ${plano.nome} - Magic Lawyer`,
       externalReference: `checkout_${Date.now()}`,
     };
 
     const payment = await asaasClient.createPayment(paymentData);
 
-    if (!payment.success) {
-      console.error("Erro ao criar pagamento:", payment);
-      return { success: false, error: "Erro ao criar cobrança no sistema de pagamento" };
+    if (!payment?.id) {
+      return {
+        success: false,
+        error: "Erro ao criar cobrança no sistema de pagamento",
+      };
     }
 
     // Salvar dados temporários para processar após pagamento
@@ -106,8 +141,8 @@ export async function processarCheckout(data: CheckoutData) {
       planoId: plano.id,
       tenantSlug,
       tenantDomain,
-      asaasCustomerId: customer.data.id,
-      asaasPaymentId: payment.data.id,
+      asaasCustomerId: customer.id,
+      asaasPaymentId: payment.id,
       status: "PENDENTE",
       createdAt: new Date(),
     };
@@ -131,13 +166,22 @@ export async function processarCheckout(data: CheckoutData) {
       success: true,
       data: {
         checkoutId: checkoutSession.id,
-        paymentData: payment.data,
-        customerData: customer.data,
-        message: "Pagamento criado com sucesso! Complete o pagamento para ativar sua conta.",
+        paymentData: payment,
+        customerData: customer,
+        message:
+          "Pagamento criado com sucesso! Complete o pagamento para ativar sua conta.",
       },
     };
   } catch (error) {
     console.error("Erro ao processar checkout:", error);
+    if (error instanceof Error && error.message.includes("401")) {
+      return {
+        success: false,
+        error:
+          "Falha na autenticação com o sistema de pagamento. Verifique a API key configurada.",
+      };
+    }
+
     return {
       success: false,
       error: "Erro interno do servidor. Tente novamente.",
@@ -162,6 +206,7 @@ export async function verificarDisponibilidadeCNPJ(cnpj: string) {
     };
   } catch (error) {
     console.error("Erro ao verificar CNPJ:", error);
+
     return {
       success: false,
       error: "Erro ao verificar CNPJ",
@@ -183,11 +228,15 @@ export async function verificarDisponibilidadeEmail(email: string) {
       success: true,
       data: {
         disponivel: !existingTenant && !existingUser,
-        message: existingTenant || existingUser ? "Email já cadastrado" : "Email disponível",
+        message:
+          existingTenant || existingUser
+            ? "Email já cadastrado"
+            : "Email disponível",
       },
     };
   } catch (error) {
     console.error("Erro ao verificar email:", error);
+
     return {
       success: false,
       error: "Erro ao verificar email",
