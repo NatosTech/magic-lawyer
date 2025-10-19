@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import QRCodeLib from "qrcode";
 import useSWR from "swr";
 import { getPaymentStatus } from "@/app/actions/payment-status";
+import CreditCardForm from "@/components/credit-card-form";
 
 interface PaymentData {
   checkoutId: string;
@@ -26,6 +27,7 @@ export default function PagamentoPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [checkoutId, setCheckoutId] = useState<string | null>(null);
+  const [paymentProcessed, setPaymentProcessed] = useState(false);
 
   // SWR para buscar status do pagamento em tempo real
   const {
@@ -33,10 +35,21 @@ export default function PagamentoPage() {
     error,
     mutate,
   } = useSWR(checkoutId ? `payment-status-${checkoutId}` : null, () => getPaymentStatus(checkoutId!), {
-    refreshInterval: 5000, // Atualizar a cada 5 segundos
+    refreshInterval: paymentProcessed ? 0 : 5000, // Para de atualizar se pagamento foi processado
     revalidateOnFocus: true,
     revalidateOnReconnect: true,
   });
+
+  // Função para lidar com pagamento processado
+  const handlePaymentProcessed = (paymentResult: any) => {
+    setPaymentProcessed(true);
+    toast.success("Pagamento processado! Redirecionando...");
+
+    // Simular redirecionamento para página de sucesso
+    setTimeout(() => {
+      window.location.href = "/sucesso";
+    }, 2000);
+  };
 
   useEffect(() => {
     // Buscar dados do pagamento da session storage ou URL params
@@ -263,16 +276,20 @@ export default function PagamentoPage() {
             )}
 
             {/* Cartão de Crédito */}
-            {payment.billingType === "CREDIT_CARD" && (
-              <div className="space-y-4">
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold text-white mb-2">Pagamento com Cartão</h3>
-                  <p className="text-sm text-default-400">Redirecionando para o gateway de pagamento...</p>
-                </div>
+            {payment.billingType === "CREDIT_CARD" && !paymentProcessed && (
+              <CreditCardForm amount={payment.value} onPaymentComplete={handlePaymentProcessed} customerName={customerData.name} checkoutId={checkoutId!} />
+            )}
 
-                <Button color="primary" className="w-full">
-                  Finalizar Pagamento
-                </Button>
+            {/* Pagamento Processado */}
+            {payment.billingType === "CREDIT_CARD" && paymentProcessed && (
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-8 h-8 text-success" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-success mb-2">Pagamento Processado!</h3>
+                  <p className="text-sm text-default-400">Redirecionando para a página de sucesso...</p>
+                </div>
               </div>
             )}
 

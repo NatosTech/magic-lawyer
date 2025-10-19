@@ -35,6 +35,23 @@ export interface AsaasPayment {
   installmentCount?: number;
   installmentValue?: number;
   totalValue?: number;
+  creditCard?: {
+    holderName: string;
+    number: string;
+    expiryMonth: string;
+    expiryYear: string;
+    ccv: string;
+  };
+  creditCardHolderInfo?: {
+    name: string;
+    email: string;
+    cpfCnpj: string;
+    postalCode?: string;
+    addressNumber?: string;
+    addressComplement?: string;
+    phone?: string;
+    mobilePhone?: string;
+  };
   discount?: {
     value: number;
     dueDateLimitDays: number;
@@ -61,7 +78,13 @@ export interface AsaasSubscription {
   billingType: "BOLETO" | "CREDIT_CARD" | "PIX" | "UNDEFINED";
   value: number;
   nextDueDate: string;
-  cycle: "WEEKLY" | "BIWEEKLY" | "MONTHLY" | "QUARTERLY" | "SEMIANNUALLY" | "YEARLY";
+  cycle:
+    | "WEEKLY"
+    | "BIWEEKLY"
+    | "MONTHLY"
+    | "QUARTERLY"
+    | "SEMIANNUALLY"
+    | "YEARLY";
   description?: string;
   externalReference?: string;
   maxPayments?: number;
@@ -78,15 +101,25 @@ export interface AsaasWebhook {
 export class AsaasClient {
   private config: AsaasConfig;
 
-  constructor(apiKey: string, environment: "sandbox" | "production" = "sandbox") {
+  constructor(
+    apiKey: string,
+    environment: "sandbox" | "production" = "sandbox",
+  ) {
     this.config = {
       apiKey,
       environment,
-      baseUrl: environment === "production" ? "https://www.asaas.com/api/v3" : "https://sandbox.asaas.com/api/v3",
+      baseUrl:
+        environment === "production"
+          ? "https://www.asaas.com/api/v3"
+          : "https://sandbox.asaas.com/api/v3",
     };
   }
 
-  private async makeRequest<T>(endpoint: string, method: "GET" | "POST" | "PUT" | "DELETE" = "GET", data?: any): Promise<T> {
+  private async makeRequest<T>(
+    endpoint: string,
+    method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
+    data?: any,
+  ): Promise<T> {
     const url = `${this.config.baseUrl}${endpoint}`;
 
     const options: RequestInit = {
@@ -105,8 +138,34 @@ export class AsaasClient {
       const response = await fetch(url, options);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Asaas API Error: ${response.status} - ${errorData.message || response.statusText}`);
+        const errorText = await response.text();
+        let errorData: any = {};
+
+        try {
+          errorData = errorText ? JSON.parse(errorText) : {};
+        } catch {
+          errorData = { raw: errorText };
+        }
+
+        console.error(
+          "Detalhes do erro Asaas",
+          JSON.stringify(
+            {
+              endpoint,
+              method,
+              status: response.status,
+              error: errorData,
+            },
+            null,
+            2,
+          ),
+        );
+
+        throw new Error(
+          `Asaas API Error: ${response.status} - ${
+            errorData?.message || response.statusText
+          }`,
+        );
       }
 
       return await response.json();
@@ -128,8 +187,15 @@ export class AsaasClient {
     return this.makeRequest<AsaasCustomer>(`/customers/${customerId}`);
   }
 
-  async updateCustomer(customerId: string, customer: Partial<AsaasCustomer>): Promise<AsaasCustomer> {
-    return this.makeRequest<AsaasCustomer>(`/customers/${customerId}`, "PUT", customer);
+  async updateCustomer(
+    customerId: string,
+    customer: Partial<AsaasCustomer>,
+  ): Promise<AsaasCustomer> {
+    return this.makeRequest<AsaasCustomer>(
+      `/customers/${customerId}`,
+      "PUT",
+      customer,
+    );
   }
 
   async deleteCustomer(customerId: string): Promise<void> {
@@ -148,8 +214,15 @@ export class AsaasClient {
     return this.makeRequest<AsaasPayment>(`/payments/${paymentId}`);
   }
 
-  async updatePayment(paymentId: string, payment: Partial<AsaasPayment>): Promise<AsaasPayment> {
-    return this.makeRequest<AsaasPayment>(`/payments/${paymentId}`, "PUT", payment);
+  async updatePayment(
+    paymentId: string,
+    payment: Partial<AsaasPayment>,
+  ): Promise<AsaasPayment> {
+    return this.makeRequest<AsaasPayment>(
+      `/payments/${paymentId}`,
+      "PUT",
+      payment,
+    );
   }
 
   async deletePayment(paymentId: string): Promise<void> {
@@ -160,16 +233,31 @@ export class AsaasClient {
   // SUBSCRIPTIONS
   // ============================================
 
-  async createSubscription(subscription: AsaasSubscription): Promise<AsaasSubscription> {
-    return this.makeRequest<AsaasSubscription>("/subscriptions", "POST", subscription);
+  async createSubscription(
+    subscription: AsaasSubscription,
+  ): Promise<AsaasSubscription> {
+    return this.makeRequest<AsaasSubscription>(
+      "/subscriptions",
+      "POST",
+      subscription,
+    );
   }
 
   async getSubscription(subscriptionId: string): Promise<AsaasSubscription> {
-    return this.makeRequest<AsaasSubscription>(`/subscriptions/${subscriptionId}`);
+    return this.makeRequest<AsaasSubscription>(
+      `/subscriptions/${subscriptionId}`,
+    );
   }
 
-  async updateSubscription(subscriptionId: string, subscription: Partial<AsaasSubscription>): Promise<AsaasSubscription> {
-    return this.makeRequest<AsaasSubscription>(`/subscriptions/${subscriptionId}`, "PUT", subscription);
+  async updateSubscription(
+    subscriptionId: string,
+    subscription: Partial<AsaasSubscription>,
+  ): Promise<AsaasSubscription> {
+    return this.makeRequest<AsaasSubscription>(
+      `/subscriptions/${subscriptionId}`,
+      "PUT",
+      subscription,
+    );
   }
 
   async deleteSubscription(subscriptionId: string): Promise<void> {
@@ -180,7 +268,9 @@ export class AsaasClient {
   // PIX
   // ============================================
 
-  async generatePixQrCode(paymentId: string): Promise<{ qrCode: string; qrCodeUrl: string; payload: string }> {
+  async generatePixQrCode(
+    paymentId: string,
+  ): Promise<{ qrCode: string; qrCodeUrl: string; payload: string }> {
     return this.makeRequest(`/payments/${paymentId}/pixQrCode`);
   }
 
@@ -210,7 +300,10 @@ export class AsaasClient {
 /**
  * Cria um cliente Asaas com credenciais criptografadas
  */
-export function createAsaasClientFromEncrypted(encryptedApiKey: string, environment: "sandbox" | "production" = "sandbox"): AsaasClient {
+export function createAsaasClientFromEncrypted(
+  encryptedApiKey: string,
+  environment: "sandbox" | "production" = "sandbox",
+): AsaasClient {
   try {
     const decryptedApiKey = decrypt(encryptedApiKey);
     return new AsaasClient(decryptedApiKey, environment);

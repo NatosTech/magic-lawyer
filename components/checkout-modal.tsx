@@ -1,15 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Card, CardBody } from "@heroui/card";
-import { Chip } from "@heroui/chip";
-import { Divider } from "@heroui/divider";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, User, Mail, Phone, MapPin, CreditCard, Smartphone, FileText, CheckCircle, ArrowRight, Loader2 } from "lucide-react";
+import {
+  Building2,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  CreditCard,
+  Smartphone,
+  CheckCircle,
+  ArrowRight,
+} from "lucide-react";
 
 import { CnpjInput } from "./cnpj-input";
 import { CpfInput } from "./cpf-input";
@@ -75,13 +89,17 @@ const initialFormData: FormData = {
   formaPagamento: "PIX",
 };
 
-export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProps) {
+export function CheckoutModal({
+  isOpen,
+  onOpenChange,
+  plano,
+}: CheckoutModalProps) {
   const router = useRouter();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [cnpjData, setCnpjData] = useState<CnpjData | null>(null);
-  const [cepData, setCepData] = useState<CepData | null>(null);
+  const [, setCnpjData] = useState<CnpjData | null>(null);
+  const [, setCepData] = useState<CepData | null>(null);
 
   const steps = [
     { id: 1, title: "Dados da Empresa", icon: Building2 },
@@ -90,8 +108,11 @@ export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProp
     { id: 4, title: "Pagamento", icon: CreditCard },
   ];
 
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: keyof FormData, value: string | number) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: typeof prev[field] === "number" ? Number(value) : value,
+    }));
   };
 
   // Função para extrair nome da pessoa física do campo razao_social (MEI)
@@ -126,12 +147,20 @@ export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProp
       email: data.email || "",
 
       // Dados do responsável (primeiro sócio/administrador ou pessoa física)
-      nomeResponsavel: data.qsa?.[0]?.nome_socio || (data.qsa?.length === 0 ? extrairNomePessoaFisica(data.razao_social) : ""),
+      nomeResponsavel:
+        data.qsa?.[0]?.nome_socio ||
+        (data.qsa?.length === 0
+          ? extrairNomePessoaFisica(data.razao_social)
+          : ""),
     }));
 
     // Toast informativo sobre os dados preenchidos
     const hasEmail = data.email && data.email.trim() !== "";
-    const hasResponsavel = data.qsa?.[0]?.nome_socio || (data.qsa?.length === 0 ? extrairNomePessoaFisica(data.razao_social) : "");
+    const hasResponsavel =
+      data.qsa?.[0]?.nome_socio ||
+      (data.qsa?.length === 0
+        ? extrairNomePessoaFisica(data.razao_social)
+        : "");
 
     let message = "Dados preenchidos automaticamente!";
     if (hasEmail) message += " Email incluído.";
@@ -154,11 +183,22 @@ export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProp
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        return !!(formData.nomeEmpresa && formData.cnpj && formData.email && formData.telefone);
+        return !!(
+          formData.nomeEmpresa &&
+          formData.cnpj &&
+          formData.email &&
+          formData.telefone
+        );
       case 2:
         return !!(formData.nomeResponsavel && formData.cpf);
       case 3:
-        return !!(formData.cep && formData.endereco && formData.numero && formData.cidade && formData.estado);
+        return !!(
+          formData.cep &&
+          formData.endereco &&
+          formData.numero &&
+          formData.cidade &&
+          formData.estado
+        );
       case 4:
         return !!formData.formaPagamento;
       default:
@@ -201,7 +241,7 @@ export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProp
             JSON.stringify({
               paymentData: result.data.paymentData,
               customerData: result.data.customerData,
-            })
+            }),
           );
         }
 
@@ -225,14 +265,31 @@ export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProp
     switch (currentStep) {
       case 1:
         return (
-          <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+          <motion.div
+            key="step1"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-4"
+          >
             <div className="text-center mb-6">
               <Building2 className="w-12 h-12 text-primary mx-auto mb-2" />
-              <h3 className="text-xl font-semibold text-white">Dados da Empresa</h3>
-              <p className="text-default-400">Informações da sua empresa ou escritório</p>
+              <h3 className="text-xl font-semibold text-white">
+                Dados da Empresa
+              </h3>
+              <p className="text-default-400">
+                Informações da sua empresa ou escritório
+              </p>
             </div>
 
-            <CnpjInput label="CNPJ da Empresa" placeholder="00.000.000/0000-00" value={formData.cnpj} onChange={(value) => handleInputChange("cnpj", value)} onCnpjFound={handleCnpjFound} isRequired />
+            <CnpjInput
+              label="CNPJ da Empresa"
+              placeholder="00.000.000/0000-00"
+              value={formData.cnpj}
+              onChange={(value) => handleInputChange("cnpj", value)}
+              onCnpjFound={handleCnpjFound}
+              isRequired
+            />
 
             <Input
               label="Nome da Empresa"
@@ -266,36 +323,67 @@ export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProp
 
       case 2:
         return (
-          <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+          <motion.div
+            key="step2"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-4"
+          >
             <div className="text-center mb-6">
               <User className="w-12 h-12 text-primary mx-auto mb-2" />
-              <h3 className="text-xl font-semibold text-white">Responsável Legal</h3>
-              <p className="text-default-400">Dados do responsável pela conta</p>
+              <h3 className="text-xl font-semibold text-white">
+                Responsável Legal
+              </h3>
+              <p className="text-default-400">
+                Dados do responsável pela conta
+              </p>
             </div>
 
             <Input
               label="Nome Completo"
               placeholder="Nome do responsável"
               value={formData.nomeResponsavel}
-              onChange={(e) => handleInputChange("nomeResponsavel", e.target.value)}
+              onChange={(e) =>
+                handleInputChange("nomeResponsavel", e.target.value)
+              }
               startContent={<User className="w-4 h-4 text-default-400" />}
               isRequired
             />
 
-            <CpfInput label="CPF" placeholder="000.000.000-00" value={formData.cpf} onChange={(value) => handleInputChange("cpf", value)} isRequired />
+            <CpfInput
+              label="CPF"
+              placeholder="000.000.000-00"
+              value={formData.cpf}
+              onChange={(value) => handleInputChange("cpf", value)}
+              isRequired
+            />
           </motion.div>
         );
 
       case 3:
         return (
-          <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+          <motion.div
+            key="step3"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-4"
+          >
             <div className="text-center mb-6">
               <MapPin className="w-12 h-12 text-primary mx-auto mb-2" />
               <h3 className="text-xl font-semibold text-white">Endereço</h3>
               <p className="text-default-400">Localização da sua empresa</p>
             </div>
 
-            <CepInput label="CEP" placeholder="00000-000" value={formData.cep} onChange={(value) => handleInputChange("cep", value)} onCepFound={handleCepFound} isRequired />
+            <CepInput
+              label="CEP"
+              placeholder="00000-000"
+              value={formData.cep}
+              onChange={(value) => handleInputChange("cep", value)}
+              onCepFound={handleCepFound}
+              isRequired
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <Input
@@ -306,52 +394,122 @@ export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProp
                 startContent={<MapPin className="w-4 h-4 text-default-400" />}
                 isRequired
               />
-              <Input label="Número" placeholder="123" value={formData.numero} onChange={(e) => handleInputChange("numero", e.target.value)} isRequired />
+              <Input
+                label="Número"
+                placeholder="123"
+                value={formData.numero}
+                onChange={(e) => handleInputChange("numero", e.target.value)}
+                isRequired
+              />
             </div>
 
-            <Input label="Complemento" placeholder="Sala, Andar, etc." value={formData.complemento} onChange={(e) => handleInputChange("complemento", e.target.value)} />
+            <Input
+              label="Complemento"
+              placeholder="Sala, Andar, etc."
+              value={formData.complemento}
+              onChange={(e) => handleInputChange("complemento", e.target.value)}
+            />
 
-            <Input label="Bairro" placeholder="Nome do bairro" value={formData.bairro} onChange={(e) => handleInputChange("bairro", e.target.value)} isRequired />
+            <Input
+              label="Bairro"
+              placeholder="Nome do bairro"
+              value={formData.bairro}
+              onChange={(e) => handleInputChange("bairro", e.target.value)}
+              isRequired
+            />
 
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Cidade" placeholder="Sua cidade" value={formData.cidade} onChange={(e) => handleInputChange("cidade", e.target.value)} isRequired />
-              <Input label="Estado" placeholder="UF" value={formData.estado} onChange={(e) => handleInputChange("estado", e.target.value)} isRequired />
+              <Input
+                label="Cidade"
+                placeholder="Sua cidade"
+                value={formData.cidade}
+                onChange={(e) => handleInputChange("cidade", e.target.value)}
+                isRequired
+              />
+              <Input
+                label="Estado"
+                placeholder="UF"
+                value={formData.estado}
+                onChange={(e) => handleInputChange("estado", e.target.value)}
+                isRequired
+              />
             </div>
           </motion.div>
         );
 
       case 4:
         return (
-          <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+          <motion.div
+            key="step4"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-4"
+          >
             <div className="text-center mb-6">
               <CreditCard className="w-12 h-12 text-primary mx-auto mb-2" />
-              <h3 className="text-xl font-semibold text-white">Forma de Pagamento</h3>
+              <h3 className="text-xl font-semibold text-white">
+                Forma de Pagamento
+              </h3>
               <p className="text-default-400">Escolha como deseja pagar</p>
             </div>
 
             <div className="grid gap-3">
               {[
-                { value: "PIX", label: "PIX", icon: Smartphone, description: "Aprovação instantânea" },
-                { value: "BOLETO", label: "Boleto Bancário", icon: FileText, description: "Vencimento em 3 dias" },
-                { value: "CREDIT_CARD", label: "Cartão de Crédito", icon: CreditCard, description: "Parcelamento disponível" },
+                {
+                  value: "PIX",
+                  label: "PIX",
+                  icon: Smartphone,
+                  description: "Aprovação instantânea",
+                },
+                {
+                  value: "CREDIT_CARD",
+                  label: "Cartão de Crédito",
+                  icon: CreditCard,
+                  description: "Pagamentos com cartão",
+                },
               ].map((option) => (
                 <Card
                   key={option.value}
                   isPressable
                   className={`cursor-pointer transition-all duration-200 ${formData.formaPagamento === option.value ? "ring-2 ring-primary bg-primary/10" : "hover:bg-default-100/10"}`}
-                  onPress={() => handleInputChange("formaPagamento", option.value)}
+                  onPress={() =>
+                    handleInputChange("formaPagamento", option.value)
+                  }
                 >
                   <CardBody className="flex flex-row items-center gap-3 p-4">
                     <option.icon className="w-6 h-6 text-primary" />
                     <div className="flex-1">
-                      <h4 className="font-semibold text-white">{option.label}</h4>
-                      <p className="text-sm text-default-400">{option.description}</p>
+                      <h4 className="font-semibold text-white">
+                        {option.label}
+                      </h4>
+                      <p className="text-sm text-default-400">
+                        {option.description}
+                      </p>
                     </div>
-                    {formData.formaPagamento === option.value && <CheckCircle className="w-5 h-5 text-primary" />}
+                    {formData.formaPagamento === option.value && (
+                      <CheckCircle className="w-5 h-5 text-primary" />
+                    )}
                   </CardBody>
                 </Card>
               ))}
             </div>
+
+            <AnimatePresence>
+              {formData.formaPagamento === "CREDIT_CARD" && (
+                <motion.p
+                  key="credit-card-info"
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-xs text-default-400"
+                >
+                  Os dados do cartão serão informados com segurança na próxima
+                  etapa.
+                </motion.p>
+              )}
+            </AnimatePresence>
           </motion.div>
         );
 
@@ -382,10 +540,24 @@ export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProp
           <>
             <ModalHeader className="flex flex-col gap-1">
               <div className="flex items-center gap-3">
-                <div className="text-2xl">{plano.slug === "basico" ? "🏢" : plano.slug === "pro" ? "🚀" : "👑"}</div>
+                <div className="text-2xl">
+                  {plano.slug === "basico"
+                    ? "🏢"
+                    : plano.slug === "pro"
+                      ? "🚀"
+                      : "👑"}
+                </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-white">{plano.nome}</h2>
-                  <p className="text-sm text-default-400">R$ {plano.valorMensal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}/mês</p>
+                  <h2 className="text-xl font-semibold text-white">
+                    {plano.nome}
+                  </h2>
+                  <p className="text-sm text-default-400">
+                    R${" "}
+                    {plano.valorMensal.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                    })}
+                    /mês
+                  </p>
                 </div>
               </div>
 
@@ -400,13 +572,27 @@ export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProp
                     <div key={step.id} className="flex items-center">
                       <div
                         className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-200 ${
-                          isCompleted ? "bg-primary border-primary text-white" : isActive ? "border-primary text-primary" : "border-default-400 text-default-400"
+                          isCompleted
+                            ? "bg-primary border-primary text-white"
+                            : isActive
+                              ? "border-primary text-primary"
+                              : "border-default-400 text-default-400"
                         }`}
                       >
-                        {isCompleted ? <CheckCircle className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                        {isCompleted ? (
+                          <CheckCircle className="w-4 h-4" />
+                        ) : (
+                          <Icon className="w-4 h-4" />
+                        )}
                       </div>
-                      <span className={`ml-2 text-xs font-medium ${isActive ? "text-primary" : "text-default-400"}`}>{step.title}</span>
-                      {index < steps.length - 1 && <ArrowRight className="w-4 h-4 text-default-400 mx-2" />}
+                      <span
+                        className={`ml-2 text-xs font-medium ${isActive ? "text-primary" : "text-default-400"}`}
+                      >
+                        {step.title}
+                      </span>
+                      {index < steps.length - 1 && (
+                        <ArrowRight className="w-4 h-4 text-default-400 mx-2" />
+                      )}
                     </div>
                   );
                 })}
@@ -414,16 +600,27 @@ export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProp
             </ModalHeader>
 
             <ModalBody>
-              <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
+              <AnimatePresence mode="wait">
+                {renderStepContent()}
+              </AnimatePresence>
             </ModalBody>
 
             <ModalFooter className="flex justify-between">
-              <Button variant="light" onPress={prevStep} isDisabled={currentStep === 1} startContent={<ArrowRight className="w-4 h-4 rotate-180" />}>
+              <Button
+                variant="light"
+                onPress={prevStep}
+                isDisabled={currentStep === 1}
+                startContent={<ArrowRight className="w-4 h-4 rotate-180" />}
+              >
                 Anterior
               </Button>
 
               {currentStep < 4 ? (
-                <Button color="primary" onPress={nextStep} endContent={<ArrowRight className="w-4 h-4" />}>
+                <Button
+                  color="primary"
+                  onPress={nextStep}
+                  endContent={<ArrowRight className="w-4 h-4" />}
+                >
                   Próximo
                 </Button>
               ) : (
@@ -431,7 +628,9 @@ export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProp
                   color="primary"
                   onPress={handleSubmit}
                   isLoading={isLoading}
-                  startContent={!isLoading && <CreditCard className="w-4 h-4" />}
+                  startContent={
+                    !isLoading && <CreditCard className="w-4 h-4" />
+                  }
                   endContent={!isLoading && <ArrowRight className="w-4 h-4" />}
                 >
                   {isLoading ? "Processando..." : "Finalizar Pagamento"}
