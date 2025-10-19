@@ -37,17 +37,13 @@ function extractTenantFromDomain(host: string): string | null {
     const subdomain = cleanHost.replace(".localhost", "");
 
     if (subdomain) {
-      return subdomain;
+      return subdomain; // Manter case original
     }
   }
 
   // Para domínios diretos: sandra.com.br
   // Neste caso, o domínio completo é o identificador do tenant
-  if (
-    !cleanHost.includes("magiclawyer") &&
-    !cleanHost.includes("vercel.app") &&
-    !cleanHost.includes("localhost")
-  ) {
+  if (!cleanHost.includes("magiclawyer") && !cleanHost.includes("vercel.app") && !cleanHost.includes("localhost")) {
     return cleanHost;
   }
 
@@ -65,6 +61,8 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
     error: "/login",
   },
+  // Configuração para aceitar qualquer domínio localhost
+  useSecureCookies: false,
   // NextAuth v4 usa NEXTAUTH_URL/NEXTAUTH_SECRET do ambiente
   providers: [
     Credentials({
@@ -75,19 +73,16 @@ export const authOptions: NextAuthOptions = {
         tenant: { label: "Escritório", type: "text" }, // pode ser slug ou domínio
       },
       authorize: async (credentials, req) => {
-        const normalizedEmail = credentials?.email?.trim();
+        const normalizedEmail = credentials?.email?.trim().toLowerCase();
         const normalizedTenant = credentials?.tenant?.trim().toLowerCase();
 
         // Tentar detectar tenant pelo domínio da requisição
         const host = req?.headers?.host || "";
-        const tenantFromDomain = extractTenantFromDomain(host);
+        const tenantFromDomain = extractTenantFromDomain(host)?.toLowerCase();
 
         // Se o tenant está vazio, undefined ou 'undefined', tratamos como auto-detect
         // Mas se detectamos pelo domínio, usamos esse
-        const shouldAutoDetect =
-          !normalizedTenant ||
-          normalizedTenant === "undefined" ||
-          normalizedTenant === "";
+        const shouldAutoDetect = !normalizedTenant || normalizedTenant === "undefined" || normalizedTenant === "";
 
         const finalTenant = tenantFromDomain || normalizedTenant;
 
@@ -102,10 +97,7 @@ export const authOptions: NextAuthOptions = {
         };
 
         if (!credentials?.email || !credentials?.password) {
-          console.warn(
-            "[auth] Credenciais incompletas para login",
-            attemptContext,
-          );
+          console.warn("[auth] Credenciais incompletas para login", attemptContext);
 
           return null;
         }
@@ -144,10 +136,7 @@ export const authOptions: NextAuthOptions = {
               return null;
             }
 
-            const validPassword = await bcrypt.compare(
-              credentials.password,
-              superAdmin.passwordHash,
-            );
+            const validPassword = await bcrypt.compare(credentials.password, superAdmin.passwordHash);
 
             if (!validPassword) {
               console.warn("[auth] Senha inválida para SuperAdmin");
@@ -182,16 +171,14 @@ export const authOptions: NextAuthOptions = {
 
           if (!shouldAutoDetect && finalTenant) {
             tenantWhere = {
-              OR: [{ slug: finalTenant }, { domain: finalTenant }],
+              OR: [{ slug: { equals: finalTenant, mode: "insensitive" } }, { domain: { equals: finalTenant, mode: "insensitive" } }],
             };
             console.info("[auth] Buscando usuário com filtro de tenant", {
               finalTenant,
               tenantWhere,
             });
           } else {
-            console.info(
-              "[auth] Buscando usuário SEM filtro de tenant (auto-detect)",
-            );
+            console.info("[auth] Buscando usuário SEM filtro de tenant (auto-detect)");
           }
 
           // Primeiro, vamos tentar buscar o usuário sem filtro de tenant para debug
@@ -199,7 +186,7 @@ export const authOptions: NextAuthOptions = {
             console.info("[auth] Buscando usuário normal em todos os tenants");
             const allUsers = await prisma.usuario.findMany({
               where: {
-                email,
+                email: { equals: email, mode: "insensitive" },
                 active: true,
               },
               include: {
@@ -226,11 +213,7 @@ export const authOptions: NextAuthOptions = {
             });
 
             // Se encontrou usuário em tenant específico e está no domínio principal, redirecionar
-            if (
-              allUsers.length > 0 &&
-              !tenantFromDomain &&
-              host.includes("magiclawyer.vercel.app")
-            ) {
+            if (allUsers.length > 0 && !tenantFromDomain && host.includes("magiclawyer.vercel.app")) {
               console.info("[auth] Verificando redirecionamento", {
                 allUsersCount: allUsers.length,
                 tenantFromDomain,
@@ -242,9 +225,7 @@ export const authOptions: NextAuthOptions = {
                 })),
               });
 
-              const userWithSpecificTenant = allUsers.find(
-                (u) => u.tenant?.slug && u.tenant.slug !== "magiclawyer",
-              );
+              const userWithSpecificTenant = allUsers.find((u) => u.tenant?.slug && u.tenant.slug !== "magiclawyer");
 
               if (userWithSpecificTenant) {
                 const tenantSlug = userWithSpecificTenant.tenant?.slug;
@@ -258,20 +239,17 @@ export const authOptions: NextAuthOptions = {
                 // Retornar erro com redirecionamento
                 throw new Error(`REDIRECT_TO_TENANT:${tenantSlug}`);
               } else {
-                console.info(
-                  "[auth] Usuário encontrado mas não precisa redirecionar",
-                  {
-                    userEmail: email,
-                    userTenants: allUsers.map((u) => u.tenant?.slug),
-                  },
-                );
+                console.info("[auth] Usuário encontrado mas não precisa redirecionar", {
+                  userEmail: email,
+                  userTenants: allUsers.map((u) => u.tenant?.slug),
+                });
               }
             }
           }
 
           const user = await prisma.usuario.findFirst({
             where: {
-              email,
+              email: { equals: email, mode: "insensitive" },
               ...(tenantWhere
                 ? {
                     tenant: tenantWhere,
@@ -303,24 +281,15 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user || !user.passwordHash) {
-            console.warn(
-              "[auth] Usuário não encontrado ou sem senha cadastrada",
-              attemptContext,
-            );
+            console.warn("[auth] Usuário não encontrado ou sem senha cadastrada", attemptContext);
 
             return null;
           }
 
-          const valid = await bcrypt.compare(
-            credentials.password,
-            user.passwordHash,
-          );
+          const valid = await bcrypt.compare(credentials.password, user.passwordHash);
 
           if (!valid) {
-            console.warn(
-              "[auth] Senha inválida para o usuário",
-              attemptContext,
-            );
+            console.warn("[auth] Senha inválida para o usuário", attemptContext);
 
             return null;
           }
@@ -351,23 +320,14 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          const tenantName =
-            tenantData?.nomeFantasia ??
-            tenantData?.razaoSocial ??
-            tenantData?.name ??
-            tenantData?.slug ??
-            undefined;
+          const tenantName = tenantData?.nomeFantasia ?? tenantData?.razaoSocial ?? tenantData?.name ?? tenantData?.slug ?? undefined;
 
-          const permissions = permissionsRaw.map(
-            (permission) => permission.permissao,
-          );
+          const permissions = permissionsRaw.map((permission) => permission.permissao);
 
           const resultUser = {
             id: user.id,
             email: user.email,
-            name:
-              [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-              undefined,
+            name: [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined,
             image: user.avatarUrl || undefined,
             tenantId: user.tenantId,
             role: user.role,
@@ -392,10 +352,7 @@ export const authOptions: NextAuthOptions = {
           return resultUser as any;
         } catch (error) {
           // Verificar se é erro de redirecionamento
-          if (
-            error instanceof Error &&
-            error.message.startsWith("REDIRECT_TO_TENANT:")
-          ) {
+          if (error instanceof Error && error.message.startsWith("REDIRECT_TO_TENANT:")) {
             console.info("[auth] Redirecionamento para tenant específico", {
               ...attemptContext,
               redirectTenant: error.message.replace("REDIRECT_TO_TENANT:", ""),
@@ -405,10 +362,7 @@ export const authOptions: NextAuthOptions = {
             throw error;
           }
 
-          const safeError =
-            error instanceof Error
-              ? { message: error.message, stack: error.stack }
-              : error;
+          const safeError = error instanceof Error ? { message: error.message, stack: error.stack } : error;
 
           console.error("[auth] Erro inesperado durante autenticação", {
             ...attemptContext,
@@ -452,37 +406,18 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
-    async session({
-      session,
-      token,
-    }: {
-      session: Session;
-      token: JWT;
-    }): Promise<Session> {
+    async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
       if (session.user) {
         // Usar dados do token (mais rápido e confiável)
         (session.user as any).id = (token as any).id as string | undefined;
-        (session.user as any).tenantId = (token as any).tenantId as
-          | string
-          | undefined;
+        (session.user as any).tenantId = (token as any).tenantId as string | undefined;
         (session.user as any).role = (token as any).role as string | undefined;
-        (session.user as any).tenantSlug = (token as any).tenantSlug as
-          | string
-          | undefined;
-        (session.user as any).tenantName = (token as any).tenantName as
-          | string
-          | undefined;
-        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as
-          | string
-          | undefined;
-        (session.user as any).tenantFaviconUrl = (token as any)
-          .tenantFaviconUrl as string | undefined;
-        (session.user as any).permissions = (token as any).permissions as
-          | string[]
-          | undefined;
-        (session.user as any).avatarUrl = (token as any).avatarUrl as
-          | string
-          | undefined;
+        (session.user as any).tenantSlug = (token as any).tenantSlug as string | undefined;
+        (session.user as any).tenantName = (token as any).tenantName as string | undefined;
+        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as string | undefined;
+        (session.user as any).tenantFaviconUrl = (token as any).tenantFaviconUrl as string | undefined;
+        (session.user as any).permissions = (token as any).permissions as string[] | undefined;
+        (session.user as any).avatarUrl = (token as any).avatarUrl as string | undefined;
       }
 
       return session;

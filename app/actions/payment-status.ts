@@ -18,29 +18,13 @@ export async function getPaymentStatus(checkoutId: string) {
       };
     }
 
-    // Se já foi confirmado, buscar dados da conta criada
-    if (checkoutSession.status === "CONFIRMED") {
-      const tenant = await prisma.tenant.findFirst({
-        where: {
-          documento: checkoutSession.dadosCheckout.documento,
-        },
-        include: {
-          subscriptions: {
-            where: {
-              status: "ATIVA",
-            },
-            include: {
-              plano: true,
-            },
-          },
-        },
-      });
-
+    // Se já foi confirmado
+    if (checkoutSession.status === "CONFIRMED" || checkoutSession.status === "CONFIRMADO") {
       return {
         success: true,
         status: "CONFIRMED",
         checkoutSession,
-        tenant,
+        tenant: null,
       };
     }
 

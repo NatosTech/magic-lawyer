@@ -7,17 +7,7 @@ import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Spinner } from "@heroui/spinner";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  QrCode,
-  Copy,
-  CheckCircle,
-  Clock,
-  CreditCard,
-  FileText,
-  Smartphone,
-  ArrowLeft,
-  CheckCircle2,
-} from "lucide-react";
+import { QrCode, Copy, CheckCircle, Clock, CreditCard, FileText, Smartphone, ArrowLeft, CheckCircle2 } from "lucide-react";
 import NextLink from "next/link";
 import { toast } from "sonner";
 import QRCodeLib from "qrcode";
@@ -42,15 +32,11 @@ export default function PagamentoPage() {
     data: paymentStatus,
     error,
     mutate,
-  } = useSWR(
-    checkoutId ? `payment-status-${checkoutId}` : null,
-    () => getPaymentStatus(checkoutId!),
-    {
-      refreshInterval: 5000, // Atualizar a cada 5 segundos
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
-    },
-  );
+  } = useSWR(checkoutId ? `payment-status-${checkoutId}` : null, () => getPaymentStatus(checkoutId!), {
+    refreshInterval: 5000, // Atualizar a cada 5 segundos
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  });
 
   useEffect(() => {
     // Buscar dados do pagamento da session storage ou URL params
@@ -65,6 +51,7 @@ export default function PagamentoPage() {
 
       if (sessionData) {
         const data = JSON.parse(sessionData);
+        console.log("🔍 Session Data:", JSON.stringify(data, null, 2));
         setPaymentData({
           checkoutId: checkoutIdParam,
           paymentData: data.paymentData,
@@ -72,10 +59,7 @@ export default function PagamentoPage() {
         });
 
         // Gerar QR Code se for PIX (não aplicável para BOLETO)
-        if (
-          data.paymentData.billingType === "PIX" &&
-          data.paymentData.pixCopyPaste
-        ) {
+        if (data.paymentData.billingType === "PIX" && data.paymentData.pixCopyPaste) {
           generateQRCode(data.paymentData.pixCopyPaste);
         }
       } else {
@@ -86,10 +70,8 @@ export default function PagamentoPage() {
             id: "pay_123456789",
             billingType: "PIX",
             value: 97.0,
-            pixQrCode:
-              "00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-426614174000520400005303986540597.005802BR5913MAGIC LAWYER6008BRASILIA62070503***6304",
-            pixCopyPaste:
-              "00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-426614174000520400005303986540597.005802BR5913MAGIC LAWYER6008BRASILIA62070503***6304",
+            pixQrCode: "00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-426614174000520400005303986540597.005802BR5913MAGIC LAWYER6008BRASILIA62070503***6304",
+            pixCopyPaste: "00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-426614174000520400005303986540597.005802BR5913MAGIC LAWYER6008BRASILIA62070503***6304",
             dueDate: "2025-01-20",
             status: "PENDING",
           },
@@ -170,18 +152,9 @@ export default function PagamentoPage() {
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
         <Card className="border border-white/10 bg-background/70 backdrop-blur-xl max-w-md w-full">
           <CardBody className="text-center p-8">
-            <h1 className="text-xl font-bold text-white mb-4">
-              Pagamento não encontrado
-            </h1>
-            <p className="text-default-400 mb-6">
-              Não foi possível encontrar os dados do pagamento.
-            </p>
-            <Button
-              as={NextLink}
-              href="/precos"
-              color="primary"
-              className="w-full"
-            >
+            <h1 className="text-xl font-bold text-white mb-4">Pagamento não encontrado</h1>
+            <p className="text-default-400 mb-6">Não foi possível encontrar os dados do pagamento.</p>
+            <Button as={NextLink} href="/precos" color="primary" className="w-full">
               Voltar aos Planos
             </Button>
           </CardBody>
@@ -194,52 +167,25 @@ export default function PagamentoPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-lg"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="w-full max-w-lg">
         <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
           <CardHeader className="flex flex-col items-center gap-4 pb-6 text-center">
             <div className="flex items-center justify-center gap-2">
               {getPaymentIcon(payment.billingType)}
-              <h1 className="text-xl font-bold text-white">
-                Pagamento {payment.billingType}
-              </h1>
+              <h1 className="text-xl font-bold text-white">Pagamento {payment.billingType}</h1>
             </div>
 
             <AnimatePresence mode="wait">
               {paymentStatus?.status === "CONFIRMED" ? (
-                <motion.div
-                  key="confirmed"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <Chip
-                    color="success"
-                    variant="flat"
-                    startContent={<CheckCircle2 className="w-4 h-4" />}
-                  >
+                <motion.div key="confirmed" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.5 }}>
+                  <Chip color="success" variant="flat" startContent={<CheckCircle2 className="w-4 h-4" />}>
                     Pagamento Confirmado!
                   </Chip>
                 </motion.div>
               ) : (
-                <motion.div
-                  key="pending"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.5 }}
-                >
+                <motion.div key="pending" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.5 }}>
                   <div className="flex items-center justify-center gap-2">
-                    <Chip
-                      color="warning"
-                      variant="flat"
-                      startContent={<Clock className="w-4 h-4" />}
-                    >
+                    <Chip color="warning" variant="flat" startContent={<Clock className="w-4 h-4" />}>
                       Aguardando Pagamento
                     </Chip>
                     <Spinner size="sm" color="warning" />
@@ -248,9 +194,7 @@ export default function PagamentoPage() {
               )}
             </AnimatePresence>
 
-            <p className="text-sm text-default-400">
-              Complete o pagamento para ativar sua conta
-            </p>
+            <p className="text-sm text-default-400">Complete o pagamento para ativar sua conta</p>
 
             <div className="text-center">
               <p className="text-3xl font-bold text-white">
@@ -268,67 +212,32 @@ export default function PagamentoPage() {
 
             {/* PIX */}
             {payment.billingType === "PIX" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.6 }}
-                className="space-y-6"
-              >
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.6 }} className="space-y-6">
                 <div className="space-y-4">
                   {/* QR Code PIX */}
                   <div className="text-center">
-                    <h3 className="text-lg font-semibold text-white mb-2">
-                      QR Code PIX
-                    </h3>
-                    <p className="text-sm text-default-400">
-                      Escaneie com seu app bancário
-                    </p>
+                    <h3 className="text-lg font-semibold text-white mb-2">QR Code PIX</h3>
+                    <p className="text-sm text-default-400">Escaneie com seu app bancário</p>
                   </div>
 
                   <div className="flex justify-center">
-                    <div className="p-4 bg-white rounded-lg">
-                      {qrCodeUrl ? (
-                        <img
-                          src={qrCodeUrl}
-                          alt="QR Code PIX"
-                          className="w-32 h-32"
-                        />
-                      ) : (
-                        <QrCode className="w-32 h-32 text-black" />
-                      )}
-                    </div>
+                    <div className="p-4 bg-white rounded-lg">{qrCodeUrl ? <img src={qrCodeUrl} alt="QR Code PIX" className="w-32 h-32" /> : <QrCode className="w-32 h-32 text-black" />}</div>
                   </div>
 
                   <Divider className="border-white/10" />
 
                   {/* Código PIX Copia e Cola */}
                   <div className="space-y-3">
-                    <h3 className="text-lg font-semibold text-white">
-                      Código PIX (Copia e Cola)
-                    </h3>
+                    <h3 className="text-lg font-semibold text-white">Código PIX (Copia e Cola)</h3>
                     <div className="p-3 bg-default-100/10 rounded-lg border border-white/10">
-                      <p className="text-xs text-default-400 break-all font-mono">
-                        {payment.pixCopyPaste ||
-                          payment.pixQrCode ||
-                          "Carregando código PIX..."}
-                      </p>
+                      <p className="text-xs text-default-400 break-all font-mono">{payment.pixCopyPaste || payment.pixQrCode || "Carregando código PIX..."}</p>
                     </div>
                     <Button
                       color="primary"
                       variant="flat"
                       size="sm"
-                      startContent={
-                        copied ? (
-                          <CheckCircle className="w-4 h-4" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )
-                      }
-                      onPress={() =>
-                        copyToClipboard(
-                          payment.pixCopyPaste || payment.pixQrCode || "",
-                        )
-                      }
+                      startContent={copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      onPress={() => copyToClipboard(payment.pixCopyPaste || payment.pixQrCode || "")}
                       className="w-full"
                       isDisabled={!payment.pixCopyPaste && !payment.pixQrCode}
                     >
@@ -343,13 +252,8 @@ export default function PagamentoPage() {
             {payment.billingType === "BOLETO" && (
               <div className="space-y-4">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    Boleto Bancário
-                  </h3>
-                  <p className="text-sm text-default-400">
-                    Vencimento:{" "}
-                    {new Date(payment.dueDate).toLocaleDateString("pt-BR")}
-                  </p>
+                  <h3 className="text-lg font-semibold text-white mb-2">Boleto Bancário</h3>
+                  <p className="text-sm text-default-400">Vencimento: {new Date(payment.dueDate).toLocaleDateString("pt-BR")}</p>
                 </div>
 
                 <Button color="primary" className="w-full">
@@ -362,12 +266,8 @@ export default function PagamentoPage() {
             {payment.billingType === "CREDIT_CARD" && (
               <div className="space-y-4">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    Pagamento com Cartão
-                  </h3>
-                  <p className="text-sm text-default-400">
-                    Redirecionando para o gateway de pagamento...
-                  </p>
+                  <h3 className="text-lg font-semibold text-white mb-2">Pagamento com Cartão</h3>
+                  <p className="text-sm text-default-400">Redirecionando para o gateway de pagamento...</p>
                 </div>
 
                 <Button color="primary" className="w-full">
@@ -380,18 +280,14 @@ export default function PagamentoPage() {
 
             {/* Informações da empresa */}
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-white">
-                Dados da Empresa
-              </h3>
+              <h3 className="text-sm font-semibold text-white">Dados da Empresa</h3>
               <p className="text-sm text-default-400">{customerData.name}</p>
               <p className="text-sm text-default-400">{customerData.email}</p>
             </div>
 
             {/* Instruções */}
             <div className="p-4 bg-primary/10 rounded-lg">
-              <h3 className="text-sm font-semibold text-primary mb-2">
-                Próximos passos:
-              </h3>
+              <h3 className="text-sm font-semibold text-primary mb-2">Próximos passos:</h3>
               <ul className="text-xs text-default-400 space-y-1">
                 <li>• Complete o pagamento usando o método escolhido</li>
                 <li>• Aguarde a confirmação automática (até 2 minutos)</li>
@@ -403,50 +299,38 @@ export default function PagamentoPage() {
             {/* Botões */}
             <div className="space-y-3">
               {/* Botão de teste para simular pagamento confirmado */}
-              {(payment.billingType === "PIX" ||
-                payment.billingType === "BOLETO") &&
-                paymentStatus?.status !== "CONFIRMED" && (
-                  <Button
-                    color="success"
-                    variant="flat"
-                    className="w-full"
-                    onPress={async () => {
-                      try {
-                        const response = await fetch("/api/test-pix-payment", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ asaasPaymentId: payment.id }),
-                        });
+              {(payment.billingType === "PIX" || payment.billingType === "BOLETO") && paymentStatus?.status !== "CONFIRMED" && (
+                <Button
+                  color="success"
+                  variant="flat"
+                  className="w-full"
+                  onPress={async () => {
+                    try {
+                      const response = await fetch("/api/test-pix-payment", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ asaasPaymentId: payment.id }),
+                      });
 
-                        const result = await response.json();
+                      const result = await response.json();
 
-                        if (result.success) {
-                          toast.success(
-                            "Pagamento confirmado! Conta criada com sucesso!",
-                          );
-                          // Atualizar o status via SWR
-                          mutate();
-                        } else {
-                          toast.error(
-                            result.error || "Erro ao confirmar pagamento",
-                          );
-                        }
-                      } catch (error) {
-                        toast.error("Erro ao confirmar pagamento");
+                      if (result.success) {
+                        toast.success("Pagamento confirmado! Conta criada com sucesso!");
+                        // Atualizar o status via SWR
+                        mutate();
+                      } else {
+                        toast.error(result.error || "Erro ao confirmar pagamento");
                       }
-                    }}
-                  >
-                    🧪 Simular Pagamento Confirmado (TESTE)
-                  </Button>
-                )}
+                    } catch (error) {
+                      toast.error("Erro ao confirmar pagamento");
+                    }
+                  }}
+                >
+                  🧪 Simular Pagamento Confirmado (TESTE)
+                </Button>
+              )}
 
-              <Button
-                as={NextLink}
-                href="/precos"
-                variant="light"
-                className="w-full"
-                startContent={<ArrowLeft className="w-4 h-4" />}
-              >
+              <Button as={NextLink} href="/precos" variant="light" className="w-full" startContent={<ArrowLeft className="w-4 h-4" />}>
                 Voltar aos Planos
               </Button>
             </div>

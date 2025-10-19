@@ -44,7 +44,7 @@ export async function processarCheckout(data: CheckoutData) {
     // Verificar se já existe um tenant com este CNPJ ou email
     const existingTenant = await prisma.tenant.findFirst({
       where: {
-        OR: [{ documento: data.cnpj.replace(/\D/g, "") }, { email: data.email }],
+        OR: [{ documento: data.cnpj.replace(/\D/g, "") }, { email: { equals: data.email, mode: "insensitive" } }],
       },
     });
 
@@ -55,8 +55,8 @@ export async function processarCheckout(data: CheckoutData) {
       };
     }
 
-    // Gerar dados únicos para o tenant
-    const tenantSlug = nanoid(8);
+    // Gerar dados únicos para o tenant (sempre minúsculo)
+    const tenantSlug = nanoid(8).toLowerCase();
     const tenantDomain = `${tenantSlug}.magiclawyer.com`;
 
     // Validar credenciais do Asaas
@@ -155,6 +155,8 @@ export async function processarCheckout(data: CheckoutData) {
     // Buscar dados completos do pagamento (incluindo PIX)
     const fullPayment = await asaasClient.getPayment(payment.id);
 
+    console.log("🔍 Full Payment Data:", JSON.stringify(fullPayment, null, 2));
+
     return {
       success: true,
       data: {
@@ -213,11 +215,11 @@ export async function verificarDisponibilidadeCNPJ(cnpj: string) {
 export async function verificarDisponibilidadeEmail(email: string) {
   try {
     const existingTenant = await prisma.tenant.findFirst({
-      where: { email: email },
+      where: { email: { equals: email, mode: "insensitive" } },
     });
 
     const existingUser = await prisma.usuario.findFirst({
-      where: { email: email },
+      where: { email: { equals: email, mode: "insensitive" } },
     });
 
     return {

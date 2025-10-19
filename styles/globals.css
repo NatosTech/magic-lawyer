@@ -65,9 +65,79 @@ body {
     }
 }
 
+/* Animações para página de sucesso */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slide-in-left {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.6s ease-out;
+}
+
+.animate-slide-up {
+    animation: slide-up 0.6s ease-out 0.2s both;
+}
+
+.animate-slide-up-delay {
+    animation: slide-up 0.6s ease-out 0.4s both;
+}
+
+.animate-slide-in-left {
+    animation: slide-in-left 0.5s ease-out 0.6s both;
+}
+
+.animate-slide-in-left-delay {
+    animation: slide-in-left 0.5s ease-out 0.8s both;
+}
+
+.animate-fade-in-delay {
+    animation: fade-in 0.6s ease-out 1.0s both;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .magic-logo__glow {
         animation: none;
         opacity: 0;
+    }
+
+    .animate-fade-in,
+    .animate-slide-up,
+    .animate-slide-up-delay,
+    .animate-slide-in-left,
+    .animate-slide-in-left-delay,
+    .animate-fade-in-delay {
+        animation: none;
     }
 }

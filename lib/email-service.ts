@@ -21,7 +21,7 @@ interface EmailConfirmacao {
 export async function enviarEmailCredenciais(data: EmailCredenciais) {
   try {
     const { data: result, error } = await resend.emails.send({
-      from: "Magic Lawyer <noreply@magiclawyer.com>",
+      from: "Magic Lawyer <onboarding@resend.dev>",
       to: [data.email],
       subject: `🎉 Bem-vindo ao Magic Lawyer! Suas credenciais de acesso`,
       html: `
@@ -225,7 +225,7 @@ export async function enviarEmailCredenciais(data: EmailCredenciais) {
 export async function enviarEmailConfirmacao(data: EmailConfirmacao) {
   try {
     const { data: result, error } = await resend.emails.send({
-      from: "Magic Lawyer <noreply@magiclawyer.com>",
+      from: "Magic Lawyer <onboarding@resend.dev>",
       to: [data.email],
       subject: `✅ Pagamento confirmado - Magic Lawyer`,
       html: `
@@ -385,17 +385,17 @@ export async function enviarEmailConfirmacao(data: EmailConfirmacao) {
 export async function enviarEmailLembrete(data: { email: string; nome: string; tenantDomain: string; diasRestantes: number }) {
   try {
     const { data: result, error } = await resend.emails.send({
-      from: "Magic Lawyer <noreply@magiclawyer.com>",
+      from: "Magic Lawyer <onboarding@resend.dev>",
       to: [data.email],
       subject: `⏰ Lembrete: Acesse sua conta Magic Lawyer`,
       html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Lembrete de Acesso</title>
-          <style>
+        <style>
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
               line-height: 1.6;
@@ -451,15 +451,15 @@ export async function enviarEmailLembrete(data: { email: string; nome: string; t
               font-size: 14px;
               color: #6b7280;
             }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
               <div class="logo">⏰ Magic Lawyer</div>
               <h1 class="title">Lembrete de Acesso</h1>
-            </div>
-
+          </div>
+          
             <p>Olá <strong>${data.nome}</strong>,</p>
             
             <div class="reminder-box">
@@ -469,16 +469,16 @@ export async function enviarEmailLembrete(data: { email: string; nome: string; t
                 ${data.diasRestantes > 0 ? `Você ainda tem ${data.diasRestantes} dias de teste grátis.` : "Seu período de teste está prestes a expirar."}
               </p>
             </div>
-
+            
             <p>Não perca a oportunidade de experimentar todas as funcionalidades da nossa plataforma de gestão jurídica!</p>
 
             <div style="text-align: center;">
               <a href="https://${data.tenantDomain}" class="button">
                 🚀 Acessar Minha Conta
               </a>
-            </div>
-
-            <div class="footer">
+          </div>
+          
+          <div class="footer">
               <p>Se você tiver alguma dúvida, nossa equipe está pronta para ajudar!</p>
               <p><strong>Suporte:</strong> suporte@magiclawyer.com</p>
               <p><strong>Telefone:</strong> (11) 99999-9999</p>
@@ -486,10 +486,10 @@ export async function enviarEmailLembrete(data: { email: string; nome: string; t
               <p>Este é um email automático, não responda a esta mensagem.</p>
               <p>© 2025 Magic Lawyer. Todos os direitos reservados.</p>
             </div>
-          </div>
-        </body>
-        </html>
-      `,
+        </div>
+      </body>
+      </html>
+    `,
     });
 
     if (error) {

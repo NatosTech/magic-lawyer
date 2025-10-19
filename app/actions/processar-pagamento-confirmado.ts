@@ -131,7 +131,7 @@ export async function processarPagamentoConfirmado(asaasPaymentId: string) {
     // Atualizar status da sessão de checkout
     await prisma.checkoutSession.update({
       where: { id: checkoutSession.id },
-      data: { status: "CONFIRMADO" },
+      data: { status: "CONFIRMED" },
     });
 
     return {
