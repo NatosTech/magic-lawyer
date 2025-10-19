@@ -17,7 +17,18 @@ NEXTAUTH_SECRET="your-secret-key-here"
 
 ## Variáveis para Novas Funcionalidades
 
-### Email (Nodemailer)
+### Email (Resend) - RECOMENDADO
+```env
+RESEND_API_KEY="re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+**Configuração do Resend:**
+1. Crie uma conta no [Resend](https://resend.com/)
+2. Verifique seu domínio (ex: magiclawyer.com)
+3. Gere uma API key no painel de desenvolvedor
+4. Configure o domínio verificado para enviar emails
+
+### Email (Nodemailer) - ALTERNATIVA
 ```env
 SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="587"
@@ -58,6 +69,25 @@ CLICKSIGN_ACCESS_TOKEN="your-clicksign-access-token"
 3. Gere um token de acesso
 4. Para produção, altere `CLICKSIGN_API_BASE` para `https://app.clicksign.com/api/v1`
 
+### Asaas Integration (Sistema de Pagamentos)
+```env
+# Asaas - Conta Principal (Magic Lawyer)
+ASAAS_API_KEY="your_main_account_key"
+ASAAS_ENVIRONMENT="sandbox"
+ASAAS_WEBHOOK_SECRET="your_webhook_secret"
+
+# Criptografia para credenciais dos tenants
+ENCRYPTION_KEY="your_encryption_key_for_tenant_credentials"
+```
+
+**Configuração do Asaas:**
+1. Crie uma conta no [Asaas](https://www.asaas.com/)
+2. Acesse o painel de desenvolvedor
+3. Gere um token de acesso para sua conta principal
+4. Configure webhooks para receber notificações de pagamento
+5. Para produção, altere `ASAAS_ENVIRONMENT` para `"production"`
+6. Gere uma chave de criptografia segura para `ENCRYPTION_KEY`
+
 ## Exemplo de Arquivo .env Completo
 
 ```env
@@ -68,7 +98,10 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/magic_lawyer?schema=
 NEXTAUTH_URL="http://localhost:9192"
 NEXTAUTH_SECRET="your-secret-key-here"
 
-# Email (Nodemailer)
+# Email (Resend) - RECOMENDADO
+RESEND_API_KEY="re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Email (Nodemailer) - ALTERNATIVA
 SMTP_HOST="smtp.gmail.com"
 SMTP_PORT="587"
 SMTP_SECURE="false"
@@ -84,6 +117,12 @@ GOOGLE_REDIRECT_URI="http://localhost:9192/api/auth/google/callback"
 # ClickSign Integration
 CLICKSIGN_API_BASE="https://sandbox.clicksign.com/api/v1"
 CLICKSIGN_ACCESS_TOKEN="your-clicksign-access-token"
+
+# Asaas Integration (Sistema de Pagamentos)
+ASAAS_API_KEY="your_main_account_key"
+ASAAS_ENVIRONMENT="sandbox"
+ASAAS_WEBHOOK_SECRET="your_webhook_secret"
+ENCRYPTION_KEY="your_encryption_key_for_tenant_credentials"
 ```
 
 ## Verificação da Configuração
@@ -93,6 +132,7 @@ Após configurar as variáveis, você pode verificar se estão funcionando:
 1. **Email**: O sistema tentará verificar a conexão SMTP na inicialização
 2. **Google Calendar**: Teste a autenticação na página de agenda
 3. **ClickSign**: Teste o envio de um documento para assinatura
+4. **Asaas**: Teste a conexão na página de configurações Asaas
 
 ## Troubleshooting
 
@@ -110,3 +150,9 @@ Após configurar as variáveis, você pode verificar se estão funcionando:
 - Confirme se o token de acesso é válido
 - Verifique se está usando a URL correta (sandbox vs produção)
 - Teste a conectividade com a API do ClickSign
+
+### Problemas com Asaas
+- Verifique se o token de acesso é válido
+- Confirme se está usando o ambiente correto (sandbox vs produção)
+- Teste a conectividade com a API do Asaas
+- Verifique se as credenciais dos tenants estão criptografadas corretamente

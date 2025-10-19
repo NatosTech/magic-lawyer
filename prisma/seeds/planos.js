@@ -1,75 +1,113 @@
 module.exports = async function seedPlanos(prisma) {
-  const planos = [
-    {
-      slug: "starter",
-      nome: "Starter",
-      descricao: "Ate 5 usuarios, ideal para bancas enxutas iniciando no SaaS.",
-      valorMensal: 149.9,
-      valorAnual: 149.9 * 10,
-      limiteUsuarios: 5,
-      limiteProcessos: 100,
-      limiteStorageMb: 512,
-      recursos: {
-        branding: true,
-        portalCliente: true,
-        relatorios: false,
-        integracoes: ["e-mail"],
-      },
-    },
-    {
-      slug: "professional",
-      nome: "Professional",
-      descricao: "Para escritorios em crescimento que precisam de automacoes.",
-      valorMensal: 299.9,
-      valorAnual: 299.9 * 10,
-      limiteUsuarios: 15,
-      limiteProcessos: 500,
-      limiteStorageMb: 2048,
-      recursos: {
-        branding: true,
-        portalCliente: true,
-        relatorios: true,
-        integracoes: ["e-mail", "whatsapp", "drive"],
-      },
-    },
-    {
-      slug: "enterprise",
-      nome: "Enterprise",
-      descricao: "Plano customizado para grandes bancas com requisitos especificos.",
-      valorMensal: null,
-      valorAnual: null,
-      limiteUsuarios: null,
-      limiteProcessos: null,
-      limiteStorageMb: null,
-      recursos: {
-        branding: true,
-        portalCliente: true,
-        relatorios: true,
-        integracoes: ["e-mail", "whatsapp", "drive", "erp"],
-        suporteDedicado: true,
-      },
-    },
-  ];
+  console.log("🌱 Iniciando seed de planos...");
 
-  for (const plano of planos) {
-    await prisma.plano.upsert({
-      where: { slug: plano.slug },
-      update: {
-        nome: plano.nome,
-        descricao: plano.descricao,
-        valorMensal: plano.valorMensal,
-        valorAnual: plano.valorAnual,
-        limiteUsuarios: plano.limiteUsuarios,
-        limiteProcessos: plano.limiteProcessos,
-        limiteStorageMb: plano.limiteStorageMb,
-        recursos: plano.recursos,
+  try {
+    // Planos padrão do Magic Lawyer
+    const planos = [
+      {
+        nome: "Básico",
+        slug: "basico",
+        descricao: "Plano ideal para escritórios pequenos e advogados autônomos",
+        valorMensal: 99.0,
+        valorAnual: 990.0,
+        limiteUsuarios: 3,
+        limiteProcessos: 50,
+        limiteStorageMb: 1000,
+        recursos: {
+          features: ["Gestão de clientes e processos", "Sistema de tarefas básico", "Agenda de eventos", "Contratos e procurações", "Relatórios básicos", "Suporte por email"],
+          integracoes: ["Google Calendar", "ViaCEP", "IBGE", "ReceitaWS"],
+          limites: {
+            usuarios: 3,
+            processos: 50,
+            contratos: 100,
+            documentos: 500,
+          },
+        },
+        periodoTeste: 14,
         ativo: true,
-        updatedAt: new Date(),
       },
-      create: {
-        ...plano,
+      {
+        nome: "Pro",
+        slug: "pro",
+        descricao: "Plano completo para escritórios em crescimento",
+        valorMensal: 299.0,
+        valorAnual: 2990.0,
+        limiteUsuarios: 10,
+        limiteProcessos: 200,
+        limiteStorageMb: 5000,
+        recursos: {
+          features: [
+            "Tudo do plano Básico",
+            "Sistema de tarefas avançado com Kanban",
+            "Dashboard financeiro completo",
+            "Sistema de honorários",
+            "Relatórios avançados",
+            "Integração com Asaas",
+            "Suporte prioritário",
+          ],
+          integracoes: ["Google Calendar", "ViaCEP", "IBGE", "ReceitaWS", "Asaas (Pagamentos)", "ClickSign (Assinaturas)"],
+          limites: {
+            usuarios: 10,
+            processos: 200,
+            contratos: 500,
+            documentos: 2000,
+          },
+        },
+        periodoTeste: 14,
         ativo: true,
       },
-    });
+      {
+        nome: "Enterprise",
+        slug: "enterprise",
+        descricao: "Plano premium para grandes escritórios e redes",
+        valorMensal: 499.0,
+        valorAnual: 4990.0,
+        limiteUsuarios: 50,
+        limiteProcessos: 1000,
+        limiteStorageMb: 20000,
+        recursos: {
+          features: [
+            "Tudo do plano Pro",
+            "Usuários ilimitados",
+            "Processos ilimitados",
+            "API personalizada",
+            "Integrações customizadas",
+            "Relatórios personalizados",
+            "Suporte dedicado",
+            "Treinamento personalizado",
+          ],
+          integracoes: ["Google Calendar", "ViaCEP", "IBGE", "ReceitaWS", "Asaas (Pagamentos)", "ClickSign (Assinaturas)", "PJe (Processos)", "eProc (Processos)", "Projudi (Processos)"],
+          limites: {
+            usuarios: 50,
+            processos: 1000,
+            contratos: 2000,
+            documentos: 10000,
+          },
+        },
+        periodoTeste: 14,
+        ativo: true,
+      },
+    ];
+
+    // Criar planos
+    for (const planoData of planos) {
+      const plano = await prisma.plano.upsert({
+        where: {
+          slug: planoData.slug,
+        },
+        update: {
+          ...planoData,
+          updatedAt: new Date(),
+        },
+        create: planoData,
+      });
+
+      console.log(`✅ Plano "${plano.nome}" criado/atualizado (ID: ${plano.id})`);
+    }
+
+    console.log("🎉 Seed de planos concluído com sucesso!");
+  } catch (error) {
+    console.error("❌ Erro no seed de planos:", error);
+    throw error;
   }
 };

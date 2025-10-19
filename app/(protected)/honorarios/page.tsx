@@ -531,7 +531,7 @@ export default function HonorariosContratuaisPage() {
                   <span className="text-sm text-default-500">Herda automaticamente a conta bancária do contrato</span>
                 </div>
               </SelectItem>
-              {(dadosBancarios || []).map((conta) => (
+              {dadosBancarios?.map((conta) => (
                 <SelectItem key={conta.id} textValue={`${conta.banco?.nome} - ${conta.agencia}/${conta.conta}`}>
                   <div className="flex flex-col">
                     <span className="font-medium">

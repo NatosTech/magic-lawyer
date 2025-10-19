@@ -21,26 +21,26 @@ interface CepInputProps {
   className?: string;
 }
 
-export function CepInput({
-  label = "CEP",
-  placeholder = "00000-000",
-  value = "",
-  onChange,
-  onCepFound,
-  isRequired = false,
-  isDisabled = false,
-  className,
-}: CepInputProps) {
+export function CepInput({ label = "CEP", placeholder = "00000-000", value = "", onChange, onCepFound, isRequired = false, isDisabled = false, className }: CepInputProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCepChange = (newValue: string) => {
     const formatted = formatarCep(newValue);
 
     onChange?.(formatted);
+
+    // Busca automática quando CEP estiver completo e válido
+    if (formatted && validarCep(formatted)) {
+      setTimeout(() => {
+        buscarCep(formatted);
+      }, 500); // Pequeno delay para evitar muitas requisições
+    }
   };
 
-  const buscarCep = async () => {
-    if (!value || !validarCep(value)) {
+  const buscarCep = async (cepValue?: string) => {
+    const cepToSearch = cepValue || value;
+
+    if (!cepToSearch || !validarCep(cepToSearch)) {
       toast.error("Digite um CEP válido");
 
       return;
@@ -48,7 +48,7 @@ export function CepInput({
 
     try {
       setIsLoading(true);
-      const result = await buscarCepAction(value);
+      const result = await buscarCepAction(cepToSearch);
 
       if (result.success && result.cepData) {
         onCepFound?.(result.cepData);

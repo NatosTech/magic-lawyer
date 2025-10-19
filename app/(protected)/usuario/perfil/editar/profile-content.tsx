@@ -11,7 +11,7 @@ import { Divider } from "@heroui/divider";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Spinner } from "@heroui/spinner";
 import { toast } from "sonner";
-import { User, Mail, Phone, Shield, Settings, BarChart3, UserCheck, Lock, Info, MapPin, Copy, CopyCheck, Briefcase, Save, CreditCard, Building2, PlusIcon, Star } from "lucide-react";
+import { User, Mail, Phone, Shield, Settings, BarChart3, UserCheck, Lock, Info, MapPin, Copy, CopyCheck, Briefcase, Save, CreditCard, Building2, PlusIcon, Star, Zap } from "lucide-react";
 import { Select, SelectItem, Textarea } from "@heroui/react";
 
 import { RoleSpecificInfo } from "./role-specific-info";
@@ -21,6 +21,7 @@ import { updateCurrentUserAdvogado, type UpdateAdvogadoInput } from "@/app/actio
 import { AvatarUpload } from "@/components/avatar-upload";
 import { EnderecoManager } from "@/components/endereco-manager";
 import { UserPermissionsInfo } from "@/components/user-permissions-info";
+import { AsaasConfigTab } from "@/components/asaas-config-tab";
 import { EspecialidadeJuridica } from "@/app/generated/prisma";
 import { useEstadosBrasil } from "@/app/hooks/use-estados-brasil";
 import { useCurrentUserAdvogado } from "@/app/hooks/use-current-user-advogado";
@@ -776,6 +777,20 @@ export function ProfileContent() {
                     </div>
                   </div>
                 )}
+              </div>
+            </Tab>
+
+            <Tab
+              key="asaas"
+              title={
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-4 h-4" />
+                  <span>Asaas</span>
+                </div>
+              }
+            >
+              <div className="p-6">
+                <AsaasConfigTab userRole={session?.user?.role || ""} />
               </div>
             </Tab>
 

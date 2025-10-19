@@ -1,462 +1,505 @@
-/**
- * Serviço de envio de emails
- * Suporta múltiplos provedores: Resend, SendGrid, SMTP, etc.
- */
+import { Resend } from "resend";
 
-export interface EmailMessage {
-  to: string | string[];
-  cc?: string | string[];
-  bcc?: string | string[];
-  subject: string;
-  html?: string;
-  text?: string;
-  attachments?: EmailAttachment[];
-  replyTo?: string;
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+interface EmailCredenciais {
+  email: string;
+  nome: string;
+  tenantDomain: string;
+  senhaTemporaria: string;
+  plano: string;
 }
 
-export interface EmailAttachment {
-  filename: string;
-  content: string | Buffer;
-  contentType?: string;
-  disposition?: "attachment" | "inline";
-  cid?: string; // Content-ID para imagens inline
+interface EmailConfirmacao {
+  email: string;
+  nome: string;
+  valor: number;
+  formaPagamento: string;
+  tenantDomain: string;
 }
 
-export interface EmailResponse {
-  success: boolean;
-  messageId?: string;
-  error?: string;
-  provider?: string;
-}
-
-export interface EmailProvider {
-  name: string;
-  sendEmail(message: EmailMessage): Promise<EmailResponse>;
-  isConfigured(): boolean;
-}
-
-/**
- * Provedor Resend
- * Plano gratuito: 3.000 emails/mês, 100 emails/dia
- */
-class ResendProvider implements EmailProvider {
-  name = "resend";
-  private apiKey: string;
-  private fromEmail: string;
-
-  constructor() {
-    this.apiKey = process.env.RESEND_API_KEY || "";
-    this.fromEmail = process.env.RESEND_FROM_EMAIL || "noreply@magiclawyer.com";
-  }
-
-  isConfigured(): boolean {
-    return !!this.apiKey;
-  }
-
-  async sendEmail(message: EmailMessage): Promise<EmailResponse> {
-    if (!this.isConfigured()) {
-      return {
-        success: false,
-        error: "Resend não configurado. Verifique RESEND_API_KEY",
-        provider: this.name,
-      };
-    }
-
-    try {
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: this.fromEmail,
-          to: Array.isArray(message.to) ? message.to : [message.to],
-          cc: message.cc ? (Array.isArray(message.cc) ? message.cc : [message.cc]) : undefined,
-          bcc: message.bcc ? (Array.isArray(message.bcc) ? message.bcc : [message.bcc]) : undefined,
-          subject: message.subject,
-          html: message.html,
-          text: message.text,
-          reply_to: message.replyTo,
-          attachments: message.attachments?.map((att) => ({
-            filename: att.filename,
-            content: typeof att.content === "string" ? att.content : att.content.toString("base64"),
-            content_type: att.contentType,
-            disposition: att.disposition,
-            cid: att.cid,
-          })),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: data.message || `Erro HTTP ${response.status}`,
-          provider: this.name,
-        };
-      }
-
-      return {
-        success: true,
-        messageId: data.id,
-        provider: this.name,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Erro desconhecido",
-        provider: this.name,
-      };
-    }
-  }
-}
-
-/**
- * Provedor SendGrid
- * Plano gratuito: 100 emails/dia
- */
-class SendGridProvider implements EmailProvider {
-  name = "sendgrid";
-  private apiKey: string;
-  private fromEmail: string;
-
-  constructor() {
-    this.apiKey = process.env.SENDGRID_API_KEY || "";
-    this.fromEmail = process.env.SENDGRID_FROM_EMAIL || "noreply@magiclawyer.com";
-  }
-
-  isConfigured(): boolean {
-    return !!this.apiKey;
-  }
-
-  async sendEmail(message: EmailMessage): Promise<EmailResponse> {
-    if (!this.isConfigured()) {
-      return {
-        success: false,
-        error: "SendGrid não configurado. Verifique SENDGRID_API_KEY",
-        provider: this.name,
-      };
-    }
-
-    try {
-      const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          personalizations: [
-            {
-              to: Array.isArray(message.to) ? message.to.map((email) => ({ email })) : [{ email: message.to }],
-              cc: message.cc ? (Array.isArray(message.cc) ? message.cc.map((email) => ({ email })) : [{ email: message.cc }]) : undefined,
-              bcc: message.bcc ? (Array.isArray(message.bcc) ? message.bcc.map((email) => ({ email })) : [{ email: message.bcc }]) : undefined,
-            },
-          ],
-          from: { email: this.fromEmail },
-          reply_to: message.replyTo ? { email: message.replyTo } : undefined,
-          subject: message.subject,
-          content: [...(message.text ? [{ type: "text/plain", value: message.text }] : []), ...(message.html ? [{ type: "text/html", value: message.html }] : [])],
-          attachments: message.attachments?.map((att) => ({
-            filename: att.filename,
-            content: typeof att.content === "string" ? att.content : att.content.toString("base64"),
-            type: att.contentType,
-            disposition: att.disposition,
-            content_id: att.cid,
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        return {
-          success: false,
-          error: `Erro HTTP ${response.status}: ${errorText}`,
-          provider: this.name,
-        };
-      }
-
-      return {
-        success: true,
-        messageId: response.headers.get("X-Message-Id") || undefined,
-        provider: this.name,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Erro desconhecido",
-        provider: this.name,
-      };
-    }
-  }
-}
-
-/**
- * Provedor SMTP (usando nodemailer)
- */
-class SMTPProvider implements EmailProvider {
-  name = "smtp";
-  private config: {
-    host: string;
-    port: number;
-    secure: boolean;
-    auth: {
-      user: string;
-      pass: string;
-    };
-  };
-  private fromEmail: string;
-
-  constructor() {
-    this.config = {
-      host: process.env.SMTP_HOST || "",
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: {
-        user: process.env.SMTP_USER || "",
-        pass: process.env.SMTP_PASS || "",
-      },
-    };
-    this.fromEmail = process.env.SMTP_FROM_EMAIL || "noreply@magiclawyer.com";
-  }
-
-  isConfigured(): boolean {
-    return !!(this.config.host && this.config.auth.user && this.config.auth.pass);
-  }
-
-  async sendEmail(message: EmailMessage): Promise<EmailResponse> {
-    if (!this.isConfigured()) {
-      return {
-        success: false,
-        error: "SMTP não configurado. Verifique SMTP_HOST, SMTP_USER, SMTP_PASS",
-        provider: this.name,
-      };
-    }
-
-    try {
-      // Para usar nodemailer, seria necessário instalar: npm install nodemailer @types/nodemailer
-      // Por enquanto, retornamos erro indicando que precisa ser implementado
-      return {
-        success: false,
-        error: "Provedor SMTP não implementado. Use Resend ou SendGrid.",
-        provider: this.name,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Erro desconhecido",
-        provider: this.name,
-      };
-    }
-  }
-}
-
-/**
- * Provedor Mock para desenvolvimento/testes
- */
-class MockEmailProvider implements EmailProvider {
-  name = "mock";
-
-  isConfigured(): boolean {
-    return true;
-  }
-
-  async sendEmail(message: EmailMessage): Promise<EmailResponse> {
-    // Simula delay de rede
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    console.log(`[MOCK Email] Enviando para ${Array.isArray(message.to) ? message.to.join(", ") : message.to}:`);
-    console.log(`Assunto: ${message.subject}`);
-    console.log(`Conteúdo: ${message.html || message.text}`);
-
-    return {
-      success: true,
-      messageId: `mock_${Date.now()}`,
-      provider: this.name,
-    };
-  }
-}
-
-/**
- * Serviço principal de Email
- */
-export class EmailService {
-  private providers: EmailProvider[] = [];
-  private defaultProvider: EmailProvider;
-
-  constructor() {
-    // Inicializa provedores disponíveis
-    this.providers = [
-      new ResendProvider(),
-      new SendGridProvider(),
-      new SMTPProvider(),
-      new MockEmailProvider(), // Sempre disponível para desenvolvimento
-    ];
-
-    // Seleciona o primeiro provedor configurado
-    this.defaultProvider = this.providers.find((p) => p.isConfigured()) || this.providers[this.providers.length - 1];
-  }
-
-  /**
-   * Envia email usando o provedor padrão
-   */
-  async sendEmail(message: EmailMessage): Promise<EmailResponse> {
-    return this.defaultProvider.sendEmail(message);
-  }
-
-  /**
-   * Envia email usando um provedor específico
-   */
-  async sendEmailWithProvider(providerName: string, message: EmailMessage): Promise<EmailResponse> {
-    const provider = this.providers.find((p) => p.name === providerName);
-
-    if (!provider) {
-      return {
-        success: false,
-        error: `Provedor '${providerName}' não encontrado`,
-      };
-    }
-
-    if (!provider.isConfigured()) {
-      return {
-        success: false,
-        error: `Provedor '${providerName}' não configurado`,
-        provider: providerName,
-      };
-    }
-
-    return provider.sendEmail(message);
-  }
-
-  /**
-   * Lista provedores disponíveis e seus status
-   */
-  getProvidersStatus(): Array<{ name: string; configured: boolean }> {
-    return this.providers.map((provider) => ({
-      name: provider.name,
-      configured: provider.isConfigured(),
-    }));
-  }
-
-  /**
-   * Valida formato de email
-   */
-  isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
-}
-
-// Instância singleton
-export const emailService = new EmailService();
-
-/**
- * Templates de email para andamentos
- */
-export const emailTemplates = {
-  andamento: {
-    subject: (processoNumero: string, titulo: string) => `Nova movimentação no processo ${processoNumero} - ${titulo}`,
-
-    html: (data: { titulo: string; descricao?: string; processo: { numero: string; titulo?: string }; dataMovimentacao: Date; clienteNome: string; escritorioNome: string }) => `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Nova Movimentação Processual</title>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
-          .content { padding: 20px; background: #f9fafb; }
-          .footer { padding: 20px; text-align: center; color: #6b7280; font-size: 14px; }
-          .process-info { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
-          .highlight { color: #2563eb; font-weight: bold; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>📋 Nova Movimentação Processual</h1>
-          </div>
-          
-          <div class="content">
-            <p>Olá <span class="highlight">${data.clienteNome}</span>,</p>
-            
-            <p>Informamos que houve uma nova movimentação no seu processo:</p>
-            
-            <div class="process-info">
-              <p><strong>Processo:</strong> ${data.processo.numero}</p>
-              ${data.processo.titulo ? `<p><strong>Título:</strong> ${data.processo.titulo}</p>` : ""}
-              <p><strong>Movimentação:</strong> ${data.titulo}</p>
-              ${data.descricao ? `<p><strong>Descrição:</strong> ${data.descricao}</p>` : ""}
-              <p><strong>Data:</strong> ${data.dataMovimentacao.toLocaleDateString("pt-BR")}</p>
+export async function enviarEmailCredenciais(data: EmailCredenciais) {
+  try {
+    const { data: result, error } = await resend.emails.send({
+      from: "Magic Lawyer <noreply@magiclawyer.com>",
+      to: [data.email],
+      subject: `🎉 Bem-vindo ao Magic Lawyer! Suas credenciais de acesso`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Bem-vindo ao Magic Lawyer</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              background-color: #f8fafc;
+            }
+            .container {
+              background: white;
+              border-radius: 12px;
+              padding: 40px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .logo {
+              font-size: 32px;
+              font-weight: bold;
+              color: #3b82f6;
+              margin-bottom: 10px;
+            }
+            .title {
+              font-size: 24px;
+              font-weight: bold;
+              color: #1f2937;
+              margin-bottom: 20px;
+            }
+            .credentials-box {
+              background: #f3f4f6;
+              border-radius: 8px;
+              padding: 20px;
+              margin: 20px 0;
+              border-left: 4px solid #3b82f6;
+            }
+            .credential-item {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 10px 0;
+              border-bottom: 1px solid #e5e7eb;
+            }
+            .credential-item:last-child {
+              border-bottom: none;
+            }
+            .credential-label {
+              font-weight: 600;
+              color: #374151;
+            }
+            .credential-value {
+              font-family: monospace;
+              background: #1f2937;
+              color: #10b981;
+              padding: 4px 8px;
+              border-radius: 4px;
+              font-size: 14px;
+            }
+            .button {
+              display: inline-block;
+              background: #3b82f6;
+              color: white;
+              padding: 12px 24px;
+              text-decoration: none;
+              border-radius: 8px;
+              font-weight: 600;
+              margin: 20px 0;
+            }
+            .button:hover {
+              background: #2563eb;
+            }
+            .footer {
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+              font-size: 14px;
+              color: #6b7280;
+            }
+            .warning {
+              background: #fef3c7;
+              border: 1px solid #f59e0b;
+              border-radius: 8px;
+              padding: 15px;
+              margin: 20px 0;
+            }
+            .warning-title {
+              font-weight: 600;
+              color: #92400e;
+              margin-bottom: 5px;
+            }
+            .warning-text {
+              color: #92400e;
+              font-size: 14px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="logo">⚖️ Magic Lawyer</div>
+              <h1 class="title">Bem-vindo ao Magic Lawyer!</h1>
             </div>
+
+            <p>Olá <strong>${data.nome}</strong>,</p>
             
-            <p>Para mais informações, entre em contato conosco.</p>
+            <p>Sua conta foi criada com sucesso! Agora você pode acessar sua plataforma de gestão jurídica completa.</p>
+
+            <div class="credentials-box">
+              <h3 style="margin-top: 0; color: #1f2937;">🔑 Suas Credenciais de Acesso</h3>
+              
+              <div class="credential-item">
+                <span class="credential-label">Email:</span>
+                <span class="credential-value">${data.email}</span>
+              </div>
+              
+              <div class="credential-item">
+                <span class="credential-label">Senha Temporária:</span>
+                <span class="credential-value">${data.senhaTemporaria}</span>
+              </div>
+              
+              <div class="credential-item">
+                <span class="credential-label">Plano:</span>
+                <span class="credential-value">${data.plano}</span>
+              </div>
+              
+              <div class="credential-item">
+                <span class="credential-label">URL de Acesso:</span>
+                <span class="credential-value">${data.tenantDomain}</span>
+              </div>
+            </div>
+
+            <div class="warning">
+              <div class="warning-title">⚠️ Importante</div>
+              <div class="warning-text">
+                Por segurança, altere sua senha temporária no primeiro acesso. 
+                Esta senha expira em 7 dias.
+              </div>
+            </div>
+
+            <div style="text-align: center;">
+              <a href="https://${data.tenantDomain}" class="button">
+                🚀 Acessar Minha Conta
+              </a>
+            </div>
+
+            <h3 style="color: #1f2937; margin-top: 30px;">📋 Próximos Passos:</h3>
+            <ul>
+              <li>Faça login com suas credenciais</li>
+              <li>Configure seu perfil e dados do escritório</li>
+              <li>Importe seus primeiros processos</li>
+              <li>Explore as funcionalidades do plano ${data.plano}</li>
+              <li>Entre em contato conosco se precisar de ajuda</li>
+            </ul>
+
+            <h3 style="color: #1f2937;">💡 Dicas para Começar:</h3>
+            <ul>
+              <li>Complete seu perfil para personalizar a experiência</li>
+              <li>Configure seus dados bancários para recebimentos</li>
+              <li>Importe clientes e processos existentes</li>
+              <li>Explore os relatórios e dashboards</li>
+            </ul>
+
+            <div class="footer">
+              <p>Se você tiver alguma dúvida, nossa equipe de suporte está pronta para ajudar!</p>
+              <p><strong>Suporte:</strong> suporte@magiclawyer.com</p>
+              <p><strong>Telefone:</strong> (11) 99999-9999</p>
+              <br>
+              <p>Este é um email automático, não responda a esta mensagem.</p>
+              <p>© 2025 Magic Lawyer. Todos os direitos reservados.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error("Erro ao enviar email de credenciais:", error);
+      throw new Error("Falha ao enviar email");
+    }
+
+    return { success: true, messageId: result?.id };
+  } catch (error) {
+    console.error("Erro no serviço de email:", error);
+    throw error;
+  }
+}
+
+export async function enviarEmailConfirmacao(data: EmailConfirmacao) {
+  try {
+    const { data: result, error } = await resend.emails.send({
+      from: "Magic Lawyer <noreply@magiclawyer.com>",
+      to: [data.email],
+      subject: `✅ Pagamento confirmado - Magic Lawyer`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Pagamento Confirmado</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              background-color: #f8fafc;
+            }
+            .container {
+              background: white;
+              border-radius: 12px;
+              padding: 40px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .logo {
+              font-size: 32px;
+              font-weight: bold;
+              color: #10b981;
+              margin-bottom: 10px;
+            }
+            .title {
+              font-size: 24px;
+              font-weight: bold;
+              color: #1f2937;
+              margin-bottom: 20px;
+            }
+            .success-box {
+              background: #ecfdf5;
+              border: 1px solid #10b981;
+              border-radius: 8px;
+              padding: 20px;
+              margin: 20px 0;
+            }
+            .payment-details {
+              background: #f3f4f6;
+              border-radius: 8px;
+              padding: 20px;
+              margin: 20px 0;
+            }
+            .detail-item {
+              display: flex;
+              justify-content: space-between;
+              padding: 8px 0;
+              border-bottom: 1px solid #e5e7eb;
+            }
+            .detail-item:last-child {
+              border-bottom: none;
+            }
+            .button {
+              display: inline-block;
+              background: #10b981;
+              color: white;
+              padding: 12px 24px;
+              text-decoration: none;
+              border-radius: 8px;
+              font-weight: 600;
+              margin: 20px 0;
+            }
+            .footer {
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+              font-size: 14px;
+              color: #6b7280;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="logo">✅ Magic Lawyer</div>
+              <h1 class="title">Pagamento Confirmado!</h1>
+            </div>
+
+            <p>Olá <strong>${data.nome}</strong>,</p>
             
-            <p>Atenciosamente,<br>
-            <strong>${data.escritorioNome}</strong></p>
+            <div class="success-box">
+              <h3 style="margin-top: 0; color: #065f46;">🎉 Sucesso!</h3>
+              <p style="color: #065f46; margin-bottom: 0;">
+                Seu pagamento foi processado com sucesso e sua conta Magic Lawyer está ativa!
+              </p>
+            </div>
+
+            <div class="payment-details">
+              <h3 style="margin-top: 0; color: #1f2937;">📋 Detalhes do Pagamento</h3>
+              
+              <div class="detail-item">
+                <span>Valor:</span>
+                <strong>R$ ${data.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</strong>
+              </div>
+              
+              <div class="detail-item">
+                <span>Forma de Pagamento:</span>
+                <strong>${data.formaPagamento}</strong>
+              </div>
+              
+              <div class="detail-item">
+                <span>Data:</span>
+                <strong>${new Date().toLocaleDateString("pt-BR")}</strong>
+              </div>
+              
+              <div class="detail-item">
+                <span>Status:</span>
+                <strong style="color: #10b981;">✅ Aprovado</strong>
+              </div>
+            </div>
+
+            <p>Sua conta está pronta para uso! Em breve você receberá um email com suas credenciais de acesso.</p>
+
+            <div style="text-align: center;">
+              <a href="https://${data.tenantDomain}" class="button">
+                🚀 Acessar Minha Conta
+              </a>
+            </div>
+
+            <div class="footer">
+              <p>Se você tiver alguma dúvida sobre o pagamento, entre em contato conosco.</p>
+              <p><strong>Suporte:</strong> suporte@magiclawyer.com</p>
+              <p><strong>Telefone:</strong> (11) 99999-9999</p>
+              <br>
+              <p>Este é um email automático, não responda a esta mensagem.</p>
+              <p>© 2025 Magic Lawyer. Todos os direitos reservados.</p>
+            </div>
           </div>
-          
-          <div class="footer">
-            <p>Esta é uma mensagem automática do sistema. Não responda este email.</p>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error("Erro ao enviar email de confirmação:", error);
+      throw new Error("Falha ao enviar email de confirmação");
+    }
+
+    return { success: true, messageId: result?.id };
+  } catch (error) {
+    console.error("Erro no serviço de email:", error);
+    throw error;
+  }
+}
+
+export async function enviarEmailLembrete(data: { email: string; nome: string; tenantDomain: string; diasRestantes: number }) {
+  try {
+    const { data: result, error } = await resend.emails.send({
+      from: "Magic Lawyer <noreply@magiclawyer.com>",
+      to: [data.email],
+      subject: `⏰ Lembrete: Acesse sua conta Magic Lawyer`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Lembrete de Acesso</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              background-color: #f8fafc;
+            }
+            .container {
+              background: white;
+              border-radius: 12px;
+              padding: 40px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .logo {
+              font-size: 32px;
+              font-weight: bold;
+              color: #f59e0b;
+              margin-bottom: 10px;
+            }
+            .title {
+              font-size: 24px;
+              font-weight: bold;
+              color: #1f2937;
+              margin-bottom: 20px;
+            }
+            .reminder-box {
+              background: #fffbeb;
+              border: 1px solid #f59e0b;
+              border-radius: 8px;
+              padding: 20px;
+              margin: 20px 0;
+            }
+            .button {
+              display: inline-block;
+              background: #f59e0b;
+              color: white;
+              padding: 12px 24px;
+              text-decoration: none;
+              border-radius: 8px;
+              font-weight: 600;
+              margin: 20px 0;
+            }
+            .footer {
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+              font-size: 14px;
+              color: #6b7280;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="logo">⏰ Magic Lawyer</div>
+              <h1 class="title">Lembrete de Acesso</h1>
+            </div>
+
+            <p>Olá <strong>${data.nome}</strong>,</p>
+            
+            <div class="reminder-box">
+              <h3 style="margin-top: 0; color: #92400e;">🔔 Não esqueça de acessar sua conta!</h3>
+              <p style="color: #92400e; margin-bottom: 0;">
+                Sua conta Magic Lawyer está pronta há alguns dias. 
+                ${data.diasRestantes > 0 ? `Você ainda tem ${data.diasRestantes} dias de teste grátis.` : "Seu período de teste está prestes a expirar."}
+              </p>
+            </div>
+
+            <p>Não perca a oportunidade de experimentar todas as funcionalidades da nossa plataforma de gestão jurídica!</p>
+
+            <div style="text-align: center;">
+              <a href="https://${data.tenantDomain}" class="button">
+                🚀 Acessar Minha Conta
+              </a>
+            </div>
+
+            <div class="footer">
+              <p>Se você tiver alguma dúvida, nossa equipe está pronta para ajudar!</p>
+              <p><strong>Suporte:</strong> suporte@magiclawyer.com</p>
+              <p><strong>Telefone:</strong> (11) 99999-9999</p>
+              <br>
+              <p>Este é um email automático, não responda a esta mensagem.</p>
+              <p>© 2025 Magic Lawyer. Todos os direitos reservados.</p>
+            </div>
           </div>
-        </div>
-      </body>
-      </html>
-    `,
+        </body>
+        </html>
+      `,
+    });
 
-    text: (data: { titulo: string; descricao?: string; processo: { numero: string; titulo?: string }; dataMovimentacao: Date; clienteNome: string; escritorioNome: string }) => `
-Nova Movimentação Processual
+    if (error) {
+      console.error("Erro ao enviar email de lembrete:", error);
+      throw new Error("Falha ao enviar email de lembrete");
+    }
 
-Olá ${data.clienteNome},
-
-Informamos que houve uma nova movimentação no seu processo:
-
-Processo: ${data.processo.numero}
-${data.processo.titulo ? `Título: ${data.processo.titulo}` : ""}
-Movimentação: ${data.titulo}
-${data.descricao ? `Descrição: ${data.descricao}` : ""}
-Data: ${data.dataMovimentacao.toLocaleDateString("pt-BR")}
-
-Para mais informações, entre em contato conosco.
-
-Atenciosamente,
-${data.escritorioNome}
-
----
-Esta é uma mensagem automática do sistema. Não responda este email.
-    `,
-  },
-};
-
-/**
- * Função utilitária para enviar notificação de andamento por email
- */
-export async function sendAndamentoEmailNotification(
-  email: string,
-  andamento: {
-    titulo: string;
-    descricao?: string;
-    processo: { numero: string; titulo?: string };
-    dataMovimentacao: Date;
-  },
-  clienteNome: string,
-  escritorioNome: string
-): Promise<EmailResponse> {
-  const data = {
-    ...andamento,
-    clienteNome,
-    escritorioNome,
-  };
-
-  return emailService.sendEmail({
-    to: email,
-    subject: emailTemplates.andamento.subject(andamento.processo.numero, andamento.titulo),
-    html: emailTemplates.andamento.html(data),
-    text: emailTemplates.andamento.text(data),
-  });
+    return { success: true, messageId: result?.id };
+  } catch (error) {
+    console.error("Erro no serviço de email:", error);
+    throw error;
+  }
 }

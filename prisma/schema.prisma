@@ -155,6 +155,8 @@ model Tenant {
   TarefaWatcher         TarefaWatcher[]
   feriados              Feriado[]
   dadosBancarios        DadosBancarios[]
+  planos                Plano[]
+  asaasConfig           TenantAsaasConfig?
 
   @@index([status])
   @@index([superAdminId])
@@ -193,6 +195,30 @@ model Endereco {
   @@index([tenantId, principal])
   @@index([usuarioId])
   @@index([clienteId])
+  @@schema("magiclawyer")
+}
+
+// ============================================
+// SISTEMA DE PAGAMENTOS ASAAS
+// ============================================
+
+model TenantAsaasConfig {
+  id                String        @id @default(cuid())
+  tenantId          String        @unique
+  asaasApiKey       String        @db.Text // Criptografado
+  asaasAccountId    String
+  asaasWalletId     String?
+  ambiente          AsaasAmbiente @default(SANDBOX)
+  integracaoAtiva   Boolean       @default(false)
+  dataConfiguracao  DateTime      @default(now())
+  ultimaValidacao   DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([ambiente])
   @@schema("magiclawyer")
 }
 
@@ -1571,11 +1597,13 @@ model Plano {
   limiteUsuarios  Int?
   limiteProcessos Int?
   limiteStorageMb Int?
+  periodoTeste    Int                  @default(14) // dias grátis
   recursos        Json?
   ativo           Boolean              @default(true)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   subscriptions   TenantSubscription[]
+  tenants         Tenant[]
 
   @@schema("magiclawyer")
 }
@@ -1591,6 +1619,10 @@ model TenantSubscription {
   trialEndsAt            DateTime?
   externalCustomerId     String?
   externalSubscriptionId String?
+  // Campos específicos do Asaas
+  asaasCustomerId        String?            // ID do cliente no Asaas
+  asaasSubscriptionId    String?            // ID da assinatura no Asaas
+  asaasPaymentId         String?            // ID do último pagamento no Asaas
   metadata               Json?
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
@@ -1598,6 +1630,8 @@ model TenantSubscription {
   plano                  Plano?             @relation(fields: [planoId], references: [id])
   tenant                 Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@index([asaasCustomerId])
+  @@index([asaasSubscriptionId])
   @@schema("magiclawyer")
 }
 
@@ -2289,6 +2323,7 @@ enum SubscriptionStatus {
   ATIVA
   INADIMPLENTE
   CANCELADA
+  SUSPENSA
 
   @@schema("magiclawyer")
 }
@@ -2490,6 +2525,14 @@ enum BoardVisibilidade {
   @@schema("magiclawyer")
 }
 
+
+enum AsaasAmbiente {
+  SANDBOX
+  PRODUCAO
+
+  @@schema("magiclawyer")
+}
+
 // ============================================
 // MODELOS DE PROCURAÇÃO
 // ============================================
@@ -2649,5 +2692,26 @@ enum TipoChavePix {
   TELEFONE
   ALEATORIA
 
+  @@schema("magiclawyer")
+}
+
+// ============================================
+// CHECKOUT SESSIONS (Temporário)
+// ============================================
+
+model CheckoutSession {
+  id                String   @id @default(cuid())
+  dadosCheckout     Json     // Dados do formulário de checkout
+  planoId           String   // ID do plano selecionado
+  tenantSlug        String   // Slug único do tenant
+  tenantDomain      String   // Domínio do tenant
+  asaasCustomerId   String   // ID do cliente no Asaas
+  asaasPaymentId    String   // ID do pagamento no Asaas
+  status            String   @default("PENDENTE") // PENDENTE, CONFIRMADO, ERRO
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([asaasPaymentId])
+  @@index([status])
   @@schema("magiclawyer")
 }
