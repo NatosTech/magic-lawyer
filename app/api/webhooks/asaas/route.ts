@@ -2,39 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
 import { createAsaasClientFromEncrypted } from "@/lib/asaas";
 import { processarPagamentoConfirmado } from "@/app/actions/processar-pagamento-confirmado";
-import crypto from "crypto";
-
-// Verificar assinatura do webhook
-function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
-  const expectedSignature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-
-  // Converter para Uint8Array para compatibilidade com timingSafeEqual
-  const signatureBuffer = new Uint8Array(Buffer.from(signature, "hex"));
-  const expectedBuffer = new Uint8Array(Buffer.from(expectedSignature, "hex"));
-
-  return crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
-}
 
 export async function POST(request: NextRequest) {
   try {
     const payload = await request.text();
-    const signature = request.headers.get("asaas-signature");
+    const accessToken = request.headers.get("asaas-access-token");
 
-    // Verificar assinatura do webhook
+    // Log dos headers para debug
+    console.log("Headers recebidos:", Object.fromEntries(request.headers.entries()));
+    console.log("Payload recebido:", payload);
+
+    // Verificar token de acesso do webhook (opcional)
     const webhookSecret = process.env.ASAAS_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      console.error("ASAAS_WEBHOOK_SECRET não configurado");
-      return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 });
-    }
 
-    if (!signature) {
-      console.error("Assinatura do webhook não encontrada");
-      return NextResponse.json({ error: "Missing signature" }, { status: 401 });
-    }
+    if (webhookSecret) {
+      // Se token está configurado, validar
+      if (!accessToken) {
+        console.error("Token de acesso do webhook não encontrado");
+        return NextResponse.json({ error: "Missing access token" }, { status: 401 });
+      }
 
-    if (!verifyWebhookSignature(payload, signature, webhookSecret)) {
-      console.error("Assinatura do webhook inválida");
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      if (accessToken !== webhookSecret) {
+        console.error("Token de acesso do webhook inválido");
+        return NextResponse.json({ error: "Invalid access token" }, { status: 401 });
+      }
+
+      console.log("✅ Token de acesso validado com sucesso");
+    } else {
+      console.log("⚠️ ASAAS_WEBHOOK_SECRET não configurado - webhook funcionando sem autenticação");
     }
 
     const webhookData = JSON.parse(payload);

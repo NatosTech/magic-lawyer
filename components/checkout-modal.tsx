@@ -94,17 +94,50 @@ export function CheckoutModal({ isOpen, onOpenChange, plano }: CheckoutModalProp
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Função para extrair nome da pessoa física do campo razao_social (MEI)
+  const extrairNomePessoaFisica = (razaoSocial: string): string => {
+    // Remove o CNPJ do início (formato na ReceitaWS: 58.837.927 NOME)
+    // Procura pelo padrão: números + ponto + números + ponto + números + espaço
+    const match = razaoSocial.match(/^\d{2}\.\d{3}\.\d{3}\s+(.+)$/);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    return razaoSocial.trim();
+  };
+
   const handleCnpjFound = (data: CnpjData) => {
     setCnpjData(data);
     setFormData((prev) => ({
       ...prev,
+      // Dados da empresa
       nomeEmpresa: data.razao_social,
+
+      // Endereço completo
+      cep: data.cep,
       endereco: data.logradouro,
       numero: data.numero || "",
+      complemento: data.complemento || "",
       bairro: data.bairro,
       cidade: data.municipio,
       estado: data.uf,
+
+      // Contato da empresa (se disponível)
+      telefone: data.ddd_telefone_1 || "",
+      email: data.email || "",
+
+      // Dados do responsável (primeiro sócio/administrador ou pessoa física)
+      nomeResponsavel: data.qsa?.[0]?.nome_socio || (data.qsa?.length === 0 ? extrairNomePessoaFisica(data.razao_social) : ""),
     }));
+
+    // Toast informativo sobre os dados preenchidos
+    const hasEmail = data.email && data.email.trim() !== "";
+    const hasResponsavel = data.qsa?.[0]?.nome_socio || (data.qsa?.length === 0 ? extrairNomePessoaFisica(data.razao_social) : "");
+
+    let message = "Dados preenchidos automaticamente!";
+    if (hasEmail) message += " Email incluído.";
+    if (hasResponsavel) message += " Responsável identificado.";
+
+    toast.success(message);
   };
 
   const handleCepFound = (data: CepData) => {

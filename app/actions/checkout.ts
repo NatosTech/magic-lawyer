@@ -3,11 +3,7 @@
 import { nanoid } from "nanoid";
 
 import prisma from "@/app/lib/prisma";
-import {
-  AsaasClient,
-  formatCpfCnpjForAsaas,
-  formatDateForAsaas,
-} from "@/lib/asaas";
+import { AsaasClient, formatCpfCnpjForAsaas, formatDateForAsaas } from "@/lib/asaas";
 
 interface CheckoutData {
   // Dados da empresa
@@ -48,10 +44,7 @@ export async function processarCheckout(data: CheckoutData) {
     // Verificar se já existe um tenant com este CNPJ ou email
     const existingTenant = await prisma.tenant.findFirst({
       where: {
-        OR: [
-          { documento: data.cnpj.replace(/\D/g, "") },
-          { email: data.email },
-        ],
+        OR: [{ documento: data.cnpj.replace(/\D/g, "") }, { email: data.email }],
       },
     });
 
@@ -78,10 +71,7 @@ export async function processarCheckout(data: CheckoutData) {
       };
     }
 
-    const asaasEnvironment: "sandbox" | "production" =
-      process.env.ASAAS_ENVIRONMENT?.toLowerCase() === "production"
-        ? "production"
-        : "sandbox";
+    const asaasEnvironment: "sandbox" | "production" = process.env.ASAAS_ENVIRONMENT?.toLowerCase() === "production" ? "production" : "sandbox";
 
     // Criar cliente no Asaas
     const asaasClient = new AsaasClient(apiKey, asaasEnvironment);
@@ -162,14 +152,21 @@ export async function processarCheckout(data: CheckoutData) {
       },
     });
 
+    // Buscar dados completos do pagamento (incluindo PIX)
+    const fullPayment = await asaasClient.getPayment(payment.id);
+
     return {
       success: true,
       data: {
         checkoutId: checkoutSession.id,
-        paymentData: payment,
+        paymentData: {
+          ...payment,
+          pixQrCode: fullPayment?.pixQrCode || "",
+          pixCopyPaste: fullPayment?.pixCopyPaste || "",
+          pixTransaction: fullPayment?.pixTransaction || null,
+        },
         customerData: customer,
-        message:
-          "Pagamento criado com sucesso! Complete o pagamento para ativar sua conta.",
+        message: "Pagamento criado com sucesso! Complete o pagamento para ativar sua conta.",
       },
     };
   } catch (error) {
@@ -177,8 +174,7 @@ export async function processarCheckout(data: CheckoutData) {
     if (error instanceof Error && error.message.includes("401")) {
       return {
         success: false,
-        error:
-          "Falha na autenticação com o sistema de pagamento. Verifique a API key configurada.",
+        error: "Falha na autenticação com o sistema de pagamento. Verifique a API key configurada.",
       };
     }
 
@@ -228,10 +224,7 @@ export async function verificarDisponibilidadeEmail(email: string) {
       success: true,
       data: {
         disponivel: !existingTenant && !existingUser,
-        message:
-          existingTenant || existingUser
-            ? "Email já cadastrado"
-            : "Email disponível",
+        message: existingTenant || existingUser ? "Email já cadastrado" : "Email disponível",
       },
     };
   } catch (error) {

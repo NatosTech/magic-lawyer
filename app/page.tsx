@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation";
 import NextLink from "next/link";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { DevInfo } from "@/components/dev-info";
-import { FloatingAutomationBadge } from "@/components/floating-automation-badge";
 
 const stats = [
   { label: "Processos monitorados", value: "3.200+" },
@@ -68,12 +66,6 @@ export default function Home() {
           pode ser personalizada por tenant, com domínio, cores, documentos e notificações exclusivas.
         </p>
       </div>
-
-      {/* Componente de informações de desenvolvimento */}
-      <DevInfo />
-
-      {/* Notificações do sistema */}
-      <FloatingAutomationBadge />
     </section>
   );
 }

@@ -88,6 +88,7 @@ export interface CnpjData {
   ddd_telefone_1: string;
   ddd_telefone_2: string;
   ddd_fax: string;
+  email: string;
   qualificacao_do_responsavel: number;
   capital_social: number;
   porte: string;

@@ -8,7 +8,7 @@ import { Providers } from "./providers";
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { DynamicFavicon } from "@/components/dynamic-favicon";
-import { FloatingAutomationBadge } from "@/components/floating-automation-badge";
+import { DevInfo } from "@/components/dev-info";
 
 export const metadata: Metadata = {
   title: {
@@ -28,25 +28,15 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html suppressHydrationWarning lang="pt-br">
       <head />
-      <body
-        suppressHydrationWarning
-        className={clsx(
-          "min-h-screen text-foreground bg-background font-sans antialiased",
-          fontSans.variable,
-        )}
-      >
+      <body suppressHydrationWarning className={clsx("min-h-screen text-foreground bg-background font-sans antialiased", fontSans.variable)}>
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <DynamicFavicon />
           {children}
-          <FloatingAutomationBadge />
+          <DevInfo />
           <Toaster richColors position="top-right" />
         </Providers>
       </body>
