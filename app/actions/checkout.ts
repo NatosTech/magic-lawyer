@@ -4,12 +4,83 @@ import { nanoid } from "nanoid";
 
 import prisma from "@/app/lib/prisma";
 import { Prisma } from "@/app/generated/prisma";
-import {
-  AsaasClient,
-  formatCpfCnpjForAsaas,
-  formatDateForAsaas,
-  type AsaasPayment,
-} from "@/lib/asaas";
+import { AsaasClient, formatCpfCnpjForAsaas, formatDateForAsaas, type AsaasPayment } from "@/lib/asaas";
+
+export async function validarDisponibilidadeSlug(slug: string) {
+  try {
+    // Validar formato do subdomínio
+    if (!slug || slug.length < 3) {
+      return {
+        success: false,
+        error: "Subdomínio deve ter pelo menos 3 caracteres",
+      };
+    }
+
+    // Validar caracteres permitidos (apenas letras, números e hífens)
+    const slugRegex = /^[a-z0-9-]+$/;
+    if (!slugRegex.test(slug)) {
+      return {
+        success: false,
+        error: "Subdomínio deve conter apenas letras minúsculas, números e hífens",
+      };
+    }
+
+    // Validar palavras reservadas
+    const palavrasReservadas = [
+      "magiclawyer",
+      "www",
+      "api",
+      "admin",
+      "app",
+      "mail",
+      "ftp",
+      "blog",
+      "shop",
+      "store",
+      "support",
+      "help",
+      "docs",
+      "status",
+      "dev",
+      "test",
+      "staging",
+      "prod",
+      "production",
+    ];
+
+    if (palavrasReservadas.includes(slug.toLowerCase())) {
+      return {
+        success: false,
+        error: "Este subdomínio é reservado e não pode ser usado",
+      };
+    }
+
+    // Verificar se já existe um tenant com esse slug
+    const tenantExistente = await prisma.tenant.findFirst({
+      where: {
+        slug: slug.toLowerCase(),
+      },
+    });
+
+    if (tenantExistente) {
+      return {
+        success: false,
+        error: "Este subdomínio já está em uso",
+      };
+    }
+
+    return {
+      success: true,
+      message: "Subdomínio disponível",
+    };
+  } catch (error) {
+    console.error("Erro ao validar slug:", error);
+    return {
+      success: false,
+      error: "Erro interno do servidor",
+    };
+  }
+}
 
 export interface CheckoutData {
   // Dados da empresa
@@ -17,6 +88,7 @@ export interface CheckoutData {
   cnpj: string;
   email: string;
   telefone: string;
+  slugPersonalizado: string;
 
   // Dados do responsável
   nomeResponsavel: string;
@@ -54,10 +126,7 @@ export async function processarCheckout(data: CheckoutData) {
     // Verificar se já existe um tenant com este CNPJ ou email
     const existingTenant = await prisma.tenant.findFirst({
       where: {
-        OR: [
-          { documento: data.cnpj.replace(/\D/g, "") },
-          { email: { equals: data.email, mode: "insensitive" } },
-        ],
+        OR: [{ documento: data.cnpj.replace(/\D/g, "") }, { email: { equals: data.email, mode: "insensitive" } }],
       },
     });
 
@@ -68,9 +137,18 @@ export async function processarCheckout(data: CheckoutData) {
       };
     }
 
-    // Gerar dados únicos para o tenant (sempre minúsculo)
-    const tenantSlug = nanoid(8).toLowerCase();
-    const tenantDomain = `${tenantSlug}.magiclawyer.com`;
+    // Validar disponibilidade do slug personalizado
+    const validacaoSlug = await validarDisponibilidadeSlug(data.slugPersonalizado);
+    if (!validacaoSlug.success) {
+      return {
+        success: false,
+        error: validacaoSlug.error,
+      };
+    }
+
+    // Usar slug personalizado (sempre minúsculo)
+    const tenantSlug = data.slugPersonalizado.toLowerCase();
+    const tenantDomain = `${tenantSlug}.magiclawyer.vercel.app`;
 
     // Validar credenciais do Asaas
     const apiKey = process.env.ASAAS_API_KEY;
@@ -82,10 +160,7 @@ export async function processarCheckout(data: CheckoutData) {
       };
     }
 
-    const asaasEnvironment: "sandbox" | "production" =
-      process.env.ASAAS_ENVIRONMENT?.toLowerCase() === "production"
-        ? "production"
-        : "sandbox";
+    const asaasEnvironment: "sandbox" | "production" = process.env.ASAAS_ENVIRONMENT?.toLowerCase() === "production" ? "production" : "sandbox";
 
     // Criar cliente no Asaas
     const asaasClient = new AsaasClient(apiKey, asaasEnvironment);
@@ -148,16 +223,13 @@ export async function processarCheckout(data: CheckoutData) {
     }
 
     // Salvar dados temporários para processar após pagamento
-    const secureCheckoutData = Object.entries(data).reduce<Prisma.JsonObject>(
-      (acc, [key, value]) => {
-        if (value !== undefined) {
-          acc[key] = value as Prisma.JsonValue;
-        }
+    const secureCheckoutData = Object.entries(data).reduce<Prisma.JsonObject>((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value as Prisma.JsonValue;
+      }
 
-        return acc;
-      },
-      {},
-    );
+      return acc;
+    }, {});
 
     const checkoutSession = {
       id: nanoid(),
@@ -191,10 +263,7 @@ export async function processarCheckout(data: CheckoutData) {
 
     if (asaasPayment?.id) {
       fullPayment = await asaasClient.getPayment(asaasPayment.id);
-      console.log(
-        "🔍 Full Payment Data:",
-        JSON.stringify(fullPayment, null, 2),
-      );
+      console.log("🔍 Full Payment Data:", JSON.stringify(fullPayment, null, 2));
     }
 
     return {
@@ -210,8 +279,7 @@ export async function processarCheckout(data: CheckoutData) {
             dueDate: formatDateForAsaas(dueDate),
           },
         customerData: customer,
-        message:
-          "Pagamento criado com sucesso! Complete o pagamento para ativar sua conta.",
+        message: "Pagamento criado com sucesso! Complete o pagamento para ativar sua conta.",
       },
     };
   } catch (error) {
@@ -219,8 +287,7 @@ export async function processarCheckout(data: CheckoutData) {
     if (error instanceof Error && error.message.includes("401")) {
       return {
         success: false,
-        error:
-          "Falha na autenticação com o sistema de pagamento. Verifique a API key configurada.",
+        error: "Falha na autenticação com o sistema de pagamento. Verifique a API key configurada.",
       };
     }
 
@@ -270,10 +337,7 @@ export async function verificarDisponibilidadeEmail(email: string) {
       success: true,
       data: {
         disponivel: !existingTenant && !existingUser,
-        message:
-          existingTenant || existingUser
-            ? "Email já cadastrado"
-            : "Email disponível",
+        message: existingTenant || existingUser ? "Email já cadastrado" : "Email disponível",
       },
     };
   } catch (error) {
