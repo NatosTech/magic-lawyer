@@ -1,6 +1,7 @@
 import CryptoJS from "crypto-js";
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "default-key-change-in-production";
+const ENCRYPTION_KEY =
+  process.env.ENCRYPTION_KEY || "default-key-change-in-production";
 
 /**
  * Criptografa uma string usando AES
@@ -8,6 +9,7 @@ const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "default-key-change-in-prod
 export function encrypt(text: string): string {
   try {
     const encrypted = CryptoJS.AES.encrypt(text, ENCRYPTION_KEY).toString();
+
     return encrypted;
   } catch (error) {
     console.error("Erro ao criptografar:", error);
@@ -48,6 +50,7 @@ export function isEncrypted(text: string): boolean {
   try {
     // Tenta descriptografar - se funcionar, está criptografada
     const decrypted = CryptoJS.AES.decrypt(text, ENCRYPTION_KEY);
+
     return decrypted.toString(CryptoJS.enc.Utf8) !== "";
   } catch {
     return false;

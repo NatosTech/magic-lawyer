@@ -24,17 +24,48 @@ export interface AsaasCustomer {
   country?: string;
 }
 
+interface AsaasListResponse<T> {
+  data: T[];
+  hasMore?: boolean;
+  totalCount?: number;
+}
+
+export type AsaasPaymentStatus =
+  | "PENDING"
+  | "PROCESSING"
+  | "CONFIRMED"
+  | "RECEIVED"
+  | "RECEIVED_IN_CASH"
+  | "OVERDUE"
+  | "REFUNDED"
+  | "CHARGED_BACK"
+  | "FAILED"
+  | "CANCELED"
+  | "CANCELLED"
+  | string;
+
 export interface AsaasPayment {
   id?: string;
   customer: string;
   billingType: "BOLETO" | "CREDIT_CARD" | "PIX" | "UNDEFINED";
   value: number;
   dueDate: string;
+  originalDueDate?: string | null;
   description?: string;
   externalReference?: string;
   installmentCount?: number;
   installmentValue?: number;
   totalValue?: number;
+  status?: AsaasPaymentStatus;
+  statusDescription?: string | null;
+  paymentDate?: string | null;
+  confirmedDate?: string | null;
+  identificationField?: string | null;
+  digitableLine?: string | null;
+  bankSlipUrl?: string | null;
+  boletoUrl?: string | null;
+  invoiceUrl?: string | null;
+  transactionReceiptUrl?: string | null;
   creditCard?: {
     holderName: string;
     number: string;
@@ -69,6 +100,8 @@ export interface AsaasPayment {
     qrCode?: string;
     qrCodeUrl?: string;
     payload?: string;
+    encodedImage?: string;
+    expirationDate?: string;
   };
 }
 
@@ -187,6 +220,15 @@ export class AsaasClient {
     return this.makeRequest<AsaasCustomer>(`/customers/${customerId}`);
   }
 
+  async findCustomerByCpfCnpj(cpfCnpj: string): Promise<AsaasCustomer | null> {
+    const sanitized = formatCpfCnpjForAsaas(cpfCnpj);
+    const response = await this.makeRequest<AsaasListResponse<AsaasCustomer>>(
+      `/customers?cpfCnpj=${encodeURIComponent(sanitized)}&limit=1`,
+    );
+
+    return response.data?.[0] ?? null;
+  }
+
   async updateCustomer(
     customerId: string,
     customer: Partial<AsaasCustomer>,
@@ -268,9 +310,14 @@ export class AsaasClient {
   // PIX
   // ============================================
 
-  async generatePixQrCode(
-    paymentId: string,
-  ): Promise<{ qrCode: string; qrCodeUrl: string; payload: string }> {
+  async generatePixQrCode(paymentId: string): Promise<{
+    qrCode?: string;
+    qrCodeUrl?: string;
+    payload?: string;
+    encodedImage?: string;
+    success?: boolean;
+    expirationDate?: string;
+  }> {
     return this.makeRequest(`/payments/${paymentId}/pixQrCode`);
   }
 
@@ -281,9 +328,11 @@ export class AsaasClient {
   async testConnection(): Promise<boolean> {
     try {
       await this.makeRequest("/customers?limit=1");
+
       return true;
     } catch (error) {
       console.error("Teste de conexão Asaas falhou:", error);
+
       return false;
     }
   }
@@ -306,6 +355,7 @@ export function createAsaasClientFromEncrypted(
 ): AsaasClient {
   try {
     const decryptedApiKey = decrypt(encryptedApiKey);
+
     return new AsaasClient(decryptedApiKey, environment);
   } catch (error) {
     console.error("Erro ao descriptografar API key do Asaas:", error);

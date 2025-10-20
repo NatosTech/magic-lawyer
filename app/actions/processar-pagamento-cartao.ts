@@ -1,5 +1,7 @@
 "use server";
 
+import type { CheckoutData } from "./checkout";
+
 import prisma from "@/app/lib/prisma";
 import {
   AsaasClient,
@@ -22,9 +24,35 @@ interface ProcessarPagamentoCartaoData {
   };
 }
 
+interface ProcessarPagamentoCartaoSuccess {
+  success: true;
+  data: {
+    status: string;
+    asaasPaymentId: string;
+    tenantId?: string;
+    tenantDomain?: string;
+    subscriptionId?: string;
+    credentials?: {
+      email: string;
+      senhaTemporaria: string;
+    };
+    message?: string;
+  };
+  message?: string;
+}
+
+interface ProcessarPagamentoCartaoError {
+  success: false;
+  error: string;
+}
+
+export type ProcessarPagamentoCartaoResult =
+  | ProcessarPagamentoCartaoSuccess
+  | ProcessarPagamentoCartaoError;
+
 export async function processarPagamentoCartao(
   data: ProcessarPagamentoCartaoData,
-) {
+): Promise<ProcessarPagamentoCartaoResult> {
   try {
     const checkoutSession = await prisma.checkoutSession.findFirst({
       where: { id: data.checkoutId },
@@ -37,7 +65,14 @@ export async function processarPagamentoCartao(
       };
     }
 
-    const checkoutData = checkoutSession.dadosCheckout as any;
+    const checkoutData = checkoutSession.dadosCheckout as CheckoutData | null;
+
+    if (!checkoutData) {
+      return {
+        success: false,
+        error: "Dados do checkout não encontrados para esta sessão",
+      };
+    }
 
     const plano = await prisma.plano.findUnique({
       where: { id: checkoutSession.planoId },
@@ -48,6 +83,7 @@ export async function processarPagamentoCartao(
     }
 
     const apiKey = process.env.ASAAS_API_KEY;
+
     if (!apiKey) {
       throw new Error("ASAAS_API_KEY não configurada");
     }
@@ -124,6 +160,7 @@ export async function processarPagamentoCartao(
 
     if (paymentDetails?.status === "CONFIRMED") {
       const confirmResult = await processarPagamentoConfirmado(asaasPayment.id);
+
       if (confirmResult.success) {
         return {
           success: true,
@@ -135,7 +172,12 @@ export async function processarPagamentoCartao(
         };
       }
 
-      return confirmResult;
+      return {
+        success: false,
+        error:
+          confirmResult.error ||
+          "Pagamento criado, mas não foi possível confirmar a assinatura",
+      };
     }
 
     return {
@@ -148,6 +190,7 @@ export async function processarPagamentoCartao(
     };
   } catch (error) {
     console.error("Erro ao processar pagamento com cartão:", error);
+
     return {
       success: false,
       error:

@@ -29,7 +29,12 @@ async function getUserId(): Promise<string> {
 // LISTAR DADOS BANCÁRIOS
 // ============================================
 
-export async function listDadosBancarios(filters?: { usuarioId?: string; clienteId?: string; ativo?: boolean; principal?: boolean }) {
+export async function listDadosBancarios(filters?: {
+  usuarioId?: string;
+  clienteId?: string;
+  ativo?: boolean;
+  principal?: boolean;
+}) {
   try {
     const tenantId = await getTenantId();
 
@@ -80,7 +85,11 @@ export async function listDadosBancarios(filters?: { usuarioId?: string; cliente
           },
         },
       },
-      orderBy: [{ principal: "desc" }, { ativo: "desc" }, { createdAt: "desc" }],
+      orderBy: [
+        { principal: "desc" },
+        { ativo: "desc" },
+        { createdAt: "desc" },
+      ],
     });
 
     return {
@@ -300,7 +309,7 @@ export async function updateDadosBancarios(
     ativo?: boolean;
     principal?: boolean;
     observacoes?: string;
-  }
+  },
 ) {
   try {
     const tenantId = await getTenantId();
@@ -518,7 +527,11 @@ export async function getMeusDadosBancarios() {
           },
         },
       },
-      orderBy: [{ principal: "desc" }, { ativo: "desc" }, { createdAt: "desc" }],
+      orderBy: [
+        { principal: "desc" },
+        { ativo: "desc" },
+        { createdAt: "desc" },
+      ],
     });
 
     return {

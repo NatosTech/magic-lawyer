@@ -21,7 +21,16 @@ interface CepInputProps {
   className?: string;
 }
 
-export function CepInput({ label = "CEP", placeholder = "00000-000", value = "", onChange, onCepFound, isRequired = false, isDisabled = false, className }: CepInputProps) {
+export function CepInput({
+  label = "CEP",
+  placeholder = "00000-000",
+  value = "",
+  onChange,
+  onCepFound,
+  isRequired = false,
+  isDisabled = false,
+  className,
+}: CepInputProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCepChange = (newValue: string) => {

@@ -12,7 +12,16 @@ import { addToast } from "@heroui/toast";
 
 import { createTenant, type CreateTenantData } from "@/app/actions/admin";
 
-const timezoneOptions = ["America/Sao_Paulo", "America/Manaus", "America/Fortaleza", "America/Recife", "America/Bahia", "America/Campo_Grande", "America/Belem", "America/Rio_Branco"];
+const timezoneOptions = [
+  "America/Sao_Paulo",
+  "America/Manaus",
+  "America/Fortaleza",
+  "America/Recife",
+  "America/Bahia",
+  "America/Campo_Grande",
+  "America/Belem",
+  "America/Rio_Branco",
+];
 
 const tipoPessoaOptions = [
   { value: "FISICA", label: "Pessoa Física" },
@@ -108,7 +117,8 @@ export function TenantCreateContent() {
     if (form.adminPassword.length < 8) {
       addToast({
         title: "Senha muito curta",
-        description: "Use pelo menos 8 caracteres para a senha do administrador.",
+        description:
+          "Use pelo menos 8 caracteres para a senha do administrador.",
         color: "warning",
       });
 
@@ -173,17 +183,40 @@ export function TenantCreateContent() {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <Card className="border border-white/10 bg-background/70 backdrop-blur">
         <CardHeader className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold text-white">Cadastrar novo tenant</h1>
-          <p className="text-sm text-default-400">Preencha as informações básicas do escritório e os dados do administrador inicial.</p>
+          <h1 className="text-2xl font-semibold text-white">
+            Cadastrar novo tenant
+          </h1>
+          <p className="text-sm text-default-400">
+            Preencha as informações básicas do escritório e os dados do
+            administrador inicial.
+          </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody className="space-y-6">
           <section className="space-y-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-default-500">Dados do tenant</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-default-500">
+              Dados do tenant
+            </h2>
             <div className="grid gap-3 md:grid-cols-2">
-              <Input isRequired label="Nome do tenant" value={form.name} onValueChange={(value) => handleChange("name", value)} />
-              <Input isRequired label="Slug" placeholder="ex.: silva-advocacia" value={form.slug} onValueChange={(value) => handleChange("slug", value)} />
-              <Input label="Domínio personalizado" placeholder="ex.: escritorio.minhaempresa.com" value={form.domain} onValueChange={(value) => handleChange("domain", value)} />
+              <Input
+                isRequired
+                label="Nome do tenant"
+                value={form.name}
+                onValueChange={(value) => handleChange("name", value)}
+              />
+              <Input
+                isRequired
+                label="Slug"
+                placeholder="ex.: silva-advocacia"
+                value={form.slug}
+                onValueChange={(value) => handleChange("slug", value)}
+              />
+              <Input
+                label="Domínio personalizado"
+                placeholder="ex.: escritorio.minhaempresa.com"
+                value={form.domain}
+                onValueChange={(value) => handleChange("domain", value)}
+              />
               <Select
                 label="Fuso horário"
                 selectedKeys={new Set([form.timezone])}
@@ -199,9 +232,23 @@ export function TenantCreateContent() {
                   <SelectItem key={option}>{option}</SelectItem>
                 ))}
               </Select>
-              <Input isRequired label="Email de contato" type="email" value={form.email} onValueChange={(value) => handleChange("email", value)} />
-              <Input label="Telefone" value={form.telefone} onValueChange={(value) => handleChange("telefone", value)} />
-              <Input label="Documento (CNPJ/CPF)" value={form.documento} onValueChange={(value) => handleChange("documento", value)} />
+              <Input
+                isRequired
+                label="Email de contato"
+                type="email"
+                value={form.email}
+                onValueChange={(value) => handleChange("email", value)}
+              />
+              <Input
+                label="Telefone"
+                value={form.telefone}
+                onValueChange={(value) => handleChange("telefone", value)}
+              />
+              <Input
+                label="Documento (CNPJ/CPF)"
+                value={form.documento}
+                onValueChange={(value) => handleChange("documento", value)}
+              />
               <Select
                 label="Tipo de pessoa"
                 selectedKeys={new Set([form.tipoPessoa])}
@@ -217,83 +264,129 @@ export function TenantCreateContent() {
                   <SelectItem key={option.value}>{option.label}</SelectItem>
                 ))}
               </Select>
-              <Input label="Razão social" value={form.razaoSocial} onValueChange={(value) => handleChange("razaoSocial", value)} />
-              <Input label="Nome fantasia" value={form.nomeFantasia} onValueChange={(value) => handleChange("nomeFantasia", value)} />
+              <Input
+                label="Razão social"
+                value={form.razaoSocial}
+                onValueChange={(value) => handleChange("razaoSocial", value)}
+              />
+              <Input
+                label="Nome fantasia"
+                value={form.nomeFantasia}
+                onValueChange={(value) => handleChange("nomeFantasia", value)}
+              />
             </div>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-default-500">Administrador inicial</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-default-500">
+              Administrador inicial
+            </h2>
             <div className="grid gap-3 md:grid-cols-2">
-              <Input label="Nome" value={form.adminFirstName} onValueChange={(value) => handleChange("adminFirstName", value)} />
-              <Input label="Sobrenome" value={form.adminLastName} onValueChange={(value) => handleChange("adminLastName", value)} />
-              <Input isRequired label="Email do administrador" type="email" value={form.adminEmail} onValueChange={(value) => handleChange("adminEmail", value)} />
-              <Input isRequired label="Senha provisória" type="password" value={form.adminPassword} onValueChange={(value) => handleChange("adminPassword", value)} />
+              <Input
+                label="Nome"
+                value={form.adminFirstName}
+                onValueChange={(value) => handleChange("adminFirstName", value)}
+              />
+              <Input
+                label="Sobrenome"
+                value={form.adminLastName}
+                onValueChange={(value) => handleChange("adminLastName", value)}
+              />
+              <Input
+                isRequired
+                label="Email do administrador"
+                type="email"
+                value={form.adminEmail}
+                onValueChange={(value) => handleChange("adminEmail", value)}
+              />
+              <Input
+                isRequired
+                label="Senha provisória"
+                type="password"
+                value={form.adminPassword}
+                onValueChange={(value) => handleChange("adminPassword", value)}
+              />
             </div>
           </section>
 
           {/* Configuração Asaas */}
           <section className="space-y-4">
             <div className="flex items-center gap-3">
-              <Checkbox isSelected={form.configurarAsaas} onValueChange={(checked) => handleChange("configurarAsaas", checked.toString())}>
-                <span className="text-sm font-semibold">Configurar integração Asaas</span>
+              <Checkbox
+                isSelected={form.configurarAsaas}
+                onValueChange={(checked) =>
+                  handleChange("configurarAsaas", checked.toString())
+                }
+              >
+                <span className="text-sm font-semibold">
+                  Configurar integração Asaas
+                </span>
               </Checkbox>
             </div>
 
             {form.configurarAsaas && (
               <div className="space-y-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  <h3 className="text-sm font-semibold text-primary">Configuração Asaas</h3>
+                  <div className="w-2 h-2 bg-primary rounded-full" />
+                  <h3 className="text-sm font-semibold text-primary">
+                    Configuração Asaas
+                  </h3>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <Input
+                    description="Começa com $aact_"
                     label="API Key"
                     placeholder="Cole a API Key do Asaas"
-                    value={form.asaasApiKey}
-                    onValueChange={(value) => handleChange("asaasApiKey", value)}
-                    description="Começa com $aact_"
                     type="password"
+                    value={form.asaasApiKey}
+                    onValueChange={(value) =>
+                      handleChange("asaasApiKey", value)
+                    }
                   />
                   <Input
+                    description="ID da conta no painel Asaas"
                     label="Account ID"
                     placeholder="ID da conta Asaas"
                     value={form.asaasAccountId}
-                    onValueChange={(value) => handleChange("asaasAccountId", value)}
-                    description="ID da conta no painel Asaas"
+                    onValueChange={(value) =>
+                      handleChange("asaasAccountId", value)
+                    }
                   />
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <Input
+                    description="Para carteiras digitais"
                     label="Wallet ID (Opcional)"
                     placeholder="ID da carteira digital"
                     value={form.asaasWalletId}
-                    onValueChange={(value) => handleChange("asaasWalletId", value)}
-                    description="Para carteiras digitais"
+                    onValueChange={(value) =>
+                      handleChange("asaasWalletId", value)
+                    }
                   />
                   <Select
                     label="Ambiente"
                     placeholder="Selecione o ambiente"
                     selectedKeys={[form.asaasAmbiente]}
                     onSelectionChange={(keys) => {
-                      const value = Array.from(keys)[0] as "SANDBOX" | "PRODUCAO";
+                      const value = Array.from(keys)[0] as
+                        | "SANDBOX"
+                        | "PRODUCAO";
+
                       handleChange("asaasAmbiente", value);
                     }}
                   >
-                    <SelectItem key="SANDBOX" value="SANDBOX">
-                      Sandbox (Teste)
-                    </SelectItem>
-                    <SelectItem key="PRODUCAO" value="PRODUCAO">
-                      Produção
-                    </SelectItem>
+                    <SelectItem key="SANDBOX">Sandbox (Teste)</SelectItem>
+                    <SelectItem key="PRODUCAO">Produção</SelectItem>
                   </Select>
                 </div>
 
                 <div className="p-3 bg-warning/10 rounded-lg">
                   <p className="text-xs text-warning">
-                    <strong>Importante:</strong> A configuração Asaas será salva após a criação do tenant. Certifique-se de que as credenciais estão corretas.
+                    <strong>Importante:</strong> A configuração Asaas será salva
+                    após a criação do tenant. Certifique-se de que as
+                    credenciais estão corretas.
                   </p>
                 </div>
               </div>
@@ -301,7 +394,12 @@ export function TenantCreateContent() {
           </section>
 
           <div className="flex justify-end">
-            <Button color="primary" isLoading={isCreating} radius="full" onPress={handleSubmit}>
+            <Button
+              color="primary"
+              isLoading={isCreating}
+              radius="full"
+              onPress={handleSubmit}
+            >
               Criar tenant
             </Button>
           </div>

@@ -18,11 +18,15 @@ import {
 // ============================================
 
 export function useMetricasFinanceiras(filtros?: FiltrosDashboard) {
-  const { data, error, isLoading, mutate } = useSWR<MetricasFinanceiras>(["metricas-financeiras", filtros], () => getMetricasFinanceiras(filtros), {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    refreshInterval: 30000, // 30 segundos
-  });
+  const { data, error, isLoading, mutate } = useSWR<MetricasFinanceiras>(
+    ["metricas-financeiras", filtros],
+    () => getMetricasFinanceiras(filtros),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      refreshInterval: 30000, // 30 segundos
+    },
+  );
 
   return {
     metricas: data,
@@ -33,11 +37,15 @@ export function useMetricasFinanceiras(filtros?: FiltrosDashboard) {
 }
 
 export function useGraficoParcelas(filtros?: FiltrosDashboard) {
-  const { data, error, isLoading, mutate } = useSWR<GraficoParcelas[]>(["grafico-parcelas", filtros], () => getGraficoParcelas(filtros), {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    refreshInterval: 30000, // 30 segundos
-  });
+  const { data, error, isLoading, mutate } = useSWR<GraficoParcelas[]>(
+    ["grafico-parcelas", filtros],
+    () => getGraficoParcelas(filtros),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      refreshInterval: 30000, // 30 segundos
+    },
+  );
 
   return {
     grafico: data || [],
@@ -48,11 +56,15 @@ export function useGraficoParcelas(filtros?: FiltrosDashboard) {
 }
 
 export function useHonorariosPorAdvogado(filtros?: FiltrosDashboard) {
-  const { data, error, isLoading, mutate } = useSWR<HonorariosPorAdvogado[]>(["honorarios-advogado", filtros], () => getHonorariosPorAdvogado(filtros), {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    refreshInterval: 30000, // 30 segundos
-  });
+  const { data, error, isLoading, mutate } = useSWR<HonorariosPorAdvogado[]>(
+    ["honorarios-advogado", filtros],
+    () => getHonorariosPorAdvogado(filtros),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      refreshInterval: 30000, // 30 segundos
+    },
+  );
 
   return {
     honorarios: data || [],
@@ -67,11 +79,15 @@ export function useHonorariosPorAdvogado(filtros?: FiltrosDashboard) {
 // ============================================
 
 export function useDadosBancariosAtivos() {
-  const { data, error, isLoading, mutate } = useSWR("dados-bancarios-ativos", getDadosBancariosAtivos, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    refreshInterval: 60000, // 1 minuto
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    "dados-bancarios-ativos",
+    getDadosBancariosAtivos,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      refreshInterval: 60000, // 1 minuto
+    },
+  );
 
   return {
     dadosBancarios: Array.isArray(data) ? data : [],
@@ -82,11 +98,15 @@ export function useDadosBancariosAtivos() {
 }
 
 export function useAdvogadosAtivos() {
-  const { data, error, isLoading, mutate } = useSWR("advogados-ativos", getAdvogadosAtivos, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    refreshInterval: 60000, // 1 minuto
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    "advogados-ativos",
+    getAdvogadosAtivos,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      refreshInterval: 60000, // 1 minuto
+    },
+  );
 
   return {
     advogados: Array.isArray(data) ? data : [],
@@ -97,11 +117,15 @@ export function useAdvogadosAtivos() {
 }
 
 export function useClientesAtivos() {
-  const { data, error, isLoading, mutate } = useSWR("clientes-ativos", getClientesAtivos, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    refreshInterval: 60000, // 1 minuto
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    "clientes-ativos",
+    getClientesAtivos,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      refreshInterval: 60000, // 1 minuto
+    },
+  );
 
   return {
     clientes: Array.isArray(data) ? data : [],
@@ -123,9 +147,21 @@ export function useDashboardFinanceiro(filtros?: FiltrosDashboard) {
   const advogados = useAdvogadosAtivos();
   const clientes = useClientesAtivos();
 
-  const isLoading = metricas.isLoading || grafico.isLoading || honorarios.isLoading || dadosBancarios.isLoading || advogados.isLoading || clientes.isLoading;
+  const isLoading =
+    metricas.isLoading ||
+    grafico.isLoading ||
+    honorarios.isLoading ||
+    dadosBancarios.isLoading ||
+    advogados.isLoading ||
+    clientes.isLoading;
 
-  const error = metricas.error || grafico.error || honorarios.error || dadosBancarios.error || advogados.error || clientes.error;
+  const error =
+    metricas.error ||
+    grafico.error ||
+    honorarios.error ||
+    dadosBancarios.error ||
+    advogados.error ||
+    clientes.error;
 
   const mutate = () => {
     metricas.mutate();
@@ -141,7 +177,9 @@ export function useDashboardFinanceiro(filtros?: FiltrosDashboard) {
     metricas: metricas.metricas,
     grafico: grafico.grafico,
     honorarios: honorarios.honorarios,
-    dadosBancarios: Array.isArray(dadosBancarios.dadosBancarios) ? dadosBancarios.dadosBancarios : [],
+    dadosBancarios: Array.isArray(dadosBancarios.dadosBancarios)
+      ? dadosBancarios.dadosBancarios
+      : [],
     advogados: Array.isArray(advogados.advogados) ? advogados.advogados : [],
     clientes: Array.isArray(clientes.clientes) ? clientes.clientes : [],
 

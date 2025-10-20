@@ -1,114 +1,435 @@
 "use server";
 
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { AsaasClient, createAsaasClientFromEncrypted, formatCpfCnpjForAsaas, formatValueForAsaas, formatDateForAsaas } from "@/lib/asaas";
 import { revalidatePath } from "next/cache";
 import QRCode from "qrcode";
 
+import { authOptions } from "@/auth";
+import prisma from "@/lib/prisma";
+import {
+  AsaasClient,
+  type AsaasCustomer,
+  type AsaasPayment,
+  type AsaasPaymentStatus,
+  createAsaasClientFromEncrypted,
+  formatCpfCnpjForAsaas,
+  formatDateForAsaas,
+  formatValueForAsaas,
+} from "@/lib/asaas";
+import { Prisma, type ContratoParcelaStatus } from "@/app/generated/prisma";
+
+type ParcelaComRelacionamentos = Prisma.ContratoParcelaGetPayload<{
+  include: {
+    contrato: {
+      include: {
+        cliente: { include: { enderecos: true } };
+        dadosBancarios: { include: { banco: true } };
+      };
+    };
+    dadosBancarios: { include: { banco: true } };
+  };
+}>;
+
+type AsaasContext =
+  | {
+      success: true;
+      parcela: ParcelaComRelacionamentos;
+      asaasClient: AsaasClient;
+      tenantId: string;
+    }
+  | { success: false; error: string };
+
+type EnsureCustomerResult =
+  | { success: true; customerId: string }
+  | { success: false; error: string };
+
 // ============================================
-// SISTEMA DE COBRANÇA PARA TENANTS
+// Helpers
 // ============================================
 
-export async function gerarPixDinamico(data: { parcelaId: string; valor: number; descricao?: string; vencimento?: Date }) {
+function mapAsaasStatusToParcela(
+  status?: AsaasPaymentStatus,
+): ContratoParcelaStatus {
+  switch (status) {
+    case "CONFIRMED":
+    case "RECEIVED":
+    case "RECEIVED_IN_CASH":
+      return "PAGA";
+    case "OVERDUE":
+      return "ATRASADA";
+    case "CANCELED":
+    case "CANCELLED":
+      return "CANCELADA";
+    default:
+      return "PENDENTE";
+  }
+}
+
+function sanitizeDigits(value?: string | null): string | undefined {
+  const digits = value?.replace(/\D/g, "");
+
+  return digits && digits.length > 0 ? digits : undefined;
+}
+
+function isJsonObject(
+  value: Prisma.JsonValue | null | undefined,
+): value is Prisma.JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toJsonValue(value: unknown): Prisma.JsonValue | undefined {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (Array.isArray(value)) {
+    const items = value
+      .map((item) => toJsonValue(item))
+      .filter((item): item is Prisma.JsonValue => item !== undefined);
+
+    return items;
+  }
+
+  if (typeof value === "object" && value) {
+    const result: Prisma.JsonObject = {};
+
+    for (const [key, entry] of Object.entries(value)) {
+      const jsonValue = toJsonValue(entry);
+
+      if (jsonValue !== undefined) {
+        result[key] = jsonValue;
+      }
+    }
+
+    return result;
+  }
+
+  return undefined;
+}
+
+function createJsonObject(data: Record<string, unknown>): Prisma.JsonObject {
+  const result: Prisma.JsonObject = {};
+
+  for (const [key, value] of Object.entries(data)) {
+    const jsonValue = toJsonValue(value);
+
+    if (jsonValue !== undefined) {
+      result[key] = jsonValue;
+    }
+  }
+
+  return result;
+}
+
+async function getAsaasContext(
+  parcelaId: string,
+  tenantId: string,
+): Promise<AsaasContext> {
+  const parcela = await prisma.contratoParcela.findFirst({
+    where: {
+      id: parcelaId,
+      tenantId,
+    },
+    include: {
+      contrato: {
+        include: {
+          cliente: { include: { enderecos: true } },
+          dadosBancarios: { include: { banco: true } },
+        },
+      },
+      dadosBancarios: { include: { banco: true } },
+    },
+  });
+
+  if (!parcela) {
+    return { success: false, error: "Parcela não encontrada" };
+  }
+
+  const asaasConfig = await prisma.tenantAsaasConfig.findUnique({
+    where: { tenantId },
+  });
+
+  if (!asaasConfig || !asaasConfig.integracaoAtiva) {
+    return {
+      success: false,
+      error: "Configuração Asaas não encontrada ou inativa",
+    };
+  }
+
+  const asaasClient = createAsaasClientFromEncrypted(
+    asaasConfig.asaasApiKey,
+    asaasConfig.ambiente.toLowerCase() as "sandbox" | "production",
+  );
+
+  return { success: true, parcela, asaasClient, tenantId };
+}
+
+async function ensureAsaasCustomer(
+  asaasClient: AsaasClient,
+  cliente: ParcelaComRelacionamentos["contrato"]["cliente"],
+): Promise<EnsureCustomerResult> {
+  if (cliente.asaasCustomerId) {
+    return { success: true, customerId: cliente.asaasCustomerId };
+  }
+
+  const documento = cliente.documento?.trim();
+
+  if (!documento) {
+    return {
+      success: false,
+      error:
+        "O cliente precisa ter um CPF/CNPJ cadastrado para gerar cobranças.",
+    };
+  }
+
+  const existing = await asaasClient.findCustomerByCpfCnpj(documento);
+
+  if (existing?.id) {
+    await prisma.cliente.update({
+      where: { id: cliente.id },
+      data: { asaasCustomerId: existing.id },
+    });
+
+    return { success: true, customerId: existing.id };
+  }
+
+  const endereco =
+    cliente.enderecos.find((item) => item.principal) ?? cliente.enderecos[0];
+
+  const defaultEmail = cliente.email || `cliente-${cliente.id}@magiclawyer.com`;
+  const telefone =
+    sanitizeDigits(cliente.telefone) ?? sanitizeDigits(cliente.celular);
+  const celular =
+    sanitizeDigits(cliente.celular) ?? sanitizeDigits(cliente.telefone);
+
+  const payload: AsaasCustomer = {
+    name: cliente.nome,
+    email: defaultEmail,
+    cpfCnpj: formatCpfCnpjForAsaas(documento),
+    country: "Brasil",
+  };
+
+  if (telefone) payload.phone = telefone;
+  if (celular) payload.mobilePhone = celular;
+  if (endereco?.logradouro) payload.address = endereco.logradouro;
+  if (endereco?.numero) payload.addressNumber = endereco.numero;
+  if (endereco?.complemento) payload.complement = endereco.complemento;
+  if (endereco?.bairro) payload.province = endereco.bairro;
+  if (endereco?.cidade) payload.city = endereco.cidade;
+  if (endereco?.estado) payload.state = endereco.estado;
+  if (endereco?.cep) payload.postalCode = sanitizeDigits(endereco.cep);
+
+  const newCustomer = await asaasClient.createCustomer(payload);
+
+  if (!newCustomer.id) {
+    return {
+      success: false,
+      error: "Não foi possível criar o cliente no Asaas.",
+    };
+  }
+
+  await prisma.cliente.update({
+    where: { id: cliente.id },
+    data: { asaasCustomerId: newCustomer.id },
+  });
+
+  return { success: true, customerId: newCustomer.id };
+}
+
+async function persistParcelaPagamento({
+  parcelaId,
+  billingType,
+  asaasPayment,
+  dadosPagamento,
+}: {
+  parcelaId: string;
+  billingType: string;
+  asaasPayment: AsaasPayment;
+  dadosPagamento: Prisma.JsonObject;
+}) {
+  const dataPagamento = asaasPayment.confirmedDate
+    ? new Date(asaasPayment.confirmedDate)
+    : null;
+
+  await prisma.contratoParcela.update({
+    where: { id: parcelaId },
+    data: {
+      formaPagamento: billingType,
+      asaasPaymentId: asaasPayment.id ?? null,
+      status: mapAsaasStatusToParcela(asaasPayment.status),
+      dataPagamento,
+      dadosPagamento,
+      updatedAt: new Date(),
+    },
+  });
+}
+
+function buildPixPaymentData(params: {
+  valor: number;
+  vencimento: Date;
+  status?: AsaasPaymentStatus;
+  qrCode: string;
+  qrCodeImage: string | null;
+  chavePix: string;
+  payload?: string | null;
+  expirationDate?: string | null;
+}): Prisma.JsonObject {
+  const {
+    valor,
+    vencimento,
+    status,
+    qrCode,
+    qrCodeImage,
+    chavePix,
+    payload,
+    expirationDate,
+  } = params;
+
+  return createJsonObject({
+    tipo: "PIX",
+    valor,
+    status: status ?? "PENDING",
+    vencimento,
+    qrCode,
+    qrCodeImage,
+    chavePix,
+    payload,
+    expirationDate,
+  });
+}
+
+function buildBoletoPaymentData(params: {
+  valor: number;
+  vencimento: Date;
+  status?: AsaasPaymentStatus;
+  codigoBarras?: string | null;
+  linhaDigitavel?: string | null;
+  linkBoleto?: string | null;
+}): Prisma.JsonObject {
+  const {
+    valor,
+    vencimento,
+    status,
+    codigoBarras,
+    linhaDigitavel,
+    linkBoleto,
+  } = params;
+
+  return createJsonObject({
+    tipo: "BOLETO",
+    valor,
+    status: status ?? "PENDING",
+    vencimento,
+    codigoBarras,
+    linhaDigitavel,
+    linkBoleto,
+  });
+}
+
+function buildCartaoPaymentData(params: {
+  valor: number;
+  vencimento: Date;
+  status?: AsaasPaymentStatus;
+}): Prisma.JsonObject {
+  const { valor, vencimento, status } = params;
+
+  return createJsonObject({
+    tipo: "CARTAO",
+    valor,
+    status: status ?? "PROCESSING",
+    vencimento,
+  });
+}
+
+// ============================================
+// PIX Dinâmico
+// ============================================
+
+export async function gerarPixDinamico(data: {
+  parcelaId: string;
+  valor: number;
+  descricao?: string;
+  vencimento?: Date;
+}) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+
+    if (!session?.user?.tenantId) {
       return { success: false, error: "Não autenticado" };
     }
 
-    const user = session.user as any;
+    const context = await getAsaasContext(
+      data.parcelaId,
+      session.user.tenantId,
+    );
 
-    // Buscar parcela
-    const parcela = await prisma.contratoParcela.findUnique({
-      where: { id: data.parcelaId },
-      include: {
-        contrato: {
-          include: {
-            dadosBancarios: {
-              include: { banco: true },
-            },
-          },
-        },
-      },
-    });
-
-    if (!parcela) {
-      return { success: false, error: "Parcela não encontrada" };
+    if (!context.success) {
+      return context;
     }
 
-    // Buscar configuração Asaas do tenant
-    const asaasConfig = await prisma.tenantAsaasConfig.findUnique({
-      where: { tenantId: user.tenantId },
-    });
+    const { parcela, asaasClient } = context;
+    const customerResult = await ensureAsaasCustomer(
+      asaasClient,
+      parcela.contrato.cliente,
+    );
 
-    if (!asaasConfig || !asaasConfig.integracaoAtiva) {
-      return { success: false, error: "Configuração Asaas não encontrada ou inativa" };
+    if (!customerResult.success) {
+      return customerResult;
     }
 
-    const asaasClient = createAsaasClientFromEncrypted(asaasConfig.asaasApiKey, asaasConfig.ambiente.toLowerCase() as "sandbox" | "production");
+    const vencimento = data.vencimento ?? new Date();
 
-    // Criar cliente no Asaas (se não existir)
-    let asaasCustomerId = parcela.contrato.cliente?.asaasCustomerId;
-
-    if (!asaasCustomerId && parcela.contrato.cliente) {
-      const asaasCustomer = await asaasClient.createCustomer({
-        name: parcela.contrato.cliente.nome,
-        email: parcela.contrato.cliente.email || "",
-        cpfCnpj: formatCpfCnpjForAsaas(parcela.contrato.cliente.cpfCnpj),
-        phone: parcela.contrato.cliente.telefone || "",
-        postalCode: parcela.contrato.cliente.cep || "",
-        address: parcela.contrato.cliente.endereco || "",
-        addressNumber: parcela.contrato.cliente.numero || "",
-        complement: parcela.contrato.cliente.complemento || "",
-        province: parcela.contrato.cliente.bairro || "",
-        city: parcela.contrato.cliente.cidade || "",
-        state: parcela.contrato.cliente.estado || "",
-        country: "Brasil",
-      });
-
-      asaasCustomerId = asaasCustomer.id!;
-
-      // Salvar ID do cliente no Asaas
-      await prisma.cliente.update({
-        where: { id: parcela.contrato.cliente.id },
-        data: { asaasCustomerId },
-      });
-    }
-
-    // Criar pagamento PIX no Asaas
     const asaasPayment = await asaasClient.createPayment({
-      customer: asaasCustomerId!,
+      customer: customerResult.customerId,
       billingType: "PIX",
       value: formatValueForAsaas(data.valor),
-      dueDate: formatDateForAsaas(data.vencimento || new Date()),
-      description: data.descricao || `Parcela ${parcela.numero} - ${parcela.contrato.cliente?.nome}`,
+      dueDate: formatDateForAsaas(vencimento),
+      description:
+        data.descricao ??
+        `Parcela ${parcela.numeroParcela} - ${parcela.contrato.cliente.nome}`,
       externalReference: `parcela_${parcela.id}`,
     });
 
-    // Gerar QR Code PIX
-    const pixQrCode = await asaasClient.generatePixQrCode(asaasPayment.id!);
+    if (!asaasPayment.id) {
+      throw new Error("Pagamento não retornou um ID");
+    }
 
-    // Gerar QR Code visual
-    const qrCodeImage = await QRCode.toDataURL(pixQrCode.encodedImage);
+    const pixQrCode = await asaasClient.generatePixQrCode(asaasPayment.id);
+    const qrCodePayload = pixQrCode.payload ?? pixQrCode.qrCode ?? "";
+    const qrCodeValue = qrCodePayload || pixQrCode.encodedImage || "";
+    const qrCodeImage =
+      pixQrCode.encodedImage ??
+      (qrCodePayload ? await QRCode.toDataURL(qrCodePayload) : null);
 
-    // Atualizar parcela com dados do pagamento
-    await prisma.contratoParcela.update({
-      where: { id: parcela.id },
-      data: {
-        asaasPaymentId: asaasPayment.id,
-        status: "PENDENTE",
-        dadosPagamento: {
-          tipo: "PIX",
-          qrCode: pixQrCode.encodedImage,
-          qrCodeImage,
-          chavePix: pixQrCode.payload,
-          valor: data.valor,
-          vencimento: data.vencimento || new Date(),
-        },
-        updatedAt: new Date(),
-      },
+    if (!qrCodeValue) {
+      throw new Error("Dados do QR Code não retornados pelo Asaas");
+    }
+
+    const dadosPagamento = buildPixPaymentData({
+      valor: data.valor,
+      vencimento,
+      status: asaasPayment.status,
+      qrCode: qrCodeValue,
+      qrCodeImage,
+      chavePix: qrCodePayload,
+      payload: pixQrCode.payload ?? null,
+      expirationDate: pixQrCode.expirationDate ?? null,
+    });
+
+    await persistParcelaPagamento({
+      parcelaId: parcela.id,
+      billingType: "PIX",
+      asaasPayment,
+      dadosPagamento,
     });
 
     revalidatePath("/parcelas");
@@ -117,111 +438,89 @@ export async function gerarPixDinamico(data: { parcelaId: string; valor: number;
       success: true,
       data: {
         paymentId: asaasPayment.id,
-        qrCode: pixQrCode.encodedImage,
+        qrCode: qrCodeValue,
         qrCodeImage,
-        chavePix: pixQrCode.payload,
+        chavePix: qrCodePayload,
         valor: data.valor,
-        vencimento: data.vencimento || new Date(),
+        vencimento,
       },
     };
   } catch (error) {
     console.error("Erro ao gerar PIX dinâmico:", error);
+
     return { success: false, error: "Erro ao gerar PIX" };
   }
 }
 
-export async function gerarBoletoAsaas(data: { parcelaId: string; valor: number; descricao?: string; vencimento?: Date }) {
+// ============================================
+// Boleto
+// ============================================
+
+export async function gerarBoletoAsaas(data: {
+  parcelaId: string;
+  valor: number;
+  descricao?: string;
+  vencimento?: Date;
+}) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+
+    if (!session?.user?.tenantId) {
       return { success: false, error: "Não autenticado" };
     }
 
-    const user = session.user as any;
+    const context = await getAsaasContext(
+      data.parcelaId,
+      session.user.tenantId,
+    );
 
-    // Buscar parcela
-    const parcela = await prisma.contratoParcela.findUnique({
-      where: { id: data.parcelaId },
-      include: {
-        contrato: {
-          include: {
-            cliente: true,
-            dadosBancarios: {
-              include: { banco: true },
-            },
-          },
-        },
-      },
-    });
-
-    if (!parcela) {
-      return { success: false, error: "Parcela não encontrada" };
+    if (!context.success) {
+      return context;
     }
 
-    // Buscar configuração Asaas do tenant
-    const asaasConfig = await prisma.tenantAsaasConfig.findUnique({
-      where: { tenantId: user.tenantId },
-    });
+    const { parcela, asaasClient } = context;
+    const customerResult = await ensureAsaasCustomer(
+      asaasClient,
+      parcela.contrato.cliente,
+    );
 
-    if (!asaasConfig || !asaasConfig.integracaoAtiva) {
-      return { success: false, error: "Configuração Asaas não encontrada ou inativa" };
+    if (!customerResult.success) {
+      return customerResult;
     }
 
-    const asaasClient = createAsaasClientFromEncrypted(asaasConfig.asaasApiKey, asaasConfig.ambiente.toLowerCase() as "sandbox" | "production");
+    const vencimento = data.vencimento ?? new Date();
 
-    // Criar cliente no Asaas (se não existir)
-    let asaasCustomerId = parcela.contrato.cliente?.asaasCustomerId;
-
-    if (!asaasCustomerId && parcela.contrato.cliente) {
-      const asaasCustomer = await asaasClient.createCustomer({
-        name: parcela.contrato.cliente.nome,
-        email: parcela.contrato.cliente.email || "",
-        cpfCnpj: formatCpfCnpjForAsaas(parcela.contrato.cliente.cpfCnpj),
-        phone: parcela.contrato.cliente.telefone || "",
-        postalCode: parcela.contrato.cliente.cep || "",
-        address: parcela.contrato.cliente.endereco || "",
-        addressNumber: parcela.contrato.cliente.numero || "",
-        complement: parcela.contrato.cliente.complemento || "",
-        province: parcela.contrato.cliente.bairro || "",
-        city: parcela.contrato.cliente.cidade || "",
-        state: parcela.contrato.cliente.estado || "",
-        country: "Brasil",
-      });
-
-      asaasCustomerId = asaasCustomer.id!;
-
-      // Salvar ID do cliente no Asaas
-      await prisma.cliente.update({
-        where: { id: parcela.contrato.cliente.id },
-        data: { asaasCustomerId },
-      });
-    }
-
-    // Criar pagamento Boleto no Asaas
     const asaasPayment = await asaasClient.createPayment({
-      customer: asaasCustomerId!,
+      customer: customerResult.customerId,
       billingType: "BOLETO",
       value: formatValueForAsaas(data.valor),
-      dueDate: formatDateForAsaas(data.vencimento || new Date()),
-      description: data.descricao || `Parcela ${parcela.numero} - ${parcela.contrato.cliente?.nome}`,
+      dueDate: formatDateForAsaas(vencimento),
+      description:
+        data.descricao ??
+        `Parcela ${parcela.numeroParcela} - ${parcela.contrato.cliente.nome}`,
       externalReference: `parcela_${parcela.id}`,
     });
 
-    // Atualizar parcela com dados do pagamento
-    await prisma.contratoParcela.update({
-      where: { id: parcela.id },
-      data: {
-        asaasPaymentId: asaasPayment.id,
-        status: "PENDENTE",
-        dadosPagamento: {
-          tipo: "BOLETO",
-          codigoBarras: asaasPayment.bankSlipUrl,
-          linhaDigitavel: asaasPayment.bankSlipUrl,
-          valor: data.valor,
-          vencimento: data.vencimento || new Date(),
-        },
-        updatedAt: new Date(),
-      },
+    if (!asaasPayment.id) {
+      throw new Error("Pagamento não retornou um ID");
+    }
+
+    const linhaDigitavel =
+      asaasPayment.digitableLine ?? asaasPayment.identificationField ?? null;
+    const dadosPagamento = buildBoletoPaymentData({
+      valor: data.valor,
+      vencimento,
+      status: asaasPayment.status,
+      codigoBarras: asaasPayment.identificationField ?? null,
+      linhaDigitavel,
+      linkBoleto: asaasPayment.bankSlipUrl ?? asaasPayment.invoiceUrl ?? null,
+    });
+
+    await persistParcelaPagamento({
+      parcelaId: parcela.id,
+      billingType: "BOLETO",
+      asaasPayment,
+      dadosPagamento,
     });
 
     revalidatePath("/parcelas");
@@ -230,17 +529,23 @@ export async function gerarBoletoAsaas(data: { parcelaId: string; valor: number;
       success: true,
       data: {
         paymentId: asaasPayment.id,
-        codigoBarras: asaasPayment.bankSlipUrl,
-        linhaDigitavel: asaasPayment.bankSlipUrl,
+        codigoBarras: asaasPayment.identificationField ?? null,
+        linhaDigitavel,
+        linkBoleto: asaasPayment.bankSlipUrl ?? asaasPayment.invoiceUrl ?? null,
         valor: data.valor,
-        vencimento: data.vencimento || new Date(),
+        vencimento,
       },
     };
   } catch (error) {
     console.error("Erro ao gerar boleto:", error);
+
     return { success: false, error: "Erro ao gerar boleto" };
   }
 }
+
+// ============================================
+// Cartão de Crédito
+// ============================================
 
 export async function gerarCobrancaCartao(data: {
   parcelaId: string;
@@ -257,101 +562,113 @@ export async function gerarCobrancaCartao(data: {
 }) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+
+    if (!session?.user?.tenantId) {
       return { success: false, error: "Não autenticado" };
     }
 
-    const user = session.user as any;
+    const context = await getAsaasContext(
+      data.parcelaId,
+      session.user.tenantId,
+    );
 
-    // Buscar parcela
-    const parcela = await prisma.contratoParcela.findUnique({
-      where: { id: data.parcelaId },
-      include: {
-        contrato: {
-          include: {
-            cliente: true,
-            dadosBancarios: {
-              include: { banco: true },
-            },
-          },
-        },
-      },
-    });
-
-    if (!parcela) {
-      return { success: false, error: "Parcela não encontrada" };
+    if (!context.success) {
+      return context;
     }
 
-    // Buscar configuração Asaas do tenant
-    const asaasConfig = await prisma.tenantAsaasConfig.findUnique({
-      where: { tenantId: user.tenantId },
-    });
+    const { parcela, asaasClient } = context;
+    const customerResult = await ensureAsaasCustomer(
+      asaasClient,
+      parcela.contrato.cliente,
+    );
 
-    if (!asaasConfig || !asaasConfig.integracaoAtiva) {
-      return { success: false, error: "Configuração Asaas não encontrada ou inativa" };
+    if (!customerResult.success) {
+      return customerResult;
     }
 
-    const asaasClient = createAsaasClientFromEncrypted(asaasConfig.asaasApiKey, asaasConfig.ambiente.toLowerCase() as "sandbox" | "production");
+    const vencimento = data.vencimento ?? new Date();
+    const sanitizedCardNumber = sanitizeDigits(data.dadosCartao.numero);
+    const sanitizedCvv = sanitizeDigits(data.dadosCartao.cvv);
 
-    // Criar cliente no Asaas (se não existir)
-    let asaasCustomerId = parcela.contrato.cliente?.asaasCustomerId;
-
-    if (!asaasCustomerId && parcela.contrato.cliente) {
-      const asaasCustomer = await asaasClient.createCustomer({
-        name: parcela.contrato.cliente.nome,
-        email: parcela.contrato.cliente.email || "",
-        cpfCnpj: formatCpfCnpjForAsaas(parcela.contrato.cliente.cpfCnpj),
-        phone: parcela.contrato.cliente.telefone || "",
-        postalCode: parcela.contrato.cliente.cep || "",
-        address: parcela.contrato.cliente.endereco || "",
-        addressNumber: parcela.contrato.cliente.numero || "",
-        complement: parcela.contrato.cliente.complemento || "",
-        province: parcela.contrato.cliente.bairro || "",
-        city: parcela.contrato.cliente.cidade || "",
-        state: parcela.contrato.cliente.estado || "",
-        country: "Brasil",
-      });
-
-      asaasCustomerId = asaasCustomer.id!;
-
-      // Salvar ID do cliente no Asaas
-      await prisma.cliente.update({
-        where: { id: parcela.contrato.cliente.id },
-        data: { asaasCustomerId },
-      });
+    if (!sanitizedCardNumber || !sanitizedCvv) {
+      return {
+        success: false,
+        error: "Dados do cartão inválidos",
+      };
     }
 
-    // Criar pagamento Cartão no Asaas
+    const enderecoPrincipal =
+      parcela.contrato.cliente.enderecos.find((item) => item.principal) ??
+      parcela.contrato.cliente.enderecos[0];
+
+    const holderCpfCnpj = parcela.contrato.cliente.documento
+      ? formatCpfCnpjForAsaas(parcela.contrato.cliente.documento)
+      : undefined;
+    const emailTitular =
+      parcela.contrato.cliente.email ??
+      `cliente-${parcela.contrato.cliente.id}@magiclawyer.com`;
+    const postalCode = enderecoPrincipal?.cep
+      ? sanitizeDigits(enderecoPrincipal.cep)
+      : undefined;
+    const addressNumber = enderecoPrincipal?.numero;
+    const addressComplement = enderecoPrincipal?.complemento;
+    const phone = sanitizeDigits(parcela.contrato.cliente.telefone);
+    const mobilePhone = sanitizeDigits(parcela.contrato.cliente.celular);
+
+    if (!holderCpfCnpj) {
+      return {
+        success: false,
+        error:
+          "Não foi possível identificar o CPF/CNPJ do responsável pelo cartão.",
+      };
+    }
+
     const asaasPayment = await asaasClient.createPayment({
-      customer: asaasCustomerId!,
+      customer: customerResult.customerId,
       billingType: "CREDIT_CARD",
       value: formatValueForAsaas(data.valor),
-      dueDate: formatDateForAsaas(data.vencimento || new Date()),
-      description: data.descricao || `Parcela ${parcela.numero} - ${parcela.contrato.cliente?.nome}`,
+      dueDate: formatDateForAsaas(vencimento),
+      description:
+        data.descricao ??
+        `Parcela ${parcela.numeroParcela} - ${parcela.contrato.cliente.nome}`,
       externalReference: `parcela_${parcela.id}`,
       creditCard: {
         holderName: data.dadosCartao.nome,
-        number: data.dadosCartao.numero,
+        number: sanitizedCardNumber,
         expiryMonth: data.dadosCartao.mes,
-        expiryYear: data.dadosCartao.ano,
-        ccv: data.dadosCartao.cvv,
+        expiryYear:
+          data.dadosCartao.ano.length === 2
+            ? `20${data.dadosCartao.ano}`
+            : data.dadosCartao.ano,
+        ccv: sanitizedCvv,
+      },
+      creditCardHolderInfo: {
+        name: data.dadosCartao.nome,
+        email: emailTitular,
+        cpfCnpj: holderCpfCnpj,
+        ...(postalCode ? { postalCode } : {}),
+        ...(addressNumber ? { addressNumber } : {}),
+        ...(addressComplement ? { addressComplement } : {}),
+        ...(phone ? { phone } : {}),
+        ...(mobilePhone ? { mobilePhone } : {}),
       },
     });
 
-    // Atualizar parcela com dados do pagamento
-    await prisma.contratoParcela.update({
-      where: { id: parcela.id },
-      data: {
-        asaasPaymentId: asaasPayment.id,
-        status: asaasPayment.status === "CONFIRMED" ? "PAGA" : "PENDENTE",
-        dadosPagamento: {
-          tipo: "CARTAO",
-          valor: data.valor,
-          vencimento: data.vencimento || new Date(),
-          status: asaasPayment.status,
-        },
-        updatedAt: new Date(),
-      },
+    if (!asaasPayment.id) {
+      throw new Error("Pagamento não retornou um ID");
+    }
+
+    const dadosPagamento = buildCartaoPaymentData({
+      valor: data.valor,
+      vencimento,
+      status: asaasPayment.status,
+    });
+
+    await persistParcelaPagamento({
+      parcelaId: parcela.id,
+      billingType: "CREDIT_CARD",
+      asaasPayment,
+      dadosPagamento,
     });
 
     revalidatePath("/parcelas");
@@ -360,38 +677,46 @@ export async function gerarCobrancaCartao(data: {
       success: true,
       data: {
         paymentId: asaasPayment.id,
-        status: asaasPayment.status,
+        status: asaasPayment.status ?? "PROCESSING",
         valor: data.valor,
-        vencimento: data.vencimento || new Date(),
+        vencimento,
       },
     };
   } catch (error) {
     console.error("Erro ao processar cartão:", error);
+
     return { success: false, error: "Erro ao processar pagamento" };
   }
 }
 
+// ============================================
+// Consultar Status
+// ============================================
+
 export async function consultarStatusPagamento(paymentId: string) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+
+    if (!session?.user?.tenantId) {
       return { success: false, error: "Não autenticado" };
     }
 
-    const user = session.user as any;
-
-    // Buscar configuração Asaas do tenant
     const asaasConfig = await prisma.tenantAsaasConfig.findUnique({
-      where: { tenantId: user.tenantId },
+      where: { tenantId: session.user.tenantId },
     });
 
     if (!asaasConfig || !asaasConfig.integracaoAtiva) {
-      return { success: false, error: "Configuração Asaas não encontrada ou inativa" };
+      return {
+        success: false,
+        error: "Configuração Asaas não encontrada ou inativa",
+      };
     }
 
-    const asaasClient = createAsaasClientFromEncrypted(asaasConfig.asaasApiKey, asaasConfig.ambiente.toLowerCase() as "sandbox" | "production");
+    const asaasClient = createAsaasClientFromEncrypted(
+      asaasConfig.asaasApiKey,
+      asaasConfig.ambiente.toLowerCase() as "sandbox" | "production",
+    );
 
-    // Consultar status do pagamento no Asaas
     const payment = await asaasClient.getPayment(paymentId);
 
     return {
@@ -399,6 +724,7 @@ export async function consultarStatusPagamento(paymentId: string) {
       data: {
         paymentId: payment.id,
         status: payment.status,
+        parcelaStatus: mapAsaasStatusToParcela(payment.status),
         value: payment.value,
         dueDate: payment.dueDate,
         confirmedDate: payment.confirmedDate,
@@ -407,55 +733,72 @@ export async function consultarStatusPagamento(paymentId: string) {
     };
   } catch (error) {
     console.error("Erro ao consultar status do pagamento:", error);
+
     return { success: false, error: "Erro ao consultar pagamento" };
   }
 }
 
+// ============================================
+// Conciliar Pagamento
+// ============================================
+
 export async function conciliarPagamento(paymentId: string) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+
+    if (!session?.user?.tenantId) {
       return { success: false, error: "Não autenticado" };
     }
 
-    const user = session.user as any;
-
-    // Buscar parcela pelo paymentId
     const parcela = await prisma.contratoParcela.findFirst({
-      where: { asaasPaymentId: paymentId },
+      where: {
+        asaasPaymentId: paymentId,
+        tenantId: session.user.tenantId,
+      },
     });
 
     if (!parcela) {
       return { success: false, error: "Parcela não encontrada" };
     }
 
-    // Buscar configuração Asaas do tenant
     const asaasConfig = await prisma.tenantAsaasConfig.findUnique({
-      where: { tenantId: user.tenantId },
+      where: { tenantId: session.user.tenantId },
     });
 
     if (!asaasConfig || !asaasConfig.integracaoAtiva) {
-      return { success: false, error: "Configuração Asaas não encontrada ou inativa" };
+      return {
+        success: false,
+        error: "Configuração Asaas não encontrada ou inativa",
+      };
     }
 
-    const asaasClient = createAsaasClientFromEncrypted(asaasConfig.asaasApiKey, asaasConfig.ambiente.toLowerCase() as "sandbox" | "production");
+    const asaasClient = createAsaasClientFromEncrypted(
+      asaasConfig.asaasApiKey,
+      asaasConfig.ambiente.toLowerCase() as "sandbox" | "production",
+    );
 
-    // Consultar status do pagamento no Asaas
     const payment = await asaasClient.getPayment(paymentId);
+    const novoStatus = mapAsaasStatusToParcela(payment.status);
 
-    // Atualizar status da parcela
-    let novoStatus = "PENDENTE";
-    if (payment.status === "CONFIRMED") {
-      novoStatus = "PAGA";
-    } else if (payment.status === "OVERDUE") {
-      novoStatus = "ATRASADA";
-    }
+    const dadosExistentes = isJsonObject(parcela.dadosPagamento)
+      ? { ...parcela.dadosPagamento }
+      : {};
+
+    const dadosPagamento = createJsonObject({
+      ...dadosExistentes,
+      status: payment.status ?? null,
+      confirmedDate: payment.confirmedDate ?? null,
+    });
 
     await prisma.contratoParcela.update({
       where: { id: parcela.id },
       data: {
         status: novoStatus,
-        dataPagamento: payment.confirmedDate ? new Date(payment.confirmedDate) : null,
+        dataPagamento: payment.confirmedDate
+          ? new Date(payment.confirmedDate)
+          : null,
+        formaPagamento: payment.billingType ?? parcela.formaPagamento,
+        dadosPagamento,
         updatedAt: new Date(),
       },
     });
@@ -473,6 +816,7 @@ export async function conciliarPagamento(paymentId: string) {
     };
   } catch (error) {
     console.error("Erro ao conciliar pagamento:", error);
+
     return { success: false, error: "Erro ao conciliar pagamento" };
   }
 }

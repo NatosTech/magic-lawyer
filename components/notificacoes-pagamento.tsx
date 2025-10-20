@@ -6,7 +6,11 @@ import { toast } from "sonner";
 
 interface NotificacaoPagamento {
   id: string;
-  tipo: "PAGAMENTO_RECEBIDO" | "PAGAMENTO_ATRASADO" | "ASSINATURA_ATIVADA" | "ASSINATURA_CANCELADA";
+  tipo:
+    | "PAGAMENTO_RECEBIDO"
+    | "PAGAMENTO_ATRASADO"
+    | "ASSINATURA_ATIVADA"
+    | "ASSINATURA_CANCELADA";
   titulo: string;
   descricao: string;
   valor?: number;
@@ -22,7 +26,9 @@ interface NotificacoesPagamentoProps {
   tenantId: string;
 }
 
-export function NotificacoesPagamento({ tenantId }: NotificacoesPagamentoProps) {
+export function NotificacoesPagamento({
+  tenantId,
+}: NotificacoesPagamentoProps) {
   const [notificacoes, setNotificacoes] = useState<NotificacaoPagamento[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -76,7 +82,9 @@ export function NotificacoesPagamento({ tenantId }: NotificacoesPagamentoProps) 
   }, [tenantId]);
 
   const marcarComoLida = (id: string) => {
-    setNotificacoes((prev) => prev.map((notif) => (notif.id === id ? { ...notif, lida: true } : notif)));
+    setNotificacoes((prev) =>
+      prev.map((notif) => (notif.id === id ? { ...notif, lida: true } : notif)),
+    );
   };
 
   const getIcone = (tipo: string) => {
@@ -136,8 +144,10 @@ export function NotificacoesPagamento({ tenantId }: NotificacoesPagamentoProps) 
       <Card className="bg-background/50 border border-white/10">
         <CardBody className="p-4">
           <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <span className="ml-2 text-sm text-default-500">Carregando notificações...</span>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <span className="ml-2 text-sm text-default-500">
+              Carregando notificações...
+            </span>
           </div>
         </CardBody>
       </Card>
@@ -150,7 +160,7 @@ export function NotificacoesPagamento({ tenantId }: NotificacoesPagamentoProps) 
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Notificações de Pagamento</h3>
         {notificacoesNaoLidas > 0 && (
-          <Chip color="danger" variant="flat" size="sm">
+          <Chip color="danger" size="sm" variant="flat">
             {notificacoesNaoLidas} não lidas
           </Chip>
         )}
@@ -167,30 +177,55 @@ export function NotificacoesPagamento({ tenantId }: NotificacoesPagamentoProps) 
           </Card>
         ) : (
           notificacoes.map((notificacao) => (
-            <Card key={notificacao.id} className={`bg-background/50 border border-white/10 transition-all duration-200 ${!notificacao.lida ? "ring-2 ring-primary/20" : ""}`}>
+            <Card
+              key={notificacao.id}
+              className={`bg-background/50 border border-white/10 transition-all duration-200 ${!notificacao.lida ? "ring-2 ring-primary/20" : ""}`}
+            >
               <CardBody className="p-4">
                 <div className="flex items-start gap-3">
-                  <Avatar icon={<span className="text-lg">{getIcone(notificacao.tipo)}</span>} className={`bg-${getCor(notificacao.tipo)}/10 text-${getCor(notificacao.tipo)}`} size="sm" />
+                  <Avatar
+                    className={`bg-${getCor(notificacao.tipo)}/10 text-${getCor(notificacao.tipo)}`}
+                    icon={
+                      <span className="text-lg">
+                        {getIcone(notificacao.tipo)}
+                      </span>
+                    }
+                    size="sm"
+                  />
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h4 className={`font-medium ${!notificacao.lida ? "text-foreground" : "text-default-600"}`}>{notificacao.titulo}</h4>
-                        <p className="text-sm text-default-500 mt-1">{notificacao.descricao}</p>
+                        <h4
+                          className={`font-medium ${!notificacao.lida ? "text-foreground" : "text-default-600"}`}
+                        >
+                          {notificacao.titulo}
+                        </h4>
+                        <p className="text-sm text-default-500 mt-1">
+                          {notificacao.descricao}
+                        </p>
 
-                        {notificacao.valor && <p className="text-sm font-semibold text-primary mt-1">{formatCurrency(notificacao.valor)}</p>}
+                        {notificacao.valor && (
+                          <p className="text-sm font-semibold text-primary mt-1">
+                            {formatCurrency(notificacao.valor)}
+                          </p>
+                        )}
 
-                        <p className="text-xs text-default-400 mt-2">{formatTime(notificacao.data)}</p>
+                        <p className="text-xs text-default-400 mt-2">
+                          {formatTime(notificacao.data)}
+                        </p>
                       </div>
 
                       <div className="flex items-center gap-2 ml-4">
-                        {!notificacao.lida && <div className="w-2 h-2 bg-primary rounded-full"></div>}
+                        {!notificacao.lida && (
+                          <div className="w-2 h-2 bg-primary rounded-full" />
+                        )}
 
                         {notificacao.acao && (
                           <Button
+                            color="primary"
                             size="sm"
                             variant="flat"
-                            color="primary"
                             onPress={() => {
                               marcarComoLida(notificacao.id);
                               // Navegar para a URL da ação
@@ -214,10 +249,12 @@ export function NotificacoesPagamento({ tenantId }: NotificacoesPagamentoProps) 
       {notificacoes.length > 0 && (
         <div className="text-center">
           <Button
-            variant="light"
             size="sm"
+            variant="light"
             onPress={() => {
-              setNotificacoes((prev) => prev.map((notif) => ({ ...notif, lida: true })));
+              setNotificacoes((prev) =>
+                prev.map((notif) => ({ ...notif, lida: true })),
+              );
               toast.success("Todas as notificações foram marcadas como lidas");
             }}
           >

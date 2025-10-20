@@ -28,11 +28,21 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html suppressHydrationWarning lang="pt-br">
       <head />
-      <body suppressHydrationWarning className={clsx("min-h-screen text-foreground bg-background font-sans antialiased", fontSans.variable)}>
+      <body
+        suppressHydrationWarning
+        className={clsx(
+          "min-h-screen text-foreground bg-background font-sans antialiased",
+          fontSans.variable,
+        )}
+      >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <DynamicFavicon />
           {children}

@@ -2,6 +2,73 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+export const emailService = {
+  async sendEmail({
+    to,
+    subject,
+    html,
+    text,
+  }: {
+    to: string;
+    subject: string;
+    html: string;
+    text?: string;
+  }) {
+    if (!process.env.RESEND_API_KEY) {
+      return {
+        success: false,
+        error: "Serviço de email não configurado (RESEND_API_KEY ausente)",
+        provider: "resend",
+      };
+    }
+
+    try {
+      const { data, error } = await resend.emails.send({
+        from: "Magic Lawyer <notificacoes@magiclawyer.com>",
+        to: [to],
+        subject,
+        html,
+        text,
+      });
+
+      if (error) {
+        console.error("Erro ao enviar email:", error);
+
+        return {
+          success: false,
+          error: "Falha ao enviar email",
+          provider: "resend",
+        };
+      }
+
+      return {
+        success: true,
+        provider: "resend",
+        messageId: data?.id,
+      };
+    } catch (error) {
+      console.error("Erro no serviço de email:", error);
+
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Erro desconhecido ao enviar email",
+        provider: "resend",
+      };
+    }
+  },
+  getProvidersStatus(): Array<{ name: string; configured: boolean }> {
+    return [
+      {
+        name: "resend",
+        configured: Boolean(process.env.RESEND_API_KEY),
+      },
+    ];
+  },
+};
+
 interface EmailCredenciais {
   email: string;
   nome: string;
@@ -382,7 +449,141 @@ export async function enviarEmailConfirmacao(data: EmailConfirmacao) {
   }
 }
 
-export async function enviarEmailLembrete(data: { email: string; nome: string; tenantDomain: string; diasRestantes: number }) {
+export async function sendAndamentoEmailNotification(
+  to: string,
+  andamento: {
+    titulo: string;
+    descricao?: string;
+    processo: {
+      numero: string;
+      titulo?: string;
+    };
+    dataMovimentacao: Date;
+    mensagemPersonalizada?: string;
+  },
+  nomeCliente: string,
+  tenantName: string,
+) {
+  if (!process.env.RESEND_API_KEY) {
+    return {
+      success: false,
+      error: "Serviço de email não configurado (RESEND_API_KEY ausente)",
+    };
+  }
+
+  try {
+    const movimentacaoDate = new Date(andamento.dataMovimentacao);
+    const dataFormatada = movimentacaoDate.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const horaFormatada = movimentacaoDate.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const descricao = andamento.descricao
+      ? `<p style="margin: 8px 0; color: #374151;">${andamento.descricao}</p>`
+      : "";
+    const mensagemPersonalizada = andamento.mensagemPersonalizada
+      ? `<div style="margin-top: 20px; padding: 16px; border-left: 4px solid #3b82f6; background: #eff6ff; border-radius: 8px;">
+            <p style="margin: 0; font-weight: 600; color: #1d4ed8;">Mensagem do escritório:</p>
+            <p style="margin: 8px 0 0; color: #1e40af;">${andamento.mensagemPersonalizada}</p>
+         </div>`
+      : "";
+
+    const { data: result, error } = await resend.emails.send({
+      from: `${tenantName} <notificacoes@magiclawyer.com>`,
+      to: [to],
+      subject: `Atualização do processo ${andamento.processo.numero}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>Atualização de andamento</title>
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; padding: 24px; color: #111827;">
+            <div style="max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); overflow: hidden;">
+              <div style="background: linear-gradient(135deg, #0ea5e9, #2563eb); padding: 24px;">
+                <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 600;">
+                  Atualização de andamento
+                </h1>
+                <p style="margin: 4px 0 0; color: rgba(255,255,255,0.85);">
+                  ${tenantName}
+                </p>
+              </div>
+              <div style="padding: 24px;">
+                <p>Olá, <strong>${nomeCliente}</strong></p>
+                <p>O processo <strong>${andamento.processo.numero}</strong> ${
+                  andamento.processo.titulo
+                    ? `(${andamento.processo.titulo}) `
+                    : ""
+                }recebeu uma nova atualização:</p>
+
+                <div style="margin: 20px 0; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc;">
+                  <p style="margin: 0; font-size: 16px; font-weight: 600; color: #1d4ed8;">
+                    ${andamento.titulo}
+                  </p>
+                  ${descricao}
+                  <p style="margin: 8px 0 0; font-size: 14px; color: #64748b;">
+                    Data da movimentação: <strong>${dataFormatada}</strong> às <strong>${horaFormatada}</strong>
+                  </p>
+                </div>
+
+                ${mensagemPersonalizada}
+
+                <p style="margin-top: 24px; font-size: 14px; color: #475569;">
+                  Caso tenha alguma dúvida, responda este email ou entre em contato com nossa equipe.
+                </p>
+              </div>
+              <div style="padding: 16px 24px; background: #f8fafc; font-size: 12px; color: #94a3b8;">
+                <p style="margin: 0;">${tenantName}</p>
+                <p style="margin: 4px 0 0;">Este email foi enviado automaticamente pelo Magic Lawyer.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error("Erro ao enviar email de andamento:", error);
+
+      return {
+        success: false,
+        error: "Falha ao enviar email de andamento",
+        provider: "resend",
+      };
+    }
+
+    return {
+      success: true,
+      provider: "resend",
+      messageId: result?.id,
+    };
+  } catch (error) {
+    console.error("Erro no serviço de email:", error);
+
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erro desconhecido ao enviar email",
+      provider: "resend",
+    };
+  }
+}
+
+export async function enviarEmailLembrete(data: {
+  email: string;
+  nome: string;
+  tenantDomain: string;
+  diasRestantes: number;
+}) {
   try {
     const { data: result, error } = await resend.emails.send({
       from: "Magic Lawyer <onboarding@resend.dev>",

@@ -2,8 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardBody, Chip, Button, Spinner } from "@heroui/react";
-import { consultarStatusPagamento, conciliarPagamento } from "@/app/actions/cobranca-asaas";
 import { toast } from "sonner";
+
+import {
+  consultarStatusPagamento,
+  conciliarPagamento,
+} from "@/app/actions/cobranca-asaas";
 
 interface StatusPagamentoTempoRealProps {
   paymentId: string;
@@ -11,7 +15,11 @@ interface StatusPagamentoTempoRealProps {
   onStatusChange?: (status: string) => void;
 }
 
-export function StatusPagamentoTempoReal({ paymentId, parcelaId, onStatusChange }: StatusPagamentoTempoRealProps) {
+export function StatusPagamentoTempoReal({
+  paymentId,
+  parcelaId,
+  onStatusChange,
+}: StatusPagamentoTempoRealProps) {
   const [status, setStatus] = useState<string>("PENDENTE");
   const [isLoading, setIsLoading] = useState(false);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date>(new Date());
@@ -23,8 +31,10 @@ export function StatusPagamentoTempoReal({ paymentId, parcelaId, onStatusChange 
     const consultarStatus = async () => {
       try {
         const result = await consultarStatusPagamento(paymentId);
+
         if (result.success && result.data) {
-          const novoStatus = result.data.status;
+          const novoStatus = result.data.status ?? "PENDING";
+
           if (novoStatus !== status) {
             setStatus(novoStatus);
             setUltimaAtualizacao(new Date());
@@ -56,13 +66,16 @@ export function StatusPagamentoTempoReal({ paymentId, parcelaId, onStatusChange 
     setIsLoading(true);
     try {
       const result = await conciliarPagamento(paymentId);
-      if (result.success) {
-        setStatus(result.data.paymentStatus);
+
+      if (result.success && result.data) {
+        const paymentStatus = result.data.paymentStatus ?? status;
+
+        setStatus(paymentStatus);
         setUltimaAtualizacao(new Date());
-        onStatusChange?.(result.data.paymentStatus);
+        onStatusChange?.(paymentStatus);
         toast.success("Pagamento conciliado com sucesso!");
       } else {
-        toast.error(result.error || "Erro ao conciliar pagamento");
+        toast.error(result.error ?? "Erro ao conciliar pagamento");
       }
     } catch (error) {
       toast.error("Erro interno do servidor");
@@ -115,8 +128,23 @@ export function StatusPagamentoTempoReal({ paymentId, parcelaId, onStatusChange 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
-              <span className="text-sm text-default-500">Status do Pagamento</span>
-              <Chip color={getStatusColor(status)} variant="flat" size="sm" startContent={status === "CONFIRMED" ? "✅" : status === "PENDING" ? "⏳" : status === "OVERDUE" ? "⚠️" : "❌"}>
+              <span className="text-sm text-default-500">
+                Status do Pagamento
+              </span>
+              <Chip
+                color={getStatusColor(status)}
+                size="sm"
+                startContent={
+                  status === "CONFIRMED"
+                    ? "✅"
+                    : status === "PENDING"
+                      ? "⏳"
+                      : status === "OVERDUE"
+                        ? "⚠️"
+                        : "❌"
+                }
+                variant="flat"
+              >
                 {getStatusText(status)}
               </Chip>
             </div>
@@ -125,10 +153,19 @@ export function StatusPagamentoTempoReal({ paymentId, parcelaId, onStatusChange 
           <div className="flex items-center gap-2">
             <div className="text-right">
               <p className="text-xs text-default-400">Última atualização</p>
-              <p className="text-xs text-default-500">{formatTime(ultimaAtualizacao)}</p>
+              <p className="text-xs text-default-500">
+                {formatTime(ultimaAtualizacao)}
+              </p>
             </div>
 
-            <Button size="sm" variant="flat" color="primary" onPress={handleConciliar} isLoading={isLoading} startContent={isLoading ? <Spinner size="sm" /> : "🔄"}>
+            <Button
+              color="primary"
+              isLoading={isLoading}
+              size="sm"
+              startContent={isLoading ? <Spinner size="sm" /> : "🔄"}
+              variant="flat"
+              onPress={handleConciliar}
+            >
               {isLoading ? "Conciliando..." : "Conciliar"}
             </Button>
           </div>
@@ -136,13 +173,20 @@ export function StatusPagamentoTempoReal({ paymentId, parcelaId, onStatusChange 
 
         {status === "PENDING" && (
           <div className="mt-3 p-2 bg-warning/10 rounded-lg">
-            <p className="text-xs text-warning">💡 O status é atualizado automaticamente a cada 30 segundos. Você também pode clicar em "Conciliar" para verificar manualmente.</p>
+            <p className="text-xs text-warning">
+              💡 O status é atualizado automaticamente a cada 30 segundos. Você
+              também pode clicar em &quot;Conciliar&quot; para verificar
+              manualmente.
+            </p>
           </div>
         )}
 
         {status === "CONFIRMED" && (
           <div className="mt-3 p-2 bg-success/10 rounded-lg">
-            <p className="text-xs text-success">✅ Pagamento confirmado! A parcela foi marcada como paga automaticamente.</p>
+            <p className="text-xs text-success">
+              ✅ Pagamento confirmado! A parcela foi marcada como paga
+              automaticamente.
+            </p>
           </div>
         )}
       </CardBody>

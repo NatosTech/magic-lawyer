@@ -1,9 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Card, CardBody, CardHeader, Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip, Divider, Tooltip } from "@heroui/react";
-import { CreditCard, Copy, QrCode, Download, Eye, CheckCircle, AlertCircle, Banknote, Smartphone } from "lucide-react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Button,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Chip,
+  Tooltip,
+} from "@heroui/react";
+import {
+  CreditCard,
+  Copy,
+  CheckCircle,
+  AlertCircle,
+  Banknote,
+  Smartphone,
+} from "lucide-react";
+
 import { getDadosPagamentoParcela } from "@/app/actions/parcelas-contrato";
 
 interface DadosPagamentoParcelaProps {
@@ -14,7 +33,13 @@ interface DadosPagamentoParcelaProps {
   className?: string;
 }
 
-export function DadosPagamentoParcela({ parcelaId, parcelaNumero, valor, status, className = "" }: DadosPagamentoParcelaProps) {
+export function DadosPagamentoParcela({
+  parcelaId,
+  parcelaNumero,
+  valor,
+  status,
+  className = "",
+}: DadosPagamentoParcelaProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [dadosPagamento, setDadosPagamento] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +60,7 @@ export function DadosPagamentoParcela({ parcelaId, parcelaNumero, valor, status,
     setIsLoading(true);
     try {
       const result = await getDadosPagamentoParcela(parcelaId);
+
       if (result.success) {
         setDadosPagamento(result.data);
         setIsOpen(true);
@@ -88,13 +114,26 @@ export function DadosPagamentoParcela({ parcelaId, parcelaNumero, valor, status,
 
   return (
     <>
-      <Tooltip content="Ver dados de pagamento" color="primary">
-        <Button size="sm" variant="light" color="primary" startContent={<CreditCard className="h-4 w-4" />} onPress={handleOpenModal} isLoading={isLoading} className={className}>
+      <Tooltip color="primary" content="Ver dados de pagamento">
+        <Button
+          className={className}
+          color="primary"
+          isLoading={isLoading}
+          size="sm"
+          startContent={<CreditCard className="h-4 w-4" />}
+          variant="light"
+          onPress={handleOpenModal}
+        >
           Pagamento
         </Button>
       </Tooltip>
 
-      <Modal isOpen={isOpen} onOpenChange={setIsOpen} size="2xl" scrollBehavior="inside">
+      <Modal
+        isOpen={isOpen}
+        scrollBehavior="inside"
+        size="2xl"
+        onOpenChange={setIsOpen}
+      >
         <ModalContent>
           {(onClose) => (
             <>
@@ -102,13 +141,20 @@ export function DadosPagamentoParcela({ parcelaId, parcelaNumero, valor, status,
                 <div className="flex items-center gap-3">
                   <CreditCard className="h-6 w-6 text-primary" />
                   <div>
-                    <h3 className="text-lg font-semibold">Dados de Pagamento</h3>
+                    <h3 className="text-lg font-semibold">
+                      Dados de Pagamento
+                    </h3>
                     <p className="text-sm text-default-500">
                       Parcela {parcelaNumero} - {formatCurrency(valor)}
                     </p>
                   </div>
                 </div>
-                <Chip color={getStatusColor(status)} variant="flat" startContent={getStatusIcon(status)} size="sm">
+                <Chip
+                  color={getStatusColor(status)}
+                  size="sm"
+                  startContent={getStatusIcon(status)}
+                  variant="flat"
+                >
                   {status}
                 </Chip>
               </ModalHeader>
@@ -119,17 +165,25 @@ export function DadosPagamentoParcela({ parcelaId, parcelaNumero, valor, status,
                     {/* Informações da Parcela */}
                     <Card className="border border-primary/20 bg-primary/5">
                       <CardHeader className="pb-2">
-                        <h4 className="text-sm font-semibold text-primary">Informações da Parcela</h4>
+                        <h4 className="text-sm font-semibold text-primary">
+                          Informações da Parcela
+                        </h4>
                       </CardHeader>
                       <CardBody className="pt-0">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
                             <p className="text-default-500">Valor</p>
-                            <p className="font-semibold">{formatCurrency(dadosPagamento.parcela.valor)}</p>
+                            <p className="font-semibold">
+                              {formatCurrency(dadosPagamento.parcela.valor)}
+                            </p>
                           </div>
                           <div>
                             <p className="text-default-500">Vencimento</p>
-                            <p className="font-semibold">{formatDate(dadosPagamento.parcela.dataVencimento)}</p>
+                            <p className="font-semibold">
+                              {formatDate(
+                                dadosPagamento.parcela.dataVencimento,
+                              )}
+                            </p>
                           </div>
                         </div>
                       </CardBody>
@@ -148,10 +202,12 @@ export function DadosPagamentoParcela({ parcelaId, parcelaNumero, valor, status,
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-xs text-default-500">Banco</p>
-                              <p className="text-sm font-semibold">{dadosPagamento.dadosBancarios.banco}</p>
+                              <p className="text-sm font-semibold">
+                                {dadosPagamento.dadosBancarios.banco}
+                              </p>
                             </div>
                             {dadosPagamento.dadosBancarios.principal && (
-                              <Chip size="sm" color="success" variant="flat">
+                              <Chip color="success" size="sm" variant="flat">
                                 Principal
                               </Chip>
                             )}
@@ -159,12 +215,18 @@ export function DadosPagamentoParcela({ parcelaId, parcelaNumero, valor, status,
 
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-xs text-default-500">Agência</p>
-                              <p className="text-sm font-semibold">{dadosPagamento.dadosBancarios.agencia}</p>
+                              <p className="text-xs text-default-500">
+                                Agência
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {dadosPagamento.dadosBancarios.agencia}
+                              </p>
                             </div>
                             <div>
                               <p className="text-xs text-default-500">Conta</p>
-                              <p className="text-sm font-semibold">{dadosPagamento.dadosBancarios.conta}</p>
+                              <p className="text-sm font-semibold">
+                                {dadosPagamento.dadosBancarios.conta}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -183,29 +245,54 @@ export function DadosPagamentoParcela({ parcelaId, parcelaNumero, valor, status,
                         <CardBody className="pt-0">
                           <div className="space-y-3">
                             <div>
-                              <p className="text-xs text-default-500">Chave PIX</p>
+                              <p className="text-xs text-default-500">
+                                Chave PIX
+                              </p>
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-mono bg-background/50 px-2 py-1 rounded flex-1">{dadosPagamento.pagamento.pix.chave}</p>
+                                <p className="text-sm font-mono bg-background/50 px-2 py-1 rounded flex-1">
+                                  {dadosPagamento.pagamento.pix.chave}
+                                </p>
                                 <Button
-                                  size="sm"
-                                  variant="light"
                                   color="secondary"
-                                  startContent={copiedField === "pix" ? <CheckCircle className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                                  onPress={() => copyToClipboard(dadosPagamento.pagamento.pix.chave, "pix")}
+                                  size="sm"
+                                  startContent={
+                                    copiedField === "pix" ? (
+                                      <CheckCircle className="h-3 w-3" />
+                                    ) : (
+                                      <Copy className="h-3 w-3" />
+                                    )
+                                  }
+                                  variant="light"
+                                  onPress={() =>
+                                    copyToClipboard(
+                                      dadosPagamento.pagamento.pix.chave,
+                                      "pix",
+                                    )
+                                  }
                                 >
-                                  {copiedField === "pix" ? "Copiado!" : "Copiar"}
+                                  {copiedField === "pix"
+                                    ? "Copiado!"
+                                    : "Copiar"}
                                 </Button>
                               </div>
                             </div>
 
                             <div>
                               <p className="text-xs text-default-500">Valor</p>
-                              <p className="text-sm font-semibold">{formatCurrency(dadosPagamento.pagamento.pix.valor)}</p>
+                              <p className="text-sm font-semibold">
+                                {formatCurrency(
+                                  dadosPagamento.pagamento.pix.valor,
+                                )}
+                              </p>
                             </div>
 
                             <div>
-                              <p className="text-xs text-default-500">Descrição</p>
-                              <p className="text-sm">{dadosPagamento.pagamento.pix.descricao}</p>
+                              <p className="text-xs text-default-500">
+                                Descrição
+                              </p>
+                              <p className="text-sm">
+                                {dadosPagamento.pagamento.pix.descricao}
+                              </p>
                             </div>
                           </div>
                         </CardBody>
@@ -225,39 +312,64 @@ export function DadosPagamentoParcela({ parcelaId, parcelaNumero, valor, status,
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <p className="text-xs text-default-500">Banco</p>
-                              <p className="text-sm font-semibold">{dadosPagamento.pagamento.boleto.banco}</p>
+                              <p className="text-sm font-semibold">
+                                {dadosPagamento.pagamento.boleto.banco}
+                              </p>
                             </div>
                             <div>
-                              <p className="text-xs text-default-500">Vencimento</p>
-                              <p className="text-sm font-semibold">{formatDate(dadosPagamento.pagamento.boleto.vencimento)}</p>
+                              <p className="text-xs text-default-500">
+                                Vencimento
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {formatDate(
+                                  dadosPagamento.pagamento.boleto.vencimento,
+                                )}
+                              </p>
                             </div>
                           </div>
 
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-xs text-default-500">Agência</p>
-                              <p className="text-sm font-semibold">{dadosPagamento.pagamento.boleto.agencia}</p>
+                              <p className="text-xs text-default-500">
+                                Agência
+                              </p>
+                              <p className="text-sm font-semibold">
+                                {dadosPagamento.pagamento.boleto.agencia}
+                              </p>
                             </div>
                             <div>
                               <p className="text-xs text-default-500">Conta</p>
-                              <p className="text-sm font-semibold">{dadosPagamento.pagamento.boleto.conta}</p>
+                              <p className="text-sm font-semibold">
+                                {dadosPagamento.pagamento.boleto.conta}
+                              </p>
                             </div>
                           </div>
 
                           <div>
                             <p className="text-xs text-default-500">Valor</p>
-                            <p className="text-sm font-semibold">{formatCurrency(dadosPagamento.pagamento.boleto.valor)}</p>
+                            <p className="text-sm font-semibold">
+                              {formatCurrency(
+                                dadosPagamento.pagamento.boleto.valor,
+                              )}
+                            </p>
                           </div>
 
                           <div>
-                            <p className="text-xs text-default-500">Instruções</p>
+                            <p className="text-xs text-default-500">
+                              Instruções
+                            </p>
                             <ul className="text-xs space-y-1">
-                              {dadosPagamento.pagamento.boleto.instrucoes.map((instrucao: string, index: number) => (
-                                <li key={index} className="flex items-start gap-2">
-                                  <span className="text-warning">•</span>
-                                  <span>{instrucao}</span>
-                                </li>
-                              ))}
+                              {dadosPagamento.pagamento.boleto.instrucoes.map(
+                                (instrucao: string, index: number) => (
+                                  <li
+                                    key={index}
+                                    className="flex items-start gap-2"
+                                  >
+                                    <span className="text-warning">•</span>
+                                    <span>{instrucao}</span>
+                                  </li>
+                                ),
+                              )}
                             </ul>
                           </div>
                         </div>
@@ -267,28 +379,38 @@ export function DadosPagamentoParcela({ parcelaId, parcelaNumero, valor, status,
                     {/* Cliente */}
                     <Card className="border border-default/20 bg-default/5">
                       <CardHeader className="pb-2">
-                        <h4 className="text-sm font-semibold text-default-700">Dados do Cliente</h4>
+                        <h4 className="text-sm font-semibold text-default-700">
+                          Dados do Cliente
+                        </h4>
                       </CardHeader>
                       <CardBody className="pt-0">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
                             <p className="text-default-500">Nome</p>
-                            <p className="font-semibold">{dadosPagamento.cliente.nome}</p>
+                            <p className="font-semibold">
+                              {dadosPagamento.cliente.nome}
+                            </p>
                           </div>
                           <div>
                             <p className="text-default-500">Documento</p>
-                            <p className="font-semibold">{dadosPagamento.cliente.documento}</p>
+                            <p className="font-semibold">
+                              {dadosPagamento.cliente.documento}
+                            </p>
                           </div>
                           {dadosPagamento.cliente.email && (
                             <div>
                               <p className="text-default-500">Email</p>
-                              <p className="font-semibold">{dadosPagamento.cliente.email}</p>
+                              <p className="font-semibold">
+                                {dadosPagamento.cliente.email}
+                              </p>
                             </div>
                           )}
                           {dadosPagamento.cliente.telefone && (
                             <div>
                               <p className="text-default-500">Telefone</p>
-                              <p className="font-semibold">{dadosPagamento.cliente.telefone}</p>
+                              <p className="font-semibold">
+                                {dadosPagamento.cliente.telefone}
+                              </p>
                             </div>
                           )}
                         </div>

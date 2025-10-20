@@ -1,6 +1,7 @@
 "use server";
 
 import { execSync } from "child_process";
+
 import prisma from "@/app/lib/prisma";
 
 interface TenantInfo {
@@ -30,12 +31,14 @@ export async function getDevInfo(): Promise<DevInfo> {
   try {
     // Obter URL do ngrok
     let ngrokUrl = "";
+
     try {
       const result = execSync("curl -s http://localhost:4040/api/tunnels", {
         encoding: "utf8",
         timeout: 2000,
       });
       const tunnels = JSON.parse(result);
+
       if (tunnels.tunnels && tunnels.tunnels.length > 0) {
         ngrokUrl = tunnels.tunnels[0].public_url;
       }
@@ -45,6 +48,7 @@ export async function getDevInfo(): Promise<DevInfo> {
 
     // Obter informações dos tenants
     let tenants: TenantInfo[] = [];
+
     try {
       tenants = await prisma.tenant.findMany({
         select: {

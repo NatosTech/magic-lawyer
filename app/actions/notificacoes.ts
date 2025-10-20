@@ -1,12 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-
 import { getServerSession } from "next-auth/next";
+
 import { authOptions } from "@/auth";
 import prisma from "@/app/lib/prisma";
-import { whatsappService, sendAndamentoNotification } from "@/lib/whatsapp-service";
-import { emailService, sendAndamentoEmailNotification } from "@/lib/email-service";
+import {
+  whatsappService,
+  sendAndamentoNotification,
+} from "@/lib/whatsapp-service";
+import {
+  emailService,
+  sendAndamentoEmailNotification,
+} from "@/lib/email-service";
 
 export interface NotificacaoResult {
   success: boolean;
@@ -32,7 +38,7 @@ export async function enviarNotificacaoAndamento(
     notificarWhatsapp?: boolean;
     notificarEmail?: boolean;
     mensagemPersonalizada?: string;
-  } = {}
+  } = {},
 ): Promise<NotificacaoResult> {
   try {
     const session = await getServerSession(authOptions);
@@ -80,16 +86,19 @@ export async function enviarNotificacaoAndamento(
     // Envia WhatsApp se solicitado e cliente tem telefone
     if (options.notificarWhatsapp && cliente.celular) {
       try {
-        const whatsappResult = await sendAndamentoNotification(cliente.celular, {
-          titulo: andamento.titulo,
-          descricao: andamento.descricao || undefined,
-          processo: {
-            numero: andamento.processo.numero,
-            titulo: andamento.processo.titulo || undefined,
+        const whatsappResult = await sendAndamentoNotification(
+          cliente.celular,
+          {
+            titulo: andamento.titulo,
+            descricao: andamento.descricao || undefined,
+            processo: {
+              numero: andamento.processo.numero,
+              titulo: andamento.processo.titulo || undefined,
+            },
+            dataMovimentacao: andamento.dataMovimentacao,
+            mensagemPersonalizada: options.mensagemPersonalizada,
           },
-          dataMovimentacao: andamento.dataMovimentacao,
-          mensagemPersonalizada: options.mensagemPersonalizada,
-        });
+        );
 
         resultado.whatsapp = {
           success: whatsappResult.success,
@@ -108,7 +117,8 @@ export async function enviarNotificacaoAndamento(
       } catch (error) {
         resultado.whatsapp = {
           success: false,
-          error: error instanceof Error ? error.message : "Erro ao enviar WhatsApp",
+          error:
+            error instanceof Error ? error.message : "Erro ao enviar WhatsApp",
         };
       }
     }
@@ -126,9 +136,10 @@ export async function enviarNotificacaoAndamento(
               titulo: andamento.processo.titulo || undefined,
             },
             dataMovimentacao: andamento.dataMovimentacao,
+            mensagemPersonalizada: options.mensagemPersonalizada,
           },
           cliente.nome,
-          session.user.tenantName || "Escritório de Advocacia"
+          session.user.tenantName || "Escritório de Advocacia",
         );
 
         resultado.email = {
@@ -147,7 +158,8 @@ export async function enviarNotificacaoAndamento(
       } catch (error) {
         resultado.email = {
           success: false,
-          error: error instanceof Error ? error.message : "Erro ao enviar email",
+          error:
+            error instanceof Error ? error.message : "Erro ao enviar email",
         };
       }
     }
@@ -174,7 +186,8 @@ export async function enviarNotificacaoAndamento(
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -182,7 +195,10 @@ export async function enviarNotificacaoAndamento(
 /**
  * Testa envio de WhatsApp para número específico
  */
-export async function testarWhatsApp(numero: string, mensagem: string = "Teste de integração WhatsApp - Magic Lawyer"): Promise<{ success: boolean; error?: string; provider?: string }> {
+export async function testarWhatsApp(
+  numero: string,
+  mensagem: string = "Teste de integração WhatsApp - Magic Lawyer",
+): Promise<{ success: boolean; error?: string; provider?: string }> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -207,7 +223,8 @@ export async function testarWhatsApp(numero: string, mensagem: string = "Teste d
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -218,7 +235,7 @@ export async function testarWhatsApp(numero: string, mensagem: string = "Teste d
 export async function testarEmail(
   email: string,
   assunto: string = "Teste de integração Email - Magic Lawyer",
-  mensagem: string = "Este é um teste de integração do sistema de emails do Magic Lawyer."
+  mensagem: string = "Este é um teste de integração do sistema de emails do Magic Lawyer.",
 ): Promise<{ success: boolean; error?: string; provider?: string }> {
   try {
     const session = await getServerSession(authOptions);
@@ -250,7 +267,8 @@ export async function testarEmail(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -292,7 +310,7 @@ export async function enviarNotificacoesLote(
     notificarWhatsapp?: boolean;
     notificarEmail?: boolean;
     mensagemPersonalizada?: string;
-  } = {}
+  } = {},
 ): Promise<{
   success: boolean;
   resultados: Array<{
@@ -323,7 +341,10 @@ export async function enviarNotificacoesLote(
 
     for (const andamentoId of andamentoIds) {
       try {
-        const resultado = await enviarNotificacaoAndamento(andamentoId, options);
+        const resultado = await enviarNotificacaoAndamento(
+          andamentoId,
+          options,
+        );
 
         resultados.push({
           andamentoId,
@@ -382,7 +403,12 @@ export async function obterEstatisticasNotificacoes(): Promise<{
       throw new Error("Usuário não autenticado");
     }
 
-    const [totalAndamentos, andamentosComWhatsapp, andamentosComEmail, andamentosComNotificacao] = await Promise.all([
+    const [
+      totalAndamentos,
+      andamentosComWhatsapp,
+      andamentosComEmail,
+      andamentosComNotificacao,
+    ] = await Promise.all([
       prisma.movimentacaoProcesso.count({
         where: { tenantId: session.user.tenantId },
       }),

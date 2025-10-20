@@ -3,6 +3,7 @@
 import { nanoid } from "nanoid";
 
 import prisma from "@/app/lib/prisma";
+import { Prisma } from "@/app/generated/prisma";
 import {
   AsaasClient,
   formatCpfCnpjForAsaas,
@@ -10,7 +11,7 @@ import {
   type AsaasPayment,
 } from "@/lib/asaas";
 
-interface CheckoutData {
+export interface CheckoutData {
   // Dados da empresa
   nomeEmpresa: string;
   cnpj: string;
@@ -143,15 +144,20 @@ export async function processarCheckout(data: CheckoutData) {
 
       asaasPaymentIdForSession = asaasPayment.id;
     } else {
-      asaasPaymentIdForSession = `pending_${Date.now()}_${Math.random()
-        .toString(36)
-        .slice(2, 8)}`;
+      asaasPaymentIdForSession = `pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     }
 
     // Salvar dados temporários para processar após pagamento
-    const secureCheckoutData: Record<string, unknown> = {
-      ...data,
-    };
+    const secureCheckoutData = Object.entries(data).reduce<Prisma.JsonObject>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = value as Prisma.JsonValue;
+        }
+
+        return acc;
+      },
+      {},
+    );
 
     const checkoutSession = {
       id: nanoid(),
@@ -169,7 +175,7 @@ export async function processarCheckout(data: CheckoutData) {
     await prisma.checkoutSession.create({
       data: {
         id: checkoutSession.id,
-        dadosCheckout: checkoutSession.dadosCheckout,
+        dadosCheckout: secureCheckoutData,
         planoId: checkoutSession.planoId,
         tenantSlug: checkoutSession.tenantSlug,
         tenantDomain: checkoutSession.tenantDomain,
@@ -182,6 +188,7 @@ export async function processarCheckout(data: CheckoutData) {
 
     // Buscar dados completos do pagamento (incluindo PIX) quando disponível
     let fullPayment: AsaasPayment | null = null;
+
     if (asaasPayment?.id) {
       fullPayment = await asaasClient.getPayment(asaasPayment.id);
       console.log(

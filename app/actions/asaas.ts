@@ -1,25 +1,44 @@
 "use server";
 
 import { getServerSession } from "next-auth";
+import { revalidatePath } from "next/cache";
+
 import { authOptions } from "@/auth";
 import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
-import { AsaasClient, createAsaasClientFromEncrypted, encryptAsaasCredentials, validateAsaasApiKey, formatCpfCnpjForAsaas, formatValueForAsaas, formatDateForAsaas } from "@/lib/asaas";
-import { revalidatePath } from "next/cache";
+import {
+  AsaasClient,
+  createAsaasClientFromEncrypted,
+  encryptAsaasCredentials,
+  validateAsaasApiKey,
+  formatCpfCnpjForAsaas,
+  formatValueForAsaas,
+  formatDateForAsaas,
+} from "@/lib/asaas";
 
 // ============================================
 // CONFIGURAÇÃO ASAAS POR TENANT
 // ============================================
 
-export async function configurarAsaasTenant(data: { asaasApiKey: string; asaasAccountId: string; asaasWalletId?: string; ambiente: "SANDBOX" | "PRODUCAO" }) {
+export async function configurarAsaasTenant(data: {
+  asaasApiKey: string;
+  asaasAccountId: string;
+  asaasWalletId?: string;
+  ambiente: "SANDBOX" | "PRODUCAO";
+}) {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user) {
       return { success: false, error: "Não autenticado" };
     }
 
     const user = session.user as any;
+
     if (user.role !== "ADMIN") {
-      return { success: false, error: "Apenas administradores podem configurar Asaas" };
+      return {
+        success: false,
+        error: "Apenas administradores podem configurar Asaas",
+      };
     }
 
     // Validar API key
@@ -28,11 +47,17 @@ export async function configurarAsaasTenant(data: { asaasApiKey: string; asaasAc
     }
 
     // Testar conexão com Asaas
-    const asaasClient = new AsaasClient(data.asaasApiKey, data.ambiente.toLowerCase() as "sandbox" | "production");
+    const asaasClient = new AsaasClient(
+      data.asaasApiKey,
+      data.ambiente.toLowerCase() as "sandbox" | "production",
+    );
     const connectionTest = await asaasClient.testConnection();
 
     if (!connectionTest) {
-      return { success: false, error: "Falha na conexão com Asaas. Verifique suas credenciais." };
+      return {
+        success: false,
+        error: "Falha na conexão com Asaas. Verifique suas credenciais.",
+      };
     }
 
     // Criptografar API key
@@ -74,6 +99,7 @@ export async function configurarAsaasTenant(data: { asaasApiKey: string; asaasAc
     };
   } catch (error) {
     console.error("Erro ao configurar Asaas:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -81,6 +107,7 @@ export async function configurarAsaasTenant(data: { asaasApiKey: string; asaasAc
 export async function testarConexaoAsaas() {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user) {
       return { success: false, error: "Não autenticado" };
     }
@@ -95,7 +122,10 @@ export async function testarConexaoAsaas() {
       return { success: false, error: "Configuração Asaas não encontrada" };
     }
 
-    const asaasClient = createAsaasClientFromEncrypted(config.asaasApiKey, config.ambiente.toLowerCase() as "sandbox" | "production");
+    const asaasClient = createAsaasClientFromEncrypted(
+      config.asaasApiKey,
+      config.ambiente.toLowerCase() as "sandbox" | "production",
+    );
     const connectionTest = await asaasClient.testConnection();
 
     if (connectionTest) {
@@ -115,6 +145,7 @@ export async function testarConexaoAsaas() {
     };
   } catch (error) {
     console.error("Erro ao testar conexão Asaas:", error);
+
     return { success: false, error: "Erro ao testar conexão" };
   }
 }
@@ -122,6 +153,7 @@ export async function testarConexaoAsaas() {
 export async function obterConfiguracaoAsaas() {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user) {
       return { success: false, error: "Não autenticado" };
     }
@@ -149,6 +181,7 @@ export async function obterConfiguracaoAsaas() {
     };
   } catch (error) {
     console.error("Erro ao obter configuração Asaas:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -176,6 +209,7 @@ export async function criarAssinatura(data: {
 }) {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user) {
       return { success: false, error: "Não autenticado" };
     }
@@ -197,10 +231,16 @@ export async function criarAssinatura(data: {
     });
 
     if (!asaasConfig || !asaasConfig.integracaoAtiva) {
-      return { success: false, error: "Configuração Asaas não encontrada ou inativa" };
+      return {
+        success: false,
+        error: "Configuração Asaas não encontrada ou inativa",
+      };
     }
 
-    const asaasClient = createAsaasClientFromEncrypted(asaasConfig.asaasApiKey, asaasConfig.ambiente.toLowerCase() as "sandbox" | "production");
+    const asaasClient = createAsaasClientFromEncrypted(
+      asaasConfig.asaasApiKey,
+      asaasConfig.ambiente.toLowerCase() as "sandbox" | "production",
+    );
 
     // Criar cliente no Asaas
     const asaasCustomer = await asaasClient.createCustomer({
@@ -224,7 +264,9 @@ export async function criarAssinatura(data: {
       customer: asaasCustomer.id!,
       billingType: data.billingType,
       value: formatValueForAsaas(Number(plano.valorMensal || 0)),
-      nextDueDate: formatDateForAsaas(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)), // 30 dias
+      nextDueDate: formatDateForAsaas(
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      ), // 30 dias
       cycle: "MONTHLY",
       description: `Assinatura Magic Lawyer - ${plano.nome}`,
       externalReference: `tenant_${user.tenantId}`,
@@ -239,7 +281,9 @@ export async function criarAssinatura(data: {
         asaasCustomerId: asaasCustomer.id,
         asaasSubscriptionId: asaasSubscription.id,
         dataInicio: new Date(),
-        trialEndsAt: new Date(Date.now() + plano.periodoTeste * 24 * 60 * 60 * 1000),
+        trialEndsAt: new Date(
+          Date.now() + plano.periodoTeste * 24 * 60 * 60 * 1000,
+        ),
         metadata: {
           billingType: data.billingType,
           customerData: data.customerData,
@@ -253,7 +297,9 @@ export async function criarAssinatura(data: {
         asaasCustomerId: asaasCustomer.id,
         asaasSubscriptionId: asaasSubscription.id,
         dataInicio: new Date(),
-        trialEndsAt: new Date(Date.now() + plano.periodoTeste * 24 * 60 * 60 * 1000),
+        trialEndsAt: new Date(
+          Date.now() + plano.periodoTeste * 24 * 60 * 60 * 1000,
+        ),
         metadata: {
           billingType: data.billingType,
           customerData: data.customerData,
@@ -275,6 +321,7 @@ export async function criarAssinatura(data: {
     };
   } catch (error) {
     console.error("Erro ao criar assinatura:", error);
+
     return { success: false, error: "Erro ao criar assinatura" };
   }
 }
@@ -282,6 +329,7 @@ export async function criarAssinatura(data: {
 export async function cancelarAssinatura() {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user) {
       return { success: false, error: "Não autenticado" };
     }
@@ -307,7 +355,10 @@ export async function cancelarAssinatura() {
       return { success: false, error: "Configuração Asaas não encontrada" };
     }
 
-    const asaasClient = createAsaasClientFromEncrypted(asaasConfig.asaasApiKey, asaasConfig.ambiente.toLowerCase() as "sandbox" | "production");
+    const asaasClient = createAsaasClientFromEncrypted(
+      asaasConfig.asaasApiKey,
+      asaasConfig.ambiente.toLowerCase() as "sandbox" | "production",
+    );
 
     // Cancelar assinatura no Asaas
     await asaasClient.deleteSubscription(subscription.asaasSubscriptionId);
@@ -328,6 +379,7 @@ export async function cancelarAssinatura() {
     return { success: true, data: { status: "CANCELADA" } };
   } catch (error) {
     console.error("Erro ao cancelar assinatura:", error);
+
     return { success: false, error: "Erro ao cancelar assinatura" };
   }
 }
@@ -335,6 +387,7 @@ export async function cancelarAssinatura() {
 export async function obterAssinaturaAtual() {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user) {
       return { success: false, error: "Não autenticado" };
     }
@@ -354,7 +407,9 @@ export async function obterAssinaturaAtual() {
     const convertedSubscription = convertAllDecimalFields(subscription);
 
     // Serialização JSON explícita
-    const serializedSubscription = JSON.parse(JSON.stringify(convertedSubscription));
+    const serializedSubscription = JSON.parse(
+      JSON.stringify(convertedSubscription),
+    );
 
     return {
       success: true,
@@ -376,6 +431,7 @@ export async function obterAssinaturaAtual() {
     };
   } catch (error) {
     console.error("Erro ao obter assinatura:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -392,7 +448,9 @@ export async function obterPlanos() {
     });
 
     // Converter campos Decimal para number
-    const convertedPlanos = planos.map((plano) => convertAllDecimalFields(plano));
+    const convertedPlanos = planos.map((plano) =>
+      convertAllDecimalFields(plano),
+    );
 
     // Serialização JSON explícita para garantir que não há objetos Decimal
     const serializedPlanos = JSON.parse(JSON.stringify(convertedPlanos));
@@ -403,6 +461,7 @@ export async function obterPlanos() {
     };
   } catch (error) {
     console.error("Erro ao obter planos:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }

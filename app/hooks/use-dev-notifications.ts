@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import useSWR from "swr";
+
 import { getDevInfo } from "@/app/actions/dev-info";
 
 interface DevNotification {
@@ -17,10 +18,14 @@ export function useDevNotifications() {
   const [notifications, setNotifications] = useState<DevNotification[]>([]);
 
   // SWR para buscar dados de desenvolvimento
-  const { data: devInfo } = useSWR(process.env.NODE_ENV === "development" ? "dev-info" : null, getDevInfo, {
-    refreshInterval: 10000,
-    revalidateOnFocus: true,
-  });
+  const { data: devInfo } = useSWR(
+    process.env.NODE_ENV === "development" ? "dev-info" : null,
+    getDevInfo,
+    {
+      refreshInterval: 10000,
+      revalidateOnFocus: true,
+    },
+  );
 
   useEffect(() => {
     // Só funcionar em desenvolvimento
@@ -88,11 +93,14 @@ export function useDevNotifications() {
     };
 
     const newNotifications = generateDevNotifications();
+
     setNotifications(newNotifications);
   }, [devInfo]);
 
   const markAsRead = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
   };
 
   const dismissNotification = (id: string) => {

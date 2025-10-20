@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import prisma from "@/app/lib/prisma";
-import { createAsaasClientFromEncrypted } from "@/lib/asaas";
 import { processarPagamentoConfirmado } from "@/app/actions/processar-pagamento-confirmado";
 
 export async function POST(request: NextRequest) {
@@ -9,7 +9,10 @@ export async function POST(request: NextRequest) {
     const accessToken = request.headers.get("asaas-access-token");
 
     // Log dos headers para debug
-    console.log("Headers recebidos:", Object.fromEntries(request.headers.entries()));
+    console.log(
+      "Headers recebidos:",
+      Object.fromEntries(request.headers.entries()),
+    );
     console.log("Payload recebido:", payload);
 
     // Verificar token de acesso do webhook (opcional)
@@ -19,20 +22,31 @@ export async function POST(request: NextRequest) {
       // Se token está configurado, validar
       if (!accessToken) {
         console.error("Token de acesso do webhook não encontrado");
-        return NextResponse.json({ error: "Missing access token" }, { status: 401 });
+
+        return NextResponse.json(
+          { error: "Missing access token" },
+          { status: 401 },
+        );
       }
 
       if (accessToken !== webhookSecret) {
         console.error("Token de acesso do webhook inválido");
-        return NextResponse.json({ error: "Invalid access token" }, { status: 401 });
+
+        return NextResponse.json(
+          { error: "Invalid access token" },
+          { status: 401 },
+        );
       }
 
       console.log("✅ Token de acesso validado com sucesso");
     } else {
-      console.log("⚠️ ASAAS_WEBHOOK_SECRET não configurado - webhook funcionando sem autenticação");
+      console.log(
+        "⚠️ ASAAS_WEBHOOK_SECRET não configurado - webhook funcionando sem autenticação",
+      );
     }
 
     const webhookData = JSON.parse(payload);
+
     console.log("Webhook Asaas recebido:", webhookData);
 
     // Processar diferentes tipos de eventos
@@ -65,7 +79,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Erro ao processar webhook Asaas:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 

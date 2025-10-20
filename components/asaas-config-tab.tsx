@@ -9,9 +9,20 @@ import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Spinner } from "@heroui/spinner";
 import { toast } from "sonner";
-import { CreditCard, CheckCircle, XCircle, AlertCircle, ExternalLink, Copy, CopyCheck } from "lucide-react";
-import { configurarAsaasTenant, testarConexaoAsaas, obterConfiguracaoAsaas } from "@/app/actions/asaas";
+import {
+  CreditCard,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  ExternalLink,
+} from "lucide-react";
 import useSWR from "swr";
+
+import {
+  configurarAsaasTenant,
+  testarConexaoAsaas,
+  obterConfiguracaoAsaas,
+} from "@/app/actions/asaas";
 
 interface AsaasConfigTabProps {
   userRole: string;
@@ -31,10 +42,14 @@ export function AsaasConfigTab({ userRole }: AsaasConfigTabProps) {
   });
 
   // Buscar configuração atual
-  const { data: configResult, mutate: mutateConfig } = useSWR("asaas-config", obterConfiguracaoAsaas, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-  });
+  const { data: configResult, mutate: mutateConfig } = useSWR(
+    "asaas-config",
+    obterConfiguracaoAsaas,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    },
+  );
 
   const config = configResult?.success ? configResult.data : null;
 
@@ -48,8 +63,12 @@ export function AsaasConfigTab({ userRole }: AsaasConfigTabProps) {
               <AlertCircle className="w-8 h-8 text-warning" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-warning mb-2">Acesso Restrito</h3>
-              <p className="text-default-500">Apenas administradores podem configurar a integração com Asaas.</p>
+              <h3 className="text-lg font-semibold text-warning mb-2">
+                Acesso Restrito
+              </h3>
+              <p className="text-default-500">
+                Apenas administradores podem configurar a integração com Asaas.
+              </p>
             </div>
           </div>
         </CardBody>
@@ -64,12 +83,14 @@ export function AsaasConfigTab({ userRole }: AsaasConfigTabProps) {
   const handleTestConnection = async () => {
     if (!config) {
       toast.error("Configure o Asaas primeiro");
+
       return;
     }
 
     setIsTesting(true);
     try {
       const result = await testarConexaoAsaas();
+
       if (result.success) {
         toast.success("Conexão com Asaas estabelecida com sucesso!");
         mutateConfig();
@@ -86,12 +107,14 @@ export function AsaasConfigTab({ userRole }: AsaasConfigTabProps) {
   const handleSaveConfig = async () => {
     if (!formData.asaasApiKey || !formData.asaasAccountId) {
       toast.error("Preencha todos os campos obrigatórios");
+
       return;
     }
 
     setIsLoading(true);
     try {
       const result = await configurarAsaasTenant(formData);
+
       if (result.success) {
         toast.success("Configuração Asaas salva com sucesso!");
         setFormData({
@@ -130,10 +153,22 @@ export function AsaasConfigTab({ userRole }: AsaasConfigTabProps) {
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Configuração Atual</h3>
-                <p className="text-sm text-default-500">Status da integração Asaas</p>
+                <p className="text-sm text-default-500">
+                  Status da integração Asaas
+                </p>
               </div>
             </div>
-            <Chip color={config.integracaoAtiva ? "success" : "warning"} variant="flat" startContent={config.integracaoAtiva ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}>
+            <Chip
+              color={config.integracaoAtiva ? "success" : "warning"}
+              startContent={
+                config.integracaoAtiva ? (
+                  <CheckCircle className="w-3 h-3" />
+                ) : (
+                  <XCircle className="w-3 h-3" />
+                )
+              }
+              variant="flat"
+            >
               {config.integracaoAtiva ? "Ativa" : "Inativa"}
             </Chip>
           </CardHeader>
@@ -145,12 +180,20 @@ export function AsaasConfigTab({ userRole }: AsaasConfigTabProps) {
               </div>
               <div>
                 <p className="text-sm text-default-500">Configurado em</p>
-                <p className="font-medium">{new Date(config.dataConfiguracao).toLocaleDateString("pt-BR")}</p>
+                <p className="font-medium">
+                  {new Date(config.dataConfiguracao).toLocaleDateString(
+                    "pt-BR",
+                  )}
+                </p>
               </div>
               {config.ultimaValidacao && (
                 <div>
                   <p className="text-sm text-default-500">Última validação</p>
-                  <p className="font-medium">{new Date(config.ultimaValidacao).toLocaleDateString("pt-BR")}</p>
+                  <p className="font-medium">
+                    {new Date(config.ultimaValidacao).toLocaleDateString(
+                      "pt-BR",
+                    )}
+                  </p>
                 </div>
               )}
             </div>
@@ -158,10 +201,22 @@ export function AsaasConfigTab({ userRole }: AsaasConfigTabProps) {
             <Divider className="my-4" />
 
             <div className="flex gap-2">
-              <Button color="primary" variant="flat" onPress={handleTestConnection} isLoading={isTesting} startContent={isTesting ? <Spinner size="sm" /> : null}>
+              <Button
+                color="primary"
+                isLoading={isTesting}
+                startContent={isTesting ? <Spinner size="sm" /> : null}
+                variant="flat"
+                onPress={handleTestConnection}
+              >
                 {isTesting ? "Testando..." : "Testar Conexão"}
               </Button>
-              <Button as="a" href="https://www.asaas.com" target="_blank" variant="bordered" startContent={<ExternalLink className="w-4 h-4" />}>
+              <Button
+                as="a"
+                href="https://www.asaas.com"
+                startContent={<ExternalLink className="w-4 h-4" />}
+                target="_blank"
+                variant="bordered"
+              >
                 Painel Asaas
               </Button>
             </div>
@@ -177,63 +232,73 @@ export function AsaasConfigTab({ userRole }: AsaasConfigTabProps) {
               <CreditCard className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold">{config ? "Atualizar Configuração" : "Configurar Asaas"}</h3>
-              <p className="text-sm text-default-500">Configure sua conta Asaas para receber pagamentos</p>
+              <h3 className="text-lg font-semibold">
+                {config ? "Atualizar Configuração" : "Configurar Asaas"}
+              </h3>
+              <p className="text-sm text-default-500">
+                Configure sua conta Asaas para receber pagamentos
+              </p>
             </div>
           </div>
         </CardHeader>
         <CardBody className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <Input
+              isRequired
+              description="Começa com $aact_"
               label="API Key"
               placeholder="Cole sua API Key do Asaas"
+              type="password"
               value={formData.asaasApiKey}
               onChange={(e) => handleInputChange("asaasApiKey", e.target.value)}
-              description="Começa com $aact_"
-              isRequired
-              type="password"
             />
             <Input
+              isRequired
+              description="ID da conta no painel Asaas"
               label="Account ID"
               placeholder="ID da sua conta Asaas"
               value={formData.asaasAccountId}
-              onChange={(e) => handleInputChange("asaasAccountId", e.target.value)}
-              description="ID da conta no painel Asaas"
-              isRequired
+              onChange={(e) =>
+                handleInputChange("asaasAccountId", e.target.value)
+              }
             />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <Input
+              description="Para carteiras digitais"
               label="Wallet ID (Opcional)"
               placeholder="ID da carteira digital"
               value={formData.asaasWalletId}
-              onChange={(e) => handleInputChange("asaasWalletId", e.target.value)}
-              description="Para carteiras digitais"
+              onChange={(e) =>
+                handleInputChange("asaasWalletId", e.target.value)
+              }
             />
             <Select
+              isRequired
               label="Ambiente"
               placeholder="Selecione o ambiente"
               selectedKeys={[formData.ambiente]}
               onSelectionChange={(keys) => {
                 const value = Array.from(keys)[0] as "SANDBOX" | "PRODUCAO";
+
                 handleInputChange("ambiente", value);
               }}
-              isRequired
             >
-              <SelectItem key="SANDBOX" value="SANDBOX">
-                Sandbox (Teste)
-              </SelectItem>
-              <SelectItem key="PRODUCAO" value="PRODUCAO">
-                Produção
-              </SelectItem>
+              <SelectItem key="SANDBOX">Sandbox (Teste)</SelectItem>
+              <SelectItem key="PRODUCAO">Produção</SelectItem>
             </Select>
           </div>
 
           <Divider />
 
           <div className="flex gap-2">
-            <Button color="primary" onPress={handleSaveConfig} isLoading={isLoading} startContent={isLoading ? <Spinner size="sm" /> : null}>
+            <Button
+              color="primary"
+              isLoading={isLoading}
+              startContent={isLoading ? <Spinner size="sm" /> : null}
+              onPress={handleSaveConfig}
+            >
               {isLoading ? "Salvando..." : config ? "Atualizar" : "Configurar"}
             </Button>
             <Button
@@ -263,12 +328,19 @@ export function AsaasConfigTab({ userRole }: AsaasConfigTabProps) {
             </h4>
             <div className="space-y-3 text-sm text-default-600">
               <div className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-semibold">1</span>
+                <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-semibold">
+                  1
+                </span>
                 <div>
                   <p className="font-medium">Acesse o painel Asaas</p>
                   <p>
                     Acesse{" "}
-                    <a href="https://www.asaas.com" target="_blank" className="text-primary hover:underline">
+                    <a
+                      className="text-primary hover:underline"
+                      href="https://www.asaas.com"
+                      rel="noreferrer"
+                      target="_blank"
+                    >
                       www.asaas.com
                     </a>{" "}
                     e faça login
@@ -276,18 +348,27 @@ export function AsaasConfigTab({ userRole }: AsaasConfigTabProps) {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-semibold">2</span>
+                <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-semibold">
+                  2
+                </span>
                 <div>
-                  <p className="font-medium">Vá em Configurações → Integrações</p>
+                  <p className="font-medium">
+                    Vá em Configurações → Integrações
+                  </p>
                   <p>Copie sua API Key e Account ID</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-semibold">3</span>
+                <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-semibold">
+                  3
+                </span>
                 <div>
                   <p className="font-medium">Configure os webhooks</p>
                   <p>
-                    Adicione a URL: <code className="bg-default-100 px-1 rounded text-xs">https://seudominio.com/api/webhooks/asaas</code>
+                    Adicione a URL:{" "}
+                    <code className="bg-default-100 px-1 rounded text-xs">
+                      https://seudominio.com/api/webhooks/asaas
+                    </code>
                   </p>
                 </div>
               </div>

@@ -1,6 +1,9 @@
 "use server";
 
-import { enviarEmailCredenciais, enviarEmailConfirmacao } from "@/lib/email-service";
+import {
+  enviarEmailCredenciais,
+  enviarEmailConfirmacao,
+} from "@/lib/email-service";
 
 export async function testarEmailCredenciais() {
   try {
@@ -19,6 +22,7 @@ export async function testarEmailCredenciais() {
     };
   } catch (error) {
     console.error("Erro ao testar email de credenciais:", error);
+
     return {
       success: false,
       error: "Erro ao enviar email de credenciais",
@@ -43,6 +47,7 @@ export async function testarEmailConfirmacao() {
     };
   } catch (error) {
     console.error("Erro ao testar email de confirmação:", error);
+
     return {
       success: false,
       error: "Erro ao enviar email de confirmação",

@@ -4,7 +4,11 @@ import { getServerSession } from "next-auth/next";
 
 import { authOptions } from "@/auth";
 import prisma from "@/app/lib/prisma";
-import { UserRole, ContratoParcelaStatus, HonorarioVisibilidade } from "@/app/generated/prisma";
+import {
+  UserRole,
+  ContratoParcelaStatus,
+  HonorarioVisibilidade,
+} from "@/app/generated/prisma";
 import logger from "@/lib/logger";
 
 // ============================================
@@ -75,6 +79,7 @@ async function getSession() {
 
   // Buscar cliente vinculado ao usuário se for CLIENTE
   let clienteId: string | undefined;
+
   if (user.role === UserRole.CLIENTE) {
     const cliente = await prisma.cliente.findFirst({
       where: {
@@ -84,6 +89,7 @@ async function getSession() {
       },
       select: { id: true },
     });
+
     clienteId = cliente?.id;
   }
 
@@ -96,7 +102,13 @@ async function getSession() {
   };
 }
 
-function buildWhereClause(tenantId: string, role: UserRole, advogadoId?: string, clienteId?: string, filtros?: FiltrosDashboard) {
+function buildWhereClause(
+  tenantId: string,
+  role: UserRole,
+  advogadoId?: string,
+  clienteId?: string,
+  filtros?: FiltrosDashboard,
+) {
   const where: any = {
     tenantId,
     deletedAt: null,
@@ -146,11 +158,19 @@ function buildWhereClause(tenantId: string, role: UserRole, advogadoId?: string,
 // SERVER ACTIONS
 // ============================================
 
-export async function getMetricasFinanceiras(filtros?: FiltrosDashboard): Promise<MetricasFinanceiras> {
+export async function getMetricasFinanceiras(
+  filtros?: FiltrosDashboard,
+): Promise<MetricasFinanceiras> {
   try {
     const { tenantId, role, advogadoId, clienteId } = await getSession();
 
-    const whereContratos = buildWhereClause(tenantId, role, advogadoId, clienteId, filtros);
+    const whereContratos = buildWhereClause(
+      tenantId,
+      role,
+      advogadoId,
+      clienteId,
+      filtros,
+    );
 
     // Buscar parcelas com filtros
     const parcelas = await prisma.contratoParcela.findMany({
@@ -180,9 +200,15 @@ export async function getMetricasFinanceiras(filtros?: FiltrosDashboard): Promis
     // Calcular métricas de receitas
     const receitas = {
       total: parcelas.reduce((sum, p) => sum + Number(p.valor), 0),
-      recebido: parcelas.filter((p) => p.status === ContratoParcelaStatus.PAGA).reduce((sum, p) => sum + Number(p.valor), 0),
-      pendente: parcelas.filter((p) => p.status === ContratoParcelaStatus.PENDENTE).reduce((sum, p) => sum + Number(p.valor), 0),
-      atrasado: parcelas.filter((p) => p.status === ContratoParcelaStatus.ATRASADA).reduce((sum, p) => sum + Number(p.valor), 0),
+      recebido: parcelas
+        .filter((p) => p.status === ContratoParcelaStatus.PAGA)
+        .reduce((sum, p) => sum + Number(p.valor), 0),
+      pendente: parcelas
+        .filter((p) => p.status === ContratoParcelaStatus.PENDENTE)
+        .reduce((sum, p) => sum + Number(p.valor), 0),
+      atrasado: parcelas
+        .filter((p) => p.status === ContratoParcelaStatus.ATRASADA)
+        .reduce((sum, p) => sum + Number(p.valor), 0),
     };
 
     // Calcular despesas (por enquanto 0, pode ser implementado depois)
@@ -200,15 +226,19 @@ export async function getMetricasFinanceiras(filtros?: FiltrosDashboard): Promis
 
     // Calcular performance
     const totalParcelas = parcelas.length;
-    const parcelasAtrasadas = parcelas.filter((p) => p.status === ContratoParcelaStatus.ATRASADA).length;
+    const parcelasAtrasadas = parcelas.filter(
+      (p) => p.status === ContratoParcelaStatus.ATRASADA,
+    ).length;
     const contratos = await prisma.contrato.count({ where: whereContratos });
     const contratosAtivos = await prisma.contrato.count({
       where: { ...whereContratos, status: "ATIVO" },
     });
 
     const performance = {
-      taxaInadimplencia: totalParcelas > 0 ? (parcelasAtrasadas / totalParcelas) * 100 : 0,
-      conversaoContratos: contratos > 0 ? (contratosAtivos / contratos) * 100 : 0,
+      taxaInadimplencia:
+        totalParcelas > 0 ? (parcelasAtrasadas / totalParcelas) * 100 : 0,
+      conversaoContratos:
+        contratos > 0 ? (contratosAtivos / contratos) * 100 : 0,
       ticketMedio: contratos > 0 ? receitas.total / contratos : 0,
     };
 
@@ -224,11 +254,19 @@ export async function getMetricasFinanceiras(filtros?: FiltrosDashboard): Promis
   }
 }
 
-export async function getGraficoParcelas(filtros?: FiltrosDashboard): Promise<GraficoParcelas[]> {
+export async function getGraficoParcelas(
+  filtros?: FiltrosDashboard,
+): Promise<GraficoParcelas[]> {
   try {
     const { tenantId, role, advogadoId, clienteId } = await getSession();
 
-    const whereContratos = buildWhereClause(tenantId, role, advogadoId, clienteId, filtros);
+    const whereContratos = buildWhereClause(
+      tenantId,
+      role,
+      advogadoId,
+      clienteId,
+      filtros,
+    );
 
     // Buscar parcelas agrupadas por mês
     const parcelas = await prisma.contratoParcela.findMany({
@@ -284,7 +322,10 @@ export async function getGraficoParcelas(filtros?: FiltrosDashboard): Promise<Gr
 
         return acc;
       },
-      {} as Record<string, { pagas: number; pendentes: number; atrasadas: number; total: number }>
+      {} as Record<
+        string,
+        { pagas: number; pendentes: number; atrasadas: number; total: number }
+      >,
     );
 
     // Converter para array e ordenar
@@ -300,11 +341,19 @@ export async function getGraficoParcelas(filtros?: FiltrosDashboard): Promise<Gr
   }
 }
 
-export async function getHonorariosPorAdvogado(filtros?: FiltrosDashboard): Promise<HonorariosPorAdvogado[]> {
+export async function getHonorariosPorAdvogado(
+  filtros?: FiltrosDashboard,
+): Promise<HonorariosPorAdvogado[]> {
   try {
     const { tenantId, role, advogadoId, clienteId } = await getSession();
 
-    const whereContratos = buildWhereClause(tenantId, role, advogadoId, clienteId, filtros);
+    const whereContratos = buildWhereClause(
+      tenantId,
+      role,
+      advogadoId,
+      clienteId,
+      filtros,
+    );
 
     // Buscar honorários com controle de privacidade por role
     const honorarios = await prisma.contratoHonorario.findMany({
@@ -374,7 +423,9 @@ export async function getHonorariosPorAdvogado(filtros?: FiltrosDashboard): Prom
     const agrupadoPorAdvogado = honorarios.reduce(
       (acc, honorario) => {
         const advogadoId = honorario.advogadoId || "geral";
-        const advogadoNome = honorario.advogadoId ? `${honorario.advogado?.usuario?.firstName || ""} ${honorario.advogado?.usuario?.lastName || ""}`.trim() : "Honorários Gerais";
+        const advogadoNome = honorario.advogadoId
+          ? `${honorario.advogado?.usuario?.firstName || ""} ${honorario.advogado?.usuario?.lastName || ""}`.trim()
+          : "Honorários Gerais";
 
         if (!acc[advogadoId]) {
           acc[advogadoId] = {
@@ -393,11 +444,15 @@ export async function getHonorariosPorAdvogado(filtros?: FiltrosDashboard): Prom
 
         if (honorario.tipo === "FIXO" && honorario.valorFixo) {
           valorHonorario = Number(honorario.valorFixo);
-        } else if (honorario.tipo === "SUCESSO" && honorario.percentualSucesso) {
+        } else if (
+          honorario.tipo === "SUCESSO" &&
+          honorario.percentualSucesso
+        ) {
           // Para honorários de sucesso, usar percentual do valor do contrato
           const valorContrato = Number(honorario.contrato.valor || 0);
 
-          valorHonorario = (valorContrato * Number(honorario.percentualSucesso)) / 100;
+          valorHonorario =
+            (valorContrato * Number(honorario.percentualSucesso)) / 100;
         } else if (honorario.tipo === "HIBRIDO") {
           // Para híbrido, somar valor fixo + percentual
           const valorFixo = Number(honorario.valorFixo || 0);
@@ -411,8 +466,12 @@ export async function getHonorariosPorAdvogado(filtros?: FiltrosDashboard): Prom
 
         // Calcular parcelas recebidas vs pendentes
         const parcelas = honorario.contrato.parcelas;
-        const parcelasRecebidas = parcelas.filter((p) => p.status === ContratoParcelaStatus.PAGA);
-        const parcelasPendentes = parcelas.filter((p) => p.status === ContratoParcelaStatus.PENDENTE);
+        const parcelasRecebidas = parcelas.filter(
+          (p) => p.status === ContratoParcelaStatus.PAGA,
+        );
+        const parcelasPendentes = parcelas.filter(
+          (p) => p.status === ContratoParcelaStatus.PENDENTE,
+        );
 
         // Proporção de honorários recebidos vs pendentes
         const totalParcelas = parcelas.length;
@@ -421,8 +480,10 @@ export async function getHonorariosPorAdvogado(filtros?: FiltrosDashboard): Prom
           const proporcaoRecebida = parcelasRecebidas.length / totalParcelas;
           const proporcaoPendente = parcelasPendentes.length / totalParcelas;
 
-          acc[advogadoId].honorariosRecebidos += valorHonorario * proporcaoRecebida;
-          acc[advogadoId].honorariosPendentes += valorHonorario * proporcaoPendente;
+          acc[advogadoId].honorariosRecebidos +=
+            valorHonorario * proporcaoRecebida;
+          acc[advogadoId].honorariosPendentes +=
+            valorHonorario * proporcaoPendente;
         }
 
         // Contar contratos ativos
@@ -432,10 +493,12 @@ export async function getHonorariosPorAdvogado(filtros?: FiltrosDashboard): Prom
 
         return acc;
       },
-      {} as Record<string, HonorariosPorAdvogado>
+      {} as Record<string, HonorariosPorAdvogado>,
     );
 
-    return Object.values(agrupadoPorAdvogado).sort((a, b) => b.totalHonorarios - a.totalHonorarios);
+    return Object.values(agrupadoPorAdvogado).sort(
+      (a, b) => b.totalHonorarios - a.totalHonorarios,
+    );
   } catch (error) {
     logger.error("Erro ao buscar honorários por advogado:", error);
     throw new Error("Erro ao buscar honorários por advogado");
@@ -481,6 +544,7 @@ export async function getDadosBancariosAtivos(): Promise<
     }));
   } catch (error) {
     logger.error("Erro ao buscar dados bancários ativos:", error);
+
     return [];
   }
 }
@@ -524,6 +588,7 @@ export async function getAdvogadosAtivos(): Promise<
     }));
   } catch (error) {
     logger.error("Erro ao buscar advogados ativos:", error);
+
     return [];
   }
 }
@@ -560,6 +625,7 @@ export async function getClientesAtivos(): Promise<
     }));
   } catch (error) {
     logger.error("Erro ao buscar clientes ativos:", error);
+
     return [];
   }
 }

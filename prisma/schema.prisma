@@ -428,6 +428,7 @@ model Cliente {
   responsavelEmail     String?
   responsavelTelefone  String?
   observacoes          String?
+  asaasCustomerId      String?                // ID do cliente no Asaas
   usuarioId            String?
   deletedAt            DateTime?
   createdAt            DateTime              @default(now())
@@ -450,6 +451,7 @@ model Cliente {
   @@unique([tenantId, usuarioId])
   @@index([nome])
   @@index([documento])
+  @@index([asaasCustomerId])
   @@index([tenantId, deletedAt])
   @@schema("magiclawyer")
 }
@@ -1328,6 +1330,8 @@ model ContratoParcela {
   formaPagamento         String?
   comprovanteDocumentoId String?
   responsavelUsuarioId   String?
+  asaasPaymentId         String?               // ID do pagamento no Asaas
+  dadosPagamento         Json?
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
   contrato               Contrato              @relation(fields: [contratoId], references: [id], onDelete: Cascade)
@@ -1340,6 +1344,7 @@ model ContratoParcela {
   @@index([tenantId, status])
   @@index([tenantId, dataVencimento])
   @@index([dadosBancariosId])
+  @@index([asaasPaymentId])
   @@schema("magiclawyer")
 }
 

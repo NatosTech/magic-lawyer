@@ -5,8 +5,17 @@ import useSWR from "swr";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { ExternalLink, Copy, Globe, Users, Server, ChevronUp, ChevronDown } from "lucide-react";
+import {
+  ExternalLink,
+  Copy,
+  Globe,
+  Users,
+  Server,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
 import { toast } from "sonner";
+
 import { getDevInfo } from "@/app/actions/dev-info";
 
 interface TenantInfo {
@@ -31,11 +40,15 @@ export function DevInfo() {
     data: devInfo,
     error,
     isLoading,
-  } = useSWR(process.env.NODE_ENV === "development" ? "dev-info" : null, getDevInfo, {
-    refreshInterval: 10000, // Atualiza a cada 10 segundos
-    revalidateOnFocus: true,
-    onSuccess: () => setIsVisible(true),
-  });
+  } = useSWR(
+    process.env.NODE_ENV === "development" ? "dev-info" : null,
+    getDevInfo,
+    {
+      refreshInterval: 10000, // Atualiza a cada 10 segundos
+      revalidateOnFocus: true,
+      onSuccess: () => setIsVisible(true),
+    },
+  );
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -46,17 +59,24 @@ export function DevInfo() {
 
   return (
     <Card className="fixed bottom-4 right-4 z-50 w-80 bg-black/90 backdrop-blur-md border-white/10">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+      <CardHeader
+        className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         <div className="flex items-center gap-2">
           <Server className="h-4 w-4 text-green-400" />
           <h3 className="text-sm font-medium text-white">Desenvolvimento</h3>
         </div>
         <div className="flex items-center gap-2">
-          <Chip size="sm" color="success" variant="flat">
+          <Chip color="success" size="sm" variant="flat">
             DEV
           </Chip>
-          <Button isIconOnly size="sm" variant="light" className="text-white">
-            {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+          <Button isIconOnly className="text-white" size="sm" variant="light">
+            {isExpanded ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronUp className="h-3 w-3" />
+            )}
           </Button>
         </div>
       </CardHeader>
@@ -70,8 +90,15 @@ export function DevInfo() {
                 <span className="text-xs text-default-400">ngrok</span>
               </div>
               <div className="flex items-center gap-2">
-                <code className="text-xs bg-white/10 px-2 py-1 rounded text-green-400 flex-1 truncate">{devInfo.ngrok}</code>
-                <Button isIconOnly size="sm" variant="light" onClick={() => copyToClipboard(devInfo.ngrok, "URL ngrok")}>
+                <code className="text-xs bg-white/10 px-2 py-1 rounded text-green-400 flex-1 truncate">
+                  {devInfo.ngrok}
+                </code>
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="light"
+                  onClick={() => copyToClipboard(devInfo.ngrok, "URL ngrok")}
+                >
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
@@ -85,8 +112,15 @@ export function DevInfo() {
               <span className="text-xs text-default-400">Dashboard</span>
             </div>
             <div className="flex items-center gap-2">
-              <code className="text-xs bg-white/10 px-2 py-1 rounded text-purple-400 flex-1">http://localhost:4040</code>
-              <Button isIconOnly size="sm" variant="light" onClick={() => window.open("http://localhost:4040", "_blank")}>
+              <code className="text-xs bg-white/10 px-2 py-1 rounded text-purple-400 flex-1">
+                http://localhost:4040
+              </code>
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                onClick={() => window.open("http://localhost:4040", "_blank")}
+              >
                 <ExternalLink className="h-3 w-3" />
               </Button>
             </div>
@@ -102,8 +136,20 @@ export function DevInfo() {
               <div className="space-y-1">
                 {devInfo.tenants.map((tenant) => (
                   <div key={tenant.slug} className="flex items-center gap-2">
-                    <code className="text-xs bg-white/10 px-2 py-1 rounded text-orange-400 flex-1">{tenant.slug}.localhost:9192</code>
-                    <Button isIconOnly size="sm" variant="light" onClick={() => copyToClipboard(`${tenant.slug}.localhost:9192`, "URL tenant")}>
+                    <code className="text-xs bg-white/10 px-2 py-1 rounded text-orange-400 flex-1">
+                      {tenant.slug}.localhost:9192
+                    </code>
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      onClick={() =>
+                        copyToClipboard(
+                          `${tenant.slug}.localhost:9192`,
+                          "URL tenant",
+                        )
+                      }
+                    >
                       <Copy className="h-3 w-3" />
                     </Button>
                   </div>
@@ -119,8 +165,20 @@ export function DevInfo() {
                 <span className="text-xs text-default-400">Webhook</span>
               </div>
               <div className="flex items-center gap-2">
-                <code className="text-xs bg-white/10 px-2 py-1 rounded text-red-400 flex-1 truncate">{devInfo.ngrok}/api/webhooks/asaas</code>
-                <Button isIconOnly size="sm" variant="light" onClick={() => copyToClipboard(`${devInfo.ngrok}/api/webhooks/asaas`, "Webhook URL")}>
+                <code className="text-xs bg-white/10 px-2 py-1 rounded text-red-400 flex-1 truncate">
+                  {devInfo.ngrok}/api/webhooks/asaas
+                </code>
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="light"
+                  onClick={() =>
+                    copyToClipboard(
+                      `${devInfo.ngrok}/api/webhooks/asaas`,
+                      "Webhook URL",
+                    )
+                  }
+                >
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
@@ -133,7 +191,7 @@ export function DevInfo() {
       {!isExpanded && (
         <div className="px-4 pb-2">
           <div className="flex items-center gap-2 text-xs text-green-400">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
             <span>ngrok: {devInfo.ngrok ? "Ativo" : "Inativo"}</span>
             <span className="text-white/50">•</span>
             <span>{devInfo.tenants.length} tenants</span>

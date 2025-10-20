@@ -19,7 +19,10 @@ export async function getPaymentStatus(checkoutId: string) {
     }
 
     // Se já foi confirmado
-    if (checkoutSession.status === "CONFIRMED" || checkoutSession.status === "CONFIRMADO") {
+    if (
+      checkoutSession.status === "CONFIRMED" ||
+      checkoutSession.status === "CONFIRMADO"
+    ) {
       return {
         success: true,
         status: "CONFIRMED",
@@ -29,7 +32,9 @@ export async function getPaymentStatus(checkoutId: string) {
     }
 
     // Buscar dados do pagamento no Asaas (simulado por enquanto)
-    const paymentStatus = checkoutSession.asaasPaymentId ? "PENDING" : "CREATED";
+    const paymentStatus = checkoutSession.asaasPaymentId
+      ? "PENDING"
+      : "CREATED";
 
     return {
       success: true,
@@ -39,6 +44,7 @@ export async function getPaymentStatus(checkoutId: string) {
     };
   } catch (error) {
     console.error("Erro ao buscar status do pagamento:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",

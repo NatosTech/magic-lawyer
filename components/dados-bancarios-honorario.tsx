@@ -1,8 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardBody, CardHeader, Button, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Select, SelectItem, Divider, Tooltip } from "@heroui/react";
-import { CreditCardIcon, BuildingIcon, UserIcon, PhoneIcon, MailIcon, CopyIcon, CheckIcon, EditIcon, DollarSignIcon } from "lucide-react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Button,
+  Chip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Select,
+  SelectItem,
+  Divider,
+  Tooltip,
+} from "@heroui/react";
+import {
+  CreditCardIcon,
+  BuildingIcon,
+  UserIcon,
+  PhoneIcon,
+  MailIcon,
+  CopyIcon,
+  CheckIcon,
+  EditIcon,
+  DollarSignIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { useDadosPagamentoHonorario } from "@/app/hooks/use-honorarios-contratuais";
@@ -15,12 +40,16 @@ interface DadosBancariosHonorarioProps {
   readonly?: boolean;
 }
 
-export function DadosBancariosHonorario({ honorarioId, readonly = false }: DadosBancariosHonorarioProps) {
+export function DadosBancariosHonorario({
+  honorarioId,
+  readonly = false,
+}: DadosBancariosHonorarioProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [loadingUpdate, setLoadingUpdate] = useState(false);
 
-  const { dadosPagamento, isLoading, recarregar } = useDadosPagamentoHonorario(honorarioId);
+  const { dadosPagamento, isLoading, recarregar } =
+    useDadosPagamentoHonorario(honorarioId);
   const { dadosBancarios } = useDadosBancariosAtivos();
 
   const handleCopy = async (text: string, field: string) => {
@@ -37,7 +66,10 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
   const handleContaChange = async (newDadosBancariosId: string) => {
     setLoadingUpdate(true);
     try {
-      const result = await updateHonorarioContratual(honorarioId, { dadosBancariosId: newDadosBancariosId });
+      const result = await updateHonorarioContratual(honorarioId, {
+        dadosBancariosId: newDadosBancariosId,
+      });
+
       if (result.success) {
         toast.success("Conta bancária do honorário atualizada!");
         recarregar(); // Re-fetch payment data
@@ -59,7 +91,9 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
           <div className="flex items-center justify-center py-4">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
-              <p className="text-sm text-default-500">Carregando dados bancários...</p>
+              <p className="text-sm text-default-500">
+                Carregando dados bancários...
+              </p>
             </div>
           </div>
         </CardBody>
@@ -69,14 +103,20 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
 
   // Type guard para verificar se é dados de pagamento completos
   const isDadosPagamentoCompletos = (
-    data: any
+    data: any,
   ): data is {
     honorario: any;
     contaBancaria: any;
     cliente: any;
     contrato: any;
   } => {
-    return data && data.contaBancaria && data.honorario && data.cliente && data.contrato;
+    return (
+      data &&
+      data.contaBancaria &&
+      data.honorario &&
+      data.cliente &&
+      data.contrato
+    );
   };
 
   if (!dadosPagamento || !isDadosPagamentoCompletos(dadosPagamento)) {
@@ -85,8 +125,12 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
         <CardBody>
           <div className="text-center py-4">
             <CreditCardIcon className="h-12 w-12 text-default-300 mx-auto mb-2" />
-            <p className="text-default-500">Nenhuma conta bancária configurada</p>
-            <p className="text-sm text-default-400">Configure uma conta para receber pagamentos</p>
+            <p className="text-default-500">
+              Nenhuma conta bancária configurada
+            </p>
+            <p className="text-sm text-default-400">
+              Configure uma conta para receber pagamentos
+            </p>
           </div>
         </CardBody>
       </Card>
@@ -108,7 +152,12 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
               {honorario.tipo}
             </Chip>
             {!readonly && dadosBancarios.length > 1 && (
-              <Button size="sm" startContent={<EditIcon className="h-4 w-4" />} variant="light" onPress={() => setModalOpen(true)}>
+              <Button
+                size="sm"
+                startContent={<EditIcon className="h-4 w-4" />}
+                variant="light"
+                onPress={() => setModalOpen(true)}
+              >
                 Alterar Conta
               </Button>
             )}
@@ -123,7 +172,9 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
                 <BuildingIcon className="h-4 w-4 text-default-400" />
                 <div>
                   <p className="text-sm font-medium">{contaBancaria.banco}</p>
-                  <p className="text-xs text-default-500">{contaBancaria.tipoConta}</p>
+                  <p className="text-xs text-default-500">
+                    {contaBancaria.tipoConta}
+                  </p>
                 </div>
               </div>
 
@@ -131,10 +182,23 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-default-600">Agência:</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">{contaBancaria.agencia}</span>
+                    <span className="font-mono text-sm">
+                      {contaBancaria.agencia}
+                    </span>
                     <Tooltip content="Copiar agência">
-                      <Button isIconOnly size="sm" variant="light" onPress={() => handleCopy(contaBancaria.agencia, "Agência")}>
-                        {copiedField === "Agência" ? <CheckIcon className="h-3 w-3 text-success" /> : <CopyIcon className="h-3 w-3" />}
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() =>
+                          handleCopy(contaBancaria.agencia, "Agência")
+                        }
+                      >
+                        {copiedField === "Agência" ? (
+                          <CheckIcon className="h-3 w-3 text-success" />
+                        ) : (
+                          <CopyIcon className="h-3 w-3" />
+                        )}
                       </Button>
                     </Tooltip>
                   </div>
@@ -143,10 +207,21 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-default-600">Conta:</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">{contaBancaria.conta}</span>
+                    <span className="font-mono text-sm">
+                      {contaBancaria.conta}
+                    </span>
                     <Tooltip content="Copiar conta">
-                      <Button isIconOnly size="sm" variant="light" onPress={() => handleCopy(contaBancaria.conta, "Conta")}>
-                        {copiedField === "Conta" ? <CheckIcon className="h-3 w-3 text-success" /> : <CopyIcon className="h-3 w-3" />}
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onPress={() => handleCopy(contaBancaria.conta, "Conta")}
+                      >
+                        {copiedField === "Conta" ? (
+                          <CheckIcon className="h-3 w-3 text-success" />
+                        ) : (
+                          <CopyIcon className="h-3 w-3" />
+                        )}
                       </Button>
                     </Tooltip>
                   </div>
@@ -160,7 +235,9 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
                 <UserIcon className="h-4 w-4 text-default-400" />
                 <div>
                   <p className="text-sm font-medium">{contaBancaria.titular}</p>
-                  <p className="text-xs text-default-500">{contaBancaria.documento}</p>
+                  <p className="text-xs text-default-500">
+                    {contaBancaria.documento}
+                  </p>
                 </div>
               </div>
 
@@ -190,7 +267,11 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
                   banco: { codigo: "001", nome: contaBancaria.banco },
                   agencia: contaBancaria.agencia,
                   conta: contaBancaria.conta,
-                  tipoContaBancaria: contaBancaria.tipoContaBancaria as "CORRENTE" | "POUPANCA" | "SALARIO" | "INVESTIMENTO",
+                  tipoContaBancaria: contaBancaria.tipoContaBancaria as
+                    | "CORRENTE"
+                    | "POUPANCA"
+                    | "SALARIO"
+                    | "INVESTIMENTO",
                   chavePix: contaBancaria.chavePix || undefined,
                   tipoChavePix: contaBancaria.tipoChavePix || undefined,
                   titularNome: contaBancaria.titular,
@@ -209,19 +290,34 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
           {/* Valor do Honorário */}
           <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-primary-700">Valor do Honorário:</span>
-              <span className="text-lg font-bold text-primary-800">R$ {honorario.valorCalculado.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+              <span className="text-sm font-medium text-primary-700">
+                Valor do Honorário:
+              </span>
+              <span className="text-lg font-bold text-primary-800">
+                R${" "}
+                {honorario.valorCalculado.toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                })}
+              </span>
             </div>
-            {honorario.detalhes && <p className="text-xs text-primary-600 mt-1">{honorario.detalhes}</p>}
+            {honorario.detalhes && (
+              <p className="text-xs text-primary-600 mt-1">
+                {honorario.detalhes}
+              </p>
+            )}
           </div>
 
           {/* Informações do Cliente */}
           <div className="bg-default-50 border border-default-200 rounded-lg p-3">
             <div className="flex items-center gap-2 mb-2">
               <UserIcon className="h-4 w-4 text-default-500" />
-              <span className="text-sm font-medium text-default-700">Cliente: {cliente.nome}</span>
+              <span className="text-sm font-medium text-default-700">
+                Cliente: {cliente.nome}
+              </span>
             </div>
-            <p className="text-xs text-default-600">Contrato: {contrato.titulo}</p>
+            <p className="text-xs text-default-600">
+              Contrato: {contrato.titulo}
+            </p>
           </div>
         </CardBody>
       </Card>
@@ -232,17 +328,21 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
           <ModalHeader>Selecionar Conta Bancária para o Honorário</ModalHeader>
           <ModalBody>
             <Select
+              isLoading={loadingUpdate}
               label="Conta para Recebimento"
               placeholder="Selecione uma conta"
               selectedKeys={contaBancaria.id ? [contaBancaria.id] : []}
               onSelectionChange={(keys) => {
                 const selectedKey = Array.from(keys)[0] as string;
+
                 handleContaChange(selectedKey);
               }}
-              isLoading={loadingUpdate}
             >
               {(dadosBancarios || []).map((conta) => (
-                <SelectItem key={conta.id} textValue={`${conta.titularNome} - ${conta.banco?.nome} - ${conta.agencia}/${conta.conta}`}>
+                <SelectItem
+                  key={conta.id}
+                  textValue={`${conta.titularNome} - ${conta.banco?.nome} - ${conta.agencia}/${conta.conta}`}
+                >
                   <div className="flex flex-col">
                     <span className="font-medium">{conta.titularNome}</span>
                     <span className="text-xs text-default-500">
@@ -255,15 +355,19 @@ export function DadosBancariosHonorario({ honorarioId, readonly = false }: Dados
             </Select>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={() => setModalOpen(false)} isDisabled={loadingUpdate}>
+            <Button
+              isDisabled={loadingUpdate}
+              variant="light"
+              onPress={() => setModalOpen(false)}
+            >
               Cancelar
             </Button>
             <Button
               color="primary"
+              isDisabled={loadingUpdate}
               onPress={() => {
                 /* Ação de salvar já está no onSelectionChange */
               }}
-              isDisabled={loadingUpdate}
             >
               Salvar
             </Button>

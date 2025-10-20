@@ -20,7 +20,16 @@ interface CnpjInputProps {
   className?: string;
 }
 
-export function CnpjInput({ label = "CNPJ", placeholder = "00.000.000/0000-00", value = "", onChange, onCnpjFound, isRequired = false, isDisabled = false, className }: CnpjInputProps) {
+export function CnpjInput({
+  label = "CNPJ",
+  placeholder = "00.000.000/0000-00",
+  value = "",
+  onChange,
+  onCnpjFound,
+  isRequired = false,
+  isDisabled = false,
+  className,
+}: CnpjInputProps) {
   const { searchCnpj, loading, error } = useCnpjSearch();
 
   const handleCnpjChange = (newValue: string) => {
@@ -79,7 +88,14 @@ export function CnpjInput({ label = "CNPJ", placeholder = "00.000.000/0000-00", 
         onChange={(e) => handleCnpjChange(e.target.value)}
         onKeyDown={handleKeyDown}
       />
-      <Button className="min-w-12" color="primary" isDisabled={!value || !validarCnpj(value) || loading} isLoading={loading} variant="bordered" onPress={handleSearchCnpj}>
+      <Button
+        className="min-w-12"
+        color="primary"
+        isDisabled={!value || !validarCnpj(value) || loading}
+        isLoading={loading}
+        variant="bordered"
+        onPress={() => handleSearchCnpj()}
+      >
         {!loading && <Search className="w-4 h-4" />}
       </Button>
     </div>

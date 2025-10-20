@@ -36,7 +36,8 @@ class WhapiCloudProvider implements WhatsAppProvider {
 
   constructor() {
     this.apiKey = process.env.WHAPI_CLOUD_API_KEY || "";
-    this.baseUrl = process.env.WHAPI_CLOUD_BASE_URL || "https://gate.whapi.cloud";
+    this.baseUrl =
+      process.env.WHAPI_CLOUD_BASE_URL || "https://gate.whapi.cloud";
   }
 
   isConfigured(): boolean {
@@ -102,7 +103,8 @@ class MaytapiProvider implements WhatsAppProvider {
 
   constructor() {
     this.apiKey = process.env.MAYTAPI_API_KEY || "";
-    this.baseUrl = process.env.MAYTAPI_BASE_URL || "https://api.maytapi.com/api";
+    this.baseUrl =
+      process.env.MAYTAPI_BASE_URL || "https://api.maytapi.com/api";
     this.instanceId = process.env.MAYTAPI_INSTANCE_ID || "";
   }
 
@@ -114,24 +116,28 @@ class MaytapiProvider implements WhatsAppProvider {
     if (!this.isConfigured()) {
       return {
         success: false,
-        error: "Maytapi não configurado. Verifique MAYTAPI_API_KEY e MAYTAPI_INSTANCE_ID",
+        error:
+          "Maytapi não configurado. Verifique MAYTAPI_API_KEY e MAYTAPI_INSTANCE_ID",
         provider: this.name,
       };
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/${this.instanceId}/sendMessage`, {
-        method: "POST",
-        headers: {
-          "x-maytapi-key": this.apiKey,
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${this.baseUrl}/${this.instanceId}/sendMessage`,
+        {
+          method: "POST",
+          headers: {
+            "x-maytapi-key": this.apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to_number: message.to,
+            type: "text",
+            message: message.message,
+          }),
         },
-        body: JSON.stringify({
-          to_number: message.to,
-          type: "text",
-          message: message.message,
-        }),
-      });
+      );
 
       const data = await response.json();
 
@@ -172,7 +178,9 @@ class MockProvider implements WhatsAppProvider {
     // Simula delay de rede
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    console.log(`[MOCK WhatsApp] Enviando para ${message.to}: ${message.message}`);
+    console.log(
+      `[MOCK WhatsApp] Enviando para ${message.to}: ${message.message}`,
+    );
 
     return {
       success: true,
@@ -198,7 +206,9 @@ export class WhatsAppService {
     ];
 
     // Seleciona o primeiro provedor configurado
-    this.defaultProvider = this.providers.find((p) => p.isConfigured()) || this.providers[this.providers.length - 1];
+    this.defaultProvider =
+      this.providers.find((p) => p.isConfigured()) ||
+      this.providers[this.providers.length - 1];
   }
 
   /**
@@ -211,7 +221,10 @@ export class WhatsAppService {
   /**
    * Envia mensagem usando um provedor específico
    */
-  async sendMessageWithProvider(providerName: string, message: WhatsAppMessage): Promise<WhatsAppResponse> {
+  async sendMessageWithProvider(
+    providerName: string,
+    message: WhatsAppMessage,
+  ): Promise<WhatsAppResponse> {
     const provider = this.providers.find((p) => p.name === providerName);
 
     if (!provider) {
@@ -272,6 +285,7 @@ export class WhatsAppService {
    */
   isValidPhoneNumber(phone: string): boolean {
     const formatted = this.formatPhoneNumber(phone);
+
     return formatted.length === 13 && formatted.startsWith("55");
   }
 }
@@ -290,7 +304,7 @@ export async function sendAndamentoNotification(
     processo: { numero: string; titulo?: string };
     dataMovimentacao: Date;
     mensagemPersonalizada?: string;
-  }
+  },
 ): Promise<WhatsAppResponse> {
   const message =
     andamento.mensagemPersonalizada ||

@@ -24,14 +24,15 @@ import {
   CheckCircle,
   ArrowRight,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { CnpjInput } from "./cnpj-input";
 import { CpfInput } from "./cpf-input";
 import { CepInput } from "./cep-input";
+
 import { type CnpjData } from "@/types/brazil";
 import { type CepData } from "@/types/brazil";
 import { processarCheckout } from "@/app/actions/checkout";
-import { useRouter } from "next/navigation";
 
 interface Plano {
   id: string;
@@ -120,9 +121,11 @@ export function CheckoutModal({
     // Remove o CNPJ do início (formato na ReceitaWS: 58.837.927 NOME)
     // Procura pelo padrão: números + ponto + números + ponto + números + espaço
     const match = razaoSocial.match(/^\d{2}\.\d{3}\.\d{3}\s+(.+)$/);
+
     if (match && match[1]) {
       return match[1].trim();
     }
+
     return razaoSocial.trim();
   };
 
@@ -163,6 +166,7 @@ export function CheckoutModal({
         : "");
 
     let message = "Dados preenchidos automaticamente!";
+
     if (hasEmail) message += " Email incluído.";
     if (hasResponsavel) message += " Responsável identificado.";
 
@@ -221,6 +225,7 @@ export function CheckoutModal({
   const handleSubmit = async () => {
     if (!validateStep(4) || !plano) {
       toast.error("Preencha todos os campos obrigatórios");
+
       return;
     }
 
@@ -267,10 +272,10 @@ export function CheckoutModal({
         return (
           <motion.div
             key="step1"
-            initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
             className="space-y-4"
+            exit={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: 20 }}
           >
             <div className="text-center mb-6">
               <Building2 className="w-12 h-12 text-primary mx-auto mb-2" />
@@ -283,40 +288,40 @@ export function CheckoutModal({
             </div>
 
             <CnpjInput
+              isRequired
               label="CNPJ da Empresa"
               placeholder="00.000.000/0000-00"
               value={formData.cnpj}
               onChange={(value) => handleInputChange("cnpj", value)}
               onCnpjFound={handleCnpjFound}
-              isRequired
             />
 
             <Input
+              isRequired
               label="Nome da Empresa"
               placeholder="Nome do seu escritório"
+              startContent={<Building2 className="w-4 h-4 text-default-400" />}
               value={formData.nomeEmpresa}
               onChange={(e) => handleInputChange("nomeEmpresa", e.target.value)}
-              startContent={<Building2 className="w-4 h-4 text-default-400" />}
-              isRequired
             />
 
             <Input
+              isRequired
               label="Email"
               placeholder="contato@seuescritorio.com"
+              startContent={<Mail className="w-4 h-4 text-default-400" />}
               type="email"
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
-              startContent={<Mail className="w-4 h-4 text-default-400" />}
-              isRequired
             />
 
             <Input
+              isRequired
               label="Telefone"
               placeholder="(11) 99999-9999"
+              startContent={<Phone className="w-4 h-4 text-default-400" />}
               value={formData.telefone}
               onChange={(e) => handleInputChange("telefone", e.target.value)}
-              startContent={<Phone className="w-4 h-4 text-default-400" />}
-              isRequired
             />
           </motion.div>
         );
@@ -325,10 +330,10 @@ export function CheckoutModal({
         return (
           <motion.div
             key="step2"
-            initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
             className="space-y-4"
+            exit={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: 20 }}
           >
             <div className="text-center mb-6">
               <User className="w-12 h-12 text-primary mx-auto mb-2" />
@@ -341,22 +346,22 @@ export function CheckoutModal({
             </div>
 
             <Input
+              isRequired
               label="Nome Completo"
               placeholder="Nome do responsável"
+              startContent={<User className="w-4 h-4 text-default-400" />}
               value={formData.nomeResponsavel}
               onChange={(e) =>
                 handleInputChange("nomeResponsavel", e.target.value)
               }
-              startContent={<User className="w-4 h-4 text-default-400" />}
-              isRequired
             />
 
             <CpfInput
+              isRequired
               label="CPF"
               placeholder="000.000.000-00"
               value={formData.cpf}
               onChange={(value) => handleInputChange("cpf", value)}
-              isRequired
             />
           </motion.div>
         );
@@ -365,10 +370,10 @@ export function CheckoutModal({
         return (
           <motion.div
             key="step3"
-            initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
             className="space-y-4"
+            exit={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: 20 }}
           >
             <div className="text-center mb-6">
               <MapPin className="w-12 h-12 text-primary mx-auto mb-2" />
@@ -377,29 +382,29 @@ export function CheckoutModal({
             </div>
 
             <CepInput
+              isRequired
               label="CEP"
               placeholder="00000-000"
               value={formData.cep}
-              onChange={(value) => handleInputChange("cep", value)}
               onCepFound={handleCepFound}
-              isRequired
+              onChange={(value) => handleInputChange("cep", value)}
             />
 
             <div className="grid grid-cols-2 gap-4">
               <Input
+                isRequired
                 label="Endereço"
                 placeholder="Rua, Avenida..."
+                startContent={<MapPin className="w-4 h-4 text-default-400" />}
                 value={formData.endereco}
                 onChange={(e) => handleInputChange("endereco", e.target.value)}
-                startContent={<MapPin className="w-4 h-4 text-default-400" />}
-                isRequired
               />
               <Input
+                isRequired
                 label="Número"
                 placeholder="123"
                 value={formData.numero}
                 onChange={(e) => handleInputChange("numero", e.target.value)}
-                isRequired
               />
             </div>
 
@@ -411,27 +416,27 @@ export function CheckoutModal({
             />
 
             <Input
+              isRequired
               label="Bairro"
               placeholder="Nome do bairro"
               value={formData.bairro}
               onChange={(e) => handleInputChange("bairro", e.target.value)}
-              isRequired
             />
 
             <div className="grid grid-cols-2 gap-4">
               <Input
+                isRequired
                 label="Cidade"
                 placeholder="Sua cidade"
                 value={formData.cidade}
                 onChange={(e) => handleInputChange("cidade", e.target.value)}
-                isRequired
               />
               <Input
+                isRequired
                 label="Estado"
                 placeholder="UF"
                 value={formData.estado}
                 onChange={(e) => handleInputChange("estado", e.target.value)}
-                isRequired
               />
             </div>
           </motion.div>
@@ -441,10 +446,10 @@ export function CheckoutModal({
         return (
           <motion.div
             key="step4"
-            initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
             className="space-y-4"
+            exit={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: 20 }}
           >
             <div className="text-center mb-6">
               <CreditCard className="w-12 h-12 text-primary mx-auto mb-2" />
@@ -499,11 +504,11 @@ export function CheckoutModal({
               {formData.formaPagamento === "CREDIT_CARD" && (
                 <motion.p
                   key="credit-card-info"
-                  initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.2 }}
                   className="text-xs text-default-400"
+                  exit={{ opacity: 0, y: -6 }}
+                  initial={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
                 >
                   Os dados do cartão serão informados com segurança na próxima
                   etapa.
@@ -522,11 +527,6 @@ export function CheckoutModal({
 
   return (
     <Modal
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      size="2xl"
-      placement="center"
-      scrollBehavior="inside"
       backdrop="blur"
       classNames={{
         base: "bg-background/95 backdrop-blur-xl z-[99999]",
@@ -534,6 +534,11 @@ export function CheckoutModal({
         body: "py-6",
         footer: "border-t border-white/10",
       }}
+      isOpen={isOpen}
+      placement="center"
+      scrollBehavior="inside"
+      size="2xl"
+      onOpenChange={onOpenChange}
     >
       <ModalContent>
         {(onClose) => (
@@ -607,10 +612,10 @@ export function CheckoutModal({
 
             <ModalFooter className="flex justify-between">
               <Button
-                variant="light"
-                onPress={prevStep}
                 isDisabled={currentStep === 1}
                 startContent={<ArrowRight className="w-4 h-4 rotate-180" />}
+                variant="light"
+                onPress={prevStep}
               >
                 Anterior
               </Button>
@@ -618,20 +623,20 @@ export function CheckoutModal({
               {currentStep < 4 ? (
                 <Button
                   color="primary"
-                  onPress={nextStep}
                   endContent={<ArrowRight className="w-4 h-4" />}
+                  onPress={nextStep}
                 >
                   Próximo
                 </Button>
               ) : (
                 <Button
                   color="primary"
-                  onPress={handleSubmit}
+                  endContent={!isLoading && <ArrowRight className="w-4 h-4" />}
                   isLoading={isLoading}
                   startContent={
                     !isLoading && <CreditCard className="w-4 h-4" />
                   }
-                  endContent={!isLoading && <ArrowRight className="w-4 h-4" />}
+                  onPress={handleSubmit}
                 >
                   {isLoading ? "Processando..." : "Finalizar Pagamento"}
                 </Button>

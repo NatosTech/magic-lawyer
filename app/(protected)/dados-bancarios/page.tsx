@@ -59,13 +59,22 @@ import {
   Smartphone,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
-import { useDadosBancarios, useTiposConta, useTiposContaBancaria, useTiposChavePix } from "@/app/hooks/use-dados-bancarios";
+import {
+  useDadosBancarios,
+  useTiposConta,
+  useTiposContaBancaria,
+  useTiposChavePix,
+} from "@/app/hooks/use-dados-bancarios";
 import { useBancosDisponiveis } from "@/app/hooks/use-bancos";
-import { createDadosBancarios, updateDadosBancarios, deleteDadosBancarios } from "@/app/actions/dados-bancarios";
+import {
+  createDadosBancarios,
+  updateDadosBancarios,
+  deleteDadosBancarios,
+} from "@/app/actions/dados-bancarios";
 import { getClientesParaSelect } from "@/app/actions/clientes";
 import { getAdvogados } from "@/app/actions/advogados";
-import { useSession } from "next-auth/react";
 import { CepInput } from "@/components/cep-input";
 import { type CepData } from "@/types/brazil";
 import { title, subtitle } from "@/components/primitives";
@@ -118,7 +127,8 @@ export default function DadosBancariosPage() {
   const [filtroTitular, setFiltroTitular] = useState<string>("");
   const [filtroBanco, setFiltroBanco] = useState<string>("");
   const [filtroTipoConta, setFiltroTipoConta] = useState<string>("");
-  const [filtroTipoContaBancaria, setFiltroTipoContaBancaria] = useState<string>("");
+  const [filtroTipoContaBancaria, setFiltroTipoContaBancaria] =
+    useState<string>("");
   const [filtroDocumento, setFiltroDocumento] = useState<string>("");
   const [filtroChavePix, setFiltroChavePix] = useState<string>("");
   const [filtroCliente, setFiltroCliente] = useState<string>("");
@@ -166,6 +176,7 @@ export default function DadosBancariosPage() {
       setLoadingClientes(true);
       try {
         const result = await getClientesParaSelect();
+
         if (result.success) {
           setClientes(result.clientes || []);
         }
@@ -180,6 +191,7 @@ export default function DadosBancariosPage() {
       setLoadingAdvogados(true);
       try {
         const result = await getAdvogados();
+
         if (result.success) {
           setAdvogados(result.data || []);
         }
@@ -224,7 +236,17 @@ export default function DadosBancariosPage() {
       filtroCliente ||
       filtroAdvogado
     );
-  }, [filters, filtroTitular, filtroBanco, filtroTipoConta, filtroTipoContaBancaria, filtroDocumento, filtroChavePix, filtroCliente, filtroAdvogado]);
+  }, [
+    filters,
+    filtroTitular,
+    filtroBanco,
+    filtroTipoConta,
+    filtroTipoContaBancaria,
+    filtroDocumento,
+    filtroChavePix,
+    filtroCliente,
+    filtroAdvogado,
+  ]);
 
   // Filtrar dados bancários localmente
   const dadosBancariosFiltrados = useMemo(() => {
@@ -232,7 +254,10 @@ export default function DadosBancariosPage() {
 
     return dadosBancarios.filter((dados) => {
       // Filtro por titular
-      if (filtroTitular && !dados.titularNome.toLowerCase().includes(filtroTitular.toLowerCase())) {
+      if (
+        filtroTitular &&
+        !dados.titularNome.toLowerCase().includes(filtroTitular.toLowerCase())
+      ) {
         return false;
       }
 
@@ -247,17 +272,27 @@ export default function DadosBancariosPage() {
       }
 
       // Filtro por tipo de conta bancária
-      if (filtroTipoContaBancaria && dados.tipoContaBancaria !== filtroTipoContaBancaria) {
+      if (
+        filtroTipoContaBancaria &&
+        dados.tipoContaBancaria !== filtroTipoContaBancaria
+      ) {
         return false;
       }
 
       // Filtro por documento
-      if (filtroDocumento && !dados.titularDocumento.includes(filtroDocumento)) {
+      if (
+        filtroDocumento &&
+        !dados.titularDocumento.includes(filtroDocumento)
+      ) {
         return false;
       }
 
       // Filtro por chave PIX
-      if (filtroChavePix && (!dados.chavePix || !dados.chavePix.toLowerCase().includes(filtroChavePix.toLowerCase()))) {
+      if (
+        filtroChavePix &&
+        (!dados.chavePix ||
+          !dados.chavePix.toLowerCase().includes(filtroChavePix.toLowerCase()))
+      ) {
         return false;
       }
 
@@ -273,13 +308,26 @@ export default function DadosBancariosPage() {
 
       return true;
     });
-  }, [dadosBancarios, filtroTitular, filtroBanco, filtroTipoConta, filtroTipoContaBancaria, filtroDocumento, filtroChavePix, filtroCliente, filtroAdvogado]);
+  }, [
+    dadosBancarios,
+    filtroTitular,
+    filtroBanco,
+    filtroTipoConta,
+    filtroTipoContaBancaria,
+    filtroDocumento,
+    filtroChavePix,
+    filtroCliente,
+    filtroAdvogado,
+  ]);
 
   // Paginação
   const totalPages = Math.ceil(dadosBancariosFiltrados.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const dadosBancariosPaginados = dadosBancariosFiltrados.slice(startIndex, endIndex);
+  const dadosBancariosPaginados = dadosBancariosFiltrados.slice(
+    startIndex,
+    endIndex,
+  );
 
   // Resetar página quando filtros mudarem
   useMemo(() => {
@@ -291,6 +339,7 @@ export default function DadosBancariosPage() {
   // Contar filtros ativos
   const activeFiltersCount = useMemo(() => {
     let count = 0;
+
     if (filters.ativo !== undefined) count++;
     if (filters.principal !== undefined) count++;
     if (filters.usuarioId) count++;
@@ -303,14 +352,26 @@ export default function DadosBancariosPage() {
     if (filtroChavePix) count++;
     if (filtroCliente) count++;
     if (filtroAdvogado) count++;
+
     return count;
-  }, [filters, filtroTitular, filtroBanco, filtroTipoConta, filtroTipoContaBancaria, filtroDocumento, filtroChavePix, filtroCliente, filtroAdvogado]);
+  }, [
+    filters,
+    filtroTitular,
+    filtroBanco,
+    filtroTipoConta,
+    filtroTipoContaBancaria,
+    filtroDocumento,
+    filtroChavePix,
+    filtroCliente,
+    filtroAdvogado,
+  ]);
 
   // Obter bancos únicos dos dados bancários
   const bancosUnicos = useMemo(() => {
     if (!dadosBancarios || !bancos) return [];
 
     const bancosUsados = new Set(dadosBancarios.map((d) => d.bancoCodigo));
+
     return bancos.filter((banco) => bancosUsados.has(banco.codigo));
   }, [dadosBancarios, bancos]);
 
@@ -322,8 +383,12 @@ export default function DadosBancariosPage() {
     const ativos = dadosBancarios.filter((d) => d.ativo).length;
     const principais = dadosBancarios.filter((d) => d.principal).length;
     const comPix = dadosBancarios.filter((d) => d.chavePix).length;
-    const usuarios = new Set(dadosBancarios.map((d) => d.usuarioId).filter(Boolean)).size;
-    const clientes = new Set(dadosBancarios.map((d) => d.clienteId).filter(Boolean)).size;
+    const usuarios = new Set(
+      dadosBancarios.map((d) => d.usuarioId).filter(Boolean),
+    ).size;
+    const clientes = new Set(
+      dadosBancarios.map((d) => d.clienteId).filter(Boolean),
+    ).size;
 
     return {
       total,
@@ -333,7 +398,8 @@ export default function DadosBancariosPage() {
       usuarios,
       clientes,
       percentualAtivos: total > 0 ? Math.round((ativos / total) * 100) : 0,
-      percentualPrincipais: total > 0 ? Math.round((principais / total) * 100) : 0,
+      percentualPrincipais:
+        total > 0 ? Math.round((principais / total) * 100) : 0,
     };
   }, [dadosBancarios]);
 
@@ -437,6 +503,7 @@ export default function DadosBancariosPage() {
         } else if (!formData.conta) {
           toast.error("Conta é obrigatória");
         }
+
         return;
       }
 
@@ -446,6 +513,7 @@ export default function DadosBancariosPage() {
         } else if (!formData.titularDocumento) {
           toast.error("CPF/CNPJ do titular é obrigatório");
         }
+
         return;
       }
 
@@ -515,7 +583,10 @@ export default function DadosBancariosPage() {
     if (documento.length === 11) {
       return documento.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
     } else if (documento.length === 14) {
-      return documento.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+      return documento.replace(
+        /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
+        "$1.$2.$3/$4-$5",
+      );
     }
 
     return documento;
@@ -536,10 +607,18 @@ export default function DadosBancariosPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>Dados Bancários</h1>
-          <p className={subtitle({ fullWidth: true })}>Gerencie os dados bancários de usuários e clientes</p>
+          <h1 className={title({ size: "lg", color: "blue" })}>
+            Dados Bancários
+          </h1>
+          <p className={subtitle({ fullWidth: true })}>
+            Gerencie os dados bancários de usuários e clientes
+          </p>
         </div>
-        <Button color="primary" startContent={<PlusIcon size={20} />} onPress={() => handleOpenModal()}>
+        <Button
+          color="primary"
+          startContent={<PlusIcon size={20} />}
+          onPress={() => handleOpenModal()}
+        >
           Novo Dados Bancários
         </Button>
       </div>
@@ -554,8 +633,12 @@ export default function DadosBancariosPage() {
                   <CreditCardIcon className="w-5 h-5 text-success" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-success/70">Total de Contas</p>
-                  <p className="text-xl font-bold text-success">{metricas.total}</p>
+                  <p className="text-xs uppercase tracking-wider text-success/70">
+                    Total de Contas
+                  </p>
+                  <p className="text-xl font-bold text-success">
+                    {metricas.total}
+                  </p>
                 </div>
               </div>
             </CardBody>
@@ -568,9 +651,15 @@ export default function DadosBancariosPage() {
                   <CheckCircle className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-primary/70">Contas Ativas</p>
-                  <p className="text-xl font-bold text-primary">{metricas.ativos}</p>
-                  <p className="text-xs text-primary/60">{metricas.percentualAtivos}% do total</p>
+                  <p className="text-xs uppercase tracking-wider text-primary/70">
+                    Contas Ativas
+                  </p>
+                  <p className="text-xl font-bold text-primary">
+                    {metricas.ativos}
+                  </p>
+                  <p className="text-xs text-primary/60">
+                    {metricas.percentualAtivos}% do total
+                  </p>
                 </div>
               </div>
             </CardBody>
@@ -583,9 +672,15 @@ export default function DadosBancariosPage() {
                   <Star className="w-5 h-5 text-warning" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-warning/70">Contas Principais</p>
-                  <p className="text-xl font-bold text-warning">{metricas.principais}</p>
-                  <p className="text-xs text-warning/60">{metricas.percentualPrincipais}% do total</p>
+                  <p className="text-xs uppercase tracking-wider text-warning/70">
+                    Contas Principais
+                  </p>
+                  <p className="text-xl font-bold text-warning">
+                    {metricas.principais}
+                  </p>
+                  <p className="text-xs text-warning/60">
+                    {metricas.percentualPrincipais}% do total
+                  </p>
                 </div>
               </div>
             </CardBody>
@@ -598,9 +693,18 @@ export default function DadosBancariosPage() {
                   <Smartphone className="w-5 h-5 text-secondary" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-secondary/70">Com PIX</p>
-                  <p className="text-xl font-bold text-secondary">{metricas.comPix}</p>
-                  <p className="text-xs text-secondary/60">{metricas.total > 0 ? Math.round((metricas.comPix / metricas.total) * 100) : 0}% do total</p>
+                  <p className="text-xs uppercase tracking-wider text-secondary/70">
+                    Com PIX
+                  </p>
+                  <p className="text-xl font-bold text-secondary">
+                    {metricas.comPix}
+                  </p>
+                  <p className="text-xs text-secondary/60">
+                    {metricas.total > 0
+                      ? Math.round((metricas.comPix / metricas.total) * 100)
+                      : 0}
+                    % do total
+                  </p>
                 </div>
               </div>
             </CardBody>
@@ -621,10 +725,27 @@ export default function DadosBancariosPage() {
             )}
           </div>
           <div className="flex gap-2">
-            <Button isDisabled={!hasActiveFilters} size="sm" startContent={<RotateCcwIcon className="w-4 h-4" />} variant="light" onPress={clearAllFilters}>
+            <Button
+              isDisabled={!hasActiveFilters}
+              size="sm"
+              startContent={<RotateCcwIcon className="w-4 h-4" />}
+              variant="light"
+              onPress={clearAllFilters}
+            >
               Limpar
             </Button>
-            <Button size="sm" startContent={showFilters ? <XCircle className="w-4 h-4" /> : <FilterIcon className="w-4 h-4" />} variant="light" onPress={() => setShowFilters(!showFilters)}>
+            <Button
+              size="sm"
+              startContent={
+                showFilters ? (
+                  <XCircle className="w-4 h-4" />
+                ) : (
+                  <FilterIcon className="w-4 h-4" />
+                )
+              }
+              variant="light"
+              onPress={() => setShowFilters(!showFilters)}
+            >
               {showFilters ? "Ocultar" : "Mostrar"}
             </Button>
           </div>
@@ -635,34 +756,42 @@ export default function DadosBancariosPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {/* Filtro por Titular */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2" htmlFor="titular">
+                <label
+                  className="text-sm font-medium flex items-center gap-2"
+                  htmlFor="titular"
+                >
                   <UserIcon className="w-4 h-4" />
                   Titular
                 </label>
                 <Input
+                  color="primary"
                   placeholder="Buscar por titular..."
                   size="sm"
                   startContent={<SearchIcon className="w-4 h-4 text-primary" />}
                   value={filtroTitular}
                   variant="bordered"
-                  color="primary"
                   onChange={(e) => setFiltroTitular(e.target.value)}
                 />
               </div>
 
               {/* Filtro por Banco */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2" htmlFor="banco">
+                <label
+                  className="text-sm font-medium flex items-center gap-2"
+                  htmlFor="banco"
+                >
                   <BuildingIcon className="w-4 h-4" />
                   Banco
                 </label>
                 <Select
+                  color="secondary"
                   placeholder="Selecione um banco"
                   selectedKeys={filtroBanco ? [filtroBanco] : []}
                   size="sm"
                   variant="bordered"
-                  color="secondary"
-                  onSelectionChange={(keys) => setFiltroBanco((Array.from(keys)[0] as string) || "")}
+                  onSelectionChange={(keys) =>
+                    setFiltroBanco((Array.from(keys)[0] as string) || "")
+                  }
                 >
                   <SelectItem key="" textValue="Todos os bancos">
                     Todos os bancos
@@ -679,17 +808,22 @@ export default function DadosBancariosPage() {
 
               {/* Filtro por Tipo de Conta */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2" htmlFor="tipoConta">
+                <label
+                  className="text-sm font-medium flex items-center gap-2"
+                  htmlFor="tipoConta"
+                >
                   <ShieldIcon className="w-4 h-4" />
                   Tipo de Conta
                 </label>
                 <Select
+                  color="success"
                   placeholder="Selecione um tipo"
                   selectedKeys={filtroTipoConta ? [filtroTipoConta] : []}
                   size="sm"
                   variant="bordered"
-                  color="success"
-                  onSelectionChange={(keys) => setFiltroTipoConta((Array.from(keys)[0] as string) || "")}
+                  onSelectionChange={(keys) =>
+                    setFiltroTipoConta((Array.from(keys)[0] as string) || "")
+                  }
                 >
                   <SelectItem key="" textValue="Todos os tipos">
                     Todos os tipos
@@ -706,17 +840,26 @@ export default function DadosBancariosPage() {
 
               {/* Filtro por Tipo de Conta Bancária */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2" htmlFor="tipoContaBancaria">
+                <label
+                  className="text-sm font-medium flex items-center gap-2"
+                  htmlFor="tipoContaBancaria"
+                >
                   <WalletIcon className="w-4 h-4" />
                   Tipo de Conta Bancária
                 </label>
                 <Select
+                  color="warning"
                   placeholder="Selecione um tipo"
-                  selectedKeys={filtroTipoContaBancaria ? [filtroTipoContaBancaria] : []}
+                  selectedKeys={
+                    filtroTipoContaBancaria ? [filtroTipoContaBancaria] : []
+                  }
                   size="sm"
                   variant="bordered"
-                  color="warning"
-                  onSelectionChange={(keys) => setFiltroTipoContaBancaria((Array.from(keys)[0] as string) || "")}
+                  onSelectionChange={(keys) =>
+                    setFiltroTipoContaBancaria(
+                      (Array.from(keys)[0] as string) || "",
+                    )
+                  }
                 >
                   <SelectItem key="" textValue="Todos os tipos">
                     Todos os tipos
@@ -733,52 +876,65 @@ export default function DadosBancariosPage() {
 
               {/* Filtro por Documento */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2" htmlFor="documento">
+                <label
+                  className="text-sm font-medium flex items-center gap-2"
+                  htmlFor="documento"
+                >
                   <ShieldIcon className="w-4 h-4" />
                   CPF/CNPJ
                 </label>
                 <Input
+                  color="danger"
                   placeholder="Buscar por documento..."
                   size="sm"
                   startContent={<SearchIcon className="w-4 h-4 text-danger" />}
                   value={filtroDocumento}
                   variant="bordered"
-                  color="danger"
                   onChange={(e) => setFiltroDocumento(e.target.value)}
                 />
               </div>
 
               {/* Filtro por Chave PIX */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2" htmlFor="chavePix">
+                <label
+                  className="text-sm font-medium flex items-center gap-2"
+                  htmlFor="chavePix"
+                >
                   <CreditCardIcon className="w-4 h-4" />
                   Chave PIX
                 </label>
                 <Input
+                  color="secondary"
                   placeholder="Buscar por chave PIX..."
                   size="sm"
-                  startContent={<SearchIcon className="w-4 h-4 text-secondary" />}
+                  startContent={
+                    <SearchIcon className="w-4 h-4 text-secondary" />
+                  }
                   value={filtroChavePix}
                   variant="bordered"
-                  color="secondary"
                   onChange={(e) => setFiltroChavePix(e.target.value)}
                 />
               </div>
 
               {/* Filtro por Cliente */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2" htmlFor="cliente">
+                <label
+                  className="text-sm font-medium flex items-center gap-2"
+                  htmlFor="cliente"
+                >
                   <UserIcon className="w-4 h-4" />
                   Cliente
                 </label>
                 <Select
+                  color="success"
+                  isLoading={loadingClientes}
                   placeholder="Selecione um cliente"
                   selectedKeys={filtroCliente ? [filtroCliente] : []}
                   size="sm"
                   variant="bordered"
-                  color="success"
-                  isLoading={loadingClientes}
-                  onSelectionChange={(keys) => setFiltroCliente((Array.from(keys)[0] as string) || "")}
+                  onSelectionChange={(keys) =>
+                    setFiltroCliente((Array.from(keys)[0] as string) || "")
+                  }
                 >
                   <SelectItem key="" textValue="Todos os clientes">
                     Todos os clientes
@@ -795,25 +951,33 @@ export default function DadosBancariosPage() {
 
               {/* Filtro por Advogado */}
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2" htmlFor="advogado">
+                <label
+                  className="text-sm font-medium flex items-center gap-2"
+                  htmlFor="advogado"
+                >
                   <ShieldIcon className="w-4 h-4" />
                   Advogado
                 </label>
                 <Select
+                  color="primary"
+                  isLoading={loadingAdvogados}
                   placeholder="Selecione um advogado"
                   selectedKeys={filtroAdvogado ? [filtroAdvogado] : []}
                   size="sm"
                   variant="bordered"
-                  color="primary"
-                  isLoading={loadingAdvogados}
-                  onSelectionChange={(keys) => setFiltroAdvogado((Array.from(keys)[0] as string) || "")}
+                  onSelectionChange={(keys) =>
+                    setFiltroAdvogado((Array.from(keys)[0] as string) || "")
+                  }
                 >
                   <SelectItem key="" textValue="Todos os advogados">
                     Todos os advogados
                   </SelectItem>
                   {
                     advogados.map((advogado) => (
-                      <SelectItem key={advogado.usuarioId} textValue={`${advogado.usuario.firstName} ${advogado.usuario.lastName}`}>
+                      <SelectItem
+                        key={advogado.usuarioId}
+                        textValue={`${advogado.usuario.firstName} ${advogado.usuario.lastName}`}
+                      >
                         {advogado.usuario.firstName} {advogado.usuario.lastName}
                       </SelectItem>
                     )) as any
@@ -831,25 +995,28 @@ export default function DadosBancariosPage() {
           <div className="flex justify-between items-center w-full">
             <div>
               <h2 className="text-lg font-semibold">Filtros Rápidos</h2>
-              {(filters.ativo || filters.principal || filters.usuarioId || filters.clienteId) && (
+              {(filters.ativo ||
+                filters.principal ||
+                filters.usuarioId ||
+                filters.clienteId) && (
                 <div className="flex gap-2 mt-2">
                   {filters.ativo && (
-                    <Chip size="sm" color="success" variant="flat">
+                    <Chip color="success" size="sm" variant="flat">
                       Apenas Ativos
                     </Chip>
                   )}
                   {filters.principal && (
-                    <Chip size="sm" color="primary" variant="flat">
+                    <Chip color="primary" size="sm" variant="flat">
                       Apenas Principais
                     </Chip>
                   )}
                   {filters.usuarioId && (
-                    <Chip size="sm" color="secondary" variant="flat">
+                    <Chip color="secondary" size="sm" variant="flat">
                       Meus Dados
                     </Chip>
                   )}
                   {filters.clienteId && (
-                    <Chip size="sm" color="warning" variant="flat">
+                    <Chip color="warning" size="sm" variant="flat">
                       Dados do Cliente
                     </Chip>
                   )}
@@ -858,9 +1025,9 @@ export default function DadosBancariosPage() {
             </div>
             <div className="flex gap-2">
               <Button
+                color={filters.ativo === true ? "primary" : "default"}
                 startContent={<CheckCircleIcon size={16} />}
                 variant={filters.ativo === true ? "solid" : "light"}
-                color={filters.ativo === true ? "primary" : "default"}
                 onPress={() =>
                   setFilters((prev) => ({
                     ...prev,
@@ -871,9 +1038,9 @@ export default function DadosBancariosPage() {
                 Apenas Ativos
               </Button>
               <Button
+                color={filters.principal === true ? "primary" : "default"}
                 startContent={<StarIcon size={16} />}
                 variant={filters.principal === true ? "solid" : "light"}
-                color={filters.principal === true ? "primary" : "default"}
                 onPress={() =>
                   setFilters((prev) => ({
                     ...prev,
@@ -884,9 +1051,9 @@ export default function DadosBancariosPage() {
                 Apenas Principais
               </Button>
               <Button
+                color={filters.usuarioId ? "secondary" : "default"}
                 startContent={<UserIcon size={16} />}
                 variant={filters.usuarioId ? "solid" : "light"}
-                color={filters.usuarioId ? "secondary" : "default"}
                 onPress={() =>
                   setFilters((prev) => ({
                     ...prev,
@@ -921,17 +1088,31 @@ export default function DadosBancariosPage() {
                       <div>
                         <p className="font-medium">{dados.titularNome}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <Chip size="sm" startContent={getTipoContaIcon(dados.tipoConta)} variant="flat">
-                            {tiposConta.find((t) => t.value === dados.tipoConta)?.label}
+                          <Chip
+                            size="sm"
+                            startContent={getTipoContaIcon(dados.tipoConta)}
+                            variant="flat"
+                          >
+                            {
+                              tiposConta.find(
+                                (t) => t.value === dados.tipoConta,
+                              )?.label
+                            }
                           </Chip>
-                          <span className="text-sm text-gray-500">{formatDocumento(dados.titularDocumento)}</span>
+                          <span className="text-sm text-gray-500">
+                            {formatDocumento(dados.titularDocumento)}
+                          </span>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{dados.banco?.nome || dados.bancoCodigo}</p>
-                        <p className="text-sm text-gray-500">Código: {dados.bancoCodigo}</p>
+                        <p className="font-medium">
+                          {dados.banco?.nome || dados.bancoCodigo}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Código: {dados.bancoCodigo}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -941,29 +1122,63 @@ export default function DadosBancariosPage() {
                           {dados.digitoConta && `-${dados.digitoConta}`}
                         </p>
                         <div className="flex items-center gap-1 mt-1">
-                          <span className="text-sm">{getTipoContaBancariaIcon(dados.tipoContaBancaria)}</span>
-                          <span className="text-sm text-gray-500">{tiposContaBancaria.find((t) => t.value === dados.tipoContaBancaria)?.label}</span>
+                          <span className="text-sm">
+                            {getTipoContaBancariaIcon(dados.tipoContaBancaria)}
+                          </span>
+                          <span className="text-sm text-gray-500">
+                            {
+                              tiposContaBancaria.find(
+                                (t) => t.value === dados.tipoContaBancaria,
+                              )?.label
+                            }
+                          </span>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       {dados.chavePix ? (
                         <div>
-                          <p className="font-medium text-sm">{dados.chavePix}</p>
-                          <p className="text-xs text-gray-500">{tiposChavePix.find((t) => t.value === dados.tipoChavePix)?.label}</p>
+                          <p className="font-medium text-sm">
+                            {dados.chavePix}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {
+                              tiposChavePix.find(
+                                (t) => t.value === dados.tipoChavePix,
+                              )?.label
+                            }
+                          </p>
                         </div>
                       ) : (
-                        <span className="text-gray-400 text-sm">Não cadastrado</span>
+                        <span className="text-gray-400 text-sm">
+                          Não cadastrado
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {dados.principal && (
-                          <Chip color="primary" size="sm" startContent={<StarIcon size={12} />} variant="flat">
+                          <Chip
+                            color="primary"
+                            size="sm"
+                            startContent={<StarIcon size={12} />}
+                            variant="flat"
+                          >
                             Principal
                           </Chip>
                         )}
-                        <Chip color={dados.ativo ? "success" : "default"} size="sm" startContent={dados.ativo ? <CheckCircleIcon size={12} /> : <XCircleIcon size={12} />} variant="flat">
+                        <Chip
+                          color={dados.ativo ? "success" : "default"}
+                          size="sm"
+                          startContent={
+                            dados.ativo ? (
+                              <CheckCircleIcon size={12} />
+                            ) : (
+                              <XCircleIcon size={12} />
+                            )
+                          }
+                          variant="flat"
+                        >
                           {dados.ativo ? "Ativo" : "Inativo"}
                         </Chip>
                       </div>
@@ -976,13 +1191,27 @@ export default function DadosBancariosPage() {
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu>
-                          <DropdownItem key="view" startContent={<EyeIcon size={16} />} onPress={() => handleOpenModal(dados)}>
+                          <DropdownItem
+                            key="view"
+                            startContent={<EyeIcon size={16} />}
+                            onPress={() => handleOpenModal(dados)}
+                          >
                             Ver Detalhes
                           </DropdownItem>
-                          <DropdownItem key="edit" startContent={<PencilIcon size={16} />} onPress={() => handleOpenModal(dados)}>
+                          <DropdownItem
+                            key="edit"
+                            startContent={<PencilIcon size={16} />}
+                            onPress={() => handleOpenModal(dados)}
+                          >
                             Editar
                           </DropdownItem>
-                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<TrashIcon size={16} />} onPress={() => handleDelete(dados.id)}>
+                          <DropdownItem
+                            key="delete"
+                            className="text-danger"
+                            color="danger"
+                            startContent={<TrashIcon size={16} />}
+                            onPress={() => handleDelete(dados.id)}
+                          >
                             Remover
                           </DropdownItem>
                         </DropdownMenu>
@@ -996,14 +1225,31 @@ export default function DadosBancariosPage() {
 
           {dadosBancariosFiltrados.length === 0 && !isLoading && (
             <div className="text-center py-8">
-              <CreditCardIcon className="mx-auto text-gray-400 mb-4" size={48} />
-              <p className="text-gray-500">{hasActiveFilters ? "Nenhum dado bancário encontrado com os filtros aplicados" : "Nenhum dado bancário encontrado"}</p>
+              <CreditCardIcon
+                className="mx-auto text-gray-400 mb-4"
+                size={48}
+              />
+              <p className="text-gray-500">
+                {hasActiveFilters
+                  ? "Nenhum dado bancário encontrado com os filtros aplicados"
+                  : "Nenhum dado bancário encontrado"}
+              </p>
               {hasActiveFilters ? (
-                <Button className="mt-2" color="primary" variant="light" onPress={clearAllFilters}>
+                <Button
+                  className="mt-2"
+                  color="primary"
+                  variant="light"
+                  onPress={clearAllFilters}
+                >
                   Limpar Filtros
                 </Button>
               ) : (
-                <Button className="mt-2" color="primary" variant="light" onPress={() => handleOpenModal()}>
+                <Button
+                  className="mt-2"
+                  color="primary"
+                  variant="light"
+                  onPress={() => handleOpenModal()}
+                >
                   Cadastrar Primeiro Dados Bancários
                 </Button>
               )}
@@ -1013,7 +1259,14 @@ export default function DadosBancariosPage() {
           {/* Paginação */}
           {dadosBancariosFiltrados.length > 0 && totalPages > 1 && (
             <div className="flex justify-center mt-6">
-              <Pagination total={totalPages} page={currentPage} onChange={setCurrentPage} showControls color="primary" variant="flat" />
+              <Pagination
+                showControls
+                color="primary"
+                page={currentPage}
+                total={totalPages}
+                variant="flat"
+                onChange={setCurrentPage}
+              />
             </div>
           )}
 
@@ -1021,11 +1274,14 @@ export default function DadosBancariosPage() {
           {dadosBancariosFiltrados.length > 0 && (
             <div className="flex justify-between items-center mt-4 text-sm text-default-500">
               <span>
-                Mostrando {startIndex + 1} a {Math.min(endIndex, dadosBancariosFiltrados.length)} de {dadosBancariosFiltrados.length} registros
+                Mostrando {startIndex + 1} a{" "}
+                {Math.min(endIndex, dadosBancariosFiltrados.length)} de{" "}
+                {dadosBancariosFiltrados.length} registros
               </span>
               {hasActiveFilters && (
                 <span>
-                  {dadosBancariosFiltrados.length} de {dadosBancarios?.length || 0} registros após filtros
+                  {dadosBancariosFiltrados.length} de{" "}
+                  {dadosBancarios?.length || 0} registros após filtros
                 </span>
               )}
             </div>
@@ -1034,7 +1290,12 @@ export default function DadosBancariosPage() {
       </Card>
 
       {/* Modal de Criação/Edição com Tabs */}
-      <Modal isOpen={modalOpen} scrollBehavior="inside" size="5xl" onClose={handleCloseModal}>
+      <Modal
+        isOpen={modalOpen}
+        scrollBehavior="inside"
+        size="5xl"
+        onClose={handleCloseModal}
+      >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -1042,8 +1303,14 @@ export default function DadosBancariosPage() {
                 <CreditCardIcon className="text-primary" size={24} />
               </div>
               <div>
-                <h3 className="text-xl font-bold">{editingId ? "Editar Dados Bancários" : "Novos Dados Bancários"}</h3>
-                <p className="text-sm text-default-500">Complete as informações bancárias</p>
+                <h3 className="text-xl font-bold">
+                  {editingId
+                    ? "Editar Dados Bancários"
+                    : "Novos Dados Bancários"}
+                </h3>
+                <p className="text-sm text-default-500">
+                  Complete as informações bancárias
+                </p>
               </div>
             </div>
           </ModalHeader>
@@ -1052,10 +1319,12 @@ export default function DadosBancariosPage() {
             <Tabs
               aria-label="Formulário de dados bancários"
               classNames={{
-                tabList: "gap-8 w-full relative rounded-none p-6 pb-0 border-b border-divider",
+                tabList:
+                  "gap-8 w-full relative rounded-none p-6 pb-0 border-b border-divider",
                 cursor: "w-full bg-primary",
                 tab: "max-w-fit px-4 h-12",
-                tabContent: "group-data-[selected=true]:text-primary font-medium",
+                tabContent:
+                  "group-data-[selected=true]:text-primary font-medium",
                 panel: "pt-6",
               }}
               color="primary"
@@ -1066,7 +1335,10 @@ export default function DadosBancariosPage() {
                 title={
                   <div className="flex items-center space-x-3">
                     <div className="p-1 rounded-md bg-blue-100 dark:bg-blue-900">
-                      <BuildingIcon className="text-blue-600 dark:text-blue-400" size={16} />
+                      <BuildingIcon
+                        className="text-blue-600 dark:text-blue-400"
+                        size={16}
+                      />
                     </div>
                     <span>Banco</span>
                   </div>
@@ -1084,10 +1356,18 @@ export default function DadosBancariosPage() {
                         isRequired
                         label="Banco"
                         placeholder="Selecione o banco"
-                        selectedKeys={formData.bancoCodigo ? [formData.bancoCodigo] : []}
-                        startContent={<BuildingIcon className="text-default-400" size={16} />}
+                        selectedKeys={
+                          formData.bancoCodigo ? [formData.bancoCodigo] : []
+                        }
+                        startContent={
+                          <BuildingIcon
+                            className="text-default-400"
+                            size={16}
+                          />
+                        }
                         onSelectionChange={(keys) => {
                           const codigo = Array.from(keys)[0] as string;
+
                           handleBancoChange(codigo);
                         }}
                       >
@@ -1095,7 +1375,9 @@ export default function DadosBancariosPage() {
                           <SelectItem key={banco.codigo} textValue={banco.nome}>
                             <div>
                               <p className="font-medium">{banco.nome}</p>
-                              <p className="text-sm text-gray-500">Código: {banco.codigo}</p>
+                              <p className="text-sm text-gray-500">
+                                Código: {banco.codigo}
+                              </p>
                             </div>
                           </SelectItem>
                         ))}
@@ -1106,9 +1388,12 @@ export default function DadosBancariosPage() {
                         label="Tipo de Conta"
                         placeholder="Selecione o tipo"
                         selectedKeys={[formData.tipoConta]}
-                        startContent={<UserIcon className="text-default-400" size={16} />}
+                        startContent={
+                          <UserIcon className="text-default-400" size={16} />
+                        }
                         onSelectionChange={(keys) => {
                           const tipo = Array.from(keys)[0] as TipoConta;
+
                           setFormData({ ...formData, tipoConta: tipo });
                         }}
                       >
@@ -1125,22 +1410,32 @@ export default function DadosBancariosPage() {
                         isRequired
                         label="Agência"
                         placeholder="0000"
-                        startContent={<span className="text-default-400 text-sm">Ag:</span>}
+                        startContent={
+                          <span className="text-default-400 text-sm">Ag:</span>
+                        }
                         value={formData.agencia}
-                        onChange={(e) => setFormData({ ...formData, agencia: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, agencia: e.target.value })
+                        }
                       />
                       <Input
                         isRequired
                         label="Conta"
                         placeholder="00000000"
-                        startContent={<span className="text-default-400 text-sm">CC:</span>}
+                        startContent={
+                          <span className="text-default-400 text-sm">CC:</span>
+                        }
                         value={formData.conta}
-                        onChange={(e) => setFormData({ ...formData, conta: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, conta: e.target.value })
+                        }
                       />
                       <Input
                         label="Dígito"
                         placeholder="0"
-                        startContent={<span className="text-default-400 text-sm">DV:</span>}
+                        startContent={
+                          <span className="text-default-400 text-sm">DV:</span>
+                        }
                         value={formData.digitoConta}
                         onChange={(e) =>
                           setFormData({
@@ -1157,9 +1452,12 @@ export default function DadosBancariosPage() {
                         label="Tipo de Conta Bancária"
                         placeholder="Selecione o tipo"
                         selectedKeys={[formData.tipoContaBancaria]}
-                        startContent={<WalletIcon className="text-default-400" size={16} />}
+                        startContent={
+                          <WalletIcon className="text-default-400" size={16} />
+                        }
                         onSelectionChange={(keys) => {
                           const tipo = Array.from(keys)[0] as TipoContaBancaria;
+
                           setFormData({ ...formData, tipoContaBancaria: tipo });
                         }}
                       >
@@ -1179,7 +1477,10 @@ export default function DadosBancariosPage() {
                 title={
                   <div className="flex items-center space-x-3">
                     <div className="p-1 rounded-md bg-green-100 dark:bg-green-900">
-                      <CreditCardIcon className="text-green-600 dark:text-green-400" size={16} />
+                      <CreditCardIcon
+                        className="text-green-600 dark:text-green-400"
+                        size={16}
+                      />
                     </div>
                     <span>PIX</span>
                   </div>
@@ -1196,10 +1497,15 @@ export default function DadosBancariosPage() {
                       <Select
                         label="Tipo da Chave PIX"
                         placeholder="Selecione o tipo"
-                        selectedKeys={formData.tipoChavePix ? [formData.tipoChavePix] : []}
-                        startContent={<ShieldIcon className="text-default-400" size={16} />}
+                        selectedKeys={
+                          formData.tipoChavePix ? [formData.tipoChavePix] : []
+                        }
+                        startContent={
+                          <ShieldIcon className="text-default-400" size={16} />
+                        }
                         onSelectionChange={(keys) => {
                           const tipo = Array.from(keys)[0] as TipoChavePix;
+
                           setFormData({ ...formData, tipoChavePix: tipo });
                         }}
                       >
@@ -1213,9 +1519,16 @@ export default function DadosBancariosPage() {
                       <Input
                         label="Chave PIX"
                         placeholder="Digite a chave PIX"
-                        startContent={<CreditCardIcon className="text-default-400" size={16} />}
+                        startContent={
+                          <CreditCardIcon
+                            className="text-default-400"
+                            size={16}
+                          />
+                        }
                         value={formData.chavePix}
-                        onChange={(e) => setFormData({ ...formData, chavePix: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, chavePix: e.target.value })
+                        }
                       />
                     </div>
 
@@ -1223,9 +1536,13 @@ export default function DadosBancariosPage() {
                       <div className="mt-4 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-800">
                         <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
                           <CheckCircleIcon size={16} />
-                          <span className="text-sm font-medium">Chave PIX configurada:</span>
+                          <span className="text-sm font-medium">
+                            Chave PIX configurada:
+                          </span>
                         </div>
-                        <p className="text-sm text-green-600 dark:text-green-400 mt-1 font-mono">{formData.chavePix}</p>
+                        <p className="text-sm text-green-600 dark:text-green-400 mt-1 font-mono">
+                          {formData.chavePix}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -1237,7 +1554,10 @@ export default function DadosBancariosPage() {
                 title={
                   <div className="flex items-center space-x-3">
                     <div className="p-1 rounded-md bg-purple-100 dark:bg-purple-900">
-                      <UserIcon className="text-purple-600 dark:text-purple-400" size={16} />
+                      <UserIcon
+                        className="text-purple-600 dark:text-purple-400"
+                        size={16}
+                      />
                     </div>
                     <span>Titular</span>
                   </div>
@@ -1255,7 +1575,9 @@ export default function DadosBancariosPage() {
                         isRequired
                         label="Nome do Titular"
                         placeholder="Nome completo"
-                        startContent={<UserIcon className="text-default-400" size={16} />}
+                        startContent={
+                          <UserIcon className="text-default-400" size={16} />
+                        }
                         value={formData.titularNome}
                         onChange={(e) =>
                           setFormData({
@@ -1268,7 +1590,9 @@ export default function DadosBancariosPage() {
                         isRequired
                         label="CPF/CNPJ"
                         placeholder="000.000.000-00"
-                        startContent={<ShieldIcon className="text-default-400" size={16} />}
+                        startContent={
+                          <ShieldIcon className="text-default-400" size={16} />
+                        }
                         value={formData.titularDocumento}
                         onChange={(e) =>
                           setFormData({
@@ -1283,7 +1607,9 @@ export default function DadosBancariosPage() {
                       <Input
                         label="E-mail"
                         placeholder="email@exemplo.com"
-                        startContent={<MailIcon className="text-default-400" size={16} />}
+                        startContent={
+                          <MailIcon className="text-default-400" size={16} />
+                        }
                         type="email"
                         value={formData.titularEmail}
                         onChange={(e) =>
@@ -1296,7 +1622,9 @@ export default function DadosBancariosPage() {
                       <Input
                         label="Telefone"
                         placeholder="(11) 99999-9999"
-                        startContent={<PhoneIcon className="text-default-400" size={16} />}
+                        startContent={
+                          <PhoneIcon className="text-default-400" size={16} />
+                        }
                         value={formData.titularTelefone}
                         onChange={(e) =>
                           setFormData({
@@ -1315,7 +1643,10 @@ export default function DadosBancariosPage() {
                 title={
                   <div className="flex items-center space-x-3">
                     <div className="p-1 rounded-md bg-orange-100 dark:bg-orange-900">
-                      <MapPinIcon className="text-orange-600 dark:text-orange-400" size={16} />
+                      <MapPinIcon
+                        className="text-orange-600 dark:text-orange-400"
+                        size={16}
+                      />
                     </div>
                     <span>Endereço</span>
                   </div>
@@ -1328,37 +1659,70 @@ export default function DadosBancariosPage() {
                         <MapPinIcon size={20} />
                         Endereço (Opcional)
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">💡 Digite o CEP e pressione Enter para preencher automaticamente os campos de endereço</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        💡 Digite o CEP e pressione Enter para preencher
+                        automaticamente os campos de endereço
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
-                      <CepInput label="CEP" placeholder="00000-000" value={formData.cep || ""} onCepFound={handleCepFound} onChange={(cep) => setFormData({ ...formData, cep })} />
-                      <Input
-                        description={formData.cidade ? "✅ Preenchido automaticamente" : undefined}
-                        label="Cidade"
-                        placeholder="São Paulo"
-                        startContent={<HomeIcon className="text-default-400" size={16} />}
-                        value={formData.cidade}
-                        onChange={(e) => setFormData({ ...formData, cidade: e.target.value })}
+                      <CepInput
+                        label="CEP"
+                        placeholder="00000-000"
+                        value={formData.cep || ""}
+                        onCepFound={handleCepFound}
+                        onChange={(cep) => setFormData({ ...formData, cep })}
                       />
                       <Input
-                        description={formData.estado ? "✅ Preenchido automaticamente" : undefined}
+                        description={
+                          formData.cidade
+                            ? "✅ Preenchido automaticamente"
+                            : undefined
+                        }
+                        label="Cidade"
+                        placeholder="São Paulo"
+                        startContent={
+                          <HomeIcon className="text-default-400" size={16} />
+                        }
+                        value={formData.cidade}
+                        onChange={(e) =>
+                          setFormData({ ...formData, cidade: e.target.value })
+                        }
+                      />
+                      <Input
+                        description={
+                          formData.estado
+                            ? "✅ Preenchido automaticamente"
+                            : undefined
+                        }
                         label="Estado"
                         placeholder="SP"
-                        startContent={<span className="text-default-400 text-sm">UF</span>}
+                        startContent={
+                          <span className="text-default-400 text-sm">UF</span>
+                        }
                         value={formData.estado}
-                        onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, estado: e.target.value })
+                        }
                       />
                     </div>
 
                     <div className="mt-4">
                       <Input
-                        description={formData.endereco ? "✅ Preenchido automaticamente" : undefined}
+                        description={
+                          formData.endereco
+                            ? "✅ Preenchido automaticamente"
+                            : undefined
+                        }
                         label="Endereço"
                         placeholder="Rua, número, complemento"
-                        startContent={<HomeIcon className="text-default-400" size={16} />}
+                        startContent={
+                          <HomeIcon className="text-default-400" size={16} />
+                        }
                         value={formData.endereco}
-                        onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, endereco: e.target.value })
+                        }
                       />
                     </div>
                   </div>
@@ -1370,7 +1734,10 @@ export default function DadosBancariosPage() {
                 title={
                   <div className="flex items-center space-x-3">
                     <div className="p-1 rounded-md bg-gray-100 dark:bg-gray-800">
-                      <SettingsIcon className="text-gray-600 dark:text-gray-400" size={16} />
+                      <SettingsIcon
+                        className="text-gray-600 dark:text-gray-400"
+                        size={16}
+                      />
                     </div>
                     <span>Configurações</span>
                   </div>
@@ -1391,10 +1758,19 @@ export default function DadosBancariosPage() {
                           </div>
                           <div>
                             <p className="font-medium">Conta Principal</p>
-                            <p className="text-sm text-default-500">Marque se esta é a conta principal para recebimentos</p>
+                            <p className="text-sm text-default-500">
+                              Marque se esta é a conta principal para
+                              recebimentos
+                            </p>
                           </div>
                         </div>
-                        <Switch color="primary" isSelected={formData.principal} onValueChange={(principal) => setFormData({ ...formData, principal })} />
+                        <Switch
+                          color="primary"
+                          isSelected={formData.principal}
+                          onValueChange={(principal) =>
+                            setFormData({ ...formData, principal })
+                          }
+                        />
                       </div>
 
                       <Textarea
@@ -1423,7 +1799,14 @@ export default function DadosBancariosPage() {
             <Button variant="light" onPress={handleCloseModal}>
               Cancelar
             </Button>
-            <Button color="primary" isLoading={loading} startContent={!loading ? <CheckCircleIcon size={16} /> : undefined} onPress={handleSubmit}>
+            <Button
+              color="primary"
+              isLoading={loading}
+              startContent={
+                !loading ? <CheckCircleIcon size={16} /> : undefined
+              }
+              onPress={handleSubmit}
+            >
               {editingId ? "Atualizar" : "Criar"}
             </Button>
           </ModalFooter>

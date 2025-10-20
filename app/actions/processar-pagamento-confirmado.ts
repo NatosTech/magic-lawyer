@@ -1,34 +1,55 @@
 "use server";
 
-import prisma from "@/app/lib/prisma";
-import { enviarEmailCredenciais, enviarEmailConfirmacao } from "@/lib/email-service";
+import type { CheckoutData } from "./checkout";
+
 import { nanoid } from "nanoid";
 import bcrypt from "bcryptjs";
 
-interface CheckoutSession {
-  id: string;
-  dadosCheckout: any;
-  planoId: string;
-  tenantSlug: string;
-  tenantDomain: string;
-  asaasCustomerId: string;
-  asaasPaymentId: string;
-  status: string;
-  createdAt: Date;
-}
+import prisma, { toNumber } from "@/app/lib/prisma";
+import {
+  enviarEmailCredenciais,
+  enviarEmailConfirmacao,
+} from "@/lib/email-service";
 
-export async function processarPagamentoConfirmado(asaasPaymentId: string) {
+export type ProcessarPagamentoConfirmadoResult =
+  | {
+      success: true;
+      data: {
+        tenantId: string;
+        tenantDomain: string;
+        subscriptionId: string;
+        credentials: {
+          email: string;
+          senhaTemporaria: string;
+        };
+        message: string;
+      };
+    }
+  | {
+      success: false;
+      error: string;
+    };
+
+export async function processarPagamentoConfirmado(
+  asaasPaymentId: string,
+): Promise<ProcessarPagamentoConfirmadoResult> {
   try {
-    // Buscar dados da sessão de checkout no banco
     const checkoutSession = await prisma.checkoutSession.findFirst({
       where: { asaasPaymentId },
     });
 
     if (!checkoutSession) {
-      throw new Error(`Sessão de checkout não encontrada para o pagamento ${asaasPaymentId}`);
+      throw new Error(
+        `Sessão de checkout não encontrada para o pagamento ${asaasPaymentId}`,
+      );
     }
 
-    // Buscar plano
+    const checkoutData = checkoutSession.dadosCheckout as CheckoutData | null;
+
+    if (!checkoutData) {
+      throw new Error("Dados do checkout não encontrados");
+    }
+
     const plano = await prisma.plano.findUnique({
       where: { id: checkoutSession.planoId },
     });
@@ -37,40 +58,36 @@ export async function processarPagamentoConfirmado(asaasPaymentId: string) {
       throw new Error("Plano não encontrado");
     }
 
-    // Gerar senha temporária
     const senhaTemporaria = nanoid(12);
     const senhaHash = await bcrypt.hash(senhaTemporaria, 12);
 
-    // Criar tenant
     const tenant = await prisma.tenant.create({
       data: {
-        name: checkoutSession.dadosCheckout.nomeEmpresa,
+        name: checkoutData.nomeEmpresa,
         slug: checkoutSession.tenantSlug,
         domain: checkoutSession.tenantDomain,
-        documento: checkoutSession.dadosCheckout.cnpj.replace(/\D/g, ""),
-        email: checkoutSession.dadosCheckout.email,
-        telefone: checkoutSession.dadosCheckout.telefone,
+        documento: checkoutData.cnpj.replace(/\D/g, ""),
+        email: checkoutData.email,
+        telefone: checkoutData.telefone,
         status: "ACTIVE",
         tipoPessoa: "JURIDICA",
-        razaoSocial: checkoutSession.dadosCheckout.nomeEmpresa,
+        razaoSocial: checkoutData.nomeEmpresa,
       },
     });
 
-    // Criar usuário admin
-    const adminUser = await prisma.usuario.create({
+    await prisma.usuario.create({
       data: {
-        firstName: checkoutSession.dadosCheckout.nomeResponsavel,
-        email: checkoutSession.dadosCheckout.email,
+        firstName: checkoutData.nomeResponsavel,
+        email: checkoutData.email,
         passwordHash: senhaHash,
         role: "ADMIN",
         tenantId: tenant.id,
-        cpf: checkoutSession.dadosCheckout.cpf.replace(/\D/g, ""),
-        phone: checkoutSession.dadosCheckout.telefone,
+        cpf: checkoutData.cpf.replace(/\D/g, ""),
+        phone: checkoutData.telefone,
         active: true,
       },
     });
 
-    // Criar assinatura com status ATIVA
     const subscription = await prisma.tenantSubscription.create({
       data: {
         tenantId: tenant.id,
@@ -80,46 +97,46 @@ export async function processarPagamentoConfirmado(asaasPaymentId: string) {
         asaasCustomerId: checkoutSession.asaasCustomerId,
         asaasPaymentId: checkoutSession.asaasPaymentId,
         metadata: {
-          formaPagamento: checkoutSession.dadosCheckout.formaPagamento,
+          formaPagamento: checkoutData.formaPagamento,
           dadosEmpresa: {
-            nomeEmpresa: checkoutSession.dadosCheckout.nomeEmpresa,
-            cnpj: checkoutSession.dadosCheckout.cnpj,
+            nomeEmpresa: checkoutData.nomeEmpresa,
+            cnpj: checkoutData.cnpj,
             endereco: {
-              cep: checkoutSession.dadosCheckout.cep,
-              endereco: checkoutSession.dadosCheckout.endereco,
-              numero: checkoutSession.dadosCheckout.numero,
-              complemento: checkoutSession.dadosCheckout.complemento,
-              bairro: checkoutSession.dadosCheckout.bairro,
-              cidade: checkoutSession.dadosCheckout.cidade,
-              estado: checkoutSession.dadosCheckout.estado,
+              cep: checkoutData.cep,
+              endereco: checkoutData.endereco,
+              numero: checkoutData.numero,
+              complemento: checkoutData.complemento,
+              bairro: checkoutData.bairro,
+              cidade: checkoutData.cidade,
+              estado: checkoutData.estado,
             },
           },
           dadosResponsavel: {
-            nome: checkoutSession.dadosCheckout.nomeResponsavel,
-            cpf: checkoutSession.dadosCheckout.cpf,
+            nome: checkoutData.nomeResponsavel,
+            cpf: checkoutData.cpf,
           },
         },
       },
     });
 
-    // Enviar email de confirmação de pagamento
+    const valorPlano = toNumber(plano.valorMensal) ?? 0;
+
     try {
       await enviarEmailConfirmacao({
-        email: checkoutSession.dadosCheckout.email,
-        nome: checkoutSession.dadosCheckout.nomeResponsavel,
-        valor: plano.valorMensal,
-        formaPagamento: checkoutSession.dadosCheckout.formaPagamento,
+        email: checkoutData.email,
+        nome: checkoutData.nomeResponsavel,
+        valor: valorPlano,
+        formaPagamento: checkoutData.formaPagamento,
         tenantDomain: checkoutSession.tenantDomain,
       });
     } catch (emailError) {
       console.error("Erro ao enviar email de confirmação:", emailError);
     }
 
-    // Enviar email com credenciais
     try {
       await enviarEmailCredenciais({
-        email: checkoutSession.dadosCheckout.email,
-        nome: checkoutSession.dadosCheckout.nomeResponsavel,
+        email: checkoutData.email,
+        nome: checkoutData.nomeResponsavel,
         tenantDomain: checkoutSession.tenantDomain,
         senhaTemporaria,
         plano: plano.nome,
@@ -128,7 +145,6 @@ export async function processarPagamentoConfirmado(asaasPaymentId: string) {
       console.error("Erro ao enviar email de credenciais:", emailError);
     }
 
-    // Atualizar status da sessão de checkout
     await prisma.checkoutSession.update({
       where: { id: checkoutSession.id },
       data: { status: "CONFIRMED" },
@@ -141,7 +157,7 @@ export async function processarPagamentoConfirmado(asaasPaymentId: string) {
         tenantDomain: checkoutSession.tenantDomain,
         subscriptionId: subscription.id,
         credentials: {
-          email: checkoutSession.dadosCheckout.email,
+          email: checkoutData.email,
           senhaTemporaria,
         },
         message: "Conta criada com sucesso após confirmação do pagamento!",
@@ -149,6 +165,7 @@ export async function processarPagamentoConfirmado(asaasPaymentId: string) {
     };
   } catch (error) {
     console.error("Erro ao processar pagamento confirmado:", error);
+
     return {
       success: false,
       error: "Erro ao processar pagamento confirmado",
