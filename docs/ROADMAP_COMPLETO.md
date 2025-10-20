@@ -1,11 +1,11 @@
 # 🗺️ Roadmap Completo - Magic Lawyer SaaS Jurídico
 
-**Última Atualização:** 17/01/2025  
+**Última Atualização:** 19/10/2025  
 **Completude Atual:** 95% (43/46 modelos implementados) ⬆️
 
 ---
 
-## ⚠️ **CORREÇÕES NECESSÁRIAS (17/01/2025)**
+## ⚠️ **CORREÇÕES NECESSÁRIAS (19/10/2025)**
 
 ### 🔴 **Problemas Identificados - ALTA PRIORIDADE**
 
@@ -18,6 +18,11 @@
 - **✅ Webhooks** - Confirmação automática de pagamentos implementada
 - **✅ Status**: FASE 3 (Subcontas), FASE 4 (Cobrança) e FASE 5 (Interface) 100% completas
 - **🎯 Próximo**: Testes Finais e Validação Completa
+- **🆕 19/10/2025**:
+  - Persistência estruturada de metadados (`dadosPagamento`) em parcelas com PIX/Boleto/Cartão
+  - Campo `asaasPaymentId` nas parcelas e `asaasCustomerId` no cliente para conciliação confiável
+  - Client Asaas com busca por CPF/CNPJ e novos campos (linha digitável, QR code enriquecido)
+  - Actions totalmente tipadas (`app/actions/cobranca-asaas.ts`) sem `ts-nocheck`
 
 #### **2. Dashboard Financeiro - CONTROLE DE ACESSO CORRIGIDO** ✅
 - **✅ CLIENTE** - Filtra apenas contratos próprios (privacidade garantida)
@@ -71,7 +76,7 @@ if (role === UserRole.FINANCEIRO) {
 
 ---
 
-## 🎯 **PRÓXIMAS PRIORIDADES (17/01/2025)**
+## 🎯 **PRÓXIMAS PRIORIDADES (19/10/2025)**
 
 ### **1. 🚨 ALTA PRIORIDADE - Novo Fluxo de Onboarding (CRÍTICO!)**
 - **Checkout Sem Login** - Formulário público na página de preços
@@ -82,6 +87,7 @@ if (role === UserRole.FINANCEIRO) {
 - **Validação de Dados** - CPF/CNPJ, email, endereço
 - **Página de Sucesso** - Após pagamento aprovado
 - **Emails Transacionais** - Bem-vindo, credenciais, tutorial
+- **🆕 19/10/2025:** Refatoração de `auth.ts`, página de pagamento e sucesso para preparar onboarding automatizado (tratamento robusto de tenant + estado do checkout)
 
 ### **2. 🔧 MÉDIA PRIORIDADE - Sistema de Pagamentos Asaas (SUPER IMPLEMENTAÇÃO)**
 - **Integração Asaas API Completa** - Sandbox + Produção ✅
@@ -94,6 +100,15 @@ if (role === UserRole.FINANCEIRO) {
 - **Sistema de Cobrança** - Para clientes dos escritórios ✅
 - **Conciliação Automática** - Matching de pagamentos ✅
 - **Relatórios Financeiros** - Dashboards de recebimentos ✅
+- **🆕 19/10/2025 - Itens concluídos hoje:**
+  - Refatoração das Server Actions de cobrança com tipos seguros e reuso de helpers
+  - Persistência de dados completos do pagamento (QR code, linha digitável, status, datas)
+  - Ajuste do fluxo de fallback para clientes sem cadastro prévio no Asaas (busca por CPF/CNPJ antes de criar)
+
+- **🛠️ 19/10/2025 - Próximos passos imediatos**
+  - Executar migration adicionando `asaasCustomerId`, `asaasPaymentId` e `dadosPagamento` (`npx prisma migrate dev`)
+  - Revisar dashboard/relatórios para usar os novos campos persistidos
+  - Finalizar testes end-to-end do fluxo de checkout com cartão após refatoração das actions
 
 ### **2. 🔧 MÉDIA PRIORIDADE - Sistema de Faturas**
 - **Geração automática de faturas** - Baseada em contratos e parcelas
@@ -105,6 +120,8 @@ if (role === UserRole.FINANCEIRO) {
 - **Filtros avançados** - Implementar em outras páginas
 - **Cards de métricas** - Padronizar em todo o sistema
 - **Interface colorida** - Aplicar padrão visual consistente
+- **🆕 19/10/2025:** Select de honorários atualizado para o padrão HeroUI (`items` + render prop) evitando erros de build e garantindo acessibilidade
+- **🆕 19/10/2025:** Checkout público com modal unificado, detecção de bandeira (`card-brand-detector`) e formulário de cartão reativo refinado
 
 ---
 
@@ -2014,4 +2031,3 @@ Os módulos abaixo foram implementados de forma **independente** e agora precisa
 - ✅ **Dashboard financeiro agora está seguro!** 🔒
 
 **Total de conquistas nesta sessão:** Controle de Acesso completo = **1 mega funcionalidade de segurança implementada!** 🔒
-
