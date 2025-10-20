@@ -10,6 +10,9 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 
+// Carregar variáveis de ambiente
+require("dotenv").config();
+
 // Tipos para o ngrok
 interface NgrokTunnel {
   name: string;
@@ -153,7 +156,7 @@ async function waitForNgrok(): Promise<string | null> {
  * Lista webhooks existentes no Asaas
  */
 async function getExistingWebhooks(): Promise<any[]> {
-  const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
+  const ASAAS_API_KEY = process.env.ASAAS_API_KEY?.replace(/^\\/, ""); // Remove contrabarra se existir
   const ASAAS_BASE_URL = process.env.ASAAS_BASE_URL || "https://sandbox.asaas.com/api/v3";
 
   if (!ASAAS_API_KEY) {
@@ -182,7 +185,7 @@ async function getExistingWebhooks(): Promise<any[]> {
  * Atualiza um webhook existente no Asaas
  */
 async function updateExistingWebhook(webhookId: string, ngrokUrl: string): Promise<boolean> {
-  const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
+  const ASAAS_API_KEY = process.env.ASAAS_API_KEY?.replace(/^\\/, ""); // Remove contrabarra se existir
   const ASAAS_BASE_URL = process.env.ASAAS_BASE_URL || "https://sandbox.asaas.com/api/v3";
 
   if (!ASAAS_API_KEY) {
@@ -202,7 +205,6 @@ async function updateExistingWebhook(webhookId: string, ngrokUrl: string): Promi
         enabled: true,
         events: [
           "PAYMENT_CREATED",
-          "PAYMENT_AWAITING_PAYMENT",
           "PAYMENT_RECEIVED",
           "PAYMENT_OVERDUE",
           "PAYMENT_DELETED",
@@ -239,7 +241,7 @@ async function updateExistingWebhook(webhookId: string, ngrokUrl: string): Promi
  * Cria um novo webhook no Asaas
  */
 async function createNewWebhook(ngrokUrl: string): Promise<boolean> {
-  const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
+  const ASAAS_API_KEY = process.env.ASAAS_API_KEY?.replace(/^\\/, ""); // Remove contrabarra se existir
   const ASAAS_BASE_URL = process.env.ASAAS_BASE_URL || "https://sandbox.asaas.com/api/v3";
 
   if (!ASAAS_API_KEY) {
@@ -259,7 +261,6 @@ async function createNewWebhook(ngrokUrl: string): Promise<boolean> {
         enabled: true,
         events: [
           "PAYMENT_CREATED",
-          "PAYMENT_AWAITING_PAYMENT",
           "PAYMENT_RECEIVED",
           "PAYMENT_OVERDUE",
           "PAYMENT_DELETED",
@@ -301,7 +302,7 @@ async function updateAsaasWebhook(ngrokUrl: string): Promise<void> {
     return;
   }
 
-  const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
+  const ASAAS_API_KEY = process.env.ASAAS_API_KEY?.replace(/^\\/, ""); // Remove contrabarra se existir
   if (!ASAAS_API_KEY) {
     console.log("⚠️  Pulando atualização do webhook - ASAAS_API_KEY não configurada");
     return;

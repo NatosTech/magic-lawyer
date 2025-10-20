@@ -12,7 +12,7 @@ const axios = require("axios");
 const prisma = new PrismaClient();
 
 // Configurações do Asaas
-const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
+const ASAAS_API_KEY = process.env.ASAAS_API_KEY?.replace(/^\\/, ""); // Remove contrabarra se existir
 const ASAAS_BASE_URL = process.env.ASAAS_BASE_URL || "https://sandbox.asaas.com/api/v3";
 
 if (!ASAAS_API_KEY) {

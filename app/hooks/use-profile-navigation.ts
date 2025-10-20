@@ -345,6 +345,12 @@ export function useProfileNavigation() {
             icon: "Receipt",
             description: "Gestão de faturas",
           },
+          {
+            label: "Recibos",
+            href: "/financeiro/recibos",
+            icon: "FileText",
+            description: "Comprovantes e recibos pagos",
+          },
         ],
       });
     }
