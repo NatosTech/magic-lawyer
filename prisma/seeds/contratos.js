@@ -1,4 +1,217 @@
-const bcrypt = require("bcryptjs");
+async function seedContratoRealSandra(prisma, Prisma, tenant) {
+  console.log(`\n🔒 Configurando contrato real para ${tenant.name}...`);
+
+  const adminUser = await prisma.usuario.findFirst({
+    where: { tenantId: tenant.id, email: "sandra@adv.br" },
+  });
+
+  if (!adminUser) {
+    console.log("⚠️  Usuária sandra@adv.br não encontrada. Pulando seed específico da Dra. Sandra.");
+    return;
+  }
+
+  const advogadoSandra = await prisma.advogado.findFirst({
+    where: { tenantId: tenant.id, usuarioId: adminUser.id },
+  });
+
+  if (!advogadoSandra) {
+    console.log("⚠️  Registro de advogado para Sandra não encontrado. Certifique-se de executar o seed de tenants antes.");
+    return;
+  }
+
+  const clienteRobson = await prisma.cliente.findFirst({
+    where: { tenantId: tenant.id, documento: "083.620.235-03" },
+  });
+
+  if (!clienteRobson) {
+    console.log("⚠️  Cliente Robson José Santos Nonato Filho não encontrado para o tenant Sandra. Verifique o seedTenantSandra.");
+    return;
+  }
+
+  const processoGuarda = await prisma.processo.findFirst({
+    where: { tenantId: tenant.id, numero: "8154973-16.2024.8.05.0001" },
+  });
+
+  if (!processoGuarda) {
+    console.log("⚠️  Processo 8154973-16.2024.8.05.0001 não localizado; contrato será criado sem vínculo processual.");
+  }
+
+  const dadosBancarios = await prisma.dadosBancarios.findUnique({
+    where: { id: "dados-sandra-bradesco" },
+  });
+
+  if (!dadosBancarios) {
+    console.log("⚠️  Dados bancários 'dados-sandra-bradesco' não encontrados. As parcelas serão criadas sem vínculo de conta.");
+  }
+
+  const tipoContrato = await prisma.tipoContrato.findFirst({
+    where: {
+      OR: [
+        { tenantId: tenant.id, slug: "customizado" },
+        { tenantId: "GLOBAL", slug: "customizado" },
+      ],
+    },
+    orderBy: {
+      tenantId: "desc",
+    },
+  });
+
+  await prisma.contrato.deleteMany({ where: { tenantId: tenant.id } });
+
+  const documentoContrato = await prisma.documento.upsert({
+    where: { id: `doc-contrato-robson-${tenant.id}` },
+    update: {
+      nome: "Contrato de Honorários - Robson José Santos Nonato Filho.pdf",
+      descricao: "Contrato real de honorários firmado em 05/09/2025 para acompanhamento das ações de guarda, união estável e medidas protetivas do cliente.",
+      url: "https://magiclawyer-assets.local/contratos/contrato-honorarios-robson.pdf",
+      tamanhoBytes: 256000,
+      contentType: "application/pdf",
+      clienteId: clienteRobson.id,
+      processoId: processoGuarda?.id ?? null,
+      uploadedById: adminUser.id,
+      origem: "ESCRITORIO",
+      visivelParaCliente: true,
+      visivelParaEquipe: true,
+    },
+    create: {
+      id: `doc-contrato-robson-${tenant.id}`,
+      tenantId: tenant.id,
+      nome: "Contrato de Honorários - Robson José Santos Nonato Filho.pdf",
+      descricao: "Contrato real de honorários firmado em 05/09/2025 para acompanhamento das ações de guarda, união estável e medidas protetivas do cliente.",
+      url: "https://magiclawyer-assets.local/contratos/contrato-honorarios-robson.pdf",
+      tamanhoBytes: 256000,
+      contentType: "application/pdf",
+      clienteId: clienteRobson.id,
+      processoId: processoGuarda?.id ?? null,
+      uploadedById: adminUser.id,
+      origem: "ESCRITORIO",
+      visivelParaCliente: true,
+      visivelParaEquipe: true,
+    },
+  });
+
+  const contrato = await prisma.contrato.create({
+    data: {
+      tenantId: tenant.id,
+      clienteId: clienteRobson.id,
+      modeloId: null,
+      advogadoResponsavelId: advogadoSandra.id,
+      responsavelUsuarioId: adminUser.id,
+      criadoPorId: adminUser.id,
+      processoId: processoGuarda?.id ?? null,
+      dadosBancariosId: dadosBancarios?.id ?? null,
+      titulo: "Contrato de Honorários - Família e Medidas Protetivas Robson Nonato",
+      tipoId: tipoContrato?.id ?? null,
+      status: "ATIVO",
+      valor: new Prisma.Decimal(25000),
+      moeda: "BRL",
+      comissaoAdvogado: new Prisma.Decimal(0),
+      percentualAcaoGanha: new Prisma.Decimal(10),
+      valorAcaoGanha: new Prisma.Decimal(0),
+      dataInicio: new Date("2025-09-05T00:00:00-03:00"),
+      dataAssinatura: new Date("2025-09-05T00:00:00-03:00"),
+      resumo: "Prestação de serviços advocatícios abrangendo as ações de guarda, união estável e medidas protetivas que tramitam nas 1ª, 8ª Varas de Família e 5ª Vara de Violência Doméstica.",
+      arquivoUrl: "https://magiclawyer-assets.local/contratos/contrato-honorarios-robson.pdf",
+      observacoes: "Pagamento: entrada de R$ 3.000,00, consultoria/programa advocatício de R$ 5.000,00 e 17 parcelas de R$ 1.000,00 (vencimento dia 10) + 10% sobre o quinhão do contratante na partilha. Depósitos na conta Bradesco ag. 3231 cc 96452-2 ou PIX CPF 943.422.535-34. Abrange os processos 8154973-16.2024.8.05.0001, 8155658-23.2024.8.05.0001 e 8155723-18.2024.8.05.0001.",
+    },
+  });
+
+  await prisma.contratoDocumento.upsert({
+    where: {
+      contratoId_documentoId: {
+        contratoId: contrato.id,
+        documentoId: documentoContrato.id,
+      },
+    },
+    update: {
+      observacoes: "Contrato digitalizado conforme arquivo físico assinado em 05/09/2025.",
+    },
+    create: {
+      tenantId: tenant.id,
+      contratoId: contrato.id,
+      documentoId: documentoContrato.id,
+      observacoes: "Contrato digitalizado conforme arquivo físico assinado em 05/09/2025.",
+      processoId: processoGuarda?.id ?? null,
+    },
+  });
+
+  await prisma.contratoHonorario.create({
+    data: {
+      tenantId: tenant.id,
+      contratoId: contrato.id,
+      advogadoId: advogadoSandra.id,
+      dadosBancariosId: dadosBancarios?.id ?? null,
+      tipo: "FIXO",
+      valorFixo: new Prisma.Decimal(25000),
+      observacoes: "Honorários fixos definidos em R$ 25.000,00, contemplando entrada, consultoria e 17 parcelas mensais conforme cláusula 2ª do contrato.",
+      visibilidade: "PUBLICO",
+    },
+  });
+
+  await prisma.contratoHonorario.create({
+    data: {
+      tenantId: tenant.id,
+      contratoId: contrato.id,
+      advogadoId: advogadoSandra.id,
+      dadosBancariosId: dadosBancarios?.id ?? null,
+      tipo: "SUCESSO",
+      percentualSucesso: new Prisma.Decimal(10),
+      valorMinimoSucesso: new Prisma.Decimal(0),
+      baseCalculo: "Quinhão do contratante na partilha.",
+      observacoes: "Honorários de êxito de 10% sobre o quinhão do contratante na partilha, devidos independentemente de acordos formais.",
+      visibilidade: "PUBLICO",
+    },
+  });
+
+  const parcelas = [
+    {
+      numeroParcela: 1,
+      titulo: "Entrada",
+      descricao: "Entrada de R$ 3.000,00 prevista na cláusula 2ª.",
+      valor: "3000",
+      dataVencimento: new Date(Date.UTC(2025, 8, 5, 15, 0, 0)),
+    },
+    {
+      numeroParcela: 2,
+      titulo: "Consultoria / Programa Advocaticio",
+      descricao: "Consultoria e estruturação do programa advocatício contratado.",
+      valor: "5000",
+      dataVencimento: new Date(Date.UTC(2025, 8, 12, 15, 0, 0)),
+    },
+  ];
+
+  for (let i = 0; i < 17; i += 1) {
+    const numeroParcela = i + 3;
+    const dueDate = new Date(Date.UTC(2025, 9 + i, 10, 15, 0, 0));
+    parcelas.push({
+      numeroParcela,
+      titulo: `Parcela ${String(i + 1).padStart(2, "0")}/17`,
+      descricao: "Parcela mensal de R$ 1.000,00 com vencimento no dia 10, conforme cláusula 2ª.",
+      valor: "1000",
+      dataVencimento: dueDate,
+    });
+  }
+
+  for (const parcela of parcelas) {
+    await prisma.contratoParcela.create({
+      data: {
+        tenantId: tenant.id,
+        contratoId: contrato.id,
+        dadosBancariosId: dadosBancarios?.id ?? null,
+        numeroParcela: parcela.numeroParcela,
+        titulo: parcela.titulo,
+        descricao: parcela.descricao,
+        valor: new Prisma.Decimal(parcela.valor),
+        dataVencimento: parcela.dataVencimento,
+        status: "PENDENTE",
+        formaPagamento: "DEPOSITO/PIX",
+        responsavelUsuarioId: adminUser.id,
+      },
+    });
+  }
+
+  console.log("✅ Contrato real da Dra. Sandra configurado com sucesso.");
+}
 
 async function seedContratos(prisma, Prisma) {
   console.log("🌱 Seeding contratos, processos, procurações e eventos...");
@@ -21,6 +234,11 @@ async function seedContratos(prisma, Prisma) {
 
   for (const tenant of tenants) {
     console.log(`📋 Processando tenant: ${tenant.name}`);
+
+    if (tenant.slug === "sandra") {
+      await seedContratoRealSandra(prisma, Prisma, tenant);
+      continue;
+    }
 
     // Buscar clientes do tenant
     const clientes = await prisma.cliente.findMany({

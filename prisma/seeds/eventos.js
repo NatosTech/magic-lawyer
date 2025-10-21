@@ -34,22 +34,23 @@ async function seedEventos() {
     const marcos = clientes.find((c) => c.nome === "Marcos Souza");
     const ana = clientes.find((c) => c.nome === "Ana Paula Oliveira");
     const inovaTech = clientes.find((c) => c.nome === "Inova Tech Ltda");
+    const robsonCliente = clientes.find((c) => c.documento === "083.620.235-03" || c.nome === "Robson José Santos Nonato Filho");
 
     // Buscar processos
     const processos = await prisma.processo.findMany({
       where: { tenantId: tenantSandra.id },
     });
 
-    const processo1 = processos[0];
-    const processo2 = processos[1];
+    const processoGuarda = processos.find((p) => p.numero === "8154973-16.2024.8.05.0001") ?? processos[0];
+    const processoUniao = processos.find((p) => p.numero === "8155658-23.2024.8.05.0001") ?? processos[1];
 
     // Verificar se temos os dados necessários
-    if (!processo1 || !processo2) {
+    if (!processoGuarda || !processoUniao) {
       console.log("❌ Processos não encontrados. Criando processos de exemplo...");
       return;
     }
 
-    if (!marcos || !ana || !inovaTech) {
+    if (!marcos || !ana || !inovaTech || !robsonCliente) {
       console.log("❌ Clientes não encontrados. Verifique o seed de clientes.");
       return;
     }
@@ -70,7 +71,7 @@ async function seedEventos() {
         dataFim: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // +2 horas
         local: "Fórum Central - Sala 101",
         participantes: ["cliente@sandraadv.br", "sandra@adv.br"],
-        processoId: processo1.id,
+        processoId: processoGuarda.id,
         clienteId: marcos.id,
         advogadoResponsavelId: sandra.advogado.id,
         criadoPorId: sandra.id,
@@ -118,7 +119,7 @@ async function seedEventos() {
         dataInicio: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 dias no futuro
         dataFim: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 24 * 60 * 60 * 1000), // +1 dia
         participantes: ["sandra@adv.br", "ricardo@sandraadv.br"],
-        processoId: processo2.id,
+        processoId: processoUniao.id,
         advogadoResponsavelId: sandra.advogado.id,
         criadoPorId: sandra.id,
         status: "AGENDADO",
@@ -148,7 +149,7 @@ async function seedEventos() {
         dataFim: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000), // +3 horas
         local: "Fórum Regional - Sala 205",
         participantes: ["cliente@sandraadv.br", "sandra@adv.br"],
-        processoId: processo1.id,
+        processoId: processoGuarda.id,
         clienteId: marcos.id,
         advogadoResponsavelId: sandra.advogado.id,
         criadoPorId: sandra.id,
@@ -169,6 +170,24 @@ async function seedEventos() {
         status: "AGENDADO",
         lembreteMinutos: 30,
         observacoes: "Reunião semanal obrigatória",
+      },
+      processoUniao && {
+        tenantId: tenantSandra.id,
+        titulo: "Audiência de Videoconciliação - CEJUSC (Tainá x Robson)",
+        descricao:
+          "Audiência VÍDEOCONCILIAÇÃO designada pelo CEJUSC Processual – Família Conciliação.\nTAINA X ROBSON (remessa de 07/10). Sessão confirmada para 18/12/2025 às 11:00.",
+        tipo: "AUDIENCIA",
+        dataInicio: new Date("2025-12-18T11:00:00-03:00"),
+        dataFim: new Date("2025-12-18T12:00:00-03:00"),
+        local: "Videoconferência - CEJUSC Processual (Família Conciliação)",
+        participantes: ["sandra@adv.br", "robsonnonato@magiclawyer.com", "taina.luisa@externo.br"],
+        processoId: processoUniao.id,
+        clienteId: robsonCliente?.id ?? null,
+        advogadoResponsavelId: sandra.advogado.id,
+        criadoPorId: sandra.id,
+        status: "AGENDADO",
+        lembreteMinutos: 120,
+        observacoes: "Enviar link da sala virtual ao cliente com 48h de antecedência e validar acesso 30 minutos antes.",
       },
       // Eventos específicos para testar confirmações
       {
@@ -194,7 +213,7 @@ async function seedEventos() {
         dataFim: new Date(Date.now() + 2 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // +2 horas
         local: "Fórum de Teste - Sala 999",
         participantes: ["cliente@sandraadv.br", "ricardo@sandraadv.br", "sandra@adv.br"],
-        processoId: processo1.id,
+        processoId: processoGuarda.id,
         clienteId: marcos.id,
         advogadoResponsavelId: sandra.advogado.id,
         criadoPorId: sandra.id,
@@ -221,7 +240,7 @@ async function seedEventos() {
     ];
 
     // Inserir eventos
-    for (const eventoData of eventos) {
+    for (const eventoData of eventos.filter(Boolean)) {
       const evento = await prisma.evento.create({
         data: eventoData,
       });

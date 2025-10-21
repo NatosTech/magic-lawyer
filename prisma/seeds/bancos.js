@@ -67,20 +67,12 @@ async function seedBancos() {
   console.log("🏦 Iniciando seed de bancos...");
 
   try {
-    // Verificar se já existem bancos
-    const bancosExistentes = await prisma.banco.count();
-    if (bancosExistentes > 0) {
-      console.log(`✅ ${bancosExistentes} bancos já existem no banco. Pulando seed.`);
-      return;
-    }
-
-    // Criar bancos
     const bancosCriados = await prisma.banco.createMany({
       data: bancosBrasil,
       skipDuplicates: true,
     });
 
-    console.log(`✅ ${bancosCriados.count} bancos criados com sucesso!`);
+    console.log(`✅ ${bancosCriados.count} novos bancos inseridos ou atualizados!`);
 
     // Listar alguns bancos criados
     const bancosListados = await prisma.banco.findMany({

@@ -80,9 +80,7 @@ async function getUserId(): Promise<string> {
 // LISTAGEM
 // ============================================
 
-export async function listAndamentos(
-  filters: AndamentoFilters,
-): Promise<ActionResponse<any[]>> {
+export async function listAndamentos(filters: AndamentoFilters): Promise<ActionResponse<any[]>> {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -106,10 +104,7 @@ export async function listAndamentos(
 
     // Busca textual
     if (filters.searchTerm) {
-      where.OR = [
-        { titulo: { contains: filters.searchTerm, mode: "insensitive" } },
-        { descricao: { contains: filters.searchTerm, mode: "insensitive" } },
-      ];
+      where.OR = [{ titulo: { contains: filters.searchTerm, mode: "insensitive" } }, { descricao: { contains: filters.searchTerm, mode: "insensitive" } }];
     }
 
     const andamentos = await prisma.movimentacaoProcesso.findMany({
@@ -170,9 +165,7 @@ export async function listAndamentos(
 // BUSCAR INDIVIDUAL
 // ============================================
 
-export async function getAndamento(
-  andamentoId: string,
-): Promise<ActionResponse<any>> {
+export async function getAndamento(andamentoId: string): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -256,9 +249,7 @@ export async function getAndamento(
 // CRIAR ANDAMENTO
 // ============================================
 
-export async function createAndamento(
-  input: AndamentoCreateInput,
-): Promise<ActionResponse<any>> {
+export async function createAndamento(input: AndamentoCreateInput): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -349,10 +340,7 @@ export async function createAndamento(
 // ATUALIZAR ANDAMENTO
 // ============================================
 
-export async function updateAndamento(
-  andamentoId: string,
-  input: AndamentoUpdateInput,
-): Promise<ActionResponse<any>> {
+export async function updateAndamento(andamentoId: string, input: AndamentoUpdateInput): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -425,9 +413,7 @@ export async function updateAndamento(
 // EXCLUIR ANDAMENTO
 // ============================================
 
-export async function deleteAndamento(
-  andamentoId: string,
-): Promise<ActionResponse<null>> {
+export async function deleteAndamento(andamentoId: string): Promise<ActionResponse<null>> {
   try {
     const tenantId = await getTenantId();
 
@@ -471,11 +457,10 @@ export async function deleteAndamento(
 // DASHBOARD/MÉTRICAS
 // ============================================
 
-export async function getDashboardAndamentos(
-  processoId?: string,
-): Promise<ActionResponse<any>> {
+export async function getDashboardAndamentos(processoId?: string): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
+    const userId = await getUserId();
 
     const where: any = { tenantId };
 
@@ -483,41 +468,59 @@ export async function getDashboardAndamentos(
       where.processoId = processoId;
     }
 
-    const [total, porTipo, ultimosAndamentos] = await Promise.all([
-      prisma.movimentacaoProcesso.count({ where }),
-      prisma.movimentacaoProcesso.groupBy({
-        by: ["tipo"],
-        where,
-        _count: true,
-      }),
-      prisma.movimentacaoProcesso.findMany({
-        where,
-        take: 10,
-        orderBy: { dataMovimentacao: "desc" },
-        include: {
-          processo: {
-            select: {
-              id: true,
-              numero: true,
-              titulo: true,
-            },
-          },
-          criadoPor: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-            },
+    // Debug temporário
+    console.log("getDashboardAndamentos - tenantId:", tenantId);
+    console.log("getDashboardAndamentos - userId:", userId);
+    console.log("getDashboardAndamentos - where:", where);
+
+    // Usar a mesma lógica da função listAndamentos que está funcionando
+    const andamentos = await prisma.movimentacaoProcesso.findMany({
+      where,
+      include: {
+        criadoPor: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
           },
         },
-      }),
-    ]);
+        processo: {
+          select: {
+            id: true,
+            numero: true,
+            titulo: true,
+          },
+        },
+      },
+    });
+
+    // Calcular métricas a partir dos dados
+    const total = andamentos.length;
+    const porTipo = andamentos.reduce((acc: any, andamento: any) => {
+      const tipo = andamento.tipo;
+      acc[tipo] = (acc[tipo] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Converter para o formato esperado
+    const porTipoArray = Object.entries(porTipo).map(([tipo, count]) => ({
+      tipo,
+      _count: count,
+    }));
+
+    const ultimosAndamentos = andamentos.sort((a: any, b: any) => new Date(b.dataMovimentacao).getTime() - new Date(a.dataMovimentacao).getTime()).slice(0, 10);
+
+    // Debug temporário
+    console.log("getDashboardAndamentos - total:", total);
+    console.log("getDashboardAndamentos - porTipo:", porTipoArray);
+    console.log("getDashboardAndamentos - ultimosAndamentos:", ultimosAndamentos.length);
 
     return {
       success: true,
       data: {
         total,
-        porTipo,
+        porTipo: porTipoArray,
         ultimosAndamentos,
       },
     };
@@ -535,19 +538,10 @@ export async function getDashboardAndamentos(
 // TIPOS DE MOVIMENTAÇÃO
 // ============================================
 
-export async function getTiposMovimentacao(): Promise<
-  ActionResponse<MovimentacaoTipo[]>
-> {
+export async function getTiposMovimentacao(): Promise<ActionResponse<MovimentacaoTipo[]>> {
   try {
     // Retornar os tipos do enum
-    const tipos: MovimentacaoTipo[] = [
-      "ANDAMENTO",
-      "PRAZO",
-      "INTIMACAO",
-      "AUDIENCIA",
-      "ANEXO",
-      "OUTRO",
-    ];
+    const tipos: MovimentacaoTipo[] = ["ANDAMENTO", "PRAZO", "INTIMACAO", "AUDIENCIA", "ANEXO", "OUTRO"];
 
     return {
       success: true,
