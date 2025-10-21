@@ -335,6 +335,7 @@ model Usuario {
   dadosBancarios               DadosBancarios[]
 
   @@unique([email, tenantId])
+  @@unique([tenantId, cpf])
   @@index([role])
   @@schema("magiclawyer")
 }
@@ -395,6 +396,7 @@ model Advogado {
   comissaoPadrao       Decimal                 @default(0.00) @db.Decimal(5, 2)
   comissaoAcaoGanha    Decimal                 @default(0.00) @db.Decimal(5, 2)
   comissaoHonorarios   Decimal                 @default(0.00) @db.Decimal(5, 2)
+  isExterno            Boolean                 @default(false) // Identifica se o advogado não é do escritório
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
   tenant               Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)

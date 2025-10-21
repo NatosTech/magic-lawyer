@@ -58,38 +58,6 @@ async function seedContratoRealSandra(prisma, Prisma, tenant) {
 
   await prisma.contrato.deleteMany({ where: { tenantId: tenant.id } });
 
-  const documentoContrato = await prisma.documento.upsert({
-    where: { id: `doc-contrato-robson-${tenant.id}` },
-    update: {
-      nome: "Contrato de Honorários - Robson José Santos Nonato Filho.pdf",
-      descricao: "Contrato real de honorários firmado em 05/09/2025 para acompanhamento das ações de guarda, união estável e medidas protetivas do cliente.",
-      url: "https://magiclawyer-assets.local/contratos/contrato-honorarios-robson.pdf",
-      tamanhoBytes: 256000,
-      contentType: "application/pdf",
-      clienteId: clienteRobson.id,
-      processoId: processoGuarda?.id ?? null,
-      uploadedById: adminUser.id,
-      origem: "ESCRITORIO",
-      visivelParaCliente: true,
-      visivelParaEquipe: true,
-    },
-    create: {
-      id: `doc-contrato-robson-${tenant.id}`,
-      tenantId: tenant.id,
-      nome: "Contrato de Honorários - Robson José Santos Nonato Filho.pdf",
-      descricao: "Contrato real de honorários firmado em 05/09/2025 para acompanhamento das ações de guarda, união estável e medidas protetivas do cliente.",
-      url: "https://magiclawyer-assets.local/contratos/contrato-honorarios-robson.pdf",
-      tamanhoBytes: 256000,
-      contentType: "application/pdf",
-      clienteId: clienteRobson.id,
-      processoId: processoGuarda?.id ?? null,
-      uploadedById: adminUser.id,
-      origem: "ESCRITORIO",
-      visivelParaCliente: true,
-      visivelParaEquipe: true,
-    },
-  });
-
   const contrato = await prisma.contrato.create({
     data: {
       tenantId: tenant.id,
@@ -111,27 +79,7 @@ async function seedContratoRealSandra(prisma, Prisma, tenant) {
       dataInicio: new Date("2025-09-05T00:00:00-03:00"),
       dataAssinatura: new Date("2025-09-05T00:00:00-03:00"),
       resumo: "Prestação de serviços advocatícios abrangendo as ações de guarda, união estável e medidas protetivas que tramitam nas 1ª, 8ª Varas de Família e 5ª Vara de Violência Doméstica.",
-      arquivoUrl: "https://magiclawyer-assets.local/contratos/contrato-honorarios-robson.pdf",
       observacoes: "Pagamento: entrada de R$ 3.000,00, consultoria/programa advocatício de R$ 5.000,00 e 17 parcelas de R$ 1.000,00 (vencimento dia 10) + 10% sobre o quinhão do contratante na partilha. Depósitos na conta Bradesco ag. 3231 cc 96452-2 ou PIX CPF 943.422.535-34. Abrange os processos 8154973-16.2024.8.05.0001, 8155658-23.2024.8.05.0001 e 8155723-18.2024.8.05.0001.",
-    },
-  });
-
-  await prisma.contratoDocumento.upsert({
-    where: {
-      contratoId_documentoId: {
-        contratoId: contrato.id,
-        documentoId: documentoContrato.id,
-      },
-    },
-    update: {
-      observacoes: "Contrato digitalizado conforme arquivo físico assinado em 05/09/2025.",
-    },
-    create: {
-      tenantId: tenant.id,
-      contratoId: contrato.id,
-      documentoId: documentoContrato.id,
-      observacoes: "Contrato digitalizado conforme arquivo físico assinado em 05/09/2025.",
-      processoId: processoGuarda?.id ?? null,
     },
   });
 

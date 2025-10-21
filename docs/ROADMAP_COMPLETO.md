@@ -2351,6 +2351,44 @@ Os módulos abaixo foram implementados de forma **independente** e agora precisa
 
 **🎯 Próximos Passos (Críticos):**
 - ✅ **Recibos e Comprovantes** - Gestão de recibos pagos (CONCLUÍDO)
+- ✅ **Sistema de Advogados Externos** - Campo isExterno no schema + interface melhorada (CONCLUÍDO)
+- 🔴 **Sistema de Advogados** - Admin do tenant pode adicionar advogados
+- 🔴 **Sistema de Equipe** - Advogados podem adicionar pessoas com permissões específicas
+- 🔴 **Gestão de Permissões** - Admin pode gerenciar acessos do escritório
+
+#### **📋 Detalhamento das Novas Funcionalidades:**
+
+**✅ Sistema de Advogados Externos (CONCLUÍDO - 21/01/2025):**
+- **Campo isExterno no Schema** - Adicionado campo boolean no modelo Advogado
+- **Identificação Automática** - Advogados podem ser marcados como externos ao escritório
+- **Interface Diferenciada** - Cards mostram chip "Externo" para advogados externos
+- **Filtros por Tipo** - Filtro para "Do Escritório" vs "Externos Identificados"
+- **Métricas Separadas** - Contadores específicos para cada tipo de advogado
+- **Modal Diferenciado** - Informações específicas para advogados externos
+- **Seed Atualizado** - Lucena Mayara Alves marcada como advogado externo
+- **Actions Simplificadas** - Lógica baseada no campo do schema ao invés de queries complexas
+
+**🔴 Sistema de Advogados (Alta Prioridade):**
+- **Admin do Tenant** pode adicionar novos advogados ao escritório
+- **Melhorar tela de advogados** com botão para adicionar advogado
+- **Interface similar à de clientes** com cards, filtros e animações
+- **Permissões específicas** para cada advogado adicionado
+- **Integração com sistema de usuários** existente
+
+**🔴 Sistema de Equipe (Alta Prioridade):**
+- **Advogados** podem adicionar pessoas que verão apenas o que ele permitir sobre ele
+- **Admin do tenant** pode adicionar pessoas que trabalham no escritório
+- **Controle granular de permissões** - acesso a tudo ou a clientes/processos específicos
+- **Sistema de convites** para novos membros da equipe
+- **Gestão de acessos** por cliente, processo ou módulo
+
+**🔴 Gestão de Permissões (Alta Prioridade):**
+- **Schema do banco** precisará ser atualizado para suportar permissões granulares
+- **Sistema de roles** expandido (além de CLIENTE, ADVOGADO, ADMIN, etc.)
+- **Permissões por módulo** (clientes, processos, financeiro, etc.)
+- **Permissões por cliente** (acesso a clientes específicos)
+- **Permissões por processo** (acesso a processos específicos)
+- **Interface de gestão** para admin configurar permissões
 
 **🎯 Próximos Passos (Média Prioridade):**
 - 🟡 **Pagamentos Internos** - Completar sistema de cobrança interna

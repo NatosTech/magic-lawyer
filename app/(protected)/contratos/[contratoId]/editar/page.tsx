@@ -51,6 +51,25 @@ export default function EditarContratoPage({
 }: {
   params: Promise<{ contratoId: string }>;
 }) {
+  const formatBancoLabel = React.useCallback((conta: any) => {
+    if (!conta || !conta.banco) {
+      return "Banco não informado";
+    }
+
+    if (typeof conta.banco === "string") {
+      return conta.banco;
+    }
+
+    if (typeof conta.banco?.nome === "string" && conta.banco.nome.trim()) {
+      return conta.banco.nome;
+    }
+
+    if (typeof conta.banco?.codigo === "string" && conta.banco.codigo.trim()) {
+      return `Banco ${conta.banco.codigo}`;
+    }
+
+    return "Banco não informado";
+  }, []);
   const router = useRouter();
   const resolvedParams = use(params);
   const contratoId = resolvedParams.contratoId;
@@ -341,19 +360,22 @@ export default function EditarContratoPage({
                 }))
               }
             >
-              {dadosBancarios.map((conta: any) => (
-                <SelectItem
-                  key={conta.id}
-                  textValue={`${conta.banco} - ${conta.titularNome}`}
-                >
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{conta.banco}</span>
-                      {conta.principal && (
-                        <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded">
-                          Principal
-                        </span>
-                      )}
+              {dadosBancarios.map((conta: any) => {
+                const bancoNome = formatBancoLabel(conta);
+
+                return (
+                  <SelectItem
+                    key={conta.id}
+                    textValue={`${bancoNome} - ${conta.titularNome}`}
+                  >
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{bancoNome}</span>
+                        {conta.principal && (
+                          <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded">
+                            Principal
+                          </span>
+                        )}
                     </div>
                     <span className="text-sm text-default-500">
                       Ag: {conta.agencia} - CC: {conta.conta}
@@ -367,9 +389,10 @@ export default function EditarContratoPage({
                         PIX: {conta.chavePix}
                       </span>
                     )}
-                  </div>
-                </SelectItem>
-              ))}
+                    </div>
+                  </SelectItem>
+                );
+              })}
             </Select>
 
             {/* Datas */}

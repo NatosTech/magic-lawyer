@@ -23,6 +23,7 @@ import {
   Edit,
   Trash2,
   Eye,
+  EyeOff,
   FileText,
   Link as LinkIcon,
   Building2,
@@ -536,13 +537,33 @@ export default function ContratosContent() {
                     </DropdownTrigger>
                     <DropdownMenu>
                       <DropdownItem
-                        key="view"
+                        key="details"
                         as={Link}
                         href={`/contratos/${contrato.id}`}
-                        startContent={<Eye className="h-4 w-4" />}
+                        startContent={<FileText className="h-4 w-4" />}
                       >
-                        Visualizar
+                        Ver detalhes
                       </DropdownItem>
+                      {contrato.arquivoUrl ? (
+                        <DropdownItem
+                          key="view-file"
+                          as="a"
+                          href={contrato.arquivoUrl}
+                          startContent={<Eye className="h-4 w-4" />}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Ver contrato anexado
+                        </DropdownItem>
+                      ) : (
+                        <DropdownItem
+                          key="view-file-disabled"
+                          isDisabled
+                          startContent={<EyeOff className="h-4 w-4 text-default-300" />}
+                        >
+                          Contrato não anexado
+                        </DropdownItem>
+                      )}
                       <DropdownItem
                         key="edit"
                         as={Link}

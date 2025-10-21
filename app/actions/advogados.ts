@@ -36,6 +36,8 @@ export interface AdvogadoData {
   comissaoPadrao: number;
   comissaoAcaoGanha: number;
   comissaoHonorarios: number;
+  isExterno: boolean; // Campo do schema para identificar advogados externos
+  processosCount?: number; // Contador de processos onde aparece
   usuario: {
     id: string;
     firstName: string | null;
@@ -106,7 +108,19 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
       where: {
         tenantId: session.user.tenantId,
       },
-      include: {
+      select: {
+        id: true,
+        usuarioId: true,
+        oabNumero: true,
+        oabUf: true,
+        especialidades: true,
+        bio: true,
+        telefone: true,
+        whatsapp: true,
+        comissaoPadrao: true,
+        comissaoAcaoGanha: true,
+        comissaoHonorarios: true,
+        isExterno: true,
         usuario: {
           select: {
             id: true,
@@ -139,6 +153,8 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
       comissaoPadrao: parseFloat(adv.comissaoPadrao.toString()),
       comissaoAcaoGanha: parseFloat(adv.comissaoAcaoGanha.toString()),
       comissaoHonorarios: parseFloat(adv.comissaoHonorarios.toString()),
+      isExterno: adv.isExterno,
+      processosCount: 0, // Será calculado se necessário
       usuario: adv.usuario,
     }));
 
@@ -150,9 +166,7 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
   }
 }
 
-export async function getAdvogado(
-  advogadoId: string,
-): Promise<ActionResponse<AdvogadoData>> {
+export async function getAdvogado(advogadoId: string): Promise<ActionResponse<AdvogadoData>> {
   try {
     const session = await getSession();
 
@@ -208,9 +222,7 @@ export async function getAdvogado(
   }
 }
 
-export async function getCurrentUserAdvogado(): Promise<
-  ActionResponse<AdvogadoData>
-> {
+export async function getCurrentUserAdvogado(): Promise<ActionResponse<AdvogadoData>> {
   try {
     const session = await getSession();
 
@@ -266,10 +278,7 @@ export async function getCurrentUserAdvogado(): Promise<
   }
 }
 
-export async function updateAdvogado(
-  advogadoId: string,
-  input: UpdateAdvogadoInput,
-): Promise<ActionResponse> {
+export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoInput): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -291,8 +300,7 @@ export async function updateAdvogado(
     // Atualizar dados do usuário se fornecido
     const usuarioUpdate: any = {};
 
-    if (input.firstName !== undefined)
-      usuarioUpdate.firstName = input.firstName;
+    if (input.firstName !== undefined) usuarioUpdate.firstName = input.firstName;
     if (input.lastName !== undefined) usuarioUpdate.lastName = input.lastName;
     if (input.phone !== undefined) usuarioUpdate.phone = input.phone;
 
@@ -306,20 +314,15 @@ export async function updateAdvogado(
     // Atualizar dados do advogado
     const advogadoUpdate: any = {};
 
-    if (input.oabNumero !== undefined)
-      advogadoUpdate.oabNumero = input.oabNumero;
+    if (input.oabNumero !== undefined) advogadoUpdate.oabNumero = input.oabNumero;
     if (input.oabUf !== undefined) advogadoUpdate.oabUf = input.oabUf;
-    if (input.especialidades !== undefined)
-      advogadoUpdate.especialidades = input.especialidades;
+    if (input.especialidades !== undefined) advogadoUpdate.especialidades = input.especialidades;
     if (input.bio !== undefined) advogadoUpdate.bio = input.bio;
     if (input.telefone !== undefined) advogadoUpdate.telefone = input.telefone;
     if (input.whatsapp !== undefined) advogadoUpdate.whatsapp = input.whatsapp;
-    if (input.comissaoPadrao !== undefined)
-      advogadoUpdate.comissaoPadrao = input.comissaoPadrao;
-    if (input.comissaoAcaoGanha !== undefined)
-      advogadoUpdate.comissaoAcaoGanha = input.comissaoAcaoGanha;
-    if (input.comissaoHonorarios !== undefined)
-      advogadoUpdate.comissaoHonorarios = input.comissaoHonorarios;
+    if (input.comissaoPadrao !== undefined) advogadoUpdate.comissaoPadrao = input.comissaoPadrao;
+    if (input.comissaoAcaoGanha !== undefined) advogadoUpdate.comissaoAcaoGanha = input.comissaoAcaoGanha;
+    if (input.comissaoHonorarios !== undefined) advogadoUpdate.comissaoHonorarios = input.comissaoHonorarios;
 
     if (Object.keys(advogadoUpdate).length > 0) {
       await prisma.advogado.update({
@@ -339,9 +342,7 @@ export async function updateAdvogado(
   }
 }
 
-export async function updateCurrentUserAdvogado(
-  input: UpdateAdvogadoInput,
-): Promise<ActionResponse> {
+export async function updateCurrentUserAdvogado(input: UpdateAdvogadoInput): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -368,9 +369,7 @@ export async function updateCurrentUserAdvogado(
   }
 }
 
-export async function getAdvogadosDisponiveis(): Promise<
-  ActionResponse<AdvogadoSelectItem[]>
-> {
+export async function getAdvogadosDisponiveis(): Promise<ActionResponse<AdvogadoSelectItem[]>> {
   try {
     const session = await getSession();
 
@@ -404,9 +403,7 @@ export async function getAdvogadosDisponiveis(): Promise<
     const data: AdvogadoSelectItem[] = advogados.map((adv) => ({
       id: adv.id,
       value: adv.id,
-      label:
-        `${adv.usuario.firstName || ""} ${adv.usuario.lastName || ""}`.trim() ||
-        "Sem nome",
+      label: `${adv.usuario.firstName || ""} ${adv.usuario.lastName || ""}`.trim() || "Sem nome",
       oab: adv.oabNumero && adv.oabUf ? `${adv.oabUf} ${adv.oabNumero}` : null,
       oabNumero: adv.oabNumero,
       oabUf: adv.oabUf,
@@ -425,6 +422,157 @@ export async function getAdvogadosDisponiveis(): Promise<
   }
 }
 
+// =============================================
+// ADVOGADOS EXTERNOS IDENTIFICADOS
+// =============================================
+
+export interface AdvogadoExternoIdentificado {
+  id: string;
+  nome: string;
+  oabNumero: string | null;
+  oabUf: string | null;
+  email: string | null;
+  telefone: string | null;
+  processosCount: number;
+  primeiroProcesso: Date | null;
+  ultimoProcesso: Date | null;
+  processos: {
+    id: string;
+    numero: string;
+    cliente: string;
+    dataIdentificacao: Date;
+  }[];
+}
+
+export async function getAdvogadosExternosIdentificados(): Promise<ActionResponse<AdvogadoExternoIdentificado[]>> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    // Buscar advogados que aparecem em ProcessoParte mas não são do escritório atual
+    const advogadosExternos = await prisma.processoParte.findMany({
+      where: {
+        tenantId: session.user.tenantId,
+        advogadoId: {
+          not: null,
+        },
+        advogado: {
+          tenantId: {
+            not: session.user.tenantId, // Advogados de outros tenants
+          },
+        },
+      },
+      include: {
+        advogado: {
+          include: {
+            usuario: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+              },
+            },
+          },
+        },
+        processo: {
+          select: {
+            id: true,
+            numero: true,
+            cliente: {
+              select: {
+                nome: true,
+              },
+            },
+            createdAt: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // Agrupar por advogado e contar processos
+    const agrupados = new Map<
+      string,
+      {
+        advogado: any;
+        processos: any[];
+        processosCount: number;
+        primeiroProcesso: Date | null;
+        ultimoProcesso: Date | null;
+      }
+    >();
+
+    for (const parte of advogadosExternos) {
+      const advogadoId = parte.advogadoId!;
+
+      if (!agrupados.has(advogadoId)) {
+        agrupados.set(advogadoId, {
+          advogado: parte.advogado,
+          processos: [],
+          processosCount: 0,
+          primeiroProcesso: null,
+          ultimoProcesso: null,
+        });
+      }
+
+      const grupo = agrupados.get(advogadoId)!;
+      grupo.processos.push({
+        id: parte.processo.id,
+        numero: parte.processo.numero,
+        cliente: parte.processo.cliente.nome,
+        dataIdentificacao: parte.createdAt,
+      });
+      grupo.processosCount++;
+
+      if (!grupo.primeiroProcesso || parte.createdAt < grupo.primeiroProcesso) {
+        grupo.primeiroProcesso = parte.createdAt;
+      }
+      if (!grupo.ultimoProcesso || parte.createdAt > grupo.ultimoProcesso) {
+        grupo.ultimoProcesso = parte.createdAt;
+      }
+    }
+
+    // Converter para formato final
+    const resultado: AdvogadoExternoIdentificado[] = Array.from(agrupados.values()).map((grupo) => ({
+      id: grupo.advogado.id,
+      nome: `${grupo.advogado.usuario?.firstName || ""} ${grupo.advogado.usuario?.lastName || ""}`.trim() || "Nome não informado",
+      oabNumero: grupo.advogado.oabNumero,
+      oabUf: grupo.advogado.oabUf,
+      email: grupo.advogado.usuario?.email || null,
+      telefone: grupo.advogado.usuario?.phone || null,
+      processosCount: grupo.processosCount,
+      primeiroProcesso: grupo.primeiroProcesso,
+      ultimoProcesso: grupo.ultimoProcesso,
+      processos: grupo.processos,
+    }));
+
+    return { success: true, data: resultado };
+  } catch (error) {
+    console.error("Erro ao buscar advogados externos identificados:", error);
+    return { success: false, error: "Erro ao buscar advogados externos identificados" };
+  }
+}
+
+// =============================================
+// FUNÇÃO COMBINADA PARA BUSCAR TODOS OS ADVOGADOS
+// =============================================
+
+export async function getAllAdvogadosComExternos(): Promise<ActionResponse<AdvogadoData[]>> {
+  try {
+    // Agora que o campo isExterno está no schema, podemos usar apenas getAdvogados
+    return await getAdvogados();
+  } catch (error) {
+    console.error("Erro ao buscar todos os advogados:", error);
+    return { success: false, error: "Erro ao buscar todos os advogados" };
+  }
+}
+
 // Alias para compatibilidade
-export const getAdvogadosDoTenant = getAdvogados;
+export const getAdvogadosDoTenant = getAllAdvogadosComExternos;
 export type Advogado = AdvogadoData;

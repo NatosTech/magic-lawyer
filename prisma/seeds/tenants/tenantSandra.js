@@ -276,6 +276,7 @@ async function seedTenantSandra(prisma, Prisma) {
       oabUf: "BA",
       especialidades: ["FAMILIA"],
       bio: "Advogada anteriormente constituída pelo cliente, poderes revogados em 20/05/2025.",
+      isExterno: true, // Marcar como advogado externo
     },
     create: {
       tenantId: tenant.id,
@@ -284,6 +285,7 @@ async function seedTenantSandra(prisma, Prisma) {
       oabUf: "BA",
       especialidades: ["FAMILIA"],
       bio: "Advogada anteriormente constituída pelo cliente, poderes revogados em 20/05/2025.",
+      isExterno: true, // Marcar como advogado externo
     },
   });
 
@@ -1075,7 +1077,7 @@ async function seedTenantSandra(prisma, Prisma) {
 
   const procuracaoRobsonData = {
     clienteId: clienteRobson.id,
-    arquivoUrl: "https://magiclawyer-assets.local/procuracoes/procuracao-robson-assinada.pdf",
+    arquivoUrl: null,
     observacoes: "Procuração vigente em favor da Dra. Sandra Quesia para todos os processos de família e violência doméstica do cliente.",
     emitidaEm: new Date("2025-09-05T00:00:00-03:00"),
     assinadaPeloClienteEm: new Date("2025-09-05T00:00:00-03:00"),
