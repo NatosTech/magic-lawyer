@@ -59,7 +59,7 @@ async function seedDadosFinanceiros(prisma) {
         vencimento.setDate(vencimento.getDate() + 7); // Vence em 7 dias
 
         const valorFatura = assinatura.plano?.valorMensal || 299.9;
-        const numeroFatura = `FAT-${dataFatura.getFullYear()}-${String(dataFatura.getMonth() + 1).padStart(2, "0")}-${String(i + 1).padStart(3, "0")}`;
+        const numeroFatura = `FAT-${assinatura.tenantId.slice(-4)}-${dataFatura.getFullYear()}-${String(dataFatura.getMonth() + 1).padStart(2, "0")}-${String(i + 1).padStart(3, "0")}-${Date.now().toString().slice(-6)}`;
 
         const fatura = await prisma.fatura.create({
           data: {

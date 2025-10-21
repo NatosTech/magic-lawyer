@@ -20,6 +20,7 @@ const { seedTiposPeticao } = require("./seeds/tipos-peticao");
 const { seedBancos } = require("./seeds/bancos");
 const { seedDadosBancarios } = require("./seeds/dadosBancarios");
 const { seedAuditLogs } = require("./seeds/auditLogs");
+const { seedRecebimentos } = require("./seeds/seed-recebimentos");
 
 const prisma = new PrismaClient();
 
@@ -110,6 +111,9 @@ async function main() {
 
   // Seed de dados bancários para usuários
   await seedDadosBancarios(prisma);
+
+  // Seed de recebimentos (parcelas e faturas pagas)
+  await seedRecebimentos(prisma, Prisma);
 
   console.log("\n🚀 Aplicando otimizações enterprise...\n");
 

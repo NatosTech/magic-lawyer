@@ -4,7 +4,12 @@ import { nanoid } from "nanoid";
 
 import prisma from "@/app/lib/prisma";
 import { Prisma } from "@/app/generated/prisma";
-import { AsaasClient, formatCpfCnpjForAsaas, formatDateForAsaas, type AsaasPayment } from "@/lib/asaas";
+import {
+  AsaasClient,
+  formatCpfCnpjForAsaas,
+  formatDateForAsaas,
+  type AsaasPayment,
+} from "@/lib/asaas";
 
 export async function validarDisponibilidadeSlug(slug: string) {
   try {
@@ -18,10 +23,12 @@ export async function validarDisponibilidadeSlug(slug: string) {
 
     // Validar caracteres permitidos (apenas letras, números e hífens)
     const slugRegex = /^[a-z0-9-]+$/;
+
     if (!slugRegex.test(slug)) {
       return {
         success: false,
-        error: "Subdomínio deve conter apenas letras minúsculas, números e hífens",
+        error:
+          "Subdomínio deve conter apenas letras minúsculas, números e hífens",
       };
     }
 
@@ -75,6 +82,7 @@ export async function validarDisponibilidadeSlug(slug: string) {
     };
   } catch (error) {
     console.error("Erro ao validar slug:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -126,7 +134,10 @@ export async function processarCheckout(data: CheckoutData) {
     // Verificar se já existe um tenant com este CNPJ ou email
     const existingTenant = await prisma.tenant.findFirst({
       where: {
-        OR: [{ documento: data.cnpj.replace(/\D/g, "") }, { email: { equals: data.email, mode: "insensitive" } }],
+        OR: [
+          { documento: data.cnpj.replace(/\D/g, "") },
+          { email: { equals: data.email, mode: "insensitive" } },
+        ],
       },
     });
 
@@ -138,7 +149,10 @@ export async function processarCheckout(data: CheckoutData) {
     }
 
     // Validar disponibilidade do slug personalizado
-    const validacaoSlug = await validarDisponibilidadeSlug(data.slugPersonalizado);
+    const validacaoSlug = await validarDisponibilidadeSlug(
+      data.slugPersonalizado,
+    );
+
     if (!validacaoSlug.success) {
       return {
         success: false,
@@ -160,7 +174,10 @@ export async function processarCheckout(data: CheckoutData) {
       };
     }
 
-    const asaasEnvironment: "sandbox" | "production" = process.env.ASAAS_ENVIRONMENT?.toLowerCase() === "production" ? "production" : "sandbox";
+    const asaasEnvironment: "sandbox" | "production" =
+      process.env.ASAAS_ENVIRONMENT?.toLowerCase() === "production"
+        ? "production"
+        : "sandbox";
 
     // Criar cliente no Asaas
     const asaasClient = new AsaasClient(apiKey, asaasEnvironment);
@@ -223,13 +240,16 @@ export async function processarCheckout(data: CheckoutData) {
     }
 
     // Salvar dados temporários para processar após pagamento
-    const secureCheckoutData = Object.entries(data).reduce<Prisma.JsonObject>((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = value as Prisma.JsonValue;
-      }
+    const secureCheckoutData = Object.entries(data).reduce<Prisma.JsonObject>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = value as Prisma.JsonValue;
+        }
 
-      return acc;
-    }, {});
+        return acc;
+      },
+      {},
+    );
 
     const checkoutSession = {
       id: nanoid(),
@@ -263,7 +283,10 @@ export async function processarCheckout(data: CheckoutData) {
 
     if (asaasPayment?.id) {
       fullPayment = await asaasClient.getPayment(asaasPayment.id);
-      console.log("🔍 Full Payment Data:", JSON.stringify(fullPayment, null, 2));
+      console.log(
+        "🔍 Full Payment Data:",
+        JSON.stringify(fullPayment, null, 2),
+      );
     }
 
     return {
@@ -279,7 +302,8 @@ export async function processarCheckout(data: CheckoutData) {
             dueDate: formatDateForAsaas(dueDate),
           },
         customerData: customer,
-        message: "Pagamento criado com sucesso! Complete o pagamento para ativar sua conta.",
+        message:
+          "Pagamento criado com sucesso! Complete o pagamento para ativar sua conta.",
       },
     };
   } catch (error) {
@@ -287,7 +311,8 @@ export async function processarCheckout(data: CheckoutData) {
     if (error instanceof Error && error.message.includes("401")) {
       return {
         success: false,
-        error: "Falha na autenticação com o sistema de pagamento. Verifique a API key configurada.",
+        error:
+          "Falha na autenticação com o sistema de pagamento. Verifique a API key configurada.",
       };
     }
 
@@ -337,7 +362,10 @@ export async function verificarDisponibilidadeEmail(email: string) {
       success: true,
       data: {
         disponivel: !existingTenant && !existingUser,
-        message: existingTenant || existingUser ? "Email já cadastrado" : "Email disponível",
+        message:
+          existingTenant || existingUser
+            ? "Email já cadastrado"
+            : "Email disponível",
       },
     };
   } catch (error) {

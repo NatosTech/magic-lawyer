@@ -53,7 +53,7 @@ export function ModalPagamentoParcela({
 }: ModalPagamentoParcelaProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [formaPagamento, setFormaPagamento] = useState<
-    "PIX" | "BOLETO" | "CARTAO"
+    "PIX" | "DINHEIRO" | "CARTAO"
   >("PIX");
   const [dadosCartao, setDadosCartao] = useState({
     numero: "",
@@ -79,7 +79,7 @@ export function ModalPagamentoParcela({
           });
           break;
 
-        case "BOLETO":
+        case "DINHEIRO":
           result = await gerarBoletoAsaas({
             parcelaId: parcela.id,
             valor: parcela.valor,
@@ -190,12 +190,12 @@ export function ModalPagamentoParcela({
                           const selected = Array.from(keys)[0] as string;
 
                           setFormaPagamento(
-                            selected as "PIX" | "BOLETO" | "CARTAO",
+                            selected as "PIX" | "DINHEIRO" | "CARTAO",
                           );
                         }}
                       >
                         <SelectItem key="PIX">PIX (Recomendado)</SelectItem>
-                        <SelectItem key="BOLETO">Boleto Bancário</SelectItem>
+                        <SelectItem key="DINHEIRO">Dinheiro</SelectItem>
                         <SelectItem key="CARTAO">Cartão de Crédito</SelectItem>
                       </Select>
                     </div>
@@ -335,66 +335,38 @@ export function ModalPagamentoParcela({
                         </Tab>
                       )}
 
-                      {formaPagamento === "BOLETO" && (
-                        <Tab key="boleto" title="Boleto">
+                      {formaPagamento === "DINHEIRO" && (
+                        <Tab key="dinheiro" title="Dinheiro">
                           <div className="space-y-4">
-                            <Card className="bg-warning/5 border border-warning/20">
+                            <Card className="bg-success/5 border border-success/20">
                               <CardBody className="p-4 text-center">
-                                <h3 className="font-semibold text-warning mb-2">
-                                  Boleto Gerado com Sucesso!
+                                <h3 className="font-semibold text-success mb-2">
+                                  Pagamento em Dinheiro
                                 </h3>
                                 <p className="text-sm text-default-600 mb-4">
-                                  Baixe o boleto ou copie o código de barras
+                                  Registre o pagamento recebido em dinheiro
                                 </p>
 
                                 <div className="space-y-4">
                                   <Button
                                     className="w-full"
-                                    color="warning"
+                                    color="success"
+                                    isLoading={isLoading}
                                     size="lg"
                                     variant="solid"
-                                    onPress={() =>
-                                      window.open(
-                                        dadosPagamento.codigoBarras,
-                                        "_blank",
-                                      )
-                                    }
+                                    onPress={handleConfirmarPagamento}
                                   >
-                                    Baixar Boleto
+                                    Confirmar Pagamento em Dinheiro
                                   </Button>
 
-                                  <div className="space-y-2">
-                                    <p className="text-sm font-medium">
-                                      Código de Barras:
-                                    </p>
-                                    <div className="flex gap-2">
-                                      <Input
-                                        readOnly
-                                        className="flex-1"
-                                        value={dadosPagamento.linhaDigitavel}
-                                      />
-                                      <Button
-                                        color="warning"
-                                        variant="flat"
-                                        onPress={() =>
-                                          copyToClipboard(
-                                            dadosPagamento.linhaDigitavel,
-                                          )
-                                        }
-                                      >
-                                        Copiar
-                                      </Button>
-                                    </div>
-                                  </div>
-
-                                  <div className="mt-4 p-3 bg-warning/10 rounded-lg">
-                                    <p className="text-sm text-warning">
+                                  <div className="mt-4 p-3 bg-success/10 rounded-lg">
+                                    <p className="text-sm text-success">
                                       <strong>Valor:</strong>{" "}
-                                      {formatCurrency(dadosPagamento.valor)}
+                                      {formatCurrency(parcela.valor)}
                                     </p>
-                                    <p className="text-sm text-warning">
+                                    <p className="text-sm text-success">
                                       <strong>Vencimento:</strong>{" "}
-                                      {formatDate(dadosPagamento.vencimento)}
+                                      {formatDate(parcela.dataVencimento)}
                                     </p>
                                   </div>
                                 </div>

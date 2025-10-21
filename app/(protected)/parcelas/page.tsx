@@ -159,11 +159,8 @@ export default function ParcelasContratoPage() {
 
   const formasPagamento = [
     { key: "PIX", label: "PIX" },
-    { key: "TED", label: "TED" },
-    { key: "BOLETO", label: "Boleto" },
     { key: "DINHEIRO", label: "Dinheiro" },
     { key: "CARTAO", label: "Cartão" },
-    { key: "CHEQUE", label: "Cheque" },
   ];
 
   const handleLimparFiltros = () => {
