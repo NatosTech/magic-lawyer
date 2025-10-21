@@ -28,23 +28,7 @@ import {
   ModalFooter,
   useDisclosure,
 } from "@heroui/react";
-import {
-  Download,
-  Search,
-  Filter,
-  FileText,
-  DollarSign,
-  User,
-  Building,
-  CreditCard,
-  Smartphone,
-  Receipt,
-  Eye,
-  XCircle,
-  RotateCcw,
-  CalendarDays,
-  Scale,
-} from "lucide-react";
+import { Download, Search, Filter, FileText, DollarSign, User, Building, CreditCard, Smartphone, Receipt, Eye, XCircle, RotateCcw, CalendarDays, Scale } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 
@@ -52,13 +36,7 @@ import useSWR from "swr";
 
 import { title, subtitle } from "@/components/primitives";
 import { PermissionGuard } from "@/components/permission-guard";
-import {
-  getRecibosPagos,
-  gerarComprovanteHTML,
-  getDadosFiltrosRecibos,
-  type FiltrosRecibos,
-  type Recibo,
-} from "@/app/actions/recibos";
+import { getRecibosPagos, gerarComprovanteHTML, getDadosFiltrosRecibos, type FiltrosRecibos, type Recibo } from "@/app/actions/recibos";
 
 type DateValueLike = {
   toDate: () => Date;
@@ -72,9 +50,7 @@ type PeriodoRange = {
 export default function RecibosPage() {
   const [filtros, setFiltros] = useState<FiltrosRecibos>({});
   const [paginaAtual, setPaginaAtual] = useState(1);
-  const [reciboSelecionado, setReciboSelecionado] = useState<Recibo | null>(
-    null,
-  );
+  const [reciboSelecionado, setReciboSelecionado] = useState<Recibo | null>(null);
   const [carregandoPDF, setCarregandoPDF] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [periodo, setPeriodo] = useState<PeriodoRange | null>(null);
@@ -89,24 +65,16 @@ export default function RecibosPage() {
     error,
     isLoading,
     mutate,
-  } = useSWR(
-    ["recibos", filtros],
-    () => getRecibosPagos({ ...filtros, pagina: 1, itensPorPagina: 1000 }),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    },
-  );
+  } = useSWR(["recibos", filtros], () => getRecibosPagos({ ...filtros, pagina: 1, itensPorPagina: 1000 }), {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+  });
 
   // Buscar dados para filtros
-  const { data: dadosFiltros } = useSWR(
-    "dados-filtros-recibos",
-    getDadosFiltrosRecibos,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-    },
-  );
+  const { data: dadosFiltros } = useSWR("dados-filtros-recibos", getDadosFiltrosRecibos, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+  });
 
   const recibos = recibosData?.data?.recibos || [];
   const resumo = recibosData?.data?.resumo;
@@ -120,17 +88,11 @@ export default function RecibosPage() {
       return recibos;
     }
 
-    const startDate = periodo?.start
-      ? dayjs(periodo.start.toDate()).startOf("day")
-      : null;
-    const endDate = periodo?.end
-      ? dayjs(periodo.end.toDate()).endOf("day")
-      : null;
+    const startDate = periodo?.start ? dayjs(periodo.start.toDate()).startOf("day") : null;
+    const endDate = periodo?.end ? dayjs(periodo.end.toDate()).endOf("day") : null;
 
     return recibos.filter((recibo) => {
-      const dataPagamento = recibo.dataPagamento
-        ? dayjs(recibo.dataPagamento)
-        : null;
+      const dataPagamento = recibo.dataPagamento ? dayjs(recibo.dataPagamento) : null;
 
       if (!dataPagamento) return false;
       if (startDate && dataPagamento.isBefore(startDate)) return false;
@@ -141,8 +103,7 @@ export default function RecibosPage() {
   }, [recibos, periodo]);
 
   const totalFiltrado = filteredRecibos.length;
-  const totalPaginasFiltrado =
-    totalFiltrado > 0 ? Math.ceil(totalFiltrado / itensPorPagina) : 1;
+  const totalPaginasFiltrado = totalFiltrado > 0 ? Math.ceil(totalFiltrado / itensPorPagina) : 1;
 
   const resumoFiltrado = useMemo(() => {
     if (!filteredRecibos.length) {
@@ -172,7 +133,7 @@ export default function RecibosPage() {
         totalRecibos: 0,
         totalParcelas: 0,
         totalFaturas: 0,
-      },
+      }
     );
   }, [filteredRecibos]);
 
@@ -224,14 +185,8 @@ export default function RecibosPage() {
   };
 
   // Verificar se há filtros ativos
-  const hasActiveFilters =
-    Object.values(filtros).some(
-      (value) => value !== undefined && value !== "",
-    ) || Boolean(periodo?.start || periodo?.end);
-  const filtrosAtivosCount =
-    Object.values(filtros).filter(
-      (value) => value !== undefined && value !== "",
-    ).length + (periodo?.start || periodo?.end ? 1 : 0);
+  const hasActiveFilters = Object.values(filtros).some((value) => value !== undefined && value !== "") || Boolean(periodo?.start || periodo?.end);
+  const filtrosAtivosCount = Object.values(filtros).filter((value) => value !== undefined && value !== "").length + (periodo?.start || periodo?.end ? 1 : 0);
 
   // Função para renderizar clientes
   const renderClientes = () => {
@@ -240,15 +195,10 @@ export default function RecibosPage() {
     if (!clientes) return [];
 
     // Converter objeto para array se necessário
-    const clientesArray = Array.isArray(clientes)
-      ? clientes
-      : Object.values(clientes);
+    const clientesArray = Array.isArray(clientes) ? clientes : Object.values(clientes);
 
     return clientesArray.map((cliente: any) => (
-      <SelectItem
-        key={cliente.id}
-        textValue={`${cliente.nome}${cliente.documento ? ` - ${cliente.documento}` : ""}`}
-      >
+      <SelectItem key={cliente.id} textValue={`${cliente.nome}${cliente.documento ? ` - ${cliente.documento}` : ""}`}>
         {cliente.nome} {cliente.documento && `- ${cliente.documento}`}
       </SelectItem>
     )) as any;
@@ -261,15 +211,10 @@ export default function RecibosPage() {
     if (!processos) return [];
 
     // Converter objeto para array se necessário
-    const processosArray = Array.isArray(processos)
-      ? processos
-      : Object.values(processos);
+    const processosArray = Array.isArray(processos) ? processos : Object.values(processos);
 
     return processosArray.map((processo: any) => (
-      <SelectItem
-        key={processo.id}
-        textValue={`${processo.numero}${processo.titulo ? ` - ${processo.titulo}` : ""}`}
-      >
+      <SelectItem key={processo.id} textValue={`${processo.numero}${processo.titulo ? ` - ${processo.titulo}` : ""}`}>
         {processo.numero} {processo.titulo && `- ${processo.titulo}`}
       </SelectItem>
     )) as any;
@@ -282,15 +227,10 @@ export default function RecibosPage() {
     if (!advogados) return [];
 
     // Converter objeto para array se necessário
-    const advogadosArray = Array.isArray(advogados)
-      ? advogados
-      : Object.values(advogados);
+    const advogadosArray = Array.isArray(advogados) ? advogados : Object.values(advogados);
 
     return advogadosArray.map((advogado: any) => (
-      <SelectItem
-        key={advogado.id}
-        textValue={`${advogado.usuario.firstName} ${advogado.usuario.lastName}`}
-      >
+      <SelectItem key={advogado.id} textValue={`${advogado.usuario.firstName} ${advogado.usuario.lastName}`}>
         {advogado.usuario.firstName} {advogado.usuario.lastName}
       </SelectItem>
     )) as any;
@@ -377,25 +317,15 @@ export default function RecibosPage() {
     <PermissionGuard permission="canViewFinancialData">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 py-12">
         <header className="space-y-4">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
-            Comprovantes e recibos
-          </p>
-          <h1 className={title({ size: "lg", color: "blue" })}>
-            Histórico de pagamentos confirmados
-          </h1>
-          <p className={subtitle({ fullWidth: true })}>
-            Visualize e baixe comprovantes de todas as parcelas e faturas pagas
-          </p>
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Comprovantes e recibos</p>
+          <h1 className={title({ size: "lg", color: "blue" })}>Histórico de pagamentos confirmados</h1>
+          <p className={subtitle({ fullWidth: true })}>Visualize e baixe comprovantes de todas as parcelas e faturas pagas</p>
         </header>
 
         {error && (
           <div className="text-center">
-            <h2 className={title({ size: "md", color: "foreground" })}>
-              Erro ao carregar recibos
-            </h2>
-            <p className={subtitle({ fullWidth: true })}>
-              {error.message || "Ocorreu um erro inesperado"}
-            </p>
+            <h2 className={title({ size: "md", color: "foreground" })}>Erro ao carregar recibos</h2>
+            <p className={subtitle({ fullWidth: true })}>{error.message || "Ocorreu um erro inesperado"}</p>
             <Button className="mt-4" color="primary" onPress={() => mutate()}>
               Tentar novamente
             </Button>
@@ -404,11 +334,7 @@ export default function RecibosPage() {
 
         {/* Resumo */}
         {resumo && (
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 md:grid-cols-4 gap-4"
-            initial={{ opacity: 0, y: 20 }}
-          >
+          <motion.div animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-4 gap-4" initial={{ opacity: 0, y: 20 }}>
             <Card className="border border-success/20 bg-success/5">
               <CardBody className="flex flex-row items-center gap-3">
                 <div className="p-2 rounded-full bg-success/20">
@@ -416,9 +342,7 @@ export default function RecibosPage() {
                 </div>
                 <div>
                   <p className="text-sm text-success/80">Total Recebido</p>
-                  <p className="text-lg font-semibold text-success">
-                    {formatarValor(resumoFiltrado.totalValor)}
-                  </p>
+                  <p className="text-lg font-semibold text-success">{formatarValor(resumoFiltrado.totalValor)}</p>
                 </div>
               </CardBody>
             </Card>
@@ -430,9 +354,7 @@ export default function RecibosPage() {
                 </div>
                 <div>
                   <p className="text-sm text-primary/80">Total Recibos</p>
-                  <p className="text-lg font-semibold text-primary">
-                    {resumoFiltrado.totalRecibos}
-                  </p>
+                  <p className="text-lg font-semibold text-primary">{resumoFiltrado.totalRecibos}</p>
                 </div>
               </CardBody>
             </Card>
@@ -444,9 +366,7 @@ export default function RecibosPage() {
                 </div>
                 <div>
                   <p className="text-sm text-warning/80">Parcelas</p>
-                  <p className="text-lg font-semibold text-warning">
-                    {resumoFiltrado.totalParcelas}
-                  </p>
+                  <p className="text-lg font-semibold text-warning">{resumoFiltrado.totalParcelas}</p>
                 </div>
               </CardBody>
             </Card>
@@ -458,9 +378,7 @@ export default function RecibosPage() {
                 </div>
                 <div>
                   <p className="text-sm text-secondary/80">Faturas</p>
-                  <p className="text-lg font-semibold text-secondary">
-                    {resumoFiltrado.totalFaturas}
-                  </p>
+                  <p className="text-lg font-semibold text-secondary">{resumoFiltrado.totalFaturas}</p>
                 </div>
               </CardBody>
             </Card>
@@ -468,11 +386,7 @@ export default function RecibosPage() {
         )}
 
         {/* Filtros Avançados */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.3 }}>
           <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
             <CardHeader className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-2">
@@ -485,27 +399,10 @@ export default function RecibosPage() {
                 )}
               </div>
               <div className="flex gap-2">
-                <Button
-                  isDisabled={!hasActiveFilters}
-                  size="sm"
-                  startContent={<RotateCcw className="w-4 h-4" />}
-                  variant="light"
-                  onPress={limparFiltros}
-                >
+                <Button isDisabled={!hasActiveFilters} size="sm" startContent={<RotateCcw className="w-4 h-4" />} variant="light" onPress={limparFiltros}>
                   Limpar
                 </Button>
-                <Button
-                  size="sm"
-                  startContent={
-                    showFilters ? (
-                      <XCircle className="w-4 h-4" />
-                    ) : (
-                      <Filter className="w-4 h-4" />
-                    )
-                  }
-                  variant="light"
-                  onPress={() => setShowFilters(!showFilters)}
-                >
+                <Button size="sm" startContent={showFilters ? <XCircle className="w-4 h-4" /> : <Filter className="w-4 h-4" />} variant="light" onPress={() => setShowFilters(!showFilters)}>
                   {showFilters ? "Ocultar" : "Mostrar"}
                 </Button>
               </div>
@@ -534,9 +431,7 @@ export default function RecibosPage() {
                           size="sm"
                           value={periodo as any}
                           variant="bordered"
-                          onChange={(value) =>
-                            handlePeriodoChange(value as PeriodoRange | null)
-                          }
+                          onChange={(value) => handlePeriodoChange(value as PeriodoRange | null)}
                         />
                       </div>
 
@@ -549,14 +444,10 @@ export default function RecibosPage() {
                         <Input
                           placeholder="Buscar por número, cliente..."
                           size="sm"
-                          startContent={
-                            <Search className="w-4 h-4 text-default-400" />
-                          }
+                          startContent={<Search className="w-4 h-4 text-default-400" />}
                           value={filtros.search || ""}
                           variant="bordered"
-                          onValueChange={(value) =>
-                            handleFiltroChange("search", value)
-                          }
+                          onValueChange={(value) => handleFiltroChange("search", value)}
                         />
                       </div>
 
@@ -632,18 +523,13 @@ export default function RecibosPage() {
                         </label>
                         <Select
                           placeholder="Selecione um cliente"
-                          selectedKeys={
-                            filtros.clienteId ? [filtros.clienteId] : []
-                          }
+                          selectedKeys={filtros.clienteId ? [filtros.clienteId] : []}
                           size="sm"
                           variant="bordered"
                           onSelectionChange={(keys) => {
                             const selected = Array.from(keys)[0] as string;
 
-                            handleFiltroChange(
-                              "clienteId",
-                              selected || undefined,
-                            );
+                            handleFiltroChange("clienteId", selected || undefined);
                           }}
                         >
                           <SelectItem key="" textValue="Todos os clientes">
@@ -661,18 +547,13 @@ export default function RecibosPage() {
                         </label>
                         <Select
                           placeholder="Selecione um processo"
-                          selectedKeys={
-                            filtros.processoId ? [filtros.processoId] : []
-                          }
+                          selectedKeys={filtros.processoId ? [filtros.processoId] : []}
                           size="sm"
                           variant="bordered"
                           onSelectionChange={(keys) => {
                             const selected = Array.from(keys)[0] as string;
 
-                            handleFiltroChange(
-                              "processoId",
-                              selected || undefined,
-                            );
+                            handleFiltroChange("processoId", selected || undefined);
                           }}
                         >
                           <SelectItem key="" textValue="Todos os processos">
@@ -690,18 +571,13 @@ export default function RecibosPage() {
                         </label>
                         <Select
                           placeholder="Selecione um advogado"
-                          selectedKeys={
-                            filtros.advogadoId ? [filtros.advogadoId] : []
-                          }
+                          selectedKeys={filtros.advogadoId ? [filtros.advogadoId] : []}
                           size="sm"
                           variant="bordered"
                           onSelectionChange={(keys) => {
                             const selected = Array.from(keys)[0] as string;
 
-                            handleFiltroChange(
-                              "advogadoId",
-                              selected || undefined,
-                            );
+                            handleFiltroChange("advogadoId", selected || undefined);
                           }}
                         >
                           <SelectItem key="" textValue="Todos os advogados">
@@ -719,11 +595,7 @@ export default function RecibosPage() {
         </motion.div>
 
         {/* Lista de Recibos */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.3, delay: 0.1 }}>
           <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
             <CardHeader>
               <div className="flex items-center justify-between w-full">
@@ -747,13 +619,8 @@ export default function RecibosPage() {
               ) : filteredRecibos.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="w-16 h-16 mx-auto text-default-300 mb-4" />
-                  <h3 className="text-lg font-semibold text-default-500 mb-2">
-                    Nenhum recibo encontrado
-                  </h3>
-                  <p className="text-default-400">
-                    Não há recibos pagos que correspondam aos filtros
-                    selecionados
-                  </p>
+                  <h3 className="text-lg font-semibold text-default-500 mb-2">Nenhum recibo encontrado</h3>
+                  <p className="text-default-400">Não há recibos pagos que correspondam aos filtros selecionados</p>
                 </div>
               ) : (
                 <>
@@ -773,47 +640,26 @@ export default function RecibosPage() {
                         <TableRow key={recibo.id}>
                           <TableCell>
                             <div className="space-y-1">
-                              <p className="font-semibold text-sm">
-                                {recibo.numero}
-                              </p>
-                              <p className="text-xs text-default-500">
-                                {recibo.titulo}
-                              </p>
-                              <Chip
-                                color={
-                                  recibo.tipo === "PARCELA"
-                                    ? "primary"
-                                    : "secondary"
-                                }
-                                size="sm"
-                                variant="flat"
-                              >
+                              <p className="font-semibold text-sm">{recibo.numero}</p>
+                              <p className="text-xs text-default-500">{recibo.titulo}</p>
+                              <Chip color={recibo.tipo === "PARCELA" ? "primary" : "secondary"} size="sm" variant="flat">
                                 {recibo.tipo}
                               </Chip>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="space-y-1">
-                              <p className="font-semibold text-sm">
-                                {recibo.contrato?.cliente.nome || "N/A"}
-                              </p>
-                              <p className="text-xs text-default-500">
-                                Contrato: {recibo.contrato?.numero || "N/A"}
-                              </p>
+                              <p className="font-semibold text-sm">{recibo.contrato?.cliente.nome || "N/A"}</p>
+                              <p className="text-xs text-default-500">Contrato: {recibo.contrato?.numero || "N/A"}</p>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="space-y-1">
                               {recibo.contrato?.processo ? (
                                 <>
-                                  <p className="text-sm font-medium text-blue-600">
-                                    {recibo.contrato.processo.numero}
-                                  </p>
+                                  <p className="text-sm font-medium text-blue-600">{recibo.contrato.processo.numero}</p>
                                   {recibo.contrato.processo.titulo && (
-                                    <p
-                                      className="text-xs text-default-500 truncate max-w-32"
-                                      title={recibo.contrato.processo.titulo}
-                                    >
+                                    <p className="text-xs text-default-500 truncate max-w-32" title={recibo.contrato.processo.titulo}>
                                       {recibo.contrato.processo.titulo}
                                     </p>
                                   )}
@@ -828,21 +674,9 @@ export default function RecibosPage() {
                               {recibo.contrato?.advogadoResponsavel ? (
                                 <>
                                   <p className="text-sm font-medium text-green-600">
-                                    {
-                                      recibo.contrato.advogadoResponsavel
-                                        .usuario.firstName
-                                    }{" "}
-                                    {
-                                      recibo.contrato.advogadoResponsavel
-                                        .usuario.lastName
-                                    }
+                                    {recibo.contrato.advogadoResponsavel.usuario.firstName} {recibo.contrato.advogadoResponsavel.usuario.lastName}
                                   </p>
-                                  <p className="text-xs text-default-500">
-                                    {
-                                      recibo.contrato.advogadoResponsavel
-                                        .usuario.email
-                                    }
-                                  </p>
+                                  <p className="text-xs text-default-500">{recibo.contrato.advogadoResponsavel.usuario.email}</p>
                                 </>
                               ) : (
                                 <p className="text-sm text-default-400">N/A</p>
@@ -850,56 +684,30 @@ export default function RecibosPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <p className="font-semibold text-success text-sm">
-                              {formatarValor(recibo.valor)}
-                            </p>
+                            <p className="font-semibold text-success text-sm">{formatarValor(recibo.valor)}</p>
                           </TableCell>
                           <TableCell>
                             <div className="space-y-1">
-                              {recibo.tipo === "PARCELA" &&
-                                recibo.formaPagamento && (
-                                  <div className="flex items-center gap-1">
-                                    {getFormaPagamentoIcon(
-                                      recibo.formaPagamento,
-                                    )}
-                                    <span className="text-xs">
-                                      {recibo.formaPagamento}
-                                    </span>
-                                  </div>
-                                )}
-                              <p className="text-xs text-default-500">
-                                {formatarData(recibo.dataPagamento)}
-                              </p>
+                              {recibo.tipo === "PARCELA" && recibo.formaPagamento && (
+                                <div className="flex items-center gap-1">
+                                  {getFormaPagamentoIcon(recibo.formaPagamento)}
+                                  <span className="text-xs">{recibo.formaPagamento}</span>
+                                </div>
+                              )}
+                              <p className="text-xs text-default-500">{formatarData(recibo.dataPagamento)}</p>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Chip
-                              color={getStatusColor(recibo.status)}
-                              size="sm"
-                              variant="flat"
-                            >
+                            <Chip color={getStatusColor(recibo.status)} size="sm" variant="flat">
                               {recibo.status}
                             </Chip>
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
-                              <Button
-                                isIconOnly
-                                size="sm"
-                                title="Ver detalhes"
-                                variant="bordered"
-                                onPress={() => abrirModalRecibo(recibo)}
-                              >
+                              <Button isIconOnly size="sm" title="Ver detalhes" variant="bordered" onPress={() => abrirModalRecibo(recibo)}>
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button
-                                isIconOnly
-                                color="primary"
-                                isLoading={carregandoPDF}
-                                size="sm"
-                                title="Baixar PDF"
-                                onPress={() => gerarPDF(recibo)}
-                              >
+                              <Button isIconOnly color="primary" isLoading={carregandoPDF} size="sm" title="Baixar PDF" onPress={() => gerarPDF(recibo)}>
                                 <Download className="w-4 h-4" />
                               </Button>
                             </div>
@@ -911,13 +719,7 @@ export default function RecibosPage() {
 
                   {totalPaginasFiltrado > 1 && (
                     <div className="flex justify-center mt-6">
-                      <Pagination
-                        showControls
-                        showShadow
-                        page={paginaAtual}
-                        total={totalPaginasFiltrado}
-                        onChange={setPaginaAtual}
-                      />
+                      <Pagination showControls showShadow page={paginaAtual} total={totalPaginasFiltrado} onChange={setPaginaAtual} />
                     </div>
                   )}
                 </>
@@ -934,13 +736,10 @@ export default function RecibosPage() {
                 {(onClose) => (
                   <>
                     <ModalHeader className="flex flex-col gap-1">
-                      <h3 className="text-lg font-semibold">
-                        Detalhes do Recibo
-                      </h3>
+                      <h3 className="text-lg font-semibold">Detalhes do Recibo</h3>
                       {reciboSelecionado && (
                         <p className="text-sm text-default-500">
-                          {reciboSelecionado.numero} -{" "}
-                          {reciboSelecionado.titulo}
+                          {reciboSelecionado.numero} - {reciboSelecionado.titulo}
                         </p>
                       )}
                     </ModalHeader>
@@ -949,28 +748,14 @@ export default function RecibosPage() {
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-sm font-semibold text-default-600">
-                                Tipo
-                              </p>
-                              <Chip
-                                color={
-                                  reciboSelecionado.tipo === "PARCELA"
-                                    ? "primary"
-                                    : "secondary"
-                                }
-                                variant="flat"
-                              >
+                              <p className="text-sm font-semibold text-default-600">Tipo</p>
+                              <Chip color={reciboSelecionado.tipo === "PARCELA" ? "primary" : "secondary"} variant="flat">
                                 {reciboSelecionado.tipo}
                               </Chip>
                             </div>
                             <div>
-                              <p className="text-sm font-semibold text-default-600">
-                                Status
-                              </p>
-                              <Chip
-                                color={getStatusColor(reciboSelecionado.status)}
-                                variant="flat"
-                              >
+                              <p className="text-sm font-semibold text-default-600">Status</p>
+                              <Chip color={getStatusColor(reciboSelecionado.status)} variant="flat">
                                 {reciboSelecionado.status}
                               </Chip>
                             </div>
@@ -978,180 +763,72 @@ export default function RecibosPage() {
 
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-sm font-semibold text-default-600">
-                                Valor
-                              </p>
-                              <p className="text-lg font-semibold text-success">
-                                {formatarValor(reciboSelecionado.valor)}
-                              </p>
+                              <p className="text-sm font-semibold text-default-600">Valor</p>
+                              <p className="text-lg font-semibold text-success">{formatarValor(reciboSelecionado.valor)}</p>
                             </div>
                             <div>
-                              <p className="text-sm font-semibold text-default-600">
-                                Data de Pagamento
-                              </p>
-                              <p className="text-sm">
-                                {formatarData(reciboSelecionado.dataPagamento)}
-                              </p>
+                              <p className="text-sm font-semibold text-default-600">Data de Pagamento</p>
+                              <p className="text-sm">{formatarData(reciboSelecionado.dataPagamento)}</p>
                             </div>
                           </div>
 
                           {reciboSelecionado.contrato && (
                             <>
                               <div>
-                                <p className="text-sm font-semibold text-default-600">
-                                  Cliente
-                                </p>
+                                <p className="text-sm font-semibold text-default-600">Cliente</p>
                                 <div className="bg-default-50 p-3 rounded-lg">
-                                  <p className="font-semibold">
-                                    {reciboSelecionado.contrato.cliente.nome}
-                                  </p>
-                                  <p className="text-sm text-default-500">
-                                    {
-                                      reciboSelecionado.contrato.cliente
-                                        .documento
-                                    }
-                                  </p>
-                                  <p className="text-sm text-default-500">
-                                    {reciboSelecionado.contrato.cliente.email}
-                                  </p>
-                                  <p className="text-sm text-default-500">
-                                    {reciboSelecionado.contrato.cliente
-                                      .telefone ||
-                                      reciboSelecionado.contrato.cliente
-                                        .celular ||
-                                      "N/A"}
-                                  </p>
+                                  <p className="font-semibold">{reciboSelecionado.contrato.cliente.nome}</p>
+                                  <p className="text-sm text-default-500">{reciboSelecionado.contrato.cliente.documento}</p>
+                                  <p className="text-sm text-default-500">{reciboSelecionado.contrato.cliente.email}</p>
+                                  <p className="text-sm text-default-500">{reciboSelecionado.contrato.cliente.telefone || reciboSelecionado.contrato.cliente.celular || "N/A"}</p>
                                 </div>
                               </div>
 
                               {reciboSelecionado.contrato.processo && (
                                 <div>
-                                  <p className="text-sm font-semibold text-default-600">
-                                    Processo
-                                  </p>
+                                  <p className="text-sm font-semibold text-default-600">Processo</p>
                                   <div className="bg-blue-50 p-3 rounded-lg">
-                                    <p className="font-semibold text-blue-800">
-                                      {
-                                        reciboSelecionado.contrato.processo
-                                          .numero
-                                      }
-                                    </p>
-                                    {reciboSelecionado.contrato.processo
-                                      .numeroCnj && (
-                                      <p className="text-sm text-blue-600">
-                                        CNJ:{" "}
-                                        {
-                                          reciboSelecionado.contrato.processo
-                                            .numeroCnj
-                                        }
-                                      </p>
+                                    <p className="font-semibold text-blue-800">{reciboSelecionado.contrato.processo.numero}</p>
+                                    {reciboSelecionado.contrato.processo.numeroCnj && <p className="text-sm text-blue-600">CNJ: {reciboSelecionado.contrato.processo.numeroCnj}</p>}
+                                    {reciboSelecionado.contrato.processo.titulo && <p className="text-sm text-blue-600">{reciboSelecionado.contrato.processo.titulo}</p>}
+                                    {reciboSelecionado.contrato.processo.valorCausa && (
+                                      <p className="text-sm text-blue-600">Valor da Causa: {formatarValor(reciboSelecionado.contrato.processo.valorCausa)}</p>
                                     )}
-                                    {reciboSelecionado.contrato.processo
-                                      .titulo && (
-                                      <p className="text-sm text-blue-600">
-                                        {
-                                          reciboSelecionado.contrato.processo
-                                            .titulo
-                                        }
-                                      </p>
-                                    )}
-                                    {reciboSelecionado.contrato.processo
-                                      .valorCausa && (
-                                      <p className="text-sm text-blue-600">
-                                        Valor da Causa:{" "}
-                                        {formatarValor(
-                                          reciboSelecionado.contrato.processo
-                                            .valorCausa,
-                                        )}
-                                      </p>
-                                    )}
-                                    {reciboSelecionado.contrato.processo
-                                      .orgaoJulgador && (
-                                      <p className="text-sm text-blue-600">
-                                        {
-                                          reciboSelecionado.contrato.processo
-                                            .orgaoJulgador
-                                        }
-                                      </p>
-                                    )}
-                                    {reciboSelecionado.contrato.processo
-                                      .vara && (
-                                      <p className="text-sm text-blue-600">
-                                        Vara:{" "}
-                                        {
-                                          reciboSelecionado.contrato.processo
-                                            .vara
-                                        }
-                                      </p>
-                                    )}
-                                    {reciboSelecionado.contrato.processo
-                                      .comarca && (
-                                      <p className="text-sm text-blue-600">
-                                        Comarca:{" "}
-                                        {
-                                          reciboSelecionado.contrato.processo
-                                            .comarca
-                                        }
-                                      </p>
-                                    )}
+                                    {reciboSelecionado.contrato.processo.orgaoJulgador && <p className="text-sm text-blue-600">{reciboSelecionado.contrato.processo.orgaoJulgador}</p>}
+                                    {reciboSelecionado.contrato.processo.vara && <p className="text-sm text-blue-600">Vara: {reciboSelecionado.contrato.processo.vara}</p>}
+                                    {reciboSelecionado.contrato.processo.comarca && <p className="text-sm text-blue-600">Comarca: {reciboSelecionado.contrato.processo.comarca}</p>}
                                   </div>
                                 </div>
                               )}
 
-                              {reciboSelecionado.contrato
-                                .advogadoResponsavel && (
+                              {reciboSelecionado.contrato.advogadoResponsavel && (
                                 <div>
-                                  <p className="text-sm font-semibold text-default-600">
-                                    Advogado Responsável
-                                  </p>
+                                  <p className="text-sm font-semibold text-default-600">Advogado Responsável</p>
                                   <div className="bg-green-50 p-3 rounded-lg">
                                     <p className="font-semibold text-green-800">
-                                      {
-                                        reciboSelecionado.contrato
-                                          .advogadoResponsavel.usuario.firstName
-                                      }{" "}
-                                      {
-                                        reciboSelecionado.contrato
-                                          .advogadoResponsavel.usuario.lastName
-                                      }
+                                      {reciboSelecionado.contrato.advogadoResponsavel.usuario.firstName} {reciboSelecionado.contrato.advogadoResponsavel.usuario.lastName}
                                     </p>
-                                    <p className="text-sm text-green-600">
-                                      {
-                                        reciboSelecionado.contrato
-                                          .advogadoResponsavel.usuario.email
-                                      }
-                                    </p>
+                                    <p className="text-sm text-green-600">{reciboSelecionado.contrato.advogadoResponsavel.usuario.email}</p>
                                   </div>
                                 </div>
                               )}
                             </>
                           )}
 
-                          {reciboSelecionado.tipo === "PARCELA" &&
-                            reciboSelecionado.formaPagamento && (
-                              <div>
-                                <p className="text-sm font-semibold text-default-600">
-                                  Forma de Pagamento
-                                </p>
-                                <div className="flex items-center gap-2">
-                                  {getFormaPagamentoIcon(
-                                    reciboSelecionado.formaPagamento,
-                                  )}
-                                  <span>
-                                    {reciboSelecionado.formaPagamento}
-                                  </span>
-                                </div>
+                          {reciboSelecionado.tipo === "PARCELA" && reciboSelecionado.formaPagamento && (
+                            <div>
+                              <p className="text-sm font-semibold text-default-600">Forma de Pagamento</p>
+                              <div className="flex items-center gap-2">
+                                {getFormaPagamentoIcon(reciboSelecionado.formaPagamento)}
+                                <span>{reciboSelecionado.formaPagamento}</span>
                               </div>
-                            )}
+                            </div>
+                          )}
 
                           {reciboSelecionado.descricao && (
                             <div>
-                              <p className="text-sm font-semibold text-default-600">
-                                Descrição
-                              </p>
-                              <p className="text-sm">
-                                {reciboSelecionado.descricao}
-                              </p>
+                              <p className="text-sm font-semibold text-default-600">Descrição</p>
+                              <p className="text-sm">{reciboSelecionado.descricao}</p>
                             </div>
                           )}
                         </div>
