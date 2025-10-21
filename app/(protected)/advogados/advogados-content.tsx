@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Button,
@@ -14,6 +14,10 @@ import {
   Select,
   SelectItem,
   Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
   Textarea,
   Divider,
   Badge,
@@ -25,6 +29,7 @@ import {
   DropdownMenu,
   DropdownItem,
   Checkbox,
+  Pagination,
 } from "@heroui/react";
 import {
   UserIcon,
@@ -63,11 +68,23 @@ import {
   Clock,
   Shield,
   Activity,
+  UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import useSWR from "swr";
 
-import { getAdvogadosDoTenant, type Advogado, type CreateAdvogadoInput, type UpdateAdvogadoInput } from "@/app/actions/advogados";
+import {
+  getAdvogadosDoTenant,
+  createAdvogado,
+  updateAdvogado,
+  deleteAdvogado,
+  uploadAvatarAdvogado,
+  deleteAvatarAdvogado,
+  convertAdvogadoExternoToInterno,
+  type Advogado,
+  type CreateAdvogadoInput,
+  type UpdateAdvogadoInput,
+} from "@/app/actions/advogados";
 import { title, subtitle } from "@/components/primitives";
 import { EspecialidadeJuridica } from "@/app/generated/prisma";
 
@@ -88,11 +105,35 @@ export default function AdvogadosContent() {
   const [selectedEspecialidade, setSelectedEspecialidade] = useState<string>("all");
   const [selectedTipo, setSelectedTipo] = useState<string>("all"); // Novo filtro para tipo de advogado
   const [showFilters, setShowFilters] = useState(false);
+  const [sortField, setSortField] = useState<string>("nome");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedAdvogado, setSelectedAdvogado] = useState<Advogado | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  // Hook para debounce da busca
+  const useDebounce = (value: string, delay: number) => {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedValue(value);
+      }, delay);
+
+      return () => {
+        clearTimeout(handler);
+      };
+    }, [value, delay]);
+
+    return debouncedValue;
+  };
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Estado do formulário
   const initialFormState: CreateAdvogadoInput = {
@@ -109,6 +150,7 @@ export default function AdvogadosContent() {
     comissaoPadrao: 0,
     comissaoAcaoGanha: 0,
     comissaoHonorarios: 0,
+    isExterno: false,
   };
 
   const [formState, setFormState] = useState<CreateAdvogadoInput>(initialFormState);
@@ -144,14 +186,57 @@ export default function AdvogadosContent() {
       .slice(0, 2);
   };
 
-  // Filtrar advogados
+  // Função de ordenação
+  const sortAdvogados = (advogados: Advogado[], field: string, direction: "asc" | "desc") => {
+    return [...advogados].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (field) {
+        case "nome":
+          aValue = getNomeCompleto(a).toLowerCase();
+          bValue = getNomeCompleto(b).toLowerCase();
+          break;
+        case "email":
+          aValue = a.usuario.email.toLowerCase();
+          bValue = b.usuario.email.toLowerCase();
+          break;
+        case "oab":
+          aValue = getOAB(a).toLowerCase();
+          bValue = getOAB(b).toLowerCase();
+          break;
+        case "especialidade":
+          aValue = a.especialidades.length > 0 ? a.especialidades[0] : "";
+          bValue = b.especialidades.length > 0 ? b.especialidades[0] : "";
+          break;
+        case "status":
+          aValue = a.usuario.active ? 1 : 0;
+          bValue = b.usuario.active ? 1 : 0;
+          break;
+        case "tipo":
+          aValue = a.isExterno ? 1 : 0;
+          bValue = b.isExterno ? 1 : 0;
+          break;
+        default:
+          aValue = getNomeCompleto(a).toLowerCase();
+          bValue = getNomeCompleto(b).toLowerCase();
+      }
+
+      if (aValue < bValue) return direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  };
+
+  // Filtrar, ordenar e paginar advogados
   const advogadosFiltrados = useMemo(() => {
-    return advogados.filter((advogado) => {
+    const filtered = advogados.filter((advogado) => {
       const nomeCompleto = getNomeCompleto(advogado).toLowerCase();
       const email = advogado.usuario.email.toLowerCase();
       const oab = getOAB(advogado).toLowerCase();
 
-      const matchSearch = !searchTerm || nomeCompleto.includes(searchTerm.toLowerCase()) || email.includes(searchTerm.toLowerCase()) || oab.includes(searchTerm.toLowerCase());
+      const matchSearch =
+        !debouncedSearchTerm || nomeCompleto.includes(debouncedSearchTerm.toLowerCase()) || email.includes(debouncedSearchTerm.toLowerCase()) || oab.includes(debouncedSearchTerm.toLowerCase());
 
       const matchStatus = selectedStatus === "all" || (selectedStatus === "active" && advogado.usuario.active) || (selectedStatus === "inactive" && !advogado.usuario.active);
 
@@ -161,7 +246,40 @@ export default function AdvogadosContent() {
 
       return matchSearch && matchStatus && matchEspecialidade && matchTipo;
     });
-  }, [advogados, searchTerm, selectedStatus, selectedEspecialidade, selectedTipo]);
+
+    const sorted = sortAdvogados(filtered, sortField, sortDirection);
+
+    // Aplicar paginação
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+
+    return sorted.slice(startIndex, endIndex);
+  }, [advogados, debouncedSearchTerm, selectedStatus, selectedEspecialidade, selectedTipo, sortField, sortDirection, currentPage, itemsPerPage]);
+
+  // Calcular total de advogados filtrados (sem paginação)
+  const totalAdvogadosFiltrados = useMemo(() => {
+    return advogados.filter((advogado) => {
+      const nomeCompleto = getNomeCompleto(advogado).toLowerCase();
+      const email = advogado.usuario.email.toLowerCase();
+      const oab = getOAB(advogado).toLowerCase();
+
+      const matchSearch =
+        !debouncedSearchTerm || nomeCompleto.includes(debouncedSearchTerm.toLowerCase()) || email.includes(debouncedSearchTerm.toLowerCase()) || oab.includes(debouncedSearchTerm.toLowerCase());
+
+      const matchStatus = selectedStatus === "all" || (selectedStatus === "active" && advogado.usuario.active) || (selectedStatus === "inactive" && !advogado.usuario.active);
+
+      const matchEspecialidade = selectedEspecialidade === "all" || advogado.especialidades.includes(selectedEspecialidade as EspecialidadeJuridica);
+
+      const matchTipo = selectedTipo === "all" || (selectedTipo === "escritorio" && !advogado.isExterno) || (selectedTipo === "externo" && advogado.isExterno);
+
+      return matchSearch && matchStatus && matchEspecialidade && matchTipo;
+    }).length;
+  }, [advogados, debouncedSearchTerm, selectedStatus, selectedEspecialidade, selectedTipo]);
+
+  // Calcular informações de paginação
+  const totalPages = Math.ceil(totalAdvogadosFiltrados / itemsPerPage);
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalAdvogadosFiltrados);
 
   // Calcular métricas
   const metrics = useMemo(() => {
@@ -192,12 +310,42 @@ export default function AdvogadosContent() {
   const handleCreateAdvogado = async () => {
     setIsSaving(true);
     try {
-      // TODO: Implementar createAdvogado action
-      toast.success("Advogado criado com sucesso!");
-      setIsCreateModalOpen(false);
-      setFormState(initialFormState);
-      mutate();
+      // Validar formulário
+      const validation = validateForm();
+      if (!validation.isValid) {
+        validation.errors.forEach((error) => toast.error(error));
+        return;
+      }
+
+      const input: CreateAdvogadoInput = {
+        firstName: formState.firstName,
+        lastName: formState.lastName,
+        email: formState.email,
+        phone: formState.phone,
+        oabNumero: formState.oabNumero,
+        oabUf: formState.oabUf,
+        especialidades: formState.especialidades,
+        bio: formState.bio,
+        telefone: formState.telefone,
+        whatsapp: formState.whatsapp,
+        comissaoPadrao: formState.comissaoPadrao,
+        comissaoAcaoGanha: formState.comissaoAcaoGanha,
+        comissaoHonorarios: formState.comissaoHonorarios,
+        isExterno: formState.isExterno,
+      };
+
+      const result = await createAdvogado(input);
+
+      if (result.success) {
+        toast.success("Advogado criado com sucesso!");
+        setIsCreateModalOpen(false);
+        setFormState(initialFormState);
+        mutate();
+      } else {
+        toast.error(result.error || "Erro ao criar advogado");
+      }
     } catch (error) {
+      console.error("Erro ao criar advogado:", error);
       toast.error("Erro ao criar advogado");
     } finally {
       setIsSaving(false);
@@ -234,12 +382,39 @@ export default function AdvogadosContent() {
 
     setIsSaving(true);
     try {
-      // TODO: Implementar updateAdvogado action
-      toast.success("Advogado atualizado com sucesso!");
-      setIsEditModalOpen(false);
-      setSelectedAdvogado(null);
-      mutate();
+      // Validar formulário
+      const validation = validateForm();
+      if (!validation.isValid) {
+        validation.errors.forEach((error) => toast.error(error));
+        return;
+      }
+      const input: UpdateAdvogadoInput = {
+        firstName: formState.firstName,
+        lastName: formState.lastName,
+        phone: formState.phone,
+        oabNumero: formState.oabNumero,
+        oabUf: formState.oabUf,
+        especialidades: formState.especialidades,
+        bio: formState.bio,
+        telefone: formState.telefone,
+        whatsapp: formState.whatsapp,
+        comissaoPadrao: formState.comissaoPadrao,
+        comissaoAcaoGanha: formState.comissaoAcaoGanha,
+        comissaoHonorarios: formState.comissaoHonorarios,
+      };
+
+      const result = await updateAdvogado(selectedAdvogado.id, input);
+
+      if (result.success) {
+        toast.success("Advogado atualizado com sucesso!");
+        setIsEditModalOpen(false);
+        setSelectedAdvogado(null);
+        mutate();
+      } else {
+        toast.error(result.error || "Erro ao atualizar advogado");
+      }
     } catch (error) {
+      console.error("Erro ao atualizar advogado:", error);
       toast.error("Erro ao atualizar advogado");
     } finally {
       setIsSaving(false);
@@ -250,12 +425,151 @@ export default function AdvogadosContent() {
     if (!confirm("Tem certeza que deseja excluir este advogado?")) return;
 
     try {
-      // TODO: Implementar deleteAdvogado action
-      toast.success("Advogado excluído com sucesso!");
-      mutate();
+      const result = await deleteAdvogado(advogadoId);
+
+      if (result.success) {
+        toast.success("Advogado excluído com sucesso!");
+        mutate();
+      } else {
+        toast.error(result.error || "Erro ao excluir advogado");
+      }
     } catch (error) {
+      console.error("Erro ao excluir advogado:", error);
       toast.error("Erro ao excluir advogado");
     }
+  };
+
+  const handleUploadAvatar = async (advogadoId: string, file: File) => {
+    setIsUploadingAvatar(true);
+    try {
+      const result = await uploadAvatarAdvogado(advogadoId, file);
+
+      if (result.success) {
+        toast.success("Avatar atualizado com sucesso!");
+        mutate();
+      } else {
+        toast.error(result.error || "Erro ao fazer upload do avatar");
+      }
+    } catch (error) {
+      console.error("Erro ao fazer upload do avatar:", error);
+      toast.error("Erro ao fazer upload do avatar");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleDeleteAvatar = async (advogadoId: string) => {
+    if (!confirm("Tem certeza que deseja remover o avatar?")) return;
+
+    try {
+      const result = await deleteAvatarAdvogado(advogadoId);
+
+      if (result.success) {
+        toast.success("Avatar removido com sucesso!");
+        mutate();
+      } else {
+        toast.error(result.error || "Erro ao remover avatar");
+      }
+    } catch (error) {
+      console.error("Erro ao remover avatar:", error);
+      toast.error("Erro ao remover avatar");
+    }
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Resetar paginação quando filtros mudarem
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedStatus, selectedEspecialidade, selectedTipo]);
+
+  const handleConvertToInterno = async (advogadoId: string) => {
+    if (!confirm("Tem certeza que deseja transformar este advogado externo em interno? Esta ação não pode ser desfeita.")) return;
+
+    try {
+      const result = await convertAdvogadoExternoToInterno(advogadoId);
+
+      if (result.success) {
+        toast.success("Advogado convertido para interno com sucesso!");
+        mutate();
+      } else {
+        toast.error(result.error || "Erro ao converter advogado");
+      }
+    } catch (error) {
+      console.error("Erro ao converter advogado:", error);
+      toast.error("Erro ao converter advogado");
+    }
+  };
+
+  // Funções de validação
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateOAB = (oabNumero: string, oabUf: string): boolean => {
+    if (!oabNumero || !oabUf) return true; // OAB é opcional
+    const oabRegex = /^\d{1,6}$/;
+    return oabRegex.test(oabNumero) && oabUf.length === 2;
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    if (!phone) return true; // Telefone é opcional
+    const phoneRegex = /^\(\d{2}\)\s\d{4,5}-\d{4}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const validateForm = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    // Validar campos obrigatórios
+    if (!formState.firstName.trim()) {
+      errors.push("Nome é obrigatório");
+    }
+    if (!formState.lastName.trim()) {
+      errors.push("Sobrenome é obrigatório");
+    }
+    if (!formState.email.trim()) {
+      errors.push("Email é obrigatório");
+    }
+
+    // Validar formato do email
+    if (formState.email && !validateEmail(formState.email)) {
+      errors.push("Email inválido");
+    }
+
+    // Validar OAB
+    if (formState.oabNumero && formState.oabUf && !validateOAB(formState.oabNumero, formState.oabUf)) {
+      errors.push("OAB inválida. Número deve ter até 6 dígitos e UF deve ter 2 caracteres");
+    }
+
+    // Validar telefone
+    if (formState.phone && !validatePhone(formState.phone)) {
+      errors.push("Telefone inválido. Use o formato (XX) XXXXX-XXXX");
+    }
+
+    // Validar comissões (devem ser entre 0 e 100)
+    if (formState.comissaoPadrao < 0 || formState.comissaoPadrao > 100) {
+      errors.push("Comissão padrão deve estar entre 0 e 100%");
+    }
+    if (formState.comissaoAcaoGanha < 0 || formState.comissaoAcaoGanha > 100) {
+      errors.push("Comissão ação ganha deve estar entre 0 e 100%");
+    }
+    if (formState.comissaoHonorarios < 0 || formState.comissaoHonorarios > 100) {
+      errors.push("Comissão honorários deve estar entre 0 e 100%");
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
   };
 
   // Opções para filtros
@@ -699,6 +1013,45 @@ export default function AdvogadosContent() {
         </Card>
       </motion.div>
 
+      {/* Controles de Paginação */}
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.4, delay: 0.1 }}>
+        <Card className="shadow-lg border border-slate-200 dark:border-slate-700">
+          <CardBody className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  Mostrando {startItem} a {endItem} de {totalAdvogadosFiltrados} advogados
+                </span>
+                <Select
+                  size="sm"
+                  value={itemsPerPage.toString()}
+                  onChange={(e) => {
+                    setItemsPerPage(parseInt(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="w-20"
+                >
+                  <SelectItem key="5" value="5">
+                    5
+                  </SelectItem>
+                  <SelectItem key="10" value="10">
+                    10
+                  </SelectItem>
+                  <SelectItem key="20" value="20">
+                    20
+                  </SelectItem>
+                  <SelectItem key="50" value="50">
+                    50
+                  </SelectItem>
+                </Select>
+                <span className="text-sm text-slate-600 dark:text-slate-400">por página</span>
+              </div>
+              {totalPages > 1 && <Pagination total={totalPages} page={currentPage} onChange={setCurrentPage} size="sm" showControls showShadow />}
+            </div>
+          </CardBody>
+        </Card>
+      </motion.div>
+
       {/* Lista de Advogados Melhorada */}
       <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.4, delay: 0.1 }}>
         <Card className="shadow-xl border-2 border-slate-200 dark:border-slate-700">
@@ -787,12 +1140,37 @@ export default function AdvogadosContent() {
                                 </Button>
                               </DropdownTrigger>
                               <DropdownMenu aria-label="Ações do advogado">
-                                <DropdownItem key="view" startContent={<Eye className="h-4 w-4" />} onPress={() => handleViewAdvogado(advogado)}>
+                                <DropdownItem
+                                  key="view"
+                                  startContent={<Eye className="h-4 w-4" />}
+                                  onPress={() => {
+                                    console.log("Abrindo modal de visualização");
+                                    handleViewAdvogado(advogado);
+                                  }}
+                                >
                                   Ver Detalhes
                                 </DropdownItem>
-                                <DropdownItem key="edit" startContent={<Edit className="h-4 w-4" />} onPress={() => handleEditAdvogado(advogado)}>
+                                <DropdownItem
+                                  key="edit"
+                                  startContent={<Edit className="h-4 w-4" />}
+                                  onPress={() => {
+                                    console.log("Abrindo modal de edição");
+                                    handleEditAdvogado(advogado);
+                                  }}
+                                >
                                   Editar
                                 </DropdownItem>
+                                {advogado.isExterno && (
+                                  <DropdownItem
+                                    key="convert"
+                                    className="text-warning"
+                                    color="warning"
+                                    startContent={<UserPlus className="h-4 w-4" />}
+                                    onPress={() => handleConvertToInterno(advogado.id)}
+                                  >
+                                    Transformar em Interno
+                                  </DropdownItem>
+                                )}
                                 <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="h-4 w-4" />} onPress={() => handleDeleteAdvogado(advogado.id)}>
                                   Excluir
                                 </DropdownItem>
@@ -889,383 +1267,422 @@ export default function AdvogadosContent() {
       </motion.div>
 
       {/* Modal Criar Advogado */}
-      <Modal isOpen={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} size="2xl" title="Novo Advogado">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              isRequired
-              label="Nome"
-              placeholder="Nome do advogado"
-              startContent={<User className="h-4 w-4 text-default-400" />}
-              value={formState.firstName}
-              onValueChange={(value) => setFormState({ ...formState, firstName: value })}
-            />
-            <Input
-              isRequired
-              label="Sobrenome"
-              placeholder="Sobrenome do advogado"
-              startContent={<User className="h-4 w-4 text-default-400" />}
-              value={formState.lastName}
-              onValueChange={(value) => setFormState({ ...formState, lastName: value })}
-            />
-          </div>
+      <Modal isOpen={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} size="2xl">
+        <ModalContent>
+          <ModalHeader>Novo Advogado</ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  isRequired
+                  label="Nome"
+                  placeholder="Nome do advogado"
+                  startContent={<User className="h-4 w-4 text-default-400" />}
+                  value={formState.firstName}
+                  onValueChange={(value) => setFormState({ ...formState, firstName: value })}
+                />
+                <Input
+                  isRequired
+                  label="Sobrenome"
+                  placeholder="Sobrenome do advogado"
+                  startContent={<User className="h-4 w-4 text-default-400" />}
+                  value={formState.lastName}
+                  onValueChange={(value) => setFormState({ ...formState, lastName: value })}
+                />
+              </div>
 
-          <Input
-            isRequired
-            label="Email"
-            placeholder="email@exemplo.com"
-            type="email"
-            startContent={<MailIcon className="h-4 w-4 text-default-400" />}
-            value={formState.email}
-            onValueChange={(value) => setFormState({ ...formState, email: value })}
-          />
+              <Input
+                isRequired
+                label="Email"
+                placeholder="email@exemplo.com"
+                type="email"
+                startContent={<MailIcon className="h-4 w-4 text-default-400" />}
+                value={formState.email}
+                onValueChange={(value) => setFormState({ ...formState, email: value })}
+              />
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Número OAB"
-              placeholder="123456"
-              startContent={<ScaleIcon className="h-4 w-4 text-default-400" />}
-              value={formState.oabNumero}
-              onValueChange={(value) => setFormState({ ...formState, oabNumero: value })}
-            />
-            <Input
-              label="UF OAB"
-              placeholder="SP"
-              startContent={<MapPin className="h-4 w-4 text-default-400" />}
-              value={formState.oabUf}
-              onValueChange={(value) => setFormState({ ...formState, oabUf: value })}
-            />
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Número OAB"
+                  placeholder="123456"
+                  startContent={<ScaleIcon className="h-4 w-4 text-default-400" />}
+                  value={formState.oabNumero}
+                  onValueChange={(value) => setFormState({ ...formState, oabNumero: value })}
+                />
+                <Input
+                  label="UF OAB"
+                  placeholder="SP"
+                  startContent={<MapPin className="h-4 w-4 text-default-400" />}
+                  value={formState.oabUf}
+                  onValueChange={(value) => setFormState({ ...formState, oabUf: value })}
+                />
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Telefone"
-              placeholder="(11) 99999-9999"
-              startContent={<Phone className="h-4 w-4 text-default-400" />}
-              value={formState.telefone}
-              onValueChange={(value) => setFormState({ ...formState, telefone: value })}
-            />
-            <Input
-              label="WhatsApp"
-              placeholder="(11) 99999-9999"
-              startContent={<Smartphone className="h-4 w-4 text-default-400" />}
-              value={formState.whatsapp}
-              onValueChange={(value) => setFormState({ ...formState, whatsapp: value })}
-            />
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Telefone"
+                  placeholder="(11) 99999-9999"
+                  startContent={<Phone className="h-4 w-4 text-default-400" />}
+                  value={formState.telefone}
+                  onValueChange={(value) => setFormState({ ...formState, telefone: value })}
+                />
+                <Input
+                  label="WhatsApp"
+                  placeholder="(11) 99999-9999"
+                  startContent={<Smartphone className="h-4 w-4 text-default-400" />}
+                  value={formState.whatsapp}
+                  onValueChange={(value) => setFormState({ ...formState, whatsapp: value })}
+                />
+              </div>
 
-          <Textarea label="Biografia" placeholder="Conte um pouco sobre o advogado..." value={formState.bio} onValueChange={(value) => setFormState({ ...formState, bio: value })} />
+              <Textarea label="Biografia" placeholder="Conte um pouco sobre o advogado..." value={formState.bio} onValueChange={(value) => setFormState({ ...formState, bio: value })} />
 
-          <div className="grid grid-cols-3 gap-4">
-            <Input
-              label="Comissão Padrão (%)"
-              type="number"
-              placeholder="0"
-              startContent={<Percent className="h-4 w-4 text-default-400" />}
-              value={formState.comissaoPadrao.toString()}
-              onValueChange={(value) => setFormState({ ...formState, comissaoPadrao: parseFloat(value) || 0 })}
-            />
-            <Input
-              label="Comissão Ação Ganha (%)"
-              type="number"
-              placeholder="0"
-              startContent={<Percent className="h-4 w-4 text-default-400" />}
-              value={formState.comissaoAcaoGanha.toString()}
-              onValueChange={(value) => setFormState({ ...formState, comissaoAcaoGanha: parseFloat(value) || 0 })}
-            />
-            <Input
-              label="Comissão Honorários (%)"
-              type="number"
-              placeholder="0"
-              startContent={<Percent className="h-4 w-4 text-default-400" />}
-              value={formState.comissaoHonorarios.toString()}
-              onValueChange={(value) => setFormState({ ...formState, comissaoHonorarios: parseFloat(value) || 0 })}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-2 mt-6">
-          <Button variant="light" onPress={() => setIsCreateModalOpen(false)}>
-            Cancelar
-          </Button>
-          <Button color="primary" isLoading={isSaving} onPress={handleCreateAdvogado}>
-            Criar Advogado
-          </Button>
-        </div>
+              <div className="grid grid-cols-3 gap-4">
+                <Input
+                  label="Comissão Padrão (%)"
+                  type="number"
+                  placeholder="0"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={formState.comissaoPadrao.toString()}
+                  onValueChange={(value) => setFormState({ ...formState, comissaoPadrao: parseFloat(value) || 0 })}
+                />
+                <Input
+                  label="Comissão Ação Ganha (%)"
+                  type="number"
+                  placeholder="0"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={formState.comissaoAcaoGanha.toString()}
+                  onValueChange={(value) => setFormState({ ...formState, comissaoAcaoGanha: parseFloat(value) || 0 })}
+                />
+                <Input
+                  label="Comissão Honorários (%)"
+                  type="number"
+                  placeholder="0"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={formState.comissaoHonorarios.toString()}
+                  onValueChange={(value) => setFormState({ ...formState, comissaoHonorarios: parseFloat(value) || 0 })}
+                />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setIsCreateModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button color="primary" isLoading={isSaving} onPress={handleCreateAdvogado}>
+              Criar Advogado
+            </Button>
+          </ModalFooter>
+        </ModalContent>
       </Modal>
 
       {/* Modal Editar Advogado */}
-      <Modal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} size="2xl" title="Editar Advogado">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              isRequired
-              label="Nome"
-              placeholder="Nome do advogado"
-              startContent={<User className="h-4 w-4 text-default-400" />}
-              value={formState.firstName}
-              onValueChange={(value) => setFormState({ ...formState, firstName: value })}
-            />
-            <Input
-              isRequired
-              label="Sobrenome"
-              placeholder="Sobrenome do advogado"
-              startContent={<User className="h-4 w-4 text-default-400" />}
-              value={formState.lastName}
-              onValueChange={(value) => setFormState({ ...formState, lastName: value })}
-            />
-          </div>
+      <Modal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} size="2xl">
+        <ModalContent>
+          <ModalHeader>Editar Advogado</ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  isRequired
+                  label="Nome"
+                  placeholder="Nome do advogado"
+                  startContent={<User className="h-4 w-4 text-default-400" />}
+                  value={formState.firstName}
+                  onValueChange={(value) => setFormState({ ...formState, firstName: value })}
+                />
+                <Input
+                  isRequired
+                  label="Sobrenome"
+                  placeholder="Sobrenome do advogado"
+                  startContent={<User className="h-4 w-4 text-default-400" />}
+                  value={formState.lastName}
+                  onValueChange={(value) => setFormState({ ...formState, lastName: value })}
+                />
+              </div>
 
-          <Input
-            isRequired
-            label="Email"
-            placeholder="email@exemplo.com"
-            type="email"
-            startContent={<MailIcon className="h-4 w-4 text-default-400" />}
-            value={formState.email}
-            onValueChange={(value) => setFormState({ ...formState, email: value })}
-          />
+              <Input
+                isRequired
+                label="Email"
+                placeholder="email@exemplo.com"
+                type="email"
+                startContent={<MailIcon className="h-4 w-4 text-default-400" />}
+                value={formState.email}
+                onValueChange={(value) => setFormState({ ...formState, email: value })}
+              />
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Número OAB"
-              placeholder="123456"
-              startContent={<ScaleIcon className="h-4 w-4 text-default-400" />}
-              value={formState.oabNumero}
-              onValueChange={(value) => setFormState({ ...formState, oabNumero: value })}
-            />
-            <Input
-              label="UF OAB"
-              placeholder="SP"
-              startContent={<MapPin className="h-4 w-4 text-default-400" />}
-              value={formState.oabUf}
-              onValueChange={(value) => setFormState({ ...formState, oabUf: value })}
-            />
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Número OAB"
+                  placeholder="123456"
+                  startContent={<ScaleIcon className="h-4 w-4 text-default-400" />}
+                  value={formState.oabNumero}
+                  onValueChange={(value) => setFormState({ ...formState, oabNumero: value })}
+                />
+                <Input
+                  label="UF OAB"
+                  placeholder="SP"
+                  startContent={<MapPin className="h-4 w-4 text-default-400" />}
+                  value={formState.oabUf}
+                  onValueChange={(value) => setFormState({ ...formState, oabUf: value })}
+                />
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Telefone"
-              placeholder="(11) 99999-9999"
-              startContent={<Phone className="h-4 w-4 text-default-400" />}
-              value={formState.telefone}
-              onValueChange={(value) => setFormState({ ...formState, telefone: value })}
-            />
-            <Input
-              label="WhatsApp"
-              placeholder="(11) 99999-9999"
-              startContent={<Smartphone className="h-4 w-4 text-default-400" />}
-              value={formState.whatsapp}
-              onValueChange={(value) => setFormState({ ...formState, whatsapp: value })}
-            />
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Telefone"
+                  placeholder="(11) 99999-9999"
+                  startContent={<Phone className="h-4 w-4 text-default-400" />}
+                  value={formState.telefone}
+                  onValueChange={(value) => setFormState({ ...formState, telefone: value })}
+                />
+                <Input
+                  label="WhatsApp"
+                  placeholder="(11) 99999-9999"
+                  startContent={<Smartphone className="h-4 w-4 text-default-400" />}
+                  value={formState.whatsapp}
+                  onValueChange={(value) => setFormState({ ...formState, whatsapp: value })}
+                />
+              </div>
 
-          <Textarea label="Biografia" placeholder="Conte um pouco sobre o advogado..." value={formState.bio} onValueChange={(value) => setFormState({ ...formState, bio: value })} />
+              <Textarea label="Biografia" placeholder="Conte um pouco sobre o advogado..." value={formState.bio} onValueChange={(value) => setFormState({ ...formState, bio: value })} />
 
-          <div className="grid grid-cols-3 gap-4">
-            <Input
-              label="Comissão Padrão (%)"
-              type="number"
-              placeholder="0"
-              startContent={<Percent className="h-4 w-4 text-default-400" />}
-              value={formState.comissaoPadrao.toString()}
-              onValueChange={(value) => setFormState({ ...formState, comissaoPadrao: parseFloat(value) || 0 })}
-            />
-            <Input
-              label="Comissão Ação Ganha (%)"
-              type="number"
-              placeholder="0"
-              startContent={<Percent className="h-4 w-4 text-default-400" />}
-              value={formState.comissaoAcaoGanha.toString()}
-              onValueChange={(value) => setFormState({ ...formState, comissaoAcaoGanha: parseFloat(value) || 0 })}
-            />
-            <Input
-              label="Comissão Honorários (%)"
-              type="number"
-              placeholder="0"
-              startContent={<Percent className="h-4 w-4 text-default-400" />}
-              value={formState.comissaoHonorarios.toString()}
-              onValueChange={(value) => setFormState({ ...formState, comissaoHonorarios: parseFloat(value) || 0 })}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-2 mt-6">
-          <Button variant="light" onPress={() => setIsEditModalOpen(false)}>
-            Cancelar
-          </Button>
-          <Button color="primary" isLoading={isSaving} onPress={handleUpdateAdvogado}>
-            Salvar Alterações
-          </Button>
-        </div>
+              <div className="grid grid-cols-3 gap-4">
+                <Input
+                  label="Comissão Padrão (%)"
+                  type="number"
+                  placeholder="0"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={formState.comissaoPadrao.toString()}
+                  onValueChange={(value) => setFormState({ ...formState, comissaoPadrao: parseFloat(value) || 0 })}
+                />
+                <Input
+                  label="Comissão Ação Ganha (%)"
+                  type="number"
+                  placeholder="0"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={formState.comissaoAcaoGanha.toString()}
+                  onValueChange={(value) => setFormState({ ...formState, comissaoAcaoGanha: parseFloat(value) || 0 })}
+                />
+                <Input
+                  label="Comissão Honorários (%)"
+                  type="number"
+                  placeholder="0"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={formState.comissaoHonorarios.toString()}
+                  onValueChange={(value) => setFormState({ ...formState, comissaoHonorarios: parseFloat(value) || 0 })}
+                />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setIsEditModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button color="primary" isLoading={isSaving} onPress={handleUpdateAdvogado}>
+              Salvar Alterações
+            </Button>
+          </ModalFooter>
+        </ModalContent>
       </Modal>
 
       {/* Modal de Visualização do Advogado */}
-      <Modal isOpen={isViewModalOpen} onOpenChange={setIsViewModalOpen} size="2xl" title="Detalhes do Advogado">
-        {selectedAdvogado && (
-          <div className="space-y-6">
-            {/* Header do Advogado */}
-            <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-              <Avatar showFallback className="bg-blue-500 text-white shadow-lg" name={getInitials(getNomeCompleto(selectedAdvogado))} size="lg" src={selectedAdvogado.usuario.avatarUrl || undefined} />
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">{getNomeCompleto(selectedAdvogado)}</h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <Chip color={getStatusColor(selectedAdvogado.usuario.active)} size="sm" variant="flat">
-                    {getStatusText(selectedAdvogado.usuario.active)}
-                  </Chip>
-                  <Chip color="primary" size="sm" variant="flat" startContent={<ScaleIcon className="h-3 w-3" />}>
-                    {getOAB(selectedAdvogado)}
-                  </Chip>
-                  {selectedAdvogado.isExterno && (
-                    <Chip color="warning" size="sm" variant="flat" startContent={<Eye className="h-3 w-3" />}>
-                      Advogado Externo Identificado
-                    </Chip>
+      <Modal isOpen={isViewModalOpen} onOpenChange={setIsViewModalOpen} size="2xl">
+        <ModalContent>
+          <ModalHeader>Detalhes do Advogado</ModalHeader>
+          <ModalBody>
+            {selectedAdvogado && (
+              <div className="space-y-6">
+                {/* Header do Advogado */}
+                <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <Avatar
+                    showFallback
+                    className="bg-blue-500 text-white shadow-lg"
+                    name={getInitials(getNomeCompleto(selectedAdvogado))}
+                    size="lg"
+                    src={selectedAdvogado.usuario.avatarUrl || undefined}
+                  />
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">{getNomeCompleto(selectedAdvogado)}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Chip color={getStatusColor(selectedAdvogado.usuario.active)} size="sm" variant="flat">
+                        {getStatusText(selectedAdvogado.usuario.active)}
+                      </Chip>
+                      <Chip color="primary" size="sm" variant="flat" startContent={<ScaleIcon className="h-3 w-3" />}>
+                        {getOAB(selectedAdvogado)}
+                      </Chip>
+                      {selectedAdvogado.isExterno && (
+                        <Chip color="warning" size="sm" variant="flat" startContent={<Eye className="h-3 w-3" />}>
+                          Advogado Externo Identificado
+                        </Chip>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informações de Contato */}
+                <div className="space-y-4">
+                  <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    <Phone className="h-5 w-5" />
+                    Informações de Contato
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                      <MailIcon className="h-4 w-4 text-blue-500" />
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Email</p>
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{selectedAdvogado.usuario.email}</p>
+                      </div>
+                    </div>
+                    {selectedAdvogado.telefone && (
+                      <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                        <Phone className="h-4 w-4 text-green-500" />
+                        <div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Telefone</p>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{selectedAdvogado.telefone}</p>
+                        </div>
+                      </div>
+                    )}
+                    {selectedAdvogado.whatsapp && (
+                      <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                        <Smartphone className="h-4 w-4 text-green-500" />
+                        <div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">WhatsApp</p>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{selectedAdvogado.whatsapp}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Especialidades ou Informações de Processos */}
+                {selectedAdvogado.isExterno ? (
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Processos Identificados
+                    </h4>
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Este advogado foi identificado em {selectedAdvogado.processosCount || 0} processo(s) do seu escritório</p>
+                      </div>
+                      <p className="text-xs text-amber-700 dark:text-amber-300">Ele não faz parte da equipe do escritório, mas aparece como advogado de outras partes nos processos.</p>
+                    </div>
+                  </div>
+                ) : (
+                  selectedAdvogado.especialidades.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                        <Star className="h-5 w-5" />
+                        Especialidades
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedAdvogado.especialidades.map((especialidade) => (
+                          <Chip key={especialidade} color="secondary" variant="flat" startContent={<Star className="h-3 w-3" />}>
+                            {especialidadeOptions.find((opt) => opt.key === especialidade)?.label || especialidade}
+                          </Chip>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                )}
+
+                {/* Comissões - Apenas para advogados do escritório */}
+                {!selectedAdvogado.isExterno && (
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Comissões
+                    </h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                        <div className="flex items-center gap-2">
+                          <Percent className="h-5 w-5 text-blue-500" />
+                          <div>
+                            <p className="text-xs text-blue-600 dark:text-blue-400">Padrão</p>
+                            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{selectedAdvogado.comissaoPadrao}%</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+                        <div className="flex items-center gap-2">
+                          <Percent className="h-5 w-5 text-green-500" />
+                          <div>
+                            <p className="text-xs text-green-600 dark:text-green-400">Ação Ganha</p>
+                            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{selectedAdvogado.comissaoAcaoGanha}%</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+                        <div className="flex items-center gap-2">
+                          <Percent className="h-5 w-5 text-purple-500" />
+                          <div>
+                            <p className="text-xs text-purple-600 dark:text-purple-400">Honorários</p>
+                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{selectedAdvogado.comissaoHonorarios}%</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Biografia */}
+                {selectedAdvogado.bio && (
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Biografia
+                    </h4>
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                      <p className="text-sm text-slate-700 dark:text-slate-300">{selectedAdvogado.bio}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Ações */}
+                <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
+                  {selectedAdvogado.isExterno ? (
+                    <div className="w-full space-y-3">
+                      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 mb-2">
+                          <Eye className="h-5 w-5" />
+                          <span className="font-medium">Advogado Externo</span>
+                        </div>
+                        <p className="text-sm text-amber-600 dark:text-amber-400">Este advogado foi identificado automaticamente através dos processos.</p>
+                      </div>
+                      <Button
+                        color="warning"
+                        variant="flat"
+                        startContent={<UserPlus className="h-4 w-4" />}
+                        onPress={() => {
+                          setIsViewModalOpen(false);
+                          handleConvertToInterno(selectedAdvogado.id);
+                        }}
+                        className="w-full"
+                      >
+                        Transformar em Advogado Interno
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      color="primary"
+                      variant="flat"
+                      startContent={<Edit className="h-4 w-4" />}
+                      onPress={() => {
+                        setIsViewModalOpen(false);
+                        handleEditAdvogado(selectedAdvogado);
+                      }}
+                      className="flex-1"
+                    >
+                      Editar Advogado
+                    </Button>
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* Informações de Contato */}
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                <Phone className="h-5 w-5" />
-                Informações de Contato
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                  <MailIcon className="h-4 w-4 text-blue-500" />
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Email</p>
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{selectedAdvogado.usuario.email}</p>
-                  </div>
-                </div>
-                {selectedAdvogado.telefone && (
-                  <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                    <Phone className="h-4 w-4 text-green-500" />
-                    <div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Telefone</p>
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{selectedAdvogado.telefone}</p>
-                    </div>
-                  </div>
-                )}
-                {selectedAdvogado.whatsapp && (
-                  <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                    <Smartphone className="h-4 w-4 text-green-500" />
-                    <div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">WhatsApp</p>
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{selectedAdvogado.whatsapp}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Especialidades ou Informações de Processos */}
-            {selectedAdvogado.isExterno ? (
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Processos Identificados
-                </h4>
-                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Este advogado foi identificado em {selectedAdvogado.processosCount || 0} processo(s) do seu escritório</p>
-                  </div>
-                  <p className="text-xs text-amber-700 dark:text-amber-300">Ele não faz parte da equipe do escritório, mas aparece como advogado de outras partes nos processos.</p>
-                </div>
-              </div>
-            ) : (
-              selectedAdvogado.especialidades.length > 0 && (
-                <div className="space-y-4">
-                  <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                    <Star className="h-5 w-5" />
-                    Especialidades
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedAdvogado.especialidades.map((especialidade) => (
-                      <Chip key={especialidade} color="secondary" variant="flat" startContent={<Star className="h-3 w-3" />}>
-                        {especialidadeOptions.find((opt) => opt.key === especialidade)?.label || especialidade}
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-              )
             )}
-
-            {/* Comissões - Apenas para advogados do escritório */}
-            {!selectedAdvogado.isExterno && (
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Comissões
-                </h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-                    <div className="flex items-center gap-2">
-                      <Percent className="h-5 w-5 text-blue-500" />
-                      <div>
-                        <p className="text-xs text-blue-600 dark:text-blue-400">Padrão</p>
-                        <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{selectedAdvogado.comissaoPadrao}%</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                    <div className="flex items-center gap-2">
-                      <Percent className="h-5 w-5 text-green-500" />
-                      <div>
-                        <p className="text-xs text-green-600 dark:text-green-400">Ação Ganha</p>
-                        <p className="text-2xl font-bold text-green-700 dark:text-green-300">{selectedAdvogado.comissaoAcaoGanha}%</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
-                    <div className="flex items-center gap-2">
-                      <Percent className="h-5 w-5 text-purple-500" />
-                      <div>
-                        <p className="text-xs text-purple-600 dark:text-purple-400">Honorários</p>
-                        <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{selectedAdvogado.comissaoHonorarios}%</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Biografia */}
-            {selectedAdvogado.bio && (
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Biografia
-                </h4>
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                  <p className="text-sm text-slate-700 dark:text-slate-300">{selectedAdvogado.bio}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Ações */}
-            <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
-              {selectedAdvogado.isExterno ? (
-                <div className="w-full p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                  <p className="text-sm text-slate-600 dark:text-slate-400 text-center">Este advogado é externo e não pode ser editado. Ele foi identificado automaticamente através dos processos.</p>
-                </div>
-              ) : (
-                <Button
-                  color="primary"
-                  variant="flat"
-                  startContent={<Edit className="h-4 w-4" />}
-                  onPress={() => {
-                    setIsViewModalOpen(false);
-                    handleEditAdvogado(selectedAdvogado);
-                  }}
-                  className="flex-1"
-                >
-                  Editar Advogado
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
+          </ModalBody>
+        </ModalContent>
       </Modal>
     </div>
   );

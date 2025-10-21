@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
 import { EspecialidadeJuridica } from "@/app/generated/prisma";
+import { UploadService } from "@/lib/upload-service";
 
 // =============================================
 // TYPES
@@ -66,6 +67,7 @@ export interface CreateAdvogadoInput {
   comissaoPadrao?: number;
   comissaoAcaoGanha?: number;
   comissaoHonorarios?: number;
+  isExterno?: boolean;
 }
 
 export interface UpdateAdvogadoInput {
@@ -163,6 +165,128 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
     console.error("Erro ao buscar advogados:", error);
 
     return { success: false, error: "Erro ao buscar advogados" };
+  }
+}
+
+export async function createAdvogado(input: CreateAdvogadoInput): Promise<ActionResponse<AdvogadoData>> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    // Verificar se o usuário tem permissão para criar advogados
+    if (session.user.role !== "ADMIN") {
+      return { success: false, error: "Apenas administradores podem criar advogados" };
+    }
+
+    // Verificar se o email já existe no tenant
+    const existingUser = await prisma.usuario.findFirst({
+      where: {
+        email: input.email,
+        tenantId: session.user.tenantId,
+      },
+    });
+
+    if (existingUser) {
+      return { success: false, error: "Já existe um usuário com este email no escritório" };
+    }
+
+    // Verificar se a OAB já existe no tenant (se fornecida)
+    if (input.oabNumero && input.oabUf) {
+      const existingOAB = await prisma.advogado.findFirst({
+        where: {
+          oabNumero: input.oabNumero,
+          oabUf: input.oabUf,
+          tenantId: session.user.tenantId,
+        },
+      });
+
+      if (existingOAB) {
+        return { success: false, error: "Já existe um advogado com esta OAB no escritório" };
+      }
+    }
+
+    // Criar usuário primeiro
+    const usuario = await prisma.usuario.create({
+      data: {
+        tenantId: session.user.tenantId,
+        email: input.email,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        phone: input.phone,
+        role: "ADVOGADO",
+        active: true,
+        createdById: session.user.id,
+      },
+    });
+
+    // Criar advogado
+    const advogado = await prisma.advogado.create({
+      data: {
+        tenantId: session.user.tenantId,
+        usuarioId: usuario.id,
+        oabNumero: input.oabNumero,
+        oabUf: input.oabUf,
+        especialidades: input.especialidades || [],
+        bio: input.bio,
+        telefone: input.telefone,
+        whatsapp: input.whatsapp,
+        comissaoPadrao: input.comissaoPadrao || 0,
+        comissaoAcaoGanha: input.comissaoAcaoGanha || 0,
+        comissaoHonorarios: input.comissaoHonorarios || 0,
+        isExterno: input.isExterno || false,
+      },
+      select: {
+        id: true,
+        usuarioId: true,
+        oabNumero: true,
+        oabUf: true,
+        especialidades: true,
+        bio: true,
+        telefone: true,
+        whatsapp: true,
+        comissaoPadrao: true,
+        comissaoAcaoGanha: true,
+        comissaoHonorarios: true,
+        isExterno: true,
+        usuario: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+            active: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    const data: AdvogadoData = {
+      id: advogado.id,
+      usuarioId: advogado.usuarioId,
+      oabNumero: advogado.oabNumero,
+      oabUf: advogado.oabUf,
+      especialidades: advogado.especialidades as EspecialidadeJuridica[],
+      bio: advogado.bio,
+      telefone: advogado.telefone,
+      whatsapp: advogado.whatsapp,
+      comissaoPadrao: parseFloat(advogado.comissaoPadrao.toString()),
+      comissaoAcaoGanha: parseFloat(advogado.comissaoAcaoGanha.toString()),
+      comissaoHonorarios: parseFloat(advogado.comissaoHonorarios.toString()),
+      isExterno: advogado.isExterno,
+      processosCount: 0,
+      usuario: advogado.usuario,
+    };
+
+    return { success: true, advogado: data } as any;
+  } catch (error) {
+    console.error("Erro ao criar advogado:", error);
+    return { success: false, error: "Erro ao criar advogado" };
   }
 }
 
@@ -339,6 +463,82 @@ export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoIn
     console.error("Erro ao atualizar advogado:", error);
 
     return { success: false, error: "Erro ao atualizar advogado" };
+  }
+}
+
+export async function deleteAdvogado(advogadoId: string): Promise<ActionResponse> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    // Verificar se o usuário tem permissão para deletar advogados
+    if (session.user.role !== "ADMIN") {
+      return { success: false, error: "Apenas administradores podem deletar advogados" };
+    }
+
+    const advogado = await prisma.advogado.findFirst({
+      where: {
+        id: advogadoId,
+        tenantId: session.user.tenantId,
+      },
+      include: {
+        usuario: true,
+      },
+    });
+
+    if (!advogado) {
+      return { success: false, error: "Advogado não encontrado" };
+    }
+
+    // Verificar se o advogado não é o próprio usuário logado
+    if (advogado.usuarioId === session.user.id) {
+      return { success: false, error: "Você não pode deletar seu próprio perfil" };
+    }
+
+    // Verificar se o advogado tem processos vinculados
+    const processosCount = await prisma.processo.count({
+      where: {
+        advogadoResponsavelId: advogadoId,
+        tenantId: session.user.tenantId,
+      },
+    });
+
+    if (processosCount > 0) {
+      return {
+        success: false,
+        error: `Não é possível deletar o advogado pois ele está vinculado a ${processosCount} processo(s). Desvincule os processos primeiro.`,
+      };
+    }
+
+    // Verificar se o advogado tem contratos vinculados
+    const contratosCount = await prisma.contrato.count({
+      where: {
+        advogadoId: advogadoId,
+        tenantId: session.user.tenantId,
+      },
+    });
+
+    if (contratosCount > 0) {
+      return {
+        success: false,
+        error: `Não é possível deletar o advogado pois ele está vinculado a ${contratosCount} contrato(s). Desvincule os contratos primeiro.`,
+      };
+    }
+
+    // Deletar o advogado (isso também deletará o usuário devido ao onDelete: Cascade)
+    await prisma.advogado.delete({
+      where: { id: advogadoId },
+    });
+
+    revalidatePath("/advogados");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao deletar advogado:", error);
+    return { success: false, error: "Erro ao deletar advogado" };
   }
 }
 
@@ -570,6 +770,196 @@ export async function getAllAdvogadosComExternos(): Promise<ActionResponse<Advog
   } catch (error) {
     console.error("Erro ao buscar todos os advogados:", error);
     return { success: false, error: "Erro ao buscar todos os advogados" };
+  }
+}
+
+export async function uploadAvatarAdvogado(advogadoId: string, file: File): Promise<ActionResponse<{ url: string }>> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    // Verificar se o advogado existe e pertence ao tenant
+    const advogado = await prisma.advogado.findFirst({
+      where: {
+        id: advogadoId,
+        tenantId: session.user.tenantId,
+      },
+      include: {
+        usuario: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!advogado) {
+      return { success: false, error: "Advogado não encontrado" };
+    }
+
+    // Verificar se o usuário tem permissão para alterar o avatar
+    if (session.user.role !== "ADMIN" && advogado.usuarioId !== session.user.id) {
+      return { success: false, error: "Você não tem permissão para alterar este avatar" };
+    }
+
+    // Validar tipo de arquivo
+    if (!file.type.startsWith("image/")) {
+      return { success: false, error: "Apenas arquivos de imagem são permitidos" };
+    }
+
+    // Validar tamanho do arquivo (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      return { success: false, error: "Arquivo muito grande. Máximo permitido: 5MB" };
+    }
+
+    // Converter File para Buffer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // Obter tenant slug
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: session.user.tenantId },
+      select: { slug: true },
+    });
+
+    if (!tenant) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Deletar avatar anterior se existir
+    if (advogado.usuario.avatarUrl) {
+      const uploadService = UploadService.getInstance();
+      await uploadService.deleteAvatar(advogado.usuario.avatarUrl, advogado.usuario.id);
+    }
+
+    // Fazer upload do novo avatar
+    const uploadService = UploadService.getInstance();
+    const uploadResult = await uploadService.uploadAvatar(buffer, advogado.usuario.id, file.name, tenant.slug, `${advogado.usuario.firstName} ${advogado.usuario.lastName}`.trim());
+
+    if (!uploadResult.success || !uploadResult.url) {
+      return { success: false, error: uploadResult.error || "Erro ao fazer upload do avatar" };
+    }
+
+    // Atualizar URL do avatar no banco
+    await prisma.usuario.update({
+      where: { id: advogado.usuario.id },
+      data: { avatarUrl: uploadResult.url },
+    });
+
+    revalidatePath("/advogados");
+    revalidatePath("/usuario/perfil/editar");
+
+    return { success: true, url: uploadResult.url } as any;
+  } catch (error) {
+    console.error("Erro ao fazer upload do avatar:", error);
+    return { success: false, error: "Erro ao fazer upload do avatar" };
+  }
+}
+
+export async function deleteAvatarAdvogado(advogadoId: string): Promise<ActionResponse> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    // Verificar se o advogado existe e pertence ao tenant
+    const advogado = await prisma.advogado.findFirst({
+      where: {
+        id: advogadoId,
+        tenantId: session.user.tenantId,
+      },
+      include: {
+        usuario: {
+          select: {
+            id: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!advogado) {
+      return { success: false, error: "Advogado não encontrado" };
+    }
+
+    // Verificar se o usuário tem permissão para deletar o avatar
+    if (session.user.role !== "ADMIN" && advogado.usuarioId !== session.user.id) {
+      return { success: false, error: "Você não tem permissão para deletar este avatar" };
+    }
+
+    if (!advogado.usuario.avatarUrl) {
+      return { success: false, error: "Avatar não encontrado" };
+    }
+
+    // Deletar avatar do Cloudinary
+    const uploadService = UploadService.getInstance();
+    const deleteResult = await uploadService.deleteAvatar(advogado.usuario.avatarUrl, advogado.usuario.id);
+
+    if (!deleteResult.success) {
+      return { success: false, error: deleteResult.error || "Erro ao deletar avatar" };
+    }
+
+    // Remover URL do avatar do banco
+    await prisma.usuario.update({
+      where: { id: advogado.usuario.id },
+      data: { avatarUrl: null },
+    });
+
+    revalidatePath("/advogados");
+    revalidatePath("/usuario/perfil/editar");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao deletar avatar:", error);
+    return { success: false, error: "Erro ao deletar avatar" };
+  }
+}
+
+export async function convertAdvogadoExternoToInterno(advogadoId: string): Promise<ActionResponse> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    // Verificar se o usuário tem permissão para converter advogados
+    if (session.user.role !== "ADMIN") {
+      return { success: false, error: "Apenas administradores podem converter advogados externos em internos" };
+    }
+
+    const advogado = await prisma.advogado.findFirst({
+      where: {
+        id: advogadoId,
+        tenantId: session.user.tenantId,
+        isExterno: true, // Apenas advogados externos podem ser convertidos
+      },
+    });
+
+    if (!advogado) {
+      return { success: false, error: "Advogado externo não encontrado" };
+    }
+
+    // Converter para interno
+    await prisma.advogado.update({
+      where: { id: advogadoId },
+      data: { isExterno: false },
+    });
+
+    revalidatePath("/advogados");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao converter advogado externo em interno:", error);
+    return { success: false, error: "Erro ao converter advogado" };
   }
 }
 
