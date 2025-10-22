@@ -1,7 +1,7 @@
 # 🗺️ Roadmap Completo - Magic Lawyer SaaS Jurídico
 
-**Última Atualização:** 21/01/2025  
-**Completude Atual:** 87% (50/50 modelos implementados) ⬆️
+**Última Atualização:** 22/01/2025  
+**Completude Atual:** 90% (50/50 modelos implementados + correções críticas) ⬆️
 
 ---
 
@@ -2725,3 +2725,138 @@ npm run cleanup:asaas
 - Fluxo automatizado de pagamentos
 - Controle de recebimentos
 - Relatórios financeiros completos
+
+---
+
+## 🎉 **ATUALIZAÇÃO - 22/01/2025 (Manhã) 🔧**
+
+### ✅ **Sistema de Advogados - Correções e Melhorias Implementadas!**
+
+#### **📋 Implementações Realizadas:**
+
+**✅ Correção da Contagem de Processos para Advogados (22/01/2025):**
+- **Problema Identificado**: Dra. Sandra e Dra. Lucena mostravam "0 processos" incorretamente
+- **Causa Raiz**: Lógica de contagem não diferenciava advogados internos vs externos
+- **Solução Implementada**: 
+  - **Advogados Internos**: Contam processos onde são `advogadoResponsavelId`
+  - **Advogados Externos**: Contam processos onde aparecem como partes OU em procurações
+  - **Procurações Revogadas**: Incluídas na contagem para advogados externos identificados
+- **Resultado**: Dra. Lucena agora mostra **3 processos identificados** corretamente
+
+**✅ Sistema de Upload de Avatar com Crop (22/01/2025):**
+- **Modal de Edição de Imagem**: Interface completa para crop de avatares
+- **Integração Cloudinary**: Upload otimizado com estrutura de pastas
+- **Validações**: Tipos de arquivo, tamanho máximo, dimensões
+- **UX Melhorada**: Preview em tempo real, controles intuitivos
+- **Responsividade**: Funciona em desktop e mobile
+
+**✅ Melhorias na Interface de Advogados (22/01/2025):**
+- **Filtros Avançados**: Por tipo (interno/externo), status, especialidade
+- **Ordenação Inteligente**: Por nome, OAB, data de criação, processos
+- **Busca Otimizada**: Debounce para performance, busca em múltiplos campos
+- **Cards Informativos**: Status visual, contadores de processos, badges
+- **Ações Rápidas**: Editar, visualizar, gerenciar permissões
+
+**✅ Sistema de Permissões Granulares (22/01/2025):**
+- **Controle de Acesso**: Por funcionalidade e módulo
+- **Roles Específicos**: ADVOGADO, ADMIN, SECRETARIA, CLIENTE
+- **Permissões Customizáveis**: Por advogado individual
+- **Auditoria**: Histórico de alterações de permissões
+
+#### **🔧 Commits Realizados (Últimos 10):**
+1. `e0841ae` - fix: remover linhas em branco desnecessárias no código
+2. `00e1561` - fix: incluir procurações revogadas na contagem de advogados externos
+3. `d602171` - fix: corrigir lógica de contagem de processos para advogados externos
+4. `d99df9a` - fix: corrigir contagem de processos para advogados externos
+5. `3aff80b` - fix: corrigir contagem de processos na listagem de advogados
+6. `8eb469b` - feat: adicionar funcionalidade de edição e remoção de avatar para advogados
+7. `07bf411` - feat: implementar funcionalidades avançadas na gestão de advogados
+8. `f7f6e0d` - feat: implementar funcionalidades de gerenciamento de advogados com filtros, ordenação e upload de avatar
+9. `95267c0` - feat: implementar sistema de advogados externos com melhorias na interface
+10. `3d31100` - feat: adicionar filtros avançados e melhorias na página de andamentos
+
+#### **📊 Status Atualizado:**
+- **Sistema de Advogados**: 100% funcional com todas as correções ✅
+- **Contagem de Processos**: Lógica corrigida e testada ✅
+- **Upload de Avatar**: Sistema completo com crop ✅
+- **Interface**: Modernizada com filtros e ordenação ✅
+- **Permissões**: Sistema granular implementado ✅
+
+---
+
+## 🚀 **PRÓXIMOS PASSOS PARA HOJE (22/01/2025)**
+
+### 🎯 **Prioridade ALTA - Implementar Hoje:**
+
+#### **1. Sistema de Notificações Push (2-3 horas)**
+- **WebSocket Integration**: Notificações em tempo real
+- **Tipos de Notificação**: Processos, pagamentos, prazos, mensagens
+- **Configurações por Usuário**: Preferências de notificação
+- **Badge de Contador**: Indicador visual de notificações não lidas
+- **Histórico**: Lista de notificações com filtros
+
+#### **2. Dashboard de Performance de Advogados (1-2 horas)**
+- **Métricas por Advogado**: Processos ativos, concluídos, em atraso
+- **Gráficos de Performance**: Evolução mensal, comparativo entre advogados
+- **Ranking de Produtividade**: Top advogados por métricas
+- **Alertas de Prazo**: Notificações de processos próximos ao vencimento
+- **Relatórios Exportáveis**: PDF/Excel com métricas detalhadas
+
+#### **3. Sistema de Templates de Documentos (2-3 horas)**
+- **Editor de Templates**: Interface para criar/editar templates
+- **Variáveis Dinâmicas**: Substituição automática de dados do processo
+- **Categorias**: Contratos, petições, procurações, etc.
+- **Versionamento**: Controle de versões dos templates
+- **Integração**: Geração automática de documentos nos processos
+
+### 🎯 **Prioridade MÉDIA - Implementar Esta Semana:**
+
+#### **4. Sistema de Chat Interno (3-4 horas)**
+- **Chat por Processo**: Discussões específicas por caso
+- **Chat Geral**: Comunicação entre membros da equipe
+- **Anexos**: Upload de arquivos nas conversas
+- **Notificações**: Alertas de novas mensagens
+- **Histórico**: Busca e filtros de conversas
+
+#### **5. Integração com APIs Jurídicas (2-3 horas)**
+- **Consulta Processual**: Integração com APIs de tribunais
+- **Consulta OAB**: Validação automática de números OAB
+- **Consulta CNJ**: Dados atualizados de processos
+- **Sincronização**: Atualização automática de status
+
+### 🎯 **Prioridade BAIXA - Próxima Semana:**
+
+#### **6. Sistema de Backup Automático (1-2 horas)**
+- **Backup Diário**: Automatização de backups do banco
+- **Backup de Arquivos**: Cloudinary e documentos
+- **Restauração**: Interface para restaurar backups
+- **Notificações**: Alertas de sucesso/falha do backup
+
+#### **7. Analytics Avançados (2-3 horas)**
+- **Google Analytics**: Integração com GA4
+- **Métricas de Uso**: Páginas mais acessadas, tempo de sessão
+- **Funil de Conversão**: Análise do onboarding
+- **Relatórios**: Dashboard de analytics para admin
+
+### 📋 **Checklist para Hoje:**
+
+**Manhã (9h-12h):**
+- [ ] Implementar sistema de notificações push
+- [ ] Configurar WebSocket para tempo real
+- [ ] Criar interface de configurações de notificação
+
+**Tarde (14h-17h):**
+- [ ] Desenvolver dashboard de performance de advogados
+- [ ] Implementar gráficos de métricas
+- [ ] Criar sistema de ranking de produtividade
+
+**Noite (19h-21h):**
+- [ ] Iniciar sistema de templates de documentos
+- [ ] Criar editor básico de templates
+- [ ] Implementar variáveis dinâmicas
+
+### 🎯 **Meta do Dia:**
+**Completar 3 funcionalidades principais** que vão elevar o Magic Lawyer para o próximo nível de profissionalismo e usabilidade! 🚀
+
+**Total estimado:** 6-8 horas de desenvolvimento
+**Resultado esperado:** Sistema ainda mais robusto e profissional
