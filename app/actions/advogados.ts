@@ -352,16 +352,37 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
         let processosCount: number;
 
         if (adv.isExterno) {
-          // Para advogados externos, contar processos onde aparecem como partes
-          processosCount = await prisma.processoParte.count({
-            where: {
-              tenantId: session.user.tenantId,
-              advogadoId: adv.id,
-              processo: {
-                deletedAt: null,
+          // Para advogados externos, contar processos onde aparecem como partes OU em procurações
+          const [processosParte, processosProcuracao] = await Promise.all([
+            // Processos onde aparece como parte
+            prisma.processoParte.count({
+              where: {
+                tenantId: session.user.tenantId,
+                advogadoId: adv.id,
+                processo: {
+                  deletedAt: null,
+                },
               },
-            },
-          });
+            }),
+            // Processos onde aparece em procurações (ativas ou revogadas)
+            prisma.procuracaoProcesso.count({
+              where: {
+                tenantId: session.user.tenantId,
+                procuracao: {
+                  outorgados: {
+                    some: {
+                      advogadoId: adv.id,
+                    },
+                  },
+                },
+                processo: {
+                  deletedAt: null,
+                },
+              },
+            }),
+          ]);
+          
+          processosCount = processosParte + processosProcuracao;
           
         } else {
           // Para advogados internos, contar processos onde são responsáveis
