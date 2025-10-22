@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/react";
 import { Metadata } from "next";
+
 import EquipeContent from "./equipe-content";
 
 export const metadata: Metadata = {

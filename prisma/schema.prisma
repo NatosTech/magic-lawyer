@@ -166,6 +166,7 @@ model Tenant {
   usuarioPermissoesIndividuais UsuarioPermissaoIndividual[]
   usuarioVinculacoes    UsuarioVinculacao[]
   equipeHistorico       EquipeHistorico[]
+  equipeConvites        EquipeConvite[]
 
   @@index([status])
   @@index([superAdminId])
@@ -349,6 +350,7 @@ model Usuario {
   permissoesIndividuais        UsuarioPermissaoIndividual[]
   vinculacoesComoServidor      UsuarioVinculacao[] @relation("UsuarioServidor")
   equipeHistorico              EquipeHistorico[]
+  equipeConvites               EquipeConvite[]
 
   @@unique([email, tenantId])
   @@unique([tenantId, cpf])
@@ -2807,6 +2809,7 @@ model Cargo {
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   usuarios    UsuarioCargo[]
   permissoes  CargoPermissao[]
+  convites    EquipeConvite[]
   
   @@index([tenantId])
   @@index([nome])
@@ -2913,5 +2916,34 @@ model EquipeHistorico {
   
   @@index([tenantId, usuarioId])
   @@index([tenantId, acao])
+  @@schema("magiclawyer")
+}
+
+model EquipeConvite {
+  id        String   @id @default(cuid())
+  tenantId  String
+  email     String
+  nome      String?
+  cargoId   String?
+  role      UserRole @default(ADVOGADO)
+  token     String   @unique
+  status    String   @default("pendente") // 'pendente', 'aceito', 'rejeitado', 'expirado'
+  expiraEm  DateTime
+  aceitoEm  DateTime?
+  rejeitadoEm DateTime?
+  observacoes String?
+  enviadoPor String // ID do usuário que enviou o convite
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relacionamentos
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cargo     Cargo?   @relation(fields: [cargoId], references: [id], onDelete: SetNull)
+  enviadoPorUsuario Usuario @relation(fields: [enviadoPor], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, email])
+  @@index([tenantId, status])
+  @@index([token])
+  @@index([expiraEm])
   @@schema("magiclawyer")
 }

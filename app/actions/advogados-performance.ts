@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
 
@@ -48,7 +47,9 @@ interface ActionResponse<T = any> {
 /**
  * Busca dados de performance de todos os advogados
  */
-export async function getAdvogadosPerformance(filters?: PerformanceFilters): Promise<ActionResponse<AdvogadoPerformanceData[]>> {
+export async function getAdvogadosPerformance(
+  filters?: PerformanceFilters,
+): Promise<ActionResponse<AdvogadoPerformanceData[]>> {
   try {
     const session = await getSession();
 
@@ -107,76 +108,110 @@ export async function getAdvogadosPerformance(filters?: PerformanceFilters): Pro
     });
 
     // Calcular métricas de performance
-    const performanceData: AdvogadoPerformanceData[] = advogados.map((advogado) => {
-      const processos = advogado.processos;
-      const totalProcessos = processos.length;
-      const processosAtivos = processos.filter((p) => p.status === "ATIVO").length;
-      const processosFinalizados = processos.filter((p) => p.status === "FINALIZADO").length;
-      const processosVencidos = processos.filter((p) => p.status === "VENCIDO").length;
+    const performanceData: AdvogadoPerformanceData[] = advogados.map(
+      (advogado) => {
+        const processos = advogado.processos;
+        const totalProcessos = processos.length;
+        const processosAtivos = processos.filter(
+          (p) => p.status === "ATIVO",
+        ).length;
+        const processosFinalizados = processos.filter(
+          (p) => p.status === "FINALIZADO",
+        ).length;
+        const processosVencidos = processos.filter(
+          (p) => p.status === "VENCIDO",
+        ).length;
 
-      // Calcular comissões
-      const totalComissoes = processos.reduce((sum, processo) => {
-        return sum + (processo.valorCausa ? processo.valorCausa * (advogado.comissaoPadrao / 100) : 0);
-      }, 0);
+        // Calcular comissões
+        const totalComissoes = processos.reduce((sum, processo) => {
+          return (
+            sum +
+            (processo.valorCausa
+              ? processo.valorCausa * (advogado.comissaoPadrao / 100)
+              : 0)
+          );
+        }, 0);
 
-      const comissaoMedia = totalProcessos > 0 ? totalComissoes / totalProcessos : 0;
+        const comissaoMedia =
+          totalProcessos > 0 ? totalComissoes / totalProcessos : 0;
 
-      // Calcular processos por mês (últimos 12 meses)
-      const processosPorMes = Array.from({ length: 12 }, (_, i) => {
-        const date = new Date();
-        date.setMonth(date.getMonth() - i);
-        const mes = date.toISOString().slice(0, 7); // YYYY-MM
+        // Calcular processos por mês (últimos 12 meses)
+        const processosPorMes = Array.from({ length: 12 }, (_, i) => {
+          const date = new Date();
 
-        const quantidade = processos.filter((p) => {
-          const processoMes = p.createdAt.toISOString().slice(0, 7);
-          return processoMes === mes;
-        }).length;
+          date.setMonth(date.getMonth() - i);
+          const mes = date.toISOString().slice(0, 7); // YYYY-MM
 
-        return { mes, quantidade };
-      }).reverse();
+          const quantidade = processos.filter((p) => {
+            const processoMes = p.createdAt.toISOString().slice(0, 7);
 
-      // Calcular tempo médio de processo
-      const processosComDataFim = processos.filter((p) => p.dataFim);
-      const tempoMedioProcesso =
-        processosComDataFim.length > 0
-          ? processosComDataFim.reduce((sum, processo) => {
-              const dias = Math.ceil((processo.dataFim!.getTime() - processo.createdAt.getTime()) / (1000 * 60 * 60 * 24));
-              return sum + dias;
-            }, 0) / processosComDataFim.length
-          : 0;
+            return processoMes === mes;
+          }).length;
 
-      // Calcular taxa de sucesso (processos finalizados vs total)
-      const taxaSucesso = totalProcessos > 0 ? (processosFinalizados / totalProcessos) * 100 : 0;
+          return { mes, quantidade };
+        }).reverse();
 
-      // Última atividade
-      const ultimaAtividade =
-        processos.length > 0
-          ? processos.reduce((latest, processo) => {
-              const ultimoAndamento = processo.movimentacoes[0];
-              if (ultimoAndamento && ultimoAndamento.dataMovimentacao > latest) {
-                return ultimoAndamento.dataMovimentacao;
-              }
-              return latest;
-            }, processos[0].createdAt)
-          : null;
+        // Calcular tempo médio de processo
+        const processosComDataFim = processos.filter((p) => p.dataFim);
+        const tempoMedioProcesso =
+          processosComDataFim.length > 0
+            ? processosComDataFim.reduce((sum, processo) => {
+                const dias = Math.ceil(
+                  (processo.dataFim!.getTime() - processo.createdAt.getTime()) /
+                    (1000 * 60 * 60 * 24),
+                );
 
-      return {
-        advogadoId: advogado.id,
-        advogadoNome: `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() || advogado.usuario?.email || "Advogado",
-        advogadoOAB: advogado.oabNumero && advogado.oabUf ? `${advogado.oabNumero}/${advogado.oabUf}` : "N/A",
-        totalProcessos,
-        processosAtivos,
-        processosFinalizados,
-        processosVencidos,
-        totalComissoes,
-        comissaoMedia,
-        processosPorMes,
-        especialidades: advogado.especialidades as string[],
-        tempoMedioProcesso: Math.round(tempoMedioProcesso),
-        taxaSucesso: Math.round(taxaSucesso * 100) / 100,
-        ultimaAtividade,
-      };
-    });
+                return sum + dias;
+              }, 0) / processosComDataFim.length
+            : 0;
+
+        // Calcular taxa de sucesso (processos finalizados vs total)
+        const taxaSucesso =
+          totalProcessos > 0
+            ? (processosFinalizados / totalProcessos) * 100
+            : 0;
+
+        // Última atividade
+        const ultimaAtividade =
+          processos.length > 0
+            ? processos.reduce((latest, processo) => {
+                const ultimoAndamento = processo.movimentacoes[0];
+
+                if (
+                  ultimoAndamento &&
+                  ultimoAndamento.dataMovimentacao > latest
+                ) {
+                  return ultimoAndamento.dataMovimentacao;
+                }
+
+                return latest;
+              }, processos[0].createdAt)
+            : null;
+
+        return {
+          advogadoId: advogado.id,
+          advogadoNome:
+            `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() ||
+            advogado.usuario?.email ||
+            "Advogado",
+          advogadoOAB:
+            advogado.oabNumero && advogado.oabUf
+              ? `${advogado.oabNumero}/${advogado.oabUf}`
+              : "N/A",
+          totalProcessos,
+          processosAtivos,
+          processosFinalizados,
+          processosVencidos,
+          totalComissoes,
+          comissaoMedia,
+          processosPorMes,
+          especialidades: advogado.especialidades as string[],
+          tempoMedioProcesso: Math.round(tempoMedioProcesso),
+          taxaSucesso: Math.round(taxaSucesso * 100) / 100,
+          ultimaAtividade,
+        };
+      },
+    );
 
     // Ordenar por total de processos (descendente)
     performanceData.sort((a, b) => b.totalProcessos - a.totalProcessos);
@@ -184,6 +219,7 @@ export async function getAdvogadosPerformance(filters?: PerformanceFilters): Pro
     return { success: true, data: performanceData };
   } catch (error) {
     console.error("Erro ao buscar performance dos advogados:", error);
+
     return { success: false, error: "Erro ao buscar dados de performance" };
   }
 }
@@ -191,7 +227,10 @@ export async function getAdvogadosPerformance(filters?: PerformanceFilters): Pro
 /**
  * Busca dados de performance de um advogado específico
  */
-export async function getAdvogadoPerformance(advogadoId: string, filters?: PerformanceFilters): Promise<ActionResponse<AdvogadoPerformanceData>> {
+export async function getAdvogadoPerformance(
+  advogadoId: string,
+  filters?: PerformanceFilters,
+): Promise<ActionResponse<AdvogadoPerformanceData>> {
   try {
     const session = await getSession();
 
@@ -211,6 +250,7 @@ export async function getAdvogadoPerformance(advogadoId: string, filters?: Perfo
     return { success: true, data: result.data[0] };
   } catch (error) {
     console.error("Erro ao buscar performance do advogado:", error);
+
     return { success: false, error: "Erro ao buscar dados de performance" };
   }
 }
@@ -218,7 +258,9 @@ export async function getAdvogadoPerformance(advogadoId: string, filters?: Perfo
 /**
  * Busca estatísticas gerais de performance do escritório
  */
-export async function getPerformanceGeral(filters?: PerformanceFilters): Promise<
+export async function getPerformanceGeral(
+  filters?: PerformanceFilters,
+): Promise<
   ActionResponse<{
     totalAdvogados: number;
     totalProcessos: number;
@@ -251,13 +293,31 @@ export async function getPerformanceGeral(filters?: PerformanceFilters): Promise
 
     const data = result.data;
     const totalAdvogados = data.length;
-    const totalProcessos = data.reduce((sum, adv) => sum + adv.totalProcessos, 0);
-    const processosAtivos = data.reduce((sum, adv) => sum + adv.processosAtivos, 0);
-    const processosFinalizados = data.reduce((sum, adv) => sum + adv.processosFinalizados, 0);
-    const taxaSucessoGeral = totalProcessos > 0 ? (processosFinalizados / totalProcessos) * 100 : 0;
-    const comissaoTotal = data.reduce((sum, adv) => sum + adv.totalComissoes, 0);
-    const comissaoMedia = totalAdvogados > 0 ? comissaoTotal / totalAdvogados : 0;
-    const tempoMedioProcesso = data.length > 0 ? data.reduce((sum, adv) => sum + adv.tempoMedioProcesso, 0) / data.length : 0;
+    const totalProcessos = data.reduce(
+      (sum, adv) => sum + adv.totalProcessos,
+      0,
+    );
+    const processosAtivos = data.reduce(
+      (sum, adv) => sum + adv.processosAtivos,
+      0,
+    );
+    const processosFinalizados = data.reduce(
+      (sum, adv) => sum + adv.processosFinalizados,
+      0,
+    );
+    const taxaSucessoGeral =
+      totalProcessos > 0 ? (processosFinalizados / totalProcessos) * 100 : 0;
+    const comissaoTotal = data.reduce(
+      (sum, adv) => sum + adv.totalComissoes,
+      0,
+    );
+    const comissaoMedia =
+      totalAdvogados > 0 ? comissaoTotal / totalAdvogados : 0;
+    const tempoMedioProcesso =
+      data.length > 0
+        ? data.reduce((sum, adv) => sum + adv.tempoMedioProcesso, 0) /
+          data.length
+        : 0;
 
     // Top 5 performers por taxa de sucesso
     const topPerformers = data
@@ -287,6 +347,7 @@ export async function getPerformanceGeral(filters?: PerformanceFilters): Promise
     };
   } catch (error) {
     console.error("Erro ao buscar performance geral:", error);
+
     return { success: false, error: "Erro ao buscar estatísticas gerais" };
   }
 }

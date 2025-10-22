@@ -38,7 +38,8 @@ export function CidadeSelect({
   const municipioKeySet = new Set(municipioItems.map((item) => item.key));
   const normalizedSelectedKeys = new Set(
     (selectedKeys ?? []).filter(
-      (key): key is string => typeof key === "string" && municipioKeySet.has(key),
+      (key): key is string =>
+        typeof key === "string" && municipioKeySet.has(key),
     ),
   );
   const selectedKey =
@@ -47,18 +48,20 @@ export function CidadeSelect({
       : null;
 
   if (!estadoSelecionado) {
-    const placeholderItems = [{ key: "placeholder", label: "Selecione um estado primeiro" }];
+    const placeholderItems = [
+      { key: "placeholder", label: "Selecione um estado primeiro" },
+    ];
 
     return (
       <Autocomplete
+        isDisabled
         allowsCustomValue={false}
         className={className}
-        isDisabled
+        isClearable={false}
         isRequired={isRequired}
+        items={placeholderItems}
         label={label}
         placeholder="Primeiro selecione o estado"
-        isClearable={false}
-        items={placeholderItems}
         selectedKey={undefined}
       >
         {(item) => (
@@ -91,12 +94,13 @@ export function CidadeSelect({
     <Autocomplete
       allowsCustomValue={false}
       className={className}
-      items={municipioItems}
+      isClearable={!isRequired}
       isDisabled={isDisabled}
       isRequired={isRequired}
+      items={municipioItems}
       label={label}
+      listboxProps={{ emptyContent: "Nenhuma cidade encontrada" }}
       placeholder={placeholder}
-      isClearable={!isRequired}
       selectedKey={selectedKey ?? undefined}
       onSelectionChange={(key) => {
         if (!onSelectionChange) return;
@@ -106,7 +110,6 @@ export function CidadeSelect({
           onSelectionChange(new Set());
         }
       }}
-      listboxProps={{ emptyContent: "Nenhuma cidade encontrada" }}
     >
       {(item) => (
         <AutocompleteItem key={item.key} textValue={item.label}>

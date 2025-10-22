@@ -64,14 +64,14 @@ export function EstadoSelect({
     <Autocomplete
       allowsCustomValue={false}
       className={className}
-      items={estadoItems}
+      isClearable={!isRequired}
       isDisabled={isDisabled}
       isRequired={isRequired}
+      items={estadoItems}
       label={label}
-      placeholder={placeholder}
-      isClearable={!isRequired}
-      selectedKey={selectedKey ?? undefined}
       listboxProps={{ emptyContent: "Nenhum estado encontrado" }}
+      placeholder={placeholder}
+      selectedKey={selectedKey ?? undefined}
       onSelectionChange={(key) => {
         if (!onSelectionChange) return;
         if (key) {

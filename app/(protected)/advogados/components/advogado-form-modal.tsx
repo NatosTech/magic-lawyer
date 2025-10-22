@@ -1,4 +1,7 @@
 "use client";
+import type { CreateAdvogadoInput } from "@/app/actions/advogados";
+import type { CepData } from "@/types/brazil";
+
 import {
   Modal,
   ModalBody,
@@ -14,7 +17,6 @@ import {
   SelectItem,
   Checkbox,
   Switch,
-  Divider,
   Card,
   CardHeader,
   CardBody,
@@ -52,16 +54,15 @@ import {
   Hash,
   Layers,
 } from "lucide-react";
-import type { CreateAdvogadoInput } from "@/app/actions/advogados";
+
+import { type EnderecoFormData, type DadosBancariosFormData } from "./types";
+
 import { CepInput } from "@/components/cep-input";
 import { CpfInput } from "@/components/cpf-input";
 import { CnpjInput } from "@/components/cnpj-input";
-import type { CepData } from "@/types/brazil";
 import { EspecialidadeJuridica } from "@/app/generated/prisma";
 import { CidadeSelect } from "@/components/cidade-select";
 import { EstadoSelect } from "@/components/estado-select";
-
-import { type EnderecoFormData, type DadosBancariosFormData } from "./types";
 
 interface SelectOption {
   value: string;
@@ -92,7 +93,9 @@ interface AdvogadoFormModalProps {
   enderecos: EnderecoFormData[];
   setEnderecos: React.Dispatch<React.SetStateAction<EnderecoFormData[]>>;
   contasBancarias: DadosBancariosFormData[];
-  setContasBancarias: React.Dispatch<React.SetStateAction<DadosBancariosFormData[]>>;
+  setContasBancarias: React.Dispatch<
+    React.SetStateAction<DadosBancariosFormData[]>
+  >;
   bancos: BancoOption[];
   tiposConta: SelectOption[];
   tiposContaBancaria: SelectOption[];
@@ -112,6 +115,7 @@ const enderecoTipoOptions: SelectOption[] = [
 
 const primeiraLetraMaiuscula = (value?: string) => {
   if (!value) return "";
+
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
@@ -137,9 +141,14 @@ export function AdvogadoFormModal({
   onOpenChange,
   onSubmit,
 }: AdvogadoFormModalProps) {
-  const updateEndereco = (index: number, field: keyof EnderecoFormData, value: string | boolean) => {
+  const updateEndereco = (
+    index: number,
+    field: keyof EnderecoFormData,
+    value: string | boolean,
+  ) => {
     setEnderecos((prev) => {
       const clone = [...prev];
+
       clone[index] = {
         ...clone[index],
         [field]: value,
@@ -210,9 +219,14 @@ export function AdvogadoFormModal({
     });
   };
 
-  const updateConta = (index: number, field: keyof DadosBancariosFormData, value: string | boolean) => {
+  const updateConta = (
+    index: number,
+    field: keyof DadosBancariosFormData,
+    value: string | boolean,
+  ) => {
     setContasBancarias((prev) => {
       const clone = [...prev];
+
       clone[index] = {
         ...clone[index],
         [field]: value,
@@ -241,7 +255,8 @@ export function AdvogadoFormModal({
         tipoContaBancaria: "CORRENTE",
         chavePix: "",
         tipoChavePix: "CPF",
-        titularNome: `${formState.firstName || ""} ${formState.lastName || ""}`.trim(),
+        titularNome:
+          `${formState.firstName || ""} ${formState.lastName || ""}`.trim(),
         titularDocumento: formState.cpf || "",
         titularEmail: formState.email || "",
         titularTelefone: formState.phone || "",
@@ -270,10 +285,12 @@ export function AdvogadoFormModal({
   };
 
   const tabsClassNames = {
-    tabList: "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
+    tabList:
+      "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
     cursor: "w-full bg-primary",
     tab: "max-w-fit px-0 h-12",
-    tabContent: "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
+    tabContent:
+      "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
     panel: "px-6 pb-6 pt-4",
   };
 
@@ -284,7 +301,12 @@ export function AdvogadoFormModal({
   };
 
   return (
-    <Modal isOpen={isOpen} scrollBehavior="inside" size="5xl" onOpenChange={onOpenChange}>
+    <Modal
+      isOpen={isOpen}
+      scrollBehavior="inside"
+      size="5xl"
+      onOpenChange={onOpenChange}
+    >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-3">
@@ -293,32 +315,54 @@ export function AdvogadoFormModal({
             </div>
             <div>
               <h3 className="text-xl font-bold text-default-900">{title}</h3>
-              <p className="text-sm text-default-500">{description || (mode === "create" ? "Complete as informações para cadastrar um advogado" : "Atualize os dados do advogado")}</p>
+              <p className="text-sm text-default-500">
+                {description ||
+                  (mode === "create"
+                    ? "Complete as informações para cadastrar um advogado"
+                    : "Atualize os dados do advogado")}
+              </p>
             </div>
           </div>
         </ModalHeader>
 
         <ModalBody className="px-0">
-          <Tabs aria-label="Formulário do advogado" classNames={tabsClassNames} color="primary" variant="underlined">
+          <Tabs
+            aria-label="Formulário do advogado"
+            classNames={tabsClassNames}
+            color="primary"
+            variant="underlined"
+          >
             <Tab
               key="dados-pessoais"
               title={
                 <div className="flex items-center gap-2">
                   <div className="p-1 rounded-md bg-blue-100 dark:bg-blue-900">
-                    <UserIcon className="text-blue-600 dark:text-blue-300" size={16} />
+                    <UserIcon
+                      className="text-blue-600 dark:text-blue-300"
+                      size={16}
+                    />
                   </div>
                   <span>Dados Pessoais</span>
                 </div>
               }
             >
               <div className="space-y-6">
-                <motion.div {...cardMotionProps} whileHover={{ translateY: -4 }}>
+                <motion.div
+                  {...cardMotionProps}
+                  whileHover={{ translateY: -4 }}
+                >
                   <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800">
                     <CardHeader className="flex flex-col items-start gap-1">
-                      <Chip color="primary" variant="flat" startContent={<UserIcon size={14} />}>
+                      <Chip
+                        color="primary"
+                        startContent={<UserIcon size={14} />}
+                        variant="flat"
+                      >
                         Identificação
                       </Chip>
-                      <p className="text-sm text-blue-700 dark:text-blue-300">Informações básicas do advogado</p>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        Informações básicas do advogado
+                      </p>
                     </CardHeader>
                     <CardBody className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -326,55 +370,90 @@ export function AdvogadoFormModal({
                           isRequired
                           label="Nome"
                           placeholder="Nome completo"
-                          startContent={<UserIcon className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <UserIcon className="w-4 h-4 text-default-400" />
+                          }
                           value={formState.firstName}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, firstName: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              firstName: value,
+                            }))
+                          }
                         />
                         <Input
                           isRequired
                           label="Sobrenome"
                           placeholder="Sobrenome"
-                          startContent={<UserIcon className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <UserIcon className="w-4 h-4 text-default-400" />
+                          }
                           value={formState.lastName}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, lastName: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              lastName: value,
+                            }))
+                          }
                         />
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input
                           isRequired
-                          type="email"
                           label="Email"
                           placeholder="email@exemplo.com"
-                          startContent={<MailIcon className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <MailIcon className="w-4 h-4 text-default-400" />
+                          }
+                          type="email"
                           value={formState.email}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, email: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({ ...prev, email: value }))
+                          }
                         />
                         <Input
                           label="Telefone"
                           placeholder="(11) 99999-9999"
-                          startContent={<PhoneIcon className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <PhoneIcon className="w-4 h-4 text-default-400" />
+                          }
                           value={formState.phone || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, phone: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({ ...prev, phone: value }))
+                          }
                         />
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <CpfInput label="CPF" placeholder="000.000.000-00" value={formState.cpf || ""} onChange={(value) => setFormState((prev) => ({ ...prev, cpf: value }))} />
+                        <CpfInput
+                          label="CPF"
+                          placeholder="000.000.000-00"
+                          value={formState.cpf || ""}
+                          onChange={(value) =>
+                            setFormState((prev) => ({ ...prev, cpf: value }))
+                          }
+                        />
                         <Input
                           label="RG"
                           placeholder="RG"
-                          startContent={<IdCard className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <IdCard className="w-4 h-4 text-default-400" />
+                          }
                           value={formState.rg || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, rg: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({ ...prev, rg: value }))
+                          }
                         />
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input
-                          type="date"
                           label="Data de Nascimento"
-                          startContent={<CalendarIcon className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <CalendarIcon className="w-4 h-4 text-default-400" />
+                          }
+                          type="date"
                           value={formState.dataNascimento || ""}
                           onValueChange={(value) =>
                             setFormState((prev) => ({
@@ -386,9 +465,16 @@ export function AdvogadoFormModal({
                         <Input
                           label="Observações"
                           placeholder="Notas internas"
-                          startContent={<StickyNote className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <StickyNote className="w-4 h-4 text-default-400" />
+                          }
                           value={formState.observacoes || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, observacoes: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              observacoes: value,
+                            }))
+                          }
                         />
                       </div>
                     </CardBody>
@@ -402,46 +488,80 @@ export function AdvogadoFormModal({
               title={
                 <div className="flex items-center gap-2">
                   <div className="p-1 rounded-md bg-purple-100 dark:bg-purple-900">
-                    <ScaleIcon className="text-purple-600 dark:text-purple-300" size={16} />
+                    <ScaleIcon
+                      className="text-purple-600 dark:text-purple-300"
+                      size={16}
+                    />
                   </div>
                   <span>Perfil Profissional</span>
                 </div>
               }
             >
               <div className="space-y-6">
-                <motion.div {...cardMotionProps} whileHover={{ translateY: -6 }}>
+                <motion.div
+                  {...cardMotionProps}
+                  whileHover={{ translateY: -6 }}
+                >
                   <Card className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-700">
                     <CardHeader className="flex flex-col items-start gap-1">
-                      <Chip color="secondary" variant="flat" startContent={<ScaleIcon size={14} />}>
+                      <Chip
+                        color="secondary"
+                        startContent={<ScaleIcon size={14} />}
+                        variant="flat"
+                      >
                         OAB & Contato
                       </Chip>
-                      <p className="text-sm text-purple-700 dark:text-purple-300">Registros profissionais e canais de contato</p>
+                      <p className="text-sm text-purple-700 dark:text-purple-300">
+                        Registros profissionais e canais de contato
+                      </p>
                     </CardHeader>
                     <CardBody className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Input
                           label="Número da OAB"
                           placeholder="123456"
-                          startContent={<ScaleIcon className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <ScaleIcon className="w-4 h-4 text-default-400" />
+                          }
                           value={formState.oabNumero || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, oabNumero: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              oabNumero: value,
+                            }))
+                          }
                         />
                         <EstadoSelect
                           className="w-full"
                           label="UF da OAB"
                           placeholder="Selecione"
-                          selectedKeys={formState.oabUf ? [formState.oabUf] : []}
+                          selectedKeys={
+                            formState.oabUf ? [formState.oabUf] : []
+                          }
                           onSelectionChange={(keys) => {
-                            const value = Array.from(keys)[0] as string | undefined;
-                            setFormState((prev) => ({ ...prev, oabUf: value || "" }));
+                            const value = Array.from(keys)[0] as
+                              | string
+                              | undefined;
+
+                            setFormState((prev) => ({
+                              ...prev,
+                              oabUf: value || "",
+                            }));
                           }}
                         />
                         <Input
                           label="WhatsApp"
                           placeholder="(11) 99999-9999"
-                          startContent={<Smartphone className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <Smartphone className="w-4 h-4 text-default-400" />
+                          }
                           value={formState.whatsapp || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, whatsapp: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              whatsapp: value,
+                            }))
+                          }
                         />
                       </div>
 
@@ -449,16 +569,21 @@ export function AdvogadoFormModal({
                         label="Biografia"
                         placeholder="Conte um pouco sobre a história e áreas de atuação do advogado"
                         value={formState.bio || ""}
-                        onValueChange={(value) => setFormState((prev) => ({ ...prev, bio: value }))}
+                        onValueChange={(value) =>
+                          setFormState((prev) => ({ ...prev, bio: value }))
+                        }
                       />
 
                       <Select
                         label="Especialidades"
                         placeholder="Selecione as especialidades"
-                        selectionMode="multiple"
                         selectedKeys={new Set(formState.especialidades || [])}
+                        selectionMode="multiple"
                         onSelectionChange={(keys) => {
-                          const values = Array.from(keys).map((value) => value as EspecialidadeJuridica);
+                          const values = Array.from(keys).map(
+                            (value) => value as EspecialidadeJuridica,
+                          );
+
                           setFormState((prev) => ({
                             ...prev,
                             especialidades: values,
@@ -468,7 +593,10 @@ export function AdvogadoFormModal({
                         {especialidades
                           .filter((opt) => opt.key !== "all")
                           .map((option) => (
-                            <SelectItem key={option.key} textValue={option.label}>
+                            <SelectItem
+                              key={option.key}
+                              textValue={option.label}
+                            >
                               {option.label}
                             </SelectItem>
                           ))}
@@ -477,9 +605,11 @@ export function AdvogadoFormModal({
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Input
                           label="Comissão Padrão (%)"
-                          type="number"
                           placeholder="0"
-                          startContent={<Percent className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <Percent className="w-4 h-4 text-default-400" />
+                          }
+                          type="number"
                           value={(formState.comissaoPadrao ?? 0).toString()}
                           onValueChange={(value) =>
                             setFormState((prev) => ({
@@ -490,9 +620,11 @@ export function AdvogadoFormModal({
                         />
                         <Input
                           label="Comissão Ação Ganha (%)"
-                          type="number"
                           placeholder="0"
-                          startContent={<Percent className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <Percent className="w-4 h-4 text-default-400" />
+                          }
+                          type="number"
                           value={(formState.comissaoAcaoGanha ?? 0).toString()}
                           onValueChange={(value) =>
                             setFormState((prev) => ({
@@ -503,9 +635,11 @@ export function AdvogadoFormModal({
                         />
                         <Input
                           label="Comissão Honorários (%)"
-                          type="number"
                           placeholder="0"
-                          startContent={<Percent className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <Percent className="w-4 h-4 text-default-400" />
+                          }
+                          type="number"
                           value={(formState.comissaoHonorarios ?? 0).toString()}
                           onValueChange={(value) =>
                             setFormState((prev) => ({
@@ -519,10 +653,15 @@ export function AdvogadoFormModal({
                   </Card>
                 </motion.div>
 
-                <motion.div {...cardMotionProps} whileHover={{ translateY: -6 }}>
+                <motion.div
+                  {...cardMotionProps}
+                  whileHover={{ translateY: -6 }}
+                >
                   <Card className="border border-purple-200 dark:border-purple-700 bg-white/70 dark:bg-default-50/10">
                     <CardHeader>
-                      <p className="text-sm font-semibold text-default-600">Trajetória e presença digital</p>
+                      <p className="text-sm font-semibold text-default-600">
+                        Trajetória e presença digital
+                      </p>
                     </CardHeader>
                     <CardBody className="space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -530,13 +669,23 @@ export function AdvogadoFormModal({
                           label="Formação Acadêmica"
                           placeholder="Graduação, pós-graduação, especializações..."
                           value={formState.formacao || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, formacao: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              formacao: value,
+                            }))
+                          }
                         />
                         <Textarea
                           label="Experiência Profissional"
                           placeholder="Experiências, áreas de atuação..."
                           value={formState.experiencia || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, experiencia: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              experiencia: value,
+                            }))
+                          }
                         />
                       </div>
 
@@ -545,13 +694,23 @@ export function AdvogadoFormModal({
                           label="Prêmios e Reconhecimentos"
                           placeholder="Destaques da carreira..."
                           value={formState.premios || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, premios: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              premios: value,
+                            }))
+                          }
                         />
                         <Textarea
                           label="Publicações e Artigos"
                           placeholder="Artigos, livros, publicações..."
                           value={formState.publicacoes || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, publicacoes: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              publicacoes: value,
+                            }))
+                          }
                         />
                       </div>
 
@@ -559,16 +718,30 @@ export function AdvogadoFormModal({
                         <Input
                           label="Website"
                           placeholder="https://www.exemplo.com"
-                          startContent={<Globe className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <Globe className="w-4 h-4 text-default-400" />
+                          }
                           value={formState.website || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, website: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              website: value,
+                            }))
+                          }
                         />
                         <Input
                           label="LinkedIn"
                           placeholder="https://linkedin.com/in/usuario"
-                          startContent={<Linkedin className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <Linkedin className="w-4 h-4 text-default-400" />
+                          }
                           value={formState.linkedin || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, linkedin: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              linkedin: value,
+                            }))
+                          }
                         />
                       </div>
 
@@ -576,16 +749,30 @@ export function AdvogadoFormModal({
                         <Input
                           label="Twitter / X"
                           placeholder="https://twitter.com/usuario"
-                          startContent={<Twitter className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <Twitter className="w-4 h-4 text-default-400" />
+                          }
                           value={formState.twitter || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, twitter: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              twitter: value,
+                            }))
+                          }
                         />
                         <Input
                           label="Instagram"
                           placeholder="https://instagram.com/usuario"
-                          startContent={<Instagram className="w-4 h-4 text-default-400" />}
+                          startContent={
+                            <Instagram className="w-4 h-4 text-default-400" />
+                          }
                           value={formState.instagram || ""}
-                          onValueChange={(value) => setFormState((prev) => ({ ...prev, instagram: value }))}
+                          onValueChange={(value) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              instagram: value,
+                            }))
+                          }
                         />
                       </div>
                     </CardBody>
@@ -599,7 +786,10 @@ export function AdvogadoFormModal({
               title={
                 <div className="flex items-center gap-2">
                   <div className="p-1 rounded-md bg-green-100 dark:bg-green-900">
-                    <HomeIcon className="text-green-600 dark:text-green-300" size={16} />
+                    <HomeIcon
+                      className="text-green-600 dark:text-green-300"
+                      size={16}
+                    />
                   </div>
                   <span>Endereços</span>
                 </div>
@@ -607,26 +797,50 @@ export function AdvogadoFormModal({
             >
               <div className="space-y-6">
                 {enderecos.map((endereco, index) => (
-                  <motion.div key={`endereco-${index}`} {...cardMotionProps} whileHover={{ translateY: -6 }}>
+                  <motion.div
+                    key={`endereco-${index}`}
+                    {...cardMotionProps}
+                    whileHover={{ translateY: -6 }}
+                  >
                     <Card
                       className={`border ${endereco.principal ? "border-green-500 shadow-lg" : "border-green-200 dark:border-green-800"} bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20`}
                     >
                       <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/40">
-                            <MapPinIcon className="text-green-600 dark:text-green-300" size={18} />
+                            <MapPinIcon
+                              className="text-green-600 dark:text-green-300"
+                              size={18}
+                            />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-green-800 dark:text-green-200">{endereco.apelido || `Endereço ${index + 1}`}</p>
-                            <p className="text-xs text-green-700/80 dark:text-green-300/80">{primeiraLetraMaiuscula(endereco.tipo)}</p>
+                            <p className="text-sm font-semibold text-green-800 dark:text-green-200">
+                              {endereco.apelido || `Endereço ${index + 1}`}
+                            </p>
+                            <p className="text-xs text-green-700/80 dark:text-green-300/80">
+                              {primeiraLetraMaiuscula(endereco.tipo)}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Switch size="sm" isSelected={endereco.principal} color="success" onValueChange={(value) => updateEndereco(index, "principal", value)}>
+                          <Switch
+                            color="success"
+                            isSelected={endereco.principal}
+                            size="sm"
+                            onValueChange={(value) =>
+                              updateEndereco(index, "principal", value)
+                            }
+                          >
                             Principal
                           </Switch>
                           {enderecos.length > 1 && (
-                            <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => removeEndereco(index)}>
+                            <Button
+                              isIconOnly
+                              color="danger"
+                              size="sm"
+                              variant="light"
+                              onPress={() => removeEndereco(index)}
+                            >
                               <TrashIcon className="w-4 h-4" />
                             </Button>
                           )}
@@ -637,21 +851,35 @@ export function AdvogadoFormModal({
                           <Input
                             label="Apelido"
                             placeholder="Principal, Escritório..."
-                            startContent={<HomeIcon className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <HomeIcon className="w-4 h-4 text-default-400" />
+                            }
                             value={endereco.apelido}
-                            onValueChange={(value) => updateEndereco(index, "apelido", value)}
+                            onValueChange={(value) =>
+                              updateEndereco(index, "apelido", value)
+                            }
                           />
                           <Select
                             label="Tipo"
                             placeholder="Selecione o tipo"
                             selectedKeys={endereco.tipo ? [endereco.tipo] : []}
                             onSelectionChange={(keys) => {
-                              const value = Array.from(keys)[0] as string | undefined;
-                              updateEndereco(index, "tipo", value || "ESCRITORIO");
+                              const value = Array.from(keys)[0] as
+                                | string
+                                | undefined;
+
+                              updateEndereco(
+                                index,
+                                "tipo",
+                                value || "ESCRITORIO",
+                              );
                             }}
                           >
                             {enderecoTipoOptions.map((option) => (
-                              <SelectItem key={option.value} textValue={option.label}>
+                              <SelectItem
+                                key={option.value}
+                                textValue={option.label}
+                              >
                                 {option.label}
                               </SelectItem>
                             ))}
@@ -659,9 +887,13 @@ export function AdvogadoFormModal({
                           <Input
                             label="Telefone"
                             placeholder="(11) 3333-4444"
-                            startContent={<PhoneIcon className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <PhoneIcon className="w-4 h-4 text-default-400" />
+                            }
                             value={endereco.telefone || ""}
-                            onValueChange={(value) => updateEndereco(index, "telefone", value)}
+                            onValueChange={(value) =>
+                              updateEndereco(index, "telefone", value)
+                            }
                           />
                         </div>
 
@@ -670,15 +902,23 @@ export function AdvogadoFormModal({
                             label="CEP"
                             placeholder="00000-000"
                             value={endereco.cep || ""}
-                            onChange={(value) => updateEndereco(index, "cep", value)}
-                            onCepFound={(cepData) => handleCepFound(cepData, index)}
+                            onCepFound={(cepData) =>
+                              handleCepFound(cepData, index)
+                            }
+                            onChange={(value) =>
+                              updateEndereco(index, "cep", value)
+                            }
                           />
                           <Input
                             label="Logradouro"
                             placeholder="Rua, Avenida..."
-                            startContent={<MapPinIcon className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <MapPinIcon className="w-4 h-4 text-default-400" />
+                            }
                             value={endereco.logradouro}
-                            onValueChange={(value) => updateEndereco(index, "logradouro", value)}
+                            onValueChange={(value) =>
+                              updateEndereco(index, "logradouro", value)
+                            }
                           />
                         </div>
 
@@ -686,41 +926,63 @@ export function AdvogadoFormModal({
                           <Input
                             label="Número"
                             placeholder="123"
-                            startContent={<Hash className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <Hash className="w-4 h-4 text-default-400" />
+                            }
                             value={endereco.numero || ""}
-                            onValueChange={(value) => updateEndereco(index, "numero", value)}
+                            onValueChange={(value) =>
+                              updateEndereco(index, "numero", value)
+                            }
                           />
                           <Input
                             label="Complemento"
                             placeholder="Apto, Sala..."
-                            startContent={<Layers className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <Layers className="w-4 h-4 text-default-400" />
+                            }
                             value={endereco.complemento || ""}
-                            onValueChange={(value) => updateEndereco(index, "complemento", value)}
+                            onValueChange={(value) =>
+                              updateEndereco(index, "complemento", value)
+                            }
                           />
                           <Input
                             label="Bairro"
                             placeholder="Nome do bairro"
-                            startContent={<MapPinIcon className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <MapPinIcon className="w-4 h-4 text-default-400" />
+                            }
                             value={endereco.bairro || ""}
-                            onValueChange={(value) => updateEndereco(index, "bairro", value)}
+                            onValueChange={(value) =>
+                              updateEndereco(index, "bairro", value)
+                            }
                           />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                           <EstadoSelect
                             className="w-full"
-                            selectedKeys={endereco.estado ? [endereco.estado] : []}
+                            selectedKeys={
+                              endereco.estado ? [endereco.estado] : []
+                            }
                             onSelectionChange={(keys) => {
-                              const value = Array.from(keys)[0] as string | undefined;
+                              const value = Array.from(keys)[0] as
+                                | string
+                                | undefined;
+
                               setEnderecos((prev) => {
                                 const clone = [...prev];
                                 const previous = clone[index];
                                 const nextEstado = value || "";
+
                                 clone[index] = {
                                   ...previous,
                                   estado: nextEstado,
-                                  cidade: previous.estado === nextEstado ? previous.cidade : "",
+                                  cidade:
+                                    previous.estado === nextEstado
+                                      ? previous.cidade
+                                      : "",
                                 };
+
                                 return clone;
                               });
                             }}
@@ -728,32 +990,50 @@ export function AdvogadoFormModal({
                           <CidadeSelect
                             className="w-full"
                             estadoSelecionado={endereco.estado || null}
-                            selectedKeys={endereco.cidade ? [endereco.cidade] : []}
+                            selectedKeys={
+                              endereco.cidade ? [endereco.cidade] : []
+                            }
                             onSelectionChange={(keys) => {
-                              const value = Array.from(keys)[0] as string | undefined;
+                              const value = Array.from(keys)[0] as
+                                | string
+                                | undefined;
+
                               updateEndereco(index, "cidade", value || "");
                             }}
                           />
                           <Input
                             label="País"
                             placeholder="Brasil"
-                            startContent={<Globe className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <Globe className="w-4 h-4 text-default-400" />
+                            }
                             value={endereco.pais || "Brasil"}
-                            onValueChange={(value) => updateEndereco(index, "pais", value)}
+                            onValueChange={(value) =>
+                              updateEndereco(index, "pais", value)
+                            }
                           />
                           <Input
                             label="Observações"
                             placeholder="Referências, horários..."
-                            startContent={<StickyNote className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <StickyNote className="w-4 h-4 text-default-400" />
+                            }
                             value={endereco.observacoes || ""}
-                            onValueChange={(value) => updateEndereco(index, "observacoes", value)}
+                            onValueChange={(value) =>
+                              updateEndereco(index, "observacoes", value)
+                            }
                           />
                         </div>
                       </CardBody>
                     </Card>
                   </motion.div>
                 ))}
-                <Button variant="flat" color="success" startContent={<PlusIcon className="w-4 h-4" />} onPress={addEndereco}>
+                <Button
+                  color="success"
+                  startContent={<PlusIcon className="w-4 h-4" />}
+                  variant="flat"
+                  onPress={addEndereco}
+                >
                   Adicionar outro endereço
                 </Button>
               </div>
@@ -764,7 +1044,10 @@ export function AdvogadoFormModal({
               title={
                 <div className="flex items-center gap-2">
                   <div className="p-1 rounded-md bg-teal-100 dark:bg-teal-900">
-                    <CreditCardIcon className="text-teal-600 dark:text-teal-300" size={16} />
+                    <CreditCardIcon
+                      className="text-teal-600 dark:text-teal-300"
+                      size={16}
+                    />
                   </div>
                   <span>Dados Bancários</span>
                 </div>
@@ -772,28 +1055,57 @@ export function AdvogadoFormModal({
             >
               <div className="space-y-6">
                 {contasBancarias.map((conta, index) => (
-                  <motion.div key={`conta-${index}`} {...cardMotionProps} whileHover={{ translateY: -6 }}>
+                  <motion.div
+                    key={`conta-${index}`}
+                    {...cardMotionProps}
+                    whileHover={{ translateY: -6 }}
+                  >
                     <Card
                       className={`border ${conta.principal ? "border-teal-500 shadow-lg" : "border-teal-200 dark:border-teal-800"} bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20`}
                     >
                       <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-lg bg-teal-100 dark:bg-teal-900/40">
-                            <WalletIcon className="text-teal-600 dark:text-teal-300" size={18} />
+                            <WalletIcon
+                              className="text-teal-600 dark:text-teal-300"
+                              size={18}
+                            />
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-teal-800 dark:text-teal-200">
-                              {conta.bancoCodigo ? bancos.find((banco) => banco.codigo === conta.bancoCodigo)?.nome || conta.bancoCodigo : `Conta ${index + 1}`}
+                              {conta.bancoCodigo
+                                ? bancos.find(
+                                    (banco) =>
+                                      banco.codigo === conta.bancoCodigo,
+                                  )?.nome || conta.bancoCodigo
+                                : `Conta ${index + 1}`}
                             </p>
-                            <p className="text-xs text-teal-700/80 dark:text-teal-300/80">{conta.tipoConta === "PESSOA_JURIDICA" ? "Pessoa Jurídica" : "Pessoa Física"}</p>
+                            <p className="text-xs text-teal-700/80 dark:text-teal-300/80">
+                              {conta.tipoConta === "PESSOA_JURIDICA"
+                                ? "Pessoa Jurídica"
+                                : "Pessoa Física"}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Switch size="sm" isSelected={conta.principal} color="success" onValueChange={(value) => updateConta(index, "principal", value)}>
+                          <Switch
+                            color="success"
+                            isSelected={conta.principal}
+                            size="sm"
+                            onValueChange={(value) =>
+                              updateConta(index, "principal", value)
+                            }
+                          >
                             Principal
                           </Switch>
                           {contasBancarias.length > 1 && (
-                            <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => removeConta(index)}>
+                            <Button
+                              isIconOnly
+                              color="danger"
+                              size="sm"
+                              variant="light"
+                              onPress={() => removeConta(index)}
+                            >
                               <TrashIcon className="w-4 h-4" />
                             </Button>
                           )}
@@ -807,19 +1119,26 @@ export function AdvogadoFormModal({
                             selectedKeys={[conta.tipoConta]}
                             onSelectionChange={(keys) => {
                               const value = Array.from(keys)[0] as string;
+
                               setContasBancarias((prev) => {
                                 const clone = [...prev];
+
                                 clone[index] = {
                                   ...clone[index],
-                                  tipoConta: value as DadosBancariosFormData["tipoConta"],
+                                  tipoConta:
+                                    value as DadosBancariosFormData["tipoConta"],
                                   titularDocumento: "",
                                 };
+
                                 return clone;
                               });
                             }}
                           >
                             {tiposConta.map((option) => (
-                              <SelectItem key={option.value} textValue={option.label}>
+                              <SelectItem
+                                key={option.value}
+                                textValue={option.label}
+                              >
                                 {option.label}
                               </SelectItem>
                             ))}
@@ -827,17 +1146,29 @@ export function AdvogadoFormModal({
                           <Select
                             label="Banco"
                             placeholder="Selecione"
-                            selectedKeys={conta.bancoCodigo ? [conta.bancoCodigo] : []}
+                            selectedKeys={
+                              conta.bancoCodigo ? [conta.bancoCodigo] : []
+                            }
                             onSelectionChange={(keys) => {
-                              const value = Array.from(keys)[0] as string | undefined;
+                              const value = Array.from(keys)[0] as
+                                | string
+                                | undefined;
+
                               updateConta(index, "bancoCodigo", value || "");
                             }}
                           >
                             {bancos.map((banco) => (
-                              <SelectItem key={banco.codigo} textValue={banco.nome}>
+                              <SelectItem
+                                key={banco.codigo}
+                                textValue={banco.nome}
+                              >
                                 <div className="flex flex-col">
-                                  <span className="font-medium">{banco.nome}</span>
-                                  <span className="text-xs text-default-400">Código: {banco.codigo}</span>
+                                  <span className="font-medium">
+                                    {banco.nome}
+                                  </span>
+                                  <span className="text-xs text-default-400">
+                                    Código: {banco.codigo}
+                                  </span>
                                 </div>
                               </SelectItem>
                             ))}
@@ -848,23 +1179,35 @@ export function AdvogadoFormModal({
                           <Input
                             label="Agência"
                             placeholder="0000"
-                            startContent={<BuildingIcon className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <BuildingIcon className="w-4 h-4 text-default-400" />
+                            }
                             value={conta.agencia}
-                            onValueChange={(value) => updateConta(index, "agencia", value)}
+                            onValueChange={(value) =>
+                              updateConta(index, "agencia", value)
+                            }
                           />
                           <Input
                             label="Conta"
                             placeholder="000000"
-                            startContent={<CreditCardIcon className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <CreditCardIcon className="w-4 h-4 text-default-400" />
+                            }
                             value={conta.conta}
-                            onValueChange={(value) => updateConta(index, "conta", value)}
+                            onValueChange={(value) =>
+                              updateConta(index, "conta", value)
+                            }
                           />
                           <Input
                             label="Dígito"
                             placeholder="0"
-                            startContent={<Hash className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <Hash className="w-4 h-4 text-default-400" />
+                            }
                             value={conta.digitoConta || ""}
-                            onValueChange={(value) => updateConta(index, "digitoConta", value)}
+                            onValueChange={(value) =>
+                              updateConta(index, "digitoConta", value)
+                            }
                           />
                         </div>
 
@@ -874,11 +1217,15 @@ export function AdvogadoFormModal({
                           selectedKeys={[conta.tipoContaBancaria]}
                           onSelectionChange={(keys) => {
                             const value = Array.from(keys)[0] as string;
+
                             updateConta(index, "tipoContaBancaria", value);
                           }}
                         >
                           {tiposContaBancaria.map((option) => (
-                            <SelectItem key={option.value} textValue={option.label}>
+                            <SelectItem
+                              key={option.value}
+                              textValue={option.label}
+                            >
                               {option.label}
                             </SelectItem>
                           ))}
@@ -888,14 +1235,22 @@ export function AdvogadoFormModal({
                           <Select
                             label="Tipo de Chave PIX"
                             placeholder="Selecione"
-                            selectedKeys={conta.tipoChavePix ? [conta.tipoChavePix] : []}
+                            selectedKeys={
+                              conta.tipoChavePix ? [conta.tipoChavePix] : []
+                            }
                             onSelectionChange={(keys) => {
-                              const value = Array.from(keys)[0] as string | undefined;
+                              const value = Array.from(keys)[0] as
+                                | string
+                                | undefined;
+
                               updateConta(index, "tipoChavePix", value || "");
                             }}
                           >
                             {tiposChavePix.map((option) => (
-                              <SelectItem key={option.value} textValue={option.label}>
+                              <SelectItem
+                                key={option.value}
+                                textValue={option.label}
+                              >
                                 {option.label}
                               </SelectItem>
                             ))}
@@ -903,9 +1258,13 @@ export function AdvogadoFormModal({
                           <Input
                             label="Chave PIX"
                             placeholder="CPF, e-mail..."
-                            startContent={<Key className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <Key className="w-4 h-4 text-default-400" />
+                            }
                             value={conta.chavePix || ""}
-                            onValueChange={(value) => updateConta(index, "chavePix", value)}
+                            onValueChange={(value) =>
+                              updateConta(index, "chavePix", value)
+                            }
                           />
                         </div>
 
@@ -913,9 +1272,13 @@ export function AdvogadoFormModal({
                           <Input
                             label="Titular"
                             placeholder="Nome do titular"
-                            startContent={<UserIcon className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <UserIcon className="w-4 h-4 text-default-400" />
+                            }
                             value={conta.titularNome}
-                            onValueChange={(value) => updateConta(index, "titularNome", value)}
+                            onValueChange={(value) =>
+                              updateConta(index, "titularNome", value)
+                            }
                           />
                           {conta.tipoConta === "PESSOA_JURIDICA" ? (
                             <CnpjInput
@@ -923,14 +1286,18 @@ export function AdvogadoFormModal({
                               label="Documento do Titular"
                               placeholder="00.000.000/0000-00"
                               value={conta.titularDocumento || ""}
-                              onChange={(value) => updateConta(index, "titularDocumento", value)}
+                              onChange={(value) =>
+                                updateConta(index, "titularDocumento", value)
+                              }
                             />
                           ) : (
                             <CpfInput
                               label="Documento do Titular"
                               placeholder="000.000.000-00"
                               value={conta.titularDocumento || ""}
-                              onChange={(value) => updateConta(index, "titularDocumento", value)}
+                              onChange={(value) =>
+                                updateConta(index, "titularDocumento", value)
+                              }
                             />
                           )}
                         </div>
@@ -939,16 +1306,24 @@ export function AdvogadoFormModal({
                           <Input
                             label="Email do Titular"
                             placeholder="email@exemplo.com"
-                            startContent={<MailIcon className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <MailIcon className="w-4 h-4 text-default-400" />
+                            }
                             value={conta.titularEmail || ""}
-                            onValueChange={(value) => updateConta(index, "titularEmail", value)}
+                            onValueChange={(value) =>
+                              updateConta(index, "titularEmail", value)
+                            }
                           />
                           <Input
                             label="Telefone do Titular"
                             placeholder="(11) 99999-9999"
-                            startContent={<PhoneIcon className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <PhoneIcon className="w-4 h-4 text-default-400" />
+                            }
                             value={conta.titularTelefone || ""}
-                            onValueChange={(value) => updateConta(index, "titularTelefone", value)}
+                            onValueChange={(value) =>
+                              updateConta(index, "titularTelefone", value)
+                            }
                           />
                         </div>
 
@@ -956,24 +1331,36 @@ export function AdvogadoFormModal({
                           <Input
                             label="Endereço"
                             placeholder="Rua, número..."
-                            startContent={<MapPinIcon className="w-4 h-4 text-default-400" />}
+                            startContent={
+                              <MapPinIcon className="w-4 h-4 text-default-400" />
+                            }
                             value={conta.endereco || ""}
-                            onValueChange={(value) => updateConta(index, "endereco", value)}
+                            onValueChange={(value) =>
+                              updateConta(index, "endereco", value)
+                            }
                           />
                           <EstadoSelect
                             className="w-full"
                             selectedKeys={conta.estado ? [conta.estado] : []}
                             onSelectionChange={(keys) => {
-                              const value = Array.from(keys)[0] as string | undefined;
+                              const value = Array.from(keys)[0] as
+                                | string
+                                | undefined;
+
                               setContasBancarias((prev) => {
                                 const clone = [...prev];
                                 const previous = clone[index];
                                 const nextEstado = value || "";
+
                                 clone[index] = {
                                   ...previous,
                                   estado: nextEstado,
-                                  cidade: previous.estado === nextEstado ? previous.cidade : "",
+                                  cidade:
+                                    previous.estado === nextEstado
+                                      ? previous.cidade
+                                      : "",
                                 };
+
                                 return clone;
                               });
                             }}
@@ -983,21 +1370,43 @@ export function AdvogadoFormModal({
                             estadoSelecionado={conta.estado || null}
                             selectedKeys={conta.cidade ? [conta.cidade] : []}
                             onSelectionChange={(keys) => {
-                              const value = Array.from(keys)[0] as string | undefined;
+                              const value = Array.from(keys)[0] as
+                                | string
+                                | undefined;
+
                               updateConta(index, "cidade", value || "");
                             }}
                           />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <CepInput label="CEP" placeholder="00000-000" value={conta.cep || ""} onChange={(value) => updateConta(index, "cep", value)} />
-                          <Textarea label="Observações" placeholder="Informações adicionais..." value={conta.observacoes || ""} onValueChange={(value) => updateConta(index, "observacoes", value)} />
+                          <CepInput
+                            label="CEP"
+                            placeholder="00000-000"
+                            value={conta.cep || ""}
+                            onChange={(value) =>
+                              updateConta(index, "cep", value)
+                            }
+                          />
+                          <Textarea
+                            label="Observações"
+                            placeholder="Informações adicionais..."
+                            value={conta.observacoes || ""}
+                            onValueChange={(value) =>
+                              updateConta(index, "observacoes", value)
+                            }
+                          />
                         </div>
                       </CardBody>
                     </Card>
                   </motion.div>
                 ))}
-                <Button variant="flat" color="primary" startContent={<PlusIcon className="w-4 h-4" />} onPress={addConta}>
+                <Button
+                  color="primary"
+                  startContent={<PlusIcon className="w-4 h-4" />}
+                  variant="flat"
+                  onPress={addConta}
+                >
                   Adicionar conta bancária
                 </Button>
               </div>
@@ -1008,39 +1417,67 @@ export function AdvogadoFormModal({
               title={
                 <div className="flex items-center gap-2">
                   <div className="p-1 rounded-md bg-amber-100 dark:bg-amber-900">
-                    <ShieldIcon className="text-amber-600 dark:text-amber-300" size={16} />
+                    <ShieldIcon
+                      className="text-amber-600 dark:text-amber-300"
+                      size={16}
+                    />
                   </div>
                   <span>Preferências</span>
                 </div>
               }
             >
               <div className="space-y-6 px-1">
-                <motion.div {...cardMotionProps} whileHover={{ translateY: -6 }}>
+                <motion.div
+                  {...cardMotionProps}
+                  whileHover={{ translateY: -6 }}
+                >
                   <Card className="border border-amber-200 dark:border-amber-700 bg-amber-50/80 dark:bg-amber-900/20">
                     <CardHeader className="flex flex-col gap-1">
-                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Configurações de Acesso</p>
-                      <p className="text-xs text-amber-700/80 dark:text-amber-300/80">Controle como o advogado utilizará o sistema</p>
+                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                        Configurações de Acesso
+                      </p>
+                      <p className="text-xs text-amber-700/80 dark:text-amber-300/80">
+                        Controle como o advogado utilizará o sistema
+                      </p>
                     </CardHeader>
                     <CardBody className="space-y-4">
                       <div className="flex flex-wrap gap-4 items-center">
                         <div className="flex items-center gap-2">
-                          <Checkbox isSelected={formState.isExterno ?? false} color="warning" onValueChange={(checked) => setFormState((prev) => ({ ...prev, isExterno: checked }))}>
+                          <Checkbox
+                            color="warning"
+                            isSelected={formState.isExterno ?? false}
+                            onValueChange={(checked) =>
+                              setFormState((prev) => ({
+                                ...prev,
+                                isExterno: checked,
+                              }))
+                            }
+                          >
                             Advogado Externo
                           </Checkbox>
-                          <Popover placement="top" showArrow>
+                          <Popover showArrow placement="top">
                             <PopoverTrigger>
-                              <Button isIconOnly size="sm" variant="light" className="min-w-0">
+                              <Button
+                                isIconOnly
+                                className="min-w-0"
+                                size="sm"
+                                variant="light"
+                              >
                                 <Info className="w-4 h-4 text-warning-500" />
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="max-w-xs space-y-2 p-4">
                               <p className="text-sm text-default-600">
-                                Advogados externos não possuem credenciais de acesso. Eles aparecem apenas como participantes de processos, mas podem ser habilitados no futuro se ingressarem na
-                                equipe.
+                                Advogados externos não possuem credenciais de
+                                acesso. Eles aparecem apenas como participantes
+                                de processos, mas podem ser habilitados no
+                                futuro se ingressarem na equipe.
                               </p>
                               <p className="text-xs text-default-500">
-                                Use esta opção para mapear profissionais citados em ações ou parceiros ocasionais. A vida é cheia de mistérios: se o vínculo evoluir, basta remover o status externo e
-                                liberar o acesso.
+                                Use esta opção para mapear profissionais citados
+                                em ações ou parceiros ocasionais. A vida é cheia
+                                de mistérios: se o vínculo evoluir, basta
+                                remover o status externo e liberar o acesso.
                               </p>
                             </PopoverContent>
                           </Popover>
@@ -1048,107 +1485,225 @@ export function AdvogadoFormModal({
 
                         <div className="flex items-center gap-2">
                           <Checkbox
-                            isSelected={formState.criarAcessoUsuario ?? true}
                             color="primary"
                             isDisabled={formState.isExterno}
-                            onValueChange={(checked) => setFormState((prev) => ({ ...prev, criarAcessoUsuario: checked }))}
+                            isSelected={formState.criarAcessoUsuario ?? true}
+                            onValueChange={(checked) =>
+                              setFormState((prev) => ({
+                                ...prev,
+                                criarAcessoUsuario: checked,
+                              }))
+                            }
                           >
                             Criar acesso ao sistema
                           </Checkbox>
-                          <Popover placement="top" showArrow>
+                          <Popover showArrow placement="top">
                             <PopoverTrigger>
-                              <Button isIconOnly size="sm" variant="light" className="min-w-0">
+                              <Button
+                                isIconOnly
+                                className="min-w-0"
+                                size="sm"
+                                variant="light"
+                              >
                                 <Key className="w-4 h-4 text-primary-500" />
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="max-w-xs space-y-2 p-4">
-                              <p className="text-sm text-default-600">Ao criar o acesso, o advogado recebe um usuário ativo com permissões padrão para atuar no sistema.</p>
-                              <p className="text-xs text-default-500">Ideal para integrantes fixos da equipe. Para colaboradores externos mantenha desmarcado.</p>
+                              <p className="text-sm text-default-600">
+                                Ao criar o acesso, o advogado recebe um usuário
+                                ativo com permissões padrão para atuar no
+                                sistema.
+                              </p>
+                              <p className="text-xs text-default-500">
+                                Ideal para integrantes fixos da equipe. Para
+                                colaboradores externos mantenha desmarcado.
+                              </p>
                             </PopoverContent>
                           </Popover>
                         </div>
 
-                        {formState.criarAcessoUsuario && !formState.isExterno && (
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              isSelected={formState.enviarEmailCredenciais ?? true}
-                              color="primary"
-                              onValueChange={(checked) =>
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  enviarEmailCredenciais: checked,
-                                }))
-                              }
-                            >
-                              Enviar credenciais por email
-                            </Checkbox>
-                            <Popover placement="top" showArrow>
-                              <PopoverTrigger>
-                                <Button isIconOnly size="sm" variant="light" className="min-w-0">
-                                  <Info className="w-4 h-4 text-primary-500" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="max-w-xs space-y-2 p-4">
-                                <p className="text-sm text-default-600">Envie automaticamente um e-mail com login, senha temporária e orientações de primeiro acesso.</p>
-                                <p className="text-xs text-default-500">Caso deseje apresentar as credenciais pessoalmente, desmarque esta opção.</p>
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                        )}
+                        {formState.criarAcessoUsuario &&
+                          !formState.isExterno && (
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                color="primary"
+                                isSelected={
+                                  formState.enviarEmailCredenciais ?? true
+                                }
+                                onValueChange={(checked) =>
+                                  setFormState((prev) => ({
+                                    ...prev,
+                                    enviarEmailCredenciais: checked,
+                                  }))
+                                }
+                              >
+                                Enviar credenciais por email
+                              </Checkbox>
+                              <Popover showArrow placement="top">
+                                <PopoverTrigger>
+                                  <Button
+                                    isIconOnly
+                                    className="min-w-0"
+                                    size="sm"
+                                    variant="light"
+                                  >
+                                    <Info className="w-4 h-4 text-primary-500" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="max-w-xs space-y-2 p-4">
+                                  <p className="text-sm text-default-600">
+                                    Envie automaticamente um e-mail com login,
+                                    senha temporária e orientações de primeiro
+                                    acesso.
+                                  </p>
+                                  <p className="text-xs text-default-500">
+                                    Caso deseje apresentar as credenciais
+                                    pessoalmente, desmarque esta opção.
+                                  </p>
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          )}
                       </div>
                     </CardBody>
                   </Card>
                 </motion.div>
 
-                <motion.div {...cardMotionProps} whileHover={{ translateY: -6 }}>
+                <motion.div
+                  {...cardMotionProps}
+                  whileHover={{ translateY: -6 }}
+                >
                   <Card className="border border-blue-200 dark:border-blue-700 bg-blue-50/80 dark:bg-blue-900/20">
                     <CardHeader className="flex flex-col gap-1">
-                      <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">Notificações</p>
-                      <p className="text-xs text-blue-700/80 dark:text-blue-300/80">Defina como o advogado receberá atualizações</p>
+                      <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                        Notificações
+                      </p>
+                      <p className="text-xs text-blue-700/80 dark:text-blue-300/80">
+                        Defina como o advogado receberá atualizações
+                      </p>
                     </CardHeader>
                     <CardBody className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Checkbox isSelected={formState.notificarEmail ?? true} color="primary" onValueChange={(checked) => setFormState((prev) => ({ ...prev, notificarEmail: checked }))}>
+                      <Checkbox
+                        color="primary"
+                        isSelected={formState.notificarEmail ?? true}
+                        onValueChange={(checked) =>
+                          setFormState((prev) => ({
+                            ...prev,
+                            notificarEmail: checked,
+                          }))
+                        }
+                      >
                         Email
                       </Checkbox>
-                      <Checkbox isSelected={formState.notificarWhatsapp ?? true} color="success" onValueChange={(checked) => setFormState((prev) => ({ ...prev, notificarWhatsapp: checked }))}>
+                      <Checkbox
+                        color="success"
+                        isSelected={formState.notificarWhatsapp ?? true}
+                        onValueChange={(checked) =>
+                          setFormState((prev) => ({
+                            ...prev,
+                            notificarWhatsapp: checked,
+                          }))
+                        }
+                      >
                         WhatsApp
                       </Checkbox>
-                      <Checkbox isSelected={formState.notificarSistema ?? true} color="secondary" onValueChange={(checked) => setFormState((prev) => ({ ...prev, notificarSistema: checked }))}>
+                      <Checkbox
+                        color="secondary"
+                        isSelected={formState.notificarSistema ?? true}
+                        onValueChange={(checked) =>
+                          setFormState((prev) => ({
+                            ...prev,
+                            notificarSistema: checked,
+                          }))
+                        }
+                      >
                         Sistema
                       </Checkbox>
                     </CardBody>
                   </Card>
                 </motion.div>
 
-                <motion.div {...cardMotionProps} whileHover={{ translateY: -6 }}>
+                <motion.div
+                  {...cardMotionProps}
+                  whileHover={{ translateY: -6 }}
+                >
                   <Card className="border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-default-50/5">
                     <CardHeader className="flex flex-col gap-1">
-                      <p className="text-sm font-semibold text-default-700 dark:text-default-200">Permissões</p>
-                      <p className="text-xs text-default-500">Controle de funcionalidades liberadas</p>
+                      <p className="text-sm font-semibold text-default-700 dark:text-default-200">
+                        Permissões
+                      </p>
+                      <p className="text-xs text-default-500">
+                        Controle de funcionalidades liberadas
+                      </p>
                     </CardHeader>
                     <CardBody className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Tooltip content="Habilita o cadastro de novos processos e ações jurídicas.">
-                        <Switch size="sm" isSelected={formState.podeCriarProcessos ?? true} onValueChange={(checked) => setFormState((prev) => ({ ...prev, podeCriarProcessos: checked }))}>
+                        <Switch
+                          isSelected={formState.podeCriarProcessos ?? true}
+                          size="sm"
+                          onValueChange={(checked) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              podeCriarProcessos: checked,
+                            }))
+                          }
+                        >
                           Pode criar processos
                         </Switch>
                       </Tooltip>
                       <Tooltip content="Permite editar informações de processos existentes.">
-                        <Switch size="sm" isSelected={formState.podeEditarProcessos ?? true} onValueChange={(checked) => setFormState((prev) => ({ ...prev, podeEditarProcessos: checked }))}>
+                        <Switch
+                          isSelected={formState.podeEditarProcessos ?? true}
+                          size="sm"
+                          onValueChange={(checked) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              podeEditarProcessos: checked,
+                            }))
+                          }
+                        >
                           Pode editar processos
                         </Switch>
                       </Tooltip>
                       <Tooltip content="Autoriza a remover processos do sistema. Use com cautela.">
-                        <Switch size="sm" isSelected={formState.podeExcluirProcessos ?? false} onValueChange={(checked) => setFormState((prev) => ({ ...prev, podeExcluirProcessos: checked }))}>
+                        <Switch
+                          isSelected={formState.podeExcluirProcessos ?? false}
+                          size="sm"
+                          onValueChange={(checked) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              podeExcluirProcessos: checked,
+                            }))
+                          }
+                        >
                           Pode excluir processos
                         </Switch>
                       </Tooltip>
                       <Tooltip content="Libera a gestão de clientes, contatos e informações sensíveis.">
-                        <Switch size="sm" isSelected={formState.podeGerenciarClientes ?? true} onValueChange={(checked) => setFormState((prev) => ({ ...prev, podeGerenciarClientes: checked }))}>
+                        <Switch
+                          isSelected={formState.podeGerenciarClientes ?? true}
+                          size="sm"
+                          onValueChange={(checked) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              podeGerenciarClientes: checked,
+                            }))
+                          }
+                        >
                           Pode gerenciar clientes
                         </Switch>
                       </Tooltip>
                       <Tooltip content="Permite visualizar dashboards, relatórios e registros financeiros.">
-                        <Switch size="sm" isSelected={formState.podeAcessarFinanceiro ?? false} onValueChange={(checked) => setFormState((prev) => ({ ...prev, podeAcessarFinanceiro: checked }))}>
+                        <Switch
+                          isSelected={formState.podeAcessarFinanceiro ?? false}
+                          size="sm"
+                          onValueChange={(checked) =>
+                            setFormState((prev) => ({
+                              ...prev,
+                              podeAcessarFinanceiro: checked,
+                            }))
+                          }
+                        >
                           Pode acessar financeiro
                         </Switch>
                       </Tooltip>

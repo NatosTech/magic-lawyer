@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
 
@@ -12,7 +13,13 @@ export interface NotificacaoData {
   id: string;
   advogadoId: string;
   advogadoNome: string;
-  tipo: "PROCESSO_CRIADO" | "PROCESSO_ATUALIZADO" | "PRAZO_VENCENDO" | "COMISSAO_PENDENTE" | "NOVO_CLIENTE" | "SISTEMA";
+  tipo:
+    | "PROCESSO_CRIADO"
+    | "PROCESSO_ATUALIZADO"
+    | "PRAZO_VENCENDO"
+    | "COMISSAO_PENDENTE"
+    | "NOVO_CLIENTE"
+    | "SISTEMA";
   titulo: string;
   mensagem: string;
   lida: boolean;
@@ -25,7 +32,13 @@ export interface NotificacaoData {
 
 export interface CreateNotificacaoInput {
   advogadoId: string;
-  tipo: "PROCESSO_CRIADO" | "PROCESSO_ATUALIZADO" | "PRAZO_VENCENDO" | "COMISSAO_PENDENTE" | "NOVO_CLIENTE" | "SISTEMA";
+  tipo:
+    | "PROCESSO_CRIADO"
+    | "PROCESSO_ATUALIZADO"
+    | "PRAZO_VENCENDO"
+    | "COMISSAO_PENDENTE"
+    | "NOVO_CLIENTE"
+    | "SISTEMA";
   titulo: string;
   mensagem: string;
   prioridade?: "BAIXA" | "MEDIA" | "ALTA" | "URGENTE";
@@ -46,7 +59,9 @@ interface ActionResponse<T = any> {
 /**
  * Cria uma nova notificação para um advogado
  */
-export async function createNotificacaoAdvogado(input: CreateNotificacaoInput): Promise<ActionResponse<NotificacaoData>> {
+export async function createNotificacaoAdvogado(
+  input: CreateNotificacaoInput,
+): Promise<ActionResponse<NotificacaoData>> {
   try {
     const session = await getSession();
 
@@ -79,7 +94,10 @@ export async function createNotificacaoAdvogado(input: CreateNotificacaoInput): 
     const notificacao: NotificacaoData = {
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       advogadoId: input.advogadoId,
-      advogadoNome: `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() || advogado.usuario?.email || "Advogado",
+      advogadoNome:
+        `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() ||
+        advogado.usuario?.email ||
+        "Advogado",
       tipo: input.tipo,
       titulo: input.titulo,
       mensagem: input.mensagem,
@@ -99,6 +117,7 @@ export async function createNotificacaoAdvogado(input: CreateNotificacaoInput): 
     return { success: true, data: notificacao };
   } catch (error) {
     console.error("Erro ao criar notificação do advogado:", error);
+
     return { success: false, error: "Erro ao criar notificação" };
   }
 }
@@ -106,7 +125,9 @@ export async function createNotificacaoAdvogado(input: CreateNotificacaoInput): 
 /**
  * Busca notificações de um advogado específico
  */
-export async function getNotificacoesAdvogado(advogadoId: string): Promise<ActionResponse<NotificacaoData[]>> {
+export async function getNotificacoesAdvogado(
+  advogadoId: string,
+): Promise<ActionResponse<NotificacaoData[]>> {
   try {
     const session = await getSession();
 
@@ -167,10 +188,14 @@ export async function getNotificacoesAdvogado(advogadoId: string): Promise<Actio
     // Converter para o formato esperado
     const notificacoes: NotificacaoData[] = notificacoesDb.map((notif) => {
       const destino = notif.destinos[0]; // Primeiro destino (deveria ter apenas um)
+
       return {
         id: notif.id,
         advogadoId: advogadoId,
-        advogadoNome: `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() || advogado.usuario?.email || "Advogado",
+        advogadoNome:
+          `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() ||
+          advogado.usuario?.email ||
+          "Advogado",
         tipo: notif.tipo as any,
         titulo: notif.titulo,
         mensagem: notif.mensagem,
@@ -178,7 +203,9 @@ export async function getNotificacoesAdvogado(advogadoId: string): Promise<Actio
         prioridade: notif.prioridade as any,
         dataCriacao: notif.createdAt,
         dataLeitura: destino?.status === "LIDA" ? notif.createdAt : null,
-        acaoUrl: notif.referenciaId ? `/processos/${notif.referenciaId}` : undefined,
+        acaoUrl: notif.referenciaId
+          ? `/processos/${notif.referenciaId}`
+          : undefined,
         acaoTexto: notif.referenciaId ? "Ver Detalhes" : undefined,
       };
     });
@@ -186,6 +213,7 @@ export async function getNotificacoesAdvogado(advogadoId: string): Promise<Actio
     return { success: true, data: notificacoes };
   } catch (error) {
     console.error("Erro ao buscar notificações do advogado:", error);
+
     return { success: false, error: "Erro ao buscar notificações" };
   }
 }
@@ -193,7 +221,9 @@ export async function getNotificacoesAdvogado(advogadoId: string): Promise<Actio
 /**
  * Marca uma notificação como lida
  */
-export async function marcarNotificacaoComoLida(notificacaoId: string): Promise<ActionResponse> {
+export async function marcarNotificacaoComoLida(
+  notificacaoId: string,
+): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -217,6 +247,7 @@ export async function marcarNotificacaoComoLida(notificacaoId: string): Promise<
     return { success: true };
   } catch (error) {
     console.error("Erro ao marcar notificação como lida:", error);
+
     return { success: false, error: "Erro ao marcar notificação como lida" };
   }
 }
@@ -224,7 +255,9 @@ export async function marcarNotificacaoComoLida(notificacaoId: string): Promise<
 /**
  * Marca todas as notificações de um advogado como lidas
  */
-export async function marcarTodasNotificacoesComoLidas(advogadoId: string): Promise<ActionResponse> {
+export async function marcarTodasNotificacoesComoLidas(
+  advogadoId: string,
+): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -261,7 +294,11 @@ export async function marcarTodasNotificacoesComoLidas(advogadoId: string): Prom
     return { success: true };
   } catch (error) {
     console.error("Erro ao marcar todas as notificações como lidas:", error);
-    return { success: false, error: "Erro ao marcar todas as notificações como lidas" };
+
+    return {
+      success: false,
+      error: "Erro ao marcar todas as notificações como lidas",
+    };
   }
 }
 
@@ -296,17 +333,19 @@ export async function getEstatisticasNotificacoes(advogadoId: string): Promise<
     const porTipo = notificacoes.reduce(
       (acc, notif) => {
         acc[notif.tipo] = (acc[notif.tipo] || 0) + 1;
+
         return acc;
       },
-      {} as Record<string, number>
+      {} as Record<string, number>,
     );
 
     const porPrioridade = notificacoes.reduce(
       (acc, notif) => {
         acc[notif.prioridade] = (acc[notif.prioridade] || 0) + 1;
+
         return acc;
       },
-      {} as Record<string, number>
+      {} as Record<string, number>,
     );
 
     return {
@@ -320,6 +359,10 @@ export async function getEstatisticasNotificacoes(advogadoId: string): Promise<
     };
   } catch (error) {
     console.error("Erro ao buscar estatísticas de notificações:", error);
-    return { success: false, error: "Erro ao buscar estatísticas de notificações" };
+
+    return {
+      success: false,
+      error: "Erro ao buscar estatísticas de notificações",
+    };
   }
 }

@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/app/lib/auth";
+
 import AdvogadoProfileContent from "./advogado-profile-content";
+
+import { getSession } from "@/app/lib/auth";
 
 interface AdvogadoProfilePageProps {
   params: {
@@ -8,7 +10,9 @@ interface AdvogadoProfilePageProps {
   };
 }
 
-export default async function AdvogadoProfilePage({ params }: AdvogadoProfilePageProps) {
+export default async function AdvogadoProfilePage({
+  params,
+}: AdvogadoProfilePageProps) {
   const session = await getSession();
 
   if (!session?.user) {
@@ -21,7 +25,10 @@ export default async function AdvogadoProfilePage({ params }: AdvogadoProfilePag
   }
 
   // Se for um advogado, só pode ver seu próprio perfil
-  if (session.user.role === "ADVOGADO" && session.user.advogadoId !== params.id) {
+  if (
+    session.user.role === "ADVOGADO" &&
+    session.user.advogadoId !== params.id
+  ) {
     redirect("/dashboard");
   }
 

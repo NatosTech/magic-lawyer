@@ -549,9 +549,9 @@ export default function ContratosContent() {
                           key="view-file"
                           as="a"
                           href={contrato.arquivoUrl}
+                          rel="noopener noreferrer"
                           startContent={<Eye className="h-4 w-4" />}
                           target="_blank"
-                          rel="noopener noreferrer"
                         >
                           Ver contrato anexado
                         </DropdownItem>
@@ -559,7 +559,9 @@ export default function ContratosContent() {
                         <DropdownItem
                           key="view-file-disabled"
                           isDisabled
-                          startContent={<EyeOff className="h-4 w-4 text-default-300" />}
+                          startContent={
+                            <EyeOff className="h-4 w-4 text-default-300" />
+                          }
                         >
                           Contrato não anexado
                         </DropdownItem>

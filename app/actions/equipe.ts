@@ -1,9 +1,10 @@
 "use server";
 
-import { auth } from "@/app/lib/auth";
-import prisma from "@/app/lib/prisma";
 import { UserRole } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+
+import { getSession } from "@/app/lib/auth";
+import prisma from "@/app/lib/prisma";
 
 // ===== TIPOS E INTERFACES =====
 
@@ -34,6 +35,7 @@ export interface UsuarioEquipeData {
   role: UserRole;
   active: boolean;
   avatarUrl?: string;
+  isExterno?: boolean; // Para advogados
   cargos: CargoData[];
   vinculacoes: UsuarioVinculacaoData[];
   permissoesIndividuais: UsuarioPermissaoIndividualData[];
@@ -61,7 +63,8 @@ export interface UsuarioPermissaoIndividualData {
 // ===== CRUD DE CARGOS =====
 
 export async function getCargos(): Promise<CargoData[]> {
-  const session = await auth();
+  const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado");
   }
@@ -77,13 +80,10 @@ export async function getCargos(): Promise<CargoData[]> {
       },
       permissoes: true,
     },
-    orderBy: [
-      { nivel: 'asc' },
-      { nome: 'asc' },
-    ],
+    orderBy: [{ nivel: "asc" }, { nome: "asc" }],
   });
 
-  return cargos.map(cargo => ({
+  return cargos.map((cargo) => ({
     id: cargo.id,
     nome: cargo.nome,
     descricao: cargo.descricao,
@@ -92,7 +92,7 @@ export async function getCargos(): Promise<CargoData[]> {
     createdAt: cargo.createdAt,
     updatedAt: cargo.updatedAt,
     usuariosCount: cargo.usuarios.length,
-    permissoes: cargo.permissoes.map(permissao => ({
+    permissoes: cargo.permissoes.map((permissao) => ({
       id: permissao.id,
       modulo: permissao.modulo,
       acao: permissao.acao,
@@ -107,7 +107,8 @@ export async function createCargo(data: {
   nivel: number;
   permissoes: { modulo: string; acao: string; permitido: boolean }[];
 }): Promise<CargoData> {
-  const session = await auth();
+  const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado");
   }
@@ -123,7 +124,7 @@ export async function createCargo(data: {
       descricao: data.descricao,
       nivel: data.nivel,
       permissoes: {
-        create: data.permissoes.map(permissao => ({
+        create: data.permissoes.map((permissao) => ({
           tenantId: session.user.tenantId,
           modulo: permissao.modulo,
           acao: permissao.acao,
@@ -151,7 +152,7 @@ export async function createCargo(data: {
     createdAt: cargo.createdAt,
     updatedAt: cargo.updatedAt,
     usuariosCount: cargo.usuarios.length,
-    permissoes: cargo.permissoes.map(permissao => ({
+    permissoes: cargo.permissoes.map((permissao) => ({
       id: permissao.id,
       modulo: permissao.modulo,
       acao: permissao.acao,
@@ -168,9 +169,10 @@ export async function updateCargo(
     nivel: number;
     ativo: boolean;
     permissoes: { modulo: string; acao: string; permitido: boolean }[];
-  }
+  },
 ): Promise<CargoData> {
-  const session = await auth();
+  const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado");
   }
@@ -202,7 +204,7 @@ export async function updateCargo(
   });
 
   await prisma.cargoPermissao.createMany({
-    data: data.permissoes.map(permissao => ({
+    data: data.permissoes.map((permissao) => ({
       tenantId: session.user.tenantId,
       cargoId: cargoId,
       modulo: permissao.modulo,
@@ -238,7 +240,7 @@ export async function updateCargo(
     createdAt: cargoAtualizado.createdAt,
     updatedAt: cargoAtualizado.updatedAt,
     usuariosCount: cargoAtualizado.usuarios.length,
-    permissoes: cargoAtualizado.permissoes.map(permissao => ({
+    permissoes: cargoAtualizado.permissoes.map((permissao) => ({
       id: permissao.id,
       modulo: permissao.modulo,
       acao: permissao.acao,
@@ -248,7 +250,8 @@ export async function updateCargo(
 }
 
 export async function deleteCargo(cargoId: string): Promise<void> {
-  const session = await auth();
+  const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado");
   }
@@ -283,7 +286,8 @@ export async function deleteCargo(cargoId: string): Promise<void> {
 // ===== GESTÃO DE USUÁRIOS DA EQUIPE =====
 
 export async function getUsuariosEquipe(): Promise<UsuarioEquipeData[]> {
-  const session = await auth();
+  const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado");
   }
@@ -319,14 +323,16 @@ export async function getUsuariosEquipe(): Promise<UsuarioEquipeData[]> {
         },
       },
       permissoesIndividuais: true,
+      advogado: {
+        select: {
+          isExterno: true,
+        },
+      },
     },
-    orderBy: [
-      { role: 'asc' },
-      { firstName: 'asc' },
-    ],
+    orderBy: [{ role: "asc" }, { firstName: "asc" }],
   });
 
-  return usuarios.map(usuario => ({
+  return usuarios.map((usuario) => ({
     id: usuario.id,
     email: usuario.email,
     firstName: usuario.firstName,
@@ -334,7 +340,8 @@ export async function getUsuariosEquipe(): Promise<UsuarioEquipeData[]> {
     role: usuario.role,
     active: usuario.active,
     avatarUrl: usuario.avatarUrl,
-    cargos: usuario.cargos.map(uc => ({
+    isExterno: usuario.advogado?.isExterno,
+    cargos: usuario.cargos.map((uc) => ({
       id: uc.cargo.id,
       nome: uc.cargo.nome,
       descricao: uc.cargo.descricao,
@@ -343,24 +350,25 @@ export async function getUsuariosEquipe(): Promise<UsuarioEquipeData[]> {
       createdAt: uc.cargo.createdAt,
       updatedAt: uc.cargo.updatedAt,
       usuariosCount: 0, // Será calculado separadamente
-      permissoes: uc.cargo.permissoes.map(permissao => ({
+      permissoes: uc.cargo.permissoes.map((permissao) => ({
         id: permissao.id,
         modulo: permissao.modulo,
         acao: permissao.acao,
         permitido: permissao.permitido,
       })),
     })),
-    vinculacoes: usuario.vinculacoesComoServidor.map(vinculacao => ({
+    vinculacoes: usuario.vinculacoesComoServidor.map((vinculacao) => ({
       id: vinculacao.id,
       advogadoId: vinculacao.advogadoId,
-      advogadoNome: `${vinculacao.advogado.usuario.firstName || ''} ${vinculacao.advogado.usuario.lastName || ''}`.trim(),
+      advogadoNome:
+        `${vinculacao.advogado.usuario.firstName || ""} ${vinculacao.advogado.usuario.lastName || ""}`.trim(),
       tipo: vinculacao.tipo,
       ativo: vinculacao.ativo,
       dataInicio: vinculacao.dataInicio,
       dataFim: vinculacao.dataFim,
       observacoes: vinculacao.observacoes,
     })),
-    permissoesIndividuais: usuario.permissoesIndividuais.map(permissao => ({
+    permissoesIndividuais: usuario.permissoesIndividuais.map((permissao) => ({
       id: permissao.id,
       modulo: permissao.modulo,
       acao: permissao.acao,
@@ -372,9 +380,10 @@ export async function getUsuariosEquipe(): Promise<UsuarioEquipeData[]> {
 
 export async function atribuirCargoUsuario(
   usuarioId: string,
-  cargoId: string
+  cargoId: string,
 ): Promise<void> {
-  const session = await auth();
+  const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado");
   }
@@ -437,8 +446,8 @@ export async function atribuirCargoUsuario(
     data: {
       tenantId: session.user.tenantId,
       usuarioId: usuarioId,
-      acao: 'cargo_alterado',
-      dadosAntigos: { cargoAnterior: 'N/A' },
+      acao: "cargo_alterado",
+      dadosAntigos: { cargoAnterior: "N/A" },
       dadosNovos: { cargoNovo: cargo.nome },
       motivo: `Cargo alterado para ${cargo.nome}`,
       realizadoPor: session.user.id,
@@ -452,15 +461,18 @@ export async function vincularUsuarioAdvogado(
   usuarioId: string,
   advogadoId: string,
   tipo: string,
-  observacoes?: string
+  observacoes?: string,
 ): Promise<void> {
-  const session = await auth();
+  const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado");
   }
 
   if (session.user.role !== UserRole.ADMIN) {
-    throw new Error("Apenas administradores podem vincular usuários a advogados");
+    throw new Error(
+      "Apenas administradores podem vincular usuários a advogados",
+    );
   }
 
   // Verificar se a vinculação já existe
@@ -495,8 +507,8 @@ export async function vincularUsuarioAdvogado(
     data: {
       tenantId: session.user.tenantId,
       usuarioId: usuarioId,
-      acao: 'vinculacao_alterada',
-      dadosAntigos: { vinculacaoAnterior: 'N/A' },
+      acao: "vinculacao_alterada",
+      dadosAntigos: { vinculacaoAnterior: "N/A" },
       dadosNovos: { vinculacaoNova: `${tipo} vinculado ao advogado` },
       motivo: `Vinculação criada: ${tipo}`,
       realizadoPor: session.user.id,
@@ -507,9 +519,10 @@ export async function vincularUsuarioAdvogado(
 }
 
 export async function desvincularUsuarioAdvogado(
-  vinculacaoId: string
+  vinculacaoId: string,
 ): Promise<void> {
-  const session = await auth();
+  const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado");
   }
@@ -538,9 +551,10 @@ export async function desvincularUsuarioAdvogado(
 export async function verificarPermissao(
   modulo: string,
   acao: string,
-  usuarioId?: string
+  usuarioId?: string,
 ): Promise<boolean> {
-  const session = await auth();
+  const session = await getSession();
+
   if (!session?.user?.tenantId) {
     return false;
   }
@@ -553,14 +567,16 @@ export async function verificarPermissao(
   }
 
   // Verificar permissões individuais primeiro
-  const permissaoIndividual = await prisma.usuarioPermissaoIndividual.findFirst({
-    where: {
-      tenantId: session.user.tenantId,
-      usuarioId: targetUsuarioId,
-      modulo: modulo,
-      acao: acao,
+  const permissaoIndividual = await prisma.usuarioPermissaoIndividual.findFirst(
+    {
+      where: {
+        tenantId: session.user.tenantId,
+        usuarioId: targetUsuarioId,
+        modulo: modulo,
+        acao: acao,
+      },
     },
-  });
+  );
 
   if (permissaoIndividual) {
     return permissaoIndividual.permitido;
@@ -584,9 +600,9 @@ export async function verificarPermissao(
 
   if (usuarioCargo?.cargo) {
     const permissaoCargo = usuarioCargo.cargo.permissoes.find(
-      p => p.modulo === modulo && p.acao === acao
+      (p) => p.modulo === modulo && p.acao === acao,
     );
-    
+
     if (permissaoCargo) {
       return permissaoCargo.permitido;
     }
@@ -595,40 +611,41 @@ export async function verificarPermissao(
   // Permissões padrão baseadas no role
   const rolePermissions: Record<UserRole, Record<string, string[]>> = {
     [UserRole.ADMIN]: {
-      processos: ['criar', 'editar', 'excluir', 'visualizar', 'exportar'],
-      clientes: ['criar', 'editar', 'excluir', 'visualizar', 'exportar'],
-      advogados: ['criar', 'editar', 'excluir', 'visualizar', 'exportar'],
-      financeiro: ['criar', 'editar', 'excluir', 'visualizar', 'exportar'],
-      equipe: ['criar', 'editar', 'excluir', 'visualizar', 'exportar'],
-      relatorios: ['criar', 'editar', 'excluir', 'visualizar', 'exportar'],
+      processos: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      clientes: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      advogados: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
     },
     [UserRole.ADVOGADO]: {
-      processos: ['criar', 'editar', 'visualizar', 'exportar'],
-      clientes: ['criar', 'editar', 'visualizar', 'exportar'],
-      advogados: ['visualizar'],
-      financeiro: ['visualizar'],
-      equipe: ['visualizar'],
-      relatorios: ['visualizar', 'exportar'],
+      processos: ["criar", "editar", "visualizar", "exportar"],
+      clientes: ["criar", "editar", "visualizar", "exportar"],
+      advogados: ["visualizar"],
+      financeiro: ["visualizar"],
+      equipe: ["visualizar"],
+      relatorios: ["visualizar", "exportar"],
     },
     [UserRole.SECRETARIA]: {
-      processos: ['criar', 'editar', 'visualizar', 'exportar'],
-      clientes: ['criar', 'editar', 'visualizar', 'exportar'],
-      advogados: ['visualizar'],
-      financeiro: ['visualizar'],
-      equipe: ['visualizar'],
-      relatorios: ['visualizar', 'exportar'],
+      processos: ["criar", "editar", "visualizar", "exportar"],
+      clientes: ["criar", "editar", "visualizar", "exportar"],
+      advogados: ["visualizar"],
+      financeiro: ["visualizar"],
+      equipe: ["visualizar"],
+      relatorios: ["visualizar", "exportar"],
     },
     [UserRole.CLIENTE]: {
-      processos: ['visualizar'],
-      clientes: ['visualizar'],
-      advogados: ['visualizar'],
-      financeiro: ['visualizar'],
+      processos: ["visualizar"],
+      clientes: ["visualizar"],
+      advogados: ["visualizar"],
+      financeiro: ["visualizar"],
       equipe: [],
-      relatorios: ['visualizar'],
+      relatorios: ["visualizar"],
     },
   };
 
   const userRolePermissions = rolePermissions[session.user.role];
+
   if (userRolePermissions[modulo]?.includes(acao)) {
     return true;
   }
@@ -641,15 +658,18 @@ export async function adicionarPermissaoIndividual(
   modulo: string,
   acao: string,
   permitido: boolean,
-  motivo?: string
+  motivo?: string,
 ): Promise<void> {
-  const session = await auth();
+  const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado");
   }
 
   if (session.user.role !== UserRole.ADMIN) {
-    throw new Error("Apenas administradores podem adicionar permissões individuais");
+    throw new Error(
+      "Apenas administradores podem adicionar permissões individuais",
+    );
   }
 
   await prisma.usuarioPermissaoIndividual.upsert({
@@ -680,10 +700,12 @@ export async function adicionarPermissaoIndividual(
     data: {
       tenantId: session.user.tenantId,
       usuarioId: usuarioId,
-      acao: 'permissao_alterada',
+      acao: "permissao_alterada",
       dadosAntigos: { permissaoAnterior: `${modulo}.${acao}: N/A` },
-      dadosNovos: { permissaoNova: `${modulo}.${acao}: ${permitido ? 'PERMITIDO' : 'NEGADO'}` },
-      motivo: motivo || `Permissão ${permitido ? 'concedida' : 'negada'}`,
+      dadosNovos: {
+        permissaoNova: `${modulo}.${acao}: ${permitido ? "PERMITIDO" : "NEGADO"}`,
+      },
+      motivo: motivo || `Permissão ${permitido ? "concedida" : "negada"}`,
       realizadoPor: session.user.id,
     },
   });
@@ -700,7 +722,8 @@ export async function getDashboardEquipe(): Promise<{
   vinculacoesAtivas: number;
   permissoesIndividuais: number;
 }> {
-  const session = await auth();
+  const session = await getSession();
+
   if (!session?.user?.tenantId) {
     throw new Error("Usuário não autenticado");
   }
@@ -719,7 +742,7 @@ export async function getDashboardEquipe(): Promise<{
       where: { tenantId: session.user.tenantId, ativo: true },
     }),
     prisma.usuarioCargo.groupBy({
-      by: ['cargoId'],
+      by: ["cargoId"],
       where: {
         tenantId: session.user.tenantId,
         ativo: true,
@@ -743,10 +766,11 @@ export async function getDashboardEquipe(): Promise<{
     select: { id: true, nome: true },
   });
 
-  const usuariosPorCargoComNome = usuariosPorCargo.map(item => {
-    const cargo = cargos.find(c => c.id === item.cargoId);
+  const usuariosPorCargoComNome = usuariosPorCargo.map((item) => {
+    const cargo = cargos.find((c) => c.id === item.cargoId);
+
     return {
-      cargo: cargo?.nome || 'Cargo não encontrado',
+      cargo: cargo?.nome || "Cargo não encontrado",
       count: item._count.cargoId,
     };
   });

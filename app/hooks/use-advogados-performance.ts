@@ -1,14 +1,25 @@
 import useSWR from "swr";
-import { getAdvogadosPerformance, getAdvogadoPerformance, getPerformanceGeral, type AdvogadoPerformanceData, type PerformanceFilters } from "@/app/actions/advogados-performance";
+
+import {
+  getAdvogadosPerformance,
+  getAdvogadoPerformance,
+  getPerformanceGeral,
+  type AdvogadoPerformanceData,
+  type PerformanceFilters,
+} from "@/app/actions/advogados-performance";
 
 export function useAdvogadosPerformance(filters?: PerformanceFilters) {
   const { data, error, isLoading, mutate } = useSWR<AdvogadoPerformanceData[]>(
-    filters ? `advogados-performance-${JSON.stringify(filters)}` : "advogados-performance",
+    filters
+      ? `advogados-performance-${JSON.stringify(filters)}`
+      : "advogados-performance",
     async () => {
       const result = await getAdvogadosPerformance(filters);
 
       if (!result.success) {
-        throw new Error(result.error || "Erro ao carregar performance dos advogados");
+        throw new Error(
+          result.error || "Erro ao carregar performance dos advogados",
+        );
       }
 
       return result.data || [];
@@ -17,7 +28,7 @@ export function useAdvogadosPerformance(filters?: PerformanceFilters) {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       refreshInterval: 30000, // Atualizar a cada 30 segundos
-    }
+    },
   );
 
   return {
@@ -30,14 +41,21 @@ export function useAdvogadosPerformance(filters?: PerformanceFilters) {
   };
 }
 
-export function useAdvogadoPerformance(advogadoId: string, filters?: PerformanceFilters) {
+export function useAdvogadoPerformance(
+  advogadoId: string,
+  filters?: PerformanceFilters,
+) {
   const { data, error, isLoading, mutate } = useSWR<AdvogadoPerformanceData>(
-    advogadoId ? `advogado-performance-${advogadoId}-${JSON.stringify(filters || {})}` : null,
+    advogadoId
+      ? `advogado-performance-${advogadoId}-${JSON.stringify(filters || {})}`
+      : null,
     async () => {
       const result = await getAdvogadoPerformance(advogadoId, filters);
 
       if (!result.success) {
-        throw new Error(result.error || "Erro ao carregar performance do advogado");
+        throw new Error(
+          result.error || "Erro ao carregar performance do advogado",
+        );
       }
 
       return result.data!;
@@ -46,7 +64,7 @@ export function useAdvogadoPerformance(advogadoId: string, filters?: Performance
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       refreshInterval: 30000,
-    }
+    },
   );
 
   return {
@@ -61,7 +79,9 @@ export function useAdvogadoPerformance(advogadoId: string, filters?: Performance
 
 export function usePerformanceGeral(filters?: PerformanceFilters) {
   const { data, error, isLoading, mutate } = useSWR(
-    filters ? `performance-geral-${JSON.stringify(filters)}` : "performance-geral",
+    filters
+      ? `performance-geral-${JSON.stringify(filters)}`
+      : "performance-geral",
     async () => {
       const result = await getPerformanceGeral(filters);
 
@@ -75,7 +95,7 @@ export function usePerformanceGeral(filters?: PerformanceFilters) {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       refreshInterval: 30000,
-    }
+    },
   );
 
   return {

@@ -1,6 +1,9 @@
 import useSWR from "swr";
 
-import { getAdvogadosParaSelect, type AdvogadoSelectItem } from "@/app/actions/advogados";
+import {
+  getAdvogadosParaSelect,
+  type AdvogadoSelectItem,
+} from "@/app/actions/advogados";
 
 export function useAdvogadosParaSelect() {
   const { data, error, isLoading, mutate } = useSWR<AdvogadoSelectItem[]>(
@@ -17,7 +20,7 @@ export function useAdvogadosParaSelect() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-    }
+    },
   );
 
   return {

@@ -1,5 +1,12 @@
 import useSWR from "swr";
-import { getNotificacoesAdvogado, getEstatisticasNotificacoes, marcarNotificacaoComoLida, marcarTodasNotificacoesComoLidas, NotificacaoData } from "@/app/actions/advogados-notificacoes";
+
+import {
+  getNotificacoesAdvogado,
+  getEstatisticasNotificacoes,
+  marcarNotificacaoComoLida,
+  marcarTodasNotificacoesComoLidas,
+  NotificacaoData,
+} from "@/app/actions/advogados-notificacoes";
 
 export function useNotificacoesAdvogado(advogadoId: string) {
   const { data, error, isLoading, mutate } = useSWR<NotificacaoData[]>(
@@ -8,7 +15,9 @@ export function useNotificacoesAdvogado(advogadoId: string) {
       const result = await getNotificacoesAdvogado(advogadoId);
 
       if (!result.success) {
-        throw new Error(result.error || "Erro ao carregar notificações do advogado");
+        throw new Error(
+          result.error || "Erro ao carregar notificações do advogado",
+        );
       }
 
       return result.data || [];
@@ -17,22 +26,26 @@ export function useNotificacoesAdvogado(advogadoId: string) {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       refreshInterval: 30000, // Atualizar a cada 30 segundos
-    }
+    },
   );
 
   const marcarComoLida = async (notificacaoId: string) => {
     const result = await marcarNotificacaoComoLida(notificacaoId);
+
     if (result.success) {
       mutate();
     }
+
     return result;
   };
 
   const marcarTodasComoLidas = async () => {
     const result = await marcarTodasNotificacoesComoLidas(advogadoId);
+
     if (result.success) {
       mutate();
     }
+
     return result;
   };
 
@@ -55,7 +68,9 @@ export function useEstatisticasNotificacoes(advogadoId: string) {
       const result = await getEstatisticasNotificacoes(advogadoId);
 
       if (!result.success) {
-        throw new Error(result.error || "Erro ao carregar estatísticas de notificações");
+        throw new Error(
+          result.error || "Erro ao carregar estatísticas de notificações",
+        );
       }
 
       return result.data!;
@@ -64,7 +79,7 @@ export function useEstatisticasNotificacoes(advogadoId: string) {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       refreshInterval: 30000,
-    }
+    },
   );
 
   return {

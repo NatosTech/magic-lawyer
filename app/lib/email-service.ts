@@ -31,8 +31,13 @@ export interface AdvogadoEmailData {
 // EMAIL TEMPLATES
 // =============================================
 
-export const getBoasVindasTemplate = (data: AdvogadoEmailData): EmailTemplate => {
-  const especialidadesText = data.especialidades.length > 0 ? data.especialidades.join(", ") : "Não especificadas";
+export const getBoasVindasTemplate = (
+  data: AdvogadoEmailData,
+): EmailTemplate => {
+  const especialidadesText =
+    data.especialidades.length > 0
+      ? data.especialidades.join(", ")
+      : "Não especificadas";
 
   return {
     subject: "Bem-vindo ao Magic Lawyer! 🎉",
@@ -260,7 +265,15 @@ export const getBoasVindasTemplate = (data: AdvogadoEmailData): EmailTemplate =>
   };
 };
 
-export const getNotificacaoTemplate = (data: { nome: string; email: string; tipo: string; titulo: string; mensagem: string; linkAcao?: string; textoAcao?: string }): EmailTemplate => {
+export const getNotificacaoTemplate = (data: {
+  nome: string;
+  email: string;
+  tipo: string;
+  titulo: string;
+  mensagem: string;
+  linkAcao?: string;
+  textoAcao?: string;
+}): EmailTemplate => {
   return {
     subject: `🔔 Magic Lawyer - ${data.titulo}`,
     html: `
@@ -398,6 +411,7 @@ class EmailService {
     try {
       if (!process.env.RESEND_API_KEY) {
         console.error("RESEND_API_KEY not configured");
+
         return false;
       }
 
@@ -411,13 +425,16 @@ class EmailService {
 
       if (error) {
         console.error("Error sending email:", error);
+
         return false;
       }
 
       console.log("Email sent successfully:", data?.id);
+
       return true;
     } catch (error) {
       console.error("Error sending email:", error);
+
       return false;
     }
   }
@@ -433,7 +450,15 @@ class EmailService {
     });
   }
 
-  async sendNotificacaoAdvogado(data: { nome: string; email: string; tipo: string; titulo: string; mensagem: string; linkAcao?: string; textoAcao?: string }): Promise<boolean> {
+  async sendNotificacaoAdvogado(data: {
+    nome: string;
+    email: string;
+    tipo: string;
+    titulo: string;
+    mensagem: string;
+    linkAcao?: string;
+    textoAcao?: string;
+  }): Promise<boolean> {
     const template = getNotificacaoTemplate(data);
 
     return this.sendEmail({
@@ -457,9 +482,11 @@ class EmailService {
         subject: "Test Connection",
         html: "<p>Test</p>",
       });
+
       return !error;
     } catch (error) {
       console.error("Email connection test failed:", error);
+
       return false;
     }
   }

@@ -376,19 +376,19 @@ export default function EditarContratoPage({
                             Principal
                           </span>
                         )}
-                    </div>
-                    <span className="text-sm text-default-500">
-                      Ag: {conta.agencia} - CC: {conta.conta}
-                      {conta.digitoConta && `-${conta.digitoConta}`}
-                    </span>
-                    <span className="text-xs text-default-400">
-                      {conta.titularNome}
-                    </span>
-                    {conta.chavePix && (
-                      <span className="text-xs text-default-400">
-                        PIX: {conta.chavePix}
+                      </div>
+                      <span className="text-sm text-default-500">
+                        Ag: {conta.agencia} - CC: {conta.conta}
+                        {conta.digitoConta && `-${conta.digitoConta}`}
                       </span>
-                    )}
+                      <span className="text-xs text-default-400">
+                        {conta.titularNome}
+                      </span>
+                      {conta.chavePix && (
+                        <span className="text-xs text-default-400">
+                          PIX: {conta.chavePix}
+                        </span>
+                      )}
                     </div>
                   </SelectItem>
                 );
