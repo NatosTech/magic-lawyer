@@ -91,6 +91,7 @@ import useSWR from "swr";
 import { AdvogadoHistorico } from "./components/advogado-historico";
 import { AdvogadoNotificacoes } from "./components/advogado-notificacoes";
 import { AdvogadoFormModal } from "./components/advogado-form-modal";
+import { ImageEditorModal } from "@/components/image-editor-modal";
 import { type EnderecoFormData, type DadosBancariosFormData } from "./components/types";
 
 import {
@@ -194,6 +195,8 @@ export default function AdvogadosContent() {
     senhaTemporaria: string;
     linkLogin: string;
   } | null>(null);
+  const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
+  const [selectedAdvogadoForAvatar, setSelectedAdvogadoForAvatar] = useState<Advogado | null>(null);
 
   // Hook para debounce da busca
   const useDebounce = (value: string, delay: number) => {
@@ -913,6 +916,77 @@ export default function AdvogadosContent() {
 
     try {
       const result = await deleteAvatarAdvogado(advogadoId);
+
+      if (result.success) {
+        toast.success("Avatar removido com sucesso!");
+        mutate();
+      } else {
+        toast.error(result.error || "Erro ao remover avatar");
+      }
+    } catch (error) {
+      console.error("Erro ao remover avatar:", error);
+      toast.error("Erro ao remover avatar");
+    }
+  };
+
+  const handleEditAvatar = (advogado: Advogado) => {
+    setSelectedAdvogadoForAvatar(advogado);
+    setIsAvatarEditorOpen(true);
+  };
+
+  const handleSaveAvatar = async (imageData: string | FormData | null, isUrl: boolean) => {
+    if (!imageData || !selectedAdvogadoForAvatar) return;
+
+    setIsUploadingAvatar(true);
+    setIsAvatarEditorOpen(false);
+
+    try {
+      let result;
+
+      if (isUrl && typeof imageData === "string") {
+        // Se for URL, converter para arquivo
+        const response = await fetch(imageData);
+        const blob = await response.blob();
+        const file = new File([blob], "avatar.jpg", { type: blob.type });
+        result = await uploadAvatarAdvogado(selectedAdvogadoForAvatar.id, file);
+      } else if (imageData instanceof FormData) {
+        // Se for FormData (arquivo original), extrair o arquivo
+        const file = imageData.get("file") as File;
+        if (file) {
+          result = await uploadAvatarAdvogado(selectedAdvogadoForAvatar.id, file);
+        } else {
+          throw new Error("Arquivo não encontrado no FormData");
+        }
+      } else if (typeof imageData === "string") {
+        // Se for base64 (crop), converter para blob e depois para File
+        const response = await fetch(imageData);
+        const blob = await response.blob();
+        const file = new File([blob], "avatar.jpg", { type: blob.type });
+        result = await uploadAvatarAdvogado(selectedAdvogadoForAvatar.id, file);
+      } else {
+        throw new Error("Tipo de dados inválido");
+      }
+
+      if (result.success) {
+        toast.success("Avatar atualizado com sucesso!");
+        mutate();
+      } else {
+        toast.error(result.error || "Erro ao atualizar avatar");
+      }
+    } catch (error) {
+      console.error("Erro ao salvar avatar:", error);
+      toast.error("Erro ao salvar avatar");
+    } finally {
+      setIsUploadingAvatar(false);
+      setSelectedAdvogadoForAvatar(null);
+    }
+  };
+
+  const handleRemoveAvatar = async (advogado: Advogado) => {
+    if (!confirm("Tem certeza que deseja remover o avatar?")) return;
+
+    try {
+      const result = await deleteAvatarAdvogado(advogado.id);
 
       if (result.success) {
         toast.success("Avatar removido com sucesso!");
@@ -2330,8 +2404,23 @@ export default function AdvogadosContent() {
                         <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700 p-4">
                           <div className="flex gap-3 w-full">
                             <Checkbox isSelected={selectedAdvogados.includes(advogado.id)} onValueChange={() => handleSelectAdvogado(advogado.id)} size="sm" className="mt-2 flex-shrink-0" />
-                            <motion.div whileHover={{ scale: 1.1, rotate: 5 }} transition={{ type: "spring", stiffness: 400, damping: 10 }} className="flex-shrink-0">
+                            <motion.div whileHover={{ scale: 1.1, rotate: 5 }} transition={{ type: "spring", stiffness: 400, damping: 10 }} className="flex-shrink-0 relative group">
                               <Avatar showFallback className="bg-blue-500 text-white shadow-lg" name={getInitials(getNomeCompleto(advogado))} size="lg" src={advogado.usuario.avatarUrl || undefined} />
+                              {isUploadingAvatar && selectedAdvogadoForAvatar?.id === advogado.id && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                                  <Spinner color="white" size="sm" />
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1">
+                                <Button isIconOnly size="sm" color="primary" variant="solid" onPress={() => handleEditAvatar(advogado)} className="h-6 w-6 min-w-6">
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                {advogado.usuario.avatarUrl && (
+                                  <Button isIconOnly size="sm" color="danger" variant="solid" onPress={() => handleRemoveAvatar(advogado)} className="h-6 w-6 min-w-6">
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
                             </motion.div>
                             <div className="flex flex-col flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2 mb-2">
@@ -2911,6 +3000,17 @@ export default function AdvogadosContent() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Modal de Edição de Avatar */}
+      <ImageEditorModal
+        isOpen={isAvatarEditorOpen}
+        onClose={() => {
+          setIsAvatarEditorOpen(false);
+          setSelectedAdvogadoForAvatar(null);
+        }}
+        onSave={handleSaveAvatar}
+        currentImageUrl={selectedAdvogadoForAvatar?.usuario.avatarUrl || null}
+      />
     </div>
   );
 }
