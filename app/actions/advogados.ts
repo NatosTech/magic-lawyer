@@ -349,13 +349,29 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
     // Calcular processosCount para cada advogado
     const advogadosComProcessos = await Promise.all(
       advogados.map(async (adv) => {
-        const processosCount = await prisma.processo.count({
-          where: {
-            tenantId: session.user.tenantId,
-            deletedAt: null,
-            advogadoResponsavelId: adv.id,
-          },
-        });
+        let processosCount: number;
+        
+        if (adv.isExterno) {
+          // Para advogados externos, contar processos onde aparecem como partes
+          processosCount = await prisma.processoParte.count({
+            where: {
+              tenantId: session.user.tenantId,
+              advogadoId: adv.id,
+              processo: {
+                deletedAt: null,
+              },
+            },
+          });
+        } else {
+          // Para advogados internos, contar processos onde são responsáveis
+          processosCount = await prisma.processo.count({
+            where: {
+              tenantId: session.user.tenantId,
+              deletedAt: null,
+              advogadoResponsavelId: adv.id,
+            },
+          });
+        }
 
         return {
           id: adv.id,
@@ -392,9 +408,7 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
           processosCount: processosCount,
           usuario: {
             ...adv.usuario,
-            dataNascimento: adv.usuario.dataNascimento
-              ? adv.usuario.dataNascimento.toISOString().split("T")[0]
-              : null,
+            dataNascimento: adv.usuario.dataNascimento ? adv.usuario.dataNascimento.toISOString().split("T")[0] : null,
           },
         };
       })
@@ -648,9 +662,7 @@ export async function createAdvogado(input: CreateAdvogadoInput): Promise<Create
       processosCount: 0,
       usuario: {
         ...advogado.usuario,
-        dataNascimento: advogado.usuario.dataNascimento
-          ? advogado.usuario.dataNascimento.toISOString().split("T")[0]
-          : null,
+        dataNascimento: advogado.usuario.dataNascimento ? advogado.usuario.dataNascimento.toISOString().split("T")[0] : null,
       },
     };
 
@@ -830,9 +842,7 @@ export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoIn
     if (input.cpf !== undefined) usuarioUpdate.cpf = input.cpf ? input.cpf.replace(/\D/g, "") : null;
     if (input.rg !== undefined) usuarioUpdate.rg = input.rg || null;
     if (input.dataNascimento !== undefined) {
-      usuarioUpdate.dataNascimento = input.dataNascimento
-        ? new Date(`${input.dataNascimento}T00:00:00`)
-        : null;
+      usuarioUpdate.dataNascimento = input.dataNascimento ? new Date(`${input.dataNascimento}T00:00:00`) : null;
     }
     if (input.observacoes !== undefined) usuarioUpdate.observacoes = input.observacoes || null;
 
@@ -888,21 +898,15 @@ export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoIn
     if (input.phone !== undefined) alteracoes.push(`Telefone: ${input.phone || "removido"}`);
     if (input.cpf !== undefined) alteracoes.push(`CPF: ${input.cpf || "removido"}`);
     if (input.rg !== undefined) alteracoes.push(`RG: ${input.rg || "removido"}`);
-    if (input.dataNascimento !== undefined)
-      alteracoes.push(`Data de nascimento: ${input.dataNascimento || "removida"}`);
-    if (input.observacoes !== undefined)
-      alteracoes.push(`Observações: ${(input.observacoes || "").slice(0, 50)}${input.observacoes && input.observacoes.length > 50 ? "..." : ""}`);
+    if (input.dataNascimento !== undefined) alteracoes.push(`Data de nascimento: ${input.dataNascimento || "removida"}`);
+    if (input.observacoes !== undefined) alteracoes.push(`Observações: ${(input.observacoes || "").slice(0, 50)}${input.observacoes && input.observacoes.length > 50 ? "..." : ""}`);
 
     // Registrar alterações do advogado
     if (input.oabNumero !== undefined) alteracoes.push(`OAB Número: ${input.oabNumero}`);
     if (input.oabUf !== undefined) alteracoes.push(`OAB UF: ${input.oabUf}`);
     if (input.especialidades !== undefined) alteracoes.push(`Especialidades: ${input.especialidades.join(", ")}`);
     if (input.bio !== undefined) {
-      const preview = input.bio
-        ? input.bio.length > 50
-          ? `${input.bio.slice(0, 50)}...`
-          : input.bio
-        : "removida";
+      const preview = input.bio ? (input.bio.length > 50 ? `${input.bio.slice(0, 50)}...` : input.bio) : "removida";
       alteracoes.push(`Bio: ${preview}`);
     }
     if (input.telefone !== undefined) alteracoes.push(`Telefone: ${input.telefone}`);
@@ -1140,17 +1144,30 @@ export async function getAdvogadosExternosIdentificados(): Promise<ActionRespons
     }
 
     // Buscar advogados que aparecem em ProcessoParte mas não são do escritório atual
+    // Inclui: 1) Advogados de outros tenants OU 2) Advogados do mesmo tenant marcados como externos
     const advogadosExternos = await prisma.processoParte.findMany({
       where: {
         tenantId: session.user.tenantId,
         advogadoId: {
           not: null,
         },
-        advogado: {
-          tenantId: {
-            not: session.user.tenantId, // Advogados de outros tenants
+        OR: [
+          // Advogados de outros tenants
+          {
+            advogado: {
+              tenantId: {
+                not: session.user.tenantId,
+              },
+            },
           },
-        },
+          // Advogados do mesmo tenant marcados como externos
+          {
+            advogado: {
+              tenantId: session.user.tenantId,
+              isExterno: true,
+            },
+          },
+        ],
       },
       include: {
         advogado: {
