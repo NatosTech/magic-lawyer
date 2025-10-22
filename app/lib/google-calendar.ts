@@ -10,10 +10,7 @@ export const createOAuth2Client = () => {
   const redirectUri = process.env.GOOGLE_REDIRECT_URI;
 
   if (!clientId || !clientSecret || !redirectUri) {
-    throw new Error(
-      "Variáveis de ambiente do Google Calendar não configuradas. " +
-        "Verifique se GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e GOOGLE_REDIRECT_URI estão definidas no arquivo .env.local",
-    );
+    throw new Error("Variáveis de ambiente do Google Calendar não configuradas. " + "Verifique se GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e GOOGLE_REDIRECT_URI estão definidas no arquivo .env.local");
   }
 
   return new OAuth2Client(clientId, clientSecret, redirectUri);
@@ -57,18 +54,12 @@ export interface CalendarApiResponse {
 export const getAuthUrl = (userId: string, currentDomain?: string) => {
   const oauth2Client = createOAuth2Client();
 
-  const scopes = [
-    "https://www.googleapis.com/auth/calendar",
-    "https://www.googleapis.com/auth/calendar.events",
-  ];
+  const scopes = ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/calendar.events"];
 
   // Determinar o domínio base para OAuth
   // Em desenvolvimento, sempre usar localhost:9192 para simplicidade
   // Em produção, sempre usar o domínio principal para OAuth
-  const oauthDomain =
-    process.env.NODE_ENV === "production"
-      ? "https://magiclawyer.vercel.app"
-      : "http://localhost:9192";
+  const oauthDomain = process.env.NODE_ENV === "production" ? "https://magiclawyer.vercel.app" : "http://localhost:9192";
 
   const state = `${userId}|${currentDomain || ""}`;
 
@@ -99,13 +90,39 @@ export const getTokensFromCode = async (code: string) => {
   }
 };
 
+// Função para renovar tokens automaticamente
+export const refreshAccessToken = async (refreshToken: string) => {
+  try {
+    const oauth2Client = createOAuth2Client();
+
+    oauth2Client.setCredentials({
+      refresh_token: refreshToken,
+    });
+
+    const { credentials } = await oauth2Client.refreshAccessToken();
+
+    return {
+      success: true,
+      tokens: credentials,
+    };
+  } catch (error) {
+    logger.error("Erro ao renovar token:", error);
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro desconhecido",
+    };
+  }
+};
+
+// Função para verificar se o token está expirado
+export const isTokenExpired = (expiryDate: number): boolean => {
+  const now = new Date().getTime();
+  return now >= expiryDate;
+};
+
 // Função para criar evento no Google Calendar
-export const createCalendarEvent = async (
-  accessToken: string,
-  refreshToken: string,
-  event: GoogleCalendarEvent,
-  calendarId: string = "primary",
-): Promise<CalendarApiResponse> => {
+export const createCalendarEvent = async (accessToken: string, refreshToken: string, event: GoogleCalendarEvent, calendarId: string = "primary"): Promise<CalendarApiResponse> => {
   try {
     const oauth2Client = createOAuth2Client();
 
@@ -141,7 +158,7 @@ export const updateCalendarEvent = async (
   refreshToken: string,
   eventId: string,
   event: Partial<GoogleCalendarEvent>,
-  calendarId: string = "primary",
+  calendarId: string = "primary"
 ): Promise<CalendarApiResponse> => {
   try {
     const oauth2Client = createOAuth2Client();
@@ -174,12 +191,7 @@ export const updateCalendarEvent = async (
 };
 
 // Função para deletar evento no Google Calendar
-export const deleteCalendarEvent = async (
-  accessToken: string,
-  refreshToken: string,
-  eventId: string,
-  calendarId: string = "primary",
-): Promise<CalendarApiResponse> => {
+export const deleteCalendarEvent = async (accessToken: string, refreshToken: string, eventId: string, calendarId: string = "primary"): Promise<CalendarApiResponse> => {
   try {
     const oauth2Client = createOAuth2Client();
 
@@ -209,10 +221,7 @@ export const deleteCalendarEvent = async (
 };
 
 // Função para listar calendários do usuário
-export const listCalendars = async (
-  accessToken: string,
-  refreshToken: string,
-): Promise<CalendarApiResponse> => {
+export const listCalendars = async (accessToken: string, refreshToken: string): Promise<CalendarApiResponse> => {
   try {
     const oauth2Client = createOAuth2Client();
 
@@ -240,13 +249,7 @@ export const listCalendars = async (
 };
 
 // Função para listar eventos de um período
-export const listEvents = async (
-  accessToken: string,
-  refreshToken: string,
-  timeMin: string,
-  timeMax: string,
-  calendarId: string = "primary",
-): Promise<CalendarApiResponse> => {
+export const listEvents = async (accessToken: string, refreshToken: string, timeMin: string, timeMax: string, calendarId: string = "primary"): Promise<CalendarApiResponse> => {
   try {
     const oauth2Client = createOAuth2Client();
 
@@ -296,7 +299,7 @@ export const syncEventWithGoogle = async (
     refreshToken: string;
   },
   googleEventId?: string,
-  calendarId: string = "primary",
+  calendarId: string = "primary"
 ): Promise<CalendarApiResponse> => {
   const googleEvent: GoogleCalendarEvent = {
     summary: localEvent.titulo,
@@ -330,20 +333,9 @@ export const syncEventWithGoogle = async (
 
   if (googleEventId) {
     // Atualizar evento existente
-    return updateCalendarEvent(
-      googleTokens.accessToken,
-      googleTokens.refreshToken,
-      googleEventId,
-      googleEvent,
-      calendarId,
-    );
+    return updateCalendarEvent(googleTokens.accessToken, googleTokens.refreshToken, googleEventId, googleEvent, calendarId);
   } else {
     // Criar novo evento
-    return createCalendarEvent(
-      googleTokens.accessToken,
-      googleTokens.refreshToken,
-      googleEvent,
-      calendarId,
-    );
+    return createCalendarEvent(googleTokens.accessToken, googleTokens.refreshToken, googleEvent, calendarId);
   }
 };

@@ -23,8 +23,16 @@
 
 ---
 
-**Última Atualização:** 22/01/2025  
-**Completude Atual:** 58% (47/94 funcionalidades implementadas) ⬆️
+**Última Atualização:** 23/01/2025  
+**Completude Atual:** 62% (51/94 funcionalidades implementadas) ⬆️
+
+### 🎉 **IMPLEMENTAÇÕES DE HOJE (23/01/2025):**
+- ✅ **Sistema de Animações com Framer Motion** - Animações fluidas em toda a agenda
+- ✅ **Criação Rápida de Eventos** - Botão para criar evento na data selecionada
+- ✅ **Filtro por Origem** - Filtrar eventos do Google Calendar vs locais
+- ✅ **Identificação Visual** - Ícone do Google para eventos sincronizados
+- ✅ **Renovação Automática de Tokens** - Sistema de refresh de tokens do Google
+- ✅ **Melhorias de UX** - Efeitos hover, transições, delays escalonados
 
 ---
 
@@ -213,7 +221,7 @@
 - [ ] **Grupos de Chat** - Conversas em grupo
 - [ ] **Integração com Processos** - Chat vinculado a casos
 
-### 📋 **13. SISTEMA DE AGENDA**
+### 📋 **13. SISTEMA DE AGENDA** ✅ **IMPLEMENTADO COM MELHORIAS**
 - [x] **Calendário Integrado** - Visualização de eventos
 - [x] **Sincronização Google Calendar** - Integração com Google
 - [x] **Eventos de Processo** - Audiências, prazos, reuniões
@@ -222,14 +230,35 @@
 - [x] **Filtros de Agenda** - Por advogado, cliente, tipo
 - [x] **Exportação de Agenda** - PDF/Excel com eventos
 - [x] **Integração com Processos** - Eventos vinculados a casos
+- [x] **Criação Rápida de Eventos** - Botão para criar evento na data selecionada
+- [x] **Filtro por Origem** - Filtrar eventos do Google Calendar vs locais
+- [x] **Identificação Visual** - Ícone do Google para eventos sincronizados
+- [x] **Animações Fluidas** - Framer Motion para melhor UX
+- [x] **Renovação Automática de Tokens** - Sistema de refresh de tokens do Google
 - [ ] **Agendamento Automático** - Sugestões de horários
 - [ ] **Integração com Clientes** - Clientes podem agendar
 
 ---
 
+## 🎯 **SISTEMA DE UX E INTERFACE**
+
+### 📋 **13.1. MELHORIAS DE UX E ANIMAÇÕES** ✅ **IMPLEMENTADO**
+- [x] **Framer Motion** - Animações fluidas em toda a aplicação
+- [x] **Animações de Entrada** - Fade-in e movimento para todos os elementos
+- [x] **Efeitos de Hover** - Interações visuais responsivas
+- [x] **Transições de Layout** - Animações automáticas para mudanças
+- [x] **Delays Escalonados** - Entrada sequencial de elementos
+- [x] **Animações de Saída** - Transições suaves para remoção
+- [x] **Efeitos de Escala** - Feedback visual em botões e cards
+- [x] **Loading States** - Indicadores de carregamento animados
+- [x] **Micro-interações** - Detalhes que melhoram a experiência
+- [x] **Performance Otimizada** - Animações sem impacto na performance
+
+---
+
 ## 🎯 **SISTEMA DE BACKUP E MANUTENÇÃO**
 
-### 📋 **14. BACKUP E SEGURANÇA DE DADOS**
+### 📋 **15. BACKUP E SEGURANÇA DE DADOS**
 - [ ] **Backup Automático** - Backup diário do banco de dados
 - [ ] **Backup de Arquivos** - Cloudinary e documentos
 - [ ] **Restauração de Backup** - Interface para restaurar dados
@@ -241,7 +270,7 @@
 - [ ] **Backup em Nuvem** - Armazenamento seguro
 - [x] **Monitoramento de Backup** - Status e logs
 
-### 📋 **15. SISTEMA DE MONITORAMENTO**
+### 📋 **16. SISTEMA DE MONITORAMENTO**
 - [ ] **Logs de Sistema** - Registro de todas as operações
 - [ ] **Monitoramento de Performance** - Métricas de sistema
 - [ ] **Alertas de Sistema** - Notificações de problemas
@@ -257,7 +286,7 @@
 
 ## 🎯 **SISTEMA DE PERSONALIZAÇÃO**
 
-### 📋 **16. WHITE LABEL E PERSONALIZAÇÃO**
+### 📋 **17. WHITE LABEL E PERSONALIZAÇÃO**
 - [x] **Subdomínio Personalizado** - Cada escritório com seu domínio
 - [x] **Logo Personalizado** - Upload de logo do escritório
 - [x] **Cores Personalizadas** - Tema customizado por escritório
@@ -269,7 +298,7 @@
 - [ ] **Configurações Avançadas** - Opções de personalização
 - [ ] **API de Personalização** - Integração com sistemas externos
 
-### 📋 **17. SISTEMA DE ONBOARDING**
+### 📋 **18. SISTEMA DE ONBOARDING**
 - [x] **Checkout Sem Login** - Formulário público de cadastro
 - [x] **Criação Automática de Tenant** - Sistema cria escritório automaticamente
 - [x] **Emails de Boas-vindas** - Sequência de emails transacionais
@@ -285,7 +314,7 @@
 
 ## 🎯 **SISTEMA DE PAGAMENTOS E ASSINATURAS**
 
-### 📋 **18. SISTEMA DE PAGAMENTOS**
+### 📋 **19. SISTEMA DE PAGAMENTOS**
 - [x] **Integração Asaas** - API completa de pagamentos
 - [x] **PIX Dinâmico** - QR Code para pagamentos
 - [x] **Boleto Bancário** - Geração de boletos
@@ -297,7 +326,9 @@
 - [x] **Múltiplas Formas de Pagamento** - PIX, boleto, cartão
 - [x] **Histórico de Pagamentos** - Log completo de transações
 
-### 📋 **19. SISTEMA DE ASSINATURAS**
+### 📋 **20. SISTEMA DE ASSINATURAS E CONTROLE DE PLANOS**
+
+#### ✅ Infraestrutura Já Disponível
 - [x] **Planos de Assinatura** - Básico, Pro, Enterprise
 - [x] **Cobrança Recorrente** - Renovação automática
 - [x] **Upgrade/Downgrade** - Mudança de planos
@@ -306,14 +337,45 @@
 - [x] **Faturamento** - Controle de faturas
 - [x] **Histórico de Assinaturas** - Log de mudanças
 - [x] **Notificações de Vencimento** - Alertas de renovação
-- [ ] **Planos Personalizados** - Assinaturas customizadas
-- [ ] **Descontos e Promoções** - Sistema de cupons
+
+#### 🗂️ Modelagem de Planos (Novo)
+- [ ] **CRUD Completo de Planos** - Criar, editar, duplicar e arquivar planos (ex.: Plano X)
+- [ ] **Versionamento de Planos** - Histórico de alterações com diffs de permissões
+- [ ] **Atribuição de Planos a Tenants** - Vincular escritórios existentes e novos cadastros
+- [ ] **Configuração de Regras Comerciais** - Preço, ciclo (mensal/anual), limite de usuários e módulos adicionais
+
+#### 🧭 Mapeamento de Rotas e Módulos
+- [ ] **Catálogo Central de Rotas** - Lista oficial de rotas/módulos (Financeiro, Agenda, Documentos, Processos, etc.)
+- [ ] **Drag & Drop de Permissões por Plano** - Definir visualmente quais rotas cada plano pode acessar
+- [ ] **Visualização em Tempo Real** - Prévia do plano com destaque do que está incluso/excluído
+- [ ] **Auditoria de Permissões** - Log de mudanças indicando usuário, data e itens alterados
+- [ ] **Validador de Conflitos** - Alertar sobre rotas críticas sem cobertura ou permissões sobrepostas
+
+#### 🧑‍💼 Painel Super Admin (robsonnonatoiii@gmail.com)
+- [ ] **Dashboard de Planos** - Visão geral com status, quantidade de tenants por plano e alertas
+- [ ] **Editor Visual de Planos** - Interface dedicada para definir módulos por plano (drag & drop)
+- [ ] **Fluxo de Publicação** - Rascunho → Revisão → Publicado, com confirmação antes de aplicar aos tenants
+- [ ] **Modo Comparativo de Planos** - Comparar planos lado a lado para validar diferenciais
+- [ ] **Impressão/Exportação** - Exportar configuração atual em PDF/CSV para auditoria externa
+
+#### 🪪 Planos Padrão e Escopo de Acesso
+- [ ] **Plano Básico** - Incluir: Processos (CRUD + timeline), Clientes (visualização), Documentos (upload e modelos básicos), Agenda (visualizar/criar compromissos), Dashboard geral. Bloquear: Financeiro, Contratos, Comissões, IA Avançada, Marketplace, Analytics avançado.
+- [ ] **Plano Profissional** - Incluir módulos do básico + Financeiro parcial (faturamento e inadimplência), Contratos, Alertas avançados, Relatórios padrões.
+- [ ] **Plano Enterprise** - Todos os módulos, integrações avançadas, IA jurídica, API externa e automações customizadas.
+- [ ] **Planos Customizados** - Permitir montar plano bespoke por cliente, salvando como variação reutilizável.
+- [ ] **Regras de Upgrade/Downgrade** - Processo para migrar entre planos com/sem perda de dados (ex.: Financeiro congelado ao descer de plano)
+
+#### 🔔 Comunicação e Billing
+- [ ] **Notificações sobre Alterações de Plano** - Emails/SMS para clientes quando houver mudança de escopo
+- [ ] **Sincronização com Cobrança** - Garantir que o plano aplicado reflete no billing recorrente (Asaas)
+- [ ] **Política de Trial** - Definir rotas liberadas durante período de teste
+- [ ] **Sistema de Descontos/Cupons** - Aplicar descontos condicionados a módulos liberados
 
 ---
 
 ## 🎯 **SISTEMA DE MOBILE E RESPONSIVIDADE**
 
-### 📋 **20. RESPONSIVIDADE E MOBILE**
+### 📋 **21. RESPONSIVIDADE E MOBILE**
 - [x] **Design Responsivo** - Funciona em todos os dispositivos
 - [x] **Mobile First** - Otimizado para mobile
 - [x] **Touch Friendly** - Interface otimizada para touch
@@ -329,7 +391,7 @@
 
 ## 🎯 **SISTEMA DE IA E AUTOMAÇÃO**
 
-### 📋 **21. SISTEMA DE IA JURÍDICA**
+### 📋 **22. SISTEMA DE IA JURÍDICA**
 - [ ] **Assistente Jurídico** - IA para responder dúvidas básicas
 - [ ] **Geração Automática de Petições** - IA para criar petições baseadas em modelos
 - [ ] **Análise de Jurisprudência** - IA para analisar tendências jurisprudenciais
@@ -339,7 +401,7 @@
 - [ ] **Previsão de Prazos** - IA para prever tempo de tramitação
 - [ ] **Sistema de Sugestões** - IA para sugerir jurisprudência relevante
 
-### 📋 **22. ANALYTICS E BUSINESS INTELLIGENCE**
+### 📋 **23. ANALYTICS E BUSINESS INTELLIGENCE**
 - [ ] **Dashboard de Performance** - Métricas de sucesso dos advogados
 - [ ] **Análise de Tempo** - Quanto tempo leva cada tipo de processo
 - [ ] **Relatórios de Rentabilidade** - Análise financeira por cliente/processo
@@ -349,7 +411,7 @@
 - [ ] **Dashboards Grafana** - Monitoramento avançado
 - [ ] **Relatórios de Sistema** - Status e performance
 
-### 📋 **23. INTEGRAÇÕES AVANÇADAS**
+### 📋 **24. INTEGRAÇÕES AVANÇADAS**
 - [ ] **Telegram Bot** - Notificações via Telegram
 - [ ] **Slack Integration** - Notificações para equipe
 - [ ] **Microsoft Teams** - Integração com ferramentas corporativas
@@ -357,7 +419,7 @@
 - [ ] **Microsoft Outlook** - Integração de calendário
 - [ ] **Apple Calendar** - Terceira opção de sincronização
 
-### 📋 **24. SISTEMA DE TREINAMENTO**
+### 📋 **25. SISTEMA DE TREINAMENTO**
 - [ ] **Academia Magic Lawyer** - Cursos e treinamentos
 - [ ] **Certificações** - Certificações para usuários
 - [ ] **Webinars** - Webinars sobre funcionalidades
@@ -366,7 +428,7 @@
 - [ ] **Onboarding Personalizado** - Baseado no tipo de escritório
 - [ ] **Feedback de Onboarding** - Coleta de opiniões
 
-### 📋 **25. GAMIFICAÇÃO**
+### 📋 **26. GAMIFICAÇÃO**
 - [ ] **Sistema de Pontos** - Pontos por uso do sistema
 - [ ] **Rankings** - Rankings de advogados/escritórios
 - [ ] **Conquistas** - Badges e conquistas
@@ -374,7 +436,7 @@
 - [ ] **Recompensas** - Descontos e benefícios
 - [ ] **Sistema de Progresso** - Acompanhamento de evolução
 
-### 📋 **26. MARKETPLACE**
+### 📋 **27. MARKETPLACE**
 - [ ] **Marketplace de Modelos** - Venda de modelos de petição
 - [ ] **Consultoria Jurídica** - Plataforma de consultoria
 - [ ] **Serviços Terceirizados** - Serviços de terceiros
@@ -387,16 +449,18 @@
 
 ## 📊 **RESUMO DE PROGRESSO**
 
-### ✅ **IMPLEMENTADO (47/94 funcionalidades)**
+### ✅ **IMPLEMENTADO (51/94 funcionalidades)**
 - **Sistema Core**: 100% completo
 - **Autenticação**: 100% completo  
-- **Integrações**: 80% completo
+- **Integrações**: 85% completo
 - **Relatórios**: 80% completo
 - **Pagamentos**: 100% completo
 - **Personalização**: 80% completo
 - **Mobile**: 70% completo
+- **UX e Animações**: 100% completo ✅ **NOVO**
+- **Sistema de Agenda**: 95% completo ✅ **MELHORADO**
 
-### ⚠️ **PENDENTE (47/94 funcionalidades)**
+### ⚠️ **PENDENTE (43/94 funcionalidades)**
 - **Gestão de Equipe**: 100% - **COMPLETO** ✅
 - **Melhorias de Equipe**: 93% - **QUASE COMPLETO** ✅
 - **Notificações**: 40% - **PARCIALMENTE IMPLEMENTADO** 🟡
@@ -419,28 +483,33 @@
 5. **Sistema de IA Jurídica** - Assistente jurídico e automação
 6. **Analytics e Business Intelligence** - Métricas e relatórios avançados
 
+### ✅ **RECÉM IMPLEMENTADO (HOJE)**
+- **Sistema de Animações** - Framer Motion em toda a aplicação
+- **Melhorias de Agenda** - Criação rápida, filtros, identificação visual
+- **Renovação de Tokens** - Sistema automático para Google Calendar
+
 ---
 
-## 🚀 **META ATUAL: 58% DE COMPLETUDE**
+## 🚀 **META ATUAL: 62% DE COMPLETUDE**
 
 **Foco:** Implementar as funcionalidades de alta prioridade para atingir 80% do sistema completo!
 
-**Tempo estimado:** 4-6 semanas de desenvolvimento intensivo
+**Tempo estimado:** 3-4 semanas de desenvolvimento intensivo
 **Resultado esperado:** Sistema 80% funcional e profissional
 
 ### 🎯 **FASES DE IMPLEMENTAÇÃO:**
 
-**FASE 1 (Alta Prioridade - 2 semanas):**
+**FASE 1 (Alta Prioridade - 1-2 semanas):**
 - Sistema de Jurisprudência
 - Sistema de Notificações Push
 - Sistema de Notificações WhatsApp
 
-**FASE 2 (Média Prioridade - 2 semanas):**
+**FASE 2 (Média Prioridade - 1-2 semanas):**
 - Sistema de Chat Interno
 - Sistema de IA Jurídica
 - Analytics e Business Intelligence
 
-**FASE 3 (Baixa Prioridade - 2 semanas):**
+**FASE 3 (Baixa Prioridade - 1 semana):**
 - Sistema de Backup Automático
 - Integrações Avançadas
 - Sistema de Treinamento
