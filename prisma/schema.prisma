@@ -157,6 +157,7 @@ model Tenant {
   dadosBancarios        DadosBancarios[]
   planos                Plano[]
   asaasConfig           TenantAsaasConfig?
+  advogadoHistorico     AdvogadoHistorico[]
 
   @@index([status])
   @@index([superAdminId])
@@ -333,6 +334,7 @@ model Usuario {
   tarefaAtividades             TarefaAtividade[]
   tarefasObservadas            TarefaWatcher[]
   dadosBancarios               DadosBancarios[]
+  advogadoHistorico            AdvogadoHistorico[]
 
   @@unique([email, tenantId])
   @@unique([tenantId, cpf])
@@ -397,6 +399,29 @@ model Advogado {
   comissaoAcaoGanha    Decimal                 @default(0.00) @db.Decimal(5, 2)
   comissaoHonorarios   Decimal                 @default(0.00) @db.Decimal(5, 2)
   isExterno            Boolean                 @default(false) // Identifica se o advogado não é do escritório
+  
+  // Dados profissionais adicionais
+  formacao             String?                 // Formação acadêmica
+  experiencia          String?                 // Experiência profissional
+  premios              String?                 // Prêmios e reconhecimentos
+  publicacoes          String?                 // Publicações e artigos
+  website              String?                 // Website pessoal
+  linkedin             String?                 // LinkedIn
+  twitter              String?                 // Twitter/X
+  instagram            String?                 // Instagram
+  
+  // Configurações de notificação
+  notificarEmail       Boolean                 @default(true)
+  notificarWhatsapp    Boolean                 @default(true)
+  notificarSistema     Boolean                 @default(true)
+  
+  // Configurações de acesso
+  podeCriarProcessos   Boolean                 @default(true)
+  podeEditarProcessos  Boolean                 @default(true)
+  podeExcluirProcessos Boolean                 @default(false)
+  podeGerenciarClientes Boolean                @default(true)
+  podeAcessarFinanceiro Boolean                @default(false)
+  
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
   tenant               Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -404,6 +429,7 @@ model Advogado {
   clientes             AdvogadoCliente[]
   contratos            Contrato[]              @relation("ContratoAdvogado")
   honorarios           ContratoHonorario[]
+  historico            AdvogadoHistorico[]
   documentoAssinaturas DocumentoAssinatura[]
   eventos              Evento[]
   pagamentoComissoes   PagamentoComissao[]
@@ -455,6 +481,31 @@ model Cliente {
   @@index([documento])
   @@index([asaasCustomerId])
   @@index([tenantId, deletedAt])
+  @@schema("magiclawyer")
+}
+
+model AdvogadoHistorico {
+  id          String   @id @default(cuid())
+  tenantId    String
+  advogadoId  String
+  usuarioId   String   // Usuário que fez a alteração
+  acao        String   // CREATE, UPDATE, DELETE, CONVERT_EXTERNAL_TO_INTERNAL, etc.
+  campo       String?  // Nome do campo alterado (opcional)
+  valorAnterior String? // Valor anterior (opcional)
+  valorNovo   String?  // Valor novo (opcional)
+  detalhes    String?  // Detalhes adicionais da alteração
+  ipAddress   String?  // IP do usuário
+  userAgent   String?  // User agent do navegador
+  createdAt   DateTime @default(now())
+  
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  advogado    Advogado @relation(fields: [advogadoId], references: [id], onDelete: Cascade)
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([advogadoId])
+  @@index([usuarioId])
+  @@index([createdAt])
   @@schema("magiclawyer")
 }
 

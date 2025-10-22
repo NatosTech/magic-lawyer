@@ -30,12 +30,11 @@ import {
   DropdownItem,
   Checkbox,
   Pagination,
+  DatePicker,
+  DateRangePicker,
   Popover,
   PopoverTrigger,
   PopoverContent,
-  Tabs,
-  Tab,
-  Switch,
 } from "@heroui/react";
 import {
   UserIcon,
@@ -90,8 +89,6 @@ import { toast } from "sonner";
 import useSWR from "swr";
 import { AdvogadoHistorico } from "./components/advogado-historico";
 import { AdvogadoNotificacoes } from "./components/advogado-notificacoes";
-import { AdvogadoFormModal } from "./components/advogado-form-modal";
-import { type EnderecoFormData, type DadosBancariosFormData } from "./components/types";
 
 import {
   getAdvogadosDoTenant,
@@ -107,48 +104,12 @@ import {
 } from "@/app/actions/advogados";
 import { useAdvogadosPerformance, usePerformanceGeral } from "@/app/hooks/use-advogados-performance";
 import { useAdvogadosComissoes, useComissoesGeral } from "@/app/hooks/use-advogados-comissoes";
-import { useBancosDisponiveis } from "@/app/hooks/use-bancos";
-import { useTiposConta, useTiposContaBancaria, useTiposChavePix } from "@/app/hooks/use-dados-bancarios";
+import { useEstadosBrasil } from "@/app/hooks/use-estados-brasil";
 import { enviarEmailBoasVindas } from "@/app/actions/advogados-emails";
-import { title } from "@/components/primitives";
+import { title, subtitle } from "@/components/primitives";
 import { EspecialidadeJuridica } from "@/app/generated/prisma";
-
-const createEndereco = (apelido = "Principal", principal = true): EnderecoFormData => ({
-  apelido,
-  tipo: "ESCRITORIO",
-  principal,
-  logradouro: "",
-  numero: "",
-  complemento: "",
-  bairro: "",
-  cidade: "",
-  estado: "",
-  cep: "",
-  pais: "Brasil",
-  telefone: "",
-  observacoes: "",
-});
-
-const createContaBancaria = (principal = true): DadosBancariosFormData => ({
-  tipoConta: "PESSOA_FISICA",
-  bancoCodigo: "",
-  agencia: "",
-  conta: "",
-  digitoConta: "",
-  tipoContaBancaria: "CORRENTE",
-  chavePix: "",
-  tipoChavePix: "CPF",
-  titularNome: "",
-  titularDocumento: "",
-  titularEmail: "",
-  titularTelefone: "",
-  endereco: "",
-  cidade: "",
-  estado: "",
-  cep: "",
-  principal,
-  observacoes: "",
-});
+import { DatePicker } from "@heroui/react";
+import { CalendarDate, parseDate } from "@internationalized/date";
 
 export default function AdvogadosContent() {
   const { data, error, isLoading, mutate } = useSWR("advogados-do-tenant", getAdvogadosDoTenant, {
@@ -234,16 +195,7 @@ export default function AdvogadosContent() {
   const { comissoes: comissoesGeral, isLoading: isLoadingComissoesGeral } = useComissoesGeral();
 
   // Hook de estados do Brasil
-
-  // Hooks para dados bancários
-  const { bancos } = useBancosDisponiveis();
-  const { tipos: tiposConta } = useTiposConta();
-  const { tipos: tiposContaBancaria } = useTiposContaBancaria();
-  const { tipos: tiposChavePix } = useTiposChavePix();
-
-  // Estados para múltiplos endereços e dados bancários
-  const [enderecos, setEnderecos] = useState<EnderecoFormData[]>([createEndereco()]);
-  const [contasBancarias, setContasBancarias] = useState<DadosBancariosFormData[]>([createContaBancaria()]);
+  const { ufs, isLoading: isLoadingUfs } = useEstadosBrasil();
 
   // Estado do formulário
   const initialFormState: CreateAdvogadoInput = {
@@ -295,7 +247,7 @@ export default function AdvogadosContent() {
     criarAcessoUsuario: true,
     enviarEmailCredenciais: true,
 
-    // Endereço (mantido para compatibilidade)
+    // Endereço
     endereco: {
       apelido: "Principal",
       tipo: "ESCRITORIO",
@@ -314,90 +266,6 @@ export default function AdvogadosContent() {
   };
 
   const [formState, setFormState] = useState<CreateAdvogadoInput>(initialFormState);
-
-  useEffect(() => {
-    if (enderecos.length === 0) {
-      setFormState((prev) => (prev.endereco ? { ...prev, endereco: undefined } : prev));
-      return;
-    }
-
-    const principalEndereco = enderecos.find((endereco) => endereco.principal) ?? enderecos[0];
-
-    if (!principalEndereco) {
-      return;
-    }
-
-    const nextEndereco = {
-      apelido: principalEndereco.apelido,
-      tipo: principalEndereco.tipo,
-      principal: true,
-      logradouro: principalEndereco.logradouro,
-      numero: principalEndereco.numero,
-      complemento: principalEndereco.complemento,
-      bairro: principalEndereco.bairro,
-      cidade: principalEndereco.cidade,
-      estado: principalEndereco.estado,
-      cep: principalEndereco.cep,
-      pais: principalEndereco.pais,
-      telefone: principalEndereco.telefone,
-      observacoes: principalEndereco.observacoes,
-    };
-
-    setFormState((prev) => {
-      const current = prev.endereco;
-
-      if (
-        current &&
-        current.apelido === nextEndereco.apelido &&
-        current.tipo === nextEndereco.tipo &&
-        current.logradouro === nextEndereco.logradouro &&
-        current.numero === nextEndereco.numero &&
-        current.complemento === nextEndereco.complemento &&
-        current.bairro === nextEndereco.bairro &&
-        current.cidade === nextEndereco.cidade &&
-        current.estado === nextEndereco.estado &&
-        current.cep === nextEndereco.cep &&
-        (current.pais || "Brasil") === (nextEndereco.pais || "Brasil") &&
-        (current.telefone || "") === (nextEndereco.telefone || "") &&
-        (current.observacoes || "") === (nextEndereco.observacoes || "")
-      ) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        endereco: nextEndereco,
-      };
-    });
-  }, [enderecos]);
-
-  useEffect(() => {
-    setContasBancarias((prev) =>
-      prev.map((conta) => {
-        const nomeSugerido = `${formState.firstName || ""} ${formState.lastName || ""}`.trim();
-        const documentoSugerido = formState.cpf || "";
-        const emailSugerido = formState.email || "";
-        const telefoneSugerido = formState.phone || "";
-
-        const titularNome = conta.titularNome || nomeSugerido;
-        const titularDocumento = conta.titularDocumento || documentoSugerido;
-        const titularEmail = conta.titularEmail || emailSugerido;
-        const titularTelefone = conta.titularTelefone || telefoneSugerido;
-
-        if (conta.titularNome === titularNome && conta.titularDocumento === titularDocumento && conta.titularEmail === titularEmail && conta.titularTelefone === titularTelefone) {
-          return conta;
-        }
-
-        return {
-          ...conta,
-          titularNome,
-          titularDocumento,
-          titularEmail,
-          titularTelefone,
-        };
-      })
-    );
-  }, [formState.firstName, formState.lastName, formState.cpf, formState.email, formState.phone]);
 
   // Funções auxiliares
   const getNomeCompleto = (advogado: Advogado) => {
@@ -580,61 +448,11 @@ export default function AdvogadosContent() {
         return;
       }
 
-      const enderecosPayload = enderecos
-        .map((endereco, index) => ({
-          apelido: endereco.apelido || `Endereço ${index + 1}`,
-          tipo: endereco.tipo || "ESCRITORIO",
-          principal: endereco.principal ?? index === 0,
-          logradouro: endereco.logradouro || "",
-          numero: endereco.numero || "",
-          complemento: endereco.complemento || "",
-          bairro: endereco.bairro || "",
-          cidade: endereco.cidade || "",
-          estado: endereco.estado || "",
-          cep: endereco.cep || "",
-          pais: endereco.pais || "Brasil",
-          telefone: endereco.telefone || "",
-          observacoes: endereco.observacoes || "",
-        }))
-        .filter((endereco) => {
-          const campos = [endereco.logradouro, endereco.cidade, endereco.estado];
-          return campos.some((valor) => valor && valor.trim().length > 0);
-        });
-
-      const enderecoPrincipal = enderecosPayload.find((item) => item.principal) ?? enderecosPayload[0];
-
-      const contasPayload = contasBancarias
-        .map((conta, index) => ({
-          tipoConta: conta.tipoConta,
-          bancoCodigo: conta.bancoCodigo,
-          agencia: conta.agencia,
-          conta: conta.conta,
-          digitoConta: conta.digitoConta || "",
-          tipoContaBancaria: conta.tipoContaBancaria,
-          chavePix: conta.chavePix || "",
-          tipoChavePix: conta.tipoChavePix,
-          titularNome: conta.titularNome || `${formState.firstName} ${formState.lastName}`.trim(),
-          titularDocumento: conta.titularDocumento || formState.cpf || "",
-          titularEmail: conta.titularEmail || formState.email || "",
-          titularTelefone: conta.titularTelefone || formState.phone || "",
-          endereco: conta.endereco || "",
-          cidade: conta.cidade || "",
-          estado: conta.estado || "",
-          cep: conta.cep || "",
-          principal: conta.principal ?? index === 0,
-          observacoes: conta.observacoes || "",
-        }))
-        .filter((conta) => conta.bancoCodigo && conta.agencia && conta.conta && conta.titularNome && conta.titularDocumento);
-
       const input: CreateAdvogadoInput = {
         firstName: formState.firstName,
         lastName: formState.lastName,
         email: formState.email,
         phone: formState.phone,
-        cpf: formState.cpf,
-        rg: formState.rg,
-        dataNascimento: formState.dataNascimento,
-        observacoes: formState.observacoes,
         oabNumero: formState.oabNumero,
         oabUf: formState.oabUf,
         especialidades: formState.especialidades,
@@ -645,27 +463,6 @@ export default function AdvogadosContent() {
         comissaoAcaoGanha: formState.comissaoAcaoGanha,
         comissaoHonorarios: formState.comissaoHonorarios,
         isExterno: formState.isExterno,
-        formacao: formState.formacao,
-        experiencia: formState.experiencia,
-        premios: formState.premios,
-        publicacoes: formState.publicacoes,
-        website: formState.website,
-        linkedin: formState.linkedin,
-        twitter: formState.twitter,
-        instagram: formState.instagram,
-        notificarEmail: formState.notificarEmail,
-        notificarWhatsapp: formState.notificarWhatsapp,
-        notificarSistema: formState.notificarSistema,
-        podeCriarProcessos: formState.podeCriarProcessos,
-        podeEditarProcessos: formState.podeEditarProcessos,
-        podeExcluirProcessos: formState.podeExcluirProcessos,
-        podeGerenciarClientes: formState.podeGerenciarClientes,
-        podeAcessarFinanceiro: formState.podeAcessarFinanceiro,
-        criarAcessoUsuario: formState.criarAcessoUsuario,
-        enviarEmailCredenciais: formState.enviarEmailCredenciais,
-        endereco: enderecoPrincipal,
-        enderecos: enderecosPayload.length > 0 ? enderecosPayload : undefined,
-        dadosBancarios: contasPayload.length > 0 ? contasPayload : undefined,
       };
 
       const result = await createAdvogado(input);
@@ -673,9 +470,7 @@ export default function AdvogadosContent() {
       if (result.success) {
         toast.success("Advogado criado com sucesso!");
         setIsCreateModalOpen(false);
-        setFormState({ ...initialFormState });
-        setEnderecos([createEndereco()]);
-        setContasBancarias([createContaBancaria()]);
+        setFormState(initialFormState);
         mutate();
 
         // Se há credenciais temporárias, mostrar modal
@@ -695,25 +490,11 @@ export default function AdvogadosContent() {
   };
 
   const handleEditAdvogado = (advogado: Advogado) => {
-    const dataNascimento = advogado.usuario.dataNascimento
-      ? typeof advogado.usuario.dataNascimento === "string"
-        ? advogado.usuario.dataNascimento
-        : new Date(advogado.usuario.dataNascimento).toISOString().slice(0, 10)
-      : "";
-
-    // Popular TODOS os campos disponíveis do advogado
     setFormState({
-      // Dados pessoais básicos
       firstName: advogado.usuario.firstName || "",
       lastName: advogado.usuario.lastName || "",
       email: advogado.usuario.email,
       phone: advogado.usuario.phone || "",
-      cpf: advogado.usuario.cpf || "",
-      rg: advogado.usuario.rg || "",
-      dataNascimento,
-      observacoes: advogado.usuario.observacoes || "",
-
-      // Dados profissionais básicos
       oabNumero: advogado.oabNumero || "",
       oabUf: advogado.oabUf || "",
       especialidades: advogado.especialidades,
@@ -723,56 +504,7 @@ export default function AdvogadosContent() {
       comissaoPadrao: advogado.comissaoPadrao,
       comissaoAcaoGanha: advogado.comissaoAcaoGanha,
       comissaoHonorarios: advogado.comissaoHonorarios,
-      isExterno: advogado.isExterno,
-
-      // Dados profissionais adicionais (agora vindo do banco!)
-      formacao: advogado.formacao || "",
-      experiencia: advogado.experiencia || "",
-      premios: advogado.premios || "",
-      publicacoes: advogado.publicacoes || "",
-      website: advogado.website || "",
-      linkedin: advogado.linkedin || "",
-      twitter: advogado.twitter || "",
-      instagram: advogado.instagram || "",
-
-      // Configurações de notificação (agora vindo do banco!)
-      notificarEmail: advogado.notificarEmail,
-      notificarWhatsapp: advogado.notificarWhatsapp,
-      notificarSistema: advogado.notificarSistema,
-
-      // Configurações de acesso (agora vindo do banco!)
-      podeCriarProcessos: advogado.podeCriarProcessos,
-      podeEditarProcessos: advogado.podeEditarProcessos,
-      podeExcluirProcessos: advogado.podeExcluirProcessos,
-      podeGerenciarClientes: advogado.podeGerenciarClientes,
-      podeAcessarFinanceiro: advogado.podeAcessarFinanceiro,
-
-      // Configurações de criação (não aplicáveis na edição)
-      criarAcessoUsuario: false,
-      enviarEmailCredenciais: false,
-
-      // Endereço padrão
-      endereco: {
-        apelido: "Principal",
-        tipo: "ESCRITORIO",
-        principal: true,
-        logradouro: "",
-        numero: "",
-        complemento: "",
-        bairro: "",
-        cidade: "",
-        estado: "",
-        cep: "",
-        pais: "Brasil",
-        telefone: "",
-        observacoes: "",
-      },
     });
-
-    // Resetar endereços e contas bancárias para valores padrão
-    setEnderecos([createEndereco()]);
-    setContasBancarias([createContaBancaria()]);
-
     setSelectedAdvogado(advogado);
     setIsEditModalOpen(true);
   };
@@ -822,10 +554,6 @@ export default function AdvogadosContent() {
         firstName: formState.firstName,
         lastName: formState.lastName,
         phone: formState.phone,
-        cpf: formState.cpf,
-        rg: formState.rg,
-        dataNascimento: formState.dataNascimento,
-        observacoes: formState.observacoes,
         oabNumero: formState.oabNumero,
         oabUf: formState.oabUf,
         especialidades: formState.especialidades,
@@ -835,22 +563,6 @@ export default function AdvogadosContent() {
         comissaoPadrao: formState.comissaoPadrao,
         comissaoAcaoGanha: formState.comissaoAcaoGanha,
         comissaoHonorarios: formState.comissaoHonorarios,
-        formacao: formState.formacao,
-        experiencia: formState.experiencia,
-        premios: formState.premios,
-        publicacoes: formState.publicacoes,
-        website: formState.website,
-        linkedin: formState.linkedin,
-        twitter: formState.twitter,
-        instagram: formState.instagram,
-        notificarEmail: formState.notificarEmail,
-        notificarWhatsapp: formState.notificarWhatsapp,
-        notificarSistema: formState.notificarSistema,
-        podeCriarProcessos: formState.podeCriarProcessos,
-        podeEditarProcessos: formState.podeEditarProcessos,
-        podeExcluirProcessos: formState.podeExcluirProcessos,
-        podeGerenciarClientes: formState.podeGerenciarClientes,
-        podeAcessarFinanceiro: formState.podeAcessarFinanceiro,
       };
 
       const result = await updateAdvogado(selectedAdvogado.id, input);
@@ -1333,9 +1045,7 @@ export default function AdvogadosContent() {
             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto"
             startContent={<Plus size={20} />}
             onPress={() => {
-              setFormState({ ...initialFormState });
-              setEnderecos([createEndereco()]);
-              setContasBancarias([createContaBancaria()]);
+              setFormState(initialFormState);
               setIsCreateModalOpen(true);
             }}
             size="sm"
@@ -2297,9 +2007,7 @@ export default function AdvogadosContent() {
                     color="primary"
                     startContent={<Plus size={20} />}
                     onPress={() => {
-                      setFormState({ ...initialFormState });
-                      setEnderecos([createEndereco()]);
-                      setContasBancarias([createContaBancaria()]);
+                      setFormState(initialFormState);
                       setIsCreateModalOpen(true);
                     }}
                     className="bg-gradient-to-r from-blue-600 to-indigo-600"
@@ -2532,49 +2240,421 @@ export default function AdvogadosContent() {
         </Card>
       </motion.div>
 
-      <AdvogadoFormModal
-        mode="create"
-        isOpen={isCreateModalOpen}
-        onOpenChange={setIsCreateModalOpen}
-        title="Novo Advogado"
-        description="Complete as informações do advogado"
-        primaryActionLabel="Criar Advogado"
-        isSaving={isSaving}
-        formState={formState}
-        setFormState={setFormState}
-        enderecos={enderecos}
-        setEnderecos={setEnderecos}
-        contasBancarias={contasBancarias}
-        setContasBancarias={setContasBancarias}
-        bancos={bancos}
-        tiposConta={tiposConta}
-        tiposContaBancaria={tiposContaBancaria}
-        tiposChavePix={tiposChavePix}
-        especialidades={especialidadeOptions}
-        onSubmit={handleCreateAdvogado}
-      />
+      {/* Modal Criar Advogado */}
+      <Modal isOpen={isCreateModalOpen} onOpenChange={setIsCreateModalOpen} size="3xl">
+        <ModalContent>
+          <ModalHeader>Novo Advogado</ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  isRequired
+                  label="Nome"
+                  placeholder="Nome do advogado"
+                  startContent={<User className="h-4 w-4 text-default-400" />}
+                  value={formState.firstName}
+                  onValueChange={(value) => setFormState({ ...formState, firstName: value })}
+                />
+                <Input
+                  isRequired
+                  label="Sobrenome"
+                  placeholder="Sobrenome do advogado"
+                  startContent={<User className="h-4 w-4 text-default-400" />}
+                  value={formState.lastName}
+                  onValueChange={(value) => setFormState({ ...formState, lastName: value })}
+                />
+              </div>
 
-      <AdvogadoFormModal
-        mode="edit"
-        isOpen={isEditModalOpen}
-        onOpenChange={setIsEditModalOpen}
-        title="Editar Advogado"
-        description="Atualize as informações do advogado"
-        primaryActionLabel="Salvar Alterações"
-        isSaving={isSaving}
-        formState={formState}
-        setFormState={setFormState}
-        enderecos={enderecos}
-        setEnderecos={setEnderecos}
-        contasBancarias={contasBancarias}
-        setContasBancarias={setContasBancarias}
-        bancos={bancos}
-        tiposConta={tiposConta}
-        tiposContaBancaria={tiposContaBancaria}
-        tiposChavePix={tiposChavePix}
-        especialidades={especialidadeOptions}
-        onSubmit={handleUpdateAdvogado}
-      />
+              <Input
+                isRequired
+                label="Email"
+                placeholder="email@exemplo.com"
+                type="email"
+                startContent={<MailIcon className="h-4 w-4 text-default-400" />}
+                value={formState.email}
+                onValueChange={(value) => setFormState({ ...formState, email: value })}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Número OAB"
+                  placeholder="123456"
+                  startContent={<ScaleIcon className="h-4 w-4 text-default-400" />}
+                  value={formState.oabNumero}
+                  onValueChange={(value) => setFormState({ ...formState, oabNumero: value })}
+                />
+                <Select
+                  label="UF OAB"
+                  placeholder="Selecione a UF"
+                  startContent={<MapPin className="h-4 w-4 text-default-400" />}
+                  selectedKeys={formState.oabUf ? [formState.oabUf] : []}
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0] as string;
+                    setFormState({ ...formState, oabUf: value });
+                  }}
+                  isLoading={isLoadingUfs}
+                >
+                  {ufs.map((uf) => (
+                    <SelectItem key={uf} textValue={uf}>
+                      {uf}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Telefone"
+                  placeholder="(11) 99999-9999"
+                  startContent={<Phone className="h-4 w-4 text-default-400" />}
+                  value={formState.telefone}
+                  onValueChange={(value) => setFormState({ ...formState, telefone: value })}
+                />
+                <Input
+                  label="WhatsApp"
+                  placeholder="(11) 99999-9999"
+                  startContent={<Smartphone className="h-4 w-4 text-default-400" />}
+                  value={formState.whatsapp}
+                  onValueChange={(value) => setFormState({ ...formState, whatsapp: value })}
+                />
+              </div>
+
+              <Textarea label="Biografia" placeholder="Conte um pouco sobre o advogado..." value={formState.bio} onValueChange={(value) => setFormState({ ...formState, bio: value })} />
+
+              <div className="grid grid-cols-3 gap-4">
+                <Input
+                  label="Comissão Padrão (%)"
+                  type="number"
+                  placeholder="0"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={(formState.comissaoPadrao ?? 0).toString()}
+                  onValueChange={(value) => setFormState({ ...formState, comissaoPadrao: parseFloat(value) || 0 })}
+                />
+                <Input
+                  label="Comissão Ação Ganha (%)"
+                  type="number"
+                  placeholder="0"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={(formState.comissaoAcaoGanha ?? 0).toString()}
+                  onValueChange={(value) => setFormState({ ...formState, comissaoAcaoGanha: parseFloat(value) || 0 })}
+                />
+                <Input
+                  label="Comissão Honorários (%)"
+                  type="number"
+                  placeholder="0"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={(formState.comissaoHonorarios ?? 0).toString()}
+                  onValueChange={(value) => setFormState({ ...formState, comissaoHonorarios: parseFloat(value) || 0 })}
+                />
+              </div>
+
+              {/* Opções de Configuração */}
+              <div className="space-y-4">
+                <Divider />
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-default-700">Configurações de Acesso</h4>
+
+                  <div className="flex items-center space-x-4">
+                    <Checkbox isSelected={formState.isExterno} onValueChange={(checked) => setFormState({ ...formState, isExterno: checked })} color="warning">
+                      <span className="text-sm">Advogado Externo</span>
+                    </Checkbox>
+                    <Popover placement="top" showArrow>
+                      <PopoverTrigger>
+                        <Button isIconOnly size="sm" variant="light" className="min-w-0 w-6 h-6 p-0">
+                          <Info className="h-4 w-4 text-default-400 hover:text-default-600 transition-colors" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80">
+                        <div className="px-1 py-2">
+                          <div className="text-small font-bold mb-2 flex items-center gap-2">
+                            <User className="h-4 w-4 text-warning" />O que é um Advogado Externo?
+                          </div>
+                          <div className="text-tiny space-y-2">
+                            <p className="text-default-600">
+                              <strong>Advogados externos</strong> são profissionais que aparecem mencionados em processos, mas <strong>não integram a equipe</strong> do seu escritório.
+                            </p>
+                            <div className="bg-warning-50 dark:bg-warning-900/20 p-3 rounded-lg border border-warning-200 dark:border-warning-800">
+                              <p className="text-warning-700 dark:text-warning-300 font-medium mb-1">⚠️ Características:</p>
+                              <ul className="text-warning-600 dark:text-warning-400 space-y-1 text-xs">
+                                <li>
+                                  • <strong>Não possuem acesso</strong> ao sistema
+                                </li>
+                                <li>
+                                  • São apenas <strong>referenciados</strong> em processos
+                                </li>
+                                <li>
+                                  • Podem ser <strong>advogados adversários</strong> ou <strong>colaboradores externos</strong>
+                                </li>
+                                <li>
+                                  • Úteis para <strong>histórico</strong> e <strong>controle</strong> de processos
+                                </li>
+                              </ul>
+                            </div>
+                            <div className="bg-success-50 dark:bg-success-900/20 p-3 rounded-lg border border-success-200 dark:border-success-800">
+                              <p className="text-success-700 dark:text-success-300 font-medium mb-1">💡 Dica:</p>
+                              <p className="text-success-600 dark:text-success-400 text-xs">
+                                <strong>Nunca se sabe!</strong> A vida é cheia de surpresas! Um advogado externo pode eventualmente ser <strong>ativado</strong> e <strong>incluído no sistema</strong>{" "}
+                                caso se torne parte da equipe.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="flex items-center space-x-4">
+                    <Checkbox
+                      isSelected={formState.criarAcessoUsuario}
+                      onValueChange={(checked) => setFormState({ ...formState, criarAcessoUsuario: checked })}
+                      color="primary"
+                      isDisabled={formState.isExterno}
+                    >
+                      <span className="text-sm">Criar Acesso ao Sistema</span>
+                    </Checkbox>
+                    <Popover placement="top" showArrow>
+                      <PopoverTrigger>
+                        <Button isIconOnly size="sm" variant="light" className="min-w-0 w-6 h-6 p-0">
+                          <Key className="h-4 w-4 text-default-400 hover:text-default-600 transition-colors" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80">
+                        <div className="px-1 py-2">
+                          <div className="text-small font-bold mb-2 flex items-center gap-2">
+                            <Key className="h-4 w-4 text-primary" />
+                            Criar Acesso ao Sistema
+                          </div>
+                          <div className="text-tiny space-y-2">
+                            <p className="text-default-600">
+                              Esta opção <strong>cria credenciais de acesso</strong> para o advogado utilizar o sistema Magic Lawyer.
+                            </p>
+                            <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-lg border border-primary-200 dark:border-primary-800">
+                              <p className="text-primary-700 dark:text-primary-300 font-medium mb-1">🔑 O que é criado:</p>
+                              <ul className="text-primary-600 dark:text-primary-400 space-y-1 text-xs">
+                                <li>
+                                  • <strong>Login</strong> com o email do advogado
+                                </li>
+                                <li>
+                                  • <strong>Senha temporária</strong> gerada automaticamente
+                                </li>
+                                <li>
+                                  • <strong>Conta ativa</strong> no sistema
+                                </li>
+                                <li>
+                                  • <strong>Permissões</strong> de advogado
+                                </li>
+                              </ul>
+                            </div>
+                            <div className="bg-warning-50 dark:bg-warning-900/20 p-3 rounded-lg border border-warning-200 dark:border-warning-800">
+                              <p className="text-warning-700 dark:text-warning-300 font-medium mb-1">⚠️ Importante:</p>
+                              <p className="text-warning-600 dark:text-warning-400 text-xs">
+                                Esta opção é <strong>desabilitada</strong> para advogados externos, pois eles não devem ter acesso ao sistema.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {formState.criarAcessoUsuario && !formState.isExterno && (
+                    <div className="flex items-center space-x-4">
+                      <Checkbox isSelected={formState.enviarEmailCredenciais} onValueChange={(checked) => setFormState({ ...formState, enviarEmailCredenciais: checked })} color="success">
+                        <span className="text-sm">Enviar Credenciais por Email</span>
+                      </Checkbox>
+                      <Popover placement="top" showArrow>
+                        <PopoverTrigger>
+                          <Button isIconOnly size="sm" variant="light" className="min-w-0 w-6 h-6 p-0">
+                            <Mail className="h-4 w-4 text-default-400 hover:text-default-600 transition-colors" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                          <div className="px-1 py-2">
+                            <div className="text-small font-bold mb-2 flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-success" />
+                              Enviar Credenciais por Email
+                            </div>
+                            <div className="text-tiny space-y-2">
+                              <p className="text-default-600">
+                                Esta opção <strong>envia automaticamente</strong> as credenciais de acesso por email para o advogado.
+                              </p>
+                              <div className="bg-success-50 dark:bg-success-900/20 p-3 rounded-lg border border-success-200 dark:border-success-800">
+                                <p className="text-success-700 dark:text-success-300 font-medium mb-1">📧 O que é enviado:</p>
+                                <ul className="text-success-600 dark:text-success-400 space-y-1 text-xs">
+                                  <li>
+                                    • <strong>Email de boas-vindas</strong> personalizado
+                                  </li>
+                                  <li>
+                                    • <strong>Login</strong> (email do advogado)
+                                  </li>
+                                  <li>
+                                    • <strong>Senha temporária</strong> gerada
+                                  </li>
+                                  <li>
+                                    • <strong>Link de acesso</strong> direto ao sistema
+                                  </li>
+                                  <li>
+                                    • <strong>Instruções</strong> de primeiro acesso
+                                  </li>
+                                </ul>
+                              </div>
+                              <div className="bg-info-50 dark:bg-info-900/20 p-3 rounded-lg border border-info-200 dark:border-info-800">
+                                <p className="text-info-700 dark:text-info-300 font-medium mb-1">💡 Vantagens:</p>
+                                <ul className="text-info-600 dark:text-info-400 space-y-1 text-xs">
+                                  <li>
+                                    • <strong>Segurança</strong> - Credenciais não ficam expostas
+                                  </li>
+                                  <li>
+                                    • <strong>Praticidade</strong> - Advogado recebe tudo pronto
+                                  </li>
+                                  <li>
+                                    • <strong>Profissionalismo</strong> - Email bem formatado
+                                  </li>
+                                  <li>
+                                    • <strong>Controle</strong> - Histórico de envio
+                                  </li>
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setIsCreateModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button color="primary" isLoading={isSaving} onPress={handleCreateAdvogado}>
+              Criar Advogado
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal Editar Advogado */}
+      <Modal isOpen={isEditModalOpen} onOpenChange={setIsEditModalOpen} size="2xl">
+        <ModalContent>
+          <ModalHeader>Editar Advogado</ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  isRequired
+                  label="Nome"
+                  placeholder="Nome do advogado"
+                  startContent={<User className="h-4 w-4 text-default-400" />}
+                  value={formState.firstName}
+                  onValueChange={(value) => setFormState({ ...formState, firstName: value })}
+                />
+                <Input
+                  isRequired
+                  label="Sobrenome"
+                  placeholder="Sobrenome do advogado"
+                  startContent={<User className="h-4 w-4 text-default-400" />}
+                  value={formState.lastName}
+                  onValueChange={(value) => setFormState({ ...formState, lastName: value })}
+                />
+              </div>
+
+              <Input
+                isRequired
+                label="Email"
+                placeholder="email@exemplo.com"
+                type="email"
+                startContent={<MailIcon className="h-4 w-4 text-default-400" />}
+                value={formState.email}
+                onValueChange={(value) => setFormState({ ...formState, email: value })}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Número OAB"
+                  placeholder="123456"
+                  startContent={<ScaleIcon className="h-4 w-4 text-default-400" />}
+                  value={formState.oabNumero}
+                  onValueChange={(value) => setFormState({ ...formState, oabNumero: value })}
+                />
+                <Select
+                  label="UF OAB"
+                  placeholder="Selecione a UF"
+                  startContent={<MapPin className="h-4 w-4 text-default-400" />}
+                  selectedKeys={formState.oabUf ? [formState.oabUf] : []}
+                  onSelectionChange={(keys) => {
+                    const value = Array.from(keys)[0] as string;
+                    setFormState({ ...formState, oabUf: value });
+                  }}
+                  isLoading={isLoadingUfs}
+                >
+                  {ufs.map((uf) => (
+                    <SelectItem key={uf} textValue={uf}>
+                      {uf}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Telefone"
+                  placeholder="(11) 99999-9999"
+                  startContent={<Phone className="h-4 w-4 text-default-400" />}
+                  value={formState.telefone}
+                  onValueChange={(value) => setFormState({ ...formState, telefone: value })}
+                />
+                <Input
+                  label="WhatsApp"
+                  placeholder="(11) 99999-9999"
+                  startContent={<Smartphone className="h-4 w-4 text-default-400" />}
+                  value={formState.whatsapp}
+                  onValueChange={(value) => setFormState({ ...formState, whatsapp: value })}
+                />
+              </div>
+
+              <Textarea label="Biografia" placeholder="Conte um pouco sobre o advogado..." value={formState.bio} onValueChange={(value) => setFormState({ ...formState, bio: value })} />
+
+              <div className="grid grid-cols-3 gap-4">
+                <Input
+                  label="Comissão Padrão (%)"
+                  type="number"
+                  placeholder="0"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={(formState.comissaoPadrao ?? 0).toString()}
+                  onValueChange={(value) => setFormState({ ...formState, comissaoPadrao: parseFloat(value) || 0 })}
+                />
+                <Input
+                  label="Comissão Ação Ganha (%)"
+                  type="number"
+                  placeholder="0"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={(formState.comissaoAcaoGanha ?? 0).toString()}
+                  onValueChange={(value) => setFormState({ ...formState, comissaoAcaoGanha: parseFloat(value) || 0 })}
+                />
+                <Input
+                  label="Comissão Honorários (%)"
+                  type="number"
+                  placeholder="0"
+                  startContent={<Percent className="h-4 w-4 text-default-400" />}
+                  value={(formState.comissaoHonorarios ?? 0).toString()}
+                  onValueChange={(value) => setFormState({ ...formState, comissaoHonorarios: parseFloat(value) || 0 })}
+                />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={() => setIsEditModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button color="primary" isLoading={isSaving} onPress={handleUpdateAdvogado}>
+              Salvar Alterações
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Modal de Visualização do Advogado */}
       <Modal isOpen={isViewModalOpen} onOpenChange={setIsViewModalOpen} size="2xl">

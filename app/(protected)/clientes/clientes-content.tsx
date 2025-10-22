@@ -573,19 +573,19 @@ export function ClientesContent() {
                         <Search className="w-4 h-4 text-blue-500" />
                         Busca Inteligente
                       </label>
-                      <Input
+            <Input
                         id="filtro-busca"
                         placeholder="Nome, email, documento..."
                         size="md"
                         startContent={<Search className="w-4 h-4 text-default-400" />}
-                        value={searchTerm}
+              value={searchTerm}
                         variant="bordered"
                         classNames={{
                           input: "text-slate-700 dark:text-slate-300",
                           inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500",
                         }}
-                        onValueChange={setSearchTerm}
-                      />
+              onValueChange={setSearchTerm}
+            />
                       <p className="text-xs text-slate-500 dark:text-slate-400">Busca em nomes, emails e documentos</p>
                     </motion.div>
 
@@ -595,18 +595,18 @@ export function ClientesContent() {
                         <Users className="w-4 h-4 text-green-500" />
                         Tipo de Pessoa
                       </label>
-                      <Select
+            <Select
                         id="filtro-tipo"
                         placeholder="Selecione o tipo"
-                        selectedKeys={[selectedTipoPessoa]}
+              selectedKeys={[selectedTipoPessoa]}
                         size="md"
                         variant="bordered"
                         classNames={{
                           trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-green-400 dark:hover:border-green-500",
                         }}
-                        onChange={(e) => setSelectedTipoPessoa(e.target.value)}
-                      >
-                        {tipoPessoaOptions.map((option) => (
+              onChange={(e) => setSelectedTipoPessoa(e.target.value)}
+            >
+              {tipoPessoaOptions.map((option) => (
                           <SelectItem key={option.key} textValue={option.label}>
                             <div className="flex items-center gap-2">
                               {option.key === "all" && <Users className="w-4 h-4" />}
@@ -615,11 +615,11 @@ export function ClientesContent() {
                               <span>{option.label}</span>
                             </div>
                           </SelectItem>
-                        ))}
-                      </Select>
+              ))}
+            </Select>
                       <p className="text-xs text-slate-500 dark:text-slate-400">Filtre por tipo de pessoa</p>
                     </motion.div>
-                  </div>
+          </div>
 
                   {/* Resumo dos Filtros Ativos */}
                   {hasActiveFilters && (
@@ -647,11 +647,11 @@ export function ClientesContent() {
                       </div>
                     </motion.div>
                   )}
-                </CardBody>
+        </CardBody>
               </motion.div>
             )}
           </AnimatePresence>
-        </Card>
+      </Card>
       </motion.div>
 
       {/* Lista de Clientes Melhorada */}
@@ -676,13 +676,13 @@ export function ClientesContent() {
             </div>
           </CardHeader>
           <CardBody className="p-6">
-            {isLoading ? (
+      {isLoading ? (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <Skeleton key={i} className="h-64 rounded-xl" />
                 ))}
-              </div>
-            ) : clientesFiltrados.length === 0 ? (
+        </div>
+      ) : clientesFiltrados.length === 0 ? (
               <motion.div animate={{ opacity: 1, scale: 1 }} className="text-center py-16" initial={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.3 }}>
                 <div className="p-6 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
                   <Users className="text-slate-400" size={48} />
@@ -708,7 +708,7 @@ export function ClientesContent() {
                 <AnimatePresence>
                   {clientesFiltrados.map((cliente, index) => (
                     <motion.div
-                      key={cliente.id}
+              key={cliente.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
@@ -723,18 +723,18 @@ export function ClientesContent() {
                         <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
                           <div className="flex gap-4 w-full">
                             <motion.div whileHover={{ scale: 1.1, rotate: 5 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-                              <Avatar
-                                showFallback
+                <Avatar
+                  showFallback
                                 className="bg-blue-500 text-white shadow-lg"
                                 icon={cliente.tipoPessoa === TipoPessoa.JURIDICA ? <Building2 className="text-white" /> : <User className="text-white" />}
-                                name={getInitials(cliente.nome)}
+                  name={getInitials(cliente.nome)}
                                 size="lg"
-                              />
+                />
                             </motion.div>
-                            <div className="flex flex-col flex-1">
+                <div className="flex flex-col flex-1">
                               <div className="flex items-center gap-2 mb-1">
                                 <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{cliente.nome}</h3>
-                                {cliente.usuarioId && (
+                    {cliente.usuarioId && (
                                   <Badge content="✓" color="success" variant="shadow" size="sm">
                                     <Chip color="success" size="sm" startContent={<Key className="h-3 w-3" />} variant="flat" className="font-semibold">
                                       Acesso
@@ -743,91 +743,91 @@ export function ClientesContent() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <Chip
+                      <Chip
                                   color={cliente.tipoPessoa === TipoPessoa.FISICA ? "secondary" : "warning"}
-                                  size="sm"
-                                  variant="flat"
+                        size="sm"
+                        variant="flat"
                                   startContent={cliente.tipoPessoa === TipoPessoa.FISICA ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
-                                >
+                      >
                                   {cliente.tipoPessoa === TipoPessoa.FISICA ? "Pessoa Física" : "Pessoa Jurídica"}
-                                </Chip>
-                              </div>
-                            </div>
-                            <Dropdown>
-                              <DropdownTrigger>
+                      </Chip>
+                  </div>
+                </div>
+                <Dropdown>
+                  <DropdownTrigger>
                                 <Button isIconOnly size="sm" variant="light" className="hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-110 transition-all">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownTrigger>
-                              <DropdownMenu aria-label="Ações do cliente">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu aria-label="Ações do cliente">
                                 <DropdownItem key="view" as={Link} href={`/clientes/${cliente.id}`} startContent={<Eye className="h-4 w-4" />}>
-                                  Ver Detalhes
-                                </DropdownItem>
+                      Ver Detalhes
+                    </DropdownItem>
                                 <DropdownItem key="edit" startContent={<Edit className="h-4 w-4" />} onPress={() => handleEditCliente(cliente)}>
-                                  Editar
-                                </DropdownItem>
-                                {cliente.usuarioId ? (
-                                  <DropdownItem
-                                    key="reset-password"
-                                    className="text-warning"
-                                    color="warning"
-                                    startContent={<KeyRound className="h-4 w-4" />}
-                                    onPress={() => handleOpenResetModal(cliente)}
-                                  >
-                                    Resetar Senha
-                                  </DropdownItem>
-                                ) : null}
+                      Editar
+                    </DropdownItem>
+                    {cliente.usuarioId ? (
+                      <DropdownItem
+                        key="reset-password"
+                        className="text-warning"
+                        color="warning"
+                        startContent={<KeyRound className="h-4 w-4" />}
+                        onPress={() => handleOpenResetModal(cliente)}
+                      >
+                        Resetar Senha
+                      </DropdownItem>
+                    ) : null}
                                 <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="h-4 w-4" />} onPress={() => handleDeleteCliente(cliente.id)}>
-                                  Excluir
-                                </DropdownItem>
-                              </DropdownMenu>
-                            </Dropdown>
+                      Excluir
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
                           </div>
-                        </CardHeader>
+              </CardHeader>
                         <CardBody className="p-6 space-y-4">
                           {/* Informações de Contato */}
                           <div className="space-y-3">
-                            {cliente.documento && (
+                {cliente.documento && (
                               <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                                 <FileText className="h-4 w-4 text-blue-500" />
                                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{cliente.documento}</span>
-                              </div>
-                            )}
-                            {cliente.email && (
+                  </div>
+                )}
+                {cliente.email && (
                               <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                                 <Mail className="h-4 w-4 text-green-500" />
                                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{cliente.email}</span>
-                              </div>
-                            )}
-                            {cliente.telefone && (
+                  </div>
+                )}
+                {cliente.telefone && (
                               <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                                 <Phone className="h-4 w-4 text-purple-500" />
                                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{cliente.telefone}</span>
-                              </div>
-                            )}
+                  </div>
+                )}
                           </div>
 
                           <Divider className="my-4" />
 
                           {/* Estatísticas e Ações */}
                           <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2">
                                 <Badge content={cliente._count?.processos || 0} color="primary" variant="shadow" size="sm">
                                   <Chip color="primary" size="md" variant="flat" className="font-semibold">
                                     {cliente._count?.processos || 0} processo(s)
-                                  </Chip>
+                    </Chip>
                                 </Badge>
-                              </div>
+                  </div>
                             </div>
 
                             <div className="flex gap-2">
-                              <Button
-                                as={Link}
-                                color="primary"
-                                href={`/clientes/${cliente.id}`}
-                                size="sm"
-                                variant="flat"
+                  <Button
+                    as={Link}
+                    color="primary"
+                    href={`/clientes/${cliente.id}`}
+                    size="sm"
+                    variant="flat"
                                 className="flex-1 hover:scale-105 transition-transform"
                                 startContent={<Eye className="h-4 w-4" />}
                               >
@@ -843,16 +843,16 @@ export function ClientesContent() {
                                 href={`/clientes/${cliente.id}`}
                               >
                                 Processos
-                              </Button>
+                  </Button>
                             </div>
-                          </div>
-                        </CardBody>
-                      </Card>
+                </div>
+              </CardBody>
+            </Card>
                     </motion.div>
-                  ))}
+          ))}
                 </AnimatePresence>
-              </div>
-            )}
+        </div>
+      )}
           </CardBody>
         </Card>
       </motion.div>

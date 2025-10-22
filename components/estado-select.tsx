@@ -1,6 +1,6 @@
 "use client";
 
-import { Select, SelectItem } from "@heroui/select";
+import { Autocomplete, AutocompleteItem } from "@heroui/react";
 import { Spinner } from "@heroui/spinner";
 
 import { useEstadosBrasil } from "@/hooks/use-brazil-apis";
@@ -25,6 +25,18 @@ export function EstadoSelect({
   className,
 }: EstadoSelectProps) {
   const { estados, isLoading, error } = useEstadosBrasil();
+  const listaEstados = estados ?? [];
+  const estadoItems = listaEstados.map((estado) => ({
+    key: estado.sigla,
+    label: `${estado.nome} (${estado.sigla})`,
+    data: estado,
+  }));
+  const estadoKeySet = new Set(estadoItems.map((item) => item.key));
+  const normalizedSelectedKeys = new Set(
+    (selectedKeys ?? []).filter(
+      (key): key is string => typeof key === "string" && estadoKeySet.has(key),
+    ),
+  );
 
   if (isLoading) {
     return (
@@ -43,21 +55,37 @@ export function EstadoSelect({
     );
   }
 
+  const selectedKey =
+    normalizedSelectedKeys.size > 0
+      ? Array.from(normalizedSelectedKeys)[0]
+      : null;
+
   return (
-    <Select
+    <Autocomplete
+      allowsCustomValue={false}
       className={className}
+      items={estadoItems}
       isDisabled={isDisabled}
       isRequired={isRequired}
       label={label}
       placeholder={placeholder}
-      selectedKeys={selectedKeys || []}
-      onSelectionChange={onSelectionChange}
+      isClearable={!isRequired}
+      selectedKey={selectedKey ?? undefined}
+      listboxProps={{ emptyContent: "Nenhum estado encontrado" }}
+      onSelectionChange={(key) => {
+        if (!onSelectionChange) return;
+        if (key) {
+          onSelectionChange(new Set([key]));
+        } else {
+          onSelectionChange(new Set());
+        }
+      }}
     >
-      {estados?.map((estado) => (
-        <SelectItem key={estado.sigla}>
-          {estado.nome} ({estado.sigla})
-        </SelectItem>
-      )) || []}
-    </Select>
+      {(item) => (
+        <AutocompleteItem key={item.key} textValue={item.label}>
+          {item.label}
+        </AutocompleteItem>
+      )}
+    </Autocomplete>
   );
 }

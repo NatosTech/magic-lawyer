@@ -6,6 +6,8 @@ import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
 import { EspecialidadeJuridica } from "@/app/generated/prisma";
 import { UploadService } from "@/lib/upload-service";
+import { createAdvogadoHistorico } from "./advogado-historico";
+import { enviarEmailBoasVindas } from "./advogados-emails";
 
 // =============================================
 // TYPES
@@ -39,6 +41,29 @@ export interface AdvogadoData {
   comissaoHonorarios: number;
   isExterno: boolean; // Campo do schema para identificar advogados externos
   processosCount?: number; // Contador de processos onde aparece
+
+  // Dados profissionais adicionais
+  formacao: string | null;
+  experiencia: string | null;
+  premios: string | null;
+  publicacoes: string | null;
+  website: string | null;
+  linkedin: string | null;
+  twitter: string | null;
+  instagram: string | null;
+
+  // Configurações de notificação
+  notificarEmail: boolean;
+  notificarWhatsapp: boolean;
+  notificarSistema: boolean;
+
+  // Configurações de acesso
+  podeCriarProcessos: boolean;
+  podeEditarProcessos: boolean;
+  podeExcluirProcessos: boolean;
+  podeGerenciarClientes: boolean;
+  podeAcessarFinanceiro: boolean;
+
   usuario: {
     id: string;
     firstName: string | null;
@@ -48,7 +73,48 @@ export interface AdvogadoData {
     avatarUrl: string | null;
     active: boolean;
     role: string;
+    cpf?: string | null;
+    rg?: string | null;
+    dataNascimento?: string | null;
+    observacoes?: string | null;
   };
+}
+
+export interface EnderecoInput {
+  apelido: string;
+  tipo: string;
+  principal: boolean;
+  logradouro: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade: string;
+  estado: string;
+  cep?: string;
+  pais?: string;
+  telefone?: string;
+  observacoes?: string;
+}
+
+export interface DadosBancariosInput {
+  tipoConta: "PESSOA_FISICA" | "PESSOA_JURIDICA";
+  bancoCodigo: string;
+  agencia: string;
+  conta: string;
+  digitoConta?: string;
+  tipoContaBancaria: "CORRENTE" | "POUPANCA" | "SALARIO" | "INVESTIMENTO";
+  chavePix?: string;
+  tipoChavePix?: "CPF" | "CNPJ" | "EMAIL" | "TELEFONE" | "ALEATORIA";
+  titularNome: string;
+  titularDocumento: string;
+  titularEmail?: string;
+  titularTelefone?: string;
+  endereco?: string;
+  cidade?: string;
+  estado?: string;
+  cep?: string;
+  principal?: boolean;
+  observacoes?: string;
 }
 
 export interface CreateAdvogadoInput {
@@ -57,6 +123,11 @@ export interface CreateAdvogadoInput {
   lastName: string;
   email: string;
   phone?: string;
+  cpf?: string;
+  rg?: string;
+  dataNascimento?: string;
+  observacoes?: string;
+
   // Dados do advogado
   oabNumero?: string;
   oabUf?: string;
@@ -68,6 +139,51 @@ export interface CreateAdvogadoInput {
   comissaoAcaoGanha?: number;
   comissaoHonorarios?: number;
   isExterno?: boolean;
+
+  // Dados profissionais adicionais
+  formacao?: string;
+  experiencia?: string;
+  premios?: string;
+  publicacoes?: string;
+  website?: string;
+  linkedin?: string;
+  twitter?: string;
+  instagram?: string;
+
+  // Configurações de notificação
+  notificarEmail?: boolean;
+  notificarWhatsapp?: boolean;
+  notificarSistema?: boolean;
+
+  // Configurações de acesso
+  podeCriarProcessos?: boolean;
+  podeEditarProcessos?: boolean;
+  podeExcluirProcessos?: boolean;
+  podeGerenciarClientes?: boolean;
+  podeAcessarFinanceiro?: boolean;
+
+  // Configurações de criação
+  criarAcessoUsuario?: boolean;
+  enviarEmailCredenciais?: boolean;
+
+  // Endereço
+  endereco?: {
+    apelido: string;
+    tipo: string;
+    principal: boolean;
+    logradouro: string;
+    numero?: string;
+    complemento?: string;
+    bairro?: string;
+    cidade: string;
+    estado: string;
+    cep?: string;
+    pais?: string;
+    telefone?: string;
+    observacoes?: string;
+  };
+  enderecos?: EnderecoInput[];
+  dadosBancarios?: DadosBancariosInput[];
 }
 
 export interface UpdateAdvogadoInput {
@@ -75,6 +191,11 @@ export interface UpdateAdvogadoInput {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  cpf?: string;
+  rg?: string;
+  dataNascimento?: string;
+  observacoes?: string;
+
   // Dados do advogado
   oabNumero?: string;
   oabUf?: string;
@@ -85,6 +206,28 @@ export interface UpdateAdvogadoInput {
   comissaoPadrao?: number;
   comissaoAcaoGanha?: number;
   comissaoHonorarios?: number;
+
+  // Dados profissionais adicionais
+  formacao?: string;
+  experiencia?: string;
+  premios?: string;
+  publicacoes?: string;
+  website?: string;
+  linkedin?: string;
+  twitter?: string;
+  instagram?: string;
+
+  // Configurações de notificação
+  notificarEmail?: boolean;
+  notificarWhatsapp?: boolean;
+  notificarSistema?: boolean;
+
+  // Configurações de acesso
+  podeCriarProcessos?: boolean;
+  podeEditarProcessos?: boolean;
+  podeExcluirProcessos?: boolean;
+  podeGerenciarClientes?: boolean;
+  podeAcessarFinanceiro?: boolean;
 }
 
 interface ActionResponse<T = any> {
@@ -92,6 +235,43 @@ interface ActionResponse<T = any> {
   data?: T;
   error?: string;
   advogados?: T;
+}
+
+interface CreateAdvogadoResponse extends ActionResponse<AdvogadoData> {
+  credenciais?: {
+    email: string;
+    senhaTemporaria: string;
+    linkLogin: string;
+  };
+}
+
+// =============================================
+// UTILITIES
+// =============================================
+
+/**
+ * Gera uma senha temporária segura
+ */
+function generateTemporaryPassword(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";
+  let password = "";
+
+  // Garantir pelo menos um caractere de cada tipo
+  password += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)]; // Maiúscula
+  password += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)]; // Minúscula
+  password += "0123456789"[Math.floor(Math.random() * 10)]; // Número
+  password += "!@#$%&*"[Math.floor(Math.random() * 7)]; // Símbolo
+
+  // Completar com caracteres aleatórios
+  for (let i = 4; i < 12; i++) {
+    password += chars[Math.floor(Math.random() * chars.length)];
+  }
+
+  // Embaralhar a senha
+  return password
+    .split("")
+    .sort(() => Math.random() - 0.5)
+    .join("");
 }
 
 // =============================================
@@ -123,6 +303,25 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
         comissaoAcaoGanha: true,
         comissaoHonorarios: true,
         isExterno: true,
+        // Dados profissionais adicionais
+        formacao: true,
+        experiencia: true,
+        premios: true,
+        publicacoes: true,
+        website: true,
+        linkedin: true,
+        twitter: true,
+        instagram: true,
+        // Configurações de notificação
+        notificarEmail: true,
+        notificarWhatsapp: true,
+        notificarSistema: true,
+        // Configurações de acesso
+        podeCriarProcessos: true,
+        podeEditarProcessos: true,
+        podeExcluirProcessos: true,
+        podeGerenciarClientes: true,
+        podeAcessarFinanceiro: true,
         usuario: {
           select: {
             id: true,
@@ -133,6 +332,10 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
             avatarUrl: true,
             active: true,
             role: true,
+            cpf: true,
+            rg: true,
+            dataNascimento: true,
+            observacoes: true,
           },
         },
       },
@@ -156,8 +359,32 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
       comissaoAcaoGanha: parseFloat(adv.comissaoAcaoGanha.toString()),
       comissaoHonorarios: parseFloat(adv.comissaoHonorarios.toString()),
       isExterno: adv.isExterno,
+      // Dados profissionais adicionais
+      formacao: adv.formacao,
+      experiencia: adv.experiencia,
+      premios: adv.premios,
+      publicacoes: adv.publicacoes,
+      website: adv.website,
+      linkedin: adv.linkedin,
+      twitter: adv.twitter,
+      instagram: adv.instagram,
+      // Configurações de notificação
+      notificarEmail: adv.notificarEmail,
+      notificarWhatsapp: adv.notificarWhatsapp,
+      notificarSistema: adv.notificarSistema,
+      // Configurações de acesso
+      podeCriarProcessos: adv.podeCriarProcessos,
+      podeEditarProcessos: adv.podeEditarProcessos,
+      podeExcluirProcessos: adv.podeExcluirProcessos,
+      podeGerenciarClientes: adv.podeGerenciarClientes,
+      podeAcessarFinanceiro: adv.podeAcessarFinanceiro,
       processosCount: 0, // Será calculado se necessário
-      usuario: adv.usuario,
+      usuario: {
+        ...adv.usuario,
+        dataNascimento: adv.usuario.dataNascimento
+          ? adv.usuario.dataNascimento.toISOString().split("T")[0]
+          : null,
+      },
     }));
 
     return { success: true, advogados: data } as any;
@@ -168,7 +395,7 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
   }
 }
 
-export async function createAdvogado(input: CreateAdvogadoInput): Promise<ActionResponse<AdvogadoData>> {
+export async function createAdvogado(input: CreateAdvogadoInput): Promise<CreateAdvogadoResponse> {
   try {
     const session = await getSession();
 
@@ -208,19 +435,45 @@ export async function createAdvogado(input: CreateAdvogadoInput): Promise<Action
       }
     }
 
-    // Criar usuário primeiro
-    const usuario = await prisma.usuario.create({
-      data: {
-        tenantId: session.user.tenantId,
-        email: input.email,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        phone: input.phone,
-        role: "ADVOGADO",
-        active: true,
-        createdById: session.user.id,
-      },
-    });
+    // Preparar dados complementares do usuário
+    const sanitizedCpf = input.cpf ? input.cpf.replace(/\D/g, "") : null;
+    const dataNascimento = input.dataNascimento ? new Date(`${input.dataNascimento}T00:00:00`) : null;
+    const usuarioPayload = {
+      tenantId: session.user.tenantId,
+      email: input.email,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      phone: input.phone || null,
+      cpf: sanitizedCpf,
+      rg: input.rg || null,
+      dataNascimento,
+      observacoes: input.observacoes || null,
+      role: "ADVOGADO" as const,
+      createdById: session.user.id,
+    };
+
+    // Gerar senha temporária se for criar acesso de usuário
+    let senhaTemporaria: string | undefined;
+    let usuario: any;
+
+    if (input.criarAcessoUsuario && !input.isExterno) {
+      senhaTemporaria = generateTemporaryPassword();
+
+      usuario = await prisma.usuario.create({
+        data: {
+          ...usuarioPayload,
+          active: true,
+          phone: input.phone || null,
+        },
+      });
+    } else {
+      usuario = await prisma.usuario.create({
+        data: {
+          ...usuarioPayload,
+          active: false, // Inativo se não tem acesso
+        },
+      });
+    }
 
     // Criar advogado
     const advogado = await prisma.advogado.create({
@@ -237,6 +490,28 @@ export async function createAdvogado(input: CreateAdvogadoInput): Promise<Action
         comissaoAcaoGanha: input.comissaoAcaoGanha || 0,
         comissaoHonorarios: input.comissaoHonorarios || 0,
         isExterno: input.isExterno || false,
+
+        // Dados profissionais adicionais
+        formacao: input.formacao,
+        experiencia: input.experiencia,
+        premios: input.premios,
+        publicacoes: input.publicacoes,
+        website: input.website,
+        linkedin: input.linkedin,
+        twitter: input.twitter,
+        instagram: input.instagram,
+
+        // Configurações de notificação
+        notificarEmail: input.notificarEmail ?? true,
+        notificarWhatsapp: input.notificarWhatsapp ?? true,
+        notificarSistema: input.notificarSistema ?? true,
+
+        // Configurações de acesso
+        podeCriarProcessos: input.podeCriarProcessos ?? true,
+        podeEditarProcessos: input.podeEditarProcessos ?? true,
+        podeExcluirProcessos: input.podeExcluirProcessos ?? false,
+        podeGerenciarClientes: input.podeGerenciarClientes ?? true,
+        podeAcessarFinanceiro: input.podeAcessarFinanceiro ?? false,
       },
       select: {
         id: true,
@@ -261,10 +536,88 @@ export async function createAdvogado(input: CreateAdvogadoInput): Promise<Action
             avatarUrl: true,
             active: true,
             role: true,
+            cpf: true,
+            rg: true,
+            dataNascimento: true,
+            observacoes: true,
           },
         },
       },
     });
+
+    const enderecosParaCriar = input.enderecos && input.enderecos.length > 0 ? input.enderecos : input.endereco ? [input.endereco] : [];
+
+    for (const endereco of enderecosParaCriar) {
+      if (!endereco.logradouro?.trim() || !endereco.cidade?.trim() || !endereco.estado?.trim()) {
+        continue;
+      }
+
+      await prisma.endereco.create({
+        data: {
+          tenantId: session.user.tenantId,
+          usuarioId: usuario.id,
+          apelido: endereco.apelido,
+          tipo: endereco.tipo as any,
+          principal: endereco.principal,
+          logradouro: endereco.logradouro,
+          numero: endereco.numero,
+          complemento: endereco.complemento,
+          bairro: endereco.bairro,
+          cidade: endereco.cidade,
+          estado: endereco.estado,
+          cep: endereco.cep,
+          pais: endereco.pais || "Brasil",
+          telefone: endereco.telefone,
+          observacoes: endereco.observacoes,
+        },
+      });
+    }
+
+    if (input.dadosBancarios && input.dadosBancarios.length > 0) {
+      for (const dado of input.dadosBancarios) {
+        if (!dado.bancoCodigo || !dado.agencia || !dado.conta || !dado.titularNome || !dado.titularDocumento) {
+          continue;
+        }
+
+        if (dado.principal) {
+          await prisma.dadosBancarios.updateMany({
+            where: {
+              tenantId: session.user.tenantId,
+              usuarioId: usuario.id,
+              principal: true,
+            },
+            data: {
+              principal: false,
+            },
+          });
+        }
+
+        await prisma.dadosBancarios.create({
+          data: {
+            tenantId: session.user.tenantId,
+            usuarioId: usuario.id,
+            tipoConta: dado.tipoConta as any,
+            bancoCodigo: dado.bancoCodigo,
+            agencia: dado.agencia,
+            conta: dado.conta,
+            digitoConta: dado.digitoConta,
+            tipoContaBancaria: dado.tipoContaBancaria as any,
+            chavePix: dado.chavePix,
+            tipoChavePix: dado.tipoChavePix as any,
+            titularNome: dado.titularNome,
+            titularDocumento: dado.titularDocumento,
+            titularEmail: dado.titularEmail,
+            titularTelefone: dado.titularTelefone,
+            endereco: dado.endereco,
+            cidade: dado.cidade,
+            estado: dado.estado,
+            cep: dado.cep,
+            principal: dado.principal ?? false,
+            observacoes: dado.observacoes,
+          },
+        });
+      }
+    }
 
     const data: AdvogadoData = {
       id: advogado.id,
@@ -280,10 +633,44 @@ export async function createAdvogado(input: CreateAdvogadoInput): Promise<Action
       comissaoHonorarios: parseFloat(advogado.comissaoHonorarios.toString()),
       isExterno: advogado.isExterno,
       processosCount: 0,
-      usuario: advogado.usuario,
+      usuario: {
+        ...advogado.usuario,
+        dataNascimento: advogado.usuario.dataNascimento
+          ? advogado.usuario.dataNascimento.toISOString().split("T")[0]
+          : null,
+      },
     };
 
-    return { success: true, advogado: data } as any;
+    // Registrar no histórico
+    await createAdvogadoHistorico({
+      advogadoId: advogado.id,
+      acao: "CREATE",
+      detalhes: `Advogado criado: ${usuario.firstName} ${usuario.lastName} (${usuario.email})`,
+    });
+
+    // Enviar email de boas-vindas com credenciais (se solicitado)
+    if (input.enviarEmailCredenciais && senhaTemporaria) {
+      try {
+        await enviarEmailBoasVindas(advogado.id, senhaTemporaria);
+      } catch (emailError) {
+        console.error("Erro ao enviar email de boas-vindas:", emailError);
+        // Não falhar a criação do advogado se o email falhar
+      }
+    }
+
+    revalidatePath("/advogados");
+
+    return {
+      success: true,
+      advogado: data,
+      credenciais: senhaTemporaria
+        ? {
+            email: input.email,
+            senhaTemporaria: senhaTemporaria,
+            linkLogin: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/login`,
+          }
+        : undefined,
+    } as any;
   } catch (error) {
     console.error("Erro ao criar advogado:", error);
     return { success: false, error: "Erro ao criar advogado" };
@@ -426,7 +813,15 @@ export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoIn
 
     if (input.firstName !== undefined) usuarioUpdate.firstName = input.firstName;
     if (input.lastName !== undefined) usuarioUpdate.lastName = input.lastName;
-    if (input.phone !== undefined) usuarioUpdate.phone = input.phone;
+    if (input.phone !== undefined) usuarioUpdate.phone = input.phone || null;
+    if (input.cpf !== undefined) usuarioUpdate.cpf = input.cpf ? input.cpf.replace(/\D/g, "") : null;
+    if (input.rg !== undefined) usuarioUpdate.rg = input.rg || null;
+    if (input.dataNascimento !== undefined) {
+      usuarioUpdate.dataNascimento = input.dataNascimento
+        ? new Date(`${input.dataNascimento}T00:00:00`)
+        : null;
+    }
+    if (input.observacoes !== undefined) usuarioUpdate.observacoes = input.observacoes || null;
 
     if (Object.keys(usuarioUpdate).length > 0) {
       await prisma.usuario.update({
@@ -447,11 +842,83 @@ export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoIn
     if (input.comissaoPadrao !== undefined) advogadoUpdate.comissaoPadrao = input.comissaoPadrao;
     if (input.comissaoAcaoGanha !== undefined) advogadoUpdate.comissaoAcaoGanha = input.comissaoAcaoGanha;
     if (input.comissaoHonorarios !== undefined) advogadoUpdate.comissaoHonorarios = input.comissaoHonorarios;
+    if (input.formacao !== undefined) advogadoUpdate.formacao = input.formacao;
+    if (input.experiencia !== undefined) advogadoUpdate.experiencia = input.experiencia;
+    if (input.premios !== undefined) advogadoUpdate.premios = input.premios;
+    if (input.publicacoes !== undefined) advogadoUpdate.publicacoes = input.publicacoes;
+    if (input.website !== undefined) advogadoUpdate.website = input.website;
+    if (input.linkedin !== undefined) advogadoUpdate.linkedin = input.linkedin;
+    if (input.twitter !== undefined) advogadoUpdate.twitter = input.twitter;
+    if (input.instagram !== undefined) advogadoUpdate.instagram = input.instagram;
+    if (input.notificarEmail !== undefined) advogadoUpdate.notificarEmail = input.notificarEmail;
+    if (input.notificarWhatsapp !== undefined) advogadoUpdate.notificarWhatsapp = input.notificarWhatsapp;
+    if (input.notificarSistema !== undefined) advogadoUpdate.notificarSistema = input.notificarSistema;
+    if (input.podeCriarProcessos !== undefined) advogadoUpdate.podeCriarProcessos = input.podeCriarProcessos;
+    if (input.podeEditarProcessos !== undefined) advogadoUpdate.podeEditarProcessos = input.podeEditarProcessos;
+    if (input.podeExcluirProcessos !== undefined) advogadoUpdate.podeExcluirProcessos = input.podeExcluirProcessos;
+    if (input.podeGerenciarClientes !== undefined) advogadoUpdate.podeGerenciarClientes = input.podeGerenciarClientes;
+    if (input.podeAcessarFinanceiro !== undefined) advogadoUpdate.podeAcessarFinanceiro = input.podeAcessarFinanceiro;
 
     if (Object.keys(advogadoUpdate).length > 0) {
       await prisma.advogado.update({
         where: { id: advogadoId },
         data: advogadoUpdate,
+      });
+    }
+
+    // Registrar alterações no histórico
+    const alteracoes: string[] = [];
+
+    // Registrar alterações do usuário
+    if (input.firstName !== undefined) alteracoes.push(`Nome: ${input.firstName}`);
+    if (input.lastName !== undefined) alteracoes.push(`Sobrenome: ${input.lastName}`);
+    if (input.phone !== undefined) alteracoes.push(`Telefone: ${input.phone || "removido"}`);
+    if (input.cpf !== undefined) alteracoes.push(`CPF: ${input.cpf || "removido"}`);
+    if (input.rg !== undefined) alteracoes.push(`RG: ${input.rg || "removido"}`);
+    if (input.dataNascimento !== undefined)
+      alteracoes.push(`Data de nascimento: ${input.dataNascimento || "removida"}`);
+    if (input.observacoes !== undefined)
+      alteracoes.push(`Observações: ${(input.observacoes || "").slice(0, 50)}${input.observacoes && input.observacoes.length > 50 ? "..." : ""}`);
+
+    // Registrar alterações do advogado
+    if (input.oabNumero !== undefined) alteracoes.push(`OAB Número: ${input.oabNumero}`);
+    if (input.oabUf !== undefined) alteracoes.push(`OAB UF: ${input.oabUf}`);
+    if (input.especialidades !== undefined) alteracoes.push(`Especialidades: ${input.especialidades.join(", ")}`);
+    if (input.bio !== undefined) {
+      const preview = input.bio
+        ? input.bio.length > 50
+          ? `${input.bio.slice(0, 50)}...`
+          : input.bio
+        : "removida";
+      alteracoes.push(`Bio: ${preview}`);
+    }
+    if (input.telefone !== undefined) alteracoes.push(`Telefone: ${input.telefone}`);
+    if (input.whatsapp !== undefined) alteracoes.push(`WhatsApp: ${input.whatsapp}`);
+    if (input.comissaoPadrao !== undefined) alteracoes.push(`Comissão Padrão: ${input.comissaoPadrao}%`);
+    if (input.comissaoAcaoGanha !== undefined) alteracoes.push(`Comissão Ação Ganha: ${input.comissaoAcaoGanha}%`);
+    if (input.comissaoHonorarios !== undefined) alteracoes.push(`Comissão Honorários: ${input.comissaoHonorarios}%`);
+    if (input.formacao !== undefined) alteracoes.push(`Formação: ${(input.formacao || "").slice(0, 50)}${input.formacao && input.formacao.length > 50 ? "..." : ""}`);
+    if (input.experiencia !== undefined) alteracoes.push(`Experiência: ${(input.experiencia || "").slice(0, 50)}${input.experiencia && input.experiencia.length > 50 ? "..." : ""}`);
+    if (input.premios !== undefined) alteracoes.push(`Prêmios: ${(input.premios || "").slice(0, 50)}${input.premios && input.premios.length > 50 ? "..." : ""}`);
+    if (input.publicacoes !== undefined) alteracoes.push(`Publicações: ${(input.publicacoes || "").slice(0, 50)}${input.publicacoes && input.publicacoes.length > 50 ? "..." : ""}`);
+    if (input.website !== undefined) alteracoes.push(`Website: ${input.website || "removido"}`);
+    if (input.linkedin !== undefined) alteracoes.push(`LinkedIn: ${input.linkedin || "removido"}`);
+    if (input.twitter !== undefined) alteracoes.push(`Twitter: ${input.twitter || "removido"}`);
+    if (input.instagram !== undefined) alteracoes.push(`Instagram: ${input.instagram || "removido"}`);
+    if (input.notificarEmail !== undefined) alteracoes.push(`Notificar por email: ${input.notificarEmail ? "sim" : "não"}`);
+    if (input.notificarWhatsapp !== undefined) alteracoes.push(`Notificar por WhatsApp: ${input.notificarWhatsapp ? "sim" : "não"}`);
+    if (input.notificarSistema !== undefined) alteracoes.push(`Notificar no sistema: ${input.notificarSistema ? "sim" : "não"}`);
+    if (input.podeCriarProcessos !== undefined) alteracoes.push(`Pode criar processos: ${input.podeCriarProcessos ? "sim" : "não"}`);
+    if (input.podeEditarProcessos !== undefined) alteracoes.push(`Pode editar processos: ${input.podeEditarProcessos ? "sim" : "não"}`);
+    if (input.podeExcluirProcessos !== undefined) alteracoes.push(`Pode excluir processos: ${input.podeExcluirProcessos ? "sim" : "não"}`);
+    if (input.podeGerenciarClientes !== undefined) alteracoes.push(`Pode gerenciar clientes: ${input.podeGerenciarClientes ? "sim" : "não"}`);
+    if (input.podeAcessarFinanceiro !== undefined) alteracoes.push(`Pode acessar financeiro: ${input.podeAcessarFinanceiro ? "sim" : "não"}`);
+
+    if (alteracoes.length > 0) {
+      await createAdvogadoHistorico({
+        advogadoId,
+        acao: "UPDATE",
+        detalhes: `Alterações: ${alteracoes.join(", ")}`,
       });
     }
 
@@ -527,6 +994,13 @@ export async function deleteAdvogado(advogadoId: string): Promise<ActionResponse
         error: `Não é possível deletar o advogado pois ele está vinculado a ${contratosCount} contrato(s). Desvincule os contratos primeiro.`,
       };
     }
+
+    // Registrar no histórico antes de deletar
+    await createAdvogadoHistorico({
+      advogadoId,
+      acao: "DELETE",
+      detalhes: `Advogado deletado: ${advogado.usuario.firstName} ${advogado.usuario.lastName} (${advogado.usuario.email})`,
+    });
 
     // Deletar o advogado (isso também deletará o usuário devido ao onDelete: Cascade)
     await prisma.advogado.delete({
@@ -852,6 +1326,16 @@ export async function uploadAvatarAdvogado(advogadoId: string, file: File): Prom
       data: { avatarUrl: uploadResult.url },
     });
 
+    // Registrar no histórico
+    await createAdvogadoHistorico({
+      advogadoId,
+      acao: "UPLOAD_AVATAR",
+      campo: "avatarUrl",
+      valorAnterior: advogado.usuario.avatarUrl || "null",
+      valorNovo: uploadResult.url,
+      detalhes: "Avatar do advogado atualizado",
+    });
+
     revalidatePath("/advogados");
     revalidatePath("/usuario/perfil/editar");
 
@@ -913,6 +1397,16 @@ export async function deleteAvatarAdvogado(advogadoId: string): Promise<ActionRe
       data: { avatarUrl: null },
     });
 
+    // Registrar no histórico
+    await createAdvogadoHistorico({
+      advogadoId,
+      acao: "DELETE_AVATAR",
+      campo: "avatarUrl",
+      valorAnterior: advogado.usuario.avatarUrl || "null",
+      valorNovo: "null",
+      detalhes: "Avatar do advogado removido",
+    });
+
     revalidatePath("/advogados");
     revalidatePath("/usuario/perfil/editar");
 
@@ -954,6 +1448,16 @@ export async function convertAdvogadoExternoToInterno(advogadoId: string): Promi
       data: { isExterno: false },
     });
 
+    // Registrar no histórico
+    await createAdvogadoHistorico({
+      advogadoId,
+      acao: "CONVERT_EXTERNAL_TO_INTERNAL",
+      campo: "isExterno",
+      valorAnterior: "true",
+      valorNovo: "false",
+      detalhes: "Advogado externo convertido para interno",
+    });
+
     revalidatePath("/advogados");
 
     return { success: true };
@@ -965,4 +1469,271 @@ export async function convertAdvogadoExternoToInterno(advogadoId: string): Promi
 
 // Alias para compatibilidade
 export const getAdvogadosDoTenant = getAllAdvogadosComExternos;
+
+/**
+ * Busca advogados para usar em selects (apenas internos e ativos)
+ */
+export async function getAdvogadoById(advogadoId: string): Promise<ActionResponse<AdvogadoData>> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const advogado = await prisma.advogado.findFirst({
+      where: {
+        id: advogadoId,
+        tenantId: session.user.tenantId,
+      },
+      select: {
+        id: true,
+        usuarioId: true,
+        oabNumero: true,
+        oabUf: true,
+        especialidades: true,
+        bio: true,
+        telefone: true,
+        whatsapp: true,
+        comissaoPadrao: true,
+        comissaoAcaoGanha: true,
+        comissaoHonorarios: true,
+        isExterno: true,
+        usuario: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+            active: true,
+            role: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!advogado) {
+      return { success: false, error: "Advogado não encontrado" };
+    }
+
+    const data: AdvogadoData = {
+      id: advogado.id,
+      usuarioId: advogado.usuarioId,
+      oabNumero: advogado.oabNumero,
+      oabUf: advogado.oabUf,
+      especialidades: advogado.especialidades as EspecialidadeJuridica[],
+      bio: advogado.bio,
+      telefone: advogado.telefone,
+      whatsapp: advogado.whatsapp,
+      comissaoPadrao: parseFloat(advogado.comissaoPadrao.toString()),
+      comissaoAcaoGanha: parseFloat(advogado.comissaoAcaoGanha.toString()),
+      comissaoHonorarios: parseFloat(advogado.comissaoHonorarios.toString()),
+      isExterno: advogado.isExterno,
+      processosCount: 0,
+      usuario: advogado.usuario,
+    };
+
+    return { success: true, advogado: data };
+  } catch (error) {
+    console.error("Erro ao buscar advogado por ID:", error);
+    return { success: false, error: "Erro ao buscar advogado" };
+  }
+}
+
+export async function getAdvogadosParaSelect(): Promise<ActionResponse<AdvogadoSelectItem[]>> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const advogados = await prisma.advogado.findMany({
+      where: {
+        tenantId: session.user.tenantId,
+        isExterno: false, // Apenas advogados internos
+        usuario: {
+          active: true, // Apenas usuários ativos
+        },
+      },
+      select: {
+        id: true,
+        oabNumero: true,
+        oabUf: true,
+        usuario: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        usuario: {
+          firstName: "asc",
+        },
+      },
+    });
+
+    const data: AdvogadoSelectItem[] = advogados.map((adv) => ({
+      id: adv.id,
+      value: adv.id,
+      label: `${adv.usuario?.firstName || ""} ${adv.usuario?.lastName || ""}`.trim() || adv.usuario?.email || "Advogado",
+      oab: adv.oabNumero && adv.oabUf ? `${adv.oabNumero}/${adv.oabUf}` : null,
+      oabNumero: adv.oabNumero,
+      oabUf: adv.oabUf,
+    }));
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Erro ao buscar advogados para select:", error);
+    return { success: false, error: "Erro ao buscar advogados" };
+  }
+}
 export type Advogado = AdvogadoData;
+
+// Interface estendida para incluir endereços e dados bancários
+export interface AdvogadoCompleto extends AdvogadoData {
+  enderecos?: EnderecoInput[];
+  dadosBancarios?: DadosBancariosInput[];
+}
+
+// Função para buscar advogado com endereços e dados bancários
+export async function getAdvogadoCompleto(advogadoId: string): Promise<ActionResponse<AdvogadoCompleto>> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const advogado = await prisma.advogado.findFirst({
+      where: {
+        id: advogadoId,
+        tenantId: session.user.tenantId,
+      },
+      include: {
+        usuario: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+            active: true,
+            role: true,
+            cpf: true,
+            rg: true,
+            dataNascimento: true,
+            observacoes: true,
+          },
+          include: {
+            enderecos: true,
+            dadosBancarios: true,
+          },
+        },
+      },
+    });
+
+    if (!advogado) {
+      return { success: false, error: "Advogado não encontrado" };
+    }
+
+    const data: AdvogadoCompleto = {
+      id: advogado.id,
+      usuarioId: advogado.usuarioId,
+      oabNumero: advogado.oabNumero,
+      oabUf: advogado.oabUf,
+      especialidades: advogado.especialidades as EspecialidadeJuridica[],
+      bio: advogado.bio,
+      telefone: advogado.telefone,
+      whatsapp: advogado.whatsapp,
+      comissaoPadrao: parseFloat(advogado.comissaoPadrao.toString()),
+      comissaoAcaoGanha: parseFloat(advogado.comissaoAcaoGanha.toString()),
+      comissaoHonorarios: parseFloat(advogado.comissaoHonorarios.toString()),
+      isExterno: advogado.isExterno,
+      processosCount: advogado.processosCount,
+
+      // Dados profissionais adicionais
+      formacao: advogado.formacao,
+      experiencia: advogado.experiencia,
+      premios: advogado.premios,
+      publicacoes: advogado.publicacoes,
+      website: advogado.website,
+      linkedin: advogado.linkedin,
+      twitter: advogado.twitter,
+      instagram: advogado.instagram,
+
+      // Configurações de notificação
+      notificarEmail: advogado.notificarEmail,
+      notificarWhatsapp: advogado.notificarWhatsapp,
+      notificarSistema: advogado.notificarSistema,
+
+      // Configurações de acesso
+      podeCriarProcessos: advogado.podeCriarProcessos,
+      podeEditarProcessos: advogado.podeEditarProcessos,
+      podeExcluirProcessos: advogado.podeExcluirProcessos,
+      podeGerenciarClientes: advogado.podeGerenciarClientes,
+      podeAcessarFinanceiro: advogado.podeAcessarFinanceiro,
+
+      usuario: {
+        id: advogado.usuario.id,
+        firstName: advogado.usuario.firstName,
+        lastName: advogado.usuario.lastName,
+        email: advogado.usuario.email,
+        phone: advogado.usuario.phone,
+        avatarUrl: advogado.usuario.avatarUrl,
+        active: advogado.usuario.active,
+        role: advogado.usuario.role,
+        cpf: advogado.usuario.cpf,
+        rg: advogado.usuario.rg,
+        dataNascimento: advogado.usuario.dataNascimento,
+        observacoes: advogado.usuario.observacoes,
+      },
+      enderecos: advogado.usuario.enderecos?.map((endereco) => ({
+        apelido: endereco.apelido,
+        tipo: endereco.tipo,
+        principal: endereco.principal,
+        logradouro: endereco.logradouro,
+        numero: endereco.numero,
+        complemento: endereco.complemento,
+        bairro: endereco.bairro,
+        cidade: endereco.cidade,
+        estado: endereco.estado,
+        cep: endereco.cep,
+        pais: endereco.pais,
+        telefone: endereco.telefone,
+        observacoes: endereco.observacoes,
+      })),
+      dadosBancarios: advogado.usuario.dadosBancarios?.map((conta) => ({
+        tipoConta: conta.tipoConta,
+        bancoCodigo: conta.bancoCodigo,
+        agencia: conta.agencia,
+        conta: conta.conta,
+        digitoConta: conta.digitoConta,
+        tipoContaBancaria: conta.tipoContaBancaria,
+        chavePix: conta.chavePix,
+        tipoChavePix: conta.tipoChavePix,
+        titularNome: conta.titularNome,
+        titularDocumento: conta.titularDocumento,
+        titularEmail: conta.titularEmail,
+        titularTelefone: conta.titularTelefone,
+        endereco: conta.endereco,
+        cidade: conta.cidade,
+        estado: conta.estado,
+        cep: conta.cep,
+        principal: conta.principal,
+        observacoes: conta.observacoes,
+      })),
+    };
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Erro ao buscar advogado completo:", error);
+    return { success: false, error: "Erro ao buscar advogado" };
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Select, SelectItem } from "@heroui/select";
+import { Autocomplete, AutocompleteItem } from "@heroui/react";
 import { Spinner } from "@heroui/spinner";
 
 import { useMunicipiosPorEstado } from "@/hooks/use-brazil-apis";
@@ -29,22 +29,44 @@ export function CidadeSelect({
   const { municipios, isLoading, error } = useMunicipiosPorEstado(
     estadoSelecionado || null,
   );
+  const listaMunicipios = municipios ?? [];
+  const municipioItems = listaMunicipios.map((municipio) => ({
+    key: municipio.nome,
+    label: municipio.nome,
+    data: municipio,
+  }));
+  const municipioKeySet = new Set(municipioItems.map((item) => item.key));
+  const normalizedSelectedKeys = new Set(
+    (selectedKeys ?? []).filter(
+      (key): key is string => typeof key === "string" && municipioKeySet.has(key),
+    ),
+  );
+  const selectedKey =
+    normalizedSelectedKeys.size > 0
+      ? Array.from(normalizedSelectedKeys)[0]
+      : null;
 
   if (!estadoSelecionado) {
+    const placeholderItems = [{ key: "placeholder", label: "Selecione um estado primeiro" }];
+
     return (
-      <Select
+      <Autocomplete
+        allowsCustomValue={false}
         className={className}
-        isDisabled={true}
+        isDisabled
         isRequired={isRequired}
         label={label}
         placeholder="Primeiro selecione o estado"
-        selectedKeys={selectedKeys || []}
-        onSelectionChange={onSelectionChange}
+        isClearable={false}
+        items={placeholderItems}
+        selectedKey={undefined}
       >
-        <SelectItem key="disabled" isDisabled>
-          Selecione um estado primeiro
-        </SelectItem>
-      </Select>
+        {(item) => (
+          <AutocompleteItem key={item.key} textValue={item.label}>
+            {item.label}
+          </AutocompleteItem>
+        )}
+      </Autocomplete>
     );
   }
 
@@ -66,18 +88,31 @@ export function CidadeSelect({
   }
 
   return (
-    <Select
+    <Autocomplete
+      allowsCustomValue={false}
       className={className}
+      items={municipioItems}
       isDisabled={isDisabled}
       isRequired={isRequired}
       label={label}
       placeholder={placeholder}
-      selectedKeys={selectedKeys || []}
-      onSelectionChange={onSelectionChange}
+      isClearable={!isRequired}
+      selectedKey={selectedKey ?? undefined}
+      onSelectionChange={(key) => {
+        if (!onSelectionChange) return;
+        if (key) {
+          onSelectionChange(new Set([key]));
+        } else {
+          onSelectionChange(new Set());
+        }
+      }}
+      listboxProps={{ emptyContent: "Nenhuma cidade encontrada" }}
     >
-      {municipios?.map((municipio) => (
-        <SelectItem key={municipio.nome}>{municipio.nome}</SelectItem>
-      )) || []}
-    </Select>
+      {(item) => (
+        <AutocompleteItem key={item.key} textValue={item.label}>
+          {item.label}
+        </AutocompleteItem>
+      )}
+    </Autocomplete>
   );
 }

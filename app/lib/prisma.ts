@@ -10,19 +10,27 @@ const globalForPrisma = globalThis as unknown as {
   consolePatched?: boolean;
 };
 
-// Bloquear APENAS a mensagem gigante de plataforma - EXECUTAR APENAS UMA VEZ
+// Bloquear logs verbosos do Prisma - EXECUTAR APENAS UMA VEZ
 if (!globalForPrisma.consolePatched) {
-  const originalConsoleError = logger.error;
-  const originalConsoleWarn = logger.warn;
+  const originalConsoleError = console.error;
+  const originalConsoleWarn = console.warn;
+  const originalConsoleLog = console.log;
 
-  logger.error = (...args: any[]) => {
+  console.error = (...args: any[]) => {
     const str = args.join(" ");
 
-    // Bloquear APENAS a mensagem gigante de checkPlatformCaching
+    // Bloquear logs verbosos do Prisma
     if (
       str.includes("checkPlatformCaching") ||
       str.includes("prisma:info") ||
-      str.length > 5000 // Apenas mensagens MUITO longas (a gigante tem +10k caracteres)
+      str.includes("Prisma has detected") ||
+      str.includes("This leads to an outdated Prisma Client") ||
+      str.includes("make sure to run") ||
+      str.includes("prisma generate") ||
+      str.includes("build process") ||
+      str.includes("clientVersion") ||
+      str.includes("clientVersion: '6.17.1'") ||
+      str.length > 1000 // Mensagens muito longas
     ) {
       return;
     }
@@ -30,13 +38,23 @@ if (!globalForPrisma.consolePatched) {
     originalConsoleError.apply(console, args);
   };
 
-  logger.warn = (...args: any[]) => {
+  console.warn = (...args: any[]) => {
     const str = args.join(" ");
 
-    if (str.includes("checkPlatformCaching")) {
+    if (str.includes("checkPlatformCaching") || str.includes("Prisma has detected") || str.includes("prisma:info")) {
       return;
     }
     originalConsoleWarn.apply(console, args);
+  };
+
+  console.log = (...args: any[]) => {
+    const str = args.join(" ");
+
+    // Bloquear logs de desenvolvimento do Prisma
+    if (str.includes("prisma:info") || str.includes("clientVersion") || str.includes("Prisma has detected")) {
+      return;
+    }
+    originalConsoleLog.apply(console, args);
   };
 
   globalForPrisma.consolePatched = true;
@@ -48,6 +66,11 @@ const prisma =
   new PrismaClient({
     log: [], // Desabilita todos os logs do Prisma
     errorFormat: "minimal", // Formato mínimo de erro
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
   });
 
 if (process.env.NODE_ENV !== "production") {
@@ -74,9 +97,7 @@ export function toNumber(value: Decimal | null | undefined): number | null {
       num = Number(value.toString());
     } else if (value.d && value.e !== undefined && value.s !== undefined) {
       // Handle Decimal internal structure: {d: [digits], e: exponent, s: sign}
-      const digits = Array.isArray(value.d)
-        ? value.d.join("")
-        : String(value.d);
+      const digits = Array.isArray(value.d) ? value.d.join("") : String(value.d);
       const exponent = value.e || 0;
       const sign = value.s || 1;
       const numStr = sign === -1 ? "-" : "";
@@ -107,10 +128,7 @@ export function toNumber(value: Decimal | null | undefined): number | null {
  * Use este helper nos Server Actions antes de retornar dados para Client Components
  * Suporta objetos aninhados e arrays
  */
-export function convertDecimalFields<T extends Record<string, any>>(
-  obj: T,
-  fields: (keyof T)[],
-): T {
+export function convertDecimalFields<T extends Record<string, any>>(obj: T, fields: (keyof T)[]): T {
   if (!obj || typeof obj !== "object") return obj;
 
   const result = { ...obj } as any;
@@ -133,13 +151,7 @@ export function convertDecimalFields<T extends Record<string, any>>(
       result[key] = toNumber(value);
     } else if (Array.isArray(value)) {
       // Converter arrays recursivamente
-      result[key] = value.map((item) =>
-        typeof item === "object" && item !== null
-          ? convertDecimalFields(item, fields)
-          : item instanceof Decimal
-            ? toNumber(item)
-            : item,
-      );
+      result[key] = value.map((item) => (typeof item === "object" && item !== null ? convertDecimalFields(item, fields) : item instanceof Decimal ? toNumber(item) : item));
     } else if (typeof value === "object" && value !== null) {
       // Converter objetos aninhados recursivamente
       result[key] = convertDecimalFields(value, fields);
@@ -154,9 +166,7 @@ export function convertDecimalFields<T extends Record<string, any>>(
  * e Date objects para strings ISO
  * Use este helper quando quiser converter todos os Decimals sem especificar campos
  */
-export function convertAllDecimalFields<T extends Record<string, any>>(
-  obj: T,
-): T {
+export function convertAllDecimalFields<T extends Record<string, any>>(obj: T): T {
   if (!obj || typeof obj !== "object") return obj;
 
   const result = { ...obj } as any;
@@ -168,9 +178,7 @@ export function convertAllDecimalFields<T extends Record<string, any>>(
     if (
       value &&
       typeof value === "object" &&
-      (value instanceof Decimal ||
-        (value.constructor && value.constructor.name === "Decimal") ||
-        (value.d && value.e !== undefined && value.s !== undefined)) // Decimal internal structure
+      (value instanceof Decimal || (value.constructor && value.constructor.name === "Decimal") || (value.d && value.e !== undefined && value.s !== undefined)) // Decimal internal structure
     ) {
       result[key] = toNumber(value);
     } else if (value instanceof Date) {
@@ -182,9 +190,7 @@ export function convertAllDecimalFields<T extends Record<string, any>>(
         } else if (
           item &&
           typeof item === "object" &&
-          (item instanceof Decimal ||
-            (item.constructor && item.constructor.name === "Decimal") ||
-            (item.d && item.e !== undefined && item.s !== undefined))
+          (item instanceof Decimal || (item.constructor && item.constructor.name === "Decimal") || (item.d && item.e !== undefined && item.s !== undefined))
         ) {
           return toNumber(item);
         } else if (item instanceof Date) {
