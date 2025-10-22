@@ -162,6 +162,7 @@ export default function AdvogadosContent() {
   const loading = isLoading;
   const errorMessage = error?.message || data?.error;
 
+
   // Estados para modais e filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");

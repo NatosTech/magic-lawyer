@@ -350,7 +350,7 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
     const advogadosComProcessos = await Promise.all(
       advogados.map(async (adv) => {
         let processosCount: number;
-        
+
         if (adv.isExterno) {
           // Para advogados externos, contar processos onde aparecem como partes
           processosCount = await prisma.processoParte.count({
@@ -362,6 +362,7 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
               },
             },
           });
+          
         } else {
           // Para advogados internos, contar processos onde são responsáveis
           processosCount = await prisma.processo.count({
