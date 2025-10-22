@@ -346,48 +346,61 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
       },
     });
 
-    const data = advogados.map((adv) => ({
-      id: adv.id,
-      usuarioId: adv.usuarioId,
-      oabNumero: adv.oabNumero,
-      oabUf: adv.oabUf,
-      especialidades: adv.especialidades as EspecialidadeJuridica[],
-      bio: adv.bio,
-      telefone: adv.telefone,
-      whatsapp: adv.whatsapp,
-      comissaoPadrao: parseFloat(adv.comissaoPadrao.toString()),
-      comissaoAcaoGanha: parseFloat(adv.comissaoAcaoGanha.toString()),
-      comissaoHonorarios: parseFloat(adv.comissaoHonorarios.toString()),
-      isExterno: adv.isExterno,
-      // Dados profissionais adicionais
-      formacao: adv.formacao,
-      experiencia: adv.experiencia,
-      premios: adv.premios,
-      publicacoes: adv.publicacoes,
-      website: adv.website,
-      linkedin: adv.linkedin,
-      twitter: adv.twitter,
-      instagram: adv.instagram,
-      // Configurações de notificação
-      notificarEmail: adv.notificarEmail,
-      notificarWhatsapp: adv.notificarWhatsapp,
-      notificarSistema: adv.notificarSistema,
-      // Configurações de acesso
-      podeCriarProcessos: adv.podeCriarProcessos,
-      podeEditarProcessos: adv.podeEditarProcessos,
-      podeExcluirProcessos: adv.podeExcluirProcessos,
-      podeGerenciarClientes: adv.podeGerenciarClientes,
-      podeAcessarFinanceiro: adv.podeAcessarFinanceiro,
-      processosCount: 0, // Será calculado se necessário
-      usuario: {
-        ...adv.usuario,
-        dataNascimento: adv.usuario.dataNascimento
-          ? adv.usuario.dataNascimento.toISOString().split("T")[0]
-          : null,
-      },
-    }));
+    // Calcular processosCount para cada advogado
+    const advogadosComProcessos = await Promise.all(
+      advogados.map(async (adv) => {
+        const processosCount = await prisma.processo.count({
+          where: {
+            tenantId: session.user.tenantId,
+            deletedAt: null,
+            advogadoResponsavelId: adv.id,
+          },
+        });
 
-    return { success: true, advogados: data } as any;
+        return {
+          id: adv.id,
+          usuarioId: adv.usuarioId,
+          oabNumero: adv.oabNumero,
+          oabUf: adv.oabUf,
+          especialidades: adv.especialidades as EspecialidadeJuridica[],
+          bio: adv.bio,
+          telefone: adv.telefone,
+          whatsapp: adv.whatsapp,
+          comissaoPadrao: parseFloat(adv.comissaoPadrao.toString()),
+          comissaoAcaoGanha: parseFloat(adv.comissaoAcaoGanha.toString()),
+          comissaoHonorarios: parseFloat(adv.comissaoHonorarios.toString()),
+          isExterno: adv.isExterno,
+          // Dados profissionais adicionais
+          formacao: adv.formacao,
+          experiencia: adv.experiencia,
+          premios: adv.premios,
+          publicacoes: adv.publicacoes,
+          website: adv.website,
+          linkedin: adv.linkedin,
+          twitter: adv.twitter,
+          instagram: adv.instagram,
+          // Configurações de notificação
+          notificarEmail: adv.notificarEmail,
+          notificarWhatsapp: adv.notificarWhatsapp,
+          notificarSistema: adv.notificarSistema,
+          // Configurações de acesso
+          podeCriarProcessos: adv.podeCriarProcessos,
+          podeEditarProcessos: adv.podeEditarProcessos,
+          podeExcluirProcessos: adv.podeExcluirProcessos,
+          podeGerenciarClientes: adv.podeGerenciarClientes,
+          podeAcessarFinanceiro: adv.podeAcessarFinanceiro,
+          processosCount: processosCount,
+          usuario: {
+            ...adv.usuario,
+            dataNascimento: adv.usuario.dataNascimento
+              ? adv.usuario.dataNascimento.toISOString().split("T")[0]
+              : null,
+          },
+        };
+      })
+    );
+
+    return { success: true, advogados: advogadosComProcessos } as any;
   } catch (error) {
     console.error("Erro ao buscar advogados:", error);
 
