@@ -381,9 +381,8 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
               },
             }),
           ]);
-          
+
           processosCount = processosParte + processosProcuracao;
-          
         } else {
           // Para advogados internos, contar processos onde são responsáveis
           processosCount = await prisma.processo.count({
