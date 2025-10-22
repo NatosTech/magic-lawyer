@@ -5,13 +5,13 @@ import ConviteAcceptForm from "./convite-accept-form";
 import { getConviteByToken } from "@/app/actions/convites-equipe";
 
 interface ConvitePageProps {
-  params: {
+  params: Promise<{
     token: string;
-  };
+  }>;
 }
 
 export default async function ConvitePage({ params }: ConvitePageProps) {
-  const { token } = params;
+  const { token } = await params;
 
   if (!token) {
     notFound();

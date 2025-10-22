@@ -11,28 +11,29 @@ export interface AdvogadoHistoricoData {
   advogadoId: string;
   usuarioId: string;
   acao: string;
-  campo?: string;
-  valorAnterior?: string;
-  valorNovo?: string;
-  detalhes?: string;
-  ipAddress?: string;
-  userAgent?: string;
+  campo?: string | null;
+  valorAnterior?: string | null;
+  valorNovo?: string | null;
+  detalhes?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
   createdAt: Date;
   usuario: {
     id: string;
-    firstName?: string;
-    lastName?: string;
+    firstName?: string | null;
+    lastName?: string | null;
     email: string;
+    avatarUrl?: string | null;
   };
 }
 
 export interface CreateHistoricoInput {
   advogadoId: string;
   acao: string;
-  campo?: string;
-  valorAnterior?: string;
-  valorNovo?: string;
-  detalhes?: string;
+  campo?: string | null;
+  valorAnterior?: string | null;
+  valorNovo?: string | null;
+  detalhes?: string | null;
 }
 
 export interface ActionResponse<T = any> {
@@ -44,9 +45,7 @@ export interface ActionResponse<T = any> {
 /**
  * Registra uma entrada no histórico de alterações do advogado
  */
-export async function createAdvogadoHistorico(
-  input: CreateHistoricoInput,
-): Promise<ActionResponse<AdvogadoHistoricoData>> {
+export async function createAdvogadoHistorico(input: CreateHistoricoInput): Promise<ActionResponse<AdvogadoHistoricoData>> {
   try {
     const session = await getSession();
 
@@ -56,10 +55,7 @@ export async function createAdvogadoHistorico(
 
     // Obter informações do request
     const headersList = await headers();
-    const ipAddress =
-      headersList.get("x-forwarded-for") ||
-      headersList.get("x-real-ip") ||
-      "unknown";
+    const ipAddress = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || "unknown";
     const userAgent = headersList.get("user-agent") || "unknown";
 
     const historico = await prisma.advogadoHistorico.create({
@@ -98,9 +94,7 @@ export async function createAdvogadoHistorico(
 /**
  * Busca o histórico de alterações de um advogado
  */
-export async function getAdvogadoHistorico(
-  advogadoId: string,
-): Promise<ActionResponse<AdvogadoHistoricoData[]>> {
+export async function getAdvogadoHistorico(advogadoId: string): Promise<ActionResponse<AdvogadoHistoricoData[]>> {
   try {
     const session = await getSession();
 
@@ -139,9 +133,7 @@ export async function getAdvogadoHistorico(
 /**
  * Busca o histórico de alterações de todos os advogados do tenant
  */
-export async function getAllAdvogadosHistorico(): Promise<
-  ActionResponse<AdvogadoHistoricoData[]>
-> {
+export async function getAllAdvogadosHistorico(): Promise<ActionResponse<AdvogadoHistoricoData[]>> {
   try {
     const session = await getSession();
 
@@ -192,9 +184,7 @@ export async function getAllAdvogadosHistorico(): Promise<
 /**
  * Deleta entradas antigas do histórico (manutenção)
  */
-export async function cleanupAdvogadoHistorico(
-  daysToKeep: number = 365,
-): Promise<ActionResponse> {
+export async function cleanupAdvogadoHistorico(daysToKeep: number = 365): Promise<ActionResponse> {
   try {
     const session = await getSession();
 

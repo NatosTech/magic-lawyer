@@ -2,7 +2,7 @@
 
 import { randomBytes } from "crypto";
 
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/app/generated/prisma";
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/app/lib/auth";
@@ -23,6 +23,7 @@ export interface ConviteEquipeData {
   enviadoPor: string;
   createdAt: Date;
   updatedAt: Date;
+  token?: string;
   cargo?: {
     id: string;
     nome: string;
@@ -89,26 +90,37 @@ export async function getConvitesEquipe(): Promise<ConviteEquipeData[]> {
   return convites.map((convite) => ({
     id: convite.id,
     email: convite.email,
-    nome: convite.nome,
-    cargoId: convite.cargoId,
+    nome: convite.nome || undefined,
+    cargoId: convite.cargoId || undefined,
     role: convite.role,
     status: convite.status,
     expiraEm: convite.expiraEm,
-    aceitoEm: convite.aceitoEm,
-    rejeitadoEm: convite.rejeitadoEm,
-    observacoes: convite.observacoes,
+    aceitoEm: convite.aceitoEm || undefined,
+    rejeitadoEm: convite.rejeitadoEm || undefined,
+    observacoes: convite.observacoes || undefined,
     enviadoPor: convite.enviadoPor,
     createdAt: convite.createdAt,
     updatedAt: convite.updatedAt,
-    cargo: convite.cargo,
-    enviadoPorUsuario: convite.enviadoPorUsuario,
+    cargo: convite.cargo
+      ? {
+          id: convite.cargo.id,
+          nome: convite.cargo.nome,
+          nivel: convite.cargo.nivel,
+        }
+      : undefined,
+    enviadoPorUsuario: convite.enviadoPorUsuario
+      ? {
+          id: convite.enviadoPorUsuario.id,
+          firstName: convite.enviadoPorUsuario.firstName || undefined,
+          lastName: convite.enviadoPorUsuario.lastName || undefined,
+          email: convite.enviadoPorUsuario.email,
+        }
+      : undefined,
   }));
 }
 
 // Criar novo convite
-export async function createConviteEquipe(
-  data: CreateConviteData,
-): Promise<ConviteEquipeData> {
+export async function createConviteEquipe(data: CreateConviteData): Promise<ConviteEquipeData> {
   const session = await getSession();
 
   if (!session?.user) {
@@ -150,7 +162,7 @@ export async function createConviteEquipe(
 
   const convite = await prisma.equipeConvite.create({
     data: {
-      tenantId: session.user.tenantId,
+      tenantId: session.user.tenantId!,
       email: data.email,
       nome: data.nome,
       cargoId: data.cargoId,
@@ -158,7 +170,7 @@ export async function createConviteEquipe(
       token,
       expiraEm,
       observacoes: data.observacoes,
-      enviadoPor: session.user.id,
+      enviadoPor: session.user.id!,
     },
     include: {
       cargo: {
@@ -189,12 +201,12 @@ export async function createConviteEquipe(
     if (tenant) {
       await sendConviteEmail({
         email: convite.email,
-        nome: convite.nome,
+        nome: convite.nome || undefined,
         nomeEscritorio: tenant.name,
         token: convite.token,
         expiraEm: convite.expiraEm,
-        observacoes: convite.observacoes,
-        cargo: convite.cargo?.nome,
+        observacoes: convite.observacoes || undefined,
+        cargo: convite.cargo?.nome || undefined,
         role: convite.role,
       });
     }
@@ -208,26 +220,37 @@ export async function createConviteEquipe(
   return {
     id: convite.id,
     email: convite.email,
-    nome: convite.nome,
-    cargoId: convite.cargoId,
+    nome: convite.nome || undefined,
+    cargoId: convite.cargoId || undefined,
     role: convite.role,
     status: convite.status,
     expiraEm: convite.expiraEm,
-    aceitoEm: convite.aceitoEm,
-    rejeitadoEm: convite.rejeitadoEm,
-    observacoes: convite.observacoes,
+    aceitoEm: convite.aceitoEm || undefined,
+    rejeitadoEm: convite.rejeitadoEm || undefined,
+    observacoes: convite.observacoes || undefined,
     enviadoPor: convite.enviadoPor,
     createdAt: convite.createdAt,
     updatedAt: convite.updatedAt,
-    cargo: convite.cargo,
-    enviadoPorUsuario: convite.enviadoPorUsuario,
+    cargo: convite.cargo
+      ? {
+          id: convite.cargo.id,
+          nome: convite.cargo.nome,
+          nivel: convite.cargo.nivel,
+        }
+      : undefined,
+    enviadoPorUsuario: convite.enviadoPorUsuario
+      ? {
+          id: convite.enviadoPorUsuario.id,
+          firstName: convite.enviadoPorUsuario.firstName || undefined,
+          lastName: convite.enviadoPorUsuario.lastName || undefined,
+          email: convite.enviadoPorUsuario.email,
+        }
+      : undefined,
   };
 }
 
 // Reenviar convite
-export async function resendConviteEquipe(
-  conviteId: string,
-): Promise<ConviteEquipeData> {
+export async function resendConviteEquipe(conviteId: string): Promise<ConviteEquipeData> {
   const session = await getSession();
 
   if (!session?.user) {
@@ -293,12 +316,12 @@ export async function resendConviteEquipe(
     if (tenant) {
       await sendConviteEmail({
         email: updatedConvite.email,
-        nome: updatedConvite.nome,
+        nome: updatedConvite.nome || undefined,
         nomeEscritorio: tenant.name,
         token: updatedConvite.token,
         expiraEm: updatedConvite.expiraEm,
-        observacoes: updatedConvite.observacoes,
-        cargo: updatedConvite.cargo?.nome,
+        observacoes: updatedConvite.observacoes || undefined,
+        cargo: updatedConvite.cargo?.nome || undefined,
         role: updatedConvite.role,
       });
     }
@@ -312,19 +335,32 @@ export async function resendConviteEquipe(
   return {
     id: updatedConvite.id,
     email: updatedConvite.email,
-    nome: updatedConvite.nome,
-    cargoId: updatedConvite.cargoId,
+    nome: updatedConvite.nome || undefined,
+    cargoId: updatedConvite.cargoId || undefined,
     role: updatedConvite.role,
     status: updatedConvite.status,
     expiraEm: updatedConvite.expiraEm,
-    aceitoEm: updatedConvite.aceitoEm,
-    rejeitadoEm: updatedConvite.rejeitadoEm,
-    observacoes: updatedConvite.observacoes,
+    aceitoEm: updatedConvite.aceitoEm || undefined,
+    rejeitadoEm: updatedConvite.rejeitadoEm || undefined,
+    observacoes: updatedConvite.observacoes || undefined,
     enviadoPor: updatedConvite.enviadoPor,
     createdAt: updatedConvite.createdAt,
     updatedAt: updatedConvite.updatedAt,
-    cargo: updatedConvite.cargo,
-    enviadoPorUsuario: updatedConvite.enviadoPorUsuario,
+    cargo: updatedConvite.cargo
+      ? {
+          id: updatedConvite.cargo.id,
+          nome: updatedConvite.cargo.nome,
+          nivel: updatedConvite.cargo.nivel,
+        }
+      : undefined,
+    enviadoPorUsuario: updatedConvite.enviadoPorUsuario
+      ? {
+          id: updatedConvite.enviadoPorUsuario.id,
+          firstName: updatedConvite.enviadoPorUsuario.firstName || undefined,
+          lastName: updatedConvite.enviadoPorUsuario.lastName || undefined,
+          email: updatedConvite.enviadoPorUsuario.email,
+        }
+      : undefined,
   };
 }
 
@@ -366,9 +402,7 @@ export async function cancelConviteEquipe(conviteId: string): Promise<void> {
 }
 
 // Buscar convite por token (para página de aceitação)
-export async function getConviteByToken(
-  token: string,
-): Promise<ConviteEquipeData | null> {
+export async function getConviteByToken(token: string): Promise<ConviteEquipeData | null> {
   const convite = await prisma.equipeConvite.findUnique({
     where: {
       token,
@@ -421,19 +455,32 @@ export async function getConviteByToken(
   return {
     id: convite.id,
     email: convite.email,
-    nome: convite.nome,
-    cargoId: convite.cargoId,
+    nome: convite.nome || undefined,
+    cargoId: convite.cargoId || undefined,
     role: convite.role,
     status: convite.status,
     expiraEm: convite.expiraEm,
-    aceitoEm: convite.aceitoEm,
-    rejeitadoEm: convite.rejeitadoEm,
-    observacoes: convite.observacoes,
+    aceitoEm: convite.aceitoEm || undefined,
+    rejeitadoEm: convite.rejeitadoEm || undefined,
+    observacoes: convite.observacoes || undefined,
     enviadoPor: convite.enviadoPor,
     createdAt: convite.createdAt,
     updatedAt: convite.updatedAt,
-    cargo: convite.cargo,
-    enviadoPorUsuario: convite.enviadoPorUsuario,
+    cargo: convite.cargo
+      ? {
+          id: convite.cargo.id,
+          nome: convite.cargo.nome,
+          nivel: convite.cargo.nivel,
+        }
+      : undefined,
+    enviadoPorUsuario: convite.enviadoPorUsuario
+      ? {
+          id: convite.enviadoPorUsuario.id,
+          firstName: convite.enviadoPorUsuario.firstName || undefined,
+          lastName: convite.enviadoPorUsuario.lastName || undefined,
+          email: convite.enviadoPorUsuario.email,
+        }
+      : undefined,
   };
 }
 
@@ -444,7 +491,7 @@ export async function acceptConviteEquipe(
     firstName: string;
     lastName: string;
     password: string;
-  },
+  }
 ): Promise<void> {
   const convite = await prisma.equipeConvite.findUnique({
     where: {
@@ -497,7 +544,7 @@ export async function acceptConviteEquipe(
       data: {
         tenantId: convite.tenantId,
         usuarioId: novoUsuario.id,
-        cargoId: convite.cargoId,
+        cargoId: convite.cargoId!,
         ativo: true,
         dataInicio: new Date(),
       },

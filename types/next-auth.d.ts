@@ -10,6 +10,7 @@ declare module "next-auth" {
       tenantName?: string;
       tenantLogoUrl?: string;
       tenantFaviconUrl?: string;
+      advogadoId?: string;
     } & DefaultSession["user"];
   }
 
@@ -21,6 +22,7 @@ declare module "next-auth" {
     tenantName?: string;
     tenantLogoUrl?: string;
     tenantFaviconUrl?: string;
+    advogadoId?: string;
   }
 }
 
@@ -33,5 +35,6 @@ declare module "next-auth/jwt" {
     tenantName?: string;
     tenantLogoUrl?: string;
     tenantFaviconUrl?: string;
+    advogadoId?: string;
   }
 }
