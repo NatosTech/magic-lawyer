@@ -158,6 +158,14 @@ model Tenant {
   planos                Plano[]
   asaasConfig           TenantAsaasConfig?
   advogadoHistorico     AdvogadoHistorico[]
+  
+  // Sistema de Gestão de Equipe
+  cargos                Cargo[]
+  cargoPermissoes       CargoPermissao[]
+  usuarioCargos         UsuarioCargo[]
+  usuarioPermissoesIndividuais UsuarioPermissaoIndividual[]
+  usuarioVinculacoes    UsuarioVinculacao[]
+  equipeHistorico       EquipeHistorico[]
 
   @@index([status])
   @@index([superAdminId])
@@ -335,6 +343,12 @@ model Usuario {
   tarefasObservadas            TarefaWatcher[]
   dadosBancarios               DadosBancarios[]
   advogadoHistorico            AdvogadoHistorico[]
+  
+  // Sistema de Gestão de Equipe
+  cargos                       UsuarioCargo[]
+  permissoesIndividuais        UsuarioPermissaoIndividual[]
+  vinculacoesComoServidor      UsuarioVinculacao[] @relation("UsuarioServidor")
+  equipeHistorico              EquipeHistorico[]
 
   @@unique([email, tenantId])
   @@unique([tenantId, cpf])
@@ -436,6 +450,9 @@ model Advogado {
   processos            Processo[]              @relation("ProcessoAdvogadoResponsavel")
   procuracoes          ProcuracaoAdvogado[]
   ProcessoParte        ProcessoParte[]
+  
+  // Sistema de Gestão de Equipe
+  vinculacoesServidas  UsuarioVinculacao[] @relation("UsuarioAdvogado")
 
   @@unique([tenantId, oabUf, oabNumero])
   @@schema("magiclawyer")
@@ -2771,5 +2788,130 @@ model CheckoutSession {
 
   @@index([asaasPaymentId])
   @@index([status])
+  @@schema("magiclawyer")
+}
+
+// ===== SISTEMA DE GESTÃO DE EQUIPE =====
+
+model Cargo {
+  id          String   @id @default(cuid())
+  tenantId    String
+  nome        String
+  descricao   String?
+  nivel       Int      @default(1) // 1=Estagiário, 2=Assistente, 3=Advogado, 4=Coordenador, 5=Diretor
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relacionamentos
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuarios    UsuarioCargo[]
+  permissoes  CargoPermissao[]
+  
+  @@index([tenantId])
+  @@index([nome])
+  @@schema("magiclawyer")
+}
+
+model CargoPermissao {
+  id        String   @id @default(cuid())
+  tenantId  String
+  cargoId   String
+  modulo    String   // 'processos', 'clientes', 'advogados', 'financeiro', 'equipe', 'relatorios'
+  acao      String   // 'criar', 'editar', 'excluir', 'visualizar', 'exportar'
+  permitido Boolean  @default(true)
+  createdAt DateTime @default(now())
+  
+  // Relacionamentos
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cargo     Cargo    @relation(fields: [cargoId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, cargoId, modulo, acao])
+  @@index([tenantId, cargoId])
+  @@schema("magiclawyer")
+}
+
+model UsuarioCargo {
+  id        String   @id @default(cuid())
+  tenantId  String
+  usuarioId String
+  cargoId   String
+  ativo     Boolean  @default(true)
+  dataInicio DateTime @default(now())
+  dataFim   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relacionamentos
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cargo     Cargo    @relation(fields: [cargoId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, usuarioId, cargoId])
+  @@index([tenantId, usuarioId])
+  @@schema("magiclawyer")
+}
+
+model UsuarioPermissaoIndividual {
+  id        String   @id @default(cuid())
+  tenantId  String
+  usuarioId String
+  modulo    String   // 'processos', 'clientes', 'advogados', 'financeiro', 'equipe', 'relatorios'
+  acao      String   // 'criar', 'editar', 'excluir', 'visualizar', 'exportar'
+  permitido Boolean  @default(true)
+  motivo    String?  // Justificativa para a permissão individual
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relacionamentos
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, usuarioId, modulo, acao])
+  @@index([tenantId, usuarioId])
+  @@schema("magiclawyer")
+}
+
+model UsuarioVinculacao {
+  id        String   @id @default(cuid())
+  tenantId  String
+  usuarioId String   // Usuário que serve (estagiário, controller, etc.)
+  advogadoId String  // Advogado que é servido
+  tipo      String   // 'estagiario', 'controller', 'assistente', 'secretario'
+  ativo     Boolean  @default(true)
+  dataInicio DateTime @default(now())
+  dataFim   DateTime?
+  observacoes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relacionamentos
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario   Usuario  @relation("UsuarioServidor", fields: [usuarioId], references: [id], onDelete: Cascade)
+  advogado  Advogado @relation("UsuarioAdvogado", fields: [advogadoId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, usuarioId, advogadoId])
+  @@index([tenantId, usuarioId])
+  @@index([tenantId, advogadoId])
+  @@schema("magiclawyer")
+}
+
+model EquipeHistorico {
+  id        String   @id @default(cuid())
+  tenantId  String
+  usuarioId String
+  acao      String   // 'criado', 'editado', 'cargo_alterado', 'permissao_alterada', 'vinculacao_alterada'
+  dadosAntigos Json? // Dados antes da alteração
+  dadosNovos   Json? // Dados após a alteração
+  motivo    String?  // Justificativa da alteração
+  realizadoPor String // ID do usuário que fez a alteração
+  createdAt DateTime @default(now())
+  
+  // Relacionamentos
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId, usuarioId])
+  @@index([tenantId, acao])
   @@schema("magiclawyer")
 }
