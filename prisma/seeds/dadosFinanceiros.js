@@ -21,6 +21,15 @@ async function seedDadosFinanceiros(prisma) {
     // Criar assinaturas para os tenants
     for (const tenant of tenants) {
       const plano = planos[Math.floor(Math.random() * planos.length)];
+      const versaoPublicada = await prisma.planoVersao.findFirst({
+        where: {
+          planoId: plano.id,
+          status: "PUBLISHED",
+        },
+        orderBy: {
+          numero: "desc",
+        },
+      });
 
       await prisma.tenantSubscription.upsert({
         where: {
@@ -30,6 +39,7 @@ async function seedDadosFinanceiros(prisma) {
         create: {
           tenantId: tenant.id,
           planoId: plano.id,
+          planoVersaoId: versaoPublicada?.id || null,
           status: "ATIVA",
           dataInicio: new Date(),
           dataFim: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 dias
@@ -45,6 +55,7 @@ async function seedDadosFinanceiros(prisma) {
       include: {
         tenant: true,
         plano: true,
+        planoVersao: true,
       },
     });
 

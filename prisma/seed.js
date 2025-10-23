@@ -4,6 +4,7 @@ const seedAreasProcesso = require("./seeds/areasProcesso");
 const seedTiposContrato = require("./seeds/tiposContrato");
 const seedCategoriasTarefa = require("./seeds/categoriasTarefa");
 const seedPlanos = require("./seeds/planos");
+const seedModulos = require("./seeds/modulos");
 const { seedTenantSandra } = require("./seeds/tenants/tenantSandra");
 const { seedTenantLuana } = require("./seeds/tenants/tenantLuana");
 const { seedSalbaAdvocacia } = require("./seeds/tenants/salbaAdvocacia");
@@ -46,6 +47,7 @@ async function main() {
   await seedAreasProcesso(prisma);
   await seedTiposContrato(prisma);
   await seedCategoriasTarefa(prisma);
+  await seedModulos(prisma);
   await seedPlanos(prisma);
 
   console.log("\n🏢 Criando tenants...\n");

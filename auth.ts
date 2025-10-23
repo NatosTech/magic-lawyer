@@ -7,6 +7,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 
 import prisma from "./app/lib/prisma";
+import { getTenantAccessibleModules } from "./app/lib/tenant-modules";
 
 // Função para extrair tenant do domínio
 function extractTenantFromDomain(host: string): string | null {
@@ -168,6 +169,7 @@ export const authOptions: NextAuthOptions = {
               tenantSlug: null,
               tenantName: "Magic Lawyer Admin",
               permissions: ["*"], // SuperAdmin tem todas as permissões
+              tenantModules: ["*"],
             };
 
             console.info("[auth] Login SuperAdmin autorizado", {
@@ -367,6 +369,10 @@ export const authOptions: NextAuthOptions = {
             (permission) => permission.permissao,
           );
 
+          const accessibleModules = await getTenantAccessibleModules(
+            user.tenantId,
+          );
+
           const resultUser = {
             id: user.id,
             email: user.email,
@@ -381,10 +387,12 @@ export const authOptions: NextAuthOptions = {
             tenantLogoUrl: tenantData?.branding?.logoUrl || undefined,
             tenantFaviconUrl: tenantData?.branding?.faviconUrl || undefined,
             permissions,
+            tenantModules: accessibleModules,
           } as unknown as User & {
             tenantId: string;
             role: string;
             permissions: string[];
+            tenantModules: string[];
           };
 
           console.info("[auth] Login autorizado", {
@@ -453,6 +461,7 @@ export const authOptions: NextAuthOptions = {
         (token as any).tenantFaviconUrl = (user as any).tenantFaviconUrl;
         (token as any).permissions = (user as any).permissions ?? [];
         (token as any).avatarUrl = (user as any).image; // image contém o avatarUrl
+        (token as any).tenantModules = (user as any).tenantModules ?? [];
       }
 
       return token;
@@ -488,6 +497,8 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).avatarUrl = (token as any).avatarUrl as
           | string
           | undefined;
+        (session.user as any).tenantModules = (token as any)
+          .tenantModules as string[] | undefined;
       }
 
       return session;

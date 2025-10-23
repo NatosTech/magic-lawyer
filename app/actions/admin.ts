@@ -10,6 +10,7 @@ import {
   EspecialidadeJuridica,
   InvoiceStatus,
   PaymentStatus,
+  Prisma,
   SubscriptionStatus,
   TenantStatus,
   TipoPessoa,
@@ -959,24 +960,57 @@ export async function updateTenantSubscription(
       });
     }
 
-    await prisma.superAdminAuditLog.create({
-      data: {
-        superAdminId: session.user.id,
-        acao: "UPDATE_TENANT_SUBSCRIPTION",
-        entidade: "TENANT",
-        entidadeId: tenantId,
-        dadosNovos: {
-          planId: subscription.planoId,
-          status: subscription.status,
-          trialEndsAt: subscription.trialEndsAt,
-          renovaEm: subscription.renovaEm,
+    const superAdmin = session.user.email
+      ? await prisma.superAdmin.findUnique({
+          where: { email: session.user.email },
+          select: { id: true },
+        })
+      : null;
+
+    if (!superAdmin?.id) {
+      logger.warn(
+        "Super admin não encontrado para auditoria ao atualizar tenant",
+        { userId: session.user.id, email: session.user.email },
+      );
+    } else {
+      await prisma.superAdminAuditLog.create({
+        data: {
+          superAdminId: superAdmin.id,
+          acao: "UPDATE_TENANT_SUBSCRIPTION",
+          entidade: "TENANT",
+          entidadeId: tenantId,
+          dadosNovos: {
+            planId: subscription.planoId,
+            status: subscription.status,
+            trialEndsAt: subscription.trialEndsAt,
+            renovaEm: subscription.renovaEm,
+          },
         },
-      },
-    });
+      });
+    }
+
+    const serialized = {
+      ...subscription,
+      plano: subscription.plano
+        ? {
+            ...subscription.plano,
+            valorMensal: subscription.plano.valorMensal
+              ? subscription.plano.valorMensal instanceof Prisma.Decimal
+                ? subscription.plano.valorMensal.toNumber()
+                : subscription.plano.valorMensal
+              : null,
+            valorAnual: subscription.plano.valorAnual
+              ? subscription.plano.valorAnual instanceof Prisma.Decimal
+                ? subscription.plano.valorAnual.toNumber()
+                : subscription.plano.valorAnual
+              : null,
+          }
+        : null,
+    };
 
     return {
       success: true,
-      data: subscription,
+      data: serialized,
     };
   } catch (error) {
     logger.error("Erro ao atualizar assinatura do tenant", error);

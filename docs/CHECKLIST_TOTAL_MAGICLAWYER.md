@@ -343,13 +343,20 @@
 - [ ] **Versionamento de Planos** - Histórico de alterações com diffs de permissões
 - [ ] **Atribuição de Planos a Tenants** - Vincular escritórios existentes e novos cadastros
 - [ ] **Configuração de Regras Comerciais** - Preço, ciclo (mensal/anual), limite de usuários e módulos adicionais
+- [x] **Tabela PlanoModulo** - Relacionar planos às rotas/módulos liberados (com changelog das migrações)
+- [x] **Tabela PlanoVersao** - Snapshot imutável das permissões a cada publicação
+- [x] **API de Gestão de Planos** - Endpoints protegidos para CRUD, versionamento e publicação
+- [x] **Seeds Iniciais** - Popular planos Básico, Profissional, Enterprise e Ultra com estruturas padrão
 
 #### 🧭 Mapeamento de Rotas e Módulos
-- [ ] **Catálogo Central de Rotas** - Lista oficial de rotas/módulos (Financeiro, Agenda, Documentos, Processos, etc.)
-- [ ] **Drag & Drop de Permissões por Plano** - Definir visualmente quais rotas cada plano pode acessar
-- [ ] **Visualização em Tempo Real** - Prévia do plano com destaque do que está incluso/excluído
+- [x] **Catálogo Central de Rotas** - Lista oficial de rotas/módulos (Financeiro, Agenda, Documentos, Processos, etc.)
+- [x] **Drag & Drop de Permissões por Plano** - Definir visualmente quais rotas cada plano pode acessar
+- [x] **Visualização em Tempo Real** - Prévia do plano com destaque do que está incluso/excluído
 - [ ] **Auditoria de Permissões** - Log de mudanças indicando usuário, data e itens alterados
 - [ ] **Validador de Conflitos** - Alertar sobre rotas críticas sem cobertura ou permissões sobrepostas
+- [ ] **Matriz Plano x Módulo** - Visão em tabela comparativa para leitura rápida
+- [x] **Modo Edição Completa** - Ao clicar em qualquer plano (Básico, Profissional, Enterprise, Ultra ou custom), exibir todos os módulos com opção de ativar/desativar
+- [ ] **Histórico de Ajustes por Plano** - Timeline mostrando inclusões/remoções de módulos
 
 #### 🧑‍💼 Painel Super Admin (robsonnonatoiii@gmail.com)
 - [ ] **Dashboard de Planos** - Visão geral com status, quantidade de tenants por plano e alertas
@@ -357,19 +364,26 @@
 - [ ] **Fluxo de Publicação** - Rascunho → Revisão → Publicado, com confirmação antes de aplicar aos tenants
 - [ ] **Modo Comparativo de Planos** - Comparar planos lado a lado para validar diferenciais
 - [ ] **Impressão/Exportação** - Exportar configuração atual em PDF/CSV para auditoria externa
+- [ ] **Controle de Acesso** - Apenas super admins (robsonnonatoiii@gmail.com) podem alterar planos globais
+- [ ] **Logs Administrativos** - Registrar ajustes feitos pelo super admin com contexto e IP de origem
 
 #### 🪪 Planos Padrão e Escopo de Acesso
 - [ ] **Plano Básico** - Incluir: Processos (CRUD + timeline), Clientes (visualização), Documentos (upload e modelos básicos), Agenda (visualizar/criar compromissos), Dashboard geral. Bloquear: Financeiro, Contratos, Comissões, IA Avançada, Marketplace, Analytics avançado.
 - [ ] **Plano Profissional** - Incluir módulos do básico + Financeiro parcial (faturamento e inadimplência), Contratos, Alertas avançados, Relatórios padrões.
 - [ ] **Plano Enterprise** - Todos os módulos, integrações avançadas, IA jurídica, API externa e automações customizadas.
-- [ ] **Planos Customizados** - Permitir montar plano bespoke por cliente, salvando como variação reutilizável.
+- [x] **Planos Customizados** - Permitir montar plano bespoke por cliente, salvando como variação reutilizável.
 - [ ] **Regras de Upgrade/Downgrade** - Processo para migrar entre planos com/sem perda de dados (ex.: Financeiro congelado ao descer de plano)
+- [x] **Plano Ultra** - Plano premium com 100% das rotas ativas e recursos exclusivos
+- [ ] **Templates de Planos** - Exportar/importar configurações para replicar em novos tenants
+- [ ] **Teste com Usuários Sandra (tenant) e Robson (super admin)** - Roteiro específico para validar permissões
 
 #### 🔔 Comunicação e Billing
 - [ ] **Notificações sobre Alterações de Plano** - Emails/SMS para clientes quando houver mudança de escopo
 - [ ] **Sincronização com Cobrança** - Garantir que o plano aplicado reflete no billing recorrente (Asaas)
 - [ ] **Política de Trial** - Definir rotas liberadas durante período de teste
 - [ ] **Sistema de Descontos/Cupons** - Aplicar descontos condicionados a módulos liberados
+- [ ] **Webhook de Alteração de Plano** - Disparar evento para serviços externos quando houver publicação
+- [ ] **Logs de Cobrança** - Garantir rastreabilidade entre mudanças de plano e faturas geradas
 
 ---
 

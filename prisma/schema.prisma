@@ -158,15 +158,15 @@ model Tenant {
   planos                Plano[]
   asaasConfig           TenantAsaasConfig?
   advogadoHistorico     AdvogadoHistorico[]
-  
+
   // Sistema de Gestão de Equipe
-  cargos                Cargo[]
-  cargoPermissoes       CargoPermissao[]
-  usuarioCargos         UsuarioCargo[]
+  cargos                       Cargo[]
+  cargoPermissoes              CargoPermissao[]
+  usuarioCargos                UsuarioCargo[]
   usuarioPermissoesIndividuais UsuarioPermissaoIndividual[]
-  usuarioVinculacoes    UsuarioVinculacao[]
-  equipeHistorico       EquipeHistorico[]
-  equipeConvites        EquipeConvite[]
+  usuarioVinculacoes           UsuarioVinculacao[]
+  equipeHistorico              EquipeHistorico[]
+  equipeConvites               EquipeConvite[]
 
   @@index([status])
   @@index([superAdminId])
@@ -213,19 +213,19 @@ model Endereco {
 // ============================================
 
 model TenantAsaasConfig {
-  id                String        @id @default(cuid())
-  tenantId          String        @unique
-  asaasApiKey       String        @db.Text // Criptografado
-  asaasAccountId    String
-  asaasWalletId     String?
-  ambiente          AsaasAmbiente @default(SANDBOX)
-  integracaoAtiva   Boolean       @default(false)
-  dataConfiguracao  DateTime      @default(now())
-  ultimaValidacao   DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  
-  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id               String        @id @default(cuid())
+  tenantId         String        @unique
+  asaasApiKey      String        @db.Text // Criptografado
+  asaasAccountId   String
+  asaasWalletId    String?
+  ambiente         AsaasAmbiente @default(SANDBOX)
+  integracaoAtiva  Boolean       @default(false)
+  dataConfiguracao DateTime      @default(now())
+  ultimaValidacao  DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([ambiente])
@@ -296,8 +296,8 @@ model Usuario {
   createdById                  String?
   // Integração Google Calendar
   googleCalendarConnected      Boolean                @default(false)
-  googleCalendarTokens         Json?                  // { access_token, refresh_token, expiry_date }
-  googleCalendarId             String?                // ID do calendário principal do usuário
+  googleCalendarTokens         Json? // { access_token, refresh_token, expiry_date }
+  googleCalendarId             String? // ID do calendário principal do usuário
   googleCalendarSyncEnabled    Boolean                @default(false)
   createdAt                    DateTime               @default(now())
   updatedAt                    DateTime               @updatedAt
@@ -344,13 +344,15 @@ model Usuario {
   tarefasObservadas            TarefaWatcher[]
   dadosBancarios               DadosBancarios[]
   advogadoHistorico            AdvogadoHistorico[]
-  
+  planoVersoesCriadas          PlanoVersao[]          @relation("PlanoVersaoCriador")
+  planoVersoesPublicadas       PlanoVersao[]          @relation("PlanoVersaoPublicador")
+
   // Sistema de Gestão de Equipe
-  cargos                       UsuarioCargo[]
-  permissoesIndividuais        UsuarioPermissaoIndividual[]
-  vinculacoesComoServidor      UsuarioVinculacao[] @relation("UsuarioServidor")
-  equipeHistorico              EquipeHistorico[]
-  equipeConvites               EquipeConvite[]
+  cargos                  UsuarioCargo[]
+  permissoesIndividuais   UsuarioPermissaoIndividual[]
+  vinculacoesComoServidor UsuarioVinculacao[]          @relation("UsuarioServidor")
+  equipeHistorico         EquipeHistorico[]
+  equipeConvites          EquipeConvite[]
 
   @@unique([email, tenantId])
   @@unique([tenantId, cpf])
@@ -402,59 +404,59 @@ model SuperAdminAuditLog {
 }
 
 model Advogado {
-  id                   String                  @id @default(cuid())
-  tenantId             String
-  usuarioId            String                  @unique
-  oabNumero            String?
-  oabUf                String?
-  especialidades       EspecialidadeJuridica[]
-  bio                  String?
-  telefone             String?
-  whatsapp             String?
-  comissaoPadrao       Decimal                 @default(0.00) @db.Decimal(5, 2)
-  comissaoAcaoGanha    Decimal                 @default(0.00) @db.Decimal(5, 2)
-  comissaoHonorarios   Decimal                 @default(0.00) @db.Decimal(5, 2)
-  isExterno            Boolean                 @default(false) // Identifica se o advogado não é do escritório
-  
+  id                 String                  @id @default(cuid())
+  tenantId           String
+  usuarioId          String                  @unique
+  oabNumero          String?
+  oabUf              String?
+  especialidades     EspecialidadeJuridica[]
+  bio                String?
+  telefone           String?
+  whatsapp           String?
+  comissaoPadrao     Decimal                 @default(0.00) @db.Decimal(5, 2)
+  comissaoAcaoGanha  Decimal                 @default(0.00) @db.Decimal(5, 2)
+  comissaoHonorarios Decimal                 @default(0.00) @db.Decimal(5, 2)
+  isExterno          Boolean                 @default(false) // Identifica se o advogado não é do escritório
+
   // Dados profissionais adicionais
-  formacao             String?                 // Formação acadêmica
-  experiencia          String?                 // Experiência profissional
-  premios              String?                 // Prêmios e reconhecimentos
-  publicacoes          String?                 // Publicações e artigos
-  website              String?                 // Website pessoal
-  linkedin             String?                 // LinkedIn
-  twitter              String?                 // Twitter/X
-  instagram            String?                 // Instagram
-  
+  formacao    String? // Formação acadêmica
+  experiencia String? // Experiência profissional
+  premios     String? // Prêmios e reconhecimentos
+  publicacoes String? // Publicações e artigos
+  website     String? // Website pessoal
+  linkedin    String? // LinkedIn
+  twitter     String? // Twitter/X
+  instagram   String? // Instagram
+
   // Configurações de notificação
-  notificarEmail       Boolean                 @default(true)
-  notificarWhatsapp    Boolean                 @default(true)
-  notificarSistema     Boolean                 @default(true)
-  
+  notificarEmail    Boolean @default(true)
+  notificarWhatsapp Boolean @default(true)
+  notificarSistema  Boolean @default(true)
+
   // Configurações de acesso
-  podeCriarProcessos   Boolean                 @default(true)
-  podeEditarProcessos  Boolean                 @default(true)
-  podeExcluirProcessos Boolean                 @default(false)
-  podeGerenciarClientes Boolean                @default(true)
-  podeAcessarFinanceiro Boolean                @default(false)
-  
-  createdAt            DateTime                @default(now())
-  updatedAt            DateTime                @updatedAt
-  tenant               Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  usuario              Usuario                 @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  podeCriarProcessos    Boolean @default(true)
+  podeEditarProcessos   Boolean @default(true)
+  podeExcluirProcessos  Boolean @default(false)
+  podeGerenciarClientes Boolean @default(true)
+  podeAcessarFinanceiro Boolean @default(false)
+
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario              Usuario               @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   clientes             AdvogadoCliente[]
-  contratos            Contrato[]              @relation("ContratoAdvogado")
+  contratos            Contrato[]            @relation("ContratoAdvogado")
   honorarios           ContratoHonorario[]
   historico            AdvogadoHistorico[]
   documentoAssinaturas DocumentoAssinatura[]
   eventos              Evento[]
   pagamentoComissoes   PagamentoComissao[]
-  processos            Processo[]              @relation("ProcessoAdvogadoResponsavel")
+  processos            Processo[]            @relation("ProcessoAdvogadoResponsavel")
   procuracoes          ProcuracaoAdvogado[]
   ProcessoParte        ProcessoParte[]
-  
+
   // Sistema de Gestão de Equipe
-  vinculacoesServidas  UsuarioVinculacao[] @relation("UsuarioAdvogado")
+  vinculacoesServidas UsuarioVinculacao[] @relation("UsuarioAdvogado")
 
   @@unique([tenantId, oabUf, oabNumero])
   @@schema("magiclawyer")
@@ -475,7 +477,7 @@ model Cliente {
   responsavelEmail     String?
   responsavelTelefone  String?
   observacoes          String?
-  asaasCustomerId      String?                // ID do cliente no Asaas
+  asaasCustomerId      String? // ID do cliente no Asaas
   usuarioId            String?
   deletedAt            DateTime?
   createdAt            DateTime              @default(now())
@@ -504,23 +506,23 @@ model Cliente {
 }
 
 model AdvogadoHistorico {
-  id          String   @id @default(cuid())
-  tenantId    String
-  advogadoId  String
-  usuarioId   String   // Usuário que fez a alteração
-  acao        String   // CREATE, UPDATE, DELETE, CONVERT_EXTERNAL_TO_INTERNAL, etc.
-  campo       String?  // Nome do campo alterado (opcional)
+  id            String   @id @default(cuid())
+  tenantId      String
+  advogadoId    String
+  usuarioId     String // Usuário que fez a alteração
+  acao          String // CREATE, UPDATE, DELETE, CONVERT_EXTERNAL_TO_INTERNAL, etc.
+  campo         String? // Nome do campo alterado (opcional)
   valorAnterior String? // Valor anterior (opcional)
-  valorNovo   String?  // Valor novo (opcional)
-  detalhes    String?  // Detalhes adicionais da alteração
-  ipAddress   String?  // IP do usuário
-  userAgent   String?  // User agent do navegador
-  createdAt   DateTime @default(now())
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  advogado    Advogado @relation(fields: [advogadoId], references: [id], onDelete: Cascade)
-  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  
+  valorNovo     String? // Valor novo (opcional)
+  detalhes      String? // Detalhes adicionais da alteração
+  ipAddress     String? // IP do usuário
+  userAgent     String? // User agent do navegador
+  createdAt     DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  advogado Advogado @relation(fields: [advogadoId], references: [id], onDelete: Cascade)
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
   @@index([tenantId])
   @@index([advogadoId])
   @@index([usuarioId])
@@ -918,27 +920,27 @@ model ProcuracaoPoder {
 }
 
 model MovimentacaoProcesso {
-  id                 String            @id @default(cuid())
-  tenantId           String
-  processoId         String
-  titulo             String
-  descricao          String?
-  tipo               MovimentacaoTipo?
-  dataMovimentacao   DateTime          @default(now())
-  prazo              DateTime?
-  criadoPorId        String?
+  id                    String            @id @default(cuid())
+  tenantId              String
+  processoId            String
+  titulo                String
+  descricao             String?
+  tipo                  MovimentacaoTipo?
+  dataMovimentacao      DateTime          @default(now())
+  prazo                 DateTime?
+  criadoPorId           String?
   // Campos para notificações
-  notificarCliente   Boolean           @default(false)
-  notificarEmail     Boolean           @default(false)
-  notificarWhatsapp  Boolean           @default(false)
+  notificarCliente      Boolean           @default(false)
+  notificarEmail        Boolean           @default(false)
+  notificarWhatsapp     Boolean           @default(false)
   mensagemPersonalizada String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  documentos         Documento[]       @relation("MovimentacaoDocumentos")
-  criadoPor          Usuario?          @relation("MovimentacaoCriador", fields: [criadoPorId], references: [id])
-  processo           Processo          @relation(fields: [processoId], references: [id], onDelete: Cascade)
-  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  prazosRelacionados ProcessoPrazo[]
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  documentos            Documento[]       @relation("MovimentacaoDocumentos")
+  criadoPor             Usuario?          @relation("MovimentacaoCriador", fields: [criadoPorId], references: [id])
+  processo              Processo          @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  tenant                Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  prazosRelacionados    ProcessoPrazo[]
 
   @@index([processoId])
   @@index([dataMovimentacao])
@@ -1032,20 +1034,20 @@ model RegimePrazo {
 }
 
 model Feriado {
-  id          String        @id @default(cuid())
-  tenantId    String?
-  nome        String
-  data        DateTime      @db.Date
-  tipo        TipoFeriado   @default(NACIONAL)
-  tribunalId  String?
-  uf          String?
-  municipio   String?
-  descricao   String?
-  recorrente  Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  tenant      Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  tribunal    Tribunal?     @relation(fields: [tribunalId], references: [id])
+  id         String      @id @default(cuid())
+  tenantId   String?
+  nome       String
+  data       DateTime    @db.Date
+  tipo       TipoFeriado @default(NACIONAL)
+  tribunalId String?
+  uf         String?
+  municipio  String?
+  descricao  String?
+  recorrente Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  tenant     Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tribunal   Tribunal?   @relation(fields: [tribunalId], references: [id])
 
   @@index([tenantId, data])
   @@index([tipo])
@@ -1112,29 +1114,29 @@ model AutoProcessual {
 }
 
 model Peticao {
-  id              String         @id @default(cuid())
+  id              String              @id @default(cuid())
   tenantId        String
   processoId      String
   causaId         String?
   modeloId        String?
   titulo          String
   tipo            String?
-  status          PeticaoStatus  @default(RASCUNHO)
+  status          PeticaoStatus       @default(RASCUNHO)
   descricao       String?
   documentoId     String?
   protocoloNumero String?
   protocoladoEm   DateTime?
   criadoPorId     String?
   observacoes     String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  processo        Processo             @relation(fields: [processoId], references: [id], onDelete: Cascade)
-  causa           Causa?               @relation(fields: [causaId], references: [id])
-  modelo          ModeloPeticao?       @relation(fields: [modeloId], references: [id], onDelete: SetNull)
-  documento       Documento?           @relation(fields: [documentoId], references: [id], onDelete: SetNull)
-  tenant          Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  criadoPor       Usuario?             @relation("PeticaoCriador", fields: [criadoPorId], references: [id])
-  diligencias     Diligencia[]         @relation("DiligenciaPeticao")
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  processo        Processo            @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  causa           Causa?              @relation(fields: [causaId], references: [id])
+  modelo          ModeloPeticao?      @relation(fields: [modeloId], references: [id], onDelete: SetNull)
+  documento       Documento?          @relation(fields: [documentoId], references: [id], onDelete: SetNull)
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  criadoPor       Usuario?            @relation("PeticaoCriador", fields: [criadoPorId], references: [id])
+  diligencias     Diligencia[]        @relation("DiligenciaPeticao")
   assinaturas     AssinaturaPeticao[]
 
   @@index([tenantId, processoId])
@@ -1159,7 +1161,7 @@ model ModeloPeticao {
   deletedAt DateTime?
 
   // Relacionamentos
-  tenant   Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   peticoes Peticao[]
 
   @@index([tenantId, ativo])
@@ -1169,17 +1171,17 @@ model ModeloPeticao {
 }
 
 model TipoPeticao {
-  id          String    @id @default(cuid())
-  tenantId    String?   // NULL = tipo global (todos os tenants), preenchido = tipo customizado do tenant
-  nome        String
-  descricao   String?
-  categoria   String? // Ex: "INICIAL", "RESPOSTA", "RECURSO", "EXECUCAO", "URGENTE", "OUTROS"
-  ativo       Boolean   @default(true)
-  global      Boolean   @default(false) // Se é um tipo global do sistema (tenantId NULL)
-  ordem       Int       @default(0) // Para ordenação customizada
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id        String    @id @default(cuid())
+  tenantId  String? // NULL = tipo global (todos os tenants), preenchido = tipo customizado do tenant
+  nome      String
+  descricao String?
+  categoria String? // Ex: "INICIAL", "RESPOSTA", "RECURSO", "EXECUCAO", "URGENTE", "OUTROS"
+  ativo     Boolean   @default(true)
+  global    Boolean   @default(false) // Se é um tipo global do sistema (tenantId NULL)
+  ordem     Int       @default(0) // Para ordenação customizada
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   // Relacionamentos
   tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1318,7 +1320,7 @@ model Contrato {
   responsavelUsuarioId     String?
   criadoPorId              String?
   processoId               String?
-  dadosBancariosId         String?             // Conta bancária para recebimento
+  dadosBancariosId         String? // Conta bancária para recebimento
   titulo                   String
   tipoId                   String?
   status                   ContratoStatus      @default(RASCUNHO)
@@ -1364,8 +1366,8 @@ model ContratoHonorario {
   id                 String                @id @default(cuid())
   tenantId           String
   contratoId         String
-  advogadoId         String?               // Advogado específico (NULL = honorário geral do contrato)
-  dadosBancariosId   String?               // Conta específica para recebimento (herda do contrato se NULL)
+  advogadoId         String? // Advogado específico (NULL = honorário geral do contrato)
+  dadosBancariosId   String? // Conta específica para recebimento (herda do contrato se NULL)
   tipo               ContratoHonorarioTipo
   valorFixo          Decimal?              @db.Decimal(14, 2)
   percentualSucesso  Decimal?              @db.Decimal(5, 2)
@@ -1391,7 +1393,7 @@ model ContratoParcela {
   id                     String                @id @default(cuid())
   tenantId               String
   contratoId             String
-  dadosBancariosId       String?               // Conta específica para esta parcela (herda do contrato se NULL)
+  dadosBancariosId       String? // Conta específica para esta parcela (herda do contrato se NULL)
   numeroParcela          Int
   titulo                 String?
   descricao              String?
@@ -1402,7 +1404,7 @@ model ContratoParcela {
   formaPagamento         String?
   comprovanteDocumentoId String?
   responsavelUsuarioId   String?
-  asaasPaymentId         String?               // ID do pagamento no Asaas
+  asaasPaymentId         String? // ID do pagamento no Asaas
   dadosPagamento         Json?
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
@@ -1680,8 +1682,78 @@ model Plano {
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   subscriptions   TenantSubscription[]
+  modulos         PlanoModulo[]
+  versoes         PlanoVersao[]
   tenants         Tenant[]
 
+  @@schema("magiclawyer")
+}
+
+model Modulo {
+  id            String              @id @default(cuid())
+  slug          String              @unique
+  nome          String
+  descricao     String?
+  categoria     String?
+  icone         String?
+  ordem         Int?
+  ativo         Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  planoModulos  PlanoModulo[]
+  versaoModulos PlanoVersaoModulo[]
+
+  @@index([categoria])
+  @@schema("magiclawyer")
+}
+
+model PlanoModulo {
+  id         String   @id @default(cuid())
+  planoId    String
+  moduloId   String
+  habilitado Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  plano      Plano    @relation(fields: [planoId], references: [id], onDelete: Cascade)
+  modulo     Modulo   @relation(fields: [moduloId], references: [id])
+
+  @@unique([planoId, moduloId])
+  @@index([moduloId])
+  @@schema("magiclawyer")
+}
+
+model PlanoVersao {
+  id             String               @id @default(cuid())
+  planoId        String
+  numero         Int
+  status         PlanoVersaoStatus    @default(DRAFT)
+  titulo         String?
+  descricao      String?
+  criadoPorId    String?
+  publicadoEm    DateTime?
+  publicadoPorId String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  plano          Plano                @relation(fields: [planoId], references: [id], onDelete: Cascade)
+  modulos        PlanoVersaoModulo[]
+  criadoPor      Usuario?             @relation("PlanoVersaoCriador", fields: [criadoPorId], references: [id])
+  publicadoPor   Usuario?             @relation("PlanoVersaoPublicador", fields: [publicadoPorId], references: [id])
+  assinaturas    TenantSubscription[] @relation("PlanoVersaoAssinaturas")
+
+  @@unique([planoId, numero])
+  @@schema("magiclawyer")
+}
+
+model PlanoVersaoModulo {
+  id            String      @id @default(cuid())
+  planoVersaoId String
+  moduloId      String
+  habilitado    Boolean     @default(true)
+  planoVersao   PlanoVersao @relation(fields: [planoVersaoId], references: [id], onDelete: Cascade)
+  modulo        Modulo      @relation(fields: [moduloId], references: [id])
+
+  @@unique([planoVersaoId, moduloId])
+  @@index([moduloId])
   @@schema("magiclawyer")
 }
 
@@ -1689,6 +1761,7 @@ model TenantSubscription {
   id                     String             @id @default(cuid())
   tenantId               String             @unique
   planoId                String?
+  planoVersaoId          String?
   status                 SubscriptionStatus @default(TRIAL)
   dataInicio             DateTime           @default(now())
   dataFim                DateTime?
@@ -1697,17 +1770,19 @@ model TenantSubscription {
   externalCustomerId     String?
   externalSubscriptionId String?
   // Campos específicos do Asaas
-  asaasCustomerId        String?            // ID do cliente no Asaas
-  asaasSubscriptionId    String?            // ID da assinatura no Asaas
-  asaasPaymentId         String?            // ID do último pagamento no Asaas
+  asaasCustomerId        String? // ID do cliente no Asaas
+  asaasSubscriptionId    String? // ID da assinatura no Asaas
+  asaasPaymentId         String? // ID do último pagamento no Asaas
   metadata               Json?
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
   faturas                Fatura[]
   plano                  Plano?             @relation(fields: [planoId], references: [id])
+  planoVersao            PlanoVersao?       @relation("PlanoVersaoAssinaturas", fields: [planoVersaoId], references: [id])
   tenant                 Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([asaasCustomerId])
+  @@index([planoVersaoId])
   @@index([asaasSubscriptionId])
   @@schema("magiclawyer")
 }
@@ -2405,6 +2480,15 @@ enum SubscriptionStatus {
   @@schema("magiclawyer")
 }
 
+enum PlanoVersaoStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+
+  @@schema("magiclawyer")
+}
+
 enum InvoiceStatus {
   RASCUNHO
   ABERTA
@@ -2602,7 +2686,6 @@ enum BoardVisibilidade {
   @@schema("magiclawyer")
 }
 
-
 enum AsaasAmbiente {
   SANDBOX
   PRODUCAO
@@ -2671,21 +2754,21 @@ model DocumentoProcuracao {
 // ============================================
 
 model Banco {
-  id                String               @id @default(cuid())
-  codigo            String               @unique
-  nome              String
-  nomeCompleto      String?
-  site              String?
-  telefone          String?
-  cnpj              String?
-  ispb              String?              // Código ISPB para PIX
-  ativo             Boolean              @default(true)
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  deletedAt         DateTime?
+  id           String    @id @default(cuid())
+  codigo       String    @unique
+  nome         String
+  nomeCompleto String?
+  site         String?
+  telefone     String?
+  cnpj         String?
+  ispb         String? // Código ISPB para PIX
+  ativo        Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
 
   // Relacionamentos
-  dadosBancarios    DadosBancarios[]
+  dadosBancarios DadosBancarios[]
 
   @@index([codigo])
   @@index([ativo])
@@ -2700,39 +2783,39 @@ model Banco {
 model DadosBancarios {
   id                String                @id @default(cuid())
   tenantId          String
-  usuarioId         String?               // NULL = dados do tenant/escritório
-  clienteId         String?               // NULL = dados do usuário/escritório
+  usuarioId         String? // NULL = dados do tenant/escritório
+  clienteId         String? // NULL = dados do usuário/escritório
   tipoConta         TipoContaBancaria     @default(PESSOA_FISICA)
-  bancoCodigo       String                // Código do banco (ex: "001")
-  agencia           String                // Número da agência
-  conta             String                // Número da conta
-  digitoConta       String?               // Dígito da conta
+  bancoCodigo       String // Código do banco (ex: "001")
+  agencia           String // Número da agência
+  conta             String // Número da conta
+  digitoConta       String? // Dígito da conta
   tipoContaBancaria TipoContaBancariaEnum @default(CORRENTE)
-  chavePix          String?               // Chave PIX (CPF, email, telefone, aleatória)
-  tipoChavePix      TipoChavePix?         // Tipo da chave PIX
-  titularNome       String                // Nome do titular
-  titularDocumento  String                // CPF/CNPJ do titular
-  titularEmail      String?               // Email do titular
-  titularTelefone   String?               // Telefone do titular
-  endereco          String?               // Endereço do titular
-  cidade            String?               // Cidade
-  estado            String?               // Estado (UF)
-  cep               String?               // CEP
+  chavePix          String? // Chave PIX (CPF, email, telefone, aleatória)
+  tipoChavePix      TipoChavePix? // Tipo da chave PIX
+  titularNome       String // Nome do titular
+  titularDocumento  String // CPF/CNPJ do titular
+  titularEmail      String? // Email do titular
+  titularTelefone   String? // Telefone do titular
+  endereco          String? // Endereço do titular
+  cidade            String? // Cidade
+  estado            String? // Estado (UF)
+  cep               String? // CEP
   ativo             Boolean               @default(true)
   principal         Boolean               @default(false) // Conta principal
-  observacoes       String?               // Observações adicionais
+  observacoes       String? // Observações adicionais
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
   deletedAt         DateTime?
 
   // Relacionamentos
-  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  usuario       Usuario?           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  cliente       Cliente?           @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  banco         Banco              @relation(fields: [bancoCodigo], references: [codigo])
-  contratos     Contrato[]
-  parcelas      ContratoParcela[]
-  honorarios    ContratoHonorario[]
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario    Usuario?            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cliente    Cliente?            @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  banco      Banco               @relation(fields: [bancoCodigo], references: [codigo])
+  contratos  Contrato[]
+  parcelas   ContratoParcela[]
+  honorarios ContratoHonorario[]
 
   @@index([tenantId, usuarioId])
   @@index([tenantId, clienteId])
@@ -2777,16 +2860,16 @@ enum TipoChavePix {
 // ============================================
 
 model CheckoutSession {
-  id                String   @id @default(cuid())
-  dadosCheckout     Json     // Dados do formulário de checkout
-  planoId           String   // ID do plano selecionado
-  tenantSlug        String   // Slug único do tenant
-  tenantDomain      String   // Domínio do tenant
-  asaasCustomerId   String   // ID do cliente no Asaas
-  asaasPaymentId    String   // ID do pagamento no Asaas
-  status            String   @default("PENDENTE") // PENDENTE, CONFIRMADO, ERRO
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id              String   @id @default(cuid())
+  dadosCheckout   Json // Dados do formulário de checkout
+  planoId         String // ID do plano selecionado
+  tenantSlug      String // Slug único do tenant
+  tenantDomain    String // Domínio do tenant
+  asaasCustomerId String // ID do cliente no Asaas
+  asaasPaymentId  String // ID do pagamento no Asaas
+  status          String   @default("PENDENTE") // PENDENTE, CONFIRMADO, ERRO
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([asaasPaymentId])
   @@index([status])
@@ -2796,21 +2879,21 @@ model CheckoutSession {
 // ===== SISTEMA DE GESTÃO DE EQUIPE =====
 
 model Cargo {
-  id          String   @id @default(cuid())
-  tenantId    String
-  nome        String
-  descricao   String?
-  nivel       Int      @default(1) // 1=Estagiário, 2=Assistente, 3=Advogado, 4=Coordenador, 5=Diretor
-  ativo       Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  tenantId  String
+  nome      String
+  descricao String?
+  nivel     Int      @default(1) // 1=Estagiário, 2=Assistente, 3=Advogado, 4=Coordenador, 5=Diretor
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relacionamentos
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  usuarios    UsuarioCargo[]
-  permissoes  CargoPermissao[]
-  convites    EquipeConvite[]
-  
+  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuarios   UsuarioCargo[]
+  permissoes CargoPermissao[]
+  convites   EquipeConvite[]
+
   @@index([tenantId])
   @@index([nome])
   @@schema("magiclawyer")
@@ -2820,36 +2903,36 @@ model CargoPermissao {
   id        String   @id @default(cuid())
   tenantId  String
   cargoId   String
-  modulo    String   // 'processos', 'clientes', 'advogados', 'financeiro', 'equipe', 'relatorios'
-  acao      String   // 'criar', 'editar', 'excluir', 'visualizar', 'exportar'
+  modulo    String // 'processos', 'clientes', 'advogados', 'financeiro', 'equipe', 'relatorios'
+  acao      String // 'criar', 'editar', 'excluir', 'visualizar', 'exportar'
   permitido Boolean  @default(true)
   createdAt DateTime @default(now())
-  
+
   // Relacionamentos
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  cargo     Cargo    @relation(fields: [cargoId], references: [id], onDelete: Cascade)
-  
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cargo  Cargo  @relation(fields: [cargoId], references: [id], onDelete: Cascade)
+
   @@unique([tenantId, cargoId, modulo, acao])
   @@index([tenantId, cargoId])
   @@schema("magiclawyer")
 }
 
 model UsuarioCargo {
-  id        String   @id @default(cuid())
-  tenantId  String
-  usuarioId String
-  cargoId   String
-  ativo     Boolean  @default(true)
-  dataInicio DateTime @default(now())
-  dataFim   DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  id         String    @id @default(cuid())
+  tenantId   String
+  usuarioId  String
+  cargoId    String
+  ativo      Boolean   @default(true)
+  dataInicio DateTime  @default(now())
+  dataFim    DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
   // Relacionamentos
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  cargo     Cargo    @relation(fields: [cargoId], references: [id], onDelete: Cascade)
-  
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cargo   Cargo   @relation(fields: [cargoId], references: [id], onDelete: Cascade)
+
   @@unique([tenantId, usuarioId, cargoId])
   @@index([tenantId, usuarioId])
   @@schema("magiclawyer")
@@ -2859,40 +2942,40 @@ model UsuarioPermissaoIndividual {
   id        String   @id @default(cuid())
   tenantId  String
   usuarioId String
-  modulo    String   // 'processos', 'clientes', 'advogados', 'financeiro', 'equipe', 'relatorios'
-  acao      String   // 'criar', 'editar', 'excluir', 'visualizar', 'exportar'
+  modulo    String // 'processos', 'clientes', 'advogados', 'financeiro', 'equipe', 'relatorios'
+  acao      String // 'criar', 'editar', 'excluir', 'visualizar', 'exportar'
   permitido Boolean  @default(true)
-  motivo    String?  // Justificativa para a permissão individual
+  motivo    String? // Justificativa para a permissão individual
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relacionamentos
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
   @@unique([tenantId, usuarioId, modulo, acao])
   @@index([tenantId, usuarioId])
   @@schema("magiclawyer")
 }
 
 model UsuarioVinculacao {
-  id        String   @id @default(cuid())
-  tenantId  String
-  usuarioId String   // Usuário que serve (estagiário, controller, etc.)
-  advogadoId String  // Advogado que é servido
-  tipo      String   // 'estagiario', 'controller', 'assistente', 'secretario'
-  ativo     Boolean  @default(true)
-  dataInicio DateTime @default(now())
-  dataFim   DateTime?
+  id          String    @id @default(cuid())
+  tenantId    String
+  usuarioId   String // Usuário que serve (estagiário, controller, etc.)
+  advogadoId  String // Advogado que é servido
+  tipo        String // 'estagiario', 'controller', 'assistente', 'secretario'
+  ativo       Boolean   @default(true)
+  dataInicio  DateTime  @default(now())
+  dataFim     DateTime?
   observacoes String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   // Relacionamentos
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  usuario   Usuario  @relation("UsuarioServidor", fields: [usuarioId], references: [id], onDelete: Cascade)
-  advogado  Advogado @relation("UsuarioAdvogado", fields: [advogadoId], references: [id], onDelete: Cascade)
-  
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario  Usuario  @relation("UsuarioServidor", fields: [usuarioId], references: [id], onDelete: Cascade)
+  advogado Advogado @relation("UsuarioAdvogado", fields: [advogadoId], references: [id], onDelete: Cascade)
+
   @@unique([tenantId, usuarioId, advogadoId])
   @@index([tenantId, usuarioId])
   @@index([tenantId, advogadoId])
@@ -2900,47 +2983,47 @@ model UsuarioVinculacao {
 }
 
 model EquipeHistorico {
-  id        String   @id @default(cuid())
-  tenantId  String
-  usuarioId String
-  acao      String   // 'criado', 'editado', 'cargo_alterado', 'permissao_alterada', 'vinculacao_alterada'
+  id           String   @id @default(cuid())
+  tenantId     String
+  usuarioId    String
+  acao         String // 'criado', 'editado', 'cargo_alterado', 'permissao_alterada', 'vinculacao_alterada'
   dadosAntigos Json? // Dados antes da alteração
   dadosNovos   Json? // Dados após a alteração
-  motivo    String?  // Justificativa da alteração
+  motivo       String? // Justificativa da alteração
   realizadoPor String // ID do usuário que fez a alteração
-  createdAt DateTime @default(now())
-  
+  createdAt    DateTime @default(now())
+
   // Relacionamentos
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
   @@index([tenantId, usuarioId])
   @@index([tenantId, acao])
   @@schema("magiclawyer")
 }
 
 model EquipeConvite {
-  id        String   @id @default(cuid())
-  tenantId  String
-  email     String
-  nome      String?
-  cargoId   String?
-  role      UserRole @default(ADVOGADO)
-  token     String   @unique
-  status    String   @default("pendente") // 'pendente', 'aceito', 'rejeitado', 'expirado'
-  expiraEm  DateTime
-  aceitoEm  DateTime?
+  id          String    @id @default(cuid())
+  tenantId    String
+  email       String
+  nome        String?
+  cargoId     String?
+  role        UserRole  @default(ADVOGADO)
+  token       String    @unique
+  status      String    @default("pendente") // 'pendente', 'aceito', 'rejeitado', 'expirado'
+  expiraEm    DateTime
+  aceitoEm    DateTime?
   rejeitadoEm DateTime?
   observacoes String?
-  enviadoPor String // ID do usuário que enviou o convite
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  enviadoPor  String // ID do usuário que enviou o convite
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   // Relacionamentos
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  cargo     Cargo?   @relation(fields: [cargoId], references: [id], onDelete: SetNull)
+  tenant            Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cargo             Cargo?  @relation(fields: [cargoId], references: [id], onDelete: SetNull)
   enviadoPorUsuario Usuario @relation(fields: [enviadoPor], references: [id], onDelete: Cascade)
-  
+
   @@unique([tenantId, email])
   @@index([tenantId, status])
   @@index([token])

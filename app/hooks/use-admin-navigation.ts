@@ -25,6 +25,12 @@ export function useAdminNavigation() {
         description: "Gerenciar escritórios de advocacia",
       },
       {
+        label: "Planos",
+        href: "/admin/planos",
+        icon: "Layers",
+        description: "Controle de planos e módulos liberados",
+      },
+      {
         label: "Juízes Globais",
         href: "/admin/juizes",
         icon: "Scale",
