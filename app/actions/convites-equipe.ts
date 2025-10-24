@@ -2,9 +2,9 @@
 
 import { randomBytes } from "crypto";
 
-import { UserRole } from "@/app/generated/prisma";
 import { revalidatePath } from "next/cache";
 
+import { UserRole } from "@/app/generated/prisma";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { sendConviteEmail } from "@/app/lib/email-convite";
@@ -120,7 +120,9 @@ export async function getConvitesEquipe(): Promise<ConviteEquipeData[]> {
 }
 
 // Criar novo convite
-export async function createConviteEquipe(data: CreateConviteData): Promise<ConviteEquipeData> {
+export async function createConviteEquipe(
+  data: CreateConviteData,
+): Promise<ConviteEquipeData> {
   const session = await getSession();
 
   if (!session?.user) {
@@ -250,7 +252,9 @@ export async function createConviteEquipe(data: CreateConviteData): Promise<Conv
 }
 
 // Reenviar convite
-export async function resendConviteEquipe(conviteId: string): Promise<ConviteEquipeData> {
+export async function resendConviteEquipe(
+  conviteId: string,
+): Promise<ConviteEquipeData> {
   const session = await getSession();
 
   if (!session?.user) {
@@ -402,7 +406,9 @@ export async function cancelConviteEquipe(conviteId: string): Promise<void> {
 }
 
 // Buscar convite por token (para página de aceitação)
-export async function getConviteByToken(token: string): Promise<ConviteEquipeData | null> {
+export async function getConviteByToken(
+  token: string,
+): Promise<ConviteEquipeData | null> {
   const convite = await prisma.equipeConvite.findUnique({
     where: {
       token,
@@ -491,7 +497,7 @@ export async function acceptConviteEquipe(
     firstName: string;
     lastName: string;
     password: string;
-  }
+  },
 ): Promise<void> {
   const convite = await prisma.equipeConvite.findUnique({
     where: {

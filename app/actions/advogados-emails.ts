@@ -14,7 +14,10 @@ interface ActionResponse<T = any> {
 /**
  * Envia email de boas-vindas para um advogado
  */
-export async function enviarEmailBoasVindas(advogadoId: string, senhaTemporaria?: string): Promise<ActionResponse> {
+export async function enviarEmailBoasVindas(
+  advogadoId: string,
+  senhaTemporaria?: string,
+): Promise<ActionResponse> {
   try {
     // Buscar dados do advogado
     const result = await getAdvogadoById(advogadoId);
@@ -24,14 +27,21 @@ export async function enviarEmailBoasVindas(advogadoId: string, senhaTemporaria?
     }
 
     const advogado = result.data;
-    const nomeCompleto = `${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() || advogado.usuario.email;
-    const oab = advogado.oabNumero && advogado.oabUf ? `${advogado.oabNumero}/${advogado.oabUf}` : "N/A";
+    const nomeCompleto =
+      `${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() ||
+      advogado.usuario.email;
+    const oab =
+      advogado.oabNumero && advogado.oabUf
+        ? `${advogado.oabNumero}/${advogado.oabUf}`
+        : "N/A";
 
     const emailData: AdvogadoEmailData = {
       nome: nomeCompleto,
       email: advogado.usuario.email,
       oab: oab,
-      especialidades: advogado.especialidades.map((esp) => esp.replace(/_/g, " ")),
+      especialidades: advogado.especialidades.map((esp) =>
+        esp.replace(/_/g, " "),
+      ),
       senhaTemporaria: senhaTemporaria,
       linkLogin: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/login`,
     };
@@ -58,7 +68,14 @@ export async function enviarEmailBoasVindas(advogadoId: string, senhaTemporaria?
 /**
  * Envia notificação por email para um advogado
  */
-export async function enviarNotificacaoEmail(advogadoId: string, tipo: string, titulo: string, mensagem: string, linkAcao?: string, textoAcao?: string): Promise<ActionResponse> {
+export async function enviarNotificacaoEmail(
+  advogadoId: string,
+  tipo: string,
+  titulo: string,
+  mensagem: string,
+  linkAcao?: string,
+  textoAcao?: string,
+): Promise<ActionResponse> {
   try {
     // Buscar dados do advogado
     const result = await getAdvogadoById(advogadoId);
@@ -68,7 +85,9 @@ export async function enviarNotificacaoEmail(advogadoId: string, tipo: string, t
     }
 
     const advogado = result.data;
-    const nomeCompleto = `${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() || advogado.usuario.email;
+    const nomeCompleto =
+      `${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() ||
+      advogado.usuario.email;
 
     const emailSent = await emailService.sendNotificacaoAdvogado({
       nome: nomeCompleto,
@@ -100,7 +119,9 @@ export async function enviarNotificacaoEmail(advogadoId: string, tipo: string, t
 /**
  * Envia email de boas-vindas para múltiplos advogados
  */
-export async function enviarEmailBoasVindasEmLote(advogadoIds: string[]): Promise<
+export async function enviarEmailBoasVindasEmLote(
+  advogadoIds: string[],
+): Promise<
   ActionResponse<{
     sucessos: number;
     erros: number;
@@ -117,7 +138,7 @@ export async function enviarEmailBoasVindasEmLote(advogadoIds: string[]): Promis
           sucesso: result.success,
           erro: result.error,
         };
-      })
+      }),
     );
 
     const detalhes = resultados.map((resultado, index) => {
@@ -166,7 +187,9 @@ export async function testarConfiguracaoEmail(): Promise<
       success: true,
       data: {
         conexaoOk,
-        detalhes: conexaoOk ? "Configuração de email está funcionando corretamente" : "Erro na configuração de email. Verifique as variáveis de ambiente SMTP.",
+        detalhes: conexaoOk
+          ? "Configuração de email está funcionando corretamente"
+          : "Erro na configuração de email. Verifique as variáveis de ambiente SMTP.",
       },
     };
   } catch (error) {

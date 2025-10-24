@@ -497,8 +497,9 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).avatarUrl = (token as any).avatarUrl as
           | string
           | undefined;
-        (session.user as any).tenantModules = (token as any)
-          .tenantModules as string[] | undefined;
+        (session.user as any).tenantModules = (token as any).tenantModules as
+          | string[]
+          | undefined;
       }
 
       return session;

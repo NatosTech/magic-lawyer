@@ -165,7 +165,10 @@ export async function getDadosFiltrosRecibos() {
         tenantId,
         contratos: {
           some: {
-            OR: [{ parcelas: { some: { status: "PAGA" } } }, { faturas: { some: { status: "PAGA" } } }],
+            OR: [
+              { parcelas: { some: { status: "PAGA" } } },
+              { faturas: { some: { status: "PAGA" } } },
+            ],
           },
         },
       },
@@ -183,7 +186,10 @@ export async function getDadosFiltrosRecibos() {
         tenantId,
         contratos: {
           some: {
-            OR: [{ parcelas: { some: { status: "PAGA" } } }, { faturas: { some: { status: "PAGA" } } }],
+            OR: [
+              { parcelas: { some: { status: "PAGA" } } },
+              { faturas: { some: { status: "PAGA" } } },
+            ],
           },
         },
       },
@@ -201,7 +207,10 @@ export async function getDadosFiltrosRecibos() {
         tenantId,
         contratos: {
           some: {
-            OR: [{ parcelas: { some: { status: "PAGA" } } }, { faturas: { some: { status: "PAGA" } } }],
+            OR: [
+              { parcelas: { some: { status: "PAGA" } } },
+              { faturas: { some: { status: "PAGA" } } },
+            ],
           },
         },
       },
@@ -219,9 +228,15 @@ export async function getDadosFiltrosRecibos() {
     });
 
     // Converter para arrays se necessário
-    const clientesArray = Array.isArray(clientes) ? clientes : Object.values(clientes);
-    const processosArray = Array.isArray(processos) ? processos : Object.values(processos);
-    const advogadosArray = Array.isArray(advogados) ? advogados : Object.values(advogados);
+    const clientesArray = Array.isArray(clientes)
+      ? clientes
+      : Object.values(clientes);
+    const processosArray = Array.isArray(processos)
+      ? processos
+      : Object.values(processos);
+    const advogadosArray = Array.isArray(advogados)
+      ? advogados
+      : Object.values(advogados);
 
     return {
       success: true,
@@ -238,7 +253,9 @@ export async function getDadosFiltrosRecibos() {
   }
 }
 
-export async function getRecibosPagos(filtros: FiltrosRecibos = {}): Promise<RecibosResponse> {
+export async function getRecibosPagos(
+  filtros: FiltrosRecibos = {},
+): Promise<RecibosResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -483,8 +500,10 @@ export async function getRecibosPagos(filtros: FiltrosRecibos = {}): Promise<Rec
               id: parcela.contrato.advogadoResponsavel.id,
               usuario: {
                 id: parcela.contrato.advogadoResponsavel.usuario.id,
-                firstName: parcela.contrato.advogadoResponsavel.usuario.firstName || "",
-                lastName: parcela.contrato.advogadoResponsavel.usuario.lastName || "",
+                firstName:
+                  parcela.contrato.advogadoResponsavel.usuario.firstName || "",
+                lastName:
+                  parcela.contrato.advogadoResponsavel.usuario.lastName || "",
                 email: parcela.contrato.advogadoResponsavel.usuario.email,
               },
             }
@@ -525,12 +544,14 @@ export async function getRecibosPagos(filtros: FiltrosRecibos = {}): Promise<Rec
     }));
 
     // Combinar e ordenar todos os recibos
-    const todosRecibos: Recibo[] = [...recibosParcelas, ...recibosFaturas].sort((a, b) => {
-      const dataA = a.dataPagamento || a.createdAt;
-      const dataB = b.dataPagamento || b.createdAt;
+    const todosRecibos: Recibo[] = [...recibosParcelas, ...recibosFaturas].sort(
+      (a, b) => {
+        const dataA = a.dataPagamento || a.createdAt;
+        const dataB = b.dataPagamento || b.createdAt;
 
-      return dataB.getTime() - dataA.getTime();
-    });
+        return dataB.getTime() - dataA.getTime();
+      },
+    );
 
     // Aplicar filtro de busca se fornecido
     const recibosFiltrados = filtros.search
@@ -548,8 +569,12 @@ export async function getRecibosPagos(filtros: FiltrosRecibos = {}): Promise<Rec
 
     // Calcular resumo
     const resumo = {
-      totalValor: recibosFiltrados.reduce((sum, recibo) => sum + recibo.valor, 0),
-      totalParcelas: recibosFiltrados.filter((r) => r.tipo === "PARCELA").length,
+      totalValor: recibosFiltrados.reduce(
+        (sum, recibo) => sum + recibo.valor,
+        0,
+      ),
+      totalParcelas: recibosFiltrados.filter((r) => r.tipo === "PARCELA")
+        .length,
       totalFaturas: recibosFiltrados.filter((r) => r.tipo === "FATURA").length,
       porStatus: recibosFiltrados.reduce(
         (acc, recibo) => {
@@ -557,7 +582,7 @@ export async function getRecibosPagos(filtros: FiltrosRecibos = {}): Promise<Rec
 
           return acc;
         },
-        {} as Record<string, number>
+        {} as Record<string, number>,
       ),
       porFormaPagamento: recibosFiltrados.reduce(
         (acc, recibo) => {
@@ -567,16 +592,21 @@ export async function getRecibosPagos(filtros: FiltrosRecibos = {}): Promise<Rec
 
           return acc;
         },
-        {} as Record<string, number>
+        {} as Record<string, number>,
       ),
     };
 
     // Converter campos Decimal para number e serializar
-    const convertedRecibos = recibosFiltrados.map((recibo) => convertAllDecimalFields(recibo));
+    const convertedRecibos = recibosFiltrados.map((recibo) =>
+      convertAllDecimalFields(recibo),
+    );
     const serializedRecibos = JSON.parse(JSON.stringify(convertedRecibos));
 
     // Aplicar paginação
-    const recibosPaginados = serializedRecibos.slice(skip, skip + itensPorPagina);
+    const recibosPaginados = serializedRecibos.slice(
+      skip,
+      skip + itensPorPagina,
+    );
     const totalPaginas = Math.ceil(serializedRecibos.length / itensPorPagina);
 
     console.log("🔍 Resultado final:", {
@@ -605,7 +635,7 @@ export async function getRecibosPagos(filtros: FiltrosRecibos = {}): Promise<Rec
 
 export async function getReciboDetalhes(
   reciboId: string,
-  tipo: "PARCELA" | "FATURA"
+  tipo: "PARCELA" | "FATURA",
 ): Promise<{
   success: boolean;
   data?: Recibo;
@@ -798,7 +828,9 @@ export async function getReciboDetalhes(
         subscription: fatura.subscription
           ? {
               id: fatura.subscription.id,
-              plano: fatura.subscription.plano || { nome: "Plano não informado" },
+              plano: fatura.subscription.plano || {
+                nome: "Plano não informado",
+              },
             }
           : null,
         createdAt: fatura.createdAt,
@@ -820,7 +852,7 @@ export async function getReciboDetalhes(
 
 export async function gerarComprovanteHTML(
   reciboId: string,
-  tipo: "PARCELA" | "FATURA"
+  tipo: "PARCELA" | "FATURA",
 ): Promise<{
   success: boolean;
   data?: {

@@ -66,6 +66,7 @@ import {
   setPlanoModulos,
   type GetPlanoConfiguracaoResponse,
   type GetPlanoMatrixResponse,
+  type PlanoMatrixModuleRow,
   type Plano,
 } from "@/app/actions/planos";
 import { title, subtitle } from "@/components/primitives";
@@ -262,7 +263,7 @@ function ModuleContainer({
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-3">
-              {items.map((item) => (
+              {items.map((item: PlanoModuloItem) => (
                 <SortableModuleCard
                   key={item.moduloId}
                   containerId={id}

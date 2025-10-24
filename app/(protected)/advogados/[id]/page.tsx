@@ -10,7 +10,9 @@ interface AdvogadoProfilePageProps {
   }>;
 }
 
-export default async function AdvogadoProfilePage({ params }: AdvogadoProfilePageProps) {
+export default async function AdvogadoProfilePage({
+  params,
+}: AdvogadoProfilePageProps) {
   const { id } = await params;
   const session = await getSession();
 

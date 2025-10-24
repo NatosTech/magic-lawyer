@@ -2,11 +2,23 @@
 
 import { useState } from "react";
 import { Card, CardBody, CardHeader, Button, Input } from "@heroui/react";
-import { CheckCircle, XCircle, Clock, Mail, Building2, User, Shield } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Mail,
+  Building2,
+  User,
+  Shield,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-import { acceptConviteEquipe, rejectConviteEquipe, type ConviteEquipeData } from "@/app/actions/convites-equipe";
+import {
+  acceptConviteEquipe,
+  rejectConviteEquipe,
+  type ConviteEquipeData,
+} from "@/app/actions/convites-equipe";
 
 interface ConviteAcceptFormProps {
   convite: ConviteEquipeData;
@@ -79,7 +91,11 @@ export default function ConviteAcceptForm({ convite }: ConviteAcceptFormProps) {
   }
 
   async function handleAccept() {
-    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.password.trim()) {
+    if (
+      !formData.firstName.trim() ||
+      !formData.lastName.trim() ||
+      !formData.password.trim()
+    ) {
       toast.error("Preencha todos os campos obrigatórios");
 
       return;
@@ -131,9 +147,19 @@ export default function ConviteAcceptForm({ convite }: ConviteAcceptFormProps) {
       <Card className="shadow-xl">
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center mb-4">
-            <div className={`p-3 rounded-full ${convite.status === "aceito" ? "bg-green-100" : convite.status === "rejeitado" ? "bg-red-100" : "bg-gray-100"}`}>{getStatusIcon(convite.status)}</div>
+            <div
+              className={`p-3 rounded-full ${convite.status === "aceito" ? "bg-green-100" : convite.status === "rejeitado" ? "bg-red-100" : "bg-gray-100"}`}
+            >
+              {getStatusIcon(convite.status)}
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">{convite.status === "aceito" ? "Convite Aceito" : convite.status === "rejeitado" ? "Convite Rejeitado" : "Convite Expirado"}</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            {convite.status === "aceito"
+              ? "Convite Aceito"
+              : convite.status === "rejeitado"
+                ? "Convite Rejeitado"
+                : "Convite Expirado"}
+          </h1>
         </CardHeader>
         <CardBody className="text-center">
           <p className="text-gray-600 mb-4">
@@ -144,7 +170,12 @@ export default function ConviteAcceptForm({ convite }: ConviteAcceptFormProps) {
                 : "Este convite expirou. Solicite um novo convite se necessário."}
           </p>
           {convite.status === "aceito" && (
-            <Button className="w-full" color="primary" size="lg" onPress={() => router.push("/login")}>
+            <Button
+              className="w-full"
+              color="primary"
+              size="lg"
+              onPress={() => router.push("/login")}
+            >
               Fazer Login
             </Button>
           )}
@@ -162,10 +193,15 @@ export default function ConviteAcceptForm({ convite }: ConviteAcceptFormProps) {
               <XCircle className="w-8 h-8 text-red-600" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Convite Rejeitado</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Convite Rejeitado
+          </h1>
         </CardHeader>
         <CardBody className="text-center">
-          <p className="text-gray-600">Você rejeitou o convite para participar da equipe. Se mudar de ideia, solicite um novo convite.</p>
+          <p className="text-gray-600">
+            Você rejeitou o convite para participar da equipe. Se mudar de
+            ideia, solicite um novo convite.
+          </p>
         </CardBody>
       </Card>
     );
@@ -179,8 +215,12 @@ export default function ConviteAcceptForm({ convite }: ConviteAcceptFormProps) {
             <Mail className="w-8 h-8 text-blue-600" />
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-gray-800">Convite para Equipe</h1>
-        <p className="text-gray-600">Você foi convidado para participar da equipe</p>
+        <h1 className="text-2xl font-bold text-gray-800">
+          Convite para Equipe
+        </h1>
+        <p className="text-gray-600">
+          Você foi convidado para participar da equipe
+        </p>
       </CardHeader>
 
       <CardBody className="space-y-6">
@@ -191,7 +231,8 @@ export default function ConviteAcceptForm({ convite }: ConviteAcceptFormProps) {
             <div>
               <p className="text-sm text-gray-500">Escritório</p>
               <p className="font-medium">
-                {convite.enviadoPorUsuario?.firstName} {convite.enviadoPorUsuario?.lastName}
+                {convite.enviadoPorUsuario?.firstName}{" "}
+                {convite.enviadoPorUsuario?.lastName}
               </p>
             </div>
           </div>
@@ -233,18 +274,38 @@ export default function ConviteAcceptForm({ convite }: ConviteAcceptFormProps) {
 
         {convite.observacoes && (
           <div className="bg-blue-50 rounded-lg p-4">
-            <h3 className="font-medium text-blue-900 mb-2">Mensagem do convite:</h3>
+            <h3 className="font-medium text-blue-900 mb-2">
+              Mensagem do convite:
+            </h3>
             <p className="text-blue-800">{convite.observacoes}</p>
           </div>
         )}
 
         {/* Formulário de Aceitação */}
         <div className="space-y-4">
-          <h3 className="font-semibold text-gray-800">Complete seus dados para aceitar o convite:</h3>
+          <h3 className="font-semibold text-gray-800">
+            Complete seus dados para aceitar o convite:
+          </h3>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input isRequired label="Nome" placeholder="Seu nome" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} />
-            <Input isRequired label="Sobrenome" placeholder="Seu sobrenome" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
+            <Input
+              isRequired
+              label="Nome"
+              placeholder="Seu nome"
+              value={formData.firstName}
+              onChange={(e) =>
+                setFormData({ ...formData, firstName: e.target.value })
+              }
+            />
+            <Input
+              isRequired
+              label="Sobrenome"
+              placeholder="Seu sobrenome"
+              value={formData.lastName}
+              onChange={(e) =>
+                setFormData({ ...formData, lastName: e.target.value })
+              }
+            />
           </div>
 
           <Input
@@ -254,7 +315,9 @@ export default function ConviteAcceptForm({ convite }: ConviteAcceptFormProps) {
             placeholder="Mínimo 6 caracteres"
             type="password"
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, password: e.target.value })
+            }
           />
 
           <Input
@@ -263,16 +326,29 @@ export default function ConviteAcceptForm({ convite }: ConviteAcceptFormProps) {
             placeholder="Digite a senha novamente"
             type="password"
             value={formData.confirmPassword}
-            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, confirmPassword: e.target.value })
+            }
           />
         </div>
 
         {/* Botões de Ação */}
         <div className="flex gap-3 pt-4">
-          <Button className="flex-1" color="danger" isLoading={loading} variant="light" onPress={handleReject}>
+          <Button
+            className="flex-1"
+            color="danger"
+            isLoading={loading}
+            variant="light"
+            onPress={handleReject}
+          >
             Rejeitar
           </Button>
-          <Button className="flex-1" color="primary" isLoading={loading} onPress={handleAccept}>
+          <Button
+            className="flex-1"
+            color="primary"
+            isLoading={loading}
+            onPress={handleAccept}
+          >
             Aceitar Convite
           </Button>
         </div>

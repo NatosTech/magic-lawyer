@@ -10,7 +10,6 @@ import {
   EspecialidadeJuridica,
   InvoiceStatus,
   PaymentStatus,
-  Prisma,
   SubscriptionStatus,
   TenantStatus,
   TipoPessoa,
@@ -994,16 +993,16 @@ export async function updateTenantSubscription(
       plano: subscription.plano
         ? {
             ...subscription.plano,
-            valorMensal: subscription.plano.valorMensal
-              ? subscription.plano.valorMensal instanceof Prisma.Decimal
-                ? subscription.plano.valorMensal.toNumber()
-                : subscription.plano.valorMensal
-              : null,
-            valorAnual: subscription.plano.valorAnual
-              ? subscription.plano.valorAnual instanceof Prisma.Decimal
-                ? subscription.plano.valorAnual.toNumber()
-                : subscription.plano.valorAnual
-              : null,
+            valorMensal:
+              subscription.plano.valorMensal !== null &&
+              subscription.plano.valorMensal !== undefined
+                ? Number(subscription.plano.valorMensal)
+                : null,
+            valorAnual:
+              subscription.plano.valorAnual !== null &&
+              subscription.plano.valorAnual !== undefined
+                ? Number(subscription.plano.valorAnual)
+                : null,
           }
         : null,
     };

@@ -7,7 +7,6 @@ import { AppSidebar, type SidebarNavItem } from "@/components/app-sidebar";
 import { Navbar } from "@/components/navbar";
 import { BreadcrumbNav } from "@/components/breadcrumb-nav";
 import { useProfileNavigation } from "@/app/hooks/use-profile-navigation";
-import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 
 export type AppShellProps = {
   children: ReactNode;
@@ -19,7 +18,6 @@ export function AppShell({ children }: AppShellProps) {
   const tenantLogoUrl = session?.user?.tenantLogoUrl || undefined;
 
   const { navigationItems, secondaryNavigationItems } = useProfileNavigation();
-  const { isSuperAdmin } = useUserPermissions();
 
   const [collapsed, setCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);

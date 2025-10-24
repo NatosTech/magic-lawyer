@@ -62,18 +62,24 @@ export async function getGoogleCalendarAuthUrl(currentDomain?: string) {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
 // Processar callback do Google OAuth
-export async function handleGoogleCalendarCallback(code: string, state: string) {
+export async function handleGoogleCalendarCallback(
+  code: string,
+  state: string,
+) {
   try {
     // Extrair userId do state (formato: userId|domain)
     const [userId, originalDomain] = state.split("|");
 
-    logger.info(`[DEBUG] handleGoogleCalendarCallback - state: ${state}, userId: ${userId}, originalDomain: ${originalDomain}`);
+    logger.info(
+      `[DEBUG] handleGoogleCalendarCallback - state: ${state}, userId: ${userId}, originalDomain: ${originalDomain}`,
+    );
 
     if (!userId) {
       throw new Error("Estado de autorização inválido - userId não encontrado");
@@ -82,7 +88,9 @@ export async function handleGoogleCalendarCallback(code: string, state: string) 
     // Verificar se o state corresponde ao usuário atual
     const session = await getServerSession(authOptions);
 
-    logger.info(`[DEBUG] Session userId: ${session?.user?.id}, expected userId: ${userId}`);
+    logger.info(
+      `[DEBUG] Session userId: ${session?.user?.id}, expected userId: ${userId}`,
+    );
 
     // Se a sessão mudou, verificar se o userId do state corresponde a um usuário válido
     if (!session?.user?.id) {
@@ -92,7 +100,9 @@ export async function handleGoogleCalendarCallback(code: string, state: string) 
       });
 
       if (!usuario) {
-        throw new Error("Estado de autorização inválido - usuário não encontrado");
+        throw new Error(
+          "Estado de autorização inválido - usuário não encontrado",
+        );
       }
 
       logger.info(`[DEBUG] Usuário encontrado pelo state: ${usuario.email}`);
@@ -103,10 +113,14 @@ export async function handleGoogleCalendarCallback(code: string, state: string) 
       });
 
       if (!usuario) {
-        throw new Error("Estado de autorização inválido - usuário não encontrado");
+        throw new Error(
+          "Estado de autorização inválido - usuário não encontrado",
+        );
       }
 
-      logger.info(`[DEBUG] Sessão diferente, mas usuário válido: ${usuario.email}`);
+      logger.info(
+        `[DEBUG] Sessão diferente, mas usuário válido: ${usuario.email}`,
+      );
     }
 
     // Trocar código por tokens
@@ -119,14 +133,18 @@ export async function handleGoogleCalendarCallback(code: string, state: string) 
     const tokens = tokenResult.tokens as GoogleTokens;
 
     // Buscar calendários do usuário
-    const calendarsResult = await listCalendars(tokens.access_token, tokens.refresh_token);
+    const calendarsResult = await listCalendars(
+      tokens.access_token,
+      tokens.refresh_token,
+    );
 
     if (!calendarsResult.success) {
       throw new Error("Erro ao buscar calendários");
     }
 
     const calendars = calendarsResult.data || [];
-    const primaryCalendar = calendars.find((cal: any) => cal.primary) || calendars[0];
+    const primaryCalendar =
+      calendars.find((cal: any) => cal.primary) || calendars[0];
 
     if (!primaryCalendar) {
       throw new Error("Nenhum calendário encontrado");
@@ -160,7 +178,8 @@ export async function handleGoogleCalendarCallback(code: string, state: string) 
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -212,7 +231,8 @@ export async function disconnectGoogleCalendar() {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -233,7 +253,9 @@ export async function toggleGoogleCalendarSync(enabled: boolean) {
       },
     });
 
-    logger.info(`Sincronização Google Calendar ${enabled ? "habilitada" : "desabilitada"} para usuário ${session.user.id}`);
+    logger.info(
+      `Sincronização Google Calendar ${enabled ? "habilitada" : "desabilitada"} para usuário ${session.user.id}`,
+    );
 
     revalidatePath("/agenda");
     revalidatePath("/configuracoes");
@@ -244,7 +266,8 @@ export async function toggleGoogleCalendarSync(enabled: boolean) {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -275,8 +298,13 @@ export async function syncEventoWithGoogle(eventoId: string) {
       },
     });
 
-    if (!usuario?.googleCalendarConnected || !usuario?.googleCalendarSyncEnabled) {
-      throw new Error("Google Calendar não está conectado ou sincronização desabilitada");
+    if (
+      !usuario?.googleCalendarConnected ||
+      !usuario?.googleCalendarSyncEnabled
+    ) {
+      throw new Error(
+        "Google Calendar não está conectado ou sincronização desabilitada",
+      );
     }
 
     const tokens = usuario.googleCalendarTokens as unknown as GoogleTokens;
@@ -361,7 +389,9 @@ export async function syncEventoWithGoogle(eventoId: string) {
       const additionalInfo = [];
 
       if (evento.processo) {
-        additionalInfo.push(`Processo: ${evento.processo.numero} - ${evento.processo.titulo}`);
+        additionalInfo.push(
+          `Processo: ${evento.processo.numero} - ${evento.processo.titulo}`,
+        );
       }
       if (evento.cliente) {
         additionalInfo.push(`Cliente: ${evento.cliente.nome}`);
@@ -378,10 +408,21 @@ export async function syncEventoWithGoogle(eventoId: string) {
 
     if (evento.googleEventId) {
       // Atualizar evento existente
-      googleEventResult = await updateCalendarEvent(tokens.access_token, tokens.refresh_token, evento.googleEventId, googleEvent, usuario.googleCalendarId || "primary");
+      googleEventResult = await updateCalendarEvent(
+        tokens.access_token,
+        tokens.refresh_token,
+        evento.googleEventId,
+        googleEvent,
+        usuario.googleCalendarId || "primary",
+      );
     } else {
       // Criar novo evento
-      googleEventResult = await createCalendarEvent(tokens.access_token, tokens.refresh_token, googleEvent, usuario.googleCalendarId || "primary");
+      googleEventResult = await createCalendarEvent(
+        tokens.access_token,
+        tokens.refresh_token,
+        googleEvent,
+        usuario.googleCalendarId || "primary",
+      );
     }
 
     if (!googleEventResult.success) {
@@ -405,7 +446,8 @@ export async function syncEventoWithGoogle(eventoId: string) {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -454,10 +496,17 @@ export async function removeEventoFromGoogle(eventoId: string) {
     const tokens = usuario.googleCalendarTokens as unknown as GoogleTokens;
 
     // Deletar evento do Google Calendar
-    const deleteResult = await deleteCalendarEvent(tokens.access_token, tokens.refresh_token, evento.googleEventId, usuario.googleCalendarId || "primary");
+    const deleteResult = await deleteCalendarEvent(
+      tokens.access_token,
+      tokens.refresh_token,
+      evento.googleEventId,
+      usuario.googleCalendarId || "primary",
+    );
 
     if (!deleteResult.success) {
-      logger.warn(`Erro ao deletar evento do Google Calendar: ${deleteResult.error}`);
+      logger.warn(
+        `Erro ao deletar evento do Google Calendar: ${deleteResult.error}`,
+      );
       // Continuar mesmo se houver erro no Google - limpar referência local
     }
 
@@ -478,7 +527,8 @@ export async function removeEventoFromGoogle(eventoId: string) {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -507,8 +557,13 @@ export async function syncAllEventosWithGoogle() {
       },
     });
 
-    if (!usuario?.googleCalendarConnected || !usuario?.googleCalendarSyncEnabled) {
-      throw new Error("Google Calendar não está conectado ou sincronização desabilitada");
+    if (
+      !usuario?.googleCalendarConnected ||
+      !usuario?.googleCalendarSyncEnabled
+    ) {
+      throw new Error(
+        "Google Calendar não está conectado ou sincronização desabilitada",
+      );
     }
 
     // Determinar quais eventos o usuário pode sincronizar
@@ -564,7 +619,9 @@ export async function syncAllEventosWithGoogle() {
       }
     }
 
-    logger.info(`Sincronização em lote concluída: ${sincronizados} eventos sincronizados, ${erros} erros`);
+    logger.info(
+      `Sincronização em lote concluída: ${sincronizados} eventos sincronizados, ${erros} erros`,
+    );
 
     return {
       success: true,
@@ -579,7 +636,8 @@ export async function syncAllEventosWithGoogle() {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -633,7 +691,8 @@ export async function getGoogleCalendarStatus() {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -664,8 +723,13 @@ export async function importEventosFromGoogle() {
       },
     });
 
-    if (!usuario?.googleCalendarConnected || !usuario?.googleCalendarSyncEnabled) {
-      throw new Error("Google Calendar não está conectado ou sincronização desabilitada");
+    if (
+      !usuario?.googleCalendarConnected ||
+      !usuario?.googleCalendarSyncEnabled
+    ) {
+      throw new Error(
+        "Google Calendar não está conectado ou sincronização desabilitada",
+      );
     }
 
     const tokens = usuario.googleCalendarTokens as unknown as GoogleTokens;
@@ -677,14 +741,22 @@ export async function importEventosFromGoogle() {
     // Verificar se o token expirou
     if (tokens.expiry_date && isTokenExpired(tokens.expiry_date)) {
       if (!tokens.refresh_token) {
-        throw new Error("Token expirado e sem refresh token. " + "É necessário reautorizar o Google Calendar. " + "Desconecte e conecte novamente.");
+        throw new Error(
+          "Token expirado e sem refresh token. " +
+            "É necessário reautorizar o Google Calendar. " +
+            "Desconecte e conecte novamente.",
+        );
       }
 
       // Tentar renovar o token
       const refreshResult = await refreshAccessToken(tokens.refresh_token);
 
       if (!refreshResult.success) {
-        throw new Error("Não foi possível renovar o token. " + "É necessário reautorizar o Google Calendar. " + "Desconecte e conecte novamente.");
+        throw new Error(
+          "Não foi possível renovar o token. " +
+            "É necessário reautorizar o Google Calendar. " +
+            "Desconecte e conecte novamente.",
+        );
       }
 
       // Atualizar tokens no banco
@@ -708,10 +780,18 @@ export async function importEventosFromGoogle() {
 
     timeMax.setDate(timeMax.getDate() + 30);
 
-    const eventosResult = await listEvents(tokens.access_token, tokens.refresh_token, timeMin.toISOString(), timeMax.toISOString(), usuario.googleCalendarId || "primary");
+    const eventosResult = await listEvents(
+      tokens.access_token,
+      tokens.refresh_token,
+      timeMin.toISOString(),
+      timeMax.toISOString(),
+      usuario.googleCalendarId || "primary",
+    );
 
     if (!eventosResult.success) {
-      throw new Error(`Erro ao buscar eventos do Google: ${eventosResult.error}`);
+      throw new Error(
+        `Erro ao buscar eventos do Google: ${eventosResult.error}`,
+      );
     }
 
     const eventosGoogle = eventosResult.data || [];
@@ -734,15 +814,23 @@ export async function importEventosFromGoogle() {
         }
 
         // Verificar se é um evento criado pelo nosso sistema (não importar)
-        if (eventoGoogle.description?.includes("Processo:") || eventoGoogle.description?.includes("Cliente:")) {
+        if (
+          eventoGoogle.description?.includes("Processo:") ||
+          eventoGoogle.description?.includes("Cliente:")
+        ) {
           continue; // Pular eventos que parecem ser do nosso sistema
         }
 
         // Criar evento local
-        const dataInicio = eventoGoogle.start?.dateTime ? new Date(eventoGoogle.start.dateTime) : new Date();
-        const dataFim = eventoGoogle.end?.dateTime ? new Date(eventoGoogle.end.dateTime) : new Date(dataInicio.getTime() + 60 * 60 * 1000);
+        const dataInicio = eventoGoogle.start?.dateTime
+          ? new Date(eventoGoogle.start.dateTime)
+          : new Date();
+        const dataFim = eventoGoogle.end?.dateTime
+          ? new Date(eventoGoogle.end.dateTime)
+          : new Date(dataInicio.getTime() + 60 * 60 * 1000);
 
-        const participantes = eventoGoogle.attendees?.map((a: any) => a.email) || [];
+        const participantes =
+          eventoGoogle.attendees?.map((a: any) => a.email) || [];
 
         await prisma.evento.create({
           data: {
@@ -768,7 +856,9 @@ export async function importEventosFromGoogle() {
       }
     }
 
-    logger.info(`Importação do Google Calendar concluída: ${importados} eventos importados, ${erros} erros`);
+    logger.info(
+      `Importação do Google Calendar concluída: ${importados} eventos importados, ${erros} erros`,
+    );
 
     revalidatePath("/agenda");
 
@@ -785,7 +875,8 @@ export async function importEventosFromGoogle() {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }

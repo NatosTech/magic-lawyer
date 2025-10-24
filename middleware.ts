@@ -1,6 +1,8 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
+import { isRouteAllowedByModules } from "@/app/lib/module-map";
+
 // Função para extrair tenant do domínio
 function extractTenantFromDomain(host: string): string | null {
   // Remove porta se existir
@@ -147,11 +149,28 @@ export default withAuth(
       }
     }
 
+    if (
+      isAuth &&
+      !req.nextUrl.pathname.startsWith("/admin") &&
+      !req.nextUrl.pathname.startsWith("/api")
+    ) {
+      const modules = (token as any)?.tenantModules as string[] | undefined;
+      const role = (token as any)?.role;
+
+      if (role !== "SUPER_ADMIN") {
+        const allowed = isRouteAllowedByModules(req.nextUrl.pathname, modules);
+
+        if (!allowed) {
+          return NextResponse.redirect(new URL("/dashboard", req.url));
+        }
+      }
+    }
+
     return NextResponse.next();
   },
   {
     callbacks: {
-      authorized: ({ token }) => {
+      authorized: () => {
         // Para rotas protegidas, verifica se tem token
         return true; // Deixamos o middleware acima fazer a lógica
       },

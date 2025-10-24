@@ -255,7 +255,8 @@ interface CreateAdvogadoResponse extends ActionResponse<AdvogadoData> {
  * Gera uma senha temporária segura
  */
 function generateTemporaryPassword(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";
   let password = "";
 
   // Garantir pelo menos um caractere de cada tipo
@@ -431,10 +432,12 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
           processosCount: processosCount,
           usuario: {
             ...adv.usuario,
-            dataNascimento: adv.usuario.dataNascimento ? adv.usuario.dataNascimento.toISOString().split("T")[0] : null,
+            dataNascimento: adv.usuario.dataNascimento
+              ? adv.usuario.dataNascimento.toISOString().split("T")[0]
+              : null,
           },
         };
-      })
+      }),
     );
 
     return { success: true, advogados: advogadosComProcessos } as any;
@@ -445,7 +448,9 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
   }
 }
 
-export async function createAdvogado(input: CreateAdvogadoInput): Promise<CreateAdvogadoResponse> {
+export async function createAdvogado(
+  input: CreateAdvogadoInput,
+): Promise<CreateAdvogadoResponse> {
   try {
     const session = await getSession();
 
@@ -496,7 +501,9 @@ export async function createAdvogado(input: CreateAdvogadoInput): Promise<Create
 
     // Preparar dados complementares do usuário
     const sanitizedCpf = input.cpf ? input.cpf.replace(/\D/g, "") : null;
-    const dataNascimento = input.dataNascimento ? new Date(`${input.dataNascimento}T00:00:00`) : null;
+    const dataNascimento = input.dataNascimento
+      ? new Date(`${input.dataNascimento}T00:00:00`)
+      : null;
     const usuarioPayload = {
       tenantId: session.user.tenantId,
       email: input.email,
@@ -604,10 +611,19 @@ export async function createAdvogado(input: CreateAdvogadoInput): Promise<Create
       },
     });
 
-    const enderecosParaCriar = input.enderecos && input.enderecos.length > 0 ? input.enderecos : input.endereco ? [input.endereco] : [];
+    const enderecosParaCriar =
+      input.enderecos && input.enderecos.length > 0
+        ? input.enderecos
+        : input.endereco
+          ? [input.endereco]
+          : [];
 
     for (const endereco of enderecosParaCriar) {
-      if (!endereco.logradouro?.trim() || !endereco.cidade?.trim() || !endereco.estado?.trim()) {
+      if (
+        !endereco.logradouro?.trim() ||
+        !endereco.cidade?.trim() ||
+        !endereco.estado?.trim()
+      ) {
         continue;
       }
 
@@ -634,7 +650,13 @@ export async function createAdvogado(input: CreateAdvogadoInput): Promise<Create
 
     if (input.dadosBancarios && input.dadosBancarios.length > 0) {
       for (const dado of input.dadosBancarios) {
-        if (!dado.bancoCodigo || !dado.agencia || !dado.conta || !dado.titularNome || !dado.titularDocumento) {
+        if (
+          !dado.bancoCodigo ||
+          !dado.agencia ||
+          !dado.conta ||
+          !dado.titularNome ||
+          !dado.titularDocumento
+        ) {
           continue;
         }
 
@@ -694,7 +716,9 @@ export async function createAdvogado(input: CreateAdvogadoInput): Promise<Create
       processosCount: 0,
       usuario: {
         ...advogado.usuario,
-        dataNascimento: advogado.usuario.dataNascimento ? advogado.usuario.dataNascimento.toISOString().split("T")[0] : null,
+        dataNascimento: advogado.usuario.dataNascimento
+          ? advogado.usuario.dataNascimento.toISOString().split("T")[0]
+          : null,
       },
     };
 
@@ -735,7 +759,9 @@ export async function createAdvogado(input: CreateAdvogadoInput): Promise<Create
   }
 }
 
-export async function getAdvogado(advogadoId: string): Promise<ActionResponse<AdvogadoData>> {
+export async function getAdvogado(
+  advogadoId: string,
+): Promise<ActionResponse<AdvogadoData>> {
   try {
     const session = await getSession();
 
@@ -791,7 +817,9 @@ export async function getAdvogado(advogadoId: string): Promise<ActionResponse<Ad
   }
 }
 
-export async function getCurrentUserAdvogado(): Promise<ActionResponse<AdvogadoData>> {
+export async function getCurrentUserAdvogado(): Promise<
+  ActionResponse<AdvogadoData>
+> {
   try {
     const session = await getSession();
 
@@ -847,7 +875,10 @@ export async function getCurrentUserAdvogado(): Promise<ActionResponse<AdvogadoD
   }
 }
 
-export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoInput): Promise<ActionResponse> {
+export async function updateAdvogado(
+  advogadoId: string,
+  input: UpdateAdvogadoInput,
+): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -869,15 +900,20 @@ export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoIn
     // Atualizar dados do usuário se fornecido
     const usuarioUpdate: any = {};
 
-    if (input.firstName !== undefined) usuarioUpdate.firstName = input.firstName;
+    if (input.firstName !== undefined)
+      usuarioUpdate.firstName = input.firstName;
     if (input.lastName !== undefined) usuarioUpdate.lastName = input.lastName;
     if (input.phone !== undefined) usuarioUpdate.phone = input.phone || null;
-    if (input.cpf !== undefined) usuarioUpdate.cpf = input.cpf ? input.cpf.replace(/\D/g, "") : null;
+    if (input.cpf !== undefined)
+      usuarioUpdate.cpf = input.cpf ? input.cpf.replace(/\D/g, "") : null;
     if (input.rg !== undefined) usuarioUpdate.rg = input.rg || null;
     if (input.dataNascimento !== undefined) {
-      usuarioUpdate.dataNascimento = input.dataNascimento ? new Date(`${input.dataNascimento}T00:00:00`) : null;
+      usuarioUpdate.dataNascimento = input.dataNascimento
+        ? new Date(`${input.dataNascimento}T00:00:00`)
+        : null;
     }
-    if (input.observacoes !== undefined) usuarioUpdate.observacoes = input.observacoes || null;
+    if (input.observacoes !== undefined)
+      usuarioUpdate.observacoes = input.observacoes || null;
 
     if (Object.keys(usuarioUpdate).length > 0) {
       await prisma.usuario.update({
@@ -889,31 +925,47 @@ export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoIn
     // Atualizar dados do advogado
     const advogadoUpdate: any = {};
 
-    if (input.oabNumero !== undefined) advogadoUpdate.oabNumero = input.oabNumero;
+    if (input.oabNumero !== undefined)
+      advogadoUpdate.oabNumero = input.oabNumero;
     if (input.oabUf !== undefined) advogadoUpdate.oabUf = input.oabUf;
-    if (input.especialidades !== undefined) advogadoUpdate.especialidades = input.especialidades;
+    if (input.especialidades !== undefined)
+      advogadoUpdate.especialidades = input.especialidades;
     if (input.bio !== undefined) advogadoUpdate.bio = input.bio;
     if (input.telefone !== undefined) advogadoUpdate.telefone = input.telefone;
     if (input.whatsapp !== undefined) advogadoUpdate.whatsapp = input.whatsapp;
-    if (input.comissaoPadrao !== undefined) advogadoUpdate.comissaoPadrao = input.comissaoPadrao;
-    if (input.comissaoAcaoGanha !== undefined) advogadoUpdate.comissaoAcaoGanha = input.comissaoAcaoGanha;
-    if (input.comissaoHonorarios !== undefined) advogadoUpdate.comissaoHonorarios = input.comissaoHonorarios;
+    if (input.comissaoPadrao !== undefined)
+      advogadoUpdate.comissaoPadrao = input.comissaoPadrao;
+    if (input.comissaoAcaoGanha !== undefined)
+      advogadoUpdate.comissaoAcaoGanha = input.comissaoAcaoGanha;
+    if (input.comissaoHonorarios !== undefined)
+      advogadoUpdate.comissaoHonorarios = input.comissaoHonorarios;
     if (input.formacao !== undefined) advogadoUpdate.formacao = input.formacao;
-    if (input.experiencia !== undefined) advogadoUpdate.experiencia = input.experiencia;
+    if (input.experiencia !== undefined)
+      advogadoUpdate.experiencia = input.experiencia;
     if (input.premios !== undefined) advogadoUpdate.premios = input.premios;
-    if (input.publicacoes !== undefined) advogadoUpdate.publicacoes = input.publicacoes;
+    if (input.publicacoes !== undefined)
+      advogadoUpdate.publicacoes = input.publicacoes;
     if (input.website !== undefined) advogadoUpdate.website = input.website;
     if (input.linkedin !== undefined) advogadoUpdate.linkedin = input.linkedin;
     if (input.twitter !== undefined) advogadoUpdate.twitter = input.twitter;
-    if (input.instagram !== undefined) advogadoUpdate.instagram = input.instagram;
-    if (input.notificarEmail !== undefined) advogadoUpdate.notificarEmail = input.notificarEmail;
-    if (input.notificarWhatsapp !== undefined) advogadoUpdate.notificarWhatsapp = input.notificarWhatsapp;
-    if (input.notificarSistema !== undefined) advogadoUpdate.notificarSistema = input.notificarSistema;
-    if (input.podeCriarProcessos !== undefined) advogadoUpdate.podeCriarProcessos = input.podeCriarProcessos;
-    if (input.podeEditarProcessos !== undefined) advogadoUpdate.podeEditarProcessos = input.podeEditarProcessos;
-    if (input.podeExcluirProcessos !== undefined) advogadoUpdate.podeExcluirProcessos = input.podeExcluirProcessos;
-    if (input.podeGerenciarClientes !== undefined) advogadoUpdate.podeGerenciarClientes = input.podeGerenciarClientes;
-    if (input.podeAcessarFinanceiro !== undefined) advogadoUpdate.podeAcessarFinanceiro = input.podeAcessarFinanceiro;
+    if (input.instagram !== undefined)
+      advogadoUpdate.instagram = input.instagram;
+    if (input.notificarEmail !== undefined)
+      advogadoUpdate.notificarEmail = input.notificarEmail;
+    if (input.notificarWhatsapp !== undefined)
+      advogadoUpdate.notificarWhatsapp = input.notificarWhatsapp;
+    if (input.notificarSistema !== undefined)
+      advogadoUpdate.notificarSistema = input.notificarSistema;
+    if (input.podeCriarProcessos !== undefined)
+      advogadoUpdate.podeCriarProcessos = input.podeCriarProcessos;
+    if (input.podeEditarProcessos !== undefined)
+      advogadoUpdate.podeEditarProcessos = input.podeEditarProcessos;
+    if (input.podeExcluirProcessos !== undefined)
+      advogadoUpdate.podeExcluirProcessos = input.podeExcluirProcessos;
+    if (input.podeGerenciarClientes !== undefined)
+      advogadoUpdate.podeGerenciarClientes = input.podeGerenciarClientes;
+    if (input.podeAcessarFinanceiro !== undefined)
+      advogadoUpdate.podeAcessarFinanceiro = input.podeAcessarFinanceiro;
 
     if (Object.keys(advogadoUpdate).length > 0) {
       await prisma.advogado.update({
@@ -926,44 +978,106 @@ export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoIn
     const alteracoes: string[] = [];
 
     // Registrar alterações do usuário
-    if (input.firstName !== undefined) alteracoes.push(`Nome: ${input.firstName}`);
-    if (input.lastName !== undefined) alteracoes.push(`Sobrenome: ${input.lastName}`);
-    if (input.phone !== undefined) alteracoes.push(`Telefone: ${input.phone || "removido"}`);
-    if (input.cpf !== undefined) alteracoes.push(`CPF: ${input.cpf || "removido"}`);
-    if (input.rg !== undefined) alteracoes.push(`RG: ${input.rg || "removido"}`);
-    if (input.dataNascimento !== undefined) alteracoes.push(`Data de nascimento: ${input.dataNascimento || "removida"}`);
-    if (input.observacoes !== undefined) alteracoes.push(`Observações: ${(input.observacoes || "").slice(0, 50)}${input.observacoes && input.observacoes.length > 50 ? "..." : ""}`);
+    if (input.firstName !== undefined)
+      alteracoes.push(`Nome: ${input.firstName}`);
+    if (input.lastName !== undefined)
+      alteracoes.push(`Sobrenome: ${input.lastName}`);
+    if (input.phone !== undefined)
+      alteracoes.push(`Telefone: ${input.phone || "removido"}`);
+    if (input.cpf !== undefined)
+      alteracoes.push(`CPF: ${input.cpf || "removido"}`);
+    if (input.rg !== undefined)
+      alteracoes.push(`RG: ${input.rg || "removido"}`);
+    if (input.dataNascimento !== undefined)
+      alteracoes.push(
+        `Data de nascimento: ${input.dataNascimento || "removida"}`,
+      );
+    if (input.observacoes !== undefined)
+      alteracoes.push(
+        `Observações: ${(input.observacoes || "").slice(0, 50)}${input.observacoes && input.observacoes.length > 50 ? "..." : ""}`,
+      );
 
     // Registrar alterações do advogado
-    if (input.oabNumero !== undefined) alteracoes.push(`OAB Número: ${input.oabNumero}`);
+    if (input.oabNumero !== undefined)
+      alteracoes.push(`OAB Número: ${input.oabNumero}`);
     if (input.oabUf !== undefined) alteracoes.push(`OAB UF: ${input.oabUf}`);
-    if (input.especialidades !== undefined) alteracoes.push(`Especialidades: ${input.especialidades.join(", ")}`);
+    if (input.especialidades !== undefined)
+      alteracoes.push(`Especialidades: ${input.especialidades.join(", ")}`);
     if (input.bio !== undefined) {
-      const preview = input.bio ? (input.bio.length > 50 ? `${input.bio.slice(0, 50)}...` : input.bio) : "removida";
+      const preview = input.bio
+        ? input.bio.length > 50
+          ? `${input.bio.slice(0, 50)}...`
+          : input.bio
+        : "removida";
 
       alteracoes.push(`Bio: ${preview}`);
     }
-    if (input.telefone !== undefined) alteracoes.push(`Telefone: ${input.telefone}`);
-    if (input.whatsapp !== undefined) alteracoes.push(`WhatsApp: ${input.whatsapp}`);
-    if (input.comissaoPadrao !== undefined) alteracoes.push(`Comissão Padrão: ${input.comissaoPadrao}%`);
-    if (input.comissaoAcaoGanha !== undefined) alteracoes.push(`Comissão Ação Ganha: ${input.comissaoAcaoGanha}%`);
-    if (input.comissaoHonorarios !== undefined) alteracoes.push(`Comissão Honorários: ${input.comissaoHonorarios}%`);
-    if (input.formacao !== undefined) alteracoes.push(`Formação: ${(input.formacao || "").slice(0, 50)}${input.formacao && input.formacao.length > 50 ? "..." : ""}`);
-    if (input.experiencia !== undefined) alteracoes.push(`Experiência: ${(input.experiencia || "").slice(0, 50)}${input.experiencia && input.experiencia.length > 50 ? "..." : ""}`);
-    if (input.premios !== undefined) alteracoes.push(`Prêmios: ${(input.premios || "").slice(0, 50)}${input.premios && input.premios.length > 50 ? "..." : ""}`);
-    if (input.publicacoes !== undefined) alteracoes.push(`Publicações: ${(input.publicacoes || "").slice(0, 50)}${input.publicacoes && input.publicacoes.length > 50 ? "..." : ""}`);
-    if (input.website !== undefined) alteracoes.push(`Website: ${input.website || "removido"}`);
-    if (input.linkedin !== undefined) alteracoes.push(`LinkedIn: ${input.linkedin || "removido"}`);
-    if (input.twitter !== undefined) alteracoes.push(`Twitter: ${input.twitter || "removido"}`);
-    if (input.instagram !== undefined) alteracoes.push(`Instagram: ${input.instagram || "removido"}`);
-    if (input.notificarEmail !== undefined) alteracoes.push(`Notificar por email: ${input.notificarEmail ? "sim" : "não"}`);
-    if (input.notificarWhatsapp !== undefined) alteracoes.push(`Notificar por WhatsApp: ${input.notificarWhatsapp ? "sim" : "não"}`);
-    if (input.notificarSistema !== undefined) alteracoes.push(`Notificar no sistema: ${input.notificarSistema ? "sim" : "não"}`);
-    if (input.podeCriarProcessos !== undefined) alteracoes.push(`Pode criar processos: ${input.podeCriarProcessos ? "sim" : "não"}`);
-    if (input.podeEditarProcessos !== undefined) alteracoes.push(`Pode editar processos: ${input.podeEditarProcessos ? "sim" : "não"}`);
-    if (input.podeExcluirProcessos !== undefined) alteracoes.push(`Pode excluir processos: ${input.podeExcluirProcessos ? "sim" : "não"}`);
-    if (input.podeGerenciarClientes !== undefined) alteracoes.push(`Pode gerenciar clientes: ${input.podeGerenciarClientes ? "sim" : "não"}`);
-    if (input.podeAcessarFinanceiro !== undefined) alteracoes.push(`Pode acessar financeiro: ${input.podeAcessarFinanceiro ? "sim" : "não"}`);
+    if (input.telefone !== undefined)
+      alteracoes.push(`Telefone: ${input.telefone}`);
+    if (input.whatsapp !== undefined)
+      alteracoes.push(`WhatsApp: ${input.whatsapp}`);
+    if (input.comissaoPadrao !== undefined)
+      alteracoes.push(`Comissão Padrão: ${input.comissaoPadrao}%`);
+    if (input.comissaoAcaoGanha !== undefined)
+      alteracoes.push(`Comissão Ação Ganha: ${input.comissaoAcaoGanha}%`);
+    if (input.comissaoHonorarios !== undefined)
+      alteracoes.push(`Comissão Honorários: ${input.comissaoHonorarios}%`);
+    if (input.formacao !== undefined)
+      alteracoes.push(
+        `Formação: ${(input.formacao || "").slice(0, 50)}${input.formacao && input.formacao.length > 50 ? "..." : ""}`,
+      );
+    if (input.experiencia !== undefined)
+      alteracoes.push(
+        `Experiência: ${(input.experiencia || "").slice(0, 50)}${input.experiencia && input.experiencia.length > 50 ? "..." : ""}`,
+      );
+    if (input.premios !== undefined)
+      alteracoes.push(
+        `Prêmios: ${(input.premios || "").slice(0, 50)}${input.premios && input.premios.length > 50 ? "..." : ""}`,
+      );
+    if (input.publicacoes !== undefined)
+      alteracoes.push(
+        `Publicações: ${(input.publicacoes || "").slice(0, 50)}${input.publicacoes && input.publicacoes.length > 50 ? "..." : ""}`,
+      );
+    if (input.website !== undefined)
+      alteracoes.push(`Website: ${input.website || "removido"}`);
+    if (input.linkedin !== undefined)
+      alteracoes.push(`LinkedIn: ${input.linkedin || "removido"}`);
+    if (input.twitter !== undefined)
+      alteracoes.push(`Twitter: ${input.twitter || "removido"}`);
+    if (input.instagram !== undefined)
+      alteracoes.push(`Instagram: ${input.instagram || "removido"}`);
+    if (input.notificarEmail !== undefined)
+      alteracoes.push(
+        `Notificar por email: ${input.notificarEmail ? "sim" : "não"}`,
+      );
+    if (input.notificarWhatsapp !== undefined)
+      alteracoes.push(
+        `Notificar por WhatsApp: ${input.notificarWhatsapp ? "sim" : "não"}`,
+      );
+    if (input.notificarSistema !== undefined)
+      alteracoes.push(
+        `Notificar no sistema: ${input.notificarSistema ? "sim" : "não"}`,
+      );
+    if (input.podeCriarProcessos !== undefined)
+      alteracoes.push(
+        `Pode criar processos: ${input.podeCriarProcessos ? "sim" : "não"}`,
+      );
+    if (input.podeEditarProcessos !== undefined)
+      alteracoes.push(
+        `Pode editar processos: ${input.podeEditarProcessos ? "sim" : "não"}`,
+      );
+    if (input.podeExcluirProcessos !== undefined)
+      alteracoes.push(
+        `Pode excluir processos: ${input.podeExcluirProcessos ? "sim" : "não"}`,
+      );
+    if (input.podeGerenciarClientes !== undefined)
+      alteracoes.push(
+        `Pode gerenciar clientes: ${input.podeGerenciarClientes ? "sim" : "não"}`,
+      );
+    if (input.podeAcessarFinanceiro !== undefined)
+      alteracoes.push(
+        `Pode acessar financeiro: ${input.podeAcessarFinanceiro ? "sim" : "não"}`,
+      );
 
     if (alteracoes.length > 0) {
       await createAdvogadoHistorico({
@@ -984,7 +1098,9 @@ export async function updateAdvogado(advogadoId: string, input: UpdateAdvogadoIn
   }
 }
 
-export async function deleteAdvogado(advogadoId: string): Promise<ActionResponse> {
+export async function deleteAdvogado(
+  advogadoId: string,
+): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -1074,7 +1190,9 @@ export async function deleteAdvogado(advogadoId: string): Promise<ActionResponse
   }
 }
 
-export async function updateCurrentUserAdvogado(input: UpdateAdvogadoInput): Promise<ActionResponse> {
+export async function updateCurrentUserAdvogado(
+  input: UpdateAdvogadoInput,
+): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -1101,7 +1219,9 @@ export async function updateCurrentUserAdvogado(input: UpdateAdvogadoInput): Pro
   }
 }
 
-export async function getAdvogadosDisponiveis(): Promise<ActionResponse<AdvogadoSelectItem[]>> {
+export async function getAdvogadosDisponiveis(): Promise<
+  ActionResponse<AdvogadoSelectItem[]>
+> {
   try {
     const session = await getSession();
 
@@ -1135,7 +1255,9 @@ export async function getAdvogadosDisponiveis(): Promise<ActionResponse<Advogado
     const data: AdvogadoSelectItem[] = advogados.map((adv) => ({
       id: adv.id,
       value: adv.id,
-      label: `${adv.usuario.firstName || ""} ${adv.usuario.lastName || ""}`.trim() || "Sem nome",
+      label:
+        `${adv.usuario.firstName || ""} ${adv.usuario.lastName || ""}`.trim() ||
+        "Sem nome",
       oab: adv.oabNumero && adv.oabUf ? `${adv.oabUf} ${adv.oabNumero}` : null,
       oabNumero: adv.oabNumero,
       oabUf: adv.oabUf,
@@ -1176,7 +1298,9 @@ export interface AdvogadoExternoIdentificado {
   }[];
 }
 
-export async function getAdvogadosExternosIdentificados(): Promise<ActionResponse<AdvogadoExternoIdentificado[]>> {
+export async function getAdvogadosExternosIdentificados(): Promise<
+  ActionResponse<AdvogadoExternoIdentificado[]>
+> {
   try {
     const session = await getSession();
 
@@ -1285,9 +1409,13 @@ export async function getAdvogadosExternosIdentificados(): Promise<ActionRespons
     }
 
     // Converter para formato final
-    const resultado: AdvogadoExternoIdentificado[] = Array.from(agrupados.values()).map((grupo) => ({
+    const resultado: AdvogadoExternoIdentificado[] = Array.from(
+      agrupados.values(),
+    ).map((grupo) => ({
       id: grupo.advogado.id,
-      nome: `${grupo.advogado.usuario?.firstName || ""} ${grupo.advogado.usuario?.lastName || ""}`.trim() || "Nome não informado",
+      nome:
+        `${grupo.advogado.usuario?.firstName || ""} ${grupo.advogado.usuario?.lastName || ""}`.trim() ||
+        "Nome não informado",
       oabNumero: grupo.advogado.oabNumero,
       oabUf: grupo.advogado.oabUf,
       email: grupo.advogado.usuario?.email || null,
@@ -1313,7 +1441,9 @@ export async function getAdvogadosExternosIdentificados(): Promise<ActionRespons
 // FUNÇÃO COMBINADA PARA BUSCAR TODOS OS ADVOGADOS
 // =============================================
 
-export async function getAllAdvogadosComExternos(): Promise<ActionResponse<AdvogadoData[]>> {
+export async function getAllAdvogadosComExternos(): Promise<
+  ActionResponse<AdvogadoData[]>
+> {
   try {
     // Agora que o campo isExterno está no schema, podemos usar apenas getAdvogados
     return await getAdvogados();
@@ -1324,7 +1454,10 @@ export async function getAllAdvogadosComExternos(): Promise<ActionResponse<Advog
   }
 }
 
-export async function uploadAvatarAdvogado(advogadoId: string, file: File): Promise<ActionResponse<{ url: string }>> {
+export async function uploadAvatarAdvogado(
+  advogadoId: string,
+  file: File,
+): Promise<ActionResponse<{ url: string }>> {
   try {
     const session = await getSession();
 
@@ -1355,7 +1488,10 @@ export async function uploadAvatarAdvogado(advogadoId: string, file: File): Prom
     }
 
     // Verificar se o usuário tem permissão para alterar o avatar
-    if (session.user.role !== "ADMIN" && advogado.usuarioId !== session.user.id) {
+    if (
+      session.user.role !== "ADMIN" &&
+      advogado.usuarioId !== session.user.id
+    ) {
       return {
         success: false,
         error: "Você não tem permissão para alterar este avatar",
@@ -1396,12 +1532,21 @@ export async function uploadAvatarAdvogado(advogadoId: string, file: File): Prom
     if (advogado.usuario.avatarUrl) {
       const uploadService = UploadService.getInstance();
 
-      await uploadService.deleteAvatar(advogado.usuario.avatarUrl, advogado.usuario.id);
+      await uploadService.deleteAvatar(
+        advogado.usuario.avatarUrl,
+        advogado.usuario.id,
+      );
     }
 
     // Fazer upload do novo avatar
     const uploadService = UploadService.getInstance();
-    const uploadResult = await uploadService.uploadAvatar(buffer, advogado.usuario.id, file.name, tenant.slug, `${advogado.usuario.firstName} ${advogado.usuario.lastName}`.trim());
+    const uploadResult = await uploadService.uploadAvatar(
+      buffer,
+      advogado.usuario.id,
+      file.name,
+      tenant.slug,
+      `${advogado.usuario.firstName} ${advogado.usuario.lastName}`.trim(),
+    );
 
     if (!uploadResult.success || !uploadResult.url) {
       return {
@@ -1437,7 +1582,9 @@ export async function uploadAvatarAdvogado(advogadoId: string, file: File): Prom
   }
 }
 
-export async function deleteAvatarAdvogado(advogadoId: string): Promise<ActionResponse> {
+export async function deleteAvatarAdvogado(
+  advogadoId: string,
+): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -1466,7 +1613,10 @@ export async function deleteAvatarAdvogado(advogadoId: string): Promise<ActionRe
     }
 
     // Verificar se o usuário tem permissão para deletar o avatar
-    if (session.user.role !== "ADMIN" && advogado.usuarioId !== session.user.id) {
+    if (
+      session.user.role !== "ADMIN" &&
+      advogado.usuarioId !== session.user.id
+    ) {
       return {
         success: false,
         error: "Você não tem permissão para deletar este avatar",
@@ -1479,7 +1629,10 @@ export async function deleteAvatarAdvogado(advogadoId: string): Promise<ActionRe
 
     // Deletar avatar do Cloudinary
     const uploadService = UploadService.getInstance();
-    const deleteResult = await uploadService.deleteAvatar(advogado.usuario.avatarUrl, advogado.usuario.id);
+    const deleteResult = await uploadService.deleteAvatar(
+      advogado.usuario.avatarUrl,
+      advogado.usuario.id,
+    );
 
     if (!deleteResult.success) {
       return {
@@ -1515,7 +1668,9 @@ export async function deleteAvatarAdvogado(advogadoId: string): Promise<ActionRe
   }
 }
 
-export async function convertAdvogadoExternoToInterno(advogadoId: string): Promise<ActionResponse> {
+export async function convertAdvogadoExternoToInterno(
+  advogadoId: string,
+): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -1527,7 +1682,8 @@ export async function convertAdvogadoExternoToInterno(advogadoId: string): Promi
     if (session.user.role !== "ADMIN") {
       return {
         success: false,
-        error: "Apenas administradores podem converter advogados externos em internos",
+        error:
+          "Apenas administradores podem converter advogados externos em internos",
       };
     }
 
@@ -1575,7 +1731,9 @@ export const getAdvogadosDoTenant = getAllAdvogadosComExternos;
 /**
  * Busca advogados para usar em selects (apenas internos e ativos)
  */
-export async function getAdvogadoById(advogadoId: string): Promise<ActionResponse<AdvogadoData>> {
+export async function getAdvogadoById(
+  advogadoId: string,
+): Promise<ActionResponse<AdvogadoData>> {
   try {
     const session = await getSession();
 
@@ -1646,7 +1804,9 @@ export async function getAdvogadoById(advogadoId: string): Promise<ActionRespons
   }
 }
 
-export async function getAdvogadosParaSelect(): Promise<ActionResponse<AdvogadoSelectItem[]>> {
+export async function getAdvogadosParaSelect(): Promise<
+  ActionResponse<AdvogadoSelectItem[]>
+> {
   try {
     const session = await getSession();
 
@@ -1684,7 +1844,10 @@ export async function getAdvogadosParaSelect(): Promise<ActionResponse<AdvogadoS
     const data: AdvogadoSelectItem[] = advogados.map((adv) => ({
       id: adv.id,
       value: adv.id,
-      label: `${adv.usuario?.firstName || ""} ${adv.usuario?.lastName || ""}`.trim() || adv.usuario?.email || "Advogado",
+      label:
+        `${adv.usuario?.firstName || ""} ${adv.usuario?.lastName || ""}`.trim() ||
+        adv.usuario?.email ||
+        "Advogado",
       oab: adv.oabNumero && adv.oabUf ? `${adv.oabNumero}/${adv.oabUf}` : null,
       oabNumero: adv.oabNumero,
       oabUf: adv.oabUf,
@@ -1707,7 +1870,9 @@ export interface AdvogadoCompleto extends AdvogadoData {
 }
 
 // Função para buscar advogado com endereços e dados bancários
-export async function getAdvogadoCompleto(advogadoId: string): Promise<ActionResponse<AdvogadoCompleto>> {
+export async function getAdvogadoCompleto(
+  advogadoId: string,
+): Promise<ActionResponse<AdvogadoCompleto>> {
   try {
     const session = await getSession();
 
@@ -1796,7 +1961,9 @@ export async function getAdvogadoCompleto(advogadoId: string): Promise<ActionRes
         role: advogado.usuario.role,
         cpf: advogado.usuario.cpf,
         rg: advogado.usuario.rg,
-        dataNascimento: advogado.usuario.dataNascimento ? advogado.usuario.dataNascimento.toISOString().split("T")[0] : null,
+        dataNascimento: advogado.usuario.dataNascimento
+          ? advogado.usuario.dataNascimento.toISOString().split("T")[0]
+          : null,
         observacoes: advogado.usuario.observacoes,
       },
       enderecos: advogado.usuario.enderecos?.map((endereco) => ({
@@ -1822,7 +1989,14 @@ export async function getAdvogadoCompleto(advogadoId: string): Promise<ActionRes
         digitoConta: conta.digitoConta || undefined,
         tipoContaBancaria: conta.tipoContaBancaria,
         chavePix: conta.chavePix || undefined,
-        tipoChavePix: conta.tipoChavePix ? (conta.tipoChavePix as "CPF" | "CNPJ" | "EMAIL" | "TELEFONE" | "ALEATORIA") : undefined,
+        tipoChavePix: conta.tipoChavePix
+          ? (conta.tipoChavePix as
+              | "CPF"
+              | "CNPJ"
+              | "EMAIL"
+              | "TELEFONE"
+              | "ALEATORIA")
+          : undefined,
         titularNome: conta.titularNome,
         titularDocumento: conta.titularDocumento,
         titularEmail: conta.titularEmail || undefined,

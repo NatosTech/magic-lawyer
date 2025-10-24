@@ -28,6 +28,8 @@ const PLANO_CONFIG_MODULOS = {
     "modelos-documentos",
     "integracoes-externas",
     "notificacoes-avancadas",
+    "base-juizes",
+    "processos-avancados",
   ],
   enterprise: [
     "dashboard-geral",
@@ -52,6 +54,8 @@ const PLANO_CONFIG_MODULOS = {
     "marketplace-integracoes",
     "api-external",
     "atendimento-omnicanal",
+    "base-juizes",
+    "processos-avancados",
   ],
   ultra: MODULOS_BASE.map((modulo) => modulo.slug),
 };

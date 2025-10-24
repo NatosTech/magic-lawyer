@@ -1,8 +1,8 @@
 "use server";
 
-import { UserRole } from "@/app/generated/prisma";
 import { revalidatePath } from "next/cache";
 
+import { UserRole } from "@/app/generated/prisma";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 
@@ -101,7 +101,12 @@ export async function getCargos(): Promise<CargoData[]> {
   }));
 }
 
-export async function createCargo(data: { nome: string; descricao?: string; nivel: number; permissoes: { modulo: string; acao: string; permitido: boolean }[] }): Promise<CargoData> {
+export async function createCargo(data: {
+  nome: string;
+  descricao?: string;
+  nivel: number;
+  permissoes: { modulo: string; acao: string; permitido: boolean }[];
+}): Promise<CargoData> {
   const session = await getSession();
 
   if (!session?.user?.tenantId) {
@@ -164,7 +169,7 @@ export async function updateCargo(
     nivel: number;
     ativo: boolean;
     permissoes: { modulo: string; acao: string; permitido: boolean }[];
-  }
+  },
 ): Promise<CargoData> {
   const session = await getSession();
 
@@ -355,7 +360,8 @@ export async function getUsuariosEquipe(): Promise<UsuarioEquipeData[]> {
     vinculacoes: usuario.vinculacoesComoServidor.map((vinculacao) => ({
       id: vinculacao.id,
       advogadoId: vinculacao.advogadoId,
-      advogadoNome: `${vinculacao.advogado.usuario.firstName || ""} ${vinculacao.advogado.usuario.lastName || ""}`.trim(),
+      advogadoNome:
+        `${vinculacao.advogado.usuario.firstName || ""} ${vinculacao.advogado.usuario.lastName || ""}`.trim(),
       tipo: vinculacao.tipo,
       ativo: vinculacao.ativo,
       dataInicio: vinculacao.dataInicio,
@@ -372,7 +378,10 @@ export async function getUsuariosEquipe(): Promise<UsuarioEquipeData[]> {
   }));
 }
 
-export async function atribuirCargoUsuario(usuarioId: string, cargoId: string): Promise<void> {
+export async function atribuirCargoUsuario(
+  usuarioId: string,
+  cargoId: string,
+): Promise<void> {
   const session = await getSession();
 
   if (!session?.user?.tenantId) {
@@ -448,7 +457,12 @@ export async function atribuirCargoUsuario(usuarioId: string, cargoId: string): 
   revalidatePath("/equipe");
 }
 
-export async function vincularUsuarioAdvogado(usuarioId: string, advogadoId: string, tipo: string, observacoes?: string): Promise<void> {
+export async function vincularUsuarioAdvogado(
+  usuarioId: string,
+  advogadoId: string,
+  tipo: string,
+  observacoes?: string,
+): Promise<void> {
   const session = await getSession();
 
   if (!session?.user?.tenantId) {
@@ -456,7 +470,9 @@ export async function vincularUsuarioAdvogado(usuarioId: string, advogadoId: str
   }
 
   if (session.user.role !== UserRole.ADMIN) {
-    throw new Error("Apenas administradores podem vincular usuários a advogados");
+    throw new Error(
+      "Apenas administradores podem vincular usuários a advogados",
+    );
   }
 
   // Verificar se a vinculação já existe
@@ -502,7 +518,9 @@ export async function vincularUsuarioAdvogado(usuarioId: string, advogadoId: str
   revalidatePath("/equipe");
 }
 
-export async function desvincularUsuarioAdvogado(vinculacaoId: string): Promise<void> {
+export async function desvincularUsuarioAdvogado(
+  vinculacaoId: string,
+): Promise<void> {
   const session = await getSession();
 
   if (!session?.user?.tenantId) {
@@ -530,7 +548,11 @@ export async function desvincularUsuarioAdvogado(vinculacaoId: string): Promise<
 
 // ===== SISTEMA DE PERMISSÕES =====
 
-export async function verificarPermissao(modulo: string, acao: string, usuarioId?: string): Promise<boolean> {
+export async function verificarPermissao(
+  modulo: string,
+  acao: string,
+  usuarioId?: string,
+): Promise<boolean> {
   const session = await getSession();
 
   if (!session?.user?.tenantId) {
@@ -545,14 +567,16 @@ export async function verificarPermissao(modulo: string, acao: string, usuarioId
   }
 
   // Verificar permissões individuais primeiro
-  const permissaoIndividual = await prisma.usuarioPermissaoIndividual.findFirst({
-    where: {
-      tenantId: session.user.tenantId,
-      usuarioId: targetUsuarioId,
-      modulo: modulo,
-      acao: acao,
+  const permissaoIndividual = await prisma.usuarioPermissaoIndividual.findFirst(
+    {
+      where: {
+        tenantId: session.user.tenantId,
+        usuarioId: targetUsuarioId,
+        modulo: modulo,
+        acao: acao,
+      },
     },
-  });
+  );
 
   if (permissaoIndividual) {
     return permissaoIndividual.permitido;
@@ -575,7 +599,9 @@ export async function verificarPermissao(modulo: string, acao: string, usuarioId
   });
 
   if (usuarioCargo?.cargo) {
-    const permissaoCargo = usuarioCargo.cargo.permissoes.find((p) => p.modulo === modulo && p.acao === acao);
+    const permissaoCargo = usuarioCargo.cargo.permissoes.find(
+      (p) => p.modulo === modulo && p.acao === acao,
+    );
 
     if (permissaoCargo) {
       return permissaoCargo.permitido;
@@ -643,7 +669,13 @@ export async function verificarPermissao(modulo: string, acao: string, usuarioId
   return false;
 }
 
-export async function adicionarPermissaoIndividual(usuarioId: string, modulo: string, acao: string, permitido: boolean, motivo?: string): Promise<void> {
+export async function adicionarPermissaoIndividual(
+  usuarioId: string,
+  modulo: string,
+  acao: string,
+  permitido: boolean,
+  motivo?: string,
+): Promise<void> {
   const session = await getSession();
 
   if (!session?.user?.tenantId) {
@@ -651,7 +683,9 @@ export async function adicionarPermissaoIndividual(usuarioId: string, modulo: st
   }
 
   if (session.user.role !== UserRole.ADMIN) {
-    throw new Error("Apenas administradores podem adicionar permissões individuais");
+    throw new Error(
+      "Apenas administradores podem adicionar permissões individuais",
+    );
   }
 
   await prisma.usuarioPermissaoIndividual.upsert({
@@ -710,7 +744,13 @@ export async function getDashboardEquipe(): Promise<{
     throw new Error("Usuário não autenticado");
   }
 
-  const [totalUsuarios, totalCargos, usuariosPorCargo, vinculacoesAtivas, permissoesIndividuais] = await Promise.all([
+  const [
+    totalUsuarios,
+    totalCargos,
+    usuariosPorCargo,
+    vinculacoesAtivas,
+    permissoesIndividuais,
+  ] = await Promise.all([
     prisma.usuario.count({
       where: { tenantId: session.user.tenantId },
     }),

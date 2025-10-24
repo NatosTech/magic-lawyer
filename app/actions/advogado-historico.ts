@@ -45,7 +45,9 @@ export interface ActionResponse<T = any> {
 /**
  * Registra uma entrada no histórico de alterações do advogado
  */
-export async function createAdvogadoHistorico(input: CreateHistoricoInput): Promise<ActionResponse<AdvogadoHistoricoData>> {
+export async function createAdvogadoHistorico(
+  input: CreateHistoricoInput,
+): Promise<ActionResponse<AdvogadoHistoricoData>> {
   try {
     const session = await getSession();
 
@@ -55,7 +57,10 @@ export async function createAdvogadoHistorico(input: CreateHistoricoInput): Prom
 
     // Obter informações do request
     const headersList = await headers();
-    const ipAddress = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || "unknown";
+    const ipAddress =
+      headersList.get("x-forwarded-for") ||
+      headersList.get("x-real-ip") ||
+      "unknown";
     const userAgent = headersList.get("user-agent") || "unknown";
 
     const historico = await prisma.advogadoHistorico.create({
@@ -94,7 +99,9 @@ export async function createAdvogadoHistorico(input: CreateHistoricoInput): Prom
 /**
  * Busca o histórico de alterações de um advogado
  */
-export async function getAdvogadoHistorico(advogadoId: string): Promise<ActionResponse<AdvogadoHistoricoData[]>> {
+export async function getAdvogadoHistorico(
+  advogadoId: string,
+): Promise<ActionResponse<AdvogadoHistoricoData[]>> {
   try {
     const session = await getSession();
 
@@ -133,7 +140,9 @@ export async function getAdvogadoHistorico(advogadoId: string): Promise<ActionRe
 /**
  * Busca o histórico de alterações de todos os advogados do tenant
  */
-export async function getAllAdvogadosHistorico(): Promise<ActionResponse<AdvogadoHistoricoData[]>> {
+export async function getAllAdvogadosHistorico(): Promise<
+  ActionResponse<AdvogadoHistoricoData[]>
+> {
   try {
     const session = await getSession();
 
@@ -184,7 +193,9 @@ export async function getAllAdvogadosHistorico(): Promise<ActionResponse<Advogad
 /**
  * Deleta entradas antigas do histórico (manutenção)
  */
-export async function cleanupAdvogadoHistorico(daysToKeep: number = 365): Promise<ActionResponse> {
+export async function cleanupAdvogadoHistorico(
+  daysToKeep: number = 365,
+): Promise<ActionResponse> {
   try {
     const session = await getSession();
 

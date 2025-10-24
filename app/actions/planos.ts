@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma, PlanoVersaoStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
 
 import prisma from "@/app/lib/prisma";
@@ -26,10 +26,20 @@ export type Plano = {
   updatedAt: Date;
 };
 
+const PLANO_VERSAO_STATUS = {
+  DRAFT: "DRAFT",
+  REVIEW: "REVIEW",
+  PUBLISHED: "PUBLISHED",
+  ARCHIVED: "ARCHIVED",
+} as const;
+
+export type PlanoVersaoStatusValue =
+  (typeof PLANO_VERSAO_STATUS)[keyof typeof PLANO_VERSAO_STATUS];
+
 export type PlanoVersaoResumo = {
   id: string;
   numero: number;
-  status: string;
+  status: PlanoVersaoStatusValue;
   titulo?: string | null;
   descricao?: string | null;
   publicadoEm?: Date | null;
@@ -82,6 +92,16 @@ export type PlanoMatrixModuleRow = {
   }>;
 };
 
+type CatalogModule = {
+  id: string;
+  slug: string;
+  nome: string;
+  categoria: string | null;
+  descricao: string | null;
+  icone: string | null;
+  ordem: number | null;
+};
+
 export type GetPlanoMatrixResponse = {
   success: boolean;
   data?: {
@@ -94,7 +114,7 @@ export type GetPlanoMatrixResponse = {
 function toPlanoVersaoResumo(versao: {
   id: string;
   numero: number;
-  status: PlanoVersaoStatus;
+  status: string;
   titulo: string | null;
   descricao: string | null;
   publicadoEm: Date | null;
@@ -104,7 +124,7 @@ function toPlanoVersaoResumo(versao: {
   return {
     id: versao.id,
     numero: versao.numero,
-    status: versao.status,
+    status: versao.status as PlanoVersaoStatusValue,
     titulo: versao.titulo ?? undefined,
     descricao: versao.descricao ?? undefined,
     publicadoEm: versao.publicadoEm ?? undefined,
@@ -117,7 +137,7 @@ async function createPlanoVersaoSnapshotTx(
   tx: Prisma.TransactionClient,
   params: {
     plano: { id: string; nome: string };
-    status: PlanoVersaoStatus;
+    status: PlanoVersaoStatusValue;
     usuarioId: string;
     titulo?: string;
     descricao?: string;
@@ -127,13 +147,14 @@ async function createPlanoVersaoSnapshotTx(
   const { plano, status, usuarioId, titulo, descricao, requireActiveModules } =
     params;
 
-  const modulosAtivos = await tx.planoModulo.findMany({
-    where: { planoId: plano.id, habilitado: true },
-    select: { moduloId: true },
-  });
+  const modulosAtivos: Array<{ moduloId: string }> =
+    await tx.planoModulo.findMany({
+      where: { planoId: plano.id, habilitado: true },
+      select: { moduloId: true },
+    });
 
   if (
-    (requireActiveModules ?? status === PlanoVersaoStatus.PUBLISHED) &&
+    (requireActiveModules ?? status === PLANO_VERSAO_STATUS.PUBLISHED) &&
     modulosAtivos.length === 0
   ) {
     throw new Error(
@@ -150,13 +171,16 @@ async function createPlanoVersaoSnapshotTx(
 
   const defaultTitulo =
     titulo ??
-    (status === PlanoVersaoStatus.REVIEW
+    (status === PLANO_VERSAO_STATUS.REVIEW
       ? `${plano.nome} · Revisão ${proximoNumero}`
-      : status === PlanoVersaoStatus.DRAFT
+      : status === PLANO_VERSAO_STATUS.DRAFT
         ? `${plano.nome} · Rascunho ${proximoNumero}`
         : `${plano.nome} · Versão ${proximoNumero}`);
 
-  const modulosData = modulosAtivos.map((modulo) => ({
+  const modulosData = modulosAtivos.map((modulo): {
+    moduloId: string;
+    habilitado: boolean;
+  } => ({
     moduloId: modulo.moduloId,
     habilitado: true,
   }));
@@ -172,8 +196,9 @@ async function createPlanoVersaoSnapshotTx(
       descricao,
       criadoPorId: usuarioId,
       publicadoPorId:
-        status === PlanoVersaoStatus.PUBLISHED ? usuarioId : undefined,
-      publicadoEm: status === PlanoVersaoStatus.PUBLISHED ? now : undefined,
+        status === PLANO_VERSAO_STATUS.PUBLISHED ? usuarioId : undefined,
+      publicadoEm:
+        status === PLANO_VERSAO_STATUS.PUBLISHED ? now : undefined,
       modulos:
         modulosData.length > 0
           ? {
@@ -432,6 +457,15 @@ export async function getPlanoConfiguracao(
       prisma.modulo.findMany({
         where: { ativo: true },
         orderBy: [{ categoria: "asc" }, { ordem: "asc" }, { nome: "asc" }],
+        select: {
+          id: true,
+          slug: true,
+          nome: true,
+          categoria: true,
+          descricao: true,
+          icone: true,
+          ordem: true,
+        },
       }),
       prisma.planoModulo.findMany({
         where: { planoId },
@@ -454,7 +488,9 @@ export async function getPlanoConfiguracao(
       configuracaoAtual.map((modulo) => [modulo.moduloId, modulo.habilitado]),
     );
 
-    const modulos: PlanoModuloConfig[] = catalogo.map((modulo) => ({
+    const catalogModules = catalogo as CatalogModule[];
+
+    const modulos: PlanoModuloConfig[] = catalogModules.map((modulo) => ({
       moduloId: modulo.id,
       slug: modulo.slug,
       nome: modulo.nome,
@@ -737,7 +773,7 @@ export async function createPlanoVersaoDraft(
 
       const novaVersao = await createPlanoVersaoSnapshotTx(tx, {
         plano,
-        status: PlanoVersaoStatus.DRAFT,
+        status: PLANO_VERSAO_STATUS.DRAFT,
         usuarioId,
         titulo: payload?.titulo,
         descricao: payload?.descricao,
@@ -783,7 +819,7 @@ export async function createPlanoVersaoReview(
 
       const novaVersao = await createPlanoVersaoSnapshotTx(tx, {
         plano,
-        status: PlanoVersaoStatus.REVIEW,
+        status: PLANO_VERSAO_STATUS.REVIEW,
         usuarioId,
         titulo: payload?.titulo,
         descricao: payload?.descricao,
@@ -841,7 +877,7 @@ export async function publishPlanoVersao(
           throw new Error("Versão informada não pertence a este plano");
         }
 
-        if (versaoAlvo.status === PlanoVersaoStatus.PUBLISHED) {
+        if (versaoAlvo.status === PLANO_VERSAO_STATUS.PUBLISHED) {
           throw new Error("Esta versão já foi publicada");
         }
 
@@ -850,14 +886,14 @@ export async function publishPlanoVersao(
         }
 
         await tx.planoVersao.updateMany({
-          where: { planoId, status: PlanoVersaoStatus.PUBLISHED },
-          data: { status: PlanoVersaoStatus.ARCHIVED },
+          where: { planoId, status: PLANO_VERSAO_STATUS.PUBLISHED },
+          data: { status: PLANO_VERSAO_STATUS.ARCHIVED },
         });
 
         versaoAlvo = await tx.planoVersao.update({
           where: { id: versaoAlvo.id },
           data: {
-            status: PlanoVersaoStatus.PUBLISHED,
+            status: PLANO_VERSAO_STATUS.PUBLISHED,
             titulo:
               payload?.titulo ??
               versaoAlvo.titulo ??
@@ -870,7 +906,7 @@ export async function publishPlanoVersao(
       } else {
         versaoAlvo = await createPlanoVersaoSnapshotTx(tx, {
           plano,
-          status: PlanoVersaoStatus.PUBLISHED,
+          status: PLANO_VERSAO_STATUS.PUBLISHED,
           usuarioId,
           titulo: payload?.titulo,
           descricao: payload?.descricao,

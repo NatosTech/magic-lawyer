@@ -1,10 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Select, SelectItem, Card, CardBody, Chip, Spinner, Tabs, Tab } from "@heroui/react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Input,
+  Select,
+  SelectItem,
+  Card,
+  CardBody,
+  Chip,
+  Spinner,
+  Tabs,
+  Tab,
+} from "@heroui/react";
 import { toast } from "sonner";
 
-import { gerarPixDinamico, gerarBoletoAsaas, gerarCobrancaCartao } from "@/app/actions/cobranca-asaas";
+import {
+  gerarPixDinamico,
+  gerarBoletoAsaas,
+  gerarCobrancaCartao,
+} from "@/app/actions/cobranca-asaas";
 
 interface Parcela {
   id: string;
@@ -26,9 +46,15 @@ interface ModalPagamentoParcelaProps {
   onClose: () => void;
 }
 
-export function ModalPagamentoParcela({ parcela, isOpen, onClose }: ModalPagamentoParcelaProps) {
+export function ModalPagamentoParcela({
+  parcela,
+  isOpen,
+  onClose,
+}: ModalPagamentoParcelaProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [formaPagamento, setFormaPagamento] = useState<"PIX" | "DINHEIRO" | "CARTAO">("PIX");
+  const [formaPagamento, setFormaPagamento] = useState<
+    "PIX" | "DINHEIRO" | "CARTAO"
+  >("PIX");
   const [dadosCartao, setDadosCartao] = useState({
     numero: "",
     nome: "",
@@ -144,13 +170,23 @@ export function ModalPagamentoParcela({ parcela, isOpen, onClose }: ModalPagamen
                   <CardBody className="p-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-semibold text-primary">Parcela {parcela.numero}</h3>
-                        <p className="text-sm text-default-400">Cliente: {parcela.contrato.cliente.nome}</p>
-                        <p className="text-sm text-default-400">CPF/CNPJ: {parcela.contrato.cliente.cpfCnpj}</p>
+                        <h3 className="font-semibold text-primary">
+                          Parcela {parcela.numero}
+                        </h3>
+                        <p className="text-sm text-default-400">
+                          Cliente: {parcela.contrato.cliente.nome}
+                        </p>
+                        <p className="text-sm text-default-400">
+                          CPF/CNPJ: {parcela.contrato.cliente.cpfCnpj}
+                        </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-primary">{formatCurrency(parcela.valor)}</p>
-                        <p className="text-xs text-default-500">Vencimento: {formatDate(parcela.dataVencimento)}</p>
+                        <p className="text-2xl font-bold text-primary">
+                          {formatCurrency(parcela.valor)}
+                        </p>
+                        <p className="text-xs text-default-500">
+                          Vencimento: {formatDate(parcela.dataVencimento)}
+                        </p>
                       </div>
                     </div>
                   </CardBody>
@@ -167,7 +203,9 @@ export function ModalPagamentoParcela({ parcela, isOpen, onClose }: ModalPagamen
                         onSelectionChange={(keys) => {
                           const selected = Array.from(keys)[0] as string;
 
-                          setFormaPagamento(selected as "PIX" | "DINHEIRO" | "CARTAO");
+                          setFormaPagamento(
+                            selected as "PIX" | "DINHEIRO" | "CARTAO",
+                          );
                         }}
                       >
                         <SelectItem key="PIX">PIX (Recomendado)</SelectItem>
@@ -254,22 +292,42 @@ export function ModalPagamentoParcela({ parcela, isOpen, onClose }: ModalPagamen
                           <div className="space-y-4">
                             <Card className="bg-success/5 border border-success/20">
                               <CardBody className="p-4 text-center">
-                                <h3 className="font-semibold text-success mb-2">PIX Gerado com Sucesso!</h3>
-                                <p className="text-sm text-default-600 mb-4">Escaneie o QR Code ou copie a chave PIX</p>
+                                <h3 className="font-semibold text-success mb-2">
+                                  PIX Gerado com Sucesso!
+                                </h3>
+                                <p className="text-sm text-default-600 mb-4">
+                                  Escaneie o QR Code ou copie a chave PIX
+                                </p>
 
                                 {/* QR Code */}
                                 {dadosPagamento.qrCodeImage && (
                                   <div className="flex justify-center mb-4">
-                                    <img alt="QR Code PIX" className="w-48 h-48 border border-success/20 rounded-lg" src={dadosPagamento.qrCodeImage} />
+                                    <img
+                                      alt="QR Code PIX"
+                                      className="w-48 h-48 border border-success/20 rounded-lg"
+                                      src={dadosPagamento.qrCodeImage}
+                                    />
                                   </div>
                                 )}
 
                                 {/* Chave PIX */}
                                 <div className="space-y-2">
-                                  <p className="text-sm font-medium">Chave PIX:</p>
+                                  <p className="text-sm font-medium">
+                                    Chave PIX:
+                                  </p>
                                   <div className="flex gap-2">
-                                    <Input readOnly className="flex-1" value={dadosPagamento.chavePix} />
-                                    <Button color="success" variant="flat" onPress={() => copyToClipboard(dadosPagamento.chavePix)}>
+                                    <Input
+                                      readOnly
+                                      className="flex-1"
+                                      value={dadosPagamento.chavePix}
+                                    />
+                                    <Button
+                                      color="success"
+                                      variant="flat"
+                                      onPress={() =>
+                                        copyToClipboard(dadosPagamento.chavePix)
+                                      }
+                                    >
                                       Copiar
                                     </Button>
                                   </div>
@@ -277,10 +335,12 @@ export function ModalPagamentoParcela({ parcela, isOpen, onClose }: ModalPagamen
 
                                 <div className="mt-4 p-3 bg-success/10 rounded-lg">
                                   <p className="text-sm text-success">
-                                    <strong>Valor:</strong> {formatCurrency(dadosPagamento.valor)}
+                                    <strong>Valor:</strong>{" "}
+                                    {formatCurrency(dadosPagamento.valor)}
                                   </p>
                                   <p className="text-sm text-success">
-                                    <strong>Vencimento:</strong> {formatDate(dadosPagamento.vencimento)}
+                                    <strong>Vencimento:</strong>{" "}
+                                    {formatDate(dadosPagamento.vencimento)}
                                   </p>
                                 </div>
                               </CardBody>
@@ -294,20 +354,33 @@ export function ModalPagamentoParcela({ parcela, isOpen, onClose }: ModalPagamen
                           <div className="space-y-4">
                             <Card className="bg-success/5 border border-success/20">
                               <CardBody className="p-4 text-center">
-                                <h3 className="font-semibold text-success mb-2">Pagamento em Dinheiro</h3>
-                                <p className="text-sm text-default-600 mb-4">Registre o pagamento recebido em dinheiro</p>
+                                <h3 className="font-semibold text-success mb-2">
+                                  Pagamento em Dinheiro
+                                </h3>
+                                <p className="text-sm text-default-600 mb-4">
+                                  Registre o pagamento recebido em dinheiro
+                                </p>
 
                                 <div className="space-y-4">
-                                  <Button className="w-full" color="success" isLoading={isLoading} size="lg" variant="solid" onPress={handleConfirmarPagamento}>
+                                  <Button
+                                    className="w-full"
+                                    color="success"
+                                    isLoading={isLoading}
+                                    size="lg"
+                                    variant="solid"
+                                    onPress={handleConfirmarPagamento}
+                                  >
                                     Confirmar Pagamento em Dinheiro
                                   </Button>
 
                                   <div className="mt-4 p-3 bg-success/10 rounded-lg">
                                     <p className="text-sm text-success">
-                                      <strong>Valor:</strong> {formatCurrency(parcela.valor)}
+                                      <strong>Valor:</strong>{" "}
+                                      {formatCurrency(parcela.valor)}
                                     </p>
                                     <p className="text-sm text-success">
-                                      <strong>Vencimento:</strong> {formatDate(parcela.dataVencimento)}
+                                      <strong>Vencimento:</strong>{" "}
+                                      {formatDate(parcela.dataVencimento)}
                                     </p>
                                   </div>
                                 </div>
@@ -322,23 +395,40 @@ export function ModalPagamentoParcela({ parcela, isOpen, onClose }: ModalPagamen
                           <div className="space-y-4">
                             <Card className="bg-primary/5 border border-primary/20">
                               <CardBody className="p-4 text-center">
-                                <h3 className="font-semibold text-primary mb-2">Pagamento Processado!</h3>
-                                <p className="text-sm text-default-600 mb-4">Status do pagamento via cartão de crédito</p>
+                                <h3 className="font-semibold text-primary mb-2">
+                                  Pagamento Processado!
+                                </h3>
+                                <p className="text-sm text-default-600 mb-4">
+                                  Status do pagamento via cartão de crédito
+                                </p>
 
                                 <div className="space-y-4">
-                                  <Chip color={dadosPagamento.status === "CONFIRMED" ? "success" : "warning"} size="lg" variant="flat">
-                                    {dadosPagamento.status === "CONFIRMED" ? "Pago" : "Processando"}
+                                  <Chip
+                                    color={
+                                      dadosPagamento.status === "CONFIRMED"
+                                        ? "success"
+                                        : "warning"
+                                    }
+                                    size="lg"
+                                    variant="flat"
+                                  >
+                                    {dadosPagamento.status === "CONFIRMED"
+                                      ? "Pago"
+                                      : "Processando"}
                                   </Chip>
 
                                   <div className="p-3 bg-primary/10 rounded-lg">
                                     <p className="text-sm text-primary">
-                                      <strong>Valor:</strong> {formatCurrency(dadosPagamento.valor)}
+                                      <strong>Valor:</strong>{" "}
+                                      {formatCurrency(dadosPagamento.valor)}
                                     </p>
                                     <p className="text-sm text-primary">
-                                      <strong>Vencimento:</strong> {formatDate(dadosPagamento.vencimento)}
+                                      <strong>Vencimento:</strong>{" "}
+                                      {formatDate(dadosPagamento.vencimento)}
                                     </p>
                                     <p className="text-sm text-primary">
-                                      <strong>Status:</strong> {dadosPagamento.status}
+                                      <strong>Status:</strong>{" "}
+                                      {dadosPagamento.status}
                                     </p>
                                   </div>
                                 </div>
@@ -355,10 +445,19 @@ export function ModalPagamentoParcela({ parcela, isOpen, onClose }: ModalPagamen
             <ModalFooter>
               {!dadosPagamento ? (
                 <>
-                  <Button disabled={isLoading} variant="light" onPress={onClose}>
+                  <Button
+                    disabled={isLoading}
+                    variant="light"
+                    onPress={onClose}
+                  >
                     Cancelar
                   </Button>
-                  <Button color="primary" disabled={isLoading} startContent={isLoading ? <Spinner size="sm" /> : null} onPress={handleGerarCobranca}>
+                  <Button
+                    color="primary"
+                    disabled={isLoading}
+                    startContent={isLoading ? <Spinner size="sm" /> : null}
+                    onPress={handleGerarCobranca}
+                  >
                     {isLoading ? "Gerando..." : "Gerar Cobrança"}
                   </Button>
                 </>

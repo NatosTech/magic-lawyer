@@ -30,6 +30,8 @@
 - Todas as ações exigem super admin (`robsonnonatoiii@gmail.com`) e registram atualizações no `updatedAt` do plano, garantindo trilha de auditoria.
 - Nova interface `/admin/planos` com visão por plano, agrupamento por categorias de módulo, toggle em tempo real e timeline das versões publicadas.
 - Builder drag & drop entre colunas de módulos ativos/disponíveis com sincronização imediata nas ações do super admin.
+- Sessão dos tenants passa a carregar `tenantModules`; sidebar autenticada e menu secundário filtram os itens conforme a versão publicada do plano.
+- Middleware protege rotas privadas consultando os módulos liberados e redireciona para o dashboard quando o tenant tenta acessar funcionalidades fora do plano.
 
 ## 🔎 Pontos de Atenção
 - Validar migração/seed em bases existentes para evitar duplicidades (planos antigos terão suas permissões redefinidas).

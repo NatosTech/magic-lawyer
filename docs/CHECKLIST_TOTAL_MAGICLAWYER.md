@@ -23,16 +23,16 @@
 
 ---
 
-**Última Atualização:** 23/01/2025  
-**Completude Atual:** 62% (51/94 funcionalidades implementadas) ⬆️
+**Última Atualização:** 24/01/2025  
+**Completude Atual:** 63% (52/94 funcionalidades implementadas) ⬆️
 
-### 🎉 **IMPLEMENTAÇÕES DE HOJE (23/01/2025):**
-- ✅ **Sistema de Animações com Framer Motion** - Animações fluidas em toda a agenda
-- ✅ **Criação Rápida de Eventos** - Botão para criar evento na data selecionada
-- ✅ **Filtro por Origem** - Filtrar eventos do Google Calendar vs locais
-- ✅ **Identificação Visual** - Ícone do Google para eventos sincronizados
-- ✅ **Renovação Automática de Tokens** - Sistema de refresh de tokens do Google
-- ✅ **Melhorias de UX** - Efeitos hover, transições, delays escalonados
+### 🎉 **IMPLEMENTAÇÕES DE HOJE (24/01/2025):**
+- ✅ **Sistema de Visualização de Configurações do Tenant** - Página completa com dados do plano, módulos e métricas
+- ✅ **Interface de Informações do Plano** - Visualização detalhada da assinatura atual
+- ✅ **Dashboard de Módulos** - Lista de módulos ativos/inativos com descrições
+- ✅ **Métricas do Escritório** - Contadores de usuários, processos, clientes e contratos
+- ✅ **Identidade Visual** - Visualização das cores e logo configurados
+- ✅ **Sistema de Versões de Plano** - Exibição da versão publicada do plano
 
 ---
 
@@ -310,6 +310,22 @@
 - [ ] **Gamificação** - Sistema de conquistas e progresso
 - [ ] **Feedback de Onboarding** - Coleta de opiniões
 
+### 📋 **18.1. SISTEMA DE CONFIGURAÇÕES DO TENANT** ✅ **IMPLEMENTADO**
+- [x] **Visualização do Plano Atual** - Informações detalhadas da assinatura
+- [x] **Status da Assinatura** - Status ativo/inativo com badges visuais
+- [x] **Informações Financeiras** - Valores mensais/anuais do plano
+- [x] **Versão do Plano** - Exibição da versão publicada com número e data
+- [x] **Período de Teste** - Data de expiração do trial
+- [x] **Próxima Renovação** - Data da próxima cobrança
+- [x] **Dados do Escritório** - Nome, slug, domínio, status
+- [x] **Informações Jurídicas** - Razão social, nome fantasia, documento
+- [x] **Métricas do Escritório** - Contadores de usuários, processos, clientes, contratos
+- [x] **Módulos do Sistema** - Lista completa com status ativo/inativo
+- [x] **Descrições dos Módulos** - Explicação de cada funcionalidade
+- [x] **Rotas por Módulo** - Visualização das páginas acessíveis
+- [x] **Identidade Visual** - Cores personalizadas e logo
+- [x] **Interface Responsiva** - Layout adaptado para diferentes dispositivos
+
 ---
 
 ## 🎯 **SISTEMA DE PAGAMENTOS E ASSINATURAS**
@@ -372,6 +388,7 @@
 - [ ] **Plano Profissional** - Incluir módulos do básico + Financeiro parcial (faturamento e inadimplência), Contratos, Alertas avançados, Relatórios padrões.
 - [ ] **Plano Enterprise** - Todos os módulos, integrações avançadas, IA jurídica, API externa e automações customizadas.
 - [x] **Planos Customizados** - Permitir montar plano bespoke por cliente, salvando como variação reutilizável.
+- [x] **Restrição de Menus por Plano** - Sidebar do tenant e middleware respeitam os módulos liberados na versão publicada do plano
 - [ ] **Regras de Upgrade/Downgrade** - Processo para migrar entre planos com/sem perda de dados (ex.: Financeiro congelado ao descer de plano)
 - [x] **Plano Ultra** - Plano premium com 100% das rotas ativas e recursos exclusivos
 - [ ] **Templates de Planos** - Exportar/importar configurações para replicar em novos tenants
@@ -463,7 +480,7 @@
 
 ## 📊 **RESUMO DE PROGRESSO**
 
-### ✅ **IMPLEMENTADO (51/94 funcionalidades)**
+### ✅ **IMPLEMENTADO (52/94 funcionalidades)**
 - **Sistema Core**: 100% completo
 - **Autenticação**: 100% completo  
 - **Integrações**: 85% completo
@@ -473,8 +490,9 @@
 - **Mobile**: 70% completo
 - **UX e Animações**: 100% completo ✅ **NOVO**
 - **Sistema de Agenda**: 95% completo ✅ **MELHORADO**
+- **Configurações do Tenant**: 100% completo ✅ **NOVO**
 
-### ⚠️ **PENDENTE (43/94 funcionalidades)**
+### ⚠️ **PENDENTE (42/94 funcionalidades)**
 - **Gestão de Equipe**: 100% - **COMPLETO** ✅
 - **Melhorias de Equipe**: 93% - **QUASE COMPLETO** ✅
 - **Notificações**: 40% - **PARCIALMENTE IMPLEMENTADO** 🟡
@@ -498,13 +516,14 @@
 6. **Analytics e Business Intelligence** - Métricas e relatórios avançados
 
 ### ✅ **RECÉM IMPLEMENTADO (HOJE)**
-- **Sistema de Animações** - Framer Motion em toda a aplicação
-- **Melhorias de Agenda** - Criação rápida, filtros, identificação visual
-- **Renovação de Tokens** - Sistema automático para Google Calendar
+- **Sistema de Configurações do Tenant** - Página completa com dados do plano e módulos
+- **Visualização de Assinatura** - Informações detalhadas do plano atual
+- **Dashboard de Módulos** - Lista de funcionalidades ativas/inativas
+- **Métricas do Escritório** - Contadores visuais de dados importantes
 
 ---
 
-## 🚀 **META ATUAL: 62% DE COMPLETUDE**
+## 🚀 **META ATUAL: 63% DE COMPLETUDE**
 
 **Foco:** Implementar as funcionalidades de alta prioridade para atingir 80% do sistema completo!
 
