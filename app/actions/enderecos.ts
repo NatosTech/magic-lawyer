@@ -4,9 +4,9 @@ import { getServerSession } from "next-auth/next";
 import { revalidatePath } from "next/cache";
 
 import { authOptions } from "../../auth";
-import prisma from "../lib/prisma";
 import { TipoEndereco } from "../generated/prisma";
 
+import prisma from "@/app/lib/prisma";
 import logger from "@/lib/logger";
 
 // Tipos simples

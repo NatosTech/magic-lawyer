@@ -1,7 +1,9 @@
 "use server";
 
 import { promises as fs } from "fs";
+import { createHash } from "crypto";
 import path from "path";
+
 import { getServerSession } from "next-auth/next";
 import { revalidatePath } from "next/cache";
 
@@ -28,6 +30,7 @@ export type AutoDetectResponse = ActionResponse<{
   updated: number;
   removed: number;
   total: number;
+  totalRoutes: number;
 }>;
 
 // ==================== CONFIGURAÇÕES ====================
@@ -134,8 +137,11 @@ async function checkSuperAdmin() {
   const userRole = (session?.user as any)?.role;
 
   if (!session || userRole !== "SUPER_ADMIN") {
-    throw new Error("Não autorizado: Apenas SuperAdmin pode realizar esta ação.");
+    throw new Error(
+      "Não autorizado: Apenas SuperAdmin pode realizar esta ação.",
+    );
   }
+
   return session.user;
 }
 
@@ -183,48 +189,80 @@ function getModuleRoutes(slug: string): string[] {
   return specificRoutes[slug] || routes;
 }
 
+type ScanProtectedModulesResult = {
+  detectedModules: DetectedModule[];
+  moduleSlugs: string[];
+  filesystemHash: string;
+  totalRoutes: number;
+};
+
+async function scanProtectedModules(): Promise<ScanProtectedModulesResult> {
+  const items = await fs.readdir(PROTECTED_FOLDER, { withFileTypes: true });
+
+  const moduleDirs = items
+    .filter((item) => item.isDirectory())
+    .map((item) => item.name)
+    .filter((name) => !name.startsWith(".") && name !== "layout.tsx")
+    .sort();
+
+  const detectedModules: DetectedModule[] = moduleDirs.map((slug, index) => {
+    const categoria = MODULE_CATEGORIES[slug] || "Sistema";
+    const icone = CATEGORY_ICONS[categoria] || "PuzzleIcon";
+    const descricao =
+      MODULE_DESCRIPTIONS[slug] || `Módulo ${formatModuleName(slug)}`;
+    const rotas = getModuleRoutes(slug);
+
+    return {
+      slug,
+      nome: formatModuleName(slug),
+      descricao,
+      categoria,
+      icone,
+      ordem: (CATEGORY_ORDER[categoria] || 99) * 100 + index,
+      ativo: true,
+      rotas,
+    };
+  });
+
+  const hashSource = JSON.stringify(
+    detectedModules.map((module) => ({
+      slug: module.slug,
+      rotas: module.rotas,
+    })),
+  );
+
+  const filesystemHash = createHash("sha256").update(hashSource).digest("hex");
+
+  const totalRoutes = detectedModules.reduce(
+    (acc, module) => acc + module.rotas.length,
+    0,
+  );
+
+  return {
+    detectedModules,
+    moduleSlugs: moduleDirs,
+    filesystemHash,
+    totalRoutes,
+  };
+}
+
 // ==================== DETECÇÃO AUTOMÁTICA ====================
 export async function autoDetectModules(): Promise<AutoDetectResponse> {
   try {
     const user = await checkSuperAdmin();
+
     logger.info(`Iniciando detecção automática de módulos por ${user.email}`);
 
-    // Ler diretório (protected)
-    const items = await fs.readdir(PROTECTED_FOLDER, { withFileTypes: true });
+    const { detectedModules, moduleSlugs, filesystemHash, totalRoutes } =
+      await scanProtectedModules();
 
-    // Filtrar apenas diretórios (módulos)
-    const moduleDirs = items
-      .filter((item) => item.isDirectory())
-      .map((item) => item.name)
-      .filter((name) => !name.startsWith(".") && name !== "layout.tsx");
-
-    logger.info(`Módulos detectados no código: ${moduleDirs.join(", ")}`);
-
-    // Criar objetos de módulos detectados
-    const detectedModules: DetectedModule[] = moduleDirs.map((slug, index) => {
-      const categoria = MODULE_CATEGORIES[slug] || "Sistema";
-      const icone = CATEGORY_ICONS[categoria] || "PuzzleIcon";
-      const descricao = MODULE_DESCRIPTIONS[slug] || `Módulo ${formatModuleName(slug)}`;
-      const rotas = getModuleRoutes(slug);
-
-      return {
-        slug,
-        nome: formatModuleName(slug),
-        descricao,
-        categoria,
-        icone,
-        ordem: (CATEGORY_ORDER[categoria] || 99) * 100 + index,
-        ativo: true,
-        rotas,
-      };
-    });
+    logger.info(`Módulos detectados no código: ${moduleSlugs.join(", ")}`);
 
     // Buscar módulos existentes no banco
     const existingModules = await prisma.modulo.findMany({
       select: { id: true, slug: true },
     });
 
-    const existingSlugs = new Set(existingModules.map((m) => m.slug));
     const detectedSlugs = new Set(detectedModules.map((m) => m.slug));
 
     let created = 0;
@@ -270,7 +308,9 @@ export async function autoDetectModules(): Promise<AutoDetectResponse> {
     }
 
     // Remover módulos que não existem mais no código
-    const modulesToRemove = existingModules.filter((m) => !detectedSlugs.has(m.slug));
+    const modulesToRemove = existingModules.filter(
+      (m) => !detectedSlugs.has(m.slug),
+    );
 
     for (const module of modulesToRemove) {
       // Verificar se está sendo usado por planos
@@ -290,36 +330,37 @@ export async function autoDetectModules(): Promise<AutoDetectResponse> {
         });
 
         removed++;
-        logger.info(`Módulo removido: ${module.slug} (não existe mais no código)`);
+        logger.info(
+          `Módulo removido: ${module.slug} (não existe mais no código)`,
+        );
       } else {
-        logger.warn(`Módulo ${module.slug} não pode ser removido pois está sendo usado por ${planUsage} plano(s)`);
+        logger.warn(
+          `Módulo ${module.slug} não pode ser removido pois está sendo usado por ${planUsage} plano(s)`,
+        );
       }
     }
 
-    logger.info(`Detecção automática concluída: ${created} criados, ${updated} atualizados, ${removed} removidos`);
+    logger.info(
+      `Detecção automática concluída: ${created} criados, ${updated} atualizados, ${removed} removidos`,
+    );
 
-    // Salvar timestamp da última detecção
-    try {
-      const controlFile = path.join(process.cwd(), "tmp", "last-auto-detect.json");
-      await fs.mkdir(path.dirname(controlFile), { recursive: true });
-      await fs.writeFile(
-        controlFile,
-        JSON.stringify({
-          lastDetection: new Date().toISOString(),
-          totalModules: detectedModules.length,
-          created,
-          updated,
-          removed,
-        })
-      );
-    } catch (error) {
-      logger.warn("Erro ao salvar arquivo de controle:", error);
-      // Não falhar por causa disso
-    }
+    // Registrar execução no banco
+    await prisma.moduleDetectionLog.create({
+      data: {
+        detectedAt: new Date(),
+        totalModules: detectedModules.length,
+        totalRoutes,
+        created,
+        updated,
+        removed,
+        filesystemHash,
+      },
+    });
 
     // 3. Limpar cache do module-map dinâmico
     try {
       const { clearModuleMapCache } = await import("../lib/module-map");
+
       clearModuleMapCache();
       logger.info("✅ Cache do module-map limpo automaticamente");
     } catch (error) {
@@ -328,7 +369,6 @@ export async function autoDetectModules(): Promise<AutoDetectResponse> {
 
     // Forçar revalidação de todas as páginas relacionadas
     revalidatePath("/admin/modulos");
-    revalidatePath("/admin/modulo-rotas");
     revalidatePath("/admin/planos");
 
     return {
@@ -339,10 +379,12 @@ export async function autoDetectModules(): Promise<AutoDetectResponse> {
         updated,
         removed,
         total: detectedModules.length,
+        totalRoutes,
       },
     };
   } catch (error: any) {
     logger.error("Erro na detecção automática de módulos:", error);
+
     return {
       success: false,
       error: error.message || "Erro na detecção automática de módulos",
@@ -369,7 +411,10 @@ async function syncModuleRoutes(slug: string, routes: string[]): Promise<void> {
     const newRoutePaths = new Set(routes);
 
     // Adicionar novas rotas
-    const routesToAdd = routes.filter((route) => !existingRoutePaths.has(route));
+    const routesToAdd = routes.filter(
+      (route) => !existingRoutePaths.has(route),
+    );
+
     for (const route of routesToAdd) {
       await prisma.moduloRota.create({
         data: {
@@ -382,7 +427,10 @@ async function syncModuleRoutes(slug: string, routes: string[]): Promise<void> {
     }
 
     // Remover rotas que não existem mais
-    const routesToRemove = existingRoutes.filter((r) => !newRoutePaths.has(r.rota));
+    const routesToRemove = existingRoutes.filter(
+      (r) => !newRoutePaths.has(r.rota),
+    );
+
     for (const route of routesToRemove) {
       await prisma.moduloRota.delete({
         where: { id: route.id },
@@ -400,42 +448,53 @@ export async function getAutoDetectStatus(): Promise<
     totalModules: number;
     totalRoutes: number;
     needsSync: boolean;
+    filesystemModules: number;
+    filesystemRoutes: number;
+    lastRunSummary: {
+      created: number;
+      updated: number;
+      removed: number;
+    } | null;
   }>
 > {
   try {
     await checkSuperAdmin();
 
-    // Buscar estatísticas
-    const [totalModules, totalRoutes] = await Promise.all([prisma.modulo.count(), prisma.moduloRota.count()]);
+    const [totalModules, totalRoutes, latestDetection] = await Promise.all([
+      prisma.modulo.count(),
+      prisma.moduloRota.count(),
+      prisma.moduleDetectionLog.findFirst({
+        orderBy: { detectedAt: "desc" },
+      }),
+    ]);
 
-    // Verificar se precisa sincronizar (arquivo de controle)
-    const controlFile = path.join(process.cwd(), "tmp", "last-auto-detect.json");
-    let lastDetection: Date | null = null;
-    let needsSync = true;
+    const scanResult = await scanProtectedModules();
 
-    try {
-      const data = JSON.parse(await fs.readFile(controlFile, "utf8"));
-      lastDetection = new Date(data.lastDetection);
-
-      // Verificar se o diretório foi modificado
-      const stats = await fs.stat(PROTECTED_FOLDER);
-      needsSync = stats.mtime > lastDetection;
-    } catch {
-      // Arquivo não existe ou erro na leitura
-      needsSync = true;
-    }
+    const needsSync =
+      !latestDetection ||
+      latestDetection.filesystemHash !== scanResult.filesystemHash;
 
     return {
       success: true,
       data: {
-        lastDetection,
+        lastDetection: latestDetection?.detectedAt ?? null,
         totalModules,
         totalRoutes,
         needsSync,
+        filesystemModules: scanResult.detectedModules.length,
+        filesystemRoutes: scanResult.totalRoutes,
+        lastRunSummary: latestDetection
+          ? {
+              created: latestDetection.created,
+              updated: latestDetection.updated,
+              removed: latestDetection.removed,
+            }
+          : null,
       },
     };
   } catch (error: any) {
     logger.error("Erro ao obter status da detecção automática:", error);
+
     return {
       success: false,
       error: error.message || "Erro ao obter status da detecção automática",

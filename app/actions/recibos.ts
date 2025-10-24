@@ -3,7 +3,7 @@
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/auth";
-import prisma, { convertAllDecimalFields } from "@/lib/prisma";
+import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
 
 // ============================================
 // Types

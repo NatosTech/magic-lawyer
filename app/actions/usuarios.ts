@@ -2,8 +2,7 @@
 
 import { getServerSession } from "next-auth/next";
 
-import prisma from "../lib/prisma";
-
+import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
 

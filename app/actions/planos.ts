@@ -177,13 +177,17 @@ async function createPlanoVersaoSnapshotTx(
         ? `${plano.nome} · Rascunho ${proximoNumero}`
         : `${plano.nome} · Versão ${proximoNumero}`);
 
-  const modulosData = modulosAtivos.map((modulo): {
-    moduloId: string;
-    habilitado: boolean;
-  } => ({
-    moduloId: modulo.moduloId,
-    habilitado: true,
-  }));
+  const modulosData = modulosAtivos.map(
+    (
+      modulo,
+    ): {
+      moduloId: string;
+      habilitado: boolean;
+    } => ({
+      moduloId: modulo.moduloId,
+      habilitado: true,
+    }),
+  );
 
   const now = new Date();
 
@@ -197,8 +201,7 @@ async function createPlanoVersaoSnapshotTx(
       criadoPorId: usuarioId,
       publicadoPorId:
         status === PLANO_VERSAO_STATUS.PUBLISHED ? usuarioId : undefined,
-      publicadoEm:
-        status === PLANO_VERSAO_STATUS.PUBLISHED ? now : undefined,
+      publicadoEm: status === PLANO_VERSAO_STATUS.PUBLISHED ? now : undefined,
       modulos:
         modulosData.length > 0
           ? {

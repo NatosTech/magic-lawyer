@@ -44,6 +44,7 @@ export async function getModuleRouteMap(): Promise<Record<string, string[]>> {
     return moduleMap;
   } catch (error) {
     console.error("Erro ao buscar módulos do banco:", error);
+
     // Retornar cache antigo se disponível
     return moduleMapCache || {};
   }
@@ -51,10 +52,14 @@ export async function getModuleRouteMap(): Promise<Record<string, string[]>> {
 
 export async function getDefaultModules(): Promise<string[]> {
   const moduleMap = await getModuleRouteMap();
+
   return Object.keys(moduleMap);
 }
 
-export async function isRouteAllowedByModules(pathname: string, modules?: string[]) {
+export async function isRouteAllowedByModules(
+  pathname: string,
+  modules?: string[],
+) {
   if (!modules || modules.includes("*")) {
     return true;
   }
@@ -70,7 +75,9 @@ export async function isRouteAllowedByModules(pathname: string, modules?: string
   return modules.includes(requiredModule);
 }
 
-export async function moduleRequiredForRoute(pathname: string): Promise<string | null> {
+export async function moduleRequiredForRoute(
+  pathname: string,
+): Promise<string | null> {
   const normalizedPath = pathname.replace(/\/$/, "");
 
   try {
@@ -78,6 +85,7 @@ export async function moduleRequiredForRoute(pathname: string): Promise<string |
 
     for (const [module, routes] of Object.entries(moduleMap)) {
       const matches = routes.some((route) => normalizedPath.startsWith(route));
+
       if (matches) {
         return module;
       }
@@ -86,6 +94,7 @@ export async function moduleRequiredForRoute(pathname: string): Promise<string |
     return null;
   } catch (error) {
     console.error("Erro ao verificar módulo necessário para rota:", error);
+
     return null;
   }
 }

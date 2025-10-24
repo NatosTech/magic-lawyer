@@ -1,6 +1,6 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import { Prisma, PrismaClient } from "../generated/prisma";
 
-import { PrismaClient } from "../generated/prisma";
+const { Decimal } = Prisma;
 
 // Evita criar múltiplas instâncias no hot-reload do Next.js (dev)
 const globalForPrisma = globalThis as unknown as {
@@ -87,7 +87,9 @@ if (process.env.NODE_ENV !== "production") {
  * Converte um valor Decimal do Prisma para number
  * Type-safe e otimizado para serialização
  */
-export function toNumber(value: Decimal | null | undefined): number | null {
+export function toNumber(
+  value: Prisma.Decimal | null | undefined,
+): number | null {
   if (!value) return null;
 
   // Handle different Decimal representations

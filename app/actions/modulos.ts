@@ -2,32 +2,12 @@
 
 import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
-import { revalidatePath } from "next/cache";
 
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
 
 // ==================== TIPOS ====================
-
-export interface ModuloCreateInput {
-  slug: string;
-  nome: string;
-  categoria?: string | null;
-  descricao?: string | null;
-  icone?: string | null;
-  ordem?: number | null;
-  ativo?: boolean;
-}
-
-export interface ModuloUpdateInput {
-  nome?: string;
-  categoria?: string | null;
-  descricao?: string | null;
-  icone?: string | null;
-  ordem?: number | null;
-  ativo?: boolean;
-}
 
 export interface ModuloWithStats {
   id: string;
@@ -87,13 +67,7 @@ export interface ModuloDetailResponse {
 
 // ==================== LISTAR MÓDULOS ====================
 
-export async function listModulos(params?: {
-  search?: string;
-  categoria?: string;
-  ativo?: boolean;
-  limit?: number;
-  offset?: number;
-}): Promise<ModuloListResponse> {
+export async function listModulos(params?: { search?: string; categoria?: string; ativo?: boolean; limit?: number; offset?: number }): Promise<ModuloListResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -112,11 +86,7 @@ export async function listModulos(params?: {
     const where: Prisma.ModuloWhereInput = {};
 
     if (search) {
-      where.OR = [
-        { nome: { contains: search, mode: "insensitive" } },
-        { slug: { contains: search, mode: "insensitive" } },
-        { descricao: { contains: search, mode: "insensitive" } },
-      ];
+      where.OR = [{ nome: { contains: search, mode: "insensitive" } }, { slug: { contains: search, mode: "insensitive" } }, { descricao: { contains: search, mode: "insensitive" } }];
     }
 
     if (categoria) {
@@ -322,38 +292,36 @@ export async function getDashboardModulos(): Promise<{
       return { success: false, error: "Acesso negado" };
     }
 
-    const [total, ativos, inativos, categorias, maisUsados] = await Promise.all(
-      [
-        prisma.modulo.count(),
-        prisma.modulo.count({ where: { ativo: true } }),
-        prisma.modulo.count({ where: { ativo: false } }),
-        prisma.modulo
-          .groupBy({
-            by: ["categoria"],
-            _count: { id: true },
-            where: { categoria: { not: null } },
-          })
-          .then((result) => result.length),
-        prisma.modulo.findMany({
-          select: {
-            id: true,
-            nome: true,
-            slug: true,
-            _count: {
-              select: {
-                planoModulos: true,
-              },
+    const [total, ativos, inativos, categorias, maisUsados] = await Promise.all([
+      prisma.modulo.count(),
+      prisma.modulo.count({ where: { ativo: true } }),
+      prisma.modulo.count({ where: { ativo: false } }),
+      prisma.modulo
+        .groupBy({
+          by: ["categoria"],
+          _count: { id: true },
+          where: { categoria: { not: null } },
+        })
+        .then((result) => result.length),
+      prisma.modulo.findMany({
+        select: {
+          id: true,
+          nome: true,
+          slug: true,
+          _count: {
+            select: {
+              planoModulos: true,
             },
           },
-          orderBy: {
-            planoModulos: {
-              _count: "desc",
-            },
+        },
+        orderBy: {
+          planoModulos: {
+            _count: "desc",
           },
-          take: 5,
-        }),
-      ],
-    );
+        },
+        take: 5,
+      }),
+    ]);
 
     return {
       success: true,

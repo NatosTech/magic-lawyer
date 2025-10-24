@@ -1,86 +1,109 @@
 // ==================== EDGE RUNTIME MODULE MAP ====================
-// Versão simplificada para Edge Runtime (middleware)
-// Não usa Prisma - apenas funções básicas
+// Busca o mapeamento de rotas a partir da API interna (dinâmica)
 
-// Cache simples para Edge Runtime
-let moduleMapCache: Record<string, string[]> | null = null;
-let cacheTimestamp: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+type ModuleRouteMap = Record<string, string[]>;
 
-// Mapa estático básico para fallback
-const FALLBACK_MODULE_MAP: Record<string, string[]> = {
-  advogados: ["/advogados", "/advogados/novo", "/advogados/[id]"],
-  clientes: ["/clientes", "/clientes/novo", "/clientes/[id]"],
-  dashboard: ["/dashboard"],
-  equipe: ["/equipe", "/equipe/novo", "/equipe/[id]"],
-  processos: ["/processos", "/processos/novo", "/processos/[id]"],
-  relatorios: ["/relatorios", "/relatorios/gerar"],
-  agenda: ["/agenda", "/agenda/novo", "/agenda/[id]"],
-  andamentos: ["/andamentos", "/andamentos/novo"],
-  diligencias: ["/diligencias", "/diligencias/nova"],
-  documentos: ["/documentos", "/documentos/upload"],
-  tarefas: ["/tarefas", "/tarefas/nova"],
-  contratos: ["/contratos", "/contratos/novo", "/contratos/[id]"],
-  "dados-bancarios": ["/dados-bancarios", "/dados-bancarios/novo"],
-  financeiro: ["/financeiro", "/financeiro/dashboard"],
-  honorarios: ["/honorarios", "/honorarios/calcular"],
-  parcelas: ["/parcelas", "/parcelas/nova"],
-  "modelos-peticao": ["/modelos-peticao", "/modelos-peticao/novo"],
-  "modelos-procuracao": ["/modelos-procuracao", "/modelos-procuracao/novo"],
-  peticoes: ["/peticoes", "/peticoes/nova"],
-  procuracoes: ["/procuracoes", "/procuracoes/nova"],
-  causas: ["/causas", "/causas/nova"],
-  juizes: ["/juizes", "/juizes/novo"],
-  "regimes-prazo": ["/regimes-prazo", "/regimes-prazo/novo"],
-  configuracoes: ["/configuracoes"],
-  help: ["/help", "/help/faq"],
-  usuario: ["/usuario", "/usuario/perfil"],
+type ModuleMapCache = {
+  data: ModuleRouteMap;
+  timestamp: number;
 };
 
-export function getModuleRouteMapEdge(): Record<string, string[]> {
-  const now = Date.now();
+let moduleMapCache: ModuleMapCache | null = null;
+const CACHE_DURATION = 60 * 1000; // 1 minuto
+const MODULE_MAP_ENDPOINT = "/api/internal/module-map";
+const AUTH_HEADER = "x-internal-token";
 
-  // Verificar se o cache ainda é válido
-  if (moduleMapCache && now - cacheTimestamp < CACHE_DURATION) {
-    return moduleMapCache;
+function resolveOrigin(origin?: string): string {
+  if (origin) {
+    return origin;
   }
 
-  // No Edge Runtime, usar fallback estático
-  // O cache será atualizado via API calls
-  moduleMapCache = FALLBACK_MODULE_MAP;
-  cacheTimestamp = now;
+  const envOrigin = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL;
 
-  return moduleMapCache;
+  if (envOrigin) {
+    return envOrigin.startsWith("http") ? envOrigin : `https://${envOrigin}`;
+  }
+
+  throw new Error(
+    "Não foi possível determinar a origem para buscar o module map",
+  );
 }
 
-export function getDefaultModulesEdge(): string[] {
-  const moduleMap = getModuleRouteMapEdge();
+async function fetchModuleMapFromApi(origin?: string): Promise<ModuleRouteMap> {
+  const resolvedOrigin = resolveOrigin(origin);
+  const url = new URL(MODULE_MAP_ENDPOINT, resolvedOrigin);
+
+  const headers: Record<string, string> = { "cache-control": "no-store" };
+  const token = process.env.MODULE_MAP_API_TOKEN;
+
+  if (token) {
+    headers[AUTH_HEADER] = token;
+  }
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers,
+    cache: "no-store",
+    next: { revalidate: 0 },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao buscar module map (status ${response.status})`);
+  }
+
+  const payload = await response.json();
+
+  if (!payload?.success) {
+    throw new Error(payload?.error || "Resposta inválida ao buscar module map");
+  }
+
+  return (payload.data ?? {}) as ModuleRouteMap;
+}
+
+export async function getModuleRouteMapEdge(
+  origin?: string,
+): Promise<ModuleRouteMap> {
+  const now = Date.now();
+
+  if (moduleMapCache && now - moduleMapCache.timestamp < CACHE_DURATION) {
+    return moduleMapCache.data;
+  }
+
+  try {
+    const data = await fetchModuleMapFromApi(origin);
+
+    moduleMapCache = { data, timestamp: now };
+
+    return data;
+  } catch (error) {
+    console.error("⚠️  Erro ao atualizar module map para Edge:", error);
+
+    if (moduleMapCache) {
+      return moduleMapCache.data;
+    }
+
+    return {};
+  }
+}
+
+export async function getDefaultModulesEdge(
+  origin?: string,
+): Promise<string[]> {
+  const moduleMap = await getModuleRouteMapEdge(origin);
+
   return Object.keys(moduleMap);
 }
 
-export function isRouteAllowedByModulesEdge(pathname: string, modules?: string[]) {
-  if (!modules || modules.includes("*")) {
-    return true;
-  }
-
+export async function moduleRequiredForRouteEdge(
+  pathname: string,
+  origin?: string,
+): Promise<string | null> {
   const normalizedPath = pathname.replace(/\/$/, "");
-
-  const requiredModule = moduleRequiredForRouteEdge(normalizedPath);
-
-  if (!requiredModule) {
-    return true;
-  }
-
-  return modules.includes(requiredModule);
-}
-
-export function moduleRequiredForRouteEdge(pathname: string): string | null {
-  const normalizedPath = pathname.replace(/\/$/, "");
-
-  const moduleMap = getModuleRouteMapEdge();
+  const moduleMap = await getModuleRouteMapEdge(origin);
 
   for (const [module, routes] of Object.entries(moduleMap)) {
     const matches = routes.some((route) => normalizedPath.startsWith(route));
+
     if (matches) {
       return module;
     }
@@ -89,8 +112,24 @@ export function moduleRequiredForRouteEdge(pathname: string): string | null {
   return null;
 }
 
-// Função para limpar o cache (útil após atualizações)
+export async function isRouteAllowedByModulesEdge(
+  pathname: string,
+  modules: string[] | undefined,
+  origin?: string,
+): Promise<boolean> {
+  if (!modules || modules.includes("*")) {
+    return true;
+  }
+
+  const requiredModule = await moduleRequiredForRouteEdge(pathname, origin);
+
+  if (!requiredModule) {
+    return true;
+  }
+
+  return modules.includes(requiredModule);
+}
+
 export function clearModuleMapCacheEdge(): void {
   moduleMapCache = null;
-  cacheTimestamp = 0;
 }

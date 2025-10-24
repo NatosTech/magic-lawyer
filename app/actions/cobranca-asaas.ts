@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import QRCode from "qrcode";
 
 import { authOptions } from "@/auth";
-import prisma from "@/lib/prisma";
+import prisma from "@/app/lib/prisma";
 import {
   AsaasClient,
   type AsaasCustomer,

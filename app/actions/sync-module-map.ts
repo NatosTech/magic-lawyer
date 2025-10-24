@@ -1,8 +1,6 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
-import { writeFileSync } from "fs";
-import { join } from "path";
 
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
@@ -50,11 +48,15 @@ export async function syncModuleMap(): Promise<{
     // Sistema agora é 100% dinâmico - não precisa gerar arquivo estático
 
     const totalModules = modulos.length;
-    const totalRoutes = modulos.reduce((acc, modulo) => acc + modulo.rotas.length, 0);
+    const totalRoutes = modulos.reduce(
+      (acc, modulo) => acc + modulo.rotas.length,
+      0,
+    );
 
     // Limpar cache do module-map dinâmico
     try {
       const { clearModuleMapCache } = await import("../lib/module-map");
+
       clearModuleMapCache();
     } catch (error) {
       console.warn("Erro ao limpar cache do module-map:", error);
@@ -63,7 +65,9 @@ export async function syncModuleMap(): Promise<{
     // Cache do Edge Runtime será atualizado automaticamente via revalidação
     // O fallback estático no module-map-edge.ts garante funcionamento
 
-    logger.info(`Module map sincronizado: ${totalModules} módulos, ${totalRoutes} rotas por usuário ${user.email}`);
+    logger.info(
+      `Module map sincronizado: ${totalModules} módulos, ${totalRoutes} rotas por usuário ${user.email}`,
+    );
 
     return {
       success: true,
@@ -75,6 +79,7 @@ export async function syncModuleMap(): Promise<{
     };
   } catch (error) {
     logger.error("Erro ao sincronizar module map:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -85,6 +90,7 @@ function generateModuleMapFile(modulos: any[]): string {
   const timestamp = new Date().toISOString();
 
   let content = `// ==================== AUTO-GENERATED FILE ====================\n`;
+
   content += `// Este arquivo é gerado automaticamente pelo sistema de administração\n`;
   content += `// Última atualização: ${timestamp}\n`;
   content += `// NÃO EDITE MANUALMENTE - Use a interface de administração\n\n`;
@@ -188,7 +194,10 @@ export async function getModuleMapStatus(): Promise<{
     }
 
     // Buscar estatísticas dos módulos
-    const [totalModules, totalRoutes] = await Promise.all([prisma.modulo.count({ where: { ativo: true } }), prisma.moduloRota.count({ where: { ativo: true } })]);
+    const [totalModules, totalRoutes] = await Promise.all([
+      prisma.modulo.count({ where: { ativo: true } }),
+      prisma.moduloRota.count({ where: { ativo: true } }),
+    ]);
 
     // Verificar se o arquivo existe e quando foi modificado
     const fs = require("fs");
@@ -200,10 +209,12 @@ export async function getModuleMapStatus(): Promise<{
 
     try {
       const stats = fs.statSync(filePath);
+
       lastSync = stats.mtime;
 
       // Verificar se precisa sincronizar (arquivo mais antigo que 1 hora)
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
       needsSync = lastSync < oneHourAgo;
     } catch (error) {
       // Arquivo não existe, precisa sincronizar
@@ -221,6 +232,7 @@ export async function getModuleMapStatus(): Promise<{
     };
   } catch (error) {
     logger.error("Erro ao verificar status do module map:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -255,6 +267,7 @@ export async function forceSyncModuleMap(): Promise<{
     return result;
   } catch (error) {
     logger.error("Erro ao forçar sincronização do module map:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }

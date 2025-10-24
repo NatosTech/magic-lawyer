@@ -37,7 +37,7 @@ function extractTenantFromDomain(host: string): string | null {
 }
 
 export default withAuth(
-  function middleware(req) {
+  async function middleware(req) {
     const token = req.nextauth.token;
     const isAuth = !!token;
     const isAuthPage = req.nextUrl.pathname.startsWith("/login");
@@ -49,6 +49,7 @@ export default withAuth(
     // Se detectamos um tenant pelo domínio, adicionar aos headers
     if (tenantFromDomain) {
       const response = NextResponse.next();
+
       response.headers.set("x-tenant-from-domain", tenantFromDomain);
     }
 
@@ -108,16 +109,35 @@ export default withAuth(
     }
 
     // Verificar se SuperAdmin está tentando acessar área comum (PROIBIR)
-    if (isAuth && !req.nextUrl.pathname.startsWith("/admin") && !req.nextUrl.pathname.startsWith("/api") && !req.nextUrl.pathname.startsWith("/login")) {
+    if (
+      isAuth &&
+      !req.nextUrl.pathname.startsWith("/admin") &&
+      !req.nextUrl.pathname.startsWith("/api") &&
+      !req.nextUrl.pathname.startsWith("/login")
+    ) {
       const userRole = (token as any)?.role;
       const isSuperAdmin = userRole === "SUPER_ADMIN";
 
       // SuperAdmin NÃO pode acessar rotas de usuário comum
       if (isSuperAdmin) {
         // Rotas que SuperAdmin NÃO pode acessar
-        const rotasProibidas = ["/dashboard", "/processos", "/documentos", "/agenda", "/financeiro", "/juizes", "/relatorios", "/equipe", "/help", "/configuracoes", "/usuario"];
+        const rotasProibidas = [
+          "/dashboard",
+          "/processos",
+          "/documentos",
+          "/agenda",
+          "/financeiro",
+          "/juizes",
+          "/relatorios",
+          "/equipe",
+          "/help",
+          "/configuracoes",
+          "/usuario",
+        ];
 
-        const isRotaProibida = rotasProibidas.some((rota) => req.nextUrl.pathname.startsWith(rota));
+        const isRotaProibida = rotasProibidas.some((rota) =>
+          req.nextUrl.pathname.startsWith(rota),
+        );
 
         if (isRotaProibida) {
           return NextResponse.redirect(new URL("/admin/dashboard", req.url));
@@ -126,13 +146,21 @@ export default withAuth(
     }
 
     // Verificar permissões de módulos para usuários comuns
-    if (isAuth && !req.nextUrl.pathname.startsWith("/admin") && !req.nextUrl.pathname.startsWith("/api")) {
+    if (
+      isAuth &&
+      !req.nextUrl.pathname.startsWith("/admin") &&
+      !req.nextUrl.pathname.startsWith("/api")
+    ) {
       const modules = (token as any)?.tenantModules as string[] | undefined;
       const role = (token as any)?.role;
 
       if (role !== "SUPER_ADMIN") {
         try {
-          const allowed = isRouteAllowedByModulesEdge(req.nextUrl.pathname, modules);
+          const allowed = await isRouteAllowedByModulesEdge(
+            req.nextUrl.pathname,
+            modules,
+            req.nextUrl.origin,
+          );
 
           if (!allowed) {
             return NextResponse.redirect(new URL("/dashboard", req.url));
@@ -153,7 +181,7 @@ export default withAuth(
         return true; // Deixamos o middleware acima fazer a lógica
       },
     },
-  }
+  },
 );
 
 export const config = {

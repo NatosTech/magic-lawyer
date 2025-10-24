@@ -3,8 +3,6 @@ import { useSession } from "next-auth/react";
 
 import { useUserPermissions } from "./use-user-permissions";
 
-import { moduleRequiredForRoute } from "@/app/lib/module-map";
-
 export interface NavigationItem {
   label: string;
   href: string;
@@ -73,28 +71,16 @@ export function useProfileNavigation() {
     | undefined;
 
   const hasModuleAccess = useCallback(
-    (href: string, required?: string[]) => {
-      if (required && required.length > 0) {
-        if (!grantedModules || grantedModules.includes("*")) {
-          return true;
-        }
-
-        if (required.some((module) => grantedModules.includes(module))) {
-          return true;
-        }
-      }
-
+    (_href: string, required?: string[]) => {
       if (!grantedModules || grantedModules.includes("*")) {
         return true;
       }
 
-      const inferredModule = await moduleRequiredForRoute(href);
-
-      if (!inferredModule) {
+      if (!required || required.length === 0) {
         return true;
       }
 
-      return grantedModules.includes(inferredModule);
+      return required.some((module) => grantedModules.includes(module));
     },
     [grantedModules],
   );

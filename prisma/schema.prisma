@@ -1724,6 +1724,22 @@ model ModuloRota {
   @@schema("magiclawyer")
 }
 
+model ModuleDetectionLog {
+  id             String   @id @default(cuid())
+  detectedAt     DateTime @default(now())
+  totalModules   Int
+  totalRoutes    Int
+  created        Int
+  updated        Int
+  removed        Int
+  filesystemHash String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([detectedAt])
+  @@schema("magiclawyer")
+}
+
 model PlanoModulo {
   id         String   @id @default(cuid())
   planoId    String

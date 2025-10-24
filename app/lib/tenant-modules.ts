@@ -1,7 +1,9 @@
 import prisma from "@/app/lib/prisma";
 import { getDefaultModules } from "@/app/lib/module-map";
 
-export async function getTenantAccessibleModules(tenantId: string): Promise<string[]> {
+export async function getTenantAccessibleModules(
+  tenantId: string,
+): Promise<string[]> {
   const subscription = await prisma.tenantSubscription.findUnique({
     where: { tenantId },
     include: {
@@ -47,6 +49,7 @@ export async function getTenantAccessibleModules(tenantId: string): Promise<stri
 
   if (!subscription) {
     console.log("[tenant-modules] Sem assinatura, retornando módulos padrão");
+
     return await getDefaultModules();
   }
 
@@ -72,25 +75,38 @@ export async function getTenantAccessibleModules(tenantId: string): Promise<stri
       : null);
 
   if (publishedVersion?.modulos?.length) {
-    const slugs = publishedVersion.modulos.filter((item) => item.modulo?.slug && item.modulo?.ativo).map((item) => item.modulo!.slug);
+    const slugs = publishedVersion.modulos
+      .filter((item) => item.modulo?.slug && item.modulo?.ativo)
+      .map((item) => item.modulo!.slug);
 
-    const result = slugs.length ? Array.from(new Set(slugs)) : await getDefaultModules();
+    const result = slugs.length
+      ? Array.from(new Set(slugs))
+      : await getDefaultModules();
+
     console.log("[tenant-modules] Retornando módulos da versão publicada:", {
       tenantId,
       planName: subscription.plano?.nome,
       versionNumber: publishedVersion.numero,
       modules: result,
     });
+
     return result;
   } else {
-    const fallbackSlugs = subscription.plano?.modulos.filter((item) => item.modulo?.slug && item.modulo?.ativo).map((item) => item.modulo!.slug) ?? [];
+    const fallbackSlugs =
+      subscription.plano?.modulos
+        .filter((item) => item.modulo?.slug && item.modulo?.ativo)
+        .map((item) => item.modulo!.slug) ?? [];
 
-    const result = fallbackSlugs.length ? Array.from(new Set(fallbackSlugs)) : await getDefaultModules();
+    const result = fallbackSlugs.length
+      ? Array.from(new Set(fallbackSlugs))
+      : await getDefaultModules();
+
     console.log("[tenant-modules] Retornando módulos do plano (fallback):", {
       tenantId,
       planName: subscription.plano?.nome,
       modules: result,
     });
+
     return result;
   }
 }
