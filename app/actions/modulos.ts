@@ -108,7 +108,7 @@ export async function listModulos(params?: { search?: string; categoria?: string
         include: {
           _count: {
             select: {
-              planos: true,
+              planoModulos: true,
               rotas: true,
             },
           },
@@ -160,16 +160,20 @@ export async function getModulo(id: string): Promise<ModuloDetailResponse> {
       include: {
         _count: {
           select: {
-            planos: true,
+            planoModulos: true,
             rotas: true,
           },
         },
-        planos: {
+        planoModulos: {
           select: {
-            id: true,
-            nome: true,
-            slug: true,
-            ativo: true,
+            plano: {
+              select: {
+                id: true,
+                nome: true,
+                slug: true,
+                ativo: true,
+              },
+            },
           },
         },
         rotas: {
@@ -188,6 +192,7 @@ export async function getModulo(id: string): Promise<ModuloDetailResponse> {
       success: true,
       data: {
         ...modulo,
+        planos: modulo.planoModulos.map((pm) => pm.plano),
         rotas: modulo.rotas.map((r) => r.rota),
       },
     };
@@ -352,10 +357,10 @@ export async function deleteModulo(id: string): Promise<{
     }
 
     // Verificar se está sendo usado em planos
-    if (existingModulo._count.planos > 0) {
+    if (existingModulo._count.planoModulos > 0) {
       return {
         success: false,
-        error: `Não é possível excluir este módulo pois ele está sendo usado por ${existingModulo._count.planos} plano(s)`,
+        error: `Não é possível excluir este módulo pois ele está sendo usado por ${existingModulo._count.planoModulos} plano(s)`,
       };
     }
 
@@ -459,10 +464,13 @@ export async function getDashboardModulos(): Promise<{
       prisma.modulo.count(),
       prisma.modulo.count({ where: { ativo: true } }),
       prisma.modulo.count({ where: { ativo: false } }),
-      prisma.modulo.count({
-        where: { categoria: { not: null } },
-        distinct: ["categoria"],
-      }),
+      prisma.modulo
+        .groupBy({
+          by: ["categoria"],
+          _count: { id: true },
+          where: { categoria: { not: null } },
+        })
+        .then((result) => result.length),
       prisma.modulo.findMany({
         select: {
           id: true,
@@ -470,12 +478,12 @@ export async function getDashboardModulos(): Promise<{
           slug: true,
           _count: {
             select: {
-              planos: true,
+              planoModulos: true,
             },
           },
         },
         orderBy: {
-          planos: {
+          planoModulos: {
             _count: "desc",
           },
         },
@@ -494,7 +502,7 @@ export async function getDashboardModulos(): Promise<{
           id: m.id,
           nome: m.nome,
           slug: m.slug,
-          count: m._count.planos,
+          count: m._count.planoModulos,
         })),
       },
     };

@@ -1,0 +1,444 @@
+"use server";
+
+import { promises as fs } from "fs";
+import path from "path";
+import { getServerSession } from "next-auth/next";
+import { revalidatePath } from "next/cache";
+
+import prisma from "@/app/lib/prisma";
+import { authOptions } from "@/auth";
+import logger from "@/lib/logger";
+import { ActionResponse } from "@/types/action-response";
+
+// ==================== TIPOS ====================
+export type DetectedModule = {
+  slug: string;
+  nome: string;
+  descricao: string;
+  categoria: string;
+  icone: string;
+  ordem: number;
+  ativo: boolean;
+  rotas: string[];
+};
+
+export type AutoDetectResponse = ActionResponse<{
+  detectedModules: DetectedModule[];
+  created: number;
+  updated: number;
+  removed: number;
+  total: number;
+}>;
+
+// ==================== CONFIGURAÇÕES ====================
+const PROTECTED_FOLDER = path.join(process.cwd(), "app", "(protected)");
+
+// Mapeamento de categorias por módulo
+const MODULE_CATEGORIES: Record<string, string> = {
+  // Core
+  dashboard: "Core",
+  processos: "Core",
+  clientes: "Core",
+  advogados: "Core",
+  equipe: "Core",
+  relatorios: "Core",
+
+  // Produtividade
+  agenda: "Produtividade",
+  documentos: "Produtividade",
+  tarefas: "Produtividade",
+  diligencias: "Produtividade",
+  andamentos: "Produtividade",
+
+  // Financeiro
+  financeiro: "Financeiro",
+  contratos: "Financeiro",
+  honorarios: "Financeiro",
+  parcelas: "Financeiro",
+  "dados-bancarios": "Financeiro",
+
+  // Documentos
+  peticoes: "Documentos",
+  procuracoes: "Documentos",
+  "modelos-peticao": "Documentos",
+  "modelos-procuracao": "Documentos",
+
+  // Jurídico
+  causas: "Jurídico",
+  juizes: "Jurídico",
+  "regimes-prazo": "Jurídico",
+
+  // Sistema
+  configuracoes: "Sistema",
+  usuario: "Sistema",
+  help: "Sistema",
+
+  // Teste
+  "teste-modulo": "Sistema",
+};
+
+// Mapeamento de ícones por categoria
+const CATEGORY_ICONS: Record<string, string> = {
+  Core: "ShieldIcon",
+  Produtividade: "ZapIcon",
+  Financeiro: "DollarSignIcon",
+  Documentos: "FileTextIcon",
+  Jurídico: "ScaleIcon",
+  Sistema: "SettingsIcon",
+};
+
+// Mapeamento de descrições por módulo
+const MODULE_DESCRIPTIONS: Record<string, string> = {
+  dashboard: "Painel principal com visão geral do escritório",
+  processos: "Gestão completa de processos jurídicos",
+  clientes: "Cadastro e gestão de clientes",
+  advogados: "Gestão de advogados e profissionais",
+  equipe: "Gestão de equipe e permissões",
+  agenda: "Calendário e gestão de compromissos",
+  documentos: "Upload e gestão de documentos",
+  tarefas: "Sistema de tarefas e lembretes",
+  diligencias: "Gestão de diligências processuais",
+  andamentos: "Acompanhamento de andamentos",
+  financeiro: "Gestão financeira completa",
+  contratos: "Criação e gestão de contratos",
+  honorarios: "Cálculo e controle de honorários",
+  parcelas: "Sistema de parcelas e pagamentos",
+  "dados-bancarios": "Gestão de dados bancários",
+  peticoes: "Criação e gestão de petições",
+  procuracoes: "Gestão de procurações",
+  "modelos-peticao": "Modelos de petições",
+  "modelos-procuracao": "Modelos de procurações",
+  causas: "Tipos de causas e áreas do direito",
+  juizes: "Base de dados de juízes",
+  "regimes-prazo": "Regimes de prazo processual",
+  relatorios: "Relatórios e exportações",
+  configuracoes: "Configurações do escritório",
+  usuario: "Perfil e configurações do usuário",
+  help: "Central de ajuda e suporte",
+  "teste-modulo": "Módulo de teste para validação do sistema",
+};
+
+// Mapeamento de ordem por categoria
+const CATEGORY_ORDER: Record<string, number> = {
+  Core: 1,
+  Produtividade: 2,
+  Financeiro: 3,
+  Documentos: 4,
+  Jurídico: 5,
+  Sistema: 6,
+};
+
+// ==================== FUNÇÕES AUXILIARES ====================
+async function checkSuperAdmin() {
+  const session = await getServerSession(authOptions);
+  const userRole = (session?.user as any)?.role;
+
+  if (!session || userRole !== "SUPER_ADMIN") {
+    throw new Error("Não autorizado: Apenas SuperAdmin pode realizar esta ação.");
+  }
+  return session.user;
+}
+
+function formatModuleName(slug: string): string {
+  return slug
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function getModuleRoutes(slug: string): string[] {
+  // Rotas básicas para cada módulo
+  const routes = [`/${slug}`];
+
+  // Rotas específicas por módulo
+  const specificRoutes: Record<string, string[]> = {
+    dashboard: ["/dashboard"],
+    processos: ["/processos", "/processos/novo", "/processos/[id]"],
+    clientes: ["/clientes", "/clientes/novo", "/clientes/[id]"],
+    advogados: ["/advogados", "/advogados/novo", "/advogados/[id]"],
+    equipe: ["/equipe", "/equipe/novo", "/equipe/[id]"],
+    agenda: ["/agenda", "/agenda/novo", "/agenda/[id]"],
+    documentos: ["/documentos", "/documentos/upload"],
+    tarefas: ["/tarefas", "/tarefas/nova"],
+    diligencias: ["/diligencias", "/diligencias/nova"],
+    andamentos: ["/andamentos", "/andamentos/novo"],
+    financeiro: ["/financeiro", "/financeiro/dashboard"],
+    contratos: ["/contratos", "/contratos/novo", "/contratos/[id]"],
+    honorarios: ["/honorarios", "/honorarios/calcular"],
+    parcelas: ["/parcelas", "/parcelas/nova"],
+    "dados-bancarios": ["/dados-bancarios", "/dados-bancarios/novo"],
+    peticoes: ["/peticoes", "/peticoes/nova"],
+    procuracoes: ["/procuracoes", "/procuracoes/nova"],
+    "modelos-peticao": ["/modelos-peticao", "/modelos-peticao/novo"],
+    "modelos-procuracao": ["/modelos-procuracao", "/modelos-procuracao/novo"],
+    causas: ["/causas", "/causas/nova"],
+    juizes: ["/juizes", "/juizes/novo"],
+    "regimes-prazo": ["/regimes-prazo", "/regimes-prazo/novo"],
+    relatorios: ["/relatorios", "/relatorios/gerar"],
+    configuracoes: ["/configuracoes"],
+    usuario: ["/usuario", "/usuario/perfil"],
+    help: ["/help", "/help/faq"],
+  };
+
+  return specificRoutes[slug] || routes;
+}
+
+// ==================== DETECÇÃO AUTOMÁTICA ====================
+export async function autoDetectModules(): Promise<AutoDetectResponse> {
+  try {
+    const user = await checkSuperAdmin();
+    logger.info(`Iniciando detecção automática de módulos por ${user.email}`);
+
+    // Ler diretório (protected)
+    const items = await fs.readdir(PROTECTED_FOLDER, { withFileTypes: true });
+
+    // Filtrar apenas diretórios (módulos)
+    const moduleDirs = items
+      .filter((item) => item.isDirectory())
+      .map((item) => item.name)
+      .filter((name) => !name.startsWith(".") && name !== "layout.tsx");
+
+    logger.info(`Módulos detectados no código: ${moduleDirs.join(", ")}`);
+
+    // Criar objetos de módulos detectados
+    const detectedModules: DetectedModule[] = moduleDirs.map((slug, index) => {
+      const categoria = MODULE_CATEGORIES[slug] || "Sistema";
+      const icone = CATEGORY_ICONS[categoria] || "PuzzleIcon";
+      const descricao = MODULE_DESCRIPTIONS[slug] || `Módulo ${formatModuleName(slug)}`;
+      const rotas = getModuleRoutes(slug);
+
+      return {
+        slug,
+        nome: formatModuleName(slug),
+        descricao,
+        categoria,
+        icone,
+        ordem: (CATEGORY_ORDER[categoria] || 99) * 100 + index,
+        ativo: true,
+        rotas,
+      };
+    });
+
+    // Buscar módulos existentes no banco
+    const existingModules = await prisma.modulo.findMany({
+      select: { id: true, slug: true },
+    });
+
+    const existingSlugs = new Set(existingModules.map((m) => m.slug));
+    const detectedSlugs = new Set(detectedModules.map((m) => m.slug));
+
+    let created = 0;
+    let updated = 0;
+    let removed = 0;
+
+    // Criar/Atualizar módulos detectados
+    for (const module of detectedModules) {
+      const existing = existingModules.find((m) => m.slug === module.slug);
+
+      if (existing) {
+        // Atualizar módulo existente
+        await prisma.modulo.update({
+          where: { id: existing.id },
+          data: {
+            nome: module.nome,
+            descricao: module.descricao,
+            categoria: module.categoria,
+            icone: module.icone,
+            ordem: module.ordem,
+            ativo: module.ativo,
+          },
+        });
+        updated++;
+      } else {
+        // Criar novo módulo
+        await prisma.modulo.create({
+          data: {
+            slug: module.slug,
+            nome: module.nome,
+            descricao: module.descricao,
+            categoria: module.categoria,
+            icone: module.icone,
+            ordem: module.ordem,
+            ativo: module.ativo,
+          },
+        });
+        created++;
+      }
+
+      // Criar/Atualizar rotas do módulo
+      await syncModuleRoutes(module.slug, module.rotas);
+    }
+
+    // Remover módulos que não existem mais no código
+    const modulesToRemove = existingModules.filter((m) => !detectedSlugs.has(m.slug));
+
+    for (const module of modulesToRemove) {
+      // Verificar se está sendo usado por planos
+      const planUsage = await prisma.planoModulo.count({
+        where: { moduloId: module.id },
+      });
+
+      if (planUsage === 0) {
+        // Remover rotas primeiro
+        await prisma.moduloRota.deleteMany({
+          where: { moduloId: module.id },
+        });
+
+        // Remover módulo
+        await prisma.modulo.delete({
+          where: { id: module.id },
+        });
+
+        removed++;
+        logger.info(`Módulo removido: ${module.slug} (não existe mais no código)`);
+      } else {
+        logger.warn(`Módulo ${module.slug} não pode ser removido pois está sendo usado por ${planUsage} plano(s)`);
+      }
+    }
+
+    logger.info(`Detecção automática concluída: ${created} criados, ${updated} atualizados, ${removed} removidos`);
+
+    // Salvar timestamp da última detecção
+    try {
+      const controlFile = path.join(process.cwd(), "tmp", "last-auto-detect.json");
+      await fs.mkdir(path.dirname(controlFile), { recursive: true });
+      await fs.writeFile(
+        controlFile,
+        JSON.stringify({
+          lastDetection: new Date().toISOString(),
+          totalModules: detectedModules.length,
+          created,
+          updated,
+          removed,
+        })
+      );
+    } catch (error) {
+      logger.warn("Erro ao salvar arquivo de controle:", error);
+      // Não falhar por causa disso
+    }
+
+    // 3. Limpar cache do module-map dinâmico
+    try {
+      const { clearModuleMapCache } = await import("../lib/module-map");
+      clearModuleMapCache();
+      logger.info("✅ Cache do module-map limpo automaticamente");
+    } catch (error) {
+      logger.warn("⚠️ Erro ao limpar cache do module-map:", error.message);
+    }
+
+    // Forçar revalidação de todas as páginas relacionadas
+    revalidatePath("/admin/modulos");
+    revalidatePath("/admin/modulo-rotas");
+    revalidatePath("/admin/planos");
+
+    return {
+      success: true,
+      data: {
+        detectedModules,
+        created,
+        updated,
+        removed,
+        total: detectedModules.length,
+      },
+    };
+  } catch (error: any) {
+    logger.error("Erro na detecção automática de módulos:", error);
+    return {
+      success: false,
+      error: error.message || "Erro na detecção automática de módulos",
+    };
+  }
+}
+
+// ==================== SINCRONIZAÇÃO DE ROTAS ====================
+async function syncModuleRoutes(slug: string, routes: string[]): Promise<void> {
+  try {
+    // Buscar módulo
+    const modulo = await prisma.modulo.findUnique({
+      where: { slug },
+    });
+
+    if (!modulo) return;
+
+    // Buscar rotas existentes
+    const existingRoutes = await prisma.moduloRota.findMany({
+      where: { moduloId: modulo.id },
+    });
+
+    const existingRoutePaths = new Set(existingRoutes.map((r) => r.rota));
+    const newRoutePaths = new Set(routes);
+
+    // Adicionar novas rotas
+    const routesToAdd = routes.filter((route) => !existingRoutePaths.has(route));
+    for (const route of routesToAdd) {
+      await prisma.moduloRota.create({
+        data: {
+          moduloId: modulo.id,
+          rota: route,
+          descricao: `Rota para ${slug}`,
+          ativo: true,
+        },
+      });
+    }
+
+    // Remover rotas que não existem mais
+    const routesToRemove = existingRoutes.filter((r) => !newRoutePaths.has(r.rota));
+    for (const route of routesToRemove) {
+      await prisma.moduloRota.delete({
+        where: { id: route.id },
+      });
+    }
+  } catch (error) {
+    logger.error(`Erro ao sincronizar rotas do módulo ${slug}:`, error);
+  }
+}
+
+// ==================== STATUS DA DETECÇÃO ====================
+export async function getAutoDetectStatus(): Promise<
+  ActionResponse<{
+    lastDetection: Date | null;
+    totalModules: number;
+    totalRoutes: number;
+    needsSync: boolean;
+  }>
+> {
+  try {
+    await checkSuperAdmin();
+
+    // Buscar estatísticas
+    const [totalModules, totalRoutes] = await Promise.all([prisma.modulo.count(), prisma.moduloRota.count()]);
+
+    // Verificar se precisa sincronizar (arquivo de controle)
+    const controlFile = path.join(process.cwd(), "tmp", "last-auto-detect.json");
+    let lastDetection: Date | null = null;
+    let needsSync = true;
+
+    try {
+      const data = JSON.parse(await fs.readFile(controlFile, "utf8"));
+      lastDetection = new Date(data.lastDetection);
+
+      // Verificar se o diretório foi modificado
+      const stats = await fs.stat(PROTECTED_FOLDER);
+      needsSync = stats.mtime > lastDetection;
+    } catch {
+      // Arquivo não existe ou erro na leitura
+      needsSync = true;
+    }
+
+    return {
+      success: true,
+      data: {
+        lastDetection,
+        totalModules,
+        totalRoutes,
+        needsSync,
+      },
+    };
+  } catch (error: any) {
+    logger.error("Erro ao obter status da detecção automática:", error);
+    return {
+      success: false,
+      error: error.message || "Erro ao obter status da detecção automática",
+    };
+  }
+}

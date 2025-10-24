@@ -88,7 +88,7 @@ export function useProfileNavigation() {
         return true;
       }
 
-      const inferredModule = moduleRequiredForRoute(href);
+      const inferredModule = await moduleRequiredForRoute(href);
 
       if (!inferredModule) {
         return true;

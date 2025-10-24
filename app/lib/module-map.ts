@@ -1,88 +1,97 @@
-export const MODULE_ROUTE_MAP: Record<string, string[]> = {
-  "dashboard-geral": ["/dashboard"],
-  "processos-gerais": ["/processos", "/andamentos"],
-  "clientes-gerais": ["/clientes"],
-  "agenda-compromissos": ["/agenda"],
-  "documentos-gerais": ["/documentos", "/peticoes", "/peticoes/modelos", "/modelos-peticao", "/documentos-upload"],
-  "modelos-documentos": ["/peticoes/modelos", "/modelos-peticao", "/modelos-procuracao", "/contratos/modelos", "/documentos/modelos"],
-  "tarefas-kanban": ["/tarefas", "/tarefas/kanban"],
-  "financeiro-completo": ["/financeiro", "/dashboard/financeiro", "/honorarios", "/parcelas", "/financeiro/recibos", "/financeiro/comissoes"],
-  "gestao-equipe": ["/equipe", "/advogados"],
-  "relatorios-basicos": ["/relatorios"],
-  "contratos-honorarios": ["/contratos"],
-  procuracoes: ["/procuracoes"],
-  "processos-avancados": ["/causas", "/diligencias", "/regimes-prazo"],
-  "base-juizes": ["/juizes"],
-  "comissoes-advogados": ["/financeiro/comissoes"],
-  "notificacoes-avancadas": ["/help"],
-  "integracoes-externas": ["/integracoes"],
-  "analytics-avancado": ["/relatorios/analytics"],
-};
+// ==================== DYNAMIC MODULE MAP ====================
+// Este arquivo agora é 100% dinâmico baseado no banco de dados
+// NÃO EDITE MANUALMENTE - Use a interface de administração
 
-export const DEFAULT_MODULES = Object.keys(MODULE_ROUTE_MAP);
+import prisma from "./prisma";
 
-export function isRouteAllowedByModules(pathname: string, modules?: string[]) {
-  console.log("[module-map] Verificando acesso à rota:", {
-    pathname,
-    modules,
-    hasModules: !!modules,
-    hasWildcard: modules?.includes("*"),
-  });
+// Cache para performance
+let moduleMapCache: Record<string, string[]> | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
-  if (!modules || modules.includes("*")) {
-    console.log("[module-map] Acesso liberado - sem módulos ou wildcard");
-    return true;
+export async function getModuleRouteMap(): Promise<Record<string, string[]>> {
+  const now = Date.now();
+
+  // Verificar se o cache ainda é válido
+  if (moduleMapCache && now - cacheTimestamp < CACHE_DURATION) {
+    return moduleMapCache;
   }
 
-  const normalizedPath = pathname.replace(/\/$/, "");
-
-  // Verificar se a rota está mapeada para algum módulo
-  const requiredModule = moduleRequiredForRoute(normalizedPath);
-
-  console.log("[module-map] Módulo necessário para rota:", {
-    pathname: normalizedPath,
-    requiredModule,
-  });
-
-  // Se a rota não está mapeada para nenhum módulo, liberar acesso
-  if (!requiredModule) {
-    console.log("[module-map] Rota não mapeada - acesso liberado");
-    return true;
-  }
-
-  // Se a rota está mapeada, verificar se o usuário tem o módulo necessário
-  const hasModule = modules.includes(requiredModule);
-  console.log("[module-map] Verificação final:", {
-    requiredModule,
-    hasModule,
-    modules,
-  });
-
-  return hasModule;
-}
-
-export function moduleRequiredForRoute(pathname: string): string | null {
-  const normalizedPath = pathname.replace(/\/$/, "");
-
-  console.log("[module-map] Buscando módulo para rota:", {
-    pathname,
-    normalizedPath,
-  });
-
-  for (const [module, routes] of Object.entries(MODULE_ROUTE_MAP)) {
-    const matches = routes.some((route) => normalizedPath.startsWith(route));
-    console.log("[module-map] Verificando módulo:", {
-      module,
-      routes,
-      matches,
+  try {
+    // Buscar módulos ativos e suas rotas do banco
+    const modulos = await prisma.modulo.findMany({
+      where: { ativo: true },
+      include: {
+        rotas: {
+          where: { ativo: true },
+          select: { rota: true },
+        },
+      },
+      orderBy: { ordem: "asc" },
     });
 
-    if (matches) {
-      console.log("[module-map] Módulo encontrado:", module);
-      return module;
+    // Construir o mapa de rotas
+    const moduleMap: Record<string, string[]> = {};
+
+    for (const modulo of modulos) {
+      moduleMap[modulo.slug] = modulo.rotas.map((r: any) => r.rota);
     }
+
+    // Atualizar cache
+    moduleMapCache = moduleMap;
+    cacheTimestamp = now;
+
+    return moduleMap;
+  } catch (error) {
+    console.error("Erro ao buscar módulos do banco:", error);
+    // Retornar cache antigo se disponível
+    return moduleMapCache || {};
+  }
+}
+
+export async function getDefaultModules(): Promise<string[]> {
+  const moduleMap = await getModuleRouteMap();
+  return Object.keys(moduleMap);
+}
+
+export async function isRouteAllowedByModules(pathname: string, modules?: string[]) {
+  if (!modules || modules.includes("*")) {
+    return true;
   }
 
-  console.log("[module-map] Nenhum módulo encontrado para rota:", normalizedPath);
-  return null;
+  const normalizedPath = pathname.replace(/\/$/, "");
+
+  const requiredModule = await moduleRequiredForRoute(normalizedPath);
+
+  if (!requiredModule) {
+    return true;
+  }
+
+  return modules.includes(requiredModule);
+}
+
+export async function moduleRequiredForRoute(pathname: string): Promise<string | null> {
+  const normalizedPath = pathname.replace(/\/$/, "");
+
+  try {
+    const moduleMap = await getModuleRouteMap();
+
+    for (const [module, routes] of Object.entries(moduleMap)) {
+      const matches = routes.some((route) => normalizedPath.startsWith(route));
+      if (matches) {
+        return module;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Erro ao verificar módulo necessário para rota:", error);
+    return null;
+  }
+}
+
+// Função para limpar o cache (útil após atualizações)
+export function clearModuleMapCache(): void {
+  moduleMapCache = null;
+  cacheTimestamp = 0;
 }

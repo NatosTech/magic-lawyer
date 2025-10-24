@@ -1702,8 +1702,25 @@ model Modulo {
   updatedAt     DateTime            @updatedAt
   planoModulos  PlanoModulo[]
   versaoModulos PlanoVersaoModulo[]
+  rotas         ModuloRota[]
 
   @@index([categoria])
+  @@schema("magiclawyer")
+}
+
+model ModuloRota {
+  id        String   @id @default(cuid())
+  moduloId  String
+  rota      String
+  descricao String?
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  modulo    Modulo   @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+
+  @@unique([moduloId, rota])
+  @@index([moduloId])
+  @@index([rota])
   @@schema("magiclawyer")
 }
 

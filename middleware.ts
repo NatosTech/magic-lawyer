@@ -1,7 +1,7 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
-import { isRouteAllowedByModules } from "@/app/lib/module-map";
+import { isRouteAllowedByModulesEdge } from "@/app/lib/module-map-edge";
 
 // Função para extrair tenant do domínio
 function extractTenantFromDomain(host: string): string | null {
@@ -131,10 +131,15 @@ export default withAuth(
       const role = (token as any)?.role;
 
       if (role !== "SUPER_ADMIN") {
-        const allowed = isRouteAllowedByModules(req.nextUrl.pathname, modules);
+        try {
+          const allowed = isRouteAllowedByModulesEdge(req.nextUrl.pathname, modules);
 
-        if (!allowed) {
-          return NextResponse.redirect(new URL("/dashboard", req.url));
+          if (!allowed) {
+            return NextResponse.redirect(new URL("/dashboard", req.url));
+          }
+        } catch (error) {
+          console.error("Erro ao verificar permissões de módulos:", error);
+          // Em caso de erro, permitir acesso (fail-safe)
         }
       }
     }

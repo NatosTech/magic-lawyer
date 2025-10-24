@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import prisma from "@/app/lib/prisma";
 import { getTenantAccessibleModules } from "@/app/lib/tenant-modules";
-import { MODULE_ROUTE_MAP } from "@/app/lib/module-map";
+import { getModuleRouteMap } from "@/app/lib/module-map";
 import logger from "@/lib/logger";
 
 export interface TenantConfigData {
@@ -196,7 +196,8 @@ export async function getTenantConfigData(): Promise<{
 
     // Buscar módulos acessíveis
     const accessibleModules = await getTenantAccessibleModules(tenantId);
-    const allAvailableModules = Object.keys(MODULE_ROUTE_MAP);
+    const moduleRouteMap = await getModuleRouteMap();
+    const allAvailableModules = Object.keys(moduleRouteMap);
 
     // Criar detalhes dos módulos
     const moduleDetails = allAvailableModules.map((slug) => ({
@@ -204,7 +205,7 @@ export async function getTenantConfigData(): Promise<{
       name: MODULE_NAMES[slug]?.name || slug,
       description: MODULE_NAMES[slug]?.description || "Módulo do sistema",
       accessible: accessibleModules.includes(slug),
-      routes: MODULE_ROUTE_MAP[slug] || [],
+      routes: moduleRouteMap[slug] || [],
     }));
 
     const data: TenantConfigData = {

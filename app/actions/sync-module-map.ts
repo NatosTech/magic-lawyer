@@ -32,9 +32,11 @@ export async function syncModuleMap(): Promise<{
       return { success: false, error: "Acesso negado" };
     }
 
-    // Buscar todos os módulos com suas rotas
+    // Buscar TODOS os módulos ativos do banco (100% dinâmico)
     const modulos = await prisma.modulo.findMany({
-      where: { ativo: true },
+      where: {
+        ativo: true,
+      },
       include: {
         rotas: {
           where: { ativo: true },
@@ -45,16 +47,21 @@ export async function syncModuleMap(): Promise<{
     });
 
     // Gerar o conteúdo do arquivo
-    const moduleMapContent = generateModuleMapFile(modulos);
-
-    // Caminho do arquivo
-    const filePath = join(process.cwd(), "app/lib/module-map.ts");
-
-    // Escrever o arquivo
-    writeFileSync(filePath, moduleMapContent, "utf8");
+    // Sistema agora é 100% dinâmico - não precisa gerar arquivo estático
 
     const totalModules = modulos.length;
     const totalRoutes = modulos.reduce((acc, modulo) => acc + modulo.rotas.length, 0);
+
+    // Limpar cache do module-map dinâmico
+    try {
+      const { clearModuleMapCache } = await import("../lib/module-map");
+      clearModuleMapCache();
+    } catch (error) {
+      console.warn("Erro ao limpar cache do module-map:", error);
+    }
+
+    // Cache do Edge Runtime será atualizado automaticamente via revalidação
+    // O fallback estático no module-map-edge.ts garante funcionamento
 
     logger.info(`Module map sincronizado: ${totalModules} módulos, ${totalRoutes} rotas por usuário ${user.email}`);
 
@@ -63,7 +70,7 @@ export async function syncModuleMap(): Promise<{
       data: {
         totalModules,
         totalRoutes,
-        generatedFile: filePath,
+        message: "Cache do module-map limpo - sistema 100% dinâmico",
       },
     };
   } catch (error) {
@@ -93,7 +100,7 @@ function generateModuleMapFile(modulos: any[]): string {
 
   content += `};\n\n`;
 
-  content += `export const DEFAULT_MODULES = Object.keys(MODULE_ROUTE_MAP);\n\n`;
+  // DEFAULT_MODULES agora é uma função assíncrona getDefaultModules()
 
   // Função isRouteAllowedByModules
   content += `export function isRouteAllowedByModules(pathname: string, modules?: string[]) {\n`;
