@@ -31,6 +31,18 @@ export function useAdminNavigation() {
         description: "Controle de planos e módulos liberados",
       },
       {
+        label: "Módulos",
+        href: "/admin/modulos",
+        icon: "Puzzle",
+        description: "Gestão de módulos do sistema",
+      },
+      {
+        label: "Rotas de Módulos",
+        href: "/admin/modulo-rotas",
+        icon: "Route",
+        description: "Mapeamento de rotas por módulo",
+      },
+      {
         label: "Juízes Globais",
         href: "/admin/juizes",
         icon: "Scale",

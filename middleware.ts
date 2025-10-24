@@ -49,12 +49,7 @@ export default withAuth(
     // Se detectamos um tenant pelo domínio, adicionar aos headers
     if (tenantFromDomain) {
       const response = NextResponse.next();
-
       response.headers.set("x-tenant-from-domain", tenantFromDomain);
-
-      // Para páginas que precisam do tenant, vamos continuar o processamento
-      // mas com o tenant disponível nos headers
-      return response;
     }
 
     // Se não está logado e não está na página de login, redireciona para login
@@ -113,35 +108,16 @@ export default withAuth(
     }
 
     // Verificar se SuperAdmin está tentando acessar área comum (PROIBIR)
-    if (
-      isAuth &&
-      !req.nextUrl.pathname.startsWith("/admin") &&
-      !req.nextUrl.pathname.startsWith("/api") &&
-      !req.nextUrl.pathname.startsWith("/login")
-    ) {
+    if (isAuth && !req.nextUrl.pathname.startsWith("/admin") && !req.nextUrl.pathname.startsWith("/api") && !req.nextUrl.pathname.startsWith("/login")) {
       const userRole = (token as any)?.role;
       const isSuperAdmin = userRole === "SUPER_ADMIN";
 
       // SuperAdmin NÃO pode acessar rotas de usuário comum
       if (isSuperAdmin) {
         // Rotas que SuperAdmin NÃO pode acessar
-        const rotasProibidas = [
-          "/dashboard",
-          "/processos",
-          "/documentos",
-          "/agenda",
-          "/financeiro",
-          "/juizes",
-          "/relatorios",
-          "/equipe",
-          "/help",
-          "/configuracoes",
-          "/usuario",
-        ];
+        const rotasProibidas = ["/dashboard", "/processos", "/documentos", "/agenda", "/financeiro", "/juizes", "/relatorios", "/equipe", "/help", "/configuracoes", "/usuario"];
 
-        const isRotaProibida = rotasProibidas.some((rota) =>
-          req.nextUrl.pathname.startsWith(rota),
-        );
+        const isRotaProibida = rotasProibidas.some((rota) => req.nextUrl.pathname.startsWith(rota));
 
         if (isRotaProibida) {
           return NextResponse.redirect(new URL("/admin/dashboard", req.url));
@@ -149,11 +125,8 @@ export default withAuth(
       }
     }
 
-    if (
-      isAuth &&
-      !req.nextUrl.pathname.startsWith("/admin") &&
-      !req.nextUrl.pathname.startsWith("/api")
-    ) {
+    // Verificar permissões de módulos para usuários comuns
+    if (isAuth && !req.nextUrl.pathname.startsWith("/admin") && !req.nextUrl.pathname.startsWith("/api")) {
       const modules = (token as any)?.tenantModules as string[] | undefined;
       const role = (token as any)?.role;
 
@@ -175,7 +148,7 @@ export default withAuth(
         return true; // Deixamos o middleware acima fazer a lógica
       },
     },
-  },
+  }
 );
 
 export const config = {
