@@ -40,7 +40,13 @@ export interface ModuloRotaWithModulo {
 
 // ==================== LISTAR ROTAS ====================
 
-export async function listModuloRotas(params?: { moduloId?: string; search?: string; ativo?: boolean; limit?: number; offset?: number }): Promise<{
+export async function listModuloRotas(params?: {
+  moduloId?: string;
+  search?: string;
+  ativo?: boolean;
+  limit?: number;
+  offset?: number;
+}): Promise<{
   success: boolean;
   data?: {
     rotas: ModuloRotaWithModulo[];
@@ -70,7 +76,11 @@ export async function listModuloRotas(params?: { moduloId?: string; search?: str
     }
 
     if (search) {
-      where.OR = [{ rota: { contains: search, mode: "insensitive" } }, { descricao: { contains: search, mode: "insensitive" } }, { modulo: { nome: { contains: search, mode: "insensitive" } } }];
+      where.OR = [
+        { rota: { contains: search, mode: "insensitive" } },
+        { descricao: { contains: search, mode: "insensitive" } },
+        { modulo: { nome: { contains: search, mode: "insensitive" } } },
+      ];
     }
 
     if (ativo !== undefined) {
@@ -105,6 +115,7 @@ export async function listModuloRotas(params?: { moduloId?: string; search?: str
     };
   } catch (error) {
     logger.error("Erro ao listar rotas de módulos:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -152,6 +163,7 @@ export async function getModuloRota(id: string): Promise<{
     };
   } catch (error) {
     logger.error("Erro ao obter rota de módulo:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -194,7 +206,10 @@ export async function createModuloRota(input: ModuloRotaCreateInput): Promise<{
     });
 
     if (existingRota) {
-      return { success: false, error: "Já existe uma rota com este path para este módulo" };
+      return {
+        success: false,
+        error: "Já existe uma rota com este path para este módulo",
+      };
     }
 
     const rota = await prisma.moduloRota.create({
@@ -206,14 +221,16 @@ export async function createModuloRota(input: ModuloRotaCreateInput): Promise<{
       },
     });
 
-    logger.info(`Rota de módulo criada: ${rota.rota} para módulo ${modulo.slug} por usuário ${user.email}`);
+    logger.info(
+      `Rota de módulo criada: ${rota.rota} para módulo ${modulo.slug} por usuário ${user.email}`,
+    );
 
     revalidatePath("/admin/modulos");
-    revalidatePath("/admin/modulo-rotas");
 
     return { success: true, data: rota };
   } catch (error) {
     logger.error("Erro ao criar rota de módulo:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -222,7 +239,7 @@ export async function createModuloRota(input: ModuloRotaCreateInput): Promise<{
 
 export async function updateModuloRota(
   id: string,
-  input: ModuloRotaUpdateInput
+  input: ModuloRotaUpdateInput,
 ): Promise<{
   success: boolean;
   data?: any;
@@ -268,7 +285,10 @@ export async function updateModuloRota(
       });
 
       if (conflictingRota) {
-        return { success: false, error: "Já existe uma rota com este path para este módulo" };
+        return {
+          success: false,
+          error: "Já existe uma rota com este path para este módulo",
+        };
       }
     }
 
@@ -281,14 +301,16 @@ export async function updateModuloRota(
       },
     });
 
-    logger.info(`Rota de módulo atualizada: ${rota.rota} para módulo ${existingRota.modulo.slug} por usuário ${user.email}`);
+    logger.info(
+      `Rota de módulo atualizada: ${rota.rota} para módulo ${existingRota.modulo.slug} por usuário ${user.email}`,
+    );
 
     revalidatePath("/admin/modulos");
-    revalidatePath("/admin/modulo-rotas");
 
     return { success: true, data: rota };
   } catch (error) {
     logger.error("Erro ao atualizar rota de módulo:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -333,14 +355,16 @@ export async function deleteModuloRota(id: string): Promise<{
       where: { id },
     });
 
-    logger.info(`Rota de módulo deletada: ${existingRota.rota} do módulo ${existingRota.modulo.slug} por usuário ${user.email}`);
+    logger.info(
+      `Rota de módulo deletada: ${existingRota.rota} do módulo ${existingRota.modulo.slug} por usuário ${user.email}`,
+    );
 
     revalidatePath("/admin/modulos");
-    revalidatePath("/admin/modulo-rotas");
 
     return { success: true };
   } catch (error) {
     logger.error("Erro ao deletar rota de módulo:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -378,14 +402,16 @@ export async function toggleModuloRotaStatus(id: string): Promise<{
       data: { ativo: !rota.ativo },
     });
 
-    logger.info(`Status da rota alterado: ${rota.rota} para ${updatedRota.ativo ? "ativa" : "inativa"} por usuário ${user.email}`);
+    logger.info(
+      `Status da rota alterado: ${rota.rota} para ${updatedRota.ativo ? "ativa" : "inativa"} por usuário ${user.email}`,
+    );
 
     revalidatePath("/admin/modulos");
-    revalidatePath("/admin/modulo-rotas");
 
     return { success: true, data: updatedRota };
   } catch (error) {
     logger.error("Erro ao alterar status da rota:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -394,7 +420,7 @@ export async function toggleModuloRotaStatus(id: string): Promise<{
 
 export async function createBulkModuloRotas(
   moduloId: string,
-  rotas: string[]
+  rotas: string[],
 ): Promise<{
   success: boolean;
   data?: any[];
@@ -435,7 +461,10 @@ export async function createBulkModuloRotas(
     const newRotas = rotas.filter((rota) => !existingRotasSet.has(rota));
 
     if (newRotas.length === 0) {
-      return { success: false, error: "Todas as rotas já existem para este módulo" };
+      return {
+        success: false,
+        error: "Todas as rotas já existem para este módulo",
+      };
     }
 
     // Criar as novas rotas
@@ -447,14 +476,16 @@ export async function createBulkModuloRotas(
       })),
     });
 
-    logger.info(`${createdRotas.count} rotas criadas para módulo ${modulo.slug} por usuário ${user.email}`);
+    logger.info(
+      `${createdRotas.count} rotas criadas para módulo ${modulo.slug} por usuário ${user.email}`,
+    );
 
     revalidatePath("/admin/modulos");
-    revalidatePath("/admin/modulo-rotas");
 
     return { success: true, data: newRotas };
   } catch (error) {
     logger.error("Erro ao criar rotas em lote:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
