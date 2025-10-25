@@ -79,6 +79,7 @@ model Tenant {
   statusChangedAt       DateTime?
   sessionVersion        Int                    @default(1)
   planRevision          Int                    @default(1)
+  tenantSoftVersion     Int                    @default(1)
   tipoPessoa            TipoPessoa             @default(JURIDICA)
   documento             String?                @unique
   razaoSocial           String?

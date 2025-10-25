@@ -3,6 +3,8 @@
 import { useEffect, useCallback, useRef, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
+import { useRealtime } from "@/app/providers/realtime-provider";
+import type { RealtimeEvent } from "@/app/lib/realtime/types";
 
 interface SessionGuardOptions {
   /**
@@ -39,11 +41,12 @@ interface SessionGuardResult {
  * Se a sessão estiver invalidada, redireciona para /login com o motivo.
  */
 export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuardResult {
-  const { interval = 5, publicRoutes = ["/login", "/", "/about", "/precos"] } = options; // Reduzido para 5s
+  const { interval = 30, publicRoutes = ["/login", "/", "/about", "/precos"] } = options; // Aumentado para 30s (fallback se WebSocket falhar)
 
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const realtime = useRealtime();
 
   // Flag para impedir revalidações repetidas
   const revokedRef = useRef(false);
@@ -153,7 +156,59 @@ export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuard
   }, [session, sessionStatus, isPublicRoute, router]);
 
   /**
-   * Efeito para configurar verificação periódica
+   * Função para forçar logout quando evento hard é recebido
+   */
+  const forceLogout = useCallback(
+    async (reason: string) => {
+      if (revokedRef.current) {
+        console.log("[useSessionGuard] ⚠️ Logout ignorado (já revogada)");
+        return;
+      }
+
+      console.log("[useSessionGuard] 🔒 Evento WebSocket detectou revogação:", reason);
+      revokedRef.current = true;
+      setIsRevoked(true);
+
+      await signOut({ redirect: false });
+
+      setTimeout(() => {
+        router.replace(`/login?reason=${reason}`);
+      }, 100);
+    },
+    [router]
+  );
+
+  /**
+   * Listener para eventos WebSocket (realtime)
+   */
+  useEffect(() => {
+    if (sessionStatus !== "authenticated" || !session?.user || isPublicRoute || revokedRef.current || isRevoked) {
+      return;
+    }
+
+    console.log("[useSessionGuard] 📡 Registrando listener WebSocket para tenant-status");
+
+    // Subscribe em eventos tenant-status (hard logout)
+    const unsubscribe = realtime.subscribe("tenant-status", (event: RealtimeEvent) => {
+      console.log("[useSessionGuard] 📨 Evento tenant-status recebido:", event);
+
+      const payload = event.payload as any;
+
+      // Se tenant ou usuário foi desativado, fazer logout
+      if (payload.status === "SUSPENDED" || payload.status === "CANCELLED") {
+        forceLogout(payload.status === "SUSPENDED" ? "TENANT_SUSPENDED" : "TENANT_CANCELLED");
+      }
+    });
+
+    // Cleanup
+    return () => {
+      console.log("[useSessionGuard] 📡 Removendo listener WebSocket");
+      unsubscribe();
+    };
+  }, [sessionStatus, session, isPublicRoute, realtime, forceLogout, isRevoked]);
+
+  /**
+   * Efeito para configurar verificação periódica (fallback se WebSocket falhar)
    */
   useEffect(() => {
     // Não fazer verificação se não estiver autenticado ou em rota pública
