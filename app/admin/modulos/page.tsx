@@ -72,7 +72,7 @@ import {
 import { toast } from "sonner";
 
 import { listModulos, getDashboardModulos } from "@/app/actions/modulos";
-import { syncModuleMap, getModuleMapStatus } from "@/app/actions/sync-module-map";
+import { getModuleMapStatus } from "@/app/actions/sync-module-map";
 import { autoDetectModules, getAutoDetectStatus } from "@/app/actions/auto-detect-modules";
 import { getCategoryIcon, getCategoryColor, getCategoryClasses } from "@/app/lib/category-utils";
 
@@ -100,6 +100,23 @@ export default function ModulosAdminPage() {
     refreshInterval: 30000,
   });
 
+  // Execução automática quando necessário
+  useSWR(
+    autoDetectStatusData?.data?.needsSync ? "auto-sync" : null,
+    async () => {
+      if (autoDetectStatusData?.data?.needsSync && !loading) {
+        console.log("🔄 Executando sincronização automática...");
+        await handleAutoDetect();
+      }
+      return null;
+    },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshInterval: 0,
+    }
+  );
+
   const modulos = modulosData?.data?.modulos || [];
   const dashboard = dashboardData?.data;
   const syncStatus = syncStatusData?.data;
@@ -114,23 +131,6 @@ export default function ModulosAdminPage() {
     onRoutesModalOpen();
   };
 
-  const handleSyncModuleMap = async () => {
-    setLoading(true);
-    try {
-      const result = await syncModuleMap();
-
-      if (result.success) {
-        toast.success("Module map sincronizado com sucesso!");
-      } else {
-        toast.error(result.error || "Erro ao sincronizar");
-      }
-    } catch (error) {
-      toast.error("Erro interno do servidor");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleAutoDetect = async () => {
     setLoading(true);
     try {
@@ -139,7 +139,7 @@ export default function ModulosAdminPage() {
       if (result.success) {
         const { created, updated, removed, total, totalRoutes } = result.data!;
 
-        toast.success(`Detecção automática concluída! ${created} criados, ${updated} atualizados, ${removed} removidos. Total: ${total} módulos / ${totalRoutes} rotas.`);
+        toast.success(`🚀 Sistema sincronizado! ${created} criados, ${updated} atualizados, ${removed} removidos. Total: ${total} módulos / ${totalRoutes} rotas.`);
 
         // Forçar atualização de todos os caches
         await Promise.all([mutateModulos(), mutateCache("dashboard-modulos"), mutateCache("module-map-status"), mutateCache("auto-detect-status")]);
@@ -149,7 +149,7 @@ export default function ModulosAdminPage() {
           window.location.reload();
         }, 1000);
       } else {
-        toast.error(result.error || "Erro na detecção automática");
+        toast.error(result.error || "Erro na sincronização");
       }
     } catch (error) {
       toast.error("Erro interno do servidor");
@@ -201,50 +201,22 @@ export default function ModulosAdminPage() {
           <Tooltip
             content={
               <div className="max-w-xs">
-                <p className="font-semibold mb-2">🔍 Detecção Automática</p>
+                <p className="font-semibold mb-2">🚀 Sincronização Completa</p>
                 <p className="text-sm mb-2">
-                  <strong>O que faz:</strong> Escaneia a pasta app/(protected)/ e detecta quais módulos realmente existem no código.
+                  <strong>O que faz:</strong> Detecta módulos no código + Sincroniza cache + Atualiza sistema de permissões.
                 </p>
                 <p className="text-sm mb-2">
-                  <strong>Quando usar:</strong> Após adicionar/remover pastas de módulos no código.
+                  <strong>Quando usar:</strong> Após adicionar/remover módulos ou rotas no código.
                 </p>
                 <p className="text-sm">
-                  <strong>Resultado:</strong> Remove módulos &quot;fantasma&quot; e mantém apenas os reais.
+                  <strong>Resultado:</strong> Sistema 100% atualizado e funcionando corretamente.
                 </p>
               </div>
             }
             placement="bottom"
           >
-            <Button color="success" isLoading={loading} startContent={<ZapIcon size={20} />} variant={autoDetectStatus?.needsSync ? "solid" : "bordered"} onPress={handleAutoDetect}>
-              {autoDetectStatus?.needsSync ? "Detectar Módulos" : "Detecção OK"}
-            </Button>
-          </Tooltip>
-          <Tooltip
-            content={
-              <div className="max-w-xs">
-                <p className="font-semibold mb-2">⚙️ Sincronização</p>
-                <p className="text-sm mb-2">
-                  <strong>O que faz:</strong> Limpa o cache do mapeamento de módulos (API interna e middleware).
-                </p>
-                <p className="text-sm mb-2">
-                  <strong>Quando usar:</strong> Após adicionar/remover rotas de módulos.
-                </p>
-                <p className="text-sm">
-                  <strong>Resultado:</strong> O sistema de controle de acesso funciona corretamente.
-                </p>
-              </div>
-            }
-            placement="bottom"
-          >
-            <Button
-              color="secondary"
-              isDisabled={!syncStatus?.needsSync}
-              isLoading={loading}
-              startContent={<SettingsIcon size={20} />}
-              variant={syncStatus?.needsSync ? "solid" : "bordered"}
-              onPress={handleSyncModuleMap}
-            >
-              {syncStatus?.needsSync ? "Sincronizar" : "Sincronizado"}
+            <Button color="primary" isLoading={loading} startContent={<ZapIcon size={20} />} variant={autoDetectStatus?.needsSync ? "solid" : "bordered"} onPress={handleAutoDetect}>
+              {autoDetectStatus?.needsSync ? "Sincronizar Sistema" : "Sistema OK"}
             </Button>
           </Tooltip>
         </div>
@@ -262,17 +234,17 @@ export default function ModulosAdminPage() {
                 <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">🚀 Como Usar Esta Tela</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div className="flex items-start gap-2">
-                    <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</span>
+                    <span className="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">✨</span>
                     <div>
-                      <p className="font-medium text-blue-800 dark:text-blue-200">Detectar Módulos</p>
-                      <p className="text-blue-700 dark:text-blue-300 text-xs">Use "Detectar Módulos" para sincronizar com o código</p>
+                      <p className="font-medium text-blue-800 dark:text-blue-200">Sincronização Automática</p>
+                      <p className="text-blue-700 dark:text-blue-300 text-xs">O sistema detecta e sincroniza automaticamente quando necessário</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="bg-orange-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
+                    <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">🚀</span>
                     <div>
-                      <p className="font-medium text-blue-800 dark:text-blue-200">Sincronizar</p>
-                      <p className="text-blue-700 dark:text-blue-300 text-xs">Use "Sincronizar" para atualizar o cache</p>
+                      <p className="font-medium text-blue-800 dark:text-blue-200">Sincronização Manual</p>
+                      <p className="text-blue-700 dark:text-blue-300 text-xs">Use "Sincronizar Sistema" para forçar atualização completa</p>
                     </div>
                   </div>
                 </div>
@@ -473,13 +445,6 @@ export default function ModulosAdminPage() {
                       </p>
                     </div>
                   </div>
-                  {syncStatus.needsSync && (
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button color="warning" isLoading={loading} size="sm" startContent={<ZapIcon className="w-4 h-4" />} onPress={handleSyncModuleMap}>
-                        Sincronizar Agora
-                      </Button>
-                    </motion.div>
-                  )}
                 </div>
               </CardBody>
             </Card>

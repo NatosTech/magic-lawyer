@@ -336,13 +336,7 @@ export async function getDashboardModulos(): Promise<{
       prisma.modulo.count(),
       prisma.modulo.count({ where: { ativo: true } }),
       prisma.modulo.count({ where: { ativo: false } }),
-      prisma.modulo
-        .groupBy({
-          by: ["categoria"],
-          _count: { id: true },
-          where: { categoria: { not: null } },
-        })
-        .then((result) => result.length),
+      prisma.moduloCategoria.count(),
       prisma.modulo.findMany({
         select: {
           id: true,
