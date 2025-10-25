@@ -414,7 +414,7 @@ export async function getModuloCatalogo(): Promise<GetModuloCatalogoResponse> {
     await ensureSuperAdmin();
 
     const modulos = await prisma.modulo.findMany({
-      orderBy: [{ categoria: { nome: "asc" } }, { ordem: "asc" }, { nome: "asc" }],
+      orderBy: [{ ordem: "asc" }, { nome: "asc" }],
     });
 
     return {
@@ -439,7 +439,7 @@ export async function getPlanoConfiguracao(planoId: string): Promise<GetPlanoCon
       prisma.plano.findUnique({ where: { id: planoId } }),
       prisma.modulo.findMany({
         where: { ativo: true },
-        orderBy: [{ categoria: { nome: "asc" } }, { ordem: "asc" }, { nome: "asc" }],
+        orderBy: [{ ordem: "asc" }, { nome: "asc" }],
         select: {
           id: true,
           slug: true,
@@ -518,7 +518,7 @@ export async function getPlanosMatrix(): Promise<GetPlanoMatrixResponse> {
       }),
       prisma.modulo.findMany({
         where: { ativo: true },
-        orderBy: [{ categoria: { nome: "asc" } }, { ordem: "asc" }, { nome: "asc" }],
+        orderBy: [{ ordem: "asc" }, { nome: "asc" }],
       }),
       prisma.planoModulo.findMany({
         select: {

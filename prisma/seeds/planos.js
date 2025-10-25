@@ -3,61 +3,54 @@ const seedModulos = require("./modulos");
 const MODULOS_BASE = seedModulos.MODULOS_BASE || [];
 
 const PLANO_CONFIG_MODULOS = {
-  basico: [
-    "dashboard-geral",
-    "processos-gerais",
-    "clientes-gerais",
-    "agenda-compromissos",
-    "documentos-gerais",
-    "tarefas-kanban",
-    "relatorios-basicos",
-  ],
+  basico: ["dashboard", "processos", "clientes", "agenda", "documentos", "tarefas", "relatorios"],
   pro: [
-    "dashboard-geral",
-    "processos-gerais",
-    "clientes-gerais",
-    "agenda-compromissos",
-    "documentos-gerais",
-    "tarefas-kanban",
-    "relatorios-basicos",
-    "gestao-equipe",
-    "permissoes-avancadas",
-    "contratos-honorarios",
-    "financeiro-completo",
-    "comissoes-advogados",
-    "modelos-documentos",
-    "integracoes-externas",
-    "notificacoes-avancadas",
-    "base-juizes",
-    "processos-avancados",
+    "dashboard",
+    "processos",
+    "clientes",
+    "agenda",
+    "documentos",
+    "tarefas",
+    "relatorios",
+    "advogados",
+    "equipe",
+    "contratos",
+    "financeiro",
+    "honorarios",
+    "parcelas",
+    "dados-bancarios",
+    "peticoes",
+    "procuracoes",
+    "modelos-peticao",
+    "modelos-procuracao",
   ],
   enterprise: [
-    "dashboard-geral",
-    "processos-gerais",
-    "clientes-gerais",
-    "agenda-compromissos",
-    "documentos-gerais",
-    "tarefas-kanban",
-    "relatorios-basicos",
-    "gestao-equipe",
-    "permissoes-avancadas",
-    "contratos-honorarios",
-    "financeiro-completo",
-    "comissoes-advogados",
-    "modelos-documentos",
-    "integracoes-externas",
-    "notificacoes-avancadas",
-    "assinaturas-digitais",
-    "automacoes-fluxos",
-    "analytics-avancado",
-    "ia-juridica",
-    "marketplace-integracoes",
-    "api-external",
-    "atendimento-omnicanal",
-    "base-juizes",
-    "processos-avancados",
+    "dashboard",
+    "processos",
+    "clientes",
+    "agenda",
+    "documentos",
+    "tarefas",
+    "relatorios",
+    "advogados",
+    "equipe",
+    "contratos",
+    "financeiro",
+    "honorarios",
+    "parcelas",
+    "dados-bancarios",
+    "peticoes",
+    "procuracoes",
+    "modelos-peticao",
+    "modelos-procuracao",
+    "causas",
+    "juizes",
+    "regimes-prazo",
+    "diligencias",
+    "andamentos",
+    "configuracoes",
   ],
-  ultra: MODULOS_BASE.map((modulo) => modulo.slug),
+  ultra: "ALL_MODULES", // Será substituído por todos os módulos do banco
 };
 
 const PLANOS_BASE = [
@@ -71,13 +64,7 @@ const PLANOS_BASE = [
     limiteProcessos: 50,
     limiteStorageMb: 1000,
     recursos: {
-      features: [
-        "Gestão de clientes e processos",
-        "Agenda compartilhada",
-        "Documentos básicos",
-        "Kanban simples de tarefas",
-        "Exportação de relatórios essenciais",
-      ],
+      features: ["Gestão de clientes e processos", "Agenda compartilhada", "Documentos básicos", "Kanban simples de tarefas", "Exportação de relatórios essenciais"],
       integracoes: ["Google Calendar", "ViaCEP", "IBGE", "ReceitaWS"],
       limites: {
         usuarios: 3,
@@ -100,14 +87,7 @@ const PLANOS_BASE = [
     limiteProcessos: 200,
     limiteStorageMb: 5000,
     recursos: {
-      features: [
-        "Tudo do plano Básico",
-        "Dashboard financeiro completo",
-        "Gestão de contratos e honorários",
-        "Comissões automatizadas",
-        "Templates inteligentes",
-        "Integração com Asaas e Clicksign",
-      ],
+      features: ["Tudo do plano Básico", "Dashboard financeiro completo", "Gestão de contratos e honorários", "Comissões automatizadas", "Templates inteligentes", "Integração com Asaas e Clicksign"],
       integracoes: ["Google Calendar", "ViaCEP", "IBGE", "ReceitaWS", "Asaas", "ClickSign"],
       limites: {
         usuarios: 10,
@@ -139,17 +119,7 @@ const PLANOS_BASE = [
         "Atendimento omnicanal",
         "Integrações judiciárias (PJe, eProc, Projudi)",
       ],
-      integracoes: [
-        "Google Calendar",
-        "ViaCEP",
-        "IBGE",
-        "ReceitaWS",
-        "Asaas",
-        "ClickSign",
-        "PJe",
-        "eProc",
-        "Projudi",
-      ],
+      integracoes: ["Google Calendar", "ViaCEP", "IBGE", "ReceitaWS", "Asaas", "ClickSign", "PJe", "eProc", "Projudi"],
       limites: {
         usuarios: 50,
         processos: 1000,
@@ -178,11 +148,7 @@ const PLANOS_BASE = [
         "Blueprints personalizados de automação",
         "Capacidade ilimitada de armazenamento",
       ],
-      integracoes: [
-        "Todas as integrações disponíveis",
-        "Webhooks customizados",
-        "Integrações privadas sob demanda",
-      ],
+      integracoes: ["Todas as integrações disponíveis", "Webhooks customizados", "Integrações privadas sob demanda"],
       limites: {
         usuarios: "ilimitado",
         processos: "ilimitado",
@@ -281,7 +247,12 @@ module.exports = async function seedPlanos(prisma) {
         create: planoBase,
       });
 
-      const slugsPermitidos = PLANO_CONFIG_MODULOS[plano.slug] || [];
+      let slugsPermitidos = PLANO_CONFIG_MODULOS[plano.slug] || [];
+
+      // Para o plano Ultra, usar TODOS os módulos disponíveis
+      if (plano.slug === "ultra") {
+        slugsPermitidos = modulos.map((modulo) => modulo.slug);
+      }
 
       await sincronizarModulosDoPlano(prisma, plano, modulosPorSlug, slugsPermitidos);
       await sincronizarVersaoPublicado(prisma, plano, modulosPorSlug, slugsPermitidos);
