@@ -253,7 +253,7 @@ export async function autoDetectModules(): Promise<AutoDetectResponse> {
 
     // Buscar módulos existentes no banco
     const existingModules = await prisma.modulo.findMany({
-      select: { id: true, slug: true },
+      select: { id: true, slug: true, categoriaId: true },
     });
 
     const detectedSlugs = new Set(detectedModules.map((m) => m.slug));
