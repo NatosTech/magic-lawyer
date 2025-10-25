@@ -1689,22 +1689,41 @@ model Plano {
   @@schema("magiclawyer")
 }
 
+model ModuloCategoria {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  nome      String
+  descricao String?
+  icone     String?
+  cor       String?  @default("#3B82F6")
+  ordem     Int      @default(0)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  modulos   Modulo[]
+
+  @@index([ativo])
+  @@index([ordem])
+  @@schema("magiclawyer")
+}
+
 model Modulo {
   id            String              @id @default(cuid())
   slug          String              @unique
   nome          String
   descricao     String?
-  categoria     String?
+  categoriaId   String?
   icone         String?
   ordem         Int?
   ativo         Boolean             @default(true)
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
+  categoria     ModuloCategoria?    @relation(fields: [categoriaId], references: [id])
   planoModulos  PlanoModulo[]
   versaoModulos PlanoVersaoModulo[]
   rotas         ModuloRota[]
 
-  @@index([categoria])
+  @@index([categoriaId])
   @@schema("magiclawyer")
 }
 

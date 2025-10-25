@@ -14,6 +14,14 @@ export interface ModuloWithStats {
   slug: string;
   nome: string;
   categoria: string | null;
+  categoriaId: string | null;
+  categoriaInfo: {
+    id: string;
+    nome: string;
+    slug: string;
+    cor: string | null;
+    icone: string | null;
+  } | null;
   descricao: string | null;
   icone: string | null;
   ordem: number | null;
@@ -39,7 +47,14 @@ export interface ModuloListResponse {
   data?: {
     modulos: ModuloWithStats[];
     total: number;
-    categorias: string[];
+    categorias: Array<{
+      id: string;
+      nome: string;
+      slug: string;
+      cor: string | null;
+      icone: string | null;
+      ativo: boolean;
+    }>;
   };
   error?: string;
 }
@@ -90,7 +105,7 @@ export async function listModulos(params?: { search?: string; categoria?: string
     }
 
     if (categoria) {
-      where.categoria = categoria;
+      where.categoriaId = categoria;
     }
 
     if (ativo !== undefined) {
@@ -101,6 +116,15 @@ export async function listModulos(params?: { search?: string; categoria?: string
       prisma.modulo.findMany({
         where,
         include: {
+          categoria: {
+            select: {
+              id: true,
+              nome: true,
+              slug: true,
+              cor: true,
+              icone: true,
+            },
+          },
           rotas: {
             select: {
               id: true,
@@ -124,10 +148,16 @@ export async function listModulos(params?: { search?: string; categoria?: string
         skip: offset,
       }),
       prisma.modulo.count({ where }),
-      prisma.modulo.findMany({
-        select: { categoria: true },
-        distinct: ["categoria"],
-        where: { categoria: { not: null } },
+      prisma.moduloCategoria.findMany({
+        select: {
+          id: true,
+          nome: true,
+          slug: true,
+          cor: true,
+          icone: true,
+          ativo: true,
+        },
+        orderBy: [{ ordem: "asc" }, { nome: "asc" }],
       }),
     ]);
 
@@ -137,6 +167,16 @@ export async function listModulos(params?: { search?: string; categoria?: string
       nome: modulo.nome,
       descricao: modulo.descricao,
       categoria: modulo.categoria,
+      categoriaId: modulo.categoriaId,
+      categoriaInfo: modulo.categoria
+        ? {
+            id: modulo.categoria.id,
+            nome: modulo.categoria.nome,
+            slug: modulo.categoria.slug,
+            cor: modulo.categoria.cor,
+            icone: modulo.categoria.icone,
+          }
+        : null,
       icone: modulo.icone,
       ordem: modulo.ordem,
       ativo: modulo.ativo,

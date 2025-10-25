@@ -54,86 +54,27 @@ import {
   StoreIcon,
   FlaskConicalIcon,
   EyeIcon,
+  ScaleIcon,
+  FileTextIcon,
+  UsersIcon,
+  FileIcon,
+  CalendarIcon,
+  CheckSquareIcon,
+  ReceiptIcon,
+  CreditCardIcon,
+  FileSignatureIcon,
+  ClockIcon,
+  ClipboardIcon,
+  BuildingIcon,
+  LayoutDashboardIcon,
+  ListIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { listModulos, getDashboardModulos } from "@/app/actions/modulos";
 import { syncModuleMap, getModuleMapStatus } from "@/app/actions/sync-module-map";
 import { autoDetectModules, getAutoDetectStatus } from "@/app/actions/auto-detect-modules";
-
-// Mapeamento de ícones por categoria
-const getCategoryIcon = (categoria: string) => {
-  const iconMap: Record<string, any> = {
-    Core: ShieldIcon,
-    Produtividade: ZapIcon,
-    Financeiro: DollarSignIcon,
-    Integração: WebhookIcon,
-    Comunicação: MessageSquareIcon,
-    Segurança: LockIcon,
-    Analytics: BarChartIcon,
-    IA: BotIcon,
-    Marketplace: StoreIcon,
-    Experimental: FlaskConicalIcon,
-  };
-
-  return iconMap[categoria] || PuzzleIcon;
-};
-
-// Mapeamento de cores por categoria
-const getCategoryColor = (categoria: string) => {
-  const colorMap: Record<string, string> = {
-    Core: "primary",
-    Produtividade: "success",
-    Financeiro: "warning",
-    Integração: "secondary",
-    Comunicação: "default",
-    Segurança: "danger",
-    Analytics: "primary",
-    IA: "secondary",
-    Marketplace: "success",
-    Experimental: "warning",
-  };
-
-  return colorMap[categoria] || "default";
-};
-
-// Mapeamento de classes CSS por categoria
-const getCategoryClasses = (categoria: string) => {
-  const classMap: Record<string, { bg: string; text: string }> = {
-    Core: { bg: "bg-blue-100 dark:bg-blue-800", text: "text-blue-600" },
-    Produtividade: {
-      bg: "bg-green-100 dark:bg-green-800",
-      text: "text-green-600",
-    },
-    Financeiro: {
-      bg: "bg-orange-100 dark:bg-orange-800",
-      text: "text-orange-600",
-    },
-    Integração: {
-      bg: "bg-purple-100 dark:bg-purple-800",
-      text: "text-purple-600",
-    },
-    Comunicação: { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600" },
-    Segurança: { bg: "bg-red-100 dark:bg-red-800", text: "text-red-600" },
-    Analytics: { bg: "bg-blue-100 dark:bg-blue-800", text: "text-blue-600" },
-    IA: { bg: "bg-purple-100 dark:bg-purple-800", text: "text-purple-600" },
-    Marketplace: {
-      bg: "bg-green-100 dark:bg-green-800",
-      text: "text-green-600",
-    },
-    Experimental: {
-      bg: "bg-orange-100 dark:bg-orange-800",
-      text: "text-orange-600",
-    },
-  };
-
-  return (
-    classMap[categoria] || {
-      bg: "bg-gray-100 dark:bg-gray-800",
-      text: "text-gray-600",
-    }
-  );
-};
+import { getCategoryIcon, getCategoryColor, getCategoryClasses } from "@/app/lib/category-utils";
 
 export default function ModulosAdminPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -604,9 +545,10 @@ export default function ModulosAdminPage() {
               </TableHeader>
               <TableBody>
                 {modulos.map((modulo, index) => {
-                  const CategoryIcon = getCategoryIcon(modulo.categoria || "");
-                  const categoryColor = getCategoryColor(modulo.categoria || "");
-                  const categoryClasses = getCategoryClasses(modulo.categoria || "");
+                  const categoriaNome = modulo.categoriaInfo?.nome || modulo.categoria || "";
+                  const CategoryIcon = getCategoryIcon(modulo.categoriaInfo);
+                  const categoryColor = getCategoryColor(modulo.categoriaInfo);
+                  const categoryClasses = getCategoryClasses(modulo.categoriaInfo);
 
                   return (
                     <TableRow key={modulo.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200">
@@ -627,11 +569,11 @@ export default function ModulosAdminPage() {
                         </motion.div>
                       </TableCell>
                       <TableCell>
-                        {modulo.categoria && (
+                        {categoriaNome && (
                           <motion.div transition={{ type: "spring", stiffness: 300 }} whileHover={{ scale: 1.05 }}>
                             <Chip className="bg-gradient-to-r from-opacity-80 to-opacity-60" color={categoryColor as any} size="sm" variant="flat">
                               <CategoryIcon className="w-3 h-3 mr-1" />
-                              {modulo.categoria}
+                              {categoriaNome}
                             </Chip>
                           </motion.div>
                         )}

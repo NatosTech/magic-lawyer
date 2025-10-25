@@ -6,6 +6,7 @@ export interface NavigationItem {
   icon?: string;
   description?: string;
   badge?: string;
+  isAccordion?: boolean;
   children?: NavigationItem[];
 }
 
@@ -31,10 +32,25 @@ export function useAdminNavigation() {
         description: "Controle de planos e módulos liberados",
       },
       {
-        label: "Módulos",
+        label: "Gestão de Módulos",
         href: "/admin/modulos",
         icon: "Puzzle",
-        description: "Gestão de módulos do sistema",
+        description: "Gestão de módulos e categorias do sistema",
+        isAccordion: true,
+        children: [
+          {
+            label: "Módulos",
+            href: "/admin/modulos",
+            icon: "Puzzle",
+            description: "Visualizar e gerenciar módulos",
+          },
+          {
+            label: "Categorias",
+            href: "/admin/modulos/categorias",
+            icon: "Tag",
+            description: "Organizar módulos por categorias",
+          },
+        ],
       },
       {
         label: "Juízes Globais",

@@ -27,6 +27,8 @@ export function AdminAppShell({ children }: AdminAppShellProps) {
     return navigationItems.map((item) => ({
       label: item.label,
       href: item.href,
+      children: item.children,
+      isAccordion: item.isAccordion,
     }));
   }, [navigationItems]);
 
@@ -34,6 +36,8 @@ export function AdminAppShell({ children }: AdminAppShellProps) {
     return secondaryNavigationItems.map((item) => ({
       label: item.label,
       href: item.href,
+      children: item.children,
+      isAccordion: item.isAccordion,
     }));
   }, [secondaryNavigationItems]);
 
@@ -55,10 +59,7 @@ export function AdminAppShell({ children }: AdminAppShellProps) {
       />
 
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-        <Navbar
-          showAuthenticatedSecondaryNav={false}
-          onOpenSidebar={openSidebarMobile}
-        />
+        <Navbar showAuthenticatedSecondaryNav={false} onOpenSidebar={openSidebarMobile} />
         <BreadcrumbNav />
         <main className="flex-1 overflow-y-auto overflow-x-hidden px-3 pb-10 pt-4 sm:px-6 sm:pt-8">
           <div className="mx-auto w-full max-w-6xl space-y-6">{children}</div>
