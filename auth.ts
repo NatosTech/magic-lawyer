@@ -329,7 +329,14 @@ export const authOptions: NextAuthOptions = {
               tenantStatus: tenantData?.status,
             });
 
-            return null;
+            // Retornar erro específico baseado no status para exibir mensagem correta
+            if (tenantData?.status === "SUSPENDED") {
+              throw new Error("TENANT_SUSPENDED");
+            } else if (tenantData?.status === "CANCELLED") {
+              throw new Error("TENANT_CANCELLED");
+            } else {
+              throw new Error(`TENANT_STATUS_${tenantData?.status}`);
+            }
           }
 
           const tenantName = tenantData?.nomeFantasia ?? tenantData?.razaoSocial ?? tenantData?.name ?? tenantData?.slug ?? undefined;

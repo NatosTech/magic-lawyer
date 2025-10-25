@@ -932,15 +932,38 @@ Vamos nessa! 💪
 
 ### 🚧 Próximas Fases (A Implementar)
 
-#### Fase 7: Frontend Admin
-- [ ] Hook `useRealtimeTenantStatus()` com SWR
-- [ ] Atualizar `app/admin/tenants/tenants-content.tsx` com `mutate()`
-- [ ] Feedback visual em tempo real
-- [ ] Exibir `statusReason` em chips
+#### Fase 7: Frontend Admin (EM PROGRESSO - 90% concluído)
+- [x] Hook `useRealtimeTenantStatus()` com SWR
+  - Hook criado em `app/hooks/use-realtime-tenant-status.ts`
+  - API route criada em `app/api/admin/tenants/[tenantId]/status/route.ts`
+  - Comparação de sessionVersion apenas quando é o mesmo tenant (evita loop infinito)
+  - Refresh automático a cada 5 segundos
+- [x] Atualizar `app/admin/tenants/tenants-content.tsx` com `mutate()`
+  - Componente `TenantCard` com status em tempo real
+  - Tooltip com `statusReason` quando disponível
+  - Refresh automático habilitado
+- [x] Feedback visual em tempo real
+  - Borda pulando (pulsing) no card quando status muda
+  - Badge "balançando" (bounce) quando há mudança
+  - Ícone de loading ⟳ durante atualização
+- [x] Indicadores de atualização quando status muda
+  - Estado `statusChanged` sinaliza mudança recente
+  - Auto-reset após 3 segundos
+- [x] Melhorias de UX no login
+  - Mensagens específicas por motivo (SUSPENDED, CANCELLED, etc.)
+  - Mensagens de erro de credenciais melhoradas com emojis
 
-#### Fase 8: Frontend Tenant
-- [ ] Guarda de sessão no `(protected)/layout.tsx`
-- [ ] Hook `useSessionGuard()` com heartbeat (15s)
+#### Fase 8: Frontend Tenant (EM PROGRESSO - 60% concluído)
+- [x] Mensagens específicas no login para tenant suspenso/cancelado
+  - auth.ts lança erro específico baseado no status
+  - app/login/page.tsx trata erros e exibe mensagem correta
+- [x] Hook `useSessionGuard()` com heartbeat (15s)
+  - Hook criado em `app/hooks/use-session-guard.ts`
+  - Verifica sessão a cada 15 segundos
+  - Redireciona para /login com motivo quando invalida
+- [x] Guarda de sessão no `(protected)/layout.tsx`
+  - Componente `SessionGuard` criado em `app/(protected)/session-guard.tsx`
+  - Layout protegido agora usa SessionGuard
 - [ ] Tratamento de erros com mensagens amigáveis
 - [ ] Modal de logout forçado
 
@@ -960,14 +983,23 @@ Vamos nessa! 💪
 - `app/lib/realtime/invalidation.ts` (122 linhas)
 - `app/api/internal/session/validate/route.ts` (176 linhas)
 - `app/api/internal/realtime/invalidate/route.ts` (89 linhas)
+- `app/api/session/check/route.ts` (Rota pública intermediária para validação)
+- `app/hooks/use-realtime-tenant-status.ts` (Hook para status em tempo real)
+- `app/api/admin/tenants/[tenantId]/status/route.ts` (API para buscar status do tenant)
+- `app/hooks/use-session-guard.ts` (Hook para guarda de sessão com heartbeat)
+- `app/(protected)/session-guard.tsx` (Componente wrapper para SessionGuard)
 
 #### Modificados
 - `prisma/schema.prisma` - Adicionados campos de sessionVersion em Tenant, Usuario e TenantSubscription
 - `.env.local` - Adicionado REALTIME_INTERNAL_TOKEN (gerado com OpenSSL)
-- `auth.ts` - Incluídos campos de versionamento no token e sessão
+- `auth.ts` - Incluídos campos de versionamento no token e sessão (lança erro específico para tenant suspenso/cancelado)
 - `middleware.ts` - Validação periódica de sessão e redirecionamento automático (CORRIGIDO: cookie setado após verificações)
 - `app/actions/admin.ts` - Chamadas de invalidação em `updateTenantStatus()` e `updateTenantSubscription()` (CORRIGIDO: planRevision incrementado, invalidação expandida)
 - `app/actions/tenant-config.ts` - Interface e consultas atualizadas para incluir campos de versionamento
+- `app/admin/tenants/tenants-content.tsx` - Componente `TenantCard` com status em tempo real, tooltip com statusReason
+- `app/login/page.tsx` - Mensagens específicas por motivo de redirecionamento e erros de credenciais melhorados
+- `app/(protected)/layout.tsx` - Adicionado SessionGuard para validação periódica de sessão
+- `app/(protected)/session-guard.tsx` - Componente wrapper para aplicar useSessionGuard
 
 ---
 
@@ -1039,6 +1071,46 @@ npm run build
 - Queries incluem `tenant.statusReason`, `tenant.statusChangedAt`, `tenant.sessionVersion`, `tenant.planRevision`, `subscription.planRevision`
 - Frontend agora pode exibir razões de invalidação e chips de status
 
+### Bug 5: Loop infinito no hook useRealtimeTenantStatus (app/hooks/use-realtime-tenant-status.ts:38-52)
+**Problema**: useEffect comparava `session.user.tenantSessionVersion` (sempre 1 para super admin) com dados de tenants reais (versões maiores), disparando `mutate()` em loop infinito para todos os cards.
+
+**Solução**: Adicionada verificação `if (userTenantId !== tenantId) return;` para só comparar quando a sessão pertence ao mesmo tenant sendo visualizado.
+
+### Bug 6: Animação infinita em useRealtimeTenantStatus (app/hooks/use-realtime-tenant-status.ts:39-60)
+**Problema**: Ao detectar mudança de status, `prevStatusRef.current` era atualizado DEPOIS do return, causando loop infinito na animação.
+
+**Solução**: `prevStatusRef.current = data.status` movido para ANTES do return, garantindo atualização imediata da referência.
+
+### Bug 7: useSessionGuard sem autenticação (app/hooks/use-session-guard.ts:42-65)
+**Problema**: Chamada para `/api/internal/session/validate` sem header `x-internal-token`, retornando 401 e nunca detectando invalidação.
+
+**Solução (REVISTA)**: Criada rota pública intermediária `/api/session/check` que:
+- É chamada pelo cliente sem precisar de token interno
+- Valida a sessão usando `getServerSession()` do NextAuth
+- Retorna `{ valid: true/false, reason: string }`
+- Evita expor token interno ao frontend
+- Hook atualizado para usar nova rota
+
+### Bug 8: Indicador de loading não mostra em revalidações (app/hooks/use-realtime-tenant-status.ts)
+**Problema**: `isUpdating` usa `isLoading && !data`, que só é true na primeira carga.
+
+**Solução**: Adicionado `isValidating` do SWR ao retorno do hook, que detecta revalidações subsequentes também.
+
+### Bug 9: Toast não aparece e usuário ainda navega após invalidação
+**Problemas**:
+1. Login não tratava `TENANT_SUSPENDED`, apenas `SUSPENDED` (maiúsculas)
+2. Hook não chamava `signOut()`, permitindo navegação antes do redirecionamento
+3. Usava `router.push()` permitindo voltar no histórico
+
+**Soluções**:
+1. Switch do login atualizado para tratar `TENANT_SUSPENDED`, `TENANT_CANCELLED`, `SESSION_VERSION_MISMATCH`, `NOT_AUTHENTICATED`
+2. Hook agora chama `await signOut({ redirect: false })` antes de redirecionar
+3. Hook usa `router.replace()` em vez de `push()` para não permitir voltar
+4. Adicionado estado `revokedRef` e `isRevoked` para prevenir revalidações repetidas
+5. Overlay de "Encerrando sessão..." enquanto limpa a sessão
+6. Intervalo reduzido de 15s para 5s
+7. Adicionado listener de `visibilitychange` para validar quando aba recebe foco
+
 ### Expansão de Invalidação (app/actions/admin.ts)
 **Mudanças em `updateTenantSubscription()`**:
 - Agora detecta mudanças em 4 campos sensíveis: `planId`, `status`, `trialEndsAt`, `renovaEm`
@@ -1050,3 +1122,16 @@ npm run build
 - Invalidação de sessão quando `active` muda
 - Reasons: `USER_REACTIVATED` ou `USER_DEACTIVATED`
 - Garante que usuários desativados são imediatamente bloqueados
+
+### Melhorias de UX na Página de Login (app/login/page.tsx)
+**Mensagens específicas por motivo de redirecionamento**:
+- `SUSPENDED`: "🔒 Escritório Suspenso" (amarelo/warning) - 8s timeout
+- `CANCELLED`: "❌ Escritório Cancelado" (vermelho/danger) - 8s timeout
+- `SESSION_VERSION_MISMATCH`: "🔄 Sessão Expirada" (azul/info) - 8s timeout
+- `USER_DISABLED`: "🚫 Usuário Desativado" (amarelo/warning) - 8s timeout
+- `SESSION_REVOKED`: "🔒 Sessão Revogada" (amarelo/warning) - 8s timeout
+
+**Mensagens de erro de credenciais melhoradas**:
+- Erro de email ou senha incorretos agora exibe mensagem clara com emoji ❌
+- Instrução sobre senha sensível a maiúsculas/minúsculas
+- Toast exibido por 6 segundos com cor warning
