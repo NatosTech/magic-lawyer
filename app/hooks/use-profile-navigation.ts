@@ -15,16 +15,11 @@ export interface NavigationItem {
   requiredModules?: string[];
 }
 
-function filterNavigation(
-  items: NavigationItem[],
-  hasModule: (href: string, required?: string[]) => boolean,
-): NavigationItem[] {
+function filterNavigation(items: NavigationItem[], hasModule: (href: string, required?: string[]) => boolean): NavigationItem[] {
   const filtered: NavigationItem[] = [];
 
   for (const item of items) {
-    const children = item.children
-      ? filterNavigation(item.children, hasModule)
-      : undefined;
+    const children = item.children ? filterNavigation(item.children, hasModule) : undefined;
 
     const allowed = hasModule(item.href, item.requiredModules);
 
@@ -57,18 +52,9 @@ function filterNavigation(
 
 export function useProfileNavigation() {
   const { data: session } = useSession();
-  const {
-    userRole,
-    permissions,
-    isAdvogado,
-    isSecretaria,
-    isFinanceiro,
-    isCliente,
-  } = useUserPermissions();
+  const { userRole, permissions, isAdvogado, isSecretaria, isFinanceiro, isCliente } = useUserPermissions();
 
-  const grantedModules = (session?.user as any)?.tenantModules as
-    | string[]
-    | undefined;
+  const grantedModules = (session?.user as any)?.tenantModules as string[] | undefined;
 
   const hasModuleAccess = useCallback(
     (_href: string, required?: string[]) => {
@@ -82,7 +68,7 @@ export function useProfileNavigation() {
 
       return required.some((module) => grantedModules.includes(module));
     },
-    [grantedModules],
+    [grantedModules]
   );
 
   const navigationItems = useMemo(() => {
@@ -94,7 +80,7 @@ export function useProfileNavigation() {
       icon: "LayoutDashboard",
       description: "Visão geral do sistema",
       section: "Visão Geral",
-      requiredModules: ["dashboard-geral"],
+      requiredModules: ["dashboard"],
     });
 
     if (permissions.canViewReports) {
@@ -104,7 +90,7 @@ export function useProfileNavigation() {
         icon: "BarChart3",
         description: "Relatórios e analytics",
         section: "Visão Geral",
-        requiredModules: ["relatorios-basicos", "analytics-avancado"],
+        requiredModules: ["relatorios"],
       });
     }
 
@@ -115,7 +101,7 @@ export function useProfileNavigation() {
         icon: "Users",
         description: "Gestão da base de clientes",
         section: "Gestão de Pessoas",
-        requiredModules: ["clientes-gerais"],
+        requiredModules: ["clientes"],
       });
     }
 
@@ -126,7 +112,7 @@ export function useProfileNavigation() {
         icon: "Users",
         description: "Gestão de advogados do escritório",
         section: "Gestão de Pessoas",
-        requiredModules: ["gestao-equipe"],
+        requiredModules: ["advogados"],
       });
 
       items.push({
@@ -135,7 +121,7 @@ export function useProfileNavigation() {
         icon: "Users",
         description: "Gestão de usuários e permissões",
         section: "Gestão de Pessoas",
-        requiredModules: ["gestao-equipe"],
+        requiredModules: ["equipe"],
       });
     }
 
@@ -146,14 +132,11 @@ export function useProfileNavigation() {
         icon: "FileText",
         description: isCliente ? "Meu processo" : "Gestão de processos",
         section: "Atividades Jurídicas",
-        requiredModules: ["processos-gerais"],
+        requiredModules: ["processos"],
       });
     }
 
-    if (
-      !isCliente &&
-      (permissions.canViewAllProcesses || isAdvogado || isSecretaria)
-    ) {
+    if (!isCliente && (permissions.canViewAllProcesses || isAdvogado || isSecretaria)) {
       items.push({
         label: "Petições",
         href: "/peticoes",
@@ -161,37 +144,34 @@ export function useProfileNavigation() {
         description: "Gestão de petições processuais",
         isAccordion: true,
         section: "Atividades Jurídicas",
-        requiredModules: ["documentos-gerais"],
+        requiredModules: ["peticoes"],
         children: [
           {
             label: "Petições",
             href: "/peticoes",
             icon: "FileText",
             description: "Gestão de petições processuais",
-            requiredModules: ["documentos-gerais"],
+            requiredModules: ["peticoes"],
           },
           {
             label: "Modelos",
             href: "/modelos-peticao",
             icon: "FileTemplate",
             description: "Modelos de petição",
-            requiredModules: ["documentos-gerais", "modelos-documentos"],
+            requiredModules: ["modelos-peticao"],
           },
         ],
       });
     }
 
-    if (
-      !isCliente &&
-      (permissions.canViewAllProcesses || isAdvogado || isSecretaria)
-    ) {
+    if (!isCliente && (permissions.canViewAllProcesses || isAdvogado || isSecretaria)) {
       items.push({
         label: "Andamentos",
         href: "/andamentos",
         icon: "Activity",
         description: "Timeline de movimentações processuais",
         section: "Atividades Jurídicas",
-        requiredModules: ["processos-gerais"],
+        requiredModules: ["andamentos"],
       });
     }
 
@@ -217,7 +197,7 @@ export function useProfileNavigation() {
             href: "/modelos-procuracao",
             icon: "FileTemplate",
             description: "Modelos de procuração",
-            requiredModules: ["modelos-documentos"],
+            requiredModules: ["modelos-procuracao"],
           },
         ],
       });
@@ -231,7 +211,7 @@ export function useProfileNavigation() {
           icon: "FileSignature",
           description: "Meus contratos com advogados",
           section: "Atividades Jurídicas",
-          requiredModules: ["contratos-honorarios"],
+          requiredModules: ["contratos"],
         });
       } else {
         items.push({
@@ -241,21 +221,21 @@ export function useProfileNavigation() {
           description: "Gestão de contratos e modelos",
           isAccordion: true,
           section: "Atividades Jurídicas",
-          requiredModules: ["contratos-honorarios"],
+          requiredModules: ["contratos"],
           children: [
             {
               label: "Contratos",
               href: "/contratos",
               icon: "FileSignature",
               description: "Gestão de contratos ativos",
-              requiredModules: ["contratos-honorarios"],
+              requiredModules: ["contratos"],
             },
             {
               label: "Modelos",
               href: "/contratos/modelos",
               icon: "FileTemplate",
               description: "Modelos de contratos reutilizáveis",
-              requiredModules: ["modelos-documentos"],
+              requiredModules: ["contratos"],
             },
           ],
         });
@@ -269,21 +249,18 @@ export function useProfileNavigation() {
         icon: "FolderOpen",
         description: isCliente ? "Meus documentos" : "Gestão de documentos",
         section: "Atividades Jurídicas",
-        requiredModules: ["documentos-gerais"],
+        requiredModules: ["documentos"],
       });
     }
 
-    if (
-      !isCliente &&
-      (permissions.canViewAllProcesses || permissions.canManageOfficeSettings)
-    ) {
+    if (!isCliente && (permissions.canViewAllProcesses || permissions.canManageOfficeSettings)) {
       items.push({
         label: "Causas",
         href: "/causas",
         icon: "Scale",
         description: "Catálogo de assuntos processuais",
         section: "Atividades Jurídicas",
-        requiredModules: ["processos-avancados"],
+        requiredModules: ["causas"],
       });
     }
 
@@ -292,26 +269,20 @@ export function useProfileNavigation() {
         label: "Juízes",
         href: "/juizes",
         icon: "Scale",
-        description: isCliente
-          ? "Informações sobre juízes"
-          : "Base de dados de juízes",
+        description: isCliente ? "Informações sobre juízes" : "Base de dados de juízes",
         section: "Atividades Jurídicas",
-        requiredModules: ["base-juizes"],
+        requiredModules: ["juizes"],
       });
     }
 
-    if (
-      permissions.canViewAllEvents ||
-      permissions.canCreateEvents ||
-      permissions.canViewClientEvents
-    ) {
+    if (permissions.canViewAllEvents || permissions.canCreateEvents || permissions.canViewClientEvents) {
       items.push({
         label: "Agenda",
         href: "/agenda",
         icon: "Calendar",
         description: isCliente ? "Eventos do meu processo" : "Gestão de agenda",
         section: "Operacional",
-        requiredModules: ["agenda-compromissos"],
+        requiredModules: ["agenda"],
       });
     }
 
@@ -323,51 +294,45 @@ export function useProfileNavigation() {
         description: "Gestão de tarefas e atividades",
         section: "Operacional",
         isAccordion: true,
-        requiredModules: ["tarefas-kanban"],
+        requiredModules: ["tarefas"],
         children: [
           {
             label: "Kanban",
             href: "/tarefas/kanban",
             icon: "LayoutBoard",
             description: "Visualização em quadros",
-            requiredModules: ["tarefas-kanban"],
+            requiredModules: ["tarefas"],
           },
           {
             label: "Lista",
             href: "/tarefas",
             icon: "List",
             description: "Visualização em lista",
-            requiredModules: ["tarefas-kanban"],
+            requiredModules: ["tarefas"],
           },
         ],
       });
     }
 
-    if (
-      !isCliente &&
-      (permissions.canViewAllProcesses || isSecretaria || isAdvogado)
-    ) {
+    if (!isCliente && (permissions.canViewAllProcesses || isSecretaria || isAdvogado)) {
       items.push({
         label: "Diligências",
         href: "/diligencias",
         icon: "Clipboard",
         description: "Controle de diligências internas e externas",
         section: "Operacional",
-        requiredModules: ["processos-avancados"],
+        requiredModules: ["diligencias"],
       });
     }
 
-    if (
-      !isCliente &&
-      (permissions.canManageOfficeSettings || isSecretaria || isAdvogado)
-    ) {
+    if (!isCliente && (permissions.canManageOfficeSettings || isSecretaria || isAdvogado)) {
       items.push({
         label: "Regimes de prazo",
         href: "/regimes-prazo",
         icon: "Clock",
         description: "Regras de contagem aplicadas aos prazos",
         section: "Operacional",
-        requiredModules: ["processos-avancados"],
+        requiredModules: ["regimes-prazo"],
       });
     }
 
@@ -376,49 +341,45 @@ export function useProfileNavigation() {
         label: "Financeiro",
         href: "/dashboard/financeiro",
         icon: "DollarSign",
-        description: isCliente
-          ? "Minhas faturas"
-          : isAdvogado
-            ? "Minhas comissões"
-            : "Gestão financeira",
+        description: isCliente ? "Minhas faturas" : isAdvogado ? "Minhas comissões" : "Gestão financeira",
         isAccordion: true,
         section: "Operacional",
-        requiredModules: ["financeiro-completo"],
+        requiredModules: ["financeiro"],
         children: [
           {
             label: "Dashboard",
             href: "/dashboard/financeiro",
             icon: "BarChart3",
             description: "Visão geral financeira",
-            requiredModules: ["financeiro-completo"],
+            requiredModules: ["financeiro"],
           },
           {
             label: "Honorários",
             href: "/honorarios",
             icon: "DollarSign",
             description: "Honorários contratuais",
-            requiredModules: ["financeiro-completo"],
+            requiredModules: ["honorarios"],
           },
           {
             label: "Parcelas",
             href: "/parcelas",
             icon: "Receipt",
             description: "Parcelas de contrato",
-            requiredModules: ["financeiro-completo"],
+            requiredModules: ["parcelas"],
           },
           {
             label: "Faturas",
             href: "/financeiro",
             icon: "Receipt",
             description: "Gestão de faturas",
-            requiredModules: ["financeiro-completo"],
+            requiredModules: ["financeiro"],
           },
           {
             label: "Recibos",
             href: "/financeiro/recibos",
             icon: "FileText",
             description: "Comprovantes e recibos pagos",
-            requiredModules: ["financeiro-completo"],
+            requiredModules: ["financeiro"],
           },
         ],
       });
@@ -430,7 +391,7 @@ export function useProfileNavigation() {
       icon: "HelpCircle",
       description: "Central de ajuda e suporte",
       section: "Administração",
-      requiredModules: ["notificacoes-avancadas"],
+      requiredModules: ["help"],
     });
 
     if (permissions.canManageOfficeSettings) {
@@ -441,77 +402,70 @@ export function useProfileNavigation() {
         description: "Configurações gerais do escritório",
         section: "Administração",
         isAccordion: true,
-        requiredModules: ["gestao-equipe", "integracoes-externas"],
+        requiredModules: ["configuracoes"],
         children: [
           {
             label: "Configurações do escritório",
             href: "/configuracoes",
             icon: "Settings",
             description: "Configurações gerais",
-            requiredModules: ["gestao-equipe"],
+            requiredModules: ["configuracoes"],
           },
           {
             label: "Categorias de Tarefa",
             href: "/configuracoes/categorias-tarefa",
             icon: "Tag",
             description: "Categorias para organizar tarefas",
-            requiredModules: ["gestao-equipe"],
+            requiredModules: ["configuracoes"],
           },
           {
             label: "Áreas de Processo",
             href: "/configuracoes/areas-processo",
             icon: "Scale",
             description: "Áreas de atuação processual",
-            requiredModules: ["gestao-equipe"],
+            requiredModules: ["configuracoes"],
           },
           {
             label: "Tipos de Contrato",
             href: "/configuracoes/tipos-contrato",
             icon: "FileSignature",
             description: "Tipos de contrato do escritório",
-            requiredModules: ["gestao-equipe", "modelos-documentos"],
+            requiredModules: ["configuracoes"],
           },
           {
             label: "Tribunais",
             href: "/configuracoes/tribunais",
             icon: "Building",
             description: "Cadastro de tribunais e órgãos",
-            requiredModules: ["gestao-equipe"],
+            requiredModules: ["configuracoes"],
           },
           {
             label: "Feriados",
             href: "/configuracoes/feriados",
             icon: "Calendar",
             description: "Gestão de feriados e dias não úteis",
-            requiredModules: ["gestao-equipe"],
+            requiredModules: ["configuracoes"],
           },
           {
             label: "Tipos de Petição",
             href: "/configuracoes/tipos-peticao",
             icon: "FileText",
             description: "Configurar tipos de petição",
-            requiredModules: ["documentos-gerais"],
+            requiredModules: ["configuracoes"],
           },
           {
             label: "Dados Bancários",
             href: "/dados-bancarios",
             icon: "CreditCard",
             description: "Dados bancários de usuários e clientes",
-            requiredModules: ["financeiro-completo"],
+            requiredModules: ["dados-bancarios"],
           },
         ],
       });
     }
 
     return filterNavigation(items, hasModuleAccess);
-  }, [
-    hasModuleAccess,
-    permissions,
-    isCliente,
-    isAdvogado,
-    isSecretaria,
-    isFinanceiro,
-  ]);
+  }, [hasModuleAccess, permissions, isCliente, isAdvogado, isSecretaria, isFinanceiro]);
 
   const secondaryNavigationItems = useMemo(() => {
     const items: NavigationItem[] = [];
@@ -529,7 +483,7 @@ export function useProfileNavigation() {
         href: "/equipe",
         icon: "Users",
         description: "Gerenciar usuários e permissões",
-        requiredModules: ["gestao-equipe"],
+        requiredModules: ["equipe"],
       });
     }
 
@@ -539,7 +493,7 @@ export function useProfileNavigation() {
         href: "/financeiro",
         icon: "Wallet",
         description: "Central financeiro",
-        requiredModules: ["financeiro-completo"],
+        requiredModules: ["financeiro"],
       });
     }
 
