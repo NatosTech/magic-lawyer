@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth/next";
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
+import { ActionResponse } from "@/types/action-response";
 
 // ==================== TIPOS ====================
 
@@ -13,7 +14,6 @@ export interface ModuloWithStats {
   id: string;
   slug: string;
   nome: string;
-  categoria: string | null;
   categoriaId: string | null;
   categoriaInfo: {
     id: string;
@@ -98,7 +98,7 @@ export async function listModulos(params?: { search?: string; categoria?: string
 
     const { search, categoria, ativo, limit = 50, offset = 0 } = params || {};
 
-    const where: Prisma.ModuloWhereInput = {};
+    const where: any = {};
 
     if (search) {
       where.OR = [{ nome: { contains: search, mode: "insensitive" } }, { slug: { contains: search, mode: "insensitive" } }, { descricao: { contains: search, mode: "insensitive" } }];
@@ -166,7 +166,6 @@ export async function listModulos(params?: { search?: string; categoria?: string
       slug: modulo.slug,
       nome: modulo.nome,
       descricao: modulo.descricao,
-      categoria: modulo.categoria,
       categoriaId: modulo.categoriaId,
       categoriaInfo: modulo.categoria
         ? {
@@ -230,6 +229,15 @@ export async function getModulo(id: string): Promise<ModuloDetailResponse> {
     const modulo = await prisma.modulo.findUnique({
       where: { id },
       include: {
+        categoria: {
+          select: {
+            id: true,
+            nome: true,
+            slug: true,
+            cor: true,
+            icone: true,
+          },
+        },
         _count: {
           select: {
             planoModulos: true,
@@ -273,7 +281,8 @@ export async function getModulo(id: string): Promise<ModuloDetailResponse> {
         slug: modulo.slug,
         nome: modulo.nome,
         descricao: modulo.descricao,
-        categoria: modulo.categoria,
+        categoriaId: modulo.categoriaId,
+        categoriaInfo: modulo.categoria,
         icone: modulo.icone,
         ordem: modulo.ordem,
         ativo: modulo.ativo,

@@ -69,7 +69,7 @@ export async function syncModuleMap(): Promise<{
       data: {
         totalModules,
         totalRoutes,
-        message: "Cache do module-map limpo - sistema 100% dinâmico",
+        generatedFile: "sistema-dinamico",
       },
     };
   } catch (error) {

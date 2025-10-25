@@ -360,7 +360,7 @@ export async function autoDetectModules(): Promise<AutoDetectResponse> {
       clearModuleMapCache();
       logger.info("✅ Cache do module-map limpo automaticamente");
     } catch (error) {
-      logger.warn("⚠️ Erro ao limpar cache do module-map:", error.message);
+      logger.warn("⚠️ Erro ao limpar cache do module-map:", error instanceof Error ? error.message : String(error));
     }
 
     // Forçar revalidação de todas as páginas relacionadas

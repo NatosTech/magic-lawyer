@@ -334,7 +334,7 @@ export function PlanosContent() {
     >();
 
     activeModules.forEach((modulo) => {
-      const categoria = typeof modulo.categoria === "string" ? modulo.categoria : (modulo.categoria?.nome ?? "Outros módulos");
+      const categoria = modulo.categoriaInfo?.nome ?? "Outros módulos";
       const existing = groups.get(categoria);
 
       if (existing) {
@@ -414,7 +414,7 @@ export function PlanosContent() {
     let categoriaAtual: string | undefined;
 
     matrixData.modulos.forEach((modulo) => {
-      const categoria = typeof modulo.categoria === "string" ? modulo.categoria : (modulo.categoria?.nome ?? "Outros módulos");
+      const categoria = modulo.categoriaInfo?.nome ?? "Outros módulos";
 
       if (categoria !== categoriaAtual) {
         rows.push({ tipo: "categoria", categoria });

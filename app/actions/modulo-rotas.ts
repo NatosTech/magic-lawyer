@@ -49,7 +49,7 @@ export async function listModuloRotas(params?: { moduloId?: string; search?: str
 
     const { moduloId, search, ativo, limit = 50, offset = 0 } = params || {};
 
-    const where: Prisma.ModuloRotaWhereInput = {};
+    const where: any = {};
 
     if (moduloId) {
       where.moduloId = moduloId;

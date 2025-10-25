@@ -52,6 +52,13 @@ export type ModuloCatalogoItem = {
   nome: string;
   descricao?: string | null;
   categoria?: string | null;
+  categoriaInfo?: {
+    id: string;
+    nome: string;
+    slug: string;
+    cor: string | null;
+    icone: string | null;
+  } | null;
   icone?: string | null;
   ordem?: number | null;
   ativo: boolean;
@@ -64,6 +71,13 @@ export type PlanoModuloConfig = {
   slug: string;
   nome: string;
   categoria?: string | null;
+  categoriaInfo?: {
+    id: string;
+    nome: string;
+    slug: string;
+    cor: string | null;
+    icone: string | null;
+  } | null;
   descricao?: string | null;
   icone?: string | null;
   ordem?: number | null;
@@ -85,6 +99,13 @@ export type PlanoMatrixModuleRow = {
   slug: string;
   nome: string;
   categoria?: string | null;
+  categoriaInfo?: {
+    id: string;
+    nome: string;
+    slug: string;
+    cor: string | null;
+    icone: string | null;
+  } | null;
   planos: Array<{
     planoId: string;
     habilitado: boolean;
@@ -96,6 +117,13 @@ type CatalogModule = {
   slug: string;
   nome: string;
   categoria: string | null;
+  categoriaInfo: {
+    id: string;
+    nome: string;
+    slug: string;
+    cor: string | null;
+    icone: string | null;
+  } | null;
   descricao: string | null;
   icone: string | null;
   ordem: number | null;
@@ -414,12 +442,27 @@ export async function getModuloCatalogo(): Promise<GetModuloCatalogoResponse> {
     await ensureSuperAdmin();
 
     const modulos = await prisma.modulo.findMany({
+      include: {
+        categoria: {
+          select: {
+            id: true,
+            nome: true,
+            slug: true,
+            cor: true,
+            icone: true,
+          },
+        },
+      },
       orderBy: [{ ordem: "asc" }, { nome: "asc" }],
     });
 
     return {
       success: true,
-      data: modulos,
+      data: modulos.map((modulo) => ({
+        ...modulo,
+        categoria: modulo.categoria?.nome ?? undefined,
+        categoriaInfo: modulo.categoria,
+      })),
     };
   } catch (error) {
     logger.error("Erro ao carregar catálogo de módulos:", error);
@@ -475,7 +518,8 @@ export async function getPlanoConfiguracao(planoId: string): Promise<GetPlanoCon
       moduloId: modulo.id,
       slug: modulo.slug,
       nome: modulo.nome,
-      categoria: modulo.categoria ?? undefined,
+      categoria: modulo.categoriaInfo?.nome ?? undefined,
+      categoriaInfo: modulo.categoriaInfo,
       descricao: modulo.descricao ?? undefined,
       icone: modulo.icone ?? undefined,
       ordem: modulo.ordem ?? undefined,
@@ -518,6 +562,17 @@ export async function getPlanosMatrix(): Promise<GetPlanoMatrixResponse> {
       }),
       prisma.modulo.findMany({
         where: { ativo: true },
+        include: {
+          categoria: {
+            select: {
+              id: true,
+              nome: true,
+              slug: true,
+              cor: true,
+              icone: true,
+            },
+          },
+        },
         orderBy: [{ ordem: "asc" }, { nome: "asc" }],
       }),
       prisma.planoModulo.findMany({
@@ -543,7 +598,8 @@ export async function getPlanosMatrix(): Promise<GetPlanoMatrixResponse> {
       moduloId: modulo.id,
       slug: modulo.slug,
       nome: modulo.nome,
-      categoria: modulo.categoria ?? undefined,
+      categoria: modulo.categoria?.nome ?? undefined,
+      categoriaInfo: modulo.categoria,
       planos: planos.map((plano) => ({
         planoId: plano.id,
         habilitado: statusPorModulo.get(modulo.id)?.get(plano.id) ?? false,

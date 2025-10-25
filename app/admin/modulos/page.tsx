@@ -523,7 +523,7 @@ export default function ModulosAdminPage() {
               </TableHeader>
               <TableBody>
                 {modulos.map((modulo, index) => {
-                  const categoriaNome = modulo.categoriaInfo?.nome || modulo.categoria || "";
+                  const categoriaNome = modulo.categoriaInfo?.nome || "";
                   const CategoryIcon = getCategoryIcon(modulo.categoriaInfo);
                   const categoryColor = getCategoryColor(modulo.categoriaInfo);
                   const categoryClasses = getCategoryClasses(modulo.categoriaInfo);
