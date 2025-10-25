@@ -48,6 +48,18 @@ async function main() {
   await seedTiposContrato(prisma);
   await seedCategoriasTarefa(prisma);
   await seedModulos(prisma);
+
+  // Detectar módulos automaticamente antes de criar planos
+  console.log("\n🔍 Detectando módulos automaticamente...");
+  try {
+    // Executar detecção via comando
+    const { execSync } = require("child_process");
+    execSync("npx tsx -e \"import('./app/actions/auto-detect-modules.ts').then(m => m.autoDetectModules())\"", { stdio: "inherit" });
+    console.log("✅ Módulos detectados com sucesso!");
+  } catch (error) {
+    console.warn("⚠️ Erro na detecção automática de módulos:", error.message);
+  }
+
   await seedPlanos(prisma);
 
   console.log("\n🏢 Criando tenants...\n");
