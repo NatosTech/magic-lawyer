@@ -201,7 +201,7 @@ export async function listModulos(params?: { search?: string; categoria?: string
       data: {
         modulos,
         total,
-        categorias: categorias.map((c) => c.categoria).filter(Boolean),
+        categorias,
       },
     };
   } catch (error) {
@@ -297,6 +297,58 @@ export async function getModulo(id: string): Promise<ModuloDetailResponse> {
   } catch (error) {
     logger.error("Erro ao obter módulo:", error);
 
+    return { success: false, error: "Erro interno do servidor" };
+  }
+}
+
+// ==================== ATUALIZAR CATEGORIA ====================
+
+export async function updateModuloCategoria(moduloId: string, categoriaId: string | null): Promise<ActionResponse<{ success: boolean }>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    // Verificar se o usuário é super admin
+    if (session.user.role !== "SUPER_ADMIN") {
+      return { success: false, error: "Acesso negado" };
+    }
+
+    // Verificar se o módulo existe
+    const modulo = await prisma.modulo.findUnique({
+      where: { id: moduloId },
+    });
+
+    if (!modulo) {
+      return { success: false, error: "Módulo não encontrado" };
+    }
+
+    // Se categoriaId for fornecido, verificar se a categoria existe
+    if (categoriaId) {
+      const categoria = await prisma.moduloCategoria.findUnique({
+        where: { id: categoriaId },
+      });
+
+      if (!categoria) {
+        return { success: false, error: "Categoria não encontrada" };
+      }
+    }
+
+    // Atualizar a categoria do módulo
+    await prisma.modulo.update({
+      where: { id: moduloId },
+      data: { categoriaId },
+    });
+
+    logger.info(`Categoria do módulo ${modulo.slug} atualizada para ${categoriaId || "sem categoria"}`);
+
+    return {
+      success: true,
+      data: { success: true },
+    };
+  } catch (error: any) {
+    logger.error("Erro ao atualizar categoria do módulo:", error);
     return { success: false, error: "Erro interno do servidor" };
   }
 }

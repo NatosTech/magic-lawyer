@@ -25,6 +25,8 @@ import {
   Tooltip,
   Badge,
   Divider,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import {
   SearchIcon,
@@ -71,7 +73,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { listModulos, getDashboardModulos } from "@/app/actions/modulos";
+import { listModulos, getDashboardModulos, updateModuloCategoria } from "@/app/actions/modulos";
 import { getModuleMapStatus } from "@/app/actions/sync-module-map";
 import { autoDetectModules, getAutoDetectStatus } from "@/app/actions/auto-detect-modules";
 import { getCategoryIcon, getCategoryColor, getCategoryClasses } from "@/app/lib/category-utils";
@@ -131,6 +133,22 @@ export default function ModulosAdminPage() {
     onRoutesModalOpen();
   };
 
+  const handleUpdateCategoria = async (moduloId: string, categoriaId: string | null) => {
+    try {
+      const result = await updateModuloCategoria(moduloId, categoriaId);
+
+      if (result.success) {
+        toast.success("Categoria atualizada com sucesso!");
+        // Forçar atualização dos dados
+        await Promise.all([mutateModulos(), mutateCache("dashboard-modulos")]);
+      } else {
+        toast.error(result.error || "Erro ao atualizar categoria");
+      }
+    } catch (error) {
+      toast.error("Erro interno do servidor");
+    }
+  };
+
   const handleAutoDetect = async () => {
     setLoading(true);
     try {
@@ -143,11 +161,6 @@ export default function ModulosAdminPage() {
 
         // Forçar atualização de todos os caches
         await Promise.all([mutateModulos(), mutateCache("dashboard-modulos"), mutateCache("module-map-status"), mutateCache("auto-detect-status")]);
-
-        // Aguardar um pouco e forçar refresh da página
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
       } else {
         toast.error(result.error || "Erro na sincronização");
       }
@@ -534,14 +547,38 @@ export default function ModulosAdminPage() {
                         </motion.div>
                       </TableCell>
                       <TableCell>
-                        {categoriaNome && (
-                          <motion.div transition={{ type: "spring", stiffness: 300 }} whileHover={{ scale: 1.05 }}>
-                            <Chip className="bg-gradient-to-r from-opacity-80 to-opacity-60" color={categoryColor as any} size="sm" variant="flat">
-                              <CategoryIcon className="w-3 h-3 mr-1" />
-                              {categoriaNome}
-                            </Chip>
-                          </motion.div>
-                        )}
+                        <Select
+                          size="sm"
+                          variant="bordered"
+                          placeholder="Selecionar categoria"
+                          selectedKeys={modulo.categoriaId ? [modulo.categoriaId] : []}
+                          onSelectionChange={(keys) => {
+                            const selectedKey = Array.from(keys)[0] as string;
+                            handleUpdateCategoria(modulo.id, selectedKey || null);
+                          }}
+                          className="min-w-[200px]"
+                        >
+                          <SelectItem key="" textValue="Sem categoria">
+                            <div className="flex items-center gap-2">
+                              <PuzzleIcon className="w-4 h-4 text-gray-400" />
+                              <span className="text-gray-500">Sem categoria</span>
+                            </div>
+                          </SelectItem>
+                          {
+                            (modulosData?.data?.categorias?.map((categoria) => {
+                              const CatIcon = getCategoryIcon(categoria);
+                              const catColor = getCategoryColor(categoria);
+                              return (
+                                <SelectItem key={categoria.id} textValue={categoria.nome}>
+                                  <div className="flex items-center gap-2">
+                                    <CatIcon className="w-4 h-4" style={{ color: catColor }} />
+                                    <span>{categoria.nome}</span>
+                                  </div>
+                                </SelectItem>
+                              );
+                            }) || []) as any
+                          }
+                        </Select>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-center">

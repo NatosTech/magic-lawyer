@@ -272,13 +272,14 @@ export async function autoDetectModules(): Promise<AutoDetectResponse> {
           where: { nome: module.categoria },
         });
 
-        // Atualizar módulo existente
+        // Atualizar módulo existente (preservar categoria se já foi atribuída)
         await prisma.modulo.update({
           where: { id: existing.id },
           data: {
             nome: module.nome,
             descricao: module.descricao,
-            categoriaId: categoria?.id || null,
+            // Só define categoria se não tiver uma atribuída manualmente
+            categoriaId: existing.categoriaId || categoria?.id || null,
             icone: module.icone,
             ordem: module.ordem,
             ativo: module.ativo,
