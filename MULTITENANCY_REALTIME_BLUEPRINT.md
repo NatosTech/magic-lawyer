@@ -808,3 +808,245 @@ Total estimado (com folga para imprevistos): **~5 dias corridos** com duas pesso
 3. Iniciar pela migração e helpers de backend (Fase 1 + 2).
 
 Vamos nessa! 💪
+
+---
+
+## 📊 Progresso de Implementação
+
+> Status: **Fases 1-6 Concluídas** | Branch: `feature/realtime-multitenancy` | Data: 2025-01-25
+
+### ✅ Fase 1: Banco de Dados (CONCLUÍDA)
+
+#### Alterações no Schema (`prisma/schema.prisma`)
+- **Model Tenant**:
+  - Adicionados campos: `statusReason String?`, `statusChangedAt DateTime?`, `sessionVersion Int @default(1)`, `planRevision Int @default(1)`
+  - Adicionado índice: `@@index([sessionVersion])`
+  
+- **Model Usuario**:
+  - Adicionados campos: `sessionVersion Int @default(1)`, `statusChangedAt DateTime?`, `statusReason String?`
+  - Adicionado índice composto: `@@index([tenantId, sessionVersion])`
+
+- **Model TenantSubscription**:
+  - Adicionado campo: `planRevision Int @default(1)`
+
+#### Configuração de Ambiente
+- Adicionado `REALTIME_INTERNAL_TOKEN` ao `.env.local` (gerado com OpenSSL)
+
+---
+
+### ✅ Fase 2: Backend Core (CONCLUÍDA)
+
+#### Helpers de Versão de Sessão (`app/lib/session-version.ts`)
+- `bumpTenantSession()` - Incrementa sessionVersion do tenant
+- `getTenantSessionSnapshot()` - Busca estado atual da sessão do tenant
+- `bumpUserSession()` - Incrementa sessionVersion do usuário
+- `getUserSessionSnapshot()` - Busca estado atual da sessão do usuário
+- `validateTenantSession()` - Valida sessão do tenant
+- `validateUserSession()` - Valida sessão do usuário
+
+#### Serviço de Invalidação (`app/lib/realtime/`)
+- `app/lib/realtime/publisher.ts` - Dispara eventos de invalidação
+  - `triggerRealtimeEvent()` - POST para rota interna (MVP)
+  - Preparado para Redis/WebSocket (Fase 2)
+
+- `app/lib/realtime/invalidation.ts` - Gerencia invalidação de sessões
+  - `invalidateTenant()` - Invalida sessão do tenant + registra auditoria
+  - `invalidateUser()` - Invalida sessão de usuário específico
+  - `invalidateAllTenantUsers()` - Invalida sessões de todos os usuários do tenant
+
+#### Rotas Internas de API
+- `app/api/internal/session/validate/route.ts` (POST)
+  - Valida sessionVersion do tenant/usuário
+  - Retorna 200 (OK) ou 409 (revoked) com motivo
+  - Autenticação via `x-internal-token`
+
+- `app/api/internal/realtime/invalidate/route.ts` (POST)
+  - Recebe eventos de invalidação
+  - Executa `revalidateTag()` e `revalidatePath()`
+  - Autenticação via `x-internal-token`
+
+---
+
+### ✅ Fase 5: NextAuth & Middleware (CONCLUÍDA + CORRIGIDA)
+
+#### Alterações no Auth (`auth.ts`)
+- Adicionados campos `sessionVersion`, `tenantSessionVersion`, `tenantPlanRevision` na query do usuário
+- Incluídos campos de versionamento no `resultUser` e callbacks JWT/session
+- Token e sessão agora transportam informações de versão para comparação no middleware
+
+#### Alterações no Middleware (`middleware.ts`) ⚠️ CORREÇÕES
+- **BUG FIX**: Cookie `ml-last-session-check` agora é setado APÓS todas as verificações, não durante
+- Validação periódica de sessão (a cada 15 segundos via cookie `ml-last-session-check`)
+- POST para `/api/internal/session/validate` para comparar versões
+- Redirecionamento automático para `/login?reason=...` quando sessão é revogada
+- Limpeza de cookies de sessão em caso de revogação
+- Tratamento de erros com fail-safe (continua normalmente em caso de erro de rede)
+- **ANTES**: Retornava `NextResponse.next()` imediatamente após setar cookie, pulando verificações
+- **DEPOIS**: Cookie é setado apenas no final, após todas as checagens de rota/módulos
+
+---
+
+### ✅ Fase 6: Server Actions (CONCLUÍDA + CORRIGIDA)
+
+#### Alterações em `app/actions/admin.ts` ⚠️ CORREÇÕES
+- **`updateTenantStatus()`**: Chamada de `invalidateTenant()` após atualizar status
+  - Registra reason: `STATUS_CHANGED_FROM_{antigo}_TO_{novo}`
+  - Incrementa sessionVersion e invalida sessões de todos os usuários
+
+- **`updateTenantSubscription()`**: Invalidação expandida
+  - **CORREÇÃO**: `planRevision` agora é incrementado sempre que a subscription é atualizada
+  - Invalidação quando `planId`, `status`, `trialEndsAt` ou `renovaEm` mudam
+  - Reasons específicos para cada tipo de mudança:
+    - `PLAN_CHANGED_TO_{planId}` (mudança de plano)
+    - `SUBSCRIPTION_STATUS_CHANGED_TO_{status}` (mudança de status)
+    - `TRIAL_ENDS_AT_CHANGED` (alteração de data de fim de trial)
+    - `RENOVA_EM_CHANGED` (alteração de data de renovação)
+
+#### Alterações em `app/actions/tenant-config.ts` ⚠️ NOVO
+- Interface `TenantConfigData` atualizada para incluir:
+  - `tenant.statusReason`, `tenant.statusChangedAt`, `tenant.sessionVersion`, `tenant.planRevision`
+  - `subscription.planRevision`
+- Consulta Prisma agora seleciona todos os campos de versionamento
+- Frontend agora tem acesso aos dados de invalidação para exibir razões e chips
+
+#### Alterações em `app/actions/admin.ts` - `updateTenantUser()` ⚠️ NOVO
+- Invalidação de sessão do usuário quando `active` muda
+- Reasons: `USER_REACTIVATED` (reativar) ou `USER_DEACTIVATED` (desativar)
+- Log de auditoria registra quem e quando realizou a alteração
+
+#### Alterações em `app/actions/admin.ts` - `updateTenantSubscription()` ⚠️ MELHORIAS
+- **Detecção de limpeza de campos**: Invalidação também quando datas são limpas (null)
+  - Detecta mudança de `trialEndsAt` ou `renovaEm` → `null`
+  - Detecta mudança de `null` → data
+- **Subscription criada pela primeira vez**: Invalidação automática com reason `SUBSCRIPTION_CREATED`
+  - Garante que módulos disponíveis sejam recalculados imediatamente
+  - Útil quando tenant não tinha assinatura e ganha uma nova
+- **Total de 5 types de invalidação**:
+  1. `SUBSCRIPTION_CREATED` (nova subscription)
+  2. `PLAN_CHANGED_TO_{planId}` (mudança de plano)
+  3. `SUBSCRIPTION_STATUS_CHANGED_TO_{status}` (mudança de status)
+  4. `TRIAL_ENDS_AT_CHANGED` (mudança/limpeza de data de trial)
+  5. `RENOVA_EM_CHANGED` (mudança/limpeza de data de renovação)
+
+---
+
+### 🚧 Próximas Fases (A Implementar)
+
+#### Fase 7: Frontend Admin
+- [ ] Hook `useRealtimeTenantStatus()` com SWR
+- [ ] Atualizar `app/admin/tenants/tenants-content.tsx` com `mutate()`
+- [ ] Feedback visual em tempo real
+- [ ] Exibir `statusReason` em chips
+
+#### Fase 8: Frontend Tenant
+- [ ] Guarda de sessão no `(protected)/layout.tsx`
+- [ ] Hook `useSessionGuard()` com heartbeat (15s)
+- [ ] Tratamento de erros com mensagens amigáveis
+- [ ] Modal de logout forçado
+
+#### Fase 9: Testes & QA
+- [ ] Testes unitários dos helpers
+- [ ] Testes de integração (Playwright)
+- [ ] Checklist manual
+- [ ] Documentação
+
+---
+
+### 📁 Arquivos Modificados
+
+#### Criados
+- `app/lib/session-version.ts` (142 linhas)
+- `app/lib/realtime/publisher.ts` (39 linhas)
+- `app/lib/realtime/invalidation.ts` (122 linhas)
+- `app/api/internal/session/validate/route.ts` (176 linhas)
+- `app/api/internal/realtime/invalidate/route.ts` (89 linhas)
+
+#### Modificados
+- `prisma/schema.prisma` - Adicionados campos de sessionVersion em Tenant, Usuario e TenantSubscription
+- `.env.local` - Adicionado REALTIME_INTERNAL_TOKEN (gerado com OpenSSL)
+- `auth.ts` - Incluídos campos de versionamento no token e sessão
+- `middleware.ts` - Validação periódica de sessão e redirecionamento automático (CORRIGIDO: cookie setado após verificações)
+- `app/actions/admin.ts` - Chamadas de invalidação em `updateTenantStatus()` e `updateTenantSubscription()` (CORRIGIDO: planRevision incrementado, invalidação expandida)
+- `app/actions/tenant-config.ts` - Interface e consultas atualizadas para incluir campos de versionamento
+
+---
+
+### 🎯 Critérios de Sucesso (Parciais)
+
+- ✅ Schema atualizado com campos de versionamento
+- ✅ Helpers de sessão implementados
+- ✅ Serviço de invalidação criado
+- ✅ Rotas internas funcionais
+- ✅ Middleware validando sessão periodicamente
+- ✅ Server actions chamando invalidação
+- ✅ Auth.ts incluindo sessionVersion no token/sessão
+- ⏳ Frontend reagindo a mudanças (não implementado)
+- ⏳ Testes automatizados (não implementado)
+
+---
+
+### 🔧 Comandos Úteis
+
+```bash
+# Ver status do git
+git status
+
+# Ver diff das mudanças
+git diff prisma/schema.prisma
+
+# Adicionar arquivos
+git add prisma/schema.prisma app/lib/session-version.ts app/lib/realtime/ app/api/internal/
+
+# Commit
+git commit -m "feat: implementar sistema de versionamento de sessão (fases 1-4)"
+
+# Testar build
+npm run build
+```
+
+---
+
+**Última Atualização**: 2025-01-25 (Correções críticas + expansão de invalidação) | **Próxima Fase**: Frontend Admin e Tenant (Fases 7-8)
+
+---
+
+## 🔧 Correções Críticas Aplicadas (2025-01-25)
+
+### Bug 1: Middleware quebrando o fluxo (middleware.ts:45)
+**Problema**: Cookie `ml-last-session-check` era setado com um `NextResponse.next()` separado, causando retorno imediato e pulando todas as verificações de rota/módulos/roles. A cada 15s qualquer usuário escapava das restrições.
+
+**Solução**: Cookie agora é setado apenas no final do middleware, após todas as verificações. Variável `sessionChecked` controla quando o cookie deve ser atualizado.
+
+### Bug 2: planRevision nunca incrementado (app/actions/admin.ts:928)
+**Problema**: Campo `TenantSubscription.planRevision` permanecia em `1` mesmo após mudanças de plano/status, quebrando gatilhos de SWR e invalidação de cache.
+
+**Solução**: Adicionado `planRevision: { increment: 1 }` em toda atualização de `TenantSubscription`.
+
+### Bug 3: Invalidação apenas quando plano muda (app/actions/admin.ts:963)
+**Problema**: `invalidateTenant()` só era chamado quando `planId` mudava. Mudanças de status da subscription (ex.: trial → active) não invalidavam sessões.
+
+**Solução**: Invalidação agora detecta mudanças em `planId`, `status`, `trialEndsAt` e `renovaEm`, com reasons específicos:
+- `PLAN_CHANGED_TO_{planId}` (quando plano muda)
+- `SUBSCRIPTION_STATUS_CHANGED_TO_{status}` (quando status muda)
+- `TRIAL_ENDS_AT_CHANGED` (quando data de fim de trial muda)
+- `RENOVA_EM_CHANGED` (quando data de renovação muda)
+
+### Bug 4: tenant-config.ts sem campos de versionamento (app/actions/tenant-config.ts:30)
+**Problema**: Interface `TenantConfigData` e queries Prisma não incluíam `sessionVersion`, `statusReason`, `planRevision`. Frontend ficava cego para mudanças.
+
+**Solução**: 
+- Interface atualizada com todos os campos de versionamento
+- Queries incluem `tenant.statusReason`, `tenant.statusChangedAt`, `tenant.sessionVersion`, `tenant.planRevision`, `subscription.planRevision`
+- Frontend agora pode exibir razões de invalidação e chips de status
+
+### Expansão de Invalidação (app/actions/admin.ts)
+**Mudanças em `updateTenantSubscription()`**:
+- Agora detecta mudanças em 4 campos sensíveis: `planId`, `status`, `trialEndsAt`, `renovaEm`
+- **Detecção de limpeza de campos**: Detecta quando datas são limpas (null)
+- **Subscription criada**: Invalidação automática quando não havia subscription antes
+- Reasons específicos para cada tipo de mudança (5 tipos diferentes, incluindo criação)
+
+**Mudanças em `updateTenantUser()`** (NOVO):
+- Invalidação de sessão quando `active` muda
+- Reasons: `USER_REACTIVATED` ou `USER_DEACTIVATED`
+- Garante que usuários desativados são imediatamente bloqueados

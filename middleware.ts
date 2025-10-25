@@ -41,6 +41,55 @@ export default withAuth(
     const token = req.nextauth.token;
     const isAuth = !!token;
     const isAuthPage = req.nextUrl.pathname.startsWith("/login");
+    let sessionChecked = false; // Controlar se verificou sessão nesta execução
+
+    // Validar sessão periodicamente (a cada 15 segundos)
+    if (token && (token as any).tenantId) {
+      const lastCheck = req.cookies.get("ml-last-session-check");
+      const shouldCheck = !lastCheck || Date.now() - Number(lastCheck.value) > 15000;
+
+      if (shouldCheck) {
+        try {
+          const base = process.env.NEXTAUTH_URL || "http://localhost:9192";
+          const url = new URL("/api/internal/session/validate", base).toString();
+
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-token": process.env.REALTIME_INTERNAL_TOKEN || "",
+            },
+            body: JSON.stringify({
+              tenantId: (token as any).tenantId,
+              userId: (token as any).id,
+              tenantVersion: (token as any).tenantSessionVersion || 1,
+              userVersion: (token as any).sessionVersion || 1,
+            }),
+          });
+
+          if (response.status === 409) {
+            const data = await response.json();
+            const logoutUrl = new URL("/login", req.url);
+            logoutUrl.searchParams.set("reason", data.reason || "SESSION_REVOKED");
+
+            const res = NextResponse.redirect(logoutUrl);
+            res.cookies.delete("next-auth.session-token");
+            res.cookies.set("ml-session-revoked", "1", { path: "/" });
+
+            return res;
+          }
+
+          // Marcar que verificou nesta execução
+          sessionChecked = true;
+        } catch (error) {
+          console.error("Erro ao validar sessão:", error);
+          // Em caso de erro, continuar normalmente (fail-safe)
+        }
+      }
+    }
+
+    // Continuar com o fluxo normal do middleware...
+    // cookie será setado no final se sessionChecked for true
 
     // Detectar tenant baseado no domínio
     const host = req.headers.get("host") || "";
@@ -109,35 +158,16 @@ export default withAuth(
     }
 
     // Verificar se SuperAdmin está tentando acessar área comum (PROIBIR)
-    if (
-      isAuth &&
-      !req.nextUrl.pathname.startsWith("/admin") &&
-      !req.nextUrl.pathname.startsWith("/api") &&
-      !req.nextUrl.pathname.startsWith("/login")
-    ) {
+    if (isAuth && !req.nextUrl.pathname.startsWith("/admin") && !req.nextUrl.pathname.startsWith("/api") && !req.nextUrl.pathname.startsWith("/login")) {
       const userRole = (token as any)?.role;
       const isSuperAdmin = userRole === "SUPER_ADMIN";
 
       // SuperAdmin NÃO pode acessar rotas de usuário comum
       if (isSuperAdmin) {
         // Rotas que SuperAdmin NÃO pode acessar
-        const rotasProibidas = [
-          "/dashboard",
-          "/processos",
-          "/documentos",
-          "/agenda",
-          "/financeiro",
-          "/juizes",
-          "/relatorios",
-          "/equipe",
-          "/help",
-          "/configuracoes",
-          "/usuario",
-        ];
+        const rotasProibidas = ["/dashboard", "/processos", "/documentos", "/agenda", "/financeiro", "/juizes", "/relatorios", "/equipe", "/help", "/configuracoes", "/usuario"];
 
-        const isRotaProibida = rotasProibidas.some((rota) =>
-          req.nextUrl.pathname.startsWith(rota),
-        );
+        const isRotaProibida = rotasProibidas.some((rota) => req.nextUrl.pathname.startsWith(rota));
 
         if (isRotaProibida) {
           return NextResponse.redirect(new URL("/admin/dashboard", req.url));
@@ -146,21 +176,13 @@ export default withAuth(
     }
 
     // Verificar permissões de módulos para usuários comuns
-    if (
-      isAuth &&
-      !req.nextUrl.pathname.startsWith("/admin") &&
-      !req.nextUrl.pathname.startsWith("/api")
-    ) {
+    if (isAuth && !req.nextUrl.pathname.startsWith("/admin") && !req.nextUrl.pathname.startsWith("/api")) {
       const modules = (token as any)?.tenantModules as string[] | undefined;
       const role = (token as any)?.role;
 
       if (role !== "SUPER_ADMIN") {
         try {
-          const allowed = await isRouteAllowedByModulesEdge(
-            req.nextUrl.pathname,
-            modules,
-            req.nextUrl.origin,
-          );
+          const allowed = await isRouteAllowedByModulesEdge(req.nextUrl.pathname, modules, req.nextUrl.origin);
 
           if (!allowed) {
             return NextResponse.redirect(new URL("/dashboard", req.url));
@@ -172,7 +194,18 @@ export default withAuth(
       }
     }
 
-    return NextResponse.next();
+    // Retornar resposta com cookie de verificação se necessário
+    const response = NextResponse.next();
+
+    if (sessionChecked) {
+      response.cookies.set("ml-last-session-check", Date.now().toString(), {
+        httpOnly: false,
+        path: "/",
+        maxAge: 60, // 1 minuto
+      });
+    }
+
+    return response;
   },
   {
     callbacks: {
@@ -181,7 +214,7 @@ export default withAuth(
         return true; // Deixamos o middleware acima fazer a lógica
       },
     },
-  },
+  }
 );
 
 export const config = {

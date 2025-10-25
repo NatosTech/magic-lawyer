@@ -44,11 +44,7 @@ function extractTenantFromDomain(host: string): string | null {
 
   // Para domínios diretos: sandra.com.br
   // Neste caso, o domínio completo é o identificador do tenant
-  if (
-    !cleanHost.includes("magiclawyer") &&
-    !cleanHost.includes("vercel.app") &&
-    !cleanHost.includes("localhost")
-  ) {
+  if (!cleanHost.includes("magiclawyer") && !cleanHost.includes("vercel.app") && !cleanHost.includes("localhost")) {
     return cleanHost;
   }
 
@@ -87,10 +83,7 @@ export const authOptions: NextAuthOptions = {
 
         // Se o tenant está vazio, undefined ou 'undefined', tratamos como auto-detect
         // Mas se detectamos pelo domínio, usamos esse
-        const shouldAutoDetect =
-          !normalizedTenant ||
-          normalizedTenant === "undefined" ||
-          normalizedTenant === "";
+        const shouldAutoDetect = !normalizedTenant || normalizedTenant === "undefined" || normalizedTenant === "";
 
         const finalTenant = tenantFromDomain || normalizedTenant;
 
@@ -105,10 +98,7 @@ export const authOptions: NextAuthOptions = {
         };
 
         if (!credentials?.email || !credentials?.password) {
-          console.warn(
-            "[auth] Credenciais incompletas para login",
-            attemptContext,
-          );
+          console.warn("[auth] Credenciais incompletas para login", attemptContext);
 
           return null;
         }
@@ -147,10 +137,7 @@ export const authOptions: NextAuthOptions = {
               return null;
             }
 
-            const validPassword = await bcrypt.compare(
-              credentials.password,
-              superAdmin.passwordHash,
-            );
+            const validPassword = await bcrypt.compare(credentials.password, superAdmin.passwordHash);
 
             if (!validPassword) {
               console.warn("[auth] Senha inválida para SuperAdmin");
@@ -186,19 +173,14 @@ export const authOptions: NextAuthOptions = {
 
           if (!shouldAutoDetect && finalTenant) {
             tenantWhere = {
-              OR: [
-                { slug: { equals: finalTenant, mode: "insensitive" } },
-                { domain: { equals: finalTenant, mode: "insensitive" } },
-              ],
+              OR: [{ slug: { equals: finalTenant, mode: "insensitive" } }, { domain: { equals: finalTenant, mode: "insensitive" } }],
             };
             console.info("[auth] Buscando usuário com filtro de tenant", {
               finalTenant,
               tenantWhere,
             });
           } else {
-            console.info(
-              "[auth] Buscando usuário SEM filtro de tenant (auto-detect)",
-            );
+            console.info("[auth] Buscando usuário SEM filtro de tenant (auto-detect)");
           }
 
           // Primeiro, vamos tentar buscar o usuário sem filtro de tenant para debug
@@ -233,11 +215,7 @@ export const authOptions: NextAuthOptions = {
             });
 
             // Se encontrou usuário em tenant específico e está no domínio principal, redirecionar
-            if (
-              allUsers.length > 0 &&
-              !tenantFromDomain &&
-              host.includes("magiclawyer.vercel.app")
-            ) {
+            if (allUsers.length > 0 && !tenantFromDomain && host.includes("magiclawyer.vercel.app")) {
               console.info("[auth] Verificando redirecionamento", {
                 allUsersCount: allUsers.length,
                 tenantFromDomain,
@@ -249,9 +227,7 @@ export const authOptions: NextAuthOptions = {
                 })),
               });
 
-              const userWithSpecificTenant = allUsers.find(
-                (u) => u.tenant?.slug && u.tenant.slug !== "magiclawyer",
-              );
+              const userWithSpecificTenant = allUsers.find((u) => u.tenant?.slug && u.tenant.slug !== "magiclawyer");
 
               if (userWithSpecificTenant) {
                 const tenantSlug = userWithSpecificTenant.tenant?.slug;
@@ -265,13 +241,10 @@ export const authOptions: NextAuthOptions = {
                 // Retornar erro com redirecionamento
                 throw new Error(`REDIRECT_TO_TENANT:${tenantSlug}`);
               } else {
-                console.info(
-                  "[auth] Usuário encontrado mas não precisa redirecionar",
-                  {
-                    userEmail: email,
-                    userTenants: allUsers.map((u) => u.tenant?.slug),
-                  },
-                );
+                console.info("[auth] Usuário encontrado mas não precisa redirecionar", {
+                  userEmail: email,
+                  userTenants: allUsers.map((u) => u.tenant?.slug),
+                });
               }
             }
           }
@@ -288,8 +261,18 @@ export const authOptions: NextAuthOptions = {
             },
             include: {
               tenant: {
-                include: {
+                select: {
+                  id: true,
+                  slug: true,
+                  name: true,
+                  status: true,
+                  statusReason: true,
+                  statusChangedAt: true,
+                  sessionVersion: true,
+                  planRevision: true,
                   branding: true,
+                  nomeFantasia: true,
+                  razaoSocial: true,
                 },
               },
               permissoes: {
@@ -310,24 +293,15 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user || !user.passwordHash) {
-            console.warn(
-              "[auth] Usuário não encontrado ou sem senha cadastrada",
-              attemptContext,
-            );
+            console.warn("[auth] Usuário não encontrado ou sem senha cadastrada", attemptContext);
 
             return null;
           }
 
-          const valid = await bcrypt.compare(
-            credentials.password,
-            user.passwordHash,
-          );
+          const valid = await bcrypt.compare(credentials.password, user.passwordHash);
 
           if (!valid) {
-            console.warn(
-              "[auth] Senha inválida para o usuário",
-              attemptContext,
-            );
+            console.warn("[auth] Senha inválida para o usuário", attemptContext);
 
             return null;
           }
@@ -358,27 +332,21 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          const tenantName =
-            tenantData?.nomeFantasia ??
-            tenantData?.razaoSocial ??
-            tenantData?.name ??
-            tenantData?.slug ??
-            undefined;
+          const tenantName = tenantData?.nomeFantasia ?? tenantData?.razaoSocial ?? tenantData?.name ?? tenantData?.slug ?? undefined;
 
-          const permissions = permissionsRaw.map(
-            (permission) => permission.permissao,
-          );
+          const permissions = permissionsRaw.map((permission) => permission.permissao);
 
-          const accessibleModules = await getTenantAccessibleModules(
-            user.tenantId,
-          );
+          const accessibleModules = await getTenantAccessibleModules(user.tenantId);
+
+          // Buscar sessionVersion do usuário
+          const sessionVersion = (user as any).sessionVersion || 1;
+          const tenantSessionVersion = (tenantData as any)?.sessionVersion || 1;
+          const tenantPlanRevision = (tenantData as any)?.planRevision || 1;
 
           const resultUser = {
             id: user.id,
             email: user.email,
-            name:
-              [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-              undefined,
+            name: [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined,
             image: user.avatarUrl || undefined,
             tenantId: user.tenantId,
             role: user.role,
@@ -388,11 +356,22 @@ export const authOptions: NextAuthOptions = {
             tenantFaviconUrl: tenantData?.branding?.faviconUrl || undefined,
             permissions,
             tenantModules: accessibleModules,
+            // Campos de versionamento de sessão
+            sessionVersion,
+            tenantSessionVersion,
+            tenantPlanRevision,
+            tenantStatus: tenantData?.status,
+            tenantStatusReason: tenantData?.statusReason,
           } as unknown as User & {
             tenantId: string;
             role: string;
             permissions: string[];
             tenantModules: string[];
+            sessionVersion: number;
+            tenantSessionVersion: number;
+            tenantPlanRevision: number;
+            tenantStatus: string;
+            tenantStatusReason?: string | null;
           };
 
           console.info("[auth] Login autorizado", {
@@ -405,10 +384,7 @@ export const authOptions: NextAuthOptions = {
           return resultUser as any;
         } catch (error) {
           // Verificar se é erro de redirecionamento
-          if (
-            error instanceof Error &&
-            error.message.startsWith("REDIRECT_TO_TENANT:")
-          ) {
+          if (error instanceof Error && error.message.startsWith("REDIRECT_TO_TENANT:")) {
             console.info("[auth] Redirecionamento para tenant específico", {
               ...attemptContext,
               redirectTenant: error.message.replace("REDIRECT_TO_TENANT:", ""),
@@ -418,10 +394,7 @@ export const authOptions: NextAuthOptions = {
             throw error;
           }
 
-          const safeError =
-            error instanceof Error
-              ? { message: error.message, stack: error.stack }
-              : error;
+          const safeError = error instanceof Error ? { message: error.message, stack: error.stack } : error;
 
           console.error("[auth] Erro inesperado durante autenticação", {
             ...attemptContext,
@@ -447,6 +420,11 @@ export const authOptions: NextAuthOptions = {
             tenantName?: string;
             tenantLogoUrl?: string;
             tenantFaviconUrl?: string;
+            sessionVersion?: number;
+            tenantSessionVersion?: number;
+            tenantPlanRevision?: number;
+            tenantStatus?: string;
+            tenantStatusReason?: string | null;
           })
         | null;
     }): Promise<JWT> {
@@ -462,44 +440,35 @@ export const authOptions: NextAuthOptions = {
         (token as any).permissions = (user as any).permissions ?? [];
         (token as any).avatarUrl = (user as any).image; // image contém o avatarUrl
         (token as any).tenantModules = (user as any).tenantModules ?? [];
+        // Campos de versionamento de sessão
+        (token as any).sessionVersion = (user as any).sessionVersion ?? 1;
+        (token as any).tenantSessionVersion = (user as any).tenantSessionVersion ?? 1;
+        (token as any).tenantPlanRevision = (user as any).tenantPlanRevision ?? 1;
+        (token as any).tenantStatus = (user as any).tenantStatus;
+        (token as any).tenantStatusReason = (user as any).tenantStatusReason;
       }
 
       return token;
     },
-    async session({
-      session,
-      token,
-    }: {
-      session: Session;
-      token: JWT;
-    }): Promise<Session> {
+    async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
       if (session.user) {
         // Usar dados do token (mais rápido e confiável)
         (session.user as any).id = (token as any).id as string | undefined;
-        (session.user as any).tenantId = (token as any).tenantId as
-          | string
-          | undefined;
+        (session.user as any).tenantId = (token as any).tenantId as string | undefined;
         (session.user as any).role = (token as any).role as string | undefined;
-        (session.user as any).tenantSlug = (token as any).tenantSlug as
-          | string
-          | undefined;
-        (session.user as any).tenantName = (token as any).tenantName as
-          | string
-          | undefined;
-        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as
-          | string
-          | undefined;
-        (session.user as any).tenantFaviconUrl = (token as any)
-          .tenantFaviconUrl as string | undefined;
-        (session.user as any).permissions = (token as any).permissions as
-          | string[]
-          | undefined;
-        (session.user as any).avatarUrl = (token as any).avatarUrl as
-          | string
-          | undefined;
-        (session.user as any).tenantModules = (token as any).tenantModules as
-          | string[]
-          | undefined;
+        (session.user as any).tenantSlug = (token as any).tenantSlug as string | undefined;
+        (session.user as any).tenantName = (token as any).tenantName as string | undefined;
+        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as string | undefined;
+        (session.user as any).tenantFaviconUrl = (token as any).tenantFaviconUrl as string | undefined;
+        (session.user as any).permissions = (token as any).permissions as string[] | undefined;
+        (session.user as any).avatarUrl = (token as any).avatarUrl as string | undefined;
+        (session.user as any).tenantModules = (token as any).tenantModules as string[] | undefined;
+        // Campos de versionamento de sessão
+        (session.user as any).sessionVersion = (token as any).sessionVersion as number | undefined;
+        (session.user as any).tenantSessionVersion = (token as any).tenantSessionVersion as number | undefined;
+        (session.user as any).tenantPlanRevision = (token as any).tenantPlanRevision as number | undefined;
+        (session.user as any).tenantStatus = (token as any).tenantStatus as string | undefined;
+        (session.user as any).tenantStatusReason = (token as any).tenantStatusReason as string | null | undefined;
       }
 
       return session;

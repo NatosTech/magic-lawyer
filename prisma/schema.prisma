@@ -75,6 +75,10 @@ model Tenant {
   domain                String?                @unique
   timezone              String                 @default("America/Sao_Paulo")
   status                TenantStatus           @default(ACTIVE)
+  statusReason          String?
+  statusChangedAt       DateTime?
+  sessionVersion        Int                    @default(1)
+  planRevision          Int                    @default(1)
   tipoPessoa            TipoPessoa             @default(JURIDICA)
   documento             String?                @unique
   razaoSocial           String?
@@ -170,6 +174,7 @@ model Tenant {
 
   @@index([status])
   @@index([superAdminId])
+  @@index([sessionVersion])
   @@schema("magiclawyer")
 }
 
@@ -288,6 +293,9 @@ model Usuario {
   phone                        String?
   avatarUrl                    String?
   active                       Boolean                @default(true)
+  sessionVersion               Int                    @default(1)
+  statusChangedAt              DateTime?
+  statusReason                 String?
   cpf                          String?
   rg                           String?
   dataNascimento               DateTime?
@@ -357,6 +365,7 @@ model Usuario {
   @@unique([email, tenantId])
   @@unique([tenantId, cpf])
   @@index([role])
+  @@index([tenantId, sessionVersion])
   @@schema("magiclawyer")
 }
 
@@ -1814,6 +1823,7 @@ model TenantSubscription {
   tenantId               String             @unique
   planoId                String?
   planoVersaoId          String?
+  planRevision           Int                @default(1)
   status                 SubscriptionStatus @default(TRIAL)
   dataInicio             DateTime           @default(now())
   dataFim                DateTime?
