@@ -214,6 +214,24 @@ export const authOptions: NextAuthOptions = {
               })),
             });
 
+            // IMPORTANTE: Verificar se algum tenant está suspenso/cancelado ANTES de continuar
+            const suspendedTenant = allUsers.find((u) => u.tenant?.status === "SUSPENDED");
+            const cancelledTenant = allUsers.find((u) => u.tenant?.status === "CANCELLED");
+
+            if (suspendedTenant) {
+              console.warn("[auth] Tenant suspenso detectado no auto-detect", {
+                tenantStatus: suspendedTenant.tenant?.status,
+              });
+              throw new Error("TENANT_SUSPENDED");
+            }
+
+            if (cancelledTenant) {
+              console.warn("[auth] Tenant cancelado detectado no auto-detect", {
+                tenantStatus: cancelledTenant.tenant?.status,
+              });
+              throw new Error("TENANT_CANCELLED");
+            }
+
             // Se encontrou usuário em tenant específico e está no domínio principal, redirecionar
             if (allUsers.length > 0 && !tenantFromDomain && host.includes("magiclawyer.vercel.app")) {
               console.info("[auth] Verificando redirecionamento", {
@@ -395,6 +413,17 @@ export const authOptions: NextAuthOptions = {
             console.info("[auth] Redirecionamento para tenant específico", {
               ...attemptContext,
               redirectTenant: error.message.replace("REDIRECT_TO_TENANT:", ""),
+            });
+
+            // Re-lançar o erro para ser tratado pelo cliente
+            throw error;
+          }
+
+          // Verificar se é erro de tenant suspenso/cancelado
+          if (error instanceof Error && (error.message === "TENANT_SUSPENDED" || error.message === "TENANT_CANCELLED")) {
+            console.warn("[auth] Tenant suspenso/cancelado detectado", {
+              ...attemptContext,
+              error: error.message,
             });
 
             // Re-lançar o erro para ser tratado pelo cliente

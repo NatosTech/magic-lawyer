@@ -760,18 +760,177 @@ Total estimado (com folga para imprevistos): **~5 dias corridos** com duas pesso
 
 ---
 
-## Backlog Fase 2+ (Realtime Avançado)
-1. **Redis / Upstash PubSub**:
-   - `invalidateTenant` publica mensagem `tenant:<id>`.
-   - Front usa `EventSource`/`WebSocket` para escutar e reagir instantaneamente.
-2. **WebSocket via Ably/Supabase Realtime/Pusher**:
-   - Canal por tenant.
-3. **Session Heartbeat incremental**:
-   - Guardar `sessionVersion` em cookie HttpOnly e validar via edge KV.
-4. **Tenant Settings UI**:
-   - Mostrar histórico de suspensões (timeline).
-5. **Admin Notification Center**:
-   - Avisar quando plano está desatualizado (revise, republique).
+## Fase 10: Realtime Escalável (Push-based)
+
+> Objetivo: remover dependência de polling/forçar logout para atualizações não críticas. Introduzir infraestrutura de eventos em tempo real que suporte milhares de tenants simultâneos em produção (Vercel) com latência < 1s.
+
+### 10.1. Infraestrutura de Mensageria
+- **Escolha de Provider**:  
+  - _Opção 1 (recomendada)_ → **Ably** (WebSocket gerenciado, plano gratuito com limite generoso, funciona bem com Vercel).  
+  - _Opção 2_ → **Upstash Redis Pub/Sub + WebSocket bridge** (exige worker custom).  
+  - _Opção 3_ → **Supabase Realtime** (Postgres replication, bom se já usar Supabase).  
+- **Custos**: Ably e Upstash possuem tiers gratuitos. Para uso em produção BR, considere planos pagos (~US$ 15-25/mês). Vercel sozinho não fornece WS stateful.
+- **Variáveis de Ambiente**:  
+  - `REALTIME_PROVIDER` (`ably` | `upstash` | `mock`).  
+  - `ABLY_API_KEY`, `ABLY_CLIENT_KEY` (se Ably).  
+  - `REDIS_URL`, `REDIS_TOKEN` (se Upstash).  
+  - `REALTIME_CHANNEL_PREFIX=ml`.
+
+### 10.1.1. Preparação (já executado)
+- Conta **Ably** criada (`magic-lawyer-dev`).  
+- Chaves definidas:
+  - `ABLY_API_KEY` → chave “Root” (server, capabilities completas).  
+  - `NEXT_PUBLIC_ABLY_CLIENT_KEY` → chave “Subscribe only” (frontend, apenas subscribe).  
+- `.env` atualizado com:
+  ```env
+  REALTIME_PROVIDER=ably
+  REALTIME_CHANNEL_PREFIX=ml-dev
+  ABLY_API_KEY="y-***:***"
+  NEXT_PUBLIC_ABLY_CLIENT_KEY="y-***:***"
+  ```
+- Registrar as mesmas variáveis na Vercel (staging/prod) com prefixos adequados (`ml-staging`, `ml-prod`).  
+- Definir fallback manual (`REALTIME_PROVIDER=mock`) para ambientes sem Ably.
+
+### 10.2. Eventos Padronizados
+Criar contrato único (JSON) para publish/subscribe:
+```json
+{
+  "type": "tenant-status" | "tenant-soft-update" | "plan-update" | "user-status" | "system-changelog",
+  "tenantId": "string | null",
+  "userId": "string | null",
+  "payload": {},
+  "timestamp": "ISO8601",
+  "version": number
+}
+```
+- `tenant-status`: situações críticas → session hard revoke (suspenso, cancelado, user desativado).  
+- `tenant-soft-update`: alterações não críticas (branding, limites, configurações).  
+- `plan-update`: módulos adicionados/removidos.  
+- `user-status`: mudanças individuais (perfis, promoções).  
+- `system-changelog`: novo item de changelog.
+
+### 10.3. Backend Publisher Layer
+Arquivo `app/lib/realtime/publisher.ts` passa a ter duas estratégias:
+1. `pushEventRealtime(event)` → envia para provider (Ably publish).  
+2. `invalidateCache(event)` → mantém fallback atual (`revalidatePath`).  
+3. `enqueueFallback(event)` → salva em tabela `RealtimeOutbox` (garante entrega, reprocessa via cron).
+
+### 10.4. Backend Consumer (Webhook/Cron)
+- Worker (Edge Function ou serverless) para reprocessar outbox e monitorar falhas.  
+- Metricas/Logs: cada publish com ID, status, retry.
+
+### 10.5. Front Client Layer
+- Criar `app/providers/realtime-provider.tsx`:
+  - Inicializa SDK (Ably).  
+  - Conecta no canal `tenant:<tenantId>` + `user:<userId>` + `system:changelog`.  
+  - Expõe Contexto (`useRealtime`) com `subscribe(eventType, handler)` e `publishLocal`.
+- Atualizar hooks:
+  - `useRealtimeTenantStatus` → ouvir `plan-update`, `tenant-soft-update`.  
+  - `useSessionGuard` → ouvir `tenant-status` para logout imediato (sem esperar intervalo).  
+  - `useTenantModules` (novo) → reagir ao evento `plan-update` e atualizar menu sem derrubar sessão.
+
+### 10.6. Soft Version vs Hard Version
+- Introduzir campo `tenantSoftVersion` (`Int`) em `Tenant`.  
+  - Incrementar para mudanças não críticas (planos, módulos, branding).  
+  - JWT agora tem `tenantSessionVersion` (hard) e `tenantSoftVersion`.  
+- Lógica:
+  - `tenantSessionVersion` divergente → logout obrigatório (tenant suspenso, user desativado).  
+  - `tenantSoftVersion` divergente → client aplica atualização em background (ex: exibir novo menu).
+
+### 10.7. Fallback & Resiliência
+- Se WebSocket falhar (desconectado > 10s) → ativar polling a cada 30s.  
+- Guardar última mensagem processada (`lastEventId` em `sessionStorage`) para evitar duplicados.  
+- Monitorar health do provider via dashboard e `status` API.
+
+### 10.8. Deploy Considerações
+- Vercel: usar Edge Config ou Runtime env para guardar API keys, sem expor ao client; uso do token de client (public) fica em `.env` com prefixo `NEXT_PUBLIC_`.  
+- Environments (Dev, Staging, Prod) com canais separados (`ml-dev`, `ml-prod`).  
+- Documentar rollback: desabilitar realtime → fallback para polling automatico (`REALTIME_PROVIDER=mock`).
+
+---
+
+## Fase 11: Changelog & Notificações In-App
+
+> Objetivo: fornecer feed central de atualizações com notificação em tempo real sem interromper fluxo do usuário.
+
+### 11.1. Modelagem & Seeds
+- Nova tabela `Changelog` (`id`, `title`, `summary`, `body`, `tags[]`, `visibility` (ALL | TENANT | ADMIN), `publishedAt`, `createdBy`).  
+- Seed inicial com releases anteriores.
+
+### 11.2. API & Admin UI
+- Rotas:
+  - `POST /api/admin/changelog` (SUPER_ADMIN) → cria item e publica evento `system-changelog`.  
+  - `GET /api/changelog` → lista paginada (visibilidade respeitada).  
+- Admin page `/admin/changelog` com editor (Markdown).
+
+### 11.3. Página Protegida
+- Rota `/dashboard/changelog` (tenant) e `/admin/changelog` (admin).  
+- Componentes:
+  - Lista cronológica com tags, data, botão “ver detalhes”.  
+  - Filtro por tags (ex.: `Segurança`, `Módulos`, `Correções`).  
+
+### 11.4. Floating Notification
+- Componente global `UpdateToast`:
+  - Escuta evento `system-changelog`.  
+  - Mostra banner fixo (“Novo update: [Título] – Ver detalhes”).  
+  - Botões: “Ver agora” (navega) / “Fechar” (salva `dismissedAt` em `localStorage`).  
+  - Permite reabrir via ícone “Sino” no cabeçalho.
+
+### 11.5. Histórico & Auditoria
+- Logar quem criou/ editou changelog (`superAdminAuditLog`).  
+- Mostrar contagem de leituras (opcional) → tabela `ChangelogRead` (userId, changelogId, readAt).
+
+### 11.6. Realtime Integração
+- Ao publicar changelog, backend executa:
+  1. Salva no banco.  
+  2. Publica evento `system-changelog` com metadata.  
+  3. Opcional: envia e-mail “Novidades” via cron (diário/semanal).
+
+---
+
+## Fase 12: Non-Disruptive Plan Updates
+
+> Objetivo: liberar ou remover módulos em tempo real sem derrubar sessões dos usuários.
+
+### 12.1. Soft vs Hard Enforcement
+- Atualizar `app/lib/tenant-modules.ts` para expor `modules` + `refreshToken` (timestamp).  
+- Criação de hook `useTenantModules` que:
+  - Carrega módulos via SWR.  
+  - Escuta evento `plan-update` → atualiza store (Zustand/Context).  
+  - Re-renderiza menus/botões (sem logout).  
+
+### 12.2. UX para Módulos Novos
+- Ao receber `plan-update`:
+  - Mostrar toast “🚀 Novo módulo liberado: [Nome]”.  
+  - Se o usuário estiver em rota agora disponível, permitir acesso imediato (router prefetch).  
+  - Para remoção de módulo, mostrar dialog “Este módulo foi desativado – contate o administrador” e redirecionar para dashboard.
+
+### 12.3. Permissões & Feature Flags
+- Introduzir `TenantFeatureState` (tenantId, featureSlug, enabled, updatedAt) para granularidade (ex.: módulos beta).  
+- Eventos incluen `feature-enabled`, `feature-disabled`.
+
+### 12.4. Backend
+- `updateTenantSubscription`:
+  - Incrementa `tenantSoftVersion`.  
+  - Publica `plan-update` com `modulesAdded`, `modulesRemoved`.  
+  - **Não** chama `invalidateTenant()` salvo se status crítico (ex.: subscription cancelada).
+
+### 12.5. Front Guard
+- `useSessionGuard`:
+  - Se `reason` ∈ { `TENANT_SUSPENDED`, `TENANT_CANCELLED`, `USER_DISABLED`, `USER_NOT_FOUND` } → hard logout.  
+  - Se `reason` = `SESSION_VERSION_MISMATCH` causado por soft update → apenas atualizar dados (não derrubar).  
+- Distinção implementada via payload: `severity: "hard" | "soft"`.
+
+---
+
+## Considerações de Deploy & Custos
+
+- **Vercel Prod**: WebSockets requerem serviço externo (Ably, Pusher, Supabase). O custo é separado de Vercel; planos básicos costumam cobrir apps médios.  
+- **Ambientes**: criar `staging` com provider gratuito para validação antes da produção.  
+- **Fallback**: manter a lógica atual (polling + invalidate) como plano B (feature flag `REALTIME_FALLBACK=true`).  
+- **Monitoramento**: configurar logs para eventos emitidos/recebidos, dashboards (Ably Insights), alertas quando canal cair.
+
+---
 
 ---
 
@@ -813,7 +972,7 @@ Vamos nessa! 💪
 
 ## 📊 Progresso de Implementação
 
-> Status: **Fases 1-6 Concluídas** | Branch: `feature/realtime-multitenancy` | Data: 2025-01-25
+> Status: **Fases 1-8 Concluídas** | Branch: `feature/realtime-multitenancy` | Data: 2025-01-25
 
 ### ✅ Fase 1: Banco de Dados (CONCLUÍDA)
 
@@ -830,7 +989,7 @@ Vamos nessa! 💪
   - Adicionado campo: `planRevision Int @default(1)`
 
 #### Configuração de Ambiente
-- Adicionado `REALTIME_INTERNAL_TOKEN` ao `.env.local` (gerado com OpenSSL)
+- Adicionado `REALTIME_INTERNAL_TOKEN` ao `.env` (gerado com OpenSSL)
 
 ---
 
@@ -953,25 +1112,37 @@ Vamos nessa! 💪
   - Mensagens específicas por motivo (SUSPENDED, CANCELLED, etc.)
   - Mensagens de erro de credenciais melhoradas com emojis
 
-#### Fase 8: Frontend Tenant (EM PROGRESSO - 60% concluído)
+#### Fase 8: Frontend Tenant (CONCLUÍDA)
 - [x] Mensagens específicas no login para tenant suspenso/cancelado
   - auth.ts lança erro específico baseado no status
   - app/login/page.tsx trata erros e exibe mensagem correta
-- [x] Hook `useSessionGuard()` com heartbeat (15s)
+  - Switch expandido para: TENANT_SUSPENDED, TENANT_CANCELLED, SESSION_VERSION_MISMATCH, USER_DISABLED, NOT_AUTHENTICATED
+- [x] Hook `useSessionGuard()` com heartbeat (5s)
   - Hook criado em `app/hooks/use-session-guard.ts`
-  - Verifica sessão a cada 15 segundos
-  - Redireciona para /login com motivo quando invalida
+  - Verifica sessão a cada 5 segundos (reduzido de 15s)
+  - Rota pública `/api/session/check` criada para validação segura
+  - Hook agora chama `signOut()` antes de redirecionar
+  - Usa `router.replace()` para não permitir voltar no histórico
+  - Estado `revokedRef` e `isRevoked` previne revalidações repetidas
+  - Listener de `visibilitychange` para validar quando aba recebe foco
 - [x] Guarda de sessão no `(protected)/layout.tsx`
   - Componente `SessionGuard` criado em `app/(protected)/session-guard.tsx`
   - Layout protegido agora usa SessionGuard
-- [ ] Tratamento de erros com mensagens amigáveis
-- [ ] Modal de logout forçado
+  - Overlay de "Encerrando sessão..." durante limpeza de sessão
+- [x] Tratamento de erros com mensagens amigáveis
+  - Toast com emojis específicos por tipo de erro
+- [x] Modal de logout forçado
+  - Overlay visual durante encerramento de sessão
 
-#### Fase 9: Testes & QA
-- [ ] Testes unitários dos helpers
-- [ ] Testes de integração (Playwright)
-- [ ] Checklist manual
-- [ ] Documentação
+#### Fase 9: Testes & QA (PRONTO PARA EXECUÇÃO)
+- [x] Checklist manual criado em `FASE9_QA_CHECKLIST.md`
+  - 10 cenários de teste principais
+  - 3 casos de erro
+  - Métricas de sucesso definidas
+- [ ] Testes unitários dos helpers (opcional)
+- [ ] Testes de integração (Playwright) (opcional)
+- [ ] Execução do checklist manual
+- [ ] Documentação final
 
 ---
 
@@ -991,7 +1162,7 @@ Vamos nessa! 💪
 
 #### Modificados
 - `prisma/schema.prisma` - Adicionados campos de sessionVersion em Tenant, Usuario e TenantSubscription
-- `.env.local` - Adicionado REALTIME_INTERNAL_TOKEN (gerado com OpenSSL)
+- `.env` - Adicionado REALTIME_INTERNAL_TOKEN (gerado com OpenSSL)
 - `auth.ts` - Incluídos campos de versionamento no token e sessão (lança erro específico para tenant suspenso/cancelado)
 - `middleware.ts` - Validação periódica de sessão e redirecionamento automático (CORRIGIDO: cookie setado após verificações)
 - `app/actions/admin.ts` - Chamadas de invalidação em `updateTenantStatus()` e `updateTenantSubscription()` (CORRIGIDO: planRevision incrementado, invalidação expandida)
@@ -1003,17 +1174,20 @@ Vamos nessa! 💪
 
 ---
 
-### 🎯 Critérios de Sucesso (Parciais)
+### 🎯 Critérios de Sucesso (Implementados)
 
 - ✅ Schema atualizado com campos de versionamento
 - ✅ Helpers de sessão implementados
 - ✅ Serviço de invalidação criado
 - ✅ Rotas internas funcionais
+- ✅ Rotas públicas intermediárias para segurança
 - ✅ Middleware validando sessão periodicamente
 - ✅ Server actions chamando invalidação
 - ✅ Auth.ts incluindo sessionVersion no token/sessão
-- ⏳ Frontend reagindo a mudanças (não implementado)
-- ⏳ Testes automatizados (não implementado)
+- ✅ Frontend reagindo a mudanças em tempo real
+- ✅ Guards de sessão implementados com overlay visual
+- ✅ Mensagens amigáveis em todos os cenários
+- ⏳ Testes automatizados (próxima fase)
 
 ---
 
@@ -1038,7 +1212,7 @@ npm run build
 
 ---
 
-**Última Atualização**: 2025-01-25 (Correções críticas + expansão de invalidação) | **Próxima Fase**: Frontend Admin e Tenant (Fases 7-8)
+**Última Atualização**: 2025-01-25 (Fases 1-8 Concluídas) | **Próxima Fase**: Testes & QA (Fase 9) + Deploy
 
 ---
 
@@ -1110,6 +1284,16 @@ npm run build
 5. Overlay de "Encerrando sessão..." enquanto limpa a sessão
 6. Intervalo reduzido de 15s para 5s
 7. Adicionado listener de `visibilitychange` para validar quando aba recebe foco
+
+### Bug 10: Switch duplicado no login (app/login/page.tsx:90-120)
+**Problema**: Dois cases com mesmo nome `SESSION_VERSION_MISMATCH`, causando conflito de mensagens.
+
+**Solução**: Removido duplicata, mantendo apenas "🔄 Sessão Expirada". Adicionados cases para `USER_ID_MISMATCH`, `USER_NOT_FOUND`, `INVALID_PAYLOAD`, `INTERNAL_ERROR`.
+
+### Bug 11: Rota session/check sem validação de input (app/api/session/check/route.ts:20)
+**Problema**: `await request.json()` executado sem try/catch, vulnerável a payloads malformados.
+
+**Solução**: Adicionado try/catch + validação de tipos para `userId`, `tenantSessionVersion`, `userSessionVersion`. Retorna códigos específicos para cada erro de validação.
 
 ### Expansão de Invalidação (app/actions/admin.ts)
 **Mudanças em `updateTenantSubscription()`**:

@@ -112,21 +112,40 @@ function LoginPageInner() {
           description = "Suas credenciais foram alteradas. Por favor, faça login novamente.";
           color = "info";
           break;
+        case "SESSION_REVOKED":
+          title = "🔒 Sessão Revogada";
+          description = "Sua sessão foi encerrada por segurança. Por favor, faça login novamente.";
+          color = "warning";
+          break;
         case "USER_DISABLED":
           title = "🚫 Usuário Desativado";
           description = "Sua conta foi desativada. Entre em contato com o administrador do escritório.";
           color = "warning";
           break;
-        case "SESSION_REVOKED":
-        case "SESSION_VERSION_MISMATCH":
-          title = "🔒 Sessão Revogada";
-          description = "Sua sessão foi encerrada por segurança. Por favor, faça login novamente.";
+        case "USER_ID_MISMATCH":
+          title = "⚠️ Erro de Autenticação";
+          description = "Houve um problema com sua sessão. Por favor, faça login novamente.";
           color = "warning";
+          break;
+        case "USER_NOT_FOUND":
+          title = "❌ Usuário Não Encontrado";
+          description = "Usuário não encontrado no sistema.";
+          color = "danger";
           break;
         case "NOT_AUTHENTICATED":
           title = "❌ Não Autenticado";
           description = "Você precisa fazer login para acessar esta página.";
           color = "warning";
+          break;
+        case "INVALID_PAYLOAD":
+          title = "⚠️ Erro de Comunicação";
+          description = "Houve um problema ao validar sua sessão. Tente novamente.";
+          color = "warning";
+          break;
+        case "INTERNAL_ERROR":
+          title = "⚠️ Erro Interno";
+          description = "Ocorreu um erro no servidor. Tente novamente mais tarde.";
+          color = "danger";
           break;
         default:
           title = "⚠️ Acesso Negado";

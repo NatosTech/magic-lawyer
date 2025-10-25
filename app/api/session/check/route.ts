@@ -19,7 +19,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ valid: false, reason: "NOT_AUTHENTICATED" }, { status: 401 });
     }
 
-    const { userId, tenantId, tenantSessionVersion, userSessionVersion } = await request.json();
+    // Validar e extrair payload
+    let payload;
+    try {
+      payload = await request.json();
+    } catch (error) {
+      return NextResponse.json({ valid: false, reason: "INVALID_PAYLOAD" }, { status: 400 });
+    }
+
+    // Validar tipos dos campos obrigatórios
+    const { userId, tenantId, tenantSessionVersion, userSessionVersion } = payload;
+
+    if (!userId || typeof userId !== "string") {
+      return NextResponse.json({ valid: false, reason: "INVALID_USER_ID" }, { status: 400 });
+    }
+
+    if (tenantSessionVersion !== undefined && typeof tenantSessionVersion !== "number") {
+      return NextResponse.json({ valid: false, reason: "INVALID_VERSION" }, { status: 400 });
+    }
+
+    if (userSessionVersion !== undefined && typeof userSessionVersion !== "number") {
+      return NextResponse.json({ valid: false, reason: "INVALID_VERSION" }, { status: 400 });
+    }
 
     // Validar que o userId da requisição corresponde ao da sessão
     if (userId !== session.user.id) {

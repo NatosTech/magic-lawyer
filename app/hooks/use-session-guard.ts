@@ -50,7 +50,19 @@ export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuard
   const [isRevoked, setIsRevoked] = useState(false);
 
   // Verificar se a rota atual é pública
-  const isPublicRoute = publicRoutes.some((route) => pathname?.startsWith(route));
+  // IMPORTANTE: "/" não deve fazer match com "/dashboard", apenas com exatamente "/"
+  const isPublicRoute = publicRoutes.some((route) => {
+    if (route === "/") {
+      return pathname === "/";
+    }
+    return pathname?.startsWith(route);
+  });
+
+  console.log("[useSessionGuard] Configuração:", {
+    pathname,
+    isPublicRoute,
+    publicRoutes,
+  });
 
   /**
    * Função para validar a sessão contra o banco de dados
@@ -58,6 +70,13 @@ export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuard
   const validateSession = useCallback(async () => {
     // Se não está autenticado, está em rota pública ou já foi revogada, não precisa verificar
     if (sessionStatus !== "authenticated" || !session?.user || isPublicRoute || revokedRef.current || isRevoked) {
+      console.log("[useSessionGuard] Verificação pulada:", {
+        sessionStatus,
+        hasUser: !!session?.user,
+        isPublicRoute,
+        revokedRef: revokedRef.current,
+        isRevoked,
+      });
       return;
     }
 
@@ -65,9 +84,17 @@ export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuard
       const tenantSessionVersion = (session.user as any)?.tenantSessionVersion;
       const userSessionVersion = (session.user as any)?.sessionVersion;
 
+      console.log("[useSessionGuard] Iniciando validação:", {
+        userId: session.user.id,
+        tenantId: (session.user as any)?.tenantId,
+        tenantSessionVersion,
+        userSessionVersion,
+      });
+
       // Usar rota pública intermediária que valida no servidor sem expor token interno
       const response = await fetch("/api/session/check", {
         method: "POST",
+        credentials: "same-origin", // Garantir envio de cookies
         headers: {
           "Content-Type": "application/json",
         },
@@ -81,15 +108,25 @@ export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuard
 
       const data = await response.json();
 
+      console.log("[useSessionGuard] Resposta recebida:", {
+        status: response.status,
+        valid: data.valid,
+        reason: data.reason,
+      });
+
       // Se a sessão foi invalidada (qualquer resposta que não seja válida)
       if (!data.valid) {
         const reason = data.reason || "SESSION_REVOKED";
 
+        console.log("[useSessionGuard] ⚠️ Sessão inválida detectada:", { reason });
+
         // Prevenir revalidações repetidas
         if (revokedRef.current) {
+          console.log("[useSessionGuard] ⚠️ Revalidação ignorada (já revogada)");
           return;
         }
 
+        console.log("[useSessionGuard] 🔒 Iniciando logout forçado...");
         revokedRef.current = true;
         setIsRevoked(true);
 
@@ -99,11 +136,14 @@ export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuard
         // Dar tempo para limpar UI antes de redirecionar
         setTimeout(() => {
           // Usar replace para não permitir voltar
+          console.log(`[useSessionGuard] 🔄 Redirecionando para /login?reason=${reason}`);
           router.replace(`/login?reason=${reason}`);
         }, 100);
 
         return;
       }
+
+      console.log("[useSessionGuard] ✅ Sessão válida");
 
       // Tudo OK, sessão válida
     } catch (error) {
@@ -118,14 +158,24 @@ export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuard
   useEffect(() => {
     // Não fazer verificação se não estiver autenticado ou em rota pública
     if (sessionStatus !== "authenticated" || !session?.user || isPublicRoute || revokedRef.current || isRevoked) {
+      console.log("[useSessionGuard] useEffect: Verificação não iniciada:", {
+        sessionStatus,
+        hasUser: !!session?.user,
+        isPublicRoute,
+        revokedRef: revokedRef.current,
+        isRevoked,
+      });
       return;
     }
+
+    console.log(`[useSessionGuard] 🔄 Iniciando verificação periódica (intervalo: ${interval}s)`);
 
     // Executar verificação imediatamente na primeira vez
     validateSession();
 
     // Configurar intervalo para verificação periódica
     const intervalId = setInterval(() => {
+      console.log(`[useSessionGuard] ⏰ Intervalo disparado (a cada ${interval}s)`);
       validateSession();
     }, interval * 1000);
 
@@ -140,6 +190,7 @@ export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuard
 
     // Cleanup ao desmontar
     return () => {
+      console.log("[useSessionGuard] 🧹 Limpando intervalo e listeners");
       clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
