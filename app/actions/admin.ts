@@ -938,26 +938,48 @@ export async function updateTenantSubscription(tenantId: string, payload: Update
     const hasRenovaEmChanged =
       (renovaEm && existingSubscription?.renovaEm?.getTime() !== renovaEm.getTime()) || (!renovaEm && existingSubscription?.renovaEm !== null) || (renovaEm && !existingSubscription?.renovaEm);
 
-    if (isNewSubscription || hasPlanChanged || hasStatusChanged || hasTrialEndsAtChanged || hasRenovaEmChanged) {
-      const { invalidateTenant } = await import("@/app/lib/realtime/invalidation");
+    // Separar mudanças críticas (exigem logout) de mudanças soft (atualização de UI)
+    const { softUpdateTenant, invalidateTenant } = await import("@/app/lib/realtime/invalidation");
 
+    if (hasStatusChanged) {
+      // Mudança de status é CRÍTICA (pode exigir logout)
+      // Verificar se é suspensão/cancelamento
+      const isCriticalStatus = payload.status === "SUSPENDED" || payload.status === "CANCELLED";
+
+      if (isCriticalStatus) {
+        // HARD LOGOUT - usar invalidateTenant
+        await invalidateTenant({
+          tenantId,
+          reason: `SUBSCRIPTION_STATUS_CHANGED_TO_${payload.status}`,
+          actorId: superAdmin?.id || session.user.id,
+        });
+      } else {
+        // SOFT UPDATE - apenas atualizar UI
+        await softUpdateTenant({
+          tenantId,
+          reason: `SUBSCRIPTION_STATUS_CHANGED_TO_${payload.status}`,
+          actorId: superAdmin?.id || session.user.id,
+          planDetails: { planId: subscription.planoId, planRevision: subscription.planRevision },
+        });
+      }
+    } else if (isNewSubscription || hasPlanChanged || hasTrialEndsAtChanged || hasRenovaEmChanged) {
+      // Todas essas mudanças são SOFT (não exigem logout)
       let reason = "";
       if (isNewSubscription) {
         reason = `SUBSCRIPTION_CREATED`;
       } else if (hasPlanChanged) {
         reason = `PLAN_CHANGED_TO_${planId}`;
-      } else if (hasStatusChanged) {
-        reason = `SUBSCRIPTION_STATUS_CHANGED_TO_${payload.status}`;
       } else if (hasTrialEndsAtChanged) {
         reason = `TRIAL_ENDS_AT_CHANGED`;
       } else if (hasRenovaEmChanged) {
         reason = `RENOVA_EM_CHANGED`;
       }
 
-      await invalidateTenant({
+      await softUpdateTenant({
         tenantId,
         reason,
         actorId: superAdmin?.id || session.user.id,
+        planDetails: { planId: subscription.planoId, planRevision: subscription.planRevision },
       });
     }
 
