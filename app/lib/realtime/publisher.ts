@@ -69,16 +69,8 @@ async function publishToAbly(event: RealtimeEvent): Promise<boolean> {
 
     const channel = client.channels.get(channelName);
 
-    // Usar Promise para garantir que publish foi concluído
-    await new Promise<void>((resolve, reject) => {
-      channel.publish(event.type, event, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
+    // Publicar evento no canal
+    await channel.publish(event.type, event);
 
     console.log("[realtime] Evento publicado no Ably:", {
       channel: channelName,
@@ -131,9 +123,7 @@ async function saveToOutbox(event: RealtimeEvent): Promise<void> {
   //     processed: false,
   //   },
   // });
-  console.log(
-    "[realtime] Outbox não implementado ainda - pulando salvar evento",
-  );
+  console.log("[realtime] Outbox não implementado ainda - pulando salvar evento");
 }
 
 /**
@@ -146,7 +136,7 @@ export async function publishRealtimeEvent(
     tenantId?: string | null;
     userId?: string | null;
     payload: Record<string, any>;
-  },
+  }
 ): Promise<void> {
   const event: RealtimeEvent = {
     type,
@@ -156,8 +146,7 @@ export async function publishRealtimeEvent(
     timestamp: new Date().toISOString(),
     // TODO: Passar version dinâmica baseada em tenantSoftVersion/sessionVersion
     // Por enquanto usa version fixo 1
-    version:
-      params.payload.tenantSoftVersion || params.payload.sessionVersion || 1,
+    version: params.payload.tenantSoftVersion || params.payload.sessionVersion || 1,
   };
 
   // Tentar publicar no Ably
@@ -177,12 +166,7 @@ export async function publishRealtimeEvent(
  * Função legada para compatibilidade
  * @deprecated Use publishRealtimeEvent()
  */
-export async function triggerRealtimeEvent(params: {
-  type: "tenant-status" | "plan-update" | "user-status";
-  tenantId: string;
-  userId?: string;
-  sessionVersion?: number;
-}): Promise<void> {
+export async function triggerRealtimeEvent(params: { type: "tenant-status" | "plan-update" | "user-status"; tenantId: string; userId?: string; sessionVersion?: number }): Promise<void> {
   await publishRealtimeEvent(params.type, {
     tenantId: params.tenantId,
     userId: params.userId,

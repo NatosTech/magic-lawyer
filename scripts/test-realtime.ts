@@ -69,18 +69,14 @@ async function testPublish() {
     console.log("\n📤 Publicando evento...");
     console.log(JSON.stringify(event, null, 2));
 
-    await new Promise<void>((resolve, reject) => {
-      channel.publish("plan-update", event, (err) => {
-        if (err) {
-          console.error("❌ Erro ao publicar:", err);
-          reject(err);
-        } else {
-          console.log("\n✅ Evento publicado com sucesso!");
-          console.log("\n👀 Verifique o console do navegador para ver se foi recebido");
-          resolve();
-        }
-      });
-    });
+    try {
+      await channel.publish("plan-update", event);
+      console.log("\n✅ Evento publicado com sucesso!");
+      console.log("\n👀 Verifique o console do navegador para ver se foi recebido");
+    } catch (err) {
+      console.error("❌ Erro ao publicar:", err);
+      throw err;
+    }
 
     // Aguardar um pouco antes de fechar
     await new Promise((resolve) => setTimeout(resolve, 1000));
