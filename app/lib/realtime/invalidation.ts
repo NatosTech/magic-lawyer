@@ -41,18 +41,20 @@ export async function softUpdateTenant(options: { tenantId: string; reason: stri
   });
 
   // Publicar eventos soft (não derruba sessão)
-  await publishRealtimeEvent("tenant-soft-update", {
+  publishRealtimeEvent("tenant-soft-update", {
     tenantId: options.tenantId,
     payload: {
       reason: options.reason,
       tenantSoftVersion: updated.tenantSoftVersion,
       changedBy: options.actorId,
     },
+  }).catch((error) => {
+    console.error("[realtime] Falha tenant-soft-update", error);
   });
 
   // Se há mudança de plano, publicar também plan-update
   if (options.planDetails) {
-    await publishRealtimeEvent("plan-update", {
+    publishRealtimeEvent("plan-update", {
       tenantId: options.tenantId,
       payload: {
         planId: options.planDetails.planId || "",
@@ -60,6 +62,8 @@ export async function softUpdateTenant(options: { tenantId: string; reason: stri
         tenantSoftVersion: updated.tenantSoftVersion,
         changedBy: options.actorId,
       },
+    }).catch((error) => {
+      console.error("[realtime] Falha plan-update", error);
     });
   }
 }
@@ -111,7 +115,7 @@ export async function invalidateTenant(options: { tenantId: string; reason: stri
   });
 
   // Disparar evento realtime via Ably
-  await publishRealtimeEvent("tenant-status", {
+  publishRealtimeEvent("tenant-status", {
     tenantId: options.tenantId,
     payload: {
       status: toStatus,
@@ -119,6 +123,8 @@ export async function invalidateTenant(options: { tenantId: string; reason: stri
       sessionVersion: updated.sessionVersion,
       changedBy: options.actorId,
     },
+  }).catch((error) => {
+    console.error("[realtime] Falha tenant-status", error);
   });
 }
 
@@ -144,13 +150,14 @@ export async function invalidateUser(options: { userId: string; tenantId: string
     await prisma.auditLog.create({
       data: {
         tenantId: options.tenantId,
-        usuarioId: options.actorId,
+        usuarioId: null,
         acao: "USER_SESSION_INVALIDATED",
         entidade: "USUARIO",
         entidadeId: options.userId,
         dados: {
           reason: options.reason,
           sessionVersion: updated.sessionVersion,
+          changedBy: options.actorId,
         },
         changedFields: ["sessionVersion", "status"],
       },
@@ -158,7 +165,7 @@ export async function invalidateUser(options: { userId: string; tenantId: string
   }
 
   // Disparar evento realtime via Ably com status CORRETO (após atualização)
-  await publishRealtimeEvent("user-status", {
+  publishRealtimeEvent("user-status", {
     tenantId: options.tenantId,
     userId: options.userId,
     payload: {
@@ -168,6 +175,8 @@ export async function invalidateUser(options: { userId: string; tenantId: string
       sessionVersion: updated.sessionVersion,
       changedBy: options.actorId,
     },
+  }).catch((error) => {
+    console.error("[realtime] Falha user-status", error);
   });
 }
 
