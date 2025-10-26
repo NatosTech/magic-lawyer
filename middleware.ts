@@ -46,12 +46,16 @@ export default withAuth(
     // Validar sessão periodicamente (a cada 15 segundos)
     if (token && (token as any).tenantId) {
       const lastCheck = req.cookies.get("ml-last-session-check");
-      const shouldCheck = !lastCheck || Date.now() - Number(lastCheck.value) > 15000;
+      const shouldCheck =
+        !lastCheck || Date.now() - Number(lastCheck.value) > 15000;
 
       if (shouldCheck) {
         try {
           const base = process.env.NEXTAUTH_URL || "http://localhost:9192";
-          const url = new URL("/api/internal/session/validate", base).toString();
+          const url = new URL(
+            "/api/internal/session/validate",
+            base,
+          ).toString();
 
           const response = await fetch(url, {
             method: "POST",
@@ -70,9 +74,14 @@ export default withAuth(
           if (response.status === 409) {
             const data = await response.json();
             const logoutUrl = new URL("/login", req.url);
-            logoutUrl.searchParams.set("reason", data.reason || "SESSION_REVOKED");
+
+            logoutUrl.searchParams.set(
+              "reason",
+              data.reason || "SESSION_REVOKED",
+            );
 
             const res = NextResponse.redirect(logoutUrl);
+
             res.cookies.delete("next-auth.session-token");
             res.cookies.set("ml-session-revoked", "1", { path: "/" });
 
@@ -158,16 +167,35 @@ export default withAuth(
     }
 
     // Verificar se SuperAdmin está tentando acessar área comum (PROIBIR)
-    if (isAuth && !req.nextUrl.pathname.startsWith("/admin") && !req.nextUrl.pathname.startsWith("/api") && !req.nextUrl.pathname.startsWith("/login")) {
+    if (
+      isAuth &&
+      !req.nextUrl.pathname.startsWith("/admin") &&
+      !req.nextUrl.pathname.startsWith("/api") &&
+      !req.nextUrl.pathname.startsWith("/login")
+    ) {
       const userRole = (token as any)?.role;
       const isSuperAdmin = userRole === "SUPER_ADMIN";
 
       // SuperAdmin NÃO pode acessar rotas de usuário comum
       if (isSuperAdmin) {
         // Rotas que SuperAdmin NÃO pode acessar
-        const rotasProibidas = ["/dashboard", "/processos", "/documentos", "/agenda", "/financeiro", "/juizes", "/relatorios", "/equipe", "/help", "/configuracoes", "/usuario"];
+        const rotasProibidas = [
+          "/dashboard",
+          "/processos",
+          "/documentos",
+          "/agenda",
+          "/financeiro",
+          "/juizes",
+          "/relatorios",
+          "/equipe",
+          "/help",
+          "/configuracoes",
+          "/usuario",
+        ];
 
-        const isRotaProibida = rotasProibidas.some((rota) => req.nextUrl.pathname.startsWith(rota));
+        const isRotaProibida = rotasProibidas.some((rota) =>
+          req.nextUrl.pathname.startsWith(rota),
+        );
 
         if (isRotaProibida) {
           return NextResponse.redirect(new URL("/admin/dashboard", req.url));
@@ -176,13 +204,21 @@ export default withAuth(
     }
 
     // Verificar permissões de módulos para usuários comuns
-    if (isAuth && !req.nextUrl.pathname.startsWith("/admin") && !req.nextUrl.pathname.startsWith("/api")) {
+    if (
+      isAuth &&
+      !req.nextUrl.pathname.startsWith("/admin") &&
+      !req.nextUrl.pathname.startsWith("/api")
+    ) {
       const modules = (token as any)?.tenantModules as string[] | undefined;
       const role = (token as any)?.role;
 
       if (role !== "SUPER_ADMIN") {
         try {
-          const allowed = await isRouteAllowedByModulesEdge(req.nextUrl.pathname, modules, req.nextUrl.origin);
+          const allowed = await isRouteAllowedByModulesEdge(
+            req.nextUrl.pathname,
+            modules,
+            req.nextUrl.origin,
+          );
 
           if (!allowed) {
             return NextResponse.redirect(new URL("/dashboard", req.url));
@@ -214,7 +250,7 @@ export default withAuth(
         return true; // Deixamos o middleware acima fazer a lógica
       },
     },
-  }
+  },
 );
 
 export const config = {

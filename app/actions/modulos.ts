@@ -1,6 +1,5 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
 
 import prisma from "@/app/lib/prisma";
@@ -82,7 +81,13 @@ export interface ModuloDetailResponse {
 
 // ==================== LISTAR MÓDULOS ====================
 
-export async function listModulos(params?: { search?: string; categoria?: string; ativo?: boolean; limit?: number; offset?: number }): Promise<ModuloListResponse> {
+export async function listModulos(params?: {
+  search?: string;
+  categoria?: string;
+  ativo?: boolean;
+  limit?: number;
+  offset?: number;
+}): Promise<ModuloListResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -101,7 +106,11 @@ export async function listModulos(params?: { search?: string; categoria?: string
     const where: any = {};
 
     if (search) {
-      where.OR = [{ nome: { contains: search, mode: "insensitive" } }, { slug: { contains: search, mode: "insensitive" } }, { descricao: { contains: search, mode: "insensitive" } }];
+      where.OR = [
+        { nome: { contains: search, mode: "insensitive" } },
+        { slug: { contains: search, mode: "insensitive" } },
+        { descricao: { contains: search, mode: "insensitive" } },
+      ];
     }
 
     if (categoria) {
@@ -312,9 +321,13 @@ export async function getModulo(id: string): Promise<ModuloDetailResponse> {
 
 // ==================== ATUALIZAR CATEGORIA ====================
 
-export async function updateModuloCategoria(moduloId: string, categoriaId: string | null): Promise<ActionResponse<{ success: boolean }>> {
+export async function updateModuloCategoria(
+  moduloId: string,
+  categoriaId: string | null,
+): Promise<ActionResponse<{ success: boolean }>> {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
       return { success: false, error: "Não autorizado" };
     }
@@ -350,7 +363,9 @@ export async function updateModuloCategoria(moduloId: string, categoriaId: strin
       data: { categoriaId },
     });
 
-    logger.info(`Categoria do módulo ${modulo.slug} atualizada para ${categoriaId || "sem categoria"}`);
+    logger.info(
+      `Categoria do módulo ${modulo.slug} atualizada para ${categoriaId || "sem categoria"}`,
+    );
 
     return {
       success: true,
@@ -358,6 +373,7 @@ export async function updateModuloCategoria(moduloId: string, categoriaId: strin
     };
   } catch (error: any) {
     logger.error("Erro ao atualizar categoria do módulo:", error);
+
     return { success: false, error: "Erro interno do servidor" };
   }
 }
@@ -393,30 +409,32 @@ export async function getDashboardModulos(): Promise<{
       return { success: false, error: "Acesso negado" };
     }
 
-    const [total, ativos, inativos, categorias, maisUsados] = await Promise.all([
-      prisma.modulo.count(),
-      prisma.modulo.count({ where: { ativo: true } }),
-      prisma.modulo.count({ where: { ativo: false } }),
-      prisma.moduloCategoria.count(),
-      prisma.modulo.findMany({
-        select: {
-          id: true,
-          nome: true,
-          slug: true,
-          _count: {
-            select: {
-              planoModulos: true,
+    const [total, ativos, inativos, categorias, maisUsados] = await Promise.all(
+      [
+        prisma.modulo.count(),
+        prisma.modulo.count({ where: { ativo: true } }),
+        prisma.modulo.count({ where: { ativo: false } }),
+        prisma.moduloCategoria.count(),
+        prisma.modulo.findMany({
+          select: {
+            id: true,
+            nome: true,
+            slug: true,
+            _count: {
+              select: {
+                planoModulos: true,
+              },
             },
           },
-        },
-        orderBy: {
-          planoModulos: {
-            _count: "desc",
+          orderBy: {
+            planoModulos: {
+              _count: "desc",
+            },
           },
-        },
-        take: 5,
-      }),
-    ]);
+          take: 5,
+        }),
+      ],
+    );
 
     return {
       success: true,

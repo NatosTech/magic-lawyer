@@ -1,11 +1,19 @@
-import prisma from "@/app/lib/prisma";
-import { bumpTenantSession, bumpUserSession, getTenantSessionSnapshot } from "@/app/lib/session-version";
 import { publishRealtimeEvent } from "./publisher";
+
+import prisma from "@/app/lib/prisma";
+import {
+  bumpTenantSession,
+  bumpUserSession,
+  getTenantSessionSnapshot,
+} from "@/app/lib/session-version";
 
 /**
  * Incrementa tenantSoftVersion (para mudanças não críticas que não exigem logout)
  */
-async function bumpTenantSoftVersion(tenantId: string, reason?: string): Promise<{ tenantSoftVersion: number }> {
+async function bumpTenantSoftVersion(
+  tenantId: string,
+  reason?: string,
+): Promise<{ tenantSoftVersion: number }> {
   const updated = await prisma.tenant.update({
     where: { id: tenantId },
     data: {
@@ -22,7 +30,12 @@ async function bumpTenantSoftVersion(tenantId: string, reason?: string): Promise
  * Soft update do tenant (mudanças não críticas que não exigem logout)
  * Incrementa tenantSoftVersion e publica evento tenant-soft-update + plan-update
  */
-export async function softUpdateTenant(options: { tenantId: string; reason: string; actorId: string; planDetails?: { planId: string | null; planRevision: number } }): Promise<void> {
+export async function softUpdateTenant(options: {
+  tenantId: string;
+  reason: string;
+  actorId: string;
+  planDetails?: { planId: string | null; planRevision: number };
+}): Promise<void> {
   // Incrementar soft version
   const updated = await bumpTenantSoftVersion(options.tenantId, options.reason);
 
@@ -72,7 +85,11 @@ export async function softUpdateTenant(options: { tenantId: string; reason: stri
  * Invalida a sessão de um tenant (incrementa versão, registra auditoria, dispara eventos)
  * USAR APENAS para mudanças CRÍTICAS que exigem logout (status SUSPENDED/CANCELLED)
  */
-export async function invalidateTenant(options: { tenantId: string; reason: string; actorId: string }): Promise<void> {
+export async function invalidateTenant(options: {
+  tenantId: string;
+  reason: string;
+  actorId: string;
+}): Promise<void> {
   // Buscar tenant atual para registrar transição
   const snapshot = await getTenantSessionSnapshot(options.tenantId);
 
@@ -131,7 +148,12 @@ export async function invalidateTenant(options: { tenantId: string; reason: stri
 /**
  * Invalida a sessão de um usuário específico
  */
-export async function invalidateUser(options: { userId: string; tenantId: string; reason: string; actorId?: string }): Promise<void> {
+export async function invalidateUser(options: {
+  userId: string;
+  tenantId: string;
+  reason: string;
+  actorId?: string;
+}): Promise<void> {
   // Incrementar versão de sessão PRIMEIRO
   const updated = await bumpUserSession(options.userId, options.reason);
 
@@ -184,7 +206,10 @@ export async function invalidateUser(options: { userId: string; tenantId: string
  * Invalida sessões de todos os usuários de um tenant
  * Usado quando o tenant é suspenso/cancelado
  */
-export async function invalidateAllTenantUsers(options: { tenantId: string; reason: string }): Promise<void> {
+export async function invalidateAllTenantUsers(options: {
+  tenantId: string;
+  reason: string;
+}): Promise<void> {
   const users = await prisma.usuario.findMany({
     where: { tenantId: options.tenantId },
     select: { id: true },
@@ -196,7 +221,7 @@ export async function invalidateAllTenantUsers(options: { tenantId: string; reas
         userId: user.id,
         tenantId: options.tenantId,
         reason: options.reason,
-      })
-    )
+      }),
+    ),
   );
 }

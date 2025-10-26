@@ -6,7 +6,15 @@ import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 
 import prisma from "@/app/lib/prisma";
-import { EspecialidadeJuridica, InvoiceStatus, PaymentStatus, SubscriptionStatus, TenantStatus, TipoPessoa, UserRole } from "@/app/generated/prisma";
+import {
+  EspecialidadeJuridica,
+  InvoiceStatus,
+  PaymentStatus,
+  SubscriptionStatus,
+  TenantStatus,
+  TipoPessoa,
+  UserRole,
+} from "@/app/generated/prisma";
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
 
@@ -66,7 +74,10 @@ const decimalToNullableNumber = (value: unknown) => {
     return Number.isNaN(parsed) ? null : parsed;
   }
 
-  if (typeof value === "object" && "toString" in (value as Record<string, unknown>)) {
+  if (
+    typeof value === "object" &&
+    "toString" in (value as Record<string, unknown>)
+  ) {
     const parsed = Number((value as { toString(): string }).toString());
 
     return Number.isNaN(parsed) ? null : parsed;
@@ -145,11 +156,17 @@ export interface TenantManagementData {
 }
 
 // Criar novo tenant
-export async function createTenant(data: CreateTenantData): Promise<TenantResponse> {
+export async function createTenant(
+  data: CreateTenantData,
+): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+    if (
+      !session?.user ||
+      session.user.role !== "SUPER_ADMIN" ||
+      !session.user.id
+    ) {
       return {
         success: false,
         error: "Acesso não autorizado para criar tenants",
@@ -233,17 +250,25 @@ export async function createTenant(data: CreateTenantData): Promise<TenantRespon
     });
 
     // Configurar Asaas se solicitado
-    if (data.asaasConfig?.configurarAsaas && data.asaasConfig.asaasApiKey && data.asaasConfig.asaasAccountId) {
+    if (
+      data.asaasConfig?.configurarAsaas &&
+      data.asaasConfig.asaasApiKey &&
+      data.asaasConfig.asaasAccountId
+    ) {
       try {
         // Importar funções do Asaas
-        const { encryptAsaasCredentials, validateAsaasApiKey } = await import("@/lib/asaas");
+        const { encryptAsaasCredentials, validateAsaasApiKey } = await import(
+          "@/lib/asaas"
+        );
 
         // Validar API key
         if (!validateAsaasApiKey(data.asaasConfig.asaasApiKey)) {
           logger.warn(`API key Asaas inválida para tenant ${result.tenant.id}`);
         } else {
           // Criptografar API key
-          const encryptedApiKey = encryptAsaasCredentials(data.asaasConfig.asaasApiKey);
+          const encryptedApiKey = encryptAsaasCredentials(
+            data.asaasConfig.asaasApiKey,
+          );
 
           // Salvar configuração Asaas
           await prisma.tenantAsaasConfig.create({
@@ -259,10 +284,15 @@ export async function createTenant(data: CreateTenantData): Promise<TenantRespon
             },
           });
 
-          logger.info(`Configuração Asaas criada para tenant ${result.tenant.id}`);
+          logger.info(
+            `Configuração Asaas criada para tenant ${result.tenant.id}`,
+          );
         }
       } catch (error) {
-        logger.error(`Erro ao configurar Asaas para tenant ${result.tenant.id}:`, error);
+        logger.error(
+          `Erro ao configurar Asaas para tenant ${result.tenant.id}:`,
+          error,
+        );
         // Não falha a criação do tenant se a configuração Asaas falhar
       }
     }
@@ -308,7 +338,11 @@ export async function getAllTenants(): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+    if (
+      !session?.user ||
+      session.user.role !== "SUPER_ADMIN" ||
+      !session.user.id
+    ) {
       return {
         success: false,
         error: "Acesso não autorizado para listar tenants",
@@ -371,8 +405,12 @@ export async function getAllTenants(): Promise<TenantResponse> {
         ? {
             status: tenant.subscription.status,
             name: tenant.subscription.plano?.nome ?? null,
-            valorMensal: decimalToNullableNumber(tenant.subscription.plano?.valorMensal ?? null),
-            valorAnual: decimalToNullableNumber(tenant.subscription.plano?.valorAnual ?? null),
+            valorMensal: decimalToNullableNumber(
+              tenant.subscription.plano?.valorMensal ?? null,
+            ),
+            valorAnual: decimalToNullableNumber(
+              tenant.subscription.plano?.valorAnual ?? null,
+            ),
             moeda: tenant.subscription.plano?.moeda ?? "BRL",
             trialEndsAt: tenant.subscription.trialEndsAt?.toISOString() ?? null,
             renovaEm: tenant.subscription.renovaEm?.toISOString() ?? null,
@@ -400,11 +438,18 @@ export async function getAllTenants(): Promise<TenantResponse> {
 }
 
 // Atualizar status do tenant
-export async function updateTenantStatus(tenantId: string, status: TenantStatus): Promise<TenantResponse> {
+export async function updateTenantStatus(
+  tenantId: string,
+  status: TenantStatus,
+): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+    if (
+      !session?.user ||
+      session.user.role !== "SUPER_ADMIN" ||
+      !session.user.id
+    ) {
       return {
         success: false,
         error: "Acesso não autorizado para atualizar tenant",
@@ -442,7 +487,10 @@ export async function updateTenantStatus(tenantId: string, status: TenantStatus)
     });
 
     // Invalidar sessões de todos os usuários do tenant
-    const { invalidateTenant } = await import("@/app/lib/realtime/invalidation");
+    const { invalidateTenant } = await import(
+      "@/app/lib/realtime/invalidation"
+    );
+
     await invalidateTenant({
       tenantId,
       reason: `STATUS_CHANGED_FROM_${tenant.status}_TO_${status}`,
@@ -533,11 +581,17 @@ export interface CreateTenantUserInput extends UpdateTenantUserInput {
   email: string;
 }
 
-export async function getTenantManagementData(tenantId: string): Promise<TenantResponse> {
+export async function getTenantManagementData(
+  tenantId: string,
+): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+    if (
+      !session?.user ||
+      session.user.role !== "SUPER_ADMIN" ||
+      !session.user.id
+    ) {
       return {
         success: false,
         error: "Acesso não autorizado",
@@ -571,7 +625,14 @@ export async function getTenantManagementData(tenantId: string): Promise<TenantR
     const ninetyDaysAgo = new Date(Date.now() - 89 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
 
-    const [plans, invoices, users, revenue90Agg, revenue30Agg, outstandingInvoices] = await Promise.all([
+    const [
+      plans,
+      invoices,
+      users,
+      revenue90Agg,
+      revenue30Agg,
+      outstandingInvoices,
+    ] = await Promise.all([
       prisma.plano.findMany({
         where: { ativo: true },
         orderBy: { nome: "asc" },
@@ -642,8 +703,12 @@ export async function getTenantManagementData(tenantId: string): Promise<TenantR
         status: tenant.subscription?.status ?? null,
         planId: tenant.subscription?.planoId ?? null,
         planName: tenant.subscription?.plano?.nome ?? null,
-        valorMensal: decimalToNullableNumber(tenant.subscription?.plano?.valorMensal),
-        valorAnual: decimalToNullableNumber(tenant.subscription?.plano?.valorAnual),
+        valorMensal: decimalToNullableNumber(
+          tenant.subscription?.plano?.valorMensal,
+        ),
+        valorAnual: decimalToNullableNumber(
+          tenant.subscription?.plano?.valorAnual,
+        ),
         moeda: tenant.subscription?.plano?.moeda ?? null,
         trialEndsAt: tenant.subscription?.trialEndsAt?.toISOString() ?? null,
         renovaEm: tenant.subscription?.renovaEm?.toISOString() ?? null,
@@ -674,7 +739,8 @@ export async function getTenantManagementData(tenantId: string): Promise<TenantR
       })),
       users: users.map((user) => ({
         id: user.id,
-        name: `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email,
+        name:
+          `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -691,9 +757,15 @@ export async function getTenantManagementData(tenantId: string): Promise<TenantR
         whatsapp: user.advogado?.whatsapp ?? null,
         bio: user.advogado?.bio ?? null,
         especialidades: user.advogado?.especialidades ?? null,
-        comissaoPadrao: user.advogado?.comissaoPadrao ? parseFloat(user.advogado.comissaoPadrao.toString()) : null,
-        comissaoAcaoGanha: user.advogado?.comissaoAcaoGanha ? parseFloat(user.advogado.comissaoAcaoGanha.toString()) : null,
-        comissaoHonorarios: user.advogado?.comissaoHonorarios ? parseFloat(user.advogado.comissaoHonorarios.toString()) : null,
+        comissaoPadrao: user.advogado?.comissaoPadrao
+          ? parseFloat(user.advogado.comissaoPadrao.toString())
+          : null,
+        comissaoAcaoGanha: user.advogado?.comissaoAcaoGanha
+          ? parseFloat(user.advogado.comissaoAcaoGanha.toString())
+          : null,
+        comissaoHonorarios: user.advogado?.comissaoHonorarios
+          ? parseFloat(user.advogado.comissaoHonorarios.toString())
+          : null,
       })),
       availableRoles: Object.values(UserRole),
     };
@@ -712,11 +784,18 @@ export async function getTenantManagementData(tenantId: string): Promise<TenantR
   }
 }
 
-export async function updateTenantDetails(tenantId: string, payload: UpdateTenantDetailsInput): Promise<TenantResponse> {
+export async function updateTenantDetails(
+  tenantId: string,
+  payload: UpdateTenantDetailsInput,
+): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+    if (
+      !session?.user ||
+      session.user.role !== "SUPER_ADMIN" ||
+      !session.user.id
+    ) {
       return { success: false, error: "Acesso não autorizado" };
     }
 
@@ -761,9 +840,12 @@ export async function updateTenantDetails(tenantId: string, payload: UpdateTenan
     if (payload.domain !== undefined) updateData.domain = payload.domain;
     if (payload.email !== undefined) updateData.email = payload.email;
     if (payload.telefone !== undefined) updateData.telefone = payload.telefone;
-    if (payload.documento !== undefined) updateData.documento = payload.documento;
-    if (payload.razaoSocial !== undefined) updateData.razaoSocial = payload.razaoSocial;
-    if (payload.nomeFantasia !== undefined) updateData.nomeFantasia = payload.nomeFantasia;
+    if (payload.documento !== undefined)
+      updateData.documento = payload.documento;
+    if (payload.razaoSocial !== undefined)
+      updateData.razaoSocial = payload.razaoSocial;
+    if (payload.nomeFantasia !== undefined)
+      updateData.nomeFantasia = payload.nomeFantasia;
     if (payload.timezone !== undefined) updateData.timezone = payload.timezone;
 
     if (Object.keys(updateData).length === 0) {
@@ -815,11 +897,18 @@ export async function updateTenantDetails(tenantId: string, payload: UpdateTenan
   }
 }
 
-export async function updateTenantSubscription(tenantId: string, payload: UpdateTenantSubscriptionInput): Promise<TenantResponse> {
+export async function updateTenantSubscription(
+  tenantId: string,
+  payload: UpdateTenantSubscriptionInput,
+): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+    if (
+      !session?.user ||
+      session.user.role !== "SUPER_ADMIN" ||
+      !session.user.id
+    ) {
       return { success: false, error: "Acesso não autorizado" };
     }
 
@@ -858,7 +947,9 @@ export async function updateTenantSubscription(tenantId: string, payload: Update
       }
     }
 
-    const trialEndsAt = payload.trialEndsAt ? new Date(payload.trialEndsAt) : null;
+    const trialEndsAt = payload.trialEndsAt
+      ? new Date(payload.trialEndsAt)
+      : null;
     const renovaEm = payload.renovaEm ? new Date(payload.renovaEm) : null;
 
     const existingSubscription = await prisma.tenantSubscription.findUnique({
@@ -908,7 +999,10 @@ export async function updateTenantSubscription(tenantId: string, payload: Update
       : null;
 
     if (!superAdmin?.id) {
-      logger.warn("Super admin não encontrado para auditoria ao atualizar tenant", { userId: session.user.id, email: session.user.email });
+      logger.warn(
+        "Super admin não encontrado para auditoria ao atualizar tenant",
+        { userId: session.user.id, email: session.user.email },
+      );
     } else {
       await prisma.superAdminAuditLog.create({
         data: {
@@ -929,22 +1023,31 @@ export async function updateTenantSubscription(tenantId: string, payload: Update
     // Invalidar sessões se algo sensível mudou OU se é uma nova subscription
     const isNewSubscription = !existingSubscription;
     const hasPlanChanged = planId && existingSubscription?.planoId !== planId;
-    const hasStatusChanged = payload.status && existingSubscription?.status !== payload.status;
+    const hasStatusChanged =
+      payload.status && existingSubscription?.status !== payload.status;
     // Detectar mudança mesmo quando valores são null (limpeza de campos)
     const hasTrialEndsAtChanged =
-      (trialEndsAt && existingSubscription?.trialEndsAt?.getTime() !== trialEndsAt.getTime()) ||
+      (trialEndsAt &&
+        existingSubscription?.trialEndsAt?.getTime() !==
+          trialEndsAt.getTime()) ||
       (!trialEndsAt && existingSubscription?.trialEndsAt !== null) ||
       (trialEndsAt && !existingSubscription?.trialEndsAt);
     const hasRenovaEmChanged =
-      (renovaEm && existingSubscription?.renovaEm?.getTime() !== renovaEm.getTime()) || (!renovaEm && existingSubscription?.renovaEm !== null) || (renovaEm && !existingSubscription?.renovaEm);
+      (renovaEm &&
+        existingSubscription?.renovaEm?.getTime() !== renovaEm.getTime()) ||
+      (!renovaEm && existingSubscription?.renovaEm !== null) ||
+      (renovaEm && !existingSubscription?.renovaEm);
 
     // Separar mudanças críticas (exigem logout) de mudanças soft (atualização de UI)
-    const { softUpdateTenant, invalidateTenant } = await import("@/app/lib/realtime/invalidation");
+    const { softUpdateTenant, invalidateTenant } = await import(
+      "@/app/lib/realtime/invalidation"
+    );
 
     if (hasStatusChanged) {
       // Mudança de status é CRÍTICA (pode exigir logout)
       // Verificar se é suspensão/cancelamento
-      const isCriticalStatus = payload.status === "SUSPENSA" || payload.status === "CANCELADA";
+      const isCriticalStatus =
+        payload.status === "SUSPENSA" || payload.status === "CANCELADA";
 
       if (isCriticalStatus) {
         // HARD LOGOUT - usar invalidateTenant
@@ -959,12 +1062,21 @@ export async function updateTenantSubscription(tenantId: string, payload: Update
           tenantId,
           reason: `SUBSCRIPTION_STATUS_CHANGED_TO_${payload.status}`,
           actorId: superAdmin?.id || session.user.id,
-          planDetails: { planId: subscription.planoId, planRevision: subscription.planRevision },
+          planDetails: {
+            planId: subscription.planoId,
+            planRevision: subscription.planRevision,
+          },
         });
       }
-    } else if (isNewSubscription || hasPlanChanged || hasTrialEndsAtChanged || hasRenovaEmChanged) {
+    } else if (
+      isNewSubscription ||
+      hasPlanChanged ||
+      hasTrialEndsAtChanged ||
+      hasRenovaEmChanged
+    ) {
       // Todas essas mudanças são SOFT (não exigem logout)
       let reason = "";
+
       if (isNewSubscription) {
         reason = `SUBSCRIPTION_CREATED`;
       } else if (hasPlanChanged) {
@@ -979,7 +1091,10 @@ export async function updateTenantSubscription(tenantId: string, payload: Update
         tenantId,
         reason,
         actorId: superAdmin?.id || session.user.id,
-        planDetails: { planId: subscription.planoId, planRevision: subscription.planRevision },
+        planDetails: {
+          planId: subscription.planoId,
+          planRevision: subscription.planRevision,
+        },
       });
     }
 
@@ -988,8 +1103,16 @@ export async function updateTenantSubscription(tenantId: string, payload: Update
       plano: subscription.plano
         ? {
             ...subscription.plano,
-            valorMensal: subscription.plano.valorMensal !== null && subscription.plano.valorMensal !== undefined ? Number(subscription.plano.valorMensal) : null,
-            valorAnual: subscription.plano.valorAnual !== null && subscription.plano.valorAnual !== undefined ? Number(subscription.plano.valorAnual) : null,
+            valorMensal:
+              subscription.plano.valorMensal !== null &&
+              subscription.plano.valorMensal !== undefined
+                ? Number(subscription.plano.valorMensal)
+                : null,
+            valorAnual:
+              subscription.plano.valorAnual !== null &&
+              subscription.plano.valorAnual !== undefined
+                ? Number(subscription.plano.valorAnual)
+                : null,
           }
         : null,
     };
@@ -1008,11 +1131,18 @@ export async function updateTenantSubscription(tenantId: string, payload: Update
   }
 }
 
-export async function updateTenantBranding(tenantId: string, payload: UpdateTenantBrandingInput): Promise<TenantResponse> {
+export async function updateTenantBranding(
+  tenantId: string,
+  payload: UpdateTenantBrandingInput,
+): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+    if (
+      !session?.user ||
+      session.user.role !== "SUPER_ADMIN" ||
+      !session.user.id
+    ) {
       return { success: false, error: "Acesso não autorizado" };
     }
 
@@ -1073,11 +1203,18 @@ function generateTemporaryPassword(length = 12) {
     .slice(0, length);
 }
 
-export async function createTenantUser(tenantId: string, payload: CreateTenantUserInput): Promise<TenantResponse> {
+export async function createTenantUser(
+  tenantId: string,
+  payload: CreateTenantUserInput,
+): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+    if (
+      !session?.user ||
+      session.user.role !== "SUPER_ADMIN" ||
+      !session.user.id
+    ) {
       return { success: false, error: "Acesso não autorizado" };
     }
 
@@ -1096,8 +1233,12 @@ export async function createTenantUser(tenantId: string, payload: CreateTenantUs
       };
     }
 
-    const temporaryPassword = payload.generatePassword ? generateTemporaryPassword() : undefined;
-    const passwordHash = temporaryPassword ? await bcrypt.hash(temporaryPassword, 12) : null;
+    const temporaryPassword = payload.generatePassword
+      ? generateTemporaryPassword()
+      : undefined;
+    const passwordHash = temporaryPassword
+      ? await bcrypt.hash(temporaryPassword, 12)
+      : null;
 
     // Criar usuário
     const newUser = await prisma.usuario.create({
@@ -1113,7 +1254,9 @@ export async function createTenantUser(tenantId: string, payload: CreateTenantUs
         // Campos pessoais adicionais
         cpf: payload.cpf,
         rg: payload.rg,
-        dataNascimento: payload.dataNascimentoUsuario ? new Date(payload.dataNascimentoUsuario) : undefined,
+        dataNascimento: payload.dataNascimentoUsuario
+          ? new Date(payload.dataNascimentoUsuario)
+          : undefined,
         observacoes: payload.observacoes,
       },
     });
@@ -1129,7 +1272,8 @@ export async function createTenantUser(tenantId: string, payload: CreateTenantUs
           telefone: payload.telefone,
           whatsapp: payload.whatsapp,
           bio: payload.bio,
-          especialidades: (payload.especialidades || []) as EspecialidadeJuridica[],
+          especialidades: (payload.especialidades ||
+            []) as EspecialidadeJuridica[],
           comissaoPadrao: payload.comissaoPadrao || 0,
           comissaoAcaoGanha: payload.comissaoAcaoGanha || 0,
           comissaoHonorarios: payload.comissaoHonorarios || 0,
@@ -1144,12 +1288,16 @@ export async function createTenantUser(tenantId: string, payload: CreateTenantUs
           tenantId: tenantId,
           usuarioId: newUser.id,
           tipoPessoa: (payload.tipoPessoa || "FISICA") as TipoPessoa,
-          nome: `${payload.firstName || ""} ${payload.lastName || ""}`.trim() || payload.email,
+          nome:
+            `${payload.firstName || ""} ${payload.lastName || ""}`.trim() ||
+            payload.email,
           documento: payload.documento,
           email: payload.email,
           telefone: payload.telefoneCliente,
           celular: payload.celular,
-          dataNascimento: payload.dataNascimento ? new Date(payload.dataNascimento) : undefined,
+          dataNascimento: payload.dataNascimento
+            ? new Date(payload.dataNascimento)
+            : undefined,
           inscricaoEstadual: payload.inscricaoEstadual,
           responsavelNome: payload.responsavelNome,
           responsavelEmail: payload.responsavelEmail,
@@ -1191,11 +1339,19 @@ export async function createTenantUser(tenantId: string, payload: CreateTenantUs
   }
 }
 
-export async function updateTenantUser(tenantId: string, userId: string, payload: UpdateTenantUserInput): Promise<TenantResponse> {
+export async function updateTenantUser(
+  tenantId: string,
+  userId: string,
+  payload: UpdateTenantUserInput,
+): Promise<TenantResponse> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || session.user.role !== "SUPER_ADMIN" || !session.user.id) {
+    if (
+      !session?.user ||
+      session.user.role !== "SUPER_ADMIN" ||
+      !session.user.id
+    ) {
       return { success: false, error: "Acesso não autorizado" };
     }
 
@@ -1232,7 +1388,10 @@ export async function updateTenantUser(tenantId: string, userId: string, payload
     }
 
     // Atualizar firstName se fornecido
-    if (payload.firstName !== undefined && payload.firstName !== user.firstName) {
+    if (
+      payload.firstName !== undefined &&
+      payload.firstName !== user.firstName
+    ) {
       updateData.firstName = payload.firstName;
     }
 
@@ -1247,7 +1406,10 @@ export async function updateTenantUser(tenantId: string, userId: string, payload
     }
 
     // Atualizar avatarUrl se fornecido
-    if (payload.avatarUrl !== undefined && payload.avatarUrl !== user.avatarUrl) {
+    if (
+      payload.avatarUrl !== undefined &&
+      payload.avatarUrl !== user.avatarUrl
+    ) {
       updateData.avatarUrl = payload.avatarUrl;
     }
 
@@ -1259,7 +1421,9 @@ export async function updateTenantUser(tenantId: string, userId: string, payload
       updateData.rg = payload.rg;
     }
     if (payload.dataNascimentoUsuario !== undefined) {
-      updateData.dataNascimento = payload.dataNascimentoUsuario ? new Date(payload.dataNascimentoUsuario) : null;
+      updateData.dataNascimento = payload.dataNascimentoUsuario
+        ? new Date(payload.dataNascimentoUsuario)
+        : null;
     }
     if (payload.observacoes !== undefined) {
       updateData.observacoes = payload.observacoes;
@@ -1307,7 +1471,8 @@ export async function updateTenantUser(tenantId: string, userId: string, payload
         advogadoData.bio = payload.bio;
       }
       if (payload.especialidades !== undefined) {
-        advogadoData.especialidades = payload.especialidades as EspecialidadeJuridica[];
+        advogadoData.especialidades =
+          payload.especialidades as EspecialidadeJuridica[];
       }
       if (payload.comissaoPadrao !== undefined) {
         advogadoData.comissaoPadrao = payload.comissaoPadrao;
@@ -1369,7 +1534,8 @@ export async function updateTenantUser(tenantId: string, userId: string, payload
 
       // Atualizar nome do cliente baseado no firstName/lastName se fornecido
       if (payload.firstName !== undefined || payload.lastName !== undefined) {
-        const nome = `${payload.firstName || user.firstName || ""} ${payload.lastName || user.lastName || ""}`.trim();
+        const nome =
+          `${payload.firstName || user.firstName || ""} ${payload.lastName || user.lastName || ""}`.trim();
 
         if (nome) {
           clienteData.nome = nome;
@@ -1388,7 +1554,10 @@ export async function updateTenantUser(tenantId: string, userId: string, payload
             tenantId: tenantId,
             usuarioId: userId,
             tipoPessoa: (payload.tipoPessoa || "FISICA") as TipoPessoa,
-            nome: `${payload.firstName || ""} ${payload.lastName || ""}`.trim() || payload.email || "",
+            nome:
+              `${payload.firstName || ""} ${payload.lastName || ""}`.trim() ||
+              payload.email ||
+              "",
             email: payload.email || user.email,
             ...clienteData,
           },
@@ -1404,7 +1573,10 @@ export async function updateTenantUser(tenantId: string, userId: string, payload
 
     // Invalidar sessão do usuário se o status (active) mudou
     if (payload.active !== undefined && payload.active !== user.active) {
-      const { invalidateUser } = await import("@/app/lib/realtime/invalidation");
+      const { invalidateUser } = await import(
+        "@/app/lib/realtime/invalidation"
+      );
+
       await invalidateUser({
         userId,
         tenantId,
@@ -1461,7 +1633,12 @@ export interface CreateJuizData {
   dataNascimento?: Date;
   dataPosse?: Date;
   status: "ATIVO" | "INATIVO" | "APOSENTADO";
-  nivel: "JUIZ_SUBSTITUTO" | "JUIZ_TITULAR" | "DESEMBARGADOR" | "MINISTRO" | "OUTROS";
+  nivel:
+    | "JUIZ_SUBSTITUTO"
+    | "JUIZ_TITULAR"
+    | "DESEMBARGADOR"
+    | "MINISTRO"
+    | "OUTROS";
   especialidades: EspecialidadeJuridica[];
   vara?: string;
   comarca?: string;
@@ -1483,7 +1660,10 @@ export interface CreateJuizData {
 }
 
 // Criar novo juiz global
-export async function createJuizGlobal(data: CreateJuizData, superAdminId: string): Promise<TenantResponse> {
+export async function createJuizGlobal(
+  data: CreateJuizData,
+  superAdminId: string,
+): Promise<TenantResponse> {
   try {
     const { especialidades, tribunalId, ...rest } = data;
     const juiz = await prisma.juiz.create({
@@ -1567,7 +1747,11 @@ export async function getAllJuizes(): Promise<TenantResponse> {
 }
 
 // Atualizar juiz
-export async function updateJuizGlobal(juizId: string, data: Partial<CreateJuizData>, superAdminId: string): Promise<TenantResponse> {
+export async function updateJuizGlobal(
+  juizId: string,
+  data: Partial<CreateJuizData>,
+  superAdminId: string,
+): Promise<TenantResponse> {
   try {
     // Verificar se o juiz existe e se o super admin tem permissão
     const juizExistente = await prisma.juiz.findFirst({
@@ -1626,7 +1810,10 @@ export async function updateJuizGlobal(juizId: string, data: Partial<CreateJuizD
 // =============================================
 
 // Buscar logs de auditoria
-export async function getAuditLogs(superAdminId: string, limit: number = 50): Promise<TenantResponse> {
+export async function getAuditLogs(
+  superAdminId: string,
+  limit: number = 50,
+): Promise<TenantResponse> {
   try {
     const logs = await prisma.superAdminAuditLog.findMany({
       where: { superAdminId },

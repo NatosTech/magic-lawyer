@@ -127,8 +127,14 @@ export const COLOR_MAP: Record<string, string> = {
 export const CSS_CLASS_MAP: Record<string, { bg: string; text: string }> = {
   // Cores principais
   "#3B82F6": { bg: "bg-blue-100 dark:bg-blue-800", text: "text-blue-600" },
-  "#10B981": { bg: "bg-emerald-100 dark:bg-emerald-800", text: "text-emerald-600" },
-  "#8B5CF6": { bg: "bg-violet-100 dark:bg-violet-800", text: "text-violet-600" },
+  "#10B981": {
+    bg: "bg-emerald-100 dark:bg-emerald-800",
+    text: "text-emerald-600",
+  },
+  "#8B5CF6": {
+    bg: "bg-violet-100 dark:bg-violet-800",
+    text: "text-violet-600",
+  },
   "#F59E0B": { bg: "bg-amber-100 dark:bg-amber-800", text: "text-amber-600" },
   "#EF4444": { bg: "bg-red-100 dark:bg-red-800", text: "text-red-600" },
   "#6B7280": { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600" },
@@ -136,14 +142,26 @@ export const CSS_CLASS_MAP: Record<string, { bg: string; text: string }> = {
   // Cores adicionais
   "#EC4899": { bg: "bg-pink-100 dark:bg-pink-800", text: "text-pink-600" },
   "#14B8A6": { bg: "bg-teal-100 dark:bg-teal-800", text: "text-teal-600" },
-  "#F97316": { bg: "bg-orange-100 dark:bg-orange-800", text: "text-orange-600" },
-  "#6366F1": { bg: "bg-indigo-100 dark:bg-indigo-800", text: "text-indigo-600" },
+  "#F97316": {
+    bg: "bg-orange-100 dark:bg-orange-800",
+    text: "text-orange-600",
+  },
+  "#6366F1": {
+    bg: "bg-indigo-100 dark:bg-indigo-800",
+    text: "text-indigo-600",
+  },
   "#84CC16": { bg: "bg-lime-100 dark:bg-lime-800", text: "text-lime-600" },
   "#F43F5E": { bg: "bg-rose-100 dark:bg-rose-800", text: "text-rose-600" },
   "#8B5A2B": { bg: "bg-amber-100 dark:bg-amber-800", text: "text-amber-600" },
   "#1F2937": { bg: "bg-gray-100 dark:bg-gray-800", text: "text-gray-600" },
-  "#7C3AED": { bg: "bg-violet-100 dark:bg-violet-800", text: "text-violet-600" },
-  "#059669": { bg: "bg-emerald-100 dark:bg-emerald-800", text: "text-emerald-600" },
+  "#7C3AED": {
+    bg: "bg-violet-100 dark:bg-violet-800",
+    text: "text-violet-600",
+  },
+  "#059669": {
+    bg: "bg-emerald-100 dark:bg-emerald-800",
+    text: "text-emerald-600",
+  },
 };
 
 /**

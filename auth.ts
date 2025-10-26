@@ -44,7 +44,11 @@ function extractTenantFromDomain(host: string): string | null {
 
   // Para domínios diretos: sandra.com.br
   // Neste caso, o domínio completo é o identificador do tenant
-  if (!cleanHost.includes("magiclawyer") && !cleanHost.includes("vercel.app") && !cleanHost.includes("localhost")) {
+  if (
+    !cleanHost.includes("magiclawyer") &&
+    !cleanHost.includes("vercel.app") &&
+    !cleanHost.includes("localhost")
+  ) {
     return cleanHost;
   }
 
@@ -83,7 +87,10 @@ export const authOptions: NextAuthOptions = {
 
         // Se o tenant está vazio, undefined ou 'undefined', tratamos como auto-detect
         // Mas se detectamos pelo domínio, usamos esse
-        const shouldAutoDetect = !normalizedTenant || normalizedTenant === "undefined" || normalizedTenant === "";
+        const shouldAutoDetect =
+          !normalizedTenant ||
+          normalizedTenant === "undefined" ||
+          normalizedTenant === "";
 
         const finalTenant = tenantFromDomain || normalizedTenant;
 
@@ -98,7 +105,10 @@ export const authOptions: NextAuthOptions = {
         };
 
         if (!credentials?.email || !credentials?.password) {
-          console.warn("[auth] Credenciais incompletas para login", attemptContext);
+          console.warn(
+            "[auth] Credenciais incompletas para login",
+            attemptContext,
+          );
 
           return null;
         }
@@ -137,7 +147,10 @@ export const authOptions: NextAuthOptions = {
               return null;
             }
 
-            const validPassword = await bcrypt.compare(credentials.password, superAdmin.passwordHash);
+            const validPassword = await bcrypt.compare(
+              credentials.password,
+              superAdmin.passwordHash,
+            );
 
             if (!validPassword) {
               console.warn("[auth] Senha inválida para SuperAdmin");
@@ -173,14 +186,19 @@ export const authOptions: NextAuthOptions = {
 
           if (!shouldAutoDetect && finalTenant) {
             tenantWhere = {
-              OR: [{ slug: { equals: finalTenant, mode: "insensitive" } }, { domain: { equals: finalTenant, mode: "insensitive" } }],
+              OR: [
+                { slug: { equals: finalTenant, mode: "insensitive" } },
+                { domain: { equals: finalTenant, mode: "insensitive" } },
+              ],
             };
             console.info("[auth] Buscando usuário com filtro de tenant", {
               finalTenant,
               tenantWhere,
             });
           } else {
-            console.info("[auth] Buscando usuário SEM filtro de tenant (auto-detect)");
+            console.info(
+              "[auth] Buscando usuário SEM filtro de tenant (auto-detect)",
+            );
           }
 
           // Primeiro, vamos tentar buscar o usuário sem filtro de tenant para debug
@@ -215,8 +233,12 @@ export const authOptions: NextAuthOptions = {
             });
 
             // IMPORTANTE: Verificar se algum tenant está suspenso/cancelado ANTES de continuar
-            const suspendedTenant = allUsers.find((u) => u.tenant?.status === "SUSPENDED");
-            const cancelledTenant = allUsers.find((u) => u.tenant?.status === "CANCELLED");
+            const suspendedTenant = allUsers.find(
+              (u) => u.tenant?.status === "SUSPENDED",
+            );
+            const cancelledTenant = allUsers.find(
+              (u) => u.tenant?.status === "CANCELLED",
+            );
 
             if (suspendedTenant) {
               console.warn("[auth] Tenant suspenso detectado no auto-detect", {
@@ -233,7 +255,11 @@ export const authOptions: NextAuthOptions = {
             }
 
             // Se encontrou usuário em tenant específico e está no domínio principal, redirecionar
-            if (allUsers.length > 0 && !tenantFromDomain && host.includes("magiclawyer.vercel.app")) {
+            if (
+              allUsers.length > 0 &&
+              !tenantFromDomain &&
+              host.includes("magiclawyer.vercel.app")
+            ) {
               console.info("[auth] Verificando redirecionamento", {
                 allUsersCount: allUsers.length,
                 tenantFromDomain,
@@ -245,7 +271,9 @@ export const authOptions: NextAuthOptions = {
                 })),
               });
 
-              const userWithSpecificTenant = allUsers.find((u) => u.tenant?.slug && u.tenant.slug !== "magiclawyer");
+              const userWithSpecificTenant = allUsers.find(
+                (u) => u.tenant?.slug && u.tenant.slug !== "magiclawyer",
+              );
 
               if (userWithSpecificTenant) {
                 const tenantSlug = userWithSpecificTenant.tenant?.slug;
@@ -259,10 +287,13 @@ export const authOptions: NextAuthOptions = {
                 // Retornar erro com redirecionamento
                 throw new Error(`REDIRECT_TO_TENANT:${tenantSlug}`);
               } else {
-                console.info("[auth] Usuário encontrado mas não precisa redirecionar", {
-                  userEmail: email,
-                  userTenants: allUsers.map((u) => u.tenant?.slug),
-                });
+                console.info(
+                  "[auth] Usuário encontrado mas não precisa redirecionar",
+                  {
+                    userEmail: email,
+                    userTenants: allUsers.map((u) => u.tenant?.slug),
+                  },
+                );
               }
             }
           }
@@ -311,15 +342,24 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user || !user.passwordHash) {
-            console.warn("[auth] Usuário não encontrado ou sem senha cadastrada", attemptContext);
+            console.warn(
+              "[auth] Usuário não encontrado ou sem senha cadastrada",
+              attemptContext,
+            );
 
             return null;
           }
 
-          const valid = await bcrypt.compare(credentials.password, user.passwordHash);
+          const valid = await bcrypt.compare(
+            credentials.password,
+            user.passwordHash,
+          );
 
           if (!valid) {
-            console.warn("[auth] Senha inválida para o usuário", attemptContext);
+            console.warn(
+              "[auth] Senha inválida para o usuário",
+              attemptContext,
+            );
 
             return null;
           }
@@ -357,11 +397,20 @@ export const authOptions: NextAuthOptions = {
             }
           }
 
-          const tenantName = tenantData?.nomeFantasia ?? tenantData?.razaoSocial ?? tenantData?.name ?? tenantData?.slug ?? undefined;
+          const tenantName =
+            tenantData?.nomeFantasia ??
+            tenantData?.razaoSocial ??
+            tenantData?.name ??
+            tenantData?.slug ??
+            undefined;
 
-          const permissions = permissionsRaw.map((permission) => permission.permissao);
+          const permissions = permissionsRaw.map(
+            (permission) => permission.permissao,
+          );
 
-          const accessibleModules = await getTenantAccessibleModules(user.tenantId);
+          const accessibleModules = await getTenantAccessibleModules(
+            user.tenantId,
+          );
 
           // Buscar sessionVersion do usuário
           const sessionVersion = (user as any).sessionVersion || 1;
@@ -371,7 +420,9 @@ export const authOptions: NextAuthOptions = {
           const resultUser = {
             id: user.id,
             email: user.email,
-            name: [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined,
+            name:
+              [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+              undefined,
             image: user.avatarUrl || undefined,
             tenantId: user.tenantId,
             role: user.role,
@@ -409,7 +460,10 @@ export const authOptions: NextAuthOptions = {
           return resultUser as any;
         } catch (error) {
           // Verificar se é erro de redirecionamento
-          if (error instanceof Error && error.message.startsWith("REDIRECT_TO_TENANT:")) {
+          if (
+            error instanceof Error &&
+            error.message.startsWith("REDIRECT_TO_TENANT:")
+          ) {
             console.info("[auth] Redirecionamento para tenant específico", {
               ...attemptContext,
               redirectTenant: error.message.replace("REDIRECT_TO_TENANT:", ""),
@@ -420,7 +474,11 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Verificar se é erro de tenant suspenso/cancelado
-          if (error instanceof Error && (error.message === "TENANT_SUSPENDED" || error.message === "TENANT_CANCELLED")) {
+          if (
+            error instanceof Error &&
+            (error.message === "TENANT_SUSPENDED" ||
+              error.message === "TENANT_CANCELLED")
+          ) {
             console.warn("[auth] Tenant suspenso/cancelado detectado", {
               ...attemptContext,
               error: error.message,
@@ -430,7 +488,10 @@ export const authOptions: NextAuthOptions = {
             throw error;
           }
 
-          const safeError = error instanceof Error ? { message: error.message, stack: error.stack } : error;
+          const safeError =
+            error instanceof Error
+              ? { message: error.message, stack: error.stack }
+              : error;
 
           console.error("[auth] Erro inesperado durante autenticação", {
             ...attemptContext,
@@ -446,6 +507,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({
       token,
       user,
+      trigger,
+      session: sessionUpdate,
     }: {
       token: JWT;
       user?:
@@ -463,7 +526,33 @@ export const authOptions: NextAuthOptions = {
             tenantStatusReason?: string | null;
           })
         | null;
+      trigger?: "update" | "signIn" | "signUp";
+      session?: Session | Record<string, unknown> | null;
     }): Promise<JWT> {
+      if (trigger === "update" && sessionUpdate) {
+        const rawPayload = (sessionUpdate as any) ?? {};
+        const incomingModules = Array.isArray(rawPayload.tenantModules)
+          ? rawPayload.tenantModules
+          : Array.isArray(rawPayload.user?.tenantModules)
+            ? rawPayload.user?.tenantModules
+            : undefined;
+
+        if (incomingModules) {
+          (token as any).tenantModules = incomingModules;
+        }
+
+        const incomingPlanRevision =
+          typeof rawPayload.tenantPlanRevision === "number"
+            ? rawPayload.tenantPlanRevision
+            : typeof rawPayload.user?.tenantPlanRevision === "number"
+              ? rawPayload.user?.tenantPlanRevision
+              : undefined;
+
+        if (typeof incomingPlanRevision === "number") {
+          (token as any).tenantPlanRevision = incomingPlanRevision;
+        }
+      }
+
       // No login
       if (user) {
         (token as any).id = user.id;
@@ -478,33 +567,63 @@ export const authOptions: NextAuthOptions = {
         (token as any).tenantModules = (user as any).tenantModules ?? [];
         // Campos de versionamento de sessão
         (token as any).sessionVersion = (user as any).sessionVersion ?? 1;
-        (token as any).tenantSessionVersion = (user as any).tenantSessionVersion ?? 1;
-        (token as any).tenantPlanRevision = (user as any).tenantPlanRevision ?? 1;
+        (token as any).tenantSessionVersion =
+          (user as any).tenantSessionVersion ?? 1;
+        (token as any).tenantPlanRevision =
+          (user as any).tenantPlanRevision ?? 1;
         (token as any).tenantStatus = (user as any).tenantStatus;
         (token as any).tenantStatusReason = (user as any).tenantStatusReason;
       }
 
       return token;
     },
-    async session({ session, token }: { session: Session; token: JWT }): Promise<Session> {
+    async session({
+      session,
+      token,
+    }: {
+      session: Session;
+      token: JWT;
+    }): Promise<Session> {
       if (session.user) {
         // Usar dados do token (mais rápido e confiável)
         (session.user as any).id = (token as any).id as string | undefined;
-        (session.user as any).tenantId = (token as any).tenantId as string | undefined;
+        (session.user as any).tenantId = (token as any).tenantId as
+          | string
+          | undefined;
         (session.user as any).role = (token as any).role as string | undefined;
-        (session.user as any).tenantSlug = (token as any).tenantSlug as string | undefined;
-        (session.user as any).tenantName = (token as any).tenantName as string | undefined;
-        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as string | undefined;
-        (session.user as any).tenantFaviconUrl = (token as any).tenantFaviconUrl as string | undefined;
-        (session.user as any).permissions = (token as any).permissions as string[] | undefined;
-        (session.user as any).avatarUrl = (token as any).avatarUrl as string | undefined;
-        (session.user as any).tenantModules = (token as any).tenantModules as string[] | undefined;
+        (session.user as any).tenantSlug = (token as any).tenantSlug as
+          | string
+          | undefined;
+        (session.user as any).tenantName = (token as any).tenantName as
+          | string
+          | undefined;
+        (session.user as any).tenantLogoUrl = (token as any).tenantLogoUrl as
+          | string
+          | undefined;
+        (session.user as any).tenantFaviconUrl = (token as any)
+          .tenantFaviconUrl as string | undefined;
+        (session.user as any).permissions = (token as any).permissions as
+          | string[]
+          | undefined;
+        (session.user as any).avatarUrl = (token as any).avatarUrl as
+          | string
+          | undefined;
+        (session.user as any).tenantModules = (token as any).tenantModules as
+          | string[]
+          | undefined;
         // Campos de versionamento de sessão
-        (session.user as any).sessionVersion = (token as any).sessionVersion as number | undefined;
-        (session.user as any).tenantSessionVersion = (token as any).tenantSessionVersion as number | undefined;
-        (session.user as any).tenantPlanRevision = (token as any).tenantPlanRevision as number | undefined;
-        (session.user as any).tenantStatus = (token as any).tenantStatus as string | undefined;
-        (session.user as any).tenantStatusReason = (token as any).tenantStatusReason as string | null | undefined;
+        (session.user as any).sessionVersion = (token as any).sessionVersion as
+          | number
+          | undefined;
+        (session.user as any).tenantSessionVersion = (token as any)
+          .tenantSessionVersion as number | undefined;
+        (session.user as any).tenantPlanRevision = (token as any)
+          .tenantPlanRevision as number | undefined;
+        (session.user as any).tenantStatus = (token as any).tenantStatus as
+          | string
+          | undefined;
+        (session.user as any).tenantStatusReason = (token as any)
+          .tenantStatusReason as string | null | undefined;
       }
 
       return session;

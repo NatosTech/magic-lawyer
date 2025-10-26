@@ -137,7 +137,9 @@ async function checkSuperAdmin() {
   const userRole = (session?.user as any)?.role;
 
   if (!session || userRole !== "SUPER_ADMIN") {
-    throw new Error("Não autorizado: Apenas SuperAdmin pode realizar esta ação.");
+    throw new Error(
+      "Não autorizado: Apenas SuperAdmin pode realizar esta ação.",
+    );
   }
 
   return session.user;
@@ -206,7 +208,8 @@ async function scanProtectedModules(): Promise<ScanProtectedModulesResult> {
   const detectedModules: DetectedModule[] = moduleDirs.map((slug, index) => {
     const categoria = MODULE_CATEGORIES[slug] || "Sistema";
     const icone = CATEGORY_ICONS[categoria] || "PuzzleIcon";
-    const descricao = MODULE_DESCRIPTIONS[slug] || `Módulo ${formatModuleName(slug)}`;
+    const descricao =
+      MODULE_DESCRIPTIONS[slug] || `Módulo ${formatModuleName(slug)}`;
     const rotas = getModuleRoutes(slug);
 
     return {
@@ -225,12 +228,15 @@ async function scanProtectedModules(): Promise<ScanProtectedModulesResult> {
     detectedModules.map((module) => ({
       slug: module.slug,
       rotas: module.rotas,
-    }))
+    })),
   );
 
   const filesystemHash = createHash("sha256").update(hashSource).digest("hex");
 
-  const totalRoutes = detectedModules.reduce((acc, module) => acc + module.rotas.length, 0);
+  const totalRoutes = detectedModules.reduce(
+    (acc, module) => acc + module.rotas.length,
+    0,
+  );
 
   return {
     detectedModules,
@@ -247,7 +253,8 @@ export async function autoDetectModules(): Promise<AutoDetectResponse> {
 
     logger.info(`Iniciando detecção automática de módulos por ${user.email}`);
 
-    const { detectedModules, moduleSlugs, filesystemHash, totalRoutes } = await scanProtectedModules();
+    const { detectedModules, moduleSlugs, filesystemHash, totalRoutes } =
+      await scanProtectedModules();
 
     logger.info(`Módulos detectados no código: ${moduleSlugs.join(", ")}`);
 
@@ -312,7 +319,9 @@ export async function autoDetectModules(): Promise<AutoDetectResponse> {
     }
 
     // Remover módulos que não existem mais no código
-    const modulesToRemove = existingModules.filter((m) => !detectedSlugs.has(m.slug));
+    const modulesToRemove = existingModules.filter(
+      (m) => !detectedSlugs.has(m.slug),
+    );
 
     for (const module of modulesToRemove) {
       // Verificar se está sendo usado por planos
@@ -332,13 +341,19 @@ export async function autoDetectModules(): Promise<AutoDetectResponse> {
         });
 
         removed++;
-        logger.info(`Módulo removido: ${module.slug} (não existe mais no código)`);
+        logger.info(
+          `Módulo removido: ${module.slug} (não existe mais no código)`,
+        );
       } else {
-        logger.warn(`Módulo ${module.slug} não pode ser removido pois está sendo usado por ${planUsage} plano(s)`);
+        logger.warn(
+          `Módulo ${module.slug} não pode ser removido pois está sendo usado por ${planUsage} plano(s)`,
+        );
       }
     }
 
-    logger.info(`Detecção automática concluída: ${created} criados, ${updated} atualizados, ${removed} removidos`);
+    logger.info(
+      `Detecção automática concluída: ${created} criados, ${updated} atualizados, ${removed} removidos`,
+    );
 
     // Registrar execução no banco
     await prisma.moduleDetectionLog.create({
@@ -360,7 +375,10 @@ export async function autoDetectModules(): Promise<AutoDetectResponse> {
       clearModuleMapCache();
       logger.info("✅ Cache do module-map limpo automaticamente");
     } catch (error) {
-      logger.warn("⚠️ Erro ao limpar cache do module-map:", error instanceof Error ? error.message : String(error));
+      logger.warn(
+        "⚠️ Erro ao limpar cache do module-map:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
 
     // Forçar revalidação de todas as páginas relacionadas
@@ -407,7 +425,9 @@ async function syncModuleRoutes(slug: string, routes: string[]): Promise<void> {
     const newRoutePaths = new Set(routes);
 
     // Adicionar novas rotas
-    const routesToAdd = routes.filter((route) => !existingRoutePaths.has(route));
+    const routesToAdd = routes.filter(
+      (route) => !existingRoutePaths.has(route),
+    );
 
     for (const route of routesToAdd) {
       await prisma.moduloRota.create({
@@ -421,7 +441,9 @@ async function syncModuleRoutes(slug: string, routes: string[]): Promise<void> {
     }
 
     // Remover rotas que não existem mais
-    const routesToRemove = existingRoutes.filter((r) => !newRoutePaths.has(r.rota));
+    const routesToRemove = existingRoutes.filter(
+      (r) => !newRoutePaths.has(r.rota),
+    );
 
     for (const route of routesToRemove) {
       await prisma.moduloRota.delete({
@@ -462,7 +484,9 @@ export async function getAutoDetectStatus(): Promise<
 
     const scanResult = await scanProtectedModules();
 
-    const needsSync = !latestDetection || latestDetection.filesystemHash !== scanResult.filesystemHash;
+    const needsSync =
+      !latestDetection ||
+      latestDetection.filesystemHash !== scanResult.filesystemHash;
 
     return {
       success: true,

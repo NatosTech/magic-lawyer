@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import useSWR from "swr";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -335,7 +341,10 @@ export function TenantManagementContent({
       });
 
       mutate(undefined, { revalidate: true }).catch((err) => {
-        console.warn("[tenant-management] Revalidação (assinatura) falhou", err);
+        console.warn(
+          "[tenant-management] Revalidação (assinatura) falhou",
+          err,
+        );
       });
     } finally {
       setIsSavingSubscription(false);
@@ -402,7 +411,10 @@ export function TenantManagementContent({
       }
 
       mutate(undefined, { revalidate: true }).catch((err) => {
-        console.warn("[tenant-management] Revalidação (user active) falhou", err);
+        console.warn(
+          "[tenant-management] Revalidação (user active) falhou",
+          err,
+        );
       });
     } finally {
       setPendingUserId(null);
@@ -441,7 +453,10 @@ export function TenantManagementContent({
       }
 
       mutate(undefined, { revalidate: true }).catch((err) => {
-        console.warn("[tenant-management] Revalidação (reset senha) falhou", err);
+        console.warn(
+          "[tenant-management] Revalidação (reset senha) falhou",
+          err,
+        );
       });
     } finally {
       setPendingUserId(null);

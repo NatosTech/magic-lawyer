@@ -1,5 +1,6 @@
-import Ably from "ably";
 import type { RealtimeEvent, RealtimeEventType } from "./types";
+
+import Ably from "ably";
 
 /**
  * Cliente Ably (singleton)
@@ -20,6 +21,7 @@ async function getAblyClient(): Promise<Ably.Realtime | null> {
     await new Promise<void>((resolve, reject) => {
       if (!ablyClient) {
         reject(new Error("Ably client not initialized"));
+
         return;
       }
 
@@ -47,8 +49,10 @@ async function getAblyClient(): Promise<Ably.Realtime | null> {
 async function publishToAbly(event: RealtimeEvent): Promise<boolean> {
   try {
     const client = await getAblyClient();
+
     if (!client) {
       console.log("[realtime] Cliente Ably não disponível, usando fallback");
+
       return false;
     }
 
@@ -56,6 +60,7 @@ async function publishToAbly(event: RealtimeEvent): Promise<boolean> {
 
     // Determinar canal baseado no evento
     let channelName: string;
+
     if (event.tenantId) {
       channelName = `${channelPrefix}:tenant:${event.tenantId}`;
     } else {
@@ -84,6 +89,7 @@ async function publishToAbly(event: RealtimeEvent): Promise<boolean> {
     return true;
   } catch (error) {
     console.error("[realtime] Erro ao publicar no Ably:", error);
+
     return false;
   }
 }
@@ -125,7 +131,9 @@ async function saveToOutbox(event: RealtimeEvent): Promise<void> {
   //     processed: false,
   //   },
   // });
-  console.log("[realtime] Outbox não implementado ainda - pulando salvar evento");
+  console.log(
+    "[realtime] Outbox não implementado ainda - pulando salvar evento",
+  );
 }
 
 /**
@@ -138,7 +146,7 @@ export async function publishRealtimeEvent(
     tenantId?: string | null;
     userId?: string | null;
     payload: Record<string, any>;
-  }
+  },
 ): Promise<void> {
   const event: RealtimeEvent = {
     type,
@@ -148,7 +156,8 @@ export async function publishRealtimeEvent(
     timestamp: new Date().toISOString(),
     // TODO: Passar version dinâmica baseada em tenantSoftVersion/sessionVersion
     // Por enquanto usa version fixo 1
-    version: params.payload.tenantSoftVersion || params.payload.sessionVersion || 1,
+    version:
+      params.payload.tenantSoftVersion || params.payload.sessionVersion || 1,
   };
 
   // Tentar publicar no Ably
@@ -168,7 +177,12 @@ export async function publishRealtimeEvent(
  * Função legada para compatibilidade
  * @deprecated Use publishRealtimeEvent()
  */
-export async function triggerRealtimeEvent(params: { type: "tenant-status" | "plan-update" | "user-status"; tenantId: string; userId?: string; sessionVersion?: number }): Promise<void> {
+export async function triggerRealtimeEvent(params: {
+  type: "tenant-status" | "plan-update" | "user-status";
+  tenantId: string;
+  userId?: string;
+  sessionVersion?: number;
+}): Promise<void> {
   await publishRealtimeEvent(params.type, {
     tenantId: params.tenantId,
     userId: params.userId,

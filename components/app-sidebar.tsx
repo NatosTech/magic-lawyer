@@ -5,10 +5,20 @@ import Image from "next/image";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { Drawer, DrawerBody, DrawerContent, DrawerHeader } from "@heroui/drawer";
+import {
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  DrawerHeader,
+} from "@heroui/drawer";
 import { Button } from "@heroui/button";
 import { User } from "@heroui/user";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/dropdown";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -23,35 +33,90 @@ type IconProps = {
 };
 
 const DashboardIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M3 13h8V3H3zM13 21h8V11h-8z" />
     <path d="M3 21h8v-4H3zM13 3v4h8V3z" />
   </svg>
 );
 
 const FolderIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M3 7a2 2 0 0 1 2-2h4l2 3h10v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
     <path d="M3 7h18" />
   </svg>
 );
 
 const FileIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M4 3h9l5 5v13H4z" />
     <path d="M13 3v6h6" />
   </svg>
 );
 
 const WalletIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <rect height="14" rx="2" width="20" x="2" y="5" />
     <path d="M16 12h4" />
   </svg>
 );
 
 const ChartIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M4 19v-8" />
     <path d="M9 19V5" />
     <path d="M15 19v-5" />
@@ -60,7 +125,18 @@ const ChartIcon = ({ size = 18 }: IconProps) => (
 );
 
 const CalendarIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <rect height="18" rx="2" ry="2" width="18" x="3" y="4" />
     <line x1="16" x2="16" y1="2" y2="6" />
     <line x1="8" x2="8" y1="2" y2="6" />
@@ -69,7 +145,18 @@ const CalendarIcon = ({ size = 18 }: IconProps) => (
 );
 
 const ScaleIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M16 11V7a4 4 0 0 0-8 0v4" />
     <rect height="11" rx="2" width="18" x="3" y="11" />
     <circle cx="12" cy="16" r="1" />
@@ -77,7 +164,18 @@ const ScaleIcon = ({ size = 18 }: IconProps) => (
 );
 
 const PeopleIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
     <circle cx="9" cy="7" r="4" />
     <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -86,21 +184,54 @@ const PeopleIcon = ({ size = 18 }: IconProps) => (
 );
 
 const SettingsIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <circle cx="12" cy="12" r="3" />
     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
   </svg>
 );
 
 const UserIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <circle cx="12" cy="7" r="4" />
     <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
   </svg>
 );
 
 const HelpIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <circle cx="12" cy="12" r="10" />
     <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
     <path d="M12 17h.01" />
@@ -108,7 +239,18 @@ const HelpIcon = ({ size = 18 }: IconProps) => (
 );
 
 const ReceiptIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z" />
     <path d="M14 8H8" />
     <path d="M16 12H8" />
@@ -117,14 +259,36 @@ const ReceiptIcon = ({ size = 18 }: IconProps) => (
 );
 
 const CreditCardIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <rect height="14" rx="2" width="20" x="2" y="5" />
     <line x1="2" x2="22" y1="10" y2="10" />
   </svg>
 );
 
 const FileSignatureIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M20 19.5v.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l4 4v13.5" />
     <path d="M14 2v4h4" />
     <path d="M10 9H8" />
@@ -135,7 +299,18 @@ const FileSignatureIcon = ({ size = 18 }: IconProps) => (
 );
 
 const FileTemplateIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
     <path d="M14 2v6h6" />
     <path d="M16 13H8" />
@@ -145,21 +320,54 @@ const FileTemplateIcon = ({ size = 18 }: IconProps) => (
 );
 
 const ShieldIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     <path d="M9 12l2 2 4-4" />
   </svg>
 );
 
 const ClockIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <circle cx="12" cy="12" r="10" />
     <path d="M12 6v6l3 3" />
   </svg>
 );
 
 const ClipboardIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M16 4h1a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1" />
     <path d="M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
     <path d="M9 12h6" />
@@ -168,7 +376,18 @@ const ClipboardIcon = ({ size = 18 }: IconProps) => (
 );
 
 const UsersIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
     <circle cx="9" cy="7" r="4" />
     <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
@@ -177,33 +396,88 @@ const UsersIcon = ({ size = 18 }: IconProps) => (
 );
 
 const ChevronDownIcon = ({ size = 16 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="m6 9 6 6 6-6" />
   </svg>
 );
 
 const CheckSquareIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <rect height="18" rx="2" width="18" x="3" y="3" />
     <path d="m9 12 2 2 4-4" />
   </svg>
 );
 
 const TagIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
     <circle cx="7" cy="7" r="1" />
   </svg>
 );
 
 const PuzzleIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <path d="M19.439 7.85c-.049.322-.059.644-.03.965l1.09 6.42a2 2 0 0 1-1.35 2.365l-1.148.381a1 1 0 0 1-1.618-.516l-1.774-6.65a1 1 0 0 0-1.176-.754l-5.33.884a1 1 0 0 1-1.105-.516L5.814 8.381a1 1 0 0 1 .192-1.165l2.128-2.128a1 1 0 0 1 1.414 0l.707.707a1 1 0 0 0 1.414 0l2.121-2.121a1 1 0 0 1 1.415 0l2.121 2.121a1 1 0 0 0 1.415 0l.707-.707a1 1 0 0 1 1.414 0l2.128 2.128a1 1 0 0 1 .192 1.165z" />
   </svg>
 );
 
 const BuildingIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <rect height="16" width="16" x="4" y="4" />
     <rect height="6" width="6" x="9" y="9" />
     <path d="M9 1v3" />
@@ -218,7 +492,18 @@ const BuildingIcon = ({ size = 18 }: IconProps) => (
 );
 
 const LayoutBoardIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <rect height="18" rx="2" width="18" x="3" y="3" />
     <path d="M3 9h18" />
     <path d="M9 21V9" />
@@ -226,7 +511,18 @@ const LayoutBoardIcon = ({ size = 18 }: IconProps) => (
 );
 
 const ListIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <line x1="8" x2="21" y1="6" y2="6" />
     <line x1="8" x2="21" y1="12" y2="12" />
     <line x1="8" x2="21" y1="18" y2="18" />
@@ -237,7 +533,18 @@ const ListIcon = ({ size = 18 }: IconProps) => (
 );
 
 const ActivityIcon = ({ size = 18 }: IconProps) => (
-  <svg aria-hidden className="text-current" fill="none" height={size} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={navIconStroke} viewBox="0 0 24 24" width={size}>
+  <svg
+    aria-hidden
+    className="text-current"
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={navIconStroke}
+    viewBox="0 0 24 24"
+    width={size}
+  >
     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
   </svg>
 );
@@ -306,20 +613,42 @@ export type SidebarProps = {
   secondaryItems: SidebarNavItem[];
 };
 
-const SidebarSectionLabel = ({ collapsed, children }: { collapsed: boolean; children: ReactNode }) =>
+const SidebarSectionLabel = ({
+  collapsed,
+  children,
+}: {
+  collapsed: boolean;
+  children: ReactNode;
+}) =>
   collapsed ? null : (
     <div className="px-2 py-0.5">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-default-500">{children}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-default-500">
+        {children}
+      </p>
     </div>
   );
 
 // Componente para item com accordion
-const AccordionNavItem = ({ item, isActive, icon, isDesktop, onCloseMobile }: { item: SidebarNavItem; isActive: boolean; icon: JSX.Element; isDesktop: boolean; onCloseMobile?: () => void }) => {
+const AccordionNavItem = ({
+  item,
+  isActive,
+  icon,
+  isDesktop,
+  onCloseMobile,
+}: {
+  item: SidebarNavItem;
+  isActive: boolean;
+  icon: JSX.Element;
+  isDesktop: boolean;
+  onCloseMobile?: () => void;
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const pathname = usePathname();
 
   // Auto-expandir se algum filho estiver ativo
-  const hasActiveChild = item.children?.some((child) => pathname === child.href || pathname.startsWith(`${child.href}/`));
+  const hasActiveChild = item.children?.some(
+    (child) => pathname === child.href || pathname.startsWith(`${child.href}/`),
+  );
 
   // Expandir automaticamente se houver filho ativo
   useEffect(() => {
@@ -341,14 +670,18 @@ const AccordionNavItem = ({ item, isActive, icon, isDesktop, onCloseMobile }: { 
           >
             <span className="shrink-0 text-base">{icon}</span>
             <span className="truncate">{item.label}</span>
-            <span className={`transition-transform duration-200 ml-auto ${isExpanded ? "rotate-180" : ""}`}>
+            <span
+              className={`transition-transform duration-200 ml-auto ${isExpanded ? "rotate-180" : ""}`}
+            >
               <ChevronDownIcon size={14} />
             </span>
           </button>
         </div>
 
         {/* Sub-itens com animação */}
-        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}>
+        <div
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
+        >
           <ul className="space-y-1 pl-6">
             {item.children?.map((child) => {
               const isChildActive = pathname === child.href;
@@ -384,11 +717,41 @@ const AccordionNavItem = ({ item, isActive, icon, isDesktop, onCloseMobile }: { 
 
 const SidebarToggleIcon = ({ collapsed }: { collapsed: boolean }) => (
   <span className="relative flex h-6 w-6 items-center justify-center">
-    <span className={clsx("absolute inset-0 rounded-full border border-primary/50 transition-all duration-500 ease-out", collapsed ? "scale-90 opacity-50" : "scale-110 opacity-80")} />
-    <span className={clsx("absolute inset-0 rounded-full bg-primary/20 transition-opacity duration-500", collapsed ? "opacity-25" : "opacity-40")} />
-    <svg aria-hidden className={clsx("relative h-4 w-4 text-primary transition-transform duration-500 ease-in-out", collapsed ? "rotate-0" : "rotate-180")} fill="none" viewBox="0 0 24 24">
-      <path d="M13 5l7 7-7 7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} />
-      <path d="M4 5l7 7-7 7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} />
+    <span
+      className={clsx(
+        "absolute inset-0 rounded-full border border-primary/50 transition-all duration-500 ease-out",
+        collapsed ? "scale-90 opacity-50" : "scale-110 opacity-80",
+      )}
+    />
+    <span
+      className={clsx(
+        "absolute inset-0 rounded-full bg-primary/20 transition-opacity duration-500",
+        collapsed ? "opacity-25" : "opacity-40",
+      )}
+    />
+    <svg
+      aria-hidden
+      className={clsx(
+        "relative h-4 w-4 text-primary transition-transform duration-500 ease-in-out",
+        collapsed ? "rotate-0" : "rotate-180",
+      )}
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M13 5l7 7-7 7"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.8}
+      />
+      <path
+        d="M4 5l7 7-7 7"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.8}
+      />
     </svg>
   </span>
 );
@@ -452,16 +815,35 @@ function MobileUserProfile({ onClose }: { onClose: () => void }) {
             />
           </Button>
         </DropdownTrigger>
-        <DropdownMenu aria-label="Menu do usuário" className="min-w-[220px]" onAction={(key) => handleUserAction(String(key))}>
-          <DropdownItem key="profile" description={isSuperAdmin ? "Configurações do sistema" : "Gerenciar informações pessoais"}>
+        <DropdownMenu
+          aria-label="Menu do usuário"
+          className="min-w-[220px]"
+          onAction={(key) => handleUserAction(String(key))}
+        >
+          <DropdownItem
+            key="profile"
+            description={
+              isSuperAdmin
+                ? "Configurações do sistema"
+                : "Gerenciar informações pessoais"
+            }
+          >
             {isSuperAdmin ? "Configurações" : "Meu perfil"}
           </DropdownItem>
           {!isSuperAdmin ? (
-            <DropdownItem key="tenant-settings" description="Configurações do escritório">
+            <DropdownItem
+              key="tenant-settings"
+              description="Configurações do escritório"
+            >
               Configurações
             </DropdownItem>
           ) : null}
-          <DropdownItem key="logout" className="text-danger" color="danger" description="Sair da sua conta">
+          <DropdownItem
+            key="logout"
+            className="text-danger"
+            color="danger"
+            description="Sair da sua conta"
+          >
             Sair
           </DropdownItem>
         </DropdownMenu>
@@ -504,7 +886,7 @@ function SidebarContent({
 
         return acc;
       },
-      {} as Record<string, SidebarNavItem[]>
+      {} as Record<string, SidebarNavItem[]>,
     );
 
     // Agrupar itens secundários por seção
@@ -519,14 +901,20 @@ function SidebarContent({
 
         return acc;
       },
-      {} as Record<string, SidebarNavItem[]>
+      {} as Record<string, SidebarNavItem[]>,
     );
 
     // Criar seções ordenadas
     const sections: Array<{ title: string; items: SidebarNavItem[] }> = [];
 
     // Ordem das seções principais
-    const sectionOrder = ["Visão Geral", "Gestão de Pessoas", "Atividades Jurídicas", "Operacional", "Administração"];
+    const sectionOrder = [
+      "Visão Geral",
+      "Gestão de Pessoas",
+      "Atividades Jurídicas",
+      "Operacional",
+      "Administração",
+    ];
 
     // Adicionar seções principais na ordem
     sectionOrder.forEach((sectionTitle) => {
@@ -549,7 +937,9 @@ function SidebarContent({
     Object.entries(groupedSecondaryItems).forEach(([sectionTitle, items]) => {
       if (items.length > 0) {
         // Verificar se já existe uma seção com esse nome
-        const existingSectionIndex = sections.findIndex((s) => s.title === sectionTitle);
+        const existingSectionIndex = sections.findIndex(
+          (s) => s.title === sectionTitle,
+        );
 
         if (existingSectionIndex >= 0) {
           // Se existe, mesclar os itens
@@ -569,7 +959,14 @@ function SidebarContent({
       <div className="mb-6 flex items-center gap-3 px-3 pt-4">
         {tenantLogoUrl ? (
           <span className="flex h-10 w-16 items-center justify-center rounded-xl border border-white/10 bg-white/5 p-1">
-            <Image unoptimized alt={`Logo ${tenantName}`} className="max-h-full w-full object-contain" height={40} src={tenantLogoUrl} width={64} />
+            <Image
+              unoptimized
+              alt={`Logo ${tenantName}`}
+              className="max-h-full w-full object-contain"
+              height={40}
+              src={tenantLogoUrl}
+              width={64}
+            />
           </span>
         ) : (
           <span className="rounded-xl bg-primary/15 p-2 text-primary">
@@ -578,7 +975,9 @@ function SidebarContent({
         )}
         {!collapsed ? (
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-white">{tenantName}</span>
+            <span className="text-sm font-semibold text-white">
+              {tenantName}
+            </span>
             <span className="text-[11px] text-default-500">Workspace</span>
           </div>
         ) : null}
@@ -588,15 +987,21 @@ function SidebarContent({
         {sections.map((section, index) => (
           <div key={section.title} className="space-y-1.5">
             {/* Separador visual entre seções (exceto a primeira) */}
-            {index > 0 && !collapsed && <div className="mx-2 my-1.5 border-t border-default-200/50" />}
+            {index > 0 && !collapsed && (
+              <div className="mx-2 my-1.5 border-t border-default-200/50" />
+            )}
 
-            <SidebarSectionLabel collapsed={collapsed}>{section.title}</SidebarSectionLabel>
+            <SidebarSectionLabel collapsed={collapsed}>
+              {section.title}
+            </SidebarSectionLabel>
 
             {collapsed ? (
               // Versão colapsada - sem accordion
               <ul className="space-y-1">
                 {section.items.map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  const isActive =
+                    pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`);
                   const icon = navIconMap[item.label] ?? <DashboardIcon />;
 
                   return (
@@ -625,11 +1030,23 @@ function SidebarContent({
               <ul className="space-y-1">
                 {section.items.map((item) => {
                   // Para itens com accordion, nunca considerar o pai como ativo - FIXED v2
-                  const isActive = item.isAccordion ? false : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  const isActive = item.isAccordion
+                    ? false
+                    : pathname === item.href ||
+                      pathname.startsWith(`${item.href}/`);
                   const icon = navIconMap[item.label] ?? <DashboardIcon />;
 
                   if (item.isAccordion && item.children) {
-                    return <AccordionNavItem key={item.href} icon={icon} isActive={isActive} isDesktop={isDesktop} item={item} onCloseMobile={onCloseMobile} />;
+                    return (
+                      <AccordionNavItem
+                        key={item.href}
+                        icon={icon}
+                        isActive={isActive}
+                        isDesktop={isDesktop}
+                        item={item}
+                        onCloseMobile={onCloseMobile}
+                      />
+                    );
                   }
 
                   // Item normal sem accordion
@@ -662,14 +1079,32 @@ function SidebarContent({
 
       {isDesktop ? (
         <div className="border-t border-default-200 p-3 space-y-2">
-          <Button as={NextLink} className={clsx("group relative w-full", collapsed ? "p-2" : "px-3 py-2")} color="warning" href="/help" isIconOnly={collapsed} radius="none" variant="bordered">
+          <Button
+            as={NextLink}
+            className={clsx(
+              "group relative w-full",
+              collapsed ? "p-2" : "px-3 py-2",
+            )}
+            color="warning"
+            href="/help"
+            isIconOnly={collapsed}
+            radius="none"
+            variant="bordered"
+          >
             <HelpIcon size={collapsed ? 16 : 18} />
             <span className="sr-only">Abrir chamado</span>
-            {!collapsed ? <span className="ml-3 text-[10px] font-semibold uppercase tracking-[0.35em]">Ajuda</span> : null}
+            {!collapsed ? (
+              <span className="ml-3 text-[10px] font-semibold uppercase tracking-[0.35em]">
+                Ajuda
+              </span>
+            ) : null}
           </Button>
           <Button
             aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-            className={clsx("group relative w-full", collapsed ? "p-2" : "px-3 py-2")}
+            className={clsx(
+              "group relative w-full",
+              collapsed ? "p-2" : "px-3 py-2",
+            )}
             color="primary"
             isIconOnly={collapsed}
             radius="none"
@@ -677,8 +1112,14 @@ function SidebarContent({
             onPress={onToggleCollapse}
           >
             <SidebarToggleIcon collapsed={collapsed} />
-            <span className="sr-only">{collapsed ? "Expandir menu" : "Recolher menu"}</span>
-            {!collapsed ? <span className="ml-3 text-[10px] font-semibold uppercase tracking-[0.35em]">Menu</span> : null}
+            <span className="sr-only">
+              {collapsed ? "Expandir menu" : "Recolher menu"}
+            </span>
+            {!collapsed ? (
+              <span className="ml-3 text-[10px] font-semibold uppercase tracking-[0.35em]">
+                Menu
+              </span>
+            ) : null}
           </Button>
         </div>
       ) : null}
@@ -686,10 +1127,24 @@ function SidebarContent({
   );
 }
 
-export function AppSidebar({ tenantName, tenantLogoUrl, collapsed, onToggleCollapse, isMobileOpen, onCloseMobile, navItems, secondaryItems }: SidebarProps) {
+export function AppSidebar({
+  tenantName,
+  tenantLogoUrl,
+  collapsed,
+  onToggleCollapse,
+  isMobileOpen,
+  onCloseMobile,
+  navItems,
+  secondaryItems,
+}: SidebarProps) {
   return (
     <>
-      <aside className={clsx("hidden h-screen flex-col border-r border-divider bg-background/80 backdrop-blur-xl transition-all duration-300 md:flex", collapsed ? "md:w-[84px]" : "md:w-64")}>
+      <aside
+        className={clsx(
+          "hidden h-screen flex-col border-r border-divider bg-background/80 backdrop-blur-xl transition-all duration-300 md:flex",
+          collapsed ? "md:w-[84px]" : "md:w-64",
+        )}
+      >
         <SidebarContent
           isDesktop
           collapsed={collapsed}
@@ -715,7 +1170,9 @@ export function AppSidebar({ tenantName, tenantLogoUrl, collapsed, onToggleColla
         <DrawerContent className="bg-background/95 text-white">
           {(onClose) => (
             <>
-              <DrawerHeader className="text-sm font-semibold uppercase tracking-[0.3em] text-default-500">Menu</DrawerHeader>
+              <DrawerHeader className="text-sm font-semibold uppercase tracking-[0.3em] text-default-500">
+                Menu
+              </DrawerHeader>
               <DrawerBody className="p-0">
                 {/* Mobile Search and Notifications */}
                 <div className="px-4 py-3 border-b border-default-200">

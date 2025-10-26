@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { ToastProvider } from "@heroui/toast";
 import { SessionProvider } from "next-auth/react";
+
 import { RealtimeProvider } from "./providers/realtime-provider";
 
 export interface ProvidersProps {
@@ -17,7 +18,9 @@ export interface ProvidersProps {
 
 declare module "@react-types/shared" {
   interface RouterConfig {
-    routerOptions: NonNullable<Parameters<ReturnType<typeof useRouter>["push"]>[1]>;
+    routerOptions: NonNullable<
+      Parameters<ReturnType<typeof useRouter>["push"]>[1]
+    >;
   }
 }
 

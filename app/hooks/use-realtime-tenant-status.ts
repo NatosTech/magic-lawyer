@@ -1,10 +1,12 @@
 "use client";
 
+import type { RealtimeEvent } from "@/app/lib/realtime/types";
+
 import useSWR from "swr";
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
+
 import { useRealtime } from "@/app/providers/realtime-provider";
-import type { RealtimeEvent } from "@/app/lib/realtime/types";
 
 interface TenantStatusData {
   id: string;
@@ -41,25 +43,36 @@ export function useRealtimeTenantStatus(tenantId: string | null) {
   const prevStatusRef = useRef<string | null>(null);
 
   // Só buscar se tivermos tenantId e sessão válida
-  const { data, error, isLoading, isValidating, mutate } = useSWR<TenantStatusData>(tenantId ? ["tenant-status", tenantId] : null, () => fetchTenantStatus(tenantId!), {
-    revalidateOnFocus: true,
-    revalidateOnReconnect: true,
-    refreshInterval: 30000, // 30 segundos (fallback se WebSocket falhar)
-    dedupingInterval: 2000, // Evitar duplicatas
-    onSuccess: (data) => {
-      // Marcar última atualização bem-sucedida
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem(`tenant-${tenantId}-last-update`, new Date().toISOString());
-      }
-    },
-  });
+  const { data, error, isLoading, isValidating, mutate } =
+    useSWR<TenantStatusData>(
+      tenantId ? ["tenant-status", tenantId] : null,
+      () => fetchTenantStatus(tenantId!),
+      {
+        revalidateOnFocus: true,
+        revalidateOnReconnect: true,
+        refreshInterval: 30000, // 30 segundos (fallback se WebSocket falhar)
+        dedupingInterval: 2000, // Evitar duplicatas
+        onSuccess: (data) => {
+          // Marcar última atualização bem-sucedida
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem(
+              `tenant-${tenantId}-last-update`,
+              new Date().toISOString(),
+            );
+          }
+        },
+      },
+    );
 
   // Detectar mudança de status
   useEffect(() => {
     if (!data?.status) return;
 
     // Se o status mudou em relação ao anterior
-    if (prevStatusRef.current !== null && prevStatusRef.current !== data.status) {
+    if (
+      prevStatusRef.current !== null &&
+      prevStatusRef.current !== data.status
+    ) {
       setStatusChanged(true);
       setLastStatus(data.status);
 
@@ -68,6 +81,7 @@ export function useRealtimeTenantStatus(tenantId: string | null) {
 
       // Auto-reset após 3 segundos
       const timer = setTimeout(() => setStatusChanged(false), 3000);
+
       return () => clearTimeout(timer);
     }
 
@@ -79,32 +93,52 @@ export function useRealtimeTenantStatus(tenantId: string | null) {
   useEffect(() => {
     if (!tenantId) return;
 
-    console.log(`[useRealtimeTenantStatus] 📡 Registrando listener WebSocket para tenant: ${tenantId}`);
+    console.log(
+      `[useRealtimeTenantStatus] 📡 Registrando listener WebSocket para tenant: ${tenantId}`,
+    );
 
     // Subscribe em plan-update (mudanças de plano/módulos)
-    const unsubscribePlan = realtime.subscribe("plan-update", (event: RealtimeEvent) => {
-      console.log(`[useRealtimeTenantStatus] 📨 Evento plan-update recebido:`, event);
+    const unsubscribePlan = realtime.subscribe(
+      "plan-update",
+      (event: RealtimeEvent) => {
+        console.log(
+          `[useRealtimeTenantStatus] 📨 Evento plan-update recebido:`,
+          event,
+        );
 
-      // Se o evento é para este tenant, invalidar cache
-      if (event.tenantId === tenantId) {
-        console.log(`[useRealtimeTenantStatus] 🔄 Invalidando cache para tenant ${tenantId}`);
-        mutate();
-      }
-    });
+        // Se o evento é para este tenant, invalidar cache
+        if (event.tenantId === tenantId) {
+          console.log(
+            `[useRealtimeTenantStatus] 🔄 Invalidando cache para tenant ${tenantId}`,
+          );
+          mutate();
+        }
+      },
+    );
 
     // Subscribe em tenant-soft-update (mudanças não críticas)
-    const unsubscribeSoft = realtime.subscribe("tenant-soft-update", (event: RealtimeEvent) => {
-      console.log(`[useRealtimeTenantStatus] 📨 Evento tenant-soft-update recebido:`, event);
+    const unsubscribeSoft = realtime.subscribe(
+      "tenant-soft-update",
+      (event: RealtimeEvent) => {
+        console.log(
+          `[useRealtimeTenantStatus] 📨 Evento tenant-soft-update recebido:`,
+          event,
+        );
 
-      if (event.tenantId === tenantId) {
-        console.log(`[useRealtimeTenantStatus] 🔄 Invalidando cache para tenant ${tenantId}`);
-        mutate();
-      }
-    });
+        if (event.tenantId === tenantId) {
+          console.log(
+            `[useRealtimeTenantStatus] 🔄 Invalidando cache para tenant ${tenantId}`,
+          );
+          mutate();
+        }
+      },
+    );
 
     // Cleanup
     return () => {
-      console.log(`[useRealtimeTenantStatus] 📡 Removendo listeners WebSocket para tenant ${tenantId}`);
+      console.log(
+        `[useRealtimeTenantStatus] 📡 Removendo listeners WebSocket para tenant ${tenantId}`,
+      );
       unsubscribePlan();
       unsubscribeSoft();
     };
@@ -124,7 +158,10 @@ export function useRealtimeTenantStatus(tenantId: string | null) {
     const tenantPlanRevision = (session.user as any)?.tenantPlanRevision;
 
     // Se houver divergência, forçar revalidação
-    if (tenantSessionVersion !== data.sessionVersion || tenantPlanRevision !== data.planRevision) {
+    if (
+      tenantSessionVersion !== data.sessionVersion ||
+      tenantPlanRevision !== data.planRevision
+    ) {
       mutate();
     }
   }, [session, data, tenantId, mutate]);

@@ -23,7 +23,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           <p className="mt-4 text-lg font-semibold">Encerrando sessão...</p>
         </div>
       </div>

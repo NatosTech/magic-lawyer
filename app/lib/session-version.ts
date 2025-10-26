@@ -5,7 +5,10 @@ import { TenantStatus } from "@/app/generated/prisma";
  * Incrementa o sessionVersion de um tenant e atualiza statusChangedAt
  * Usado quando há alteração crítica no tenant (status, plano, módulos)
  */
-export async function bumpTenantSession(tenantId: string, reason?: string): Promise<{ sessionVersion: number }> {
+export async function bumpTenantSession(
+  tenantId: string,
+  reason?: string,
+): Promise<{ sessionVersion: number }> {
   const updated = await prisma.tenant.update({
     where: { id: tenantId },
     data: {
@@ -40,7 +43,10 @@ export async function getTenantSessionSnapshot(tenantId: string) {
  * Incrementa o sessionVersion de um usuário e atualiza statusChangedAt
  * Usado quando há alteração crítica no usuário (status, permissões)
  */
-export async function bumpUserSession(userId: string, reason?: string): Promise<{ sessionVersion: number }> {
+export async function bumpUserSession(
+  userId: string,
+  reason?: string,
+): Promise<{ sessionVersion: number }> {
   const updated = await prisma.usuario.update({
     where: { id: userId },
     data: {
@@ -73,7 +79,10 @@ export async function getUserSessionSnapshot(userId: string) {
 /**
  * Verifica se o tenant está ativo e se a sessão é válida
  */
-export async function validateTenantSession(tenantId: string, sessionVersion: number): Promise<{ valid: boolean; status?: TenantStatus; reason?: string }> {
+export async function validateTenantSession(
+  tenantId: string,
+  sessionVersion: number,
+): Promise<{ valid: boolean; status?: TenantStatus; reason?: string }> {
   const tenant = await getTenantSessionSnapshot(tenantId);
 
   if (!tenant) {
@@ -97,7 +106,10 @@ export async function validateTenantSession(tenantId: string, sessionVersion: nu
 /**
  * Verifica se o usuário está ativo e se a sessão é válida
  */
-export async function validateUserSession(userId: string, sessionVersion: number): Promise<{ valid: boolean; reason?: string }> {
+export async function validateUserSession(
+  userId: string,
+  sessionVersion: number,
+): Promise<{ valid: boolean; reason?: string }> {
   const user = await getUserSessionSnapshot(userId);
 
   if (!user) {

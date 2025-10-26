@@ -248,8 +248,12 @@ export async function getTenantConfigData(): Promise<{
             status: tenant.subscription.status,
             planId: tenant.subscription.planoId,
             planName: tenant.subscription.plano?.nome ?? null,
-            valorMensal: decimalToNullableNumber(tenant.subscription.plano?.valorMensal),
-            valorAnual: decimalToNullableNumber(tenant.subscription.plano?.valorAnual),
+            valorMensal: decimalToNullableNumber(
+              tenant.subscription.plano?.valorMensal,
+            ),
+            valorAnual: decimalToNullableNumber(
+              tenant.subscription.plano?.valorAnual,
+            ),
             moeda: tenant.subscription.plano?.moeda ?? null,
             planRevision: tenant.subscription.planRevision,
             trialEndsAt: tenant.subscription.trialEndsAt?.toISOString() ?? null,
@@ -261,7 +265,9 @@ export async function getTenantConfigData(): Promise<{
                   status: tenant.subscription.planoVersao.status,
                   titulo: tenant.subscription.planoVersao.titulo,
                   descricao: tenant.subscription.planoVersao.descricao,
-                  publicadoEm: tenant.subscription.planoVersao.publicadoEm?.toISOString() ?? null,
+                  publicadoEm:
+                    tenant.subscription.planoVersao.publicadoEm?.toISOString() ??
+                    null,
                 }
               : null,
           }

@@ -13,7 +13,10 @@ export async function POST(request: Request) {
     const expectedToken = process.env.REALTIME_INTERNAL_TOKEN;
 
     if (!token || token !== expectedToken) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
     }
 
     const payload = await request.json();
@@ -64,6 +67,10 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Erro ao invalidar cache:", error);
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
+
+    return NextResponse.json(
+      { success: false, error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
