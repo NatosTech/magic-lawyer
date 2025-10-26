@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
-import Ably from "ably/promises";
+import Ably from "ably";
 import type { RealtimeEvent, RealtimeEventType } from "@/app/lib/realtime/types";
 
 interface RealtimeContextType {

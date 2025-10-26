@@ -165,7 +165,7 @@ async function createPlanoVersaoSnapshotTx(
   params: {
     plano: { id: string; nome: string };
     status: PlanoVersaoStatusValue;
-    usuarioId: string;
+    usuarioId?: string | null;
     titulo?: string;
     descricao?: string;
     requireActiveModules?: boolean;
@@ -218,8 +218,8 @@ async function createPlanoVersaoSnapshotTx(
       status,
       titulo: defaultTitulo,
       descricao,
-      criadoPorId: usuarioId,
-      publicadoPorId: status === PLANO_VERSAO_STATUS.PUBLISHED ? usuarioId : undefined,
+      criadoPorId: usuarioId ?? null,
+      publicadoPorId: status === PLANO_VERSAO_STATUS.PUBLISHED ? usuarioId ?? null : undefined,
       publicadoEm: status === PLANO_VERSAO_STATUS.PUBLISHED ? now : undefined,
       modulos:
         modulosData.length > 0
@@ -297,7 +297,7 @@ export type GetEstatisticasPlanosResponse = {
 async function ensureSuperAdmin() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !session?.user?.email) {
     throw new Error("Não autenticado");
   }
 
@@ -307,7 +307,17 @@ async function ensureSuperAdmin() {
     throw new Error("Acesso negado. Apenas Super Admins podem gerenciar planos.");
   }
 
-  return session.user.id as string;
+  // Buscar o ID do SuperAdmin correspondente ao usuário
+  const superAdmin = await prisma.superAdmin.findUnique({
+    where: { email: session.user.email },
+    select: { id: true },
+  });
+
+  if (!superAdmin) {
+    throw new Error("Super Admin não encontrado");
+  }
+
+  return superAdmin.id;
 }
 
 // ==================== CRUD PLANOS ====================
@@ -767,7 +777,7 @@ export async function syncPlanoModulos(planoId: string, activeModuloIds: string[
 
 export async function createPlanoVersaoDraft(planoId: string, payload?: { titulo?: string; descricao?: string }): Promise<{ success: boolean; data?: PlanoVersaoResumo; error?: string }> {
   try {
-    const usuarioId = await ensureSuperAdmin();
+    await ensureSuperAdmin();
 
     const versao = await prisma.$transaction(async (tx) => {
       const plano = await tx.plano.findUnique({
@@ -782,7 +792,7 @@ export async function createPlanoVersaoDraft(planoId: string, payload?: { titulo
       const novaVersao = await createPlanoVersaoSnapshotTx(tx, {
         plano,
         status: PLANO_VERSAO_STATUS.DRAFT,
-        usuarioId,
+        usuarioId: null,
         titulo: payload?.titulo,
         descricao: payload?.descricao,
         requireActiveModules: false,
@@ -809,7 +819,7 @@ export async function createPlanoVersaoDraft(planoId: string, payload?: { titulo
 
 export async function createPlanoVersaoReview(planoId: string, payload?: { titulo?: string; descricao?: string }): Promise<{ success: boolean; data?: PlanoVersaoResumo; error?: string }> {
   try {
-    const usuarioId = await ensureSuperAdmin();
+    await ensureSuperAdmin();
 
     const versao = await prisma.$transaction(async (tx) => {
       const plano = await tx.plano.findUnique({
@@ -824,7 +834,7 @@ export async function createPlanoVersaoReview(planoId: string, payload?: { titul
       const novaVersao = await createPlanoVersaoSnapshotTx(tx, {
         plano,
         status: PLANO_VERSAO_STATUS.REVIEW,
-        usuarioId,
+        usuarioId: null,
         titulo: payload?.titulo,
         descricao: payload?.descricao,
         requireActiveModules: true,
@@ -899,7 +909,7 @@ export async function publishPlanoVersao(
             status: PLANO_VERSAO_STATUS.PUBLISHED,
             titulo: payload?.titulo ?? versaoAlvo.titulo ?? `${plano.nome} · Versão ${versaoAlvo.numero}`,
             descricao: payload?.descricao ?? versaoAlvo.descricao,
-            publicadoPorId: usuarioId,
+            publicadoPorId: null,
             publicadoEm: new Date(),
           },
         });
@@ -907,7 +917,7 @@ export async function publishPlanoVersao(
         versaoAlvo = await createPlanoVersaoSnapshotTx(tx, {
           plano,
           status: PLANO_VERSAO_STATUS.PUBLISHED,
-          usuarioId,
+          usuarioId: null,
           titulo: payload?.titulo,
           descricao: payload?.descricao,
           requireActiveModules: true,

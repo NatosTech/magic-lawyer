@@ -944,7 +944,7 @@ export async function updateTenantSubscription(tenantId: string, payload: Update
     if (hasStatusChanged) {
       // Mudança de status é CRÍTICA (pode exigir logout)
       // Verificar se é suspensão/cancelamento
-      const isCriticalStatus = payload.status === "SUSPENDED" || payload.status === "CANCELLED";
+      const isCriticalStatus = payload.status === "SUSPENSA" || payload.status === "CANCELADA";
 
       if (isCriticalStatus) {
         // HARD LOGOUT - usar invalidateTenant

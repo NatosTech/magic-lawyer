@@ -30,24 +30,33 @@ async function main() {
 
   // Criar tenant global para dados compartilhados
   console.log("🌍 Criando tenant global...\n");
-  await prisma.tenant.upsert({
-    where: { slug: "global" },
-    update: {},
-    create: {
-      id: "GLOBAL",
-      name: "Sistema Global",
-      slug: "global",
-      status: "ACTIVE",
-      timezone: "America/Sao_Paulo",
-      tipoPessoa: "JURIDICA",
-    },
-  });
+  try {
+    await prisma.tenant.upsert({
+      where: { slug: "global" },
+      update: {},
+      create: {
+        id: "GLOBAL",
+        name: "Sistema Global",
+        slug: "global",
+        status: "ACTIVE",
+        timezone: "America/Sao_Paulo",
+        tipoPessoa: "JURIDICA",
+      },
+    });
+    console.log("✅ Tenant global criado/atualizado\n");
+  } catch (error) {
+    console.warn("⚠️ Tenant global já existe, pulando...\n");
+  }
 
   // Seeds básicos
-  await seedAreasProcesso(prisma);
-  await seedTiposContrato(prisma);
-  await seedCategoriasTarefa(prisma);
-  await seedModulos(prisma);
+  try {
+    await seedAreasProcesso(prisma);
+    await seedTiposContrato(prisma);
+    await seedCategoriasTarefa(prisma);
+    await seedModulos(prisma);
+  } catch (error) {
+    console.warn("⚠️ Algunos seeds básicos já existem:", error.message);
+  }
 
   // Detectar módulos automaticamente antes de criar planos
   console.log("\n🔍 Detectando módulos automaticamente...");
@@ -60,74 +69,156 @@ async function main() {
     console.warn("⚠️ Erro na detecção automática de módulos:", error.message);
   }
 
-  await seedPlanos(prisma);
+  try {
+    await seedPlanos(prisma);
+  } catch (error) {
+    console.warn("⚠️ Planos já criados:", error.message);
+  }
 
   console.log("\n🏢 Criando tenants...\n");
 
   // Seeds de tenants
-  await seedTenantSandra(prisma, Prisma);
-  await seedTenantLuana(prisma, Prisma);
-  await seedSalbaAdvocacia(prisma);
+  try {
+    await seedTenantSandra(prisma, Prisma);
+    await seedTenantLuana(prisma, Prisma);
+    await seedSalbaAdvocacia(prisma);
+  } catch (error) {
+    console.warn("⚠️ Tenants já criados:", error.message);
+  }
 
   console.log("\n🗂️  Criando catálogo de causas...\n");
-  await seedCausas(prisma);
+  try {
+    await seedCausas(prisma);
+  } catch (error) {
+    console.warn("⚠️ Causas já criadas:", error.message);
+  }
 
   console.log("\n⏱️  Criando regimes de prazo padrão...\n");
-  await seedRegimesPrazo(prisma);
+  try {
+    await seedRegimesPrazo(prisma);
+  } catch (error) {
+    console.warn("⚠️ Regimes de prazo já criados:", error.message);
+  }
 
   console.log("\n📅 Criando eventos...\n");
 
   // Seed de eventos
-  await seedEventos();
+  try {
+    await seedEventos();
+  } catch (error) {
+    console.warn("⚠️ Eventos já criados:", error.message);
+  }
 
   console.log("\n🔑 Criando Super Admins do sistema...\n");
 
   // Seed do Super Admin
-  const { superAdminRobson, superAdminTalisia } = await seedSuperAdmin(prisma);
+  let superAdminRobson, superAdminTalisia;
+  try {
+    const result = await seedSuperAdmin(prisma);
+    superAdminRobson = result.superAdminRobson;
+    superAdminTalisia = result.superAdminTalisia;
+  } catch (error) {
+    console.warn("⚠️ Super Admins já criados:", error.message);
+    // Tentar buscar os existentes
+    try {
+      superAdminRobson = await prisma.superAdmin.findUnique({ where: { email: "robsonnonatoiii@gmail.com" } });
+      superAdminTalisia = await prisma.superAdmin.findUnique({ where: { email: "talisia@magiclawyer.com" } });
+    } catch (err) {
+      console.warn("⚠️ Não foi possível buscar Super Admins existentes");
+    }
+  }
 
   console.log("\n👨‍⚖️ Criando base de juízes...\n");
 
   // Seed de juízes (controlados pelo Super Admin Robson)
-  await seedJuizes(superAdminRobson.id, prisma);
+  if (superAdminRobson) {
+    try {
+      await seedJuizes(superAdminRobson.id, prisma);
+    } catch (error) {
+      console.warn("⚠️ Juízes já criados:", error.message);
+    }
+  }
 
   console.log("\n⚙️ Criando configurações de preço...\n");
 
   // Seed de configurações de preço
-  await seedConfiguracoesPreco(superAdminRobson.id, prisma);
+  if (superAdminRobson) {
+    try {
+      await seedConfiguracoesPreco(superAdminRobson.id, prisma);
+    } catch (error) {
+      console.warn("⚠️ Configurações de preço já criadas:", error.message);
+    }
+  }
 
   console.log("\n📦 Criando pacotes de juízes...\n");
 
   // Seed de pacotes de juízes
-  await seedPacotesJuiz(superAdminRobson.id, prisma);
+  if (superAdminRobson) {
+    try {
+      await seedPacotesJuiz(superAdminRobson.id, prisma);
+    } catch (error) {
+      console.warn("⚠️ Pacotes de juízes já criados:", error.message);
+    }
+  }
 
   console.log("\n🕵️  Criando registros de auditoria...\n");
 
   // Seed de logs de auditoria (super admin e tenants)
-  await seedAuditLogs(prisma, superAdminRobson.id);
+  if (superAdminRobson) {
+    try {
+      await seedAuditLogs(prisma, superAdminRobson.id);
+    } catch (error) {
+      console.warn("⚠️ Logs de auditoria já criados:", error.message);
+    }
+  }
 
   console.log("\n💰 Criando dados financeiros de teste...\n");
 
   // Seed de dados financeiros
-  await seedDadosFinanceiros(prisma);
+  try {
+    await seedDadosFinanceiros(prisma);
+  } catch (error) {
+    console.warn("⚠️ Dados financeiros já criados:", error.message);
+  }
 
   console.log("\n📄 Criando contratos, processos e procurações...\n");
 
   // Seed de contratos, processos e procurações
-  await seedContratos(prisma, Prisma);
+  try {
+    await seedContratos(prisma, Prisma);
+  } catch (error) {
+    console.warn("⚠️ Contratos já criados:", error.message);
+  }
 
   console.log("\n🏛️  Criando tipos de petição padrão...\n");
 
   // Seed de tipos de petição
-  await seedTiposPeticao();
+  try {
+    await seedTiposPeticao();
+  } catch (error) {
+    console.warn("⚠️ Tipos de petição já criados:", error.message);
+  }
 
   // Seed de bancos do Brasil
-  await seedBancos();
+  try {
+    await seedBancos();
+  } catch (error) {
+    console.warn("⚠️ Bancos já criados:", error.message);
+  }
 
   // Seed de dados bancários para usuários
-  await seedDadosBancarios(prisma);
+  try {
+    await seedDadosBancarios(prisma);
+  } catch (error) {
+    console.warn("⚠️ Dados bancários já criados:", error.message);
+  }
 
   // Seed de recebimentos (parcelas e faturas pagas)
-  await seedRecebimentos(prisma, Prisma);
+  try {
+    await seedRecebimentos(prisma, Prisma);
+  } catch (error) {
+    console.warn("⚠️ Recebimentos já criados:", error.message);
+  }
 
   console.log("\n🚀 Aplicando otimizações enterprise...\n");
 

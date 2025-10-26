@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 
 import { useUserPermissions } from "./use-user-permissions";
+import { useTenantModules } from "./use-tenant-modules";
 
 export interface NavigationItem {
   label: string;
@@ -54,11 +55,30 @@ export function useProfileNavigation() {
   const { data: session } = useSession();
   const { userRole, permissions, isAdvogado, isSecretaria, isFinanceiro, isCliente } = useUserPermissions();
 
-  const grantedModules = (session?.user as any)?.tenantModules as string[] | undefined;
+  // Buscar módulos via hook realtime (atualiza automaticamente)
+  const { modules: realtimeModules, isLoading: isLoadingModules } = useTenantModules();
+
+  // Debug removido
+
+  // Usar módulos do realtime se disponível, senão usar do session
+  // IMPORTANTE: Mantém uso de session enquanto carrega para evitar sidebar vazio
+  const sessionModules = (session?.user as any)?.tenantModules as string[] | undefined;
+
+  // Garantir que temos sempre um array válido
+  const grantedModules = useMemo(() => {
+    if (realtimeModules.length > 0) {
+      return realtimeModules;
+    }
+    return sessionModules || [];
+  }, [realtimeModules, sessionModules]);
 
   const hasModuleAccess = useCallback(
     (_href: string, required?: string[]) => {
-      if (!grantedModules || grantedModules.includes("*")) {
+      if (!grantedModules || !Array.isArray(grantedModules)) {
+        return false;
+      }
+
+      if (grantedModules.includes("*")) {
         return true;
       }
 

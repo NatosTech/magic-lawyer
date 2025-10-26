@@ -4,7 +4,7 @@
  * Execução: npx tsx scripts/test-realtime.ts
  */
 
-import Ably from "ably/promises";
+import Ably from "ably";
 import * as dotenv from "dotenv";
 
 // Carregar variáveis de ambiente

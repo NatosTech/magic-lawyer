@@ -286,7 +286,26 @@ export function TenantManagementContent({
         color: "success",
       });
 
-      await mutate();
+      // Atualização otimista imediata
+      mutate(
+        (current) =>
+          current
+            ? {
+                ...current,
+                tenant: {
+                  ...current.tenant,
+                  status,
+                },
+              }
+            : current,
+        { revalidate: false },
+      );
+
+      try {
+        await mutate();
+      } catch (error) {
+        console.error("[tenant-management] Erro ao revalidar tenant:", error);
+      }
     });
   };
 
