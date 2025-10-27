@@ -18,6 +18,13 @@ export async function POST(request: Request) {
     // Verificar token de autenticação interno
     const token = request.headers.get("x-internal-token");
 
+    // Verificar se o token interno está configurado corretamente
+    if (!expectedToken || expectedToken.trim() === "") {
+      return NextResponse.json(
+        { success: false, error: "Configuração ausente: REALTIME_INTERNAL_TOKEN não definido" },
+        { status: 500 },
+      );
+    }
     if (!token || token !== expectedToken) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
