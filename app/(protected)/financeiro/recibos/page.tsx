@@ -49,6 +49,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 
 import useSWR from "swr";
+import { toast } from "sonner";
 
 import { title, subtitle } from "@/components/primitives";
 import { PermissionGuard } from "@/components/permission-guard";
@@ -191,13 +192,6 @@ export default function RecibosPage() {
   }, [paginaAtual, totalPaginasFiltrado]);
 
   // Debug removido para produção
-    total,
-    totalPaginas,
-    filtrados: filteredRecibos.length,
-    resumoFiltrado,
-    isLoading,
-    error,
-  });
 
   const handleFiltroChange = (key: keyof FiltrosRecibos, value: any) => {
     setFiltros((prev) => ({ ...prev, [key]: value }));

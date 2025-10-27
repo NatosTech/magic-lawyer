@@ -124,9 +124,6 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
   const { isFavorito, mutate: mutateFavorito } = useFavoritoJuiz(juizId);
 
   // Debug removido para produção
-    isError,
-    isFavorito,
-  });
   const { processos, isLoading: isLoadingProcessos } =
     useProcessosDoJuiz(juizId);
   const { julgamentos, isLoading: isLoadingJulgamentos } =

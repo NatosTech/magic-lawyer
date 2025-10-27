@@ -244,12 +244,6 @@ export default function AdvogadosContent() {
   } = usePerformanceGeral();
 
   // Debug logs removidos para produção
-    performanceError,
-    performanceGeral,
-    isLoadingPerformanceGeral,
-    performanceGeralError,
-    showPerformanceReports,
-  });
 
   // Hooks de comissões
   const { comissoes: comissoesData, isLoading: isLoadingComissoes } =
