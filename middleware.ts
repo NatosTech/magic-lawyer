@@ -3,6 +3,30 @@ import { NextResponse } from "next/server";
 
 import { isRouteAllowedByModulesEdge } from "@/app/lib/module-map-edge";
 
+// Função para detectar dinamicamente o NEXTAUTH_URL baseado no ambiente
+function getDynamicNextAuthUrl(host: string): string {
+  // Remove porta se existir
+  const cleanHost = host.split(":")[0];
+  
+  // Para desenvolvimento local
+  if (cleanHost.includes("localhost")) {
+    return `http://${cleanHost}`;
+  }
+  
+  // Para preview deployments do Vercel (branches que não são main)
+  if (cleanHost.includes("vercel.app") && !cleanHost.includes("magiclawyer.vercel.app")) {
+    return `https://${cleanHost}`;
+  }
+  
+  // Para domínio principal de produção
+  if (cleanHost.includes("magiclawyer.vercel.app")) {
+    return "https://magiclawyer.vercel.app";
+  }
+  
+  // Para domínios customizados
+  return `https://${cleanHost}`;
+}
+
 // Função para extrair tenant do domínio
 function extractTenantFromDomain(host: string): string | null {
   // Remove porta se existir
@@ -51,7 +75,8 @@ export default withAuth(
 
       if (shouldCheck) {
         try {
-          const base = process.env.NEXTAUTH_URL || "http://localhost:9192";
+          const host = req.headers.get("host") || "";
+          const base = getDynamicNextAuthUrl(host);
           const url = new URL(
             "/api/internal/session/validate",
             base,

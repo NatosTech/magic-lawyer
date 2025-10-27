@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 
 import prisma from "./app/lib/prisma";
 import { getTenantAccessibleModules } from "./app/lib/tenant-modules";
+import { getNextAuthConfig, isVercelPreviewDeployment, isLocalDevelopment, isProduction } from "./app/lib/auth-config";
 
 // Função para extrair tenant do domínio
 function extractTenantFromDomain(host: string): string | null {
@@ -67,8 +68,7 @@ export const authOptions: NextAuthOptions = {
     error: "/login",
   },
   // Configuração para aceitar qualquer domínio localhost
-  useSecureCookies: false,
-  // NextAuth v4 usa NEXTAUTH_URL/NEXTAUTH_SECRET do ambiente
+  useSecureCookies: process.env.NODE_ENV === "production",
   providers: [
     Credentials({
       name: "Credenciais",
