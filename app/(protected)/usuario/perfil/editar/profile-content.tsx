@@ -210,7 +210,7 @@ export function ProfileContent() {
       // Atualizar sessão
       await update();
     } catch (error) {
-      console.error("Erro ao atualizar estado do avatar:", error);
+      // Erro silencioso - usuário já tem feedback visual
     }
   };
 

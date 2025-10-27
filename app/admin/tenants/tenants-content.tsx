@@ -9,9 +9,11 @@ import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Skeleton } from "@heroui/react";
 import NextLink from "next/link";
+import { Tooltip } from "@heroui/react";
 
 import { getAllTenants, type TenantResponse } from "@/app/actions/admin";
 import { title, subtitle } from "@/components/primitives";
+import { useRealtimeTenantStatus } from "@/app/hooks/use-realtime-tenant-status";
 
 const statusLabel: Record<string, string> = {
   ACTIVE: "Ativo",
@@ -94,10 +96,108 @@ function TenantsSkeleton() {
   );
 }
 
+interface TenantCardProps {
+  tenant: any;
+  mutate: () => void;
+}
+
+function TenantCard({ tenant, mutate }: TenantCardProps) {
+  const { status, statusChanged, isUpdating } = useRealtimeTenantStatus(
+    tenant.id,
+  );
+
+  // Se tivermos status em tempo real, usar esse
+  const tenantStatus = status?.status ?? tenant.status;
+  const statusReason = status?.statusReason ?? null;
+
+  // Animação quando o status muda
+  const cardClassName = statusChanged
+    ? "border border-white/10 bg-background/70 backdrop-blur transition hover:border-primary/40 animate-pulse border-green-500/50"
+    : "border border-white/10 bg-background/70 backdrop-blur transition hover:border-primary/40";
+
+  return (
+    <Card key={tenant.id} className={cardClassName}>
+      <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-lg font-semibold text-white">{tenant.name}</p>
+            {statusReason ? (
+              <Tooltip content={statusReason}>
+                <Chip
+                  className={statusChanged ? "animate-bounce" : ""}
+                  color={statusTone[tenantStatus] ?? "secondary"}
+                  size="sm"
+                  variant="flat"
+                >
+                  {statusLabel[tenantStatus] ?? tenantStatus}
+                  {isUpdating && <span className="ml-1 text-xs">⟳</span>}
+                </Chip>
+              </Tooltip>
+            ) : (
+              <Chip
+                className={statusChanged ? "animate-bounce" : ""}
+                color={statusTone[tenantStatus] ?? "secondary"}
+                size="sm"
+                variant="flat"
+              >
+                {statusLabel[tenantStatus] ?? tenantStatus}
+                {isUpdating && <span className="ml-1 text-xs">⟳</span>}
+              </Chip>
+            )}
+            {tenant.plan?.name ? (
+              <Badge color="primary" variant="flat">
+                Plano {tenant.plan.name}
+              </Badge>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs text-default-400">
+            <span>Slug: {tenant.slug}</span>
+            {tenant.domain ? <span>• Domínio: {tenant.domain}</span> : null}
+            {tenant.email ? <span>• Email: {tenant.email}</span> : null}
+            {tenant.telefone ? (
+              <span>• Telefone: {tenant.telefone}</span>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-3 text-xs text-default-500">
+            <span>{tenant.counts.usuarios} usuários</span>
+            <span>• {tenant.counts.processos} processos</span>
+            <span>• {tenant.counts.clientes} clientes</span>
+            <span>
+              • Criado em{" "}
+              {new Date(tenant.createdAt).toLocaleDateString("pt-BR")}
+            </span>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <Button
+            as={NextLink}
+            color="primary"
+            href={`/admin/tenants/${tenant.id}`}
+            radius="full"
+            size="sm"
+            variant="flat"
+          >
+            Gerenciar
+          </Button>
+          <p className="text-xs text-default-400">
+            Última atualização em{" "}
+            {new Date(tenant.updatedAt).toLocaleString("pt-BR")}
+          </p>
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
 export function TenantsContent() {
-  const { data, error, isLoading } = useSWR("admin-tenants", fetchTenants, {
-    revalidateOnFocus: false,
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    "admin-tenants",
+    fetchTenants,
+    {
+      revalidateOnFocus: true,
+      refreshInterval: 5000, // 5 segundos
+    },
+  );
 
   const { tenants, totals } = useTenantsData(data);
 
@@ -190,71 +290,7 @@ export function TenantsContent() {
           {tenants.length ? (
             <div className="space-y-4">
               {tenants.map((tenant) => (
-                <Card
-                  key={tenant.id}
-                  className="border border-white/10 bg-background/70 backdrop-blur transition hover:border-primary/40"
-                >
-                  <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <p className="text-lg font-semibold text-white">
-                          {tenant.name}
-                        </p>
-                        <Chip
-                          color={statusTone[tenant.status] ?? "secondary"}
-                          size="sm"
-                          variant="flat"
-                        >
-                          {statusLabel[tenant.status] ?? tenant.status}
-                        </Chip>
-                        {tenant.plan?.name ? (
-                          <Badge color="primary" variant="flat">
-                            Plano {tenant.plan.name}
-                          </Badge>
-                        ) : null}
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-xs text-default-400">
-                        <span>Slug: {tenant.slug}</span>
-                        {tenant.domain ? (
-                          <span>• Domínio: {tenant.domain}</span>
-                        ) : null}
-                        {tenant.email ? (
-                          <span>• Email: {tenant.email}</span>
-                        ) : null}
-                        {tenant.telefone ? (
-                          <span>• Telefone: {tenant.telefone}</span>
-                        ) : null}
-                      </div>
-                      <div className="flex flex-wrap gap-3 text-xs text-default-500">
-                        <span>{tenant.counts.usuarios} usuários</span>
-                        <span>• {tenant.counts.processos} processos</span>
-                        <span>• {tenant.counts.clientes} clientes</span>
-                        <span>
-                          • Criado em{" "}
-                          {new Date(tenant.createdAt).toLocaleDateString(
-                            "pt-BR",
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <Button
-                        as={NextLink}
-                        color="primary"
-                        href={`/admin/tenants/${tenant.id}`}
-                        radius="full"
-                        size="sm"
-                        variant="flat"
-                      >
-                        Gerenciar
-                      </Button>
-                      <p className="text-xs text-default-400">
-                        Última atualização em{" "}
-                        {new Date(tenant.updatedAt).toLocaleString("pt-BR")}
-                      </p>
-                    </div>
-                  </CardBody>
-                </Card>
+                <TenantCard key={tenant.id} mutate={mutate} tenant={tenant} />
               ))}
             </div>
           ) : (

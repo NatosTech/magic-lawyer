@@ -4,7 +4,6 @@ import {
   useEffect,
   useMemo,
   useState,
-  useTransition,
   type Dispatch,
   type SetStateAction,
 } from "react";
@@ -193,11 +192,14 @@ export function TenantManagementContent({
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
-  const [isSavingDetails, startSavingDetails] = useTransition();
-  const [isUpdatingStatus, startUpdatingStatus] = useTransition();
-  const [isSavingSubscription, startSavingSubscription] = useTransition();
-  const [isSavingBranding, startSavingBranding] = useTransition();
-  const [isUpdatingUser, startUpdatingUser] = useTransition();
+  const [isSavingDetails, setIsSavingDetails] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isSavingSubscription, setIsSavingSubscription] = useState(false);
+  const [isSavingBranding, setIsSavingBranding] = useState(false);
+  const [isUpdatingUser, setIsUpdatingUser] = useState(false);
+  const [tenantStatusState, setTenantStatusState] = useState<TenantStatus>(
+    tenantData.tenant.status,
+  );
 
   useEffect(() => {
     setDetailsForm({
@@ -242,8 +244,12 @@ export function TenantManagementContent({
     [tenantData.availablePlans],
   );
 
-  const handleSaveDetails = () => {
-    startSavingDetails(async () => {
+  const handleSaveDetails = async () => {
+    if (isSavingDetails) return;
+
+    setIsSavingDetails(true);
+
+    try {
       const response = await updateTenantDetails(tenantId, detailsForm);
 
       if (!response.success) {
@@ -262,12 +268,20 @@ export function TenantManagementContent({
         color: "success",
       });
 
-      await mutate();
-    });
+      mutate(undefined, { revalidate: true }).catch((err) => {
+        console.warn("[tenant-management] Revalidação falhou", err);
+      });
+    } finally {
+      setIsSavingDetails(false);
+    }
   };
 
-  const handleStatusChange = (status: TenantStatus) => {
-    startUpdatingStatus(async () => {
+  const handleStatusChange = async (status: TenantStatus) => {
+    if (isUpdatingStatus) return;
+
+    setIsUpdatingStatus(true);
+
+    try {
       const response = await updateTenantStatus(tenantId, status);
 
       if (!response.success) {
@@ -286,11 +300,16 @@ export function TenantManagementContent({
         color: "success",
       });
 
-      await mutate();
-    });
+      setTenantStatusState(status);
+      mutate(undefined, { revalidate: true }).catch((err) => {
+        console.warn("[tenant-management] Revalidação (status) falhou", err);
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
-  const handleSaveSubscription = () => {
+  const handleSaveSubscription = async () => {
     const payload: UpdateTenantSubscriptionInput = {
       planId: subscriptionForm.planId ? subscriptionForm.planId : null,
       status: subscriptionForm.status,
@@ -298,7 +317,11 @@ export function TenantManagementContent({
       renovaEm: subscriptionForm.renovaEm ?? null,
     };
 
-    startSavingSubscription(async () => {
+    if (isSavingSubscription) return;
+
+    setIsSavingSubscription(true);
+
+    try {
       const response = await updateTenantSubscription(tenantId, payload);
 
       if (!response.success) {
@@ -317,12 +340,23 @@ export function TenantManagementContent({
         color: "success",
       });
 
-      await mutate();
-    });
+      mutate(undefined, { revalidate: true }).catch((err) => {
+        console.warn(
+          "[tenant-management] Revalidação (assinatura) falhou",
+          err,
+        );
+      });
+    } finally {
+      setIsSavingSubscription(false);
+    }
   };
 
-  const handleSaveBranding = () => {
-    startSavingBranding(async () => {
+  const handleSaveBranding = async () => {
+    if (isSavingBranding) return;
+
+    setIsSavingBranding(true);
+
+    try {
       const response = await updateTenantBranding(tenantId, brandingForm);
 
       if (!response.success) {
@@ -341,71 +375,93 @@ export function TenantManagementContent({
         color: "success",
       });
 
-      await mutate();
-    });
+      mutate(undefined, { revalidate: true }).catch((err) => {
+        console.warn("[tenant-management] Revalidação (branding) falhou", err);
+      });
+    } finally {
+      setIsSavingBranding(false);
+    }
   };
 
-  const handleToggleUserActive = (userId: string, current: boolean) => {
+  const handleToggleUserActive = async (userId: string, current: boolean) => {
+    if (isUpdatingUser) return;
+
     setPendingUserId(userId);
-    startUpdatingUser(() => {
-      (async () => {
-        const response = await updateTenantUser(tenantId, userId, {
-          active: !current,
+    setIsUpdatingUser(true);
+
+    try {
+      const response = await updateTenantUser(tenantId, userId, {
+        active: !current,
+      });
+
+      if (!response.success) {
+        addToast({
+          title: "Erro ao alterar status",
+          description: response.error ?? "Tente novamente",
+          color: "danger",
         });
+      } else {
+        addToast({
+          title: !current ? "Usuário reativado" : "Usuário desativado",
+          description: !current
+            ? "Acesso liberado novamente"
+            : "Usuário ficará sem acesso até nova liberação",
+          color: "success",
+        });
+      }
 
-        if (!response.success) {
-          addToast({
-            title: "Erro ao alterar status",
-            description: response.error ?? "Tente novamente",
-            color: "danger",
-          });
-        } else {
-          addToast({
-            title: !current ? "Usuário reativado" : "Usuário desativado",
-            description: !current
-              ? "Acesso liberado novamente"
-              : "Usuário ficará sem acesso até nova liberação",
-            color: "success",
-          });
-        }
-
-        setPendingUserId(null);
-        await mutate();
-      })();
-    });
+      mutate(undefined, { revalidate: true }).catch((err) => {
+        console.warn(
+          "[tenant-management] Revalidação (user active) falhou",
+          err,
+        );
+      });
+    } finally {
+      setPendingUserId(null);
+      setIsUpdatingUser(false);
+    }
   };
 
-  const handleResetUserPassword = (userId: string) => {
+  const handleResetUserPassword = async (userId: string) => {
+    if (isUpdatingUser) return;
+
     setPendingUserId(userId);
-    startUpdatingUser(() => {
-      (async () => {
-        const response = await updateTenantUser(tenantId, userId, {
-          generatePassword: true,
+    setIsUpdatingUser(true);
+
+    try {
+      const response = await updateTenantUser(tenantId, userId, {
+        generatePassword: true,
+      });
+
+      if (!response.success) {
+        addToast({
+          title: "Erro ao resetar senha",
+          description: response.error ?? "Tente novamente",
+          color: "danger",
         });
+      } else {
+        const newPassword = response.data?.temporaryPassword;
 
-        if (!response.success) {
-          addToast({
-            title: "Erro ao resetar senha",
-            description: response.error ?? "Tente novamente",
-            color: "danger",
-          });
-        } else {
-          const newPassword = response.data?.temporaryPassword;
+        addToast({
+          title: "Senha redefinida",
+          description: newPassword
+            ? `Nova senha temporária: ${newPassword}`
+            : "Senha redefinida com sucesso.",
+          color: "success",
+          timeout: 8000,
+        });
+      }
 
-          addToast({
-            title: "Senha redefinida",
-            description: newPassword
-              ? `Nova senha temporária: ${newPassword}`
-              : "Senha redefinida com sucesso.",
-            color: "success",
-            timeout: 8000,
-          });
-        }
-
-        setPendingUserId(null);
-        await mutate();
-      })();
-    });
+      mutate(undefined, { revalidate: true }).catch((err) => {
+        console.warn(
+          "[tenant-management] Revalidação (reset senha) falhou",
+          err,
+        );
+      });
+    } finally {
+      setPendingUserId(null);
+      setIsUpdatingUser(false);
+    }
   };
 
   const handleOpenUserModal = async (user?: any) => {
@@ -450,11 +506,11 @@ export function TenantManagementContent({
                 {tenantData.tenant.name}
               </p>
               <Chip
-                color={statusChipColor(tenantData.tenant.status)}
+                color={statusChipColor(tenantStatusState)}
                 size="sm"
                 variant="flat"
               >
-                {statusLabel(tenantData.tenant.status)}
+                {statusLabel(tenantStatusState)}
               </Chip>
             </div>
             <p className="text-xs text-primary/80">
@@ -500,7 +556,7 @@ export function TenantManagementContent({
             isSavingDetails={isSavingDetails}
             isUpdatingStatus={isUpdatingStatus}
             setDetailsForm={setDetailsForm}
-            tenantStatus={tenantData.tenant.status}
+            tenantStatus={tenantStatusState}
           />
         </Tab>
 
@@ -589,9 +645,9 @@ interface OverviewTabProps {
   detailsForm: UpdateTenantDetailsInput;
   setDetailsForm: Dispatch<SetStateAction<UpdateTenantDetailsInput>>;
   isSavingDetails: boolean;
-  handleSaveDetails: () => void;
+  handleSaveDetails: () => Promise<void>;
   tenantStatus: TenantStatus;
-  handleStatusChange: (status: TenantStatus) => void;
+  handleStatusChange: (status: TenantStatus) => Promise<void>;
   isUpdatingStatus: boolean;
 }
 
@@ -792,7 +848,7 @@ interface FinanceTabProps {
     valorAnual: number | null;
     moeda: string;
   }>;
-  handleSaveSubscription: () => void;
+  handleSaveSubscription: () => Promise<void>;
   isSavingSubscription: boolean;
   metrics: TenantManagementData["metrics"];
   invoices: TenantManagementData["invoices"];
@@ -990,8 +1046,8 @@ interface UsersTabProps {
   userRoleOptions: Array<{ value: UserRole; label: string }>;
   pendingUserId: string | null;
   isUpdatingUser: boolean;
-  onToggleActive: (userId: string, active: boolean) => void;
-  onResetPassword: (userId: string) => void;
+  onToggleActive: (userId: string, active: boolean) => Promise<void>;
+  onResetPassword: (userId: string) => Promise<void>;
   onOpenUserModal: (user?: any) => void;
 }
 
@@ -1130,7 +1186,7 @@ interface BrandingTabProps {
   setBrandingForm: (
     updater: (prev: UpdateTenantBrandingInput) => UpdateTenantBrandingInput,
   ) => void;
-  handleSaveBranding: () => void;
+  handleSaveBranding: () => Promise<void>;
   isSavingBranding: boolean;
 }
 

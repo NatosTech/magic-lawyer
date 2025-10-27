@@ -132,37 +132,19 @@ export default function AndamentosPage() {
 
   // Estado do modal
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">(
-    "create",
-  );
-  const [selectedAndamento, setSelectedAndamento] = useState<Andamento | null>(
-    null,
-  );
+  const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
+  const [selectedAndamento, setSelectedAndamento] = useState<Andamento | null>(null);
 
   // SWR - Fetch data
-  const {
-    data: andamentosData,
-    mutate: mutateAndamentos,
-    isLoading: loadingAndamentos,
-  } = useSWR(["andamentos", filters], () => listAndamentos(filters));
+  const { data: andamentosData, mutate: mutateAndamentos, isLoading: loadingAndamentos } = useSWR(["andamentos", filters], () => listAndamentos(filters));
 
-  const { data: dashboardData, isLoading: loadingDashboard } = useSWR(
-    "dashboard-andamentos",
-    getDashboardAndamentos,
-  );
+  const { data: dashboardData, isLoading: loadingDashboard } = useSWR("dashboard-andamentos", getDashboardAndamentos);
 
-  // Debug temporário
-  console.log("Dashboard data:", dashboardData);
-  console.log("Dashboard data.data:", dashboardData?.data);
-  console.log("Dashboard data.data.total:", dashboardData?.data?.total);
-  console.log("Dashboard data.data.porTipo:", dashboardData?.data?.porTipo);
+  // Debug temporário removido para produção
 
   const { data: processosData } = useSWR("processos-list", getAllProcessos);
 
-  const { data: tiposData } = useSWR(
-    "tipos-movimentacao",
-    getTiposMovimentacao,
-  );
+  const { data: tiposData } = useSWR("tipos-movimentacao", getTiposMovimentacao);
 
   // Por enquanto, vamos usar uma lista vazia de clientes
   // TODO: Implementar API de clientes ou buscar de outra forma
@@ -198,13 +180,7 @@ export default function AndamentosPage() {
       _count: count,
     }));
 
-    const ultimosAndamentos = andamentos
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.dataMovimentacao).getTime() -
-          new Date(a.dataMovimentacao).getTime(),
-      )
-      .slice(0, 10);
+    const ultimosAndamentos = andamentos.sort((a: any, b: any) => new Date(b.dataMovimentacao).getTime() - new Date(a.dataMovimentacao).getTime()).slice(0, 10);
 
     return {
       total,
@@ -214,8 +190,7 @@ export default function AndamentosPage() {
   }, [andamentos]);
 
   // Usar os dados calculados se o dashboard não estiver funcionando
-  const finalDashboard =
-    dashboard?.total === 0 ? calculatedDashboard : dashboard;
+  const finalDashboard = dashboard?.total === 0 ? calculatedDashboard : dashboard;
 
   // Função auxiliar para obter contagem por tipo
   const getCountByType = (tipo: string): number => {
@@ -245,8 +220,7 @@ export default function AndamentosPage() {
   };
 
   // Verificar se há filtros ativos
-  const hasActiveFilters =
-    filters.processoId || filters.tipo || searchTerm || dateRange || clienteId;
+  const hasActiveFilters = filters.processoId || filters.tipo || searchTerm || dateRange || clienteId;
 
   // Handlers do modal
   const openCreateModal = () => {
@@ -309,32 +283,17 @@ export default function AndamentosPage() {
   const getTipoIcon = (tipo: MovimentacaoTipo | null) => {
     switch (tipo) {
       case "ANDAMENTO":
-        return (
-          <Activity className="text-blue-600 dark:text-blue-400" size={16} />
-        );
+        return <Activity className="text-blue-600 dark:text-blue-400" size={16} />;
       case "PRAZO":
-        return (
-          <Timer className="text-amber-600 dark:text-amber-400" size={16} />
-        );
+        return <Timer className="text-amber-600 dark:text-amber-400" size={16} />;
       case "INTIMACAO":
-        return (
-          <Megaphone className="text-red-600 dark:text-red-400" size={16} />
-        );
+        return <Megaphone className="text-red-600 dark:text-red-400" size={16} />;
       case "AUDIENCIA":
-        return (
-          <CalendarDays
-            className="text-purple-600 dark:text-purple-400"
-            size={16}
-          />
-        );
+        return <CalendarDays className="text-purple-600 dark:text-purple-400" size={16} />;
       case "ANEXO":
-        return (
-          <Paperclip className="text-green-600 dark:text-green-400" size={16} />
-        );
+        return <Paperclip className="text-green-600 dark:text-green-400" size={16} />;
       case "OUTRO":
-        return (
-          <Sparkles className="text-gray-600 dark:text-gray-400" size={16} />
-        );
+        return <Sparkles className="text-gray-600 dark:text-gray-400" size={16} />;
       default:
         return <FileText className="text-gray-500" size={16} />;
     }
@@ -353,12 +312,8 @@ export default function AndamentosPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>
-            Andamentos Processuais
-          </h1>
-          <p className={subtitle({ fullWidth: true })}>
-            Timeline completa de movimentações processuais
-          </p>
+          <h1 className={title({ size: "lg", color: "blue" })}>Andamentos Processuais</h1>
+          <p className={subtitle({ fullWidth: true })}>Timeline completa de movimentações processuais</p>
         </div>
         <Button
           className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300"
@@ -385,9 +340,7 @@ export default function AndamentosPage() {
                   <Sparkles className="text-blue-500" size={16} />
                   Total de Andamentos
                 </p>
-                <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">
-                  {finalDashboard?.total || 0}
-                </p>
+                <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{finalDashboard?.total || 0}</p>
               </div>
               <div className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-lg">
                 <Activity className="text-white" size={28} />
@@ -402,9 +355,7 @@ export default function AndamentosPage() {
                   <Timer className="text-amber-500" size={16} />
                   Com Prazo
                 </p>
-                <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">
-                  {getCountByType("PRAZO")}
-                </p>
+                <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">{getCountByType("PRAZO")}</p>
               </div>
               <div className="p-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full shadow-lg">
                 <Clock className="text-white" size={28} />
@@ -419,9 +370,7 @@ export default function AndamentosPage() {
                   <Megaphone className="text-red-500" size={16} />
                   Intimações
                 </p>
-                <p className="text-3xl font-bold text-red-700 dark:text-red-300">
-                  {getCountByType("INTIMACAO")}
-                </p>
+                <p className="text-3xl font-bold text-red-700 dark:text-red-300">{getCountByType("INTIMACAO")}</p>
               </div>
               <div className="p-4 bg-gradient-to-br from-red-500 to-pink-600 rounded-full shadow-lg">
                 <Bell className="text-white" size={28} />
@@ -436,9 +385,7 @@ export default function AndamentosPage() {
                   <CalendarDays className="text-green-500" size={16} />
                   Audiências
                 </p>
-                <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-                  {getCountByType("AUDIENCIA")}
-                </p>
+                <p className="text-3xl font-bold text-green-700 dark:text-green-300">{getCountByType("AUDIENCIA")}</p>
               </div>
               <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full shadow-lg">
                 <Calendar className="text-white" size={28} />
@@ -449,11 +396,7 @@ export default function AndamentosPage() {
       ) : null}
 
       {/* Filtros Avançados */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.3 }}
-      >
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-2">
@@ -461,41 +404,15 @@ export default function AndamentosPage() {
               <h3 className="text-lg font-semibold">Filtros</h3>
               {hasActiveFilters && (
                 <Chip color="primary" size="sm" variant="flat">
-                  {
-                    [
-                      filters.processoId,
-                      filters.tipo,
-                      searchTerm,
-                      dateRange,
-                      clienteId,
-                    ].filter(Boolean).length
-                  }{" "}
-                  ativo(s)
+                  {[filters.processoId, filters.tipo, searchTerm, dateRange, clienteId].filter(Boolean).length} ativo(s)
                 </Chip>
               )}
             </div>
             <div className="flex gap-2">
-              <Button
-                isDisabled={!hasActiveFilters}
-                size="sm"
-                startContent={<RotateCcw className="w-4 h-4" />}
-                variant="light"
-                onPress={clearFilters}
-              >
+              <Button isDisabled={!hasActiveFilters} size="sm" startContent={<RotateCcw className="w-4 h-4" />} variant="light" onPress={clearFilters}>
                 Limpar
               </Button>
-              <Button
-                size="sm"
-                startContent={
-                  showFilters ? (
-                    <XCircle className="w-4 h-4" />
-                  ) : (
-                    <Filter className="w-4 h-4" />
-                  )
-                }
-                variant="light"
-                onPress={() => setShowFilters(!showFilters)}
-              >
+              <Button size="sm" startContent={showFilters ? <XCircle className="w-4 h-4" /> : <Filter className="w-4 h-4" />} variant="light" onPress={() => setShowFilters(!showFilters)}>
                 {showFilters ? "Ocultar" : "Mostrar"}
               </Button>
             </div>
@@ -503,20 +420,12 @@ export default function AndamentosPage() {
 
           <AnimatePresence>
             {showFilters && (
-              <motion.div
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                initial={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-              >
+              <motion.div animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} initial={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
                 <CardBody>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                     {/* Filtro por Título */}
                     <div className="space-y-2">
-                      <label
-                        className="text-sm font-medium flex items-center gap-2"
-                        htmlFor="filtro-titulo"
-                      >
+                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="filtro-titulo">
                         <Search className="w-4 h-4" />
                         Título
                       </label>
@@ -524,9 +433,7 @@ export default function AndamentosPage() {
                         id="filtro-titulo"
                         placeholder="Buscar por título..."
                         size="sm"
-                        startContent={
-                          <Search className="w-4 h-4 text-default-400" />
-                        }
+                        startContent={<Search className="w-4 h-4 text-default-400" />}
                         value={searchTerm}
                         variant="bordered"
                         onValueChange={handleSearch}
@@ -535,19 +442,14 @@ export default function AndamentosPage() {
 
                     {/* Filtro por Processo */}
                     <div className="space-y-2">
-                      <label
-                        className="text-sm font-medium flex items-center gap-2"
-                        htmlFor="filtro-processo"
-                      >
+                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="filtro-processo">
                         <FileText className="w-4 h-4" />
                         Processo
                       </label>
                       <Select
                         id="filtro-processo"
                         placeholder="Todos os processos"
-                        selectedKeys={
-                          filters.processoId ? [filters.processoId] : []
-                        }
+                        selectedKeys={filters.processoId ? [filters.processoId] : []}
                         size="sm"
                         variant="bordered"
                         onSelectionChange={(keys) => {
@@ -557,12 +459,8 @@ export default function AndamentosPage() {
                         }}
                       >
                         {processos.map((proc: any) => (
-                          <SelectItem
-                            key={proc.id}
-                            textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}
-                          >
-                            {proc.numero}{" "}
-                            {proc.titulo ? `- ${proc.titulo}` : ""}
+                          <SelectItem key={proc.id} textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}>
+                            {proc.numero} {proc.titulo ? `- ${proc.titulo}` : ""}
                           </SelectItem>
                         ))}
                       </Select>
@@ -570,10 +468,7 @@ export default function AndamentosPage() {
 
                     {/* Filtro por Tipo */}
                     <div className="space-y-2">
-                      <label
-                        className="text-sm font-medium flex items-center gap-2"
-                        htmlFor="filtro-tipo"
-                      >
+                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="filtro-tipo">
                         <Tag className="w-4 h-4" />
                         Tipo
                       </label>
@@ -599,10 +494,7 @@ export default function AndamentosPage() {
 
                     {/* Filtro por Data Range */}
                     <div className="space-y-2">
-                      <label
-                        className="text-sm font-medium flex items-center gap-2"
-                        htmlFor="filtro-data"
-                      >
+                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="filtro-data">
                         <Calendar className="w-4 h-4" />
                         Período
                       </label>
@@ -621,8 +513,7 @@ export default function AndamentosPage() {
                               dataFim: new Date(range.end as any),
                             });
                           } else {
-                            const { dataInicio, dataFim, ...restFilters } =
-                              filters;
+                            const { dataInicio, dataFim, ...restFilters } = filters;
 
                             setFilters(restFilters);
                           }
@@ -632,10 +523,7 @@ export default function AndamentosPage() {
 
                     {/* Filtro por Cliente */}
                     <div className="space-y-2">
-                      <label
-                        className="text-sm font-medium flex items-center gap-2"
-                        htmlFor="filtro-cliente"
-                      >
+                      <label className="text-sm font-medium flex items-center gap-2" htmlFor="filtro-cliente">
                         <User className="w-4 h-4" />
                         Cliente
                       </label>
@@ -651,22 +539,14 @@ export default function AndamentosPage() {
                           setClienteId(value);
                           // Filtrar processos por cliente
                           if (value) {
-                            const processosDoCliente = processos.filter(
-                              (proc: any) =>
-                                proc.partes?.some(
-                                  (parte: any) => parte.clienteId === value,
-                                ),
-                            );
+                            const processosDoCliente = processos.filter((proc: any) => proc.partes?.some((parte: any) => parte.clienteId === value));
                             // Por enquanto, vamos apenas marcar que há um filtro ativo
                             // A lógica de filtro por cliente precisará ser implementada no backend
                           }
                         }}
                       >
                         {clientes.map((cliente: any) => (
-                          <SelectItem
-                            key={cliente.id}
-                            textValue={`${cliente.firstName} ${cliente.lastName}`}
-                          >
+                          <SelectItem key={cliente.id} textValue={`${cliente.firstName} ${cliente.lastName}`}>
                             {cliente.firstName} {cliente.lastName}
                           </SelectItem>
                         ))}
@@ -681,11 +561,7 @@ export default function AndamentosPage() {
       </motion.div>
 
       {/* Timeline de Andamentos */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-      >
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.4, delay: 0.1 }}>
         <Card>
           <CardHeader>
             <h2 className="text-xl font-semibold">Timeline</h2>
@@ -698,16 +574,9 @@ export default function AndamentosPage() {
                 ))}
               </div>
             ) : andamentos.length === 0 ? (
-              <motion.div
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-12"
-                initial={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-              >
+              <motion.div animate={{ opacity: 1, scale: 1 }} className="text-center py-12" initial={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.3 }}>
                 <Activity className="mx-auto text-gray-400 mb-4" size={48} />
-                <p className="text-gray-600 dark:text-gray-400">
-                  Nenhum andamento encontrado
-                </p>
+                <p className="text-gray-600 dark:text-gray-400">Nenhum andamento encontrado</p>
               </motion.div>
             ) : (
               <div className="relative space-y-6">
@@ -761,21 +630,12 @@ export default function AndamentosPage() {
                         }`}
                       >
                         <CardBody className="p-4">
-                          <div
-                            className="flex justify-between items-start mb-2 cursor-pointer"
-                            onClick={() => openViewModal(andamento)}
-                          >
+                          <div className="flex justify-between items-start mb-2 cursor-pointer" onClick={() => openViewModal(andamento)}>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold text-lg">
-                                  {andamento.titulo}
-                                </h3>
+                                <h3 className="font-semibold text-lg">{andamento.titulo}</h3>
                                 {andamento.tipo && (
-                                  <Chip
-                                    color={getTipoColor(andamento.tipo)}
-                                    size="sm"
-                                    variant="flat"
-                                  >
+                                  <Chip color={getTipoColor(andamento.tipo)} size="sm" variant="flat">
                                     {andamento.tipo}
                                   </Chip>
                                 )}
@@ -783,15 +643,10 @@ export default function AndamentosPage() {
 
                               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                                 Processo: {andamento.processo.numero}
-                                {andamento.processo.titulo &&
-                                  ` - ${andamento.processo.titulo}`}
+                                {andamento.processo.titulo && ` - ${andamento.processo.titulo}`}
                               </p>
 
-                              {andamento.descricao && (
-                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                                  {andamento.descricao}
-                                </p>
-                              )}
+                              {andamento.descricao && <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">{andamento.descricao}</p>}
 
                               <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-400">
                                 <span className="flex items-center gap-1">
@@ -816,15 +671,13 @@ export default function AndamentosPage() {
                                 {andamento.prazosRelacionados.length > 0 && (
                                   <span className="flex items-center gap-1">
                                     <AlertCircle size={14} />
-                                    {andamento.prazosRelacionados.length}{" "}
-                                    prazo(s)
+                                    {andamento.prazosRelacionados.length} prazo(s)
                                   </span>
                                 )}
 
                                 {andamento.criadoPor && (
                                   <span>
-                                    Por: {andamento.criadoPor.firstName}{" "}
-                                    {andamento.criadoPor.lastName}
+                                    Por: {andamento.criadoPor.firstName} {andamento.criadoPor.lastName}
                                   </span>
                                 )}
                               </div>
@@ -873,15 +726,7 @@ export default function AndamentosPage() {
       </motion.div>
 
       {/* Modal de Criar/Editar/Visualizar */}
-      <AndamentoModal
-        andamento={selectedAndamento}
-        isOpen={modalOpen}
-        mode={modalMode}
-        processos={processos}
-        tipos={tipos}
-        onClose={closeModal}
-        onSuccess={mutateAndamentos}
-      />
+      <AndamentoModal andamento={selectedAndamento} isOpen={modalOpen} mode={modalMode} processos={processos} tipos={tipos} onClose={closeModal} onSuccess={mutateAndamentos} />
     </div>
   );
 }
@@ -900,15 +745,7 @@ interface AndamentoModalProps {
   onSuccess: () => void;
 }
 
-function AndamentoModal({
-  isOpen,
-  onClose,
-  mode,
-  andamento,
-  processos,
-  tipos,
-  onSuccess,
-}: AndamentoModalProps) {
+function AndamentoModal({ isOpen, onClose, mode, andamento, processos, tipos, onSuccess }: AndamentoModalProps) {
   const isReadOnly = mode === "view";
 
   // Calcular dados iniciais do formulário
@@ -934,12 +771,8 @@ function AndamentoModal({
         titulo: andamento.titulo,
         descricao: andamento.descricao || "",
         tipo: andamento.tipo || "",
-        dataMovimentacao: parseDate(
-          new Date(andamento.dataMovimentacao).toISOString().split("T")[0],
-        ),
-        prazo: andamento.prazo
-          ? parseDate(new Date(andamento.prazo).toISOString().split("T")[0])
-          : null,
+        dataMovimentacao: parseDate(new Date(andamento.dataMovimentacao).toISOString().split("T")[0]),
+        prazo: andamento.prazo ? parseDate(new Date(andamento.prazo).toISOString().split("T")[0]) : null,
         geraPrazo: false,
         // Campos para notificações
         notificarCliente: andamento.notificarCliente || false,
@@ -986,9 +819,7 @@ function AndamentoModal({
       titulo: formData.titulo,
       descricao: formData.descricao || undefined,
       tipo: formData.tipo || undefined,
-      dataMovimentacao: formData.dataMovimentacao
-        ? new Date(formData.dataMovimentacao.toString())
-        : undefined,
+      dataMovimentacao: formData.dataMovimentacao ? new Date(formData.dataMovimentacao.toString()) : undefined,
       prazo: formData.prazo ? new Date(formData.prazo.toString()) : undefined,
       geraPrazo: formData.geraPrazo,
       // Campos para notificações
@@ -998,19 +829,12 @@ function AndamentoModal({
       mensagemPersonalizada: formData.mensagemPersonalizada || undefined,
     };
 
-    const result =
-      mode === "create"
-        ? await createAndamento(input)
-        : await updateAndamento(andamento!.id, input);
+    const result = mode === "create" ? await createAndamento(input) : await updateAndamento(andamento!.id, input);
 
     setSaving(false);
 
     if (result.success) {
-      toast.success(
-        mode === "create"
-          ? "Andamento criado com sucesso!"
-          : "Andamento atualizado com sucesso!",
-      );
+      toast.success(mode === "create" ? "Andamento criado com sucesso!" : "Andamento atualizado com sucesso!");
       onSuccess();
       onClose();
     } else {
@@ -1020,12 +844,7 @@ function AndamentoModal({
 
   return (
     <Modal isOpen={isOpen} scrollBehavior="inside" size="2xl" onClose={onClose}>
-      <motion.div
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        initial={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.2 }}
-      >
+      <motion.div animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} initial={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.2 }}>
         <ModalContent>
           <ModalHeader>
             <div className="flex items-center gap-3">
@@ -1042,9 +861,7 @@ function AndamentoModal({
                   <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
                     <Edit3 className="text-white" size={20} />
                   </div>
-                  <span className="text-xl font-semibold">
-                    Editar Andamento
-                  </span>
+                  <span className="text-xl font-semibold">Editar Andamento</span>
                 </>
               )}
               {mode === "view" && (
@@ -1052,9 +869,7 @@ function AndamentoModal({
                   <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg">
                     <Eye className="text-white" size={20} />
                   </div>
-                  <span className="text-xl font-semibold">
-                    Detalhes do Andamento
-                  </span>
+                  <span className="text-xl font-semibold">Detalhes do Andamento</span>
                 </>
               )}
             </div>
@@ -1062,25 +877,19 @@ function AndamentoModal({
           <ModalBody>
             <div className="space-y-4">
               <div className="space-y-2">
-                <label
-                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
-                  htmlFor="modal-processo"
-                >
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-processo">
                   <FileText className="text-blue-500" size={16} />
                   Processo
                 </label>
                 <Select
                   isRequired
                   classNames={{
-                    trigger:
-                      "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                    trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
                   }}
                   id="modal-processo"
                   isDisabled={isReadOnly || mode === "edit"}
                   placeholder="Selecione o processo"
-                  selectedKeys={
-                    formData.processoId ? [formData.processoId] : []
-                  }
+                  selectedKeys={formData.processoId ? [formData.processoId] : []}
                   onSelectionChange={(keys) => {
                     const value = Array.from(keys)[0] as string;
 
@@ -1088,10 +897,7 @@ function AndamentoModal({
                   }}
                 >
                   {processos.map((proc: any) => (
-                    <SelectItem
-                      key={proc.id}
-                      textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}
-                    >
+                    <SelectItem key={proc.id} textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}>
                       {proc.numero} {proc.titulo ? `- ${proc.titulo}` : ""}
                     </SelectItem>
                   ))}
@@ -1099,10 +905,7 @@ function AndamentoModal({
               </div>
 
               <div className="space-y-2">
-                <label
-                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
-                  htmlFor="modal-titulo"
-                >
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-titulo">
                   <Star className="text-yellow-500" size={16} />
                   Título
                 </label>
@@ -1110,49 +913,37 @@ function AndamentoModal({
                   isRequired
                   classNames={{
                     input: "text-slate-700 dark:text-slate-300",
-                    inputWrapper:
-                      "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                    inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
                   }}
                   id="modal-titulo"
                   isReadOnly={isReadOnly}
                   placeholder="Ex: Sentença proferida, Intimação recebida, etc"
                   value={formData.titulo}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, titulo: value })
-                  }
+                  onValueChange={(value) => setFormData({ ...formData, titulo: value })}
                 />
               </div>
 
               <div className="space-y-2">
-                <label
-                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
-                  htmlFor="modal-descricao"
-                >
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-descricao">
                   <FileText className="text-green-500" size={16} />
                   Descrição
                 </label>
                 <Textarea
                   classNames={{
                     input: "text-slate-700 dark:text-slate-300",
-                    inputWrapper:
-                      "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                    inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
                   }}
                   id="modal-descricao"
                   isReadOnly={isReadOnly}
                   minRows={3}
                   placeholder="Descreva o andamento em detalhes..."
                   value={formData.descricao}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, descricao: value })
-                  }
+                  onValueChange={(value) => setFormData({ ...formData, descricao: value })}
                 />
               </div>
 
               <div className="space-y-2">
-                <label
-                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
-                  htmlFor="modal-tipo"
-                >
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-tipo">
                   <Tag className="text-purple-500" size={16} />
                   Tipo
                 </label>
@@ -1176,10 +967,7 @@ function AndamentoModal({
               </div>
 
               <div className="space-y-2">
-                <label
-                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
-                  htmlFor="modal-data-movimentacao"
-                >
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-data-movimentacao">
                   <Calendar className="text-blue-500" size={16} />
                   Data da Movimentação
                 </label>
@@ -1197,10 +985,7 @@ function AndamentoModal({
               </div>
 
               <div className="space-y-2">
-                <label
-                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
-                  htmlFor="modal-prazo"
-                >
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-prazo">
                   <Clock className="text-amber-500" size={16} />
                   Prazo (opcional)
                 </label>
@@ -1217,22 +1002,9 @@ function AndamentoModal({
               </div>
 
               {!isReadOnly && formData.prazo && mode === "create" && (
-                <label
-                  className="flex items-center gap-2 cursor-pointer"
-                  htmlFor="gera-prazo"
-                >
-                  <input
-                    checked={formData.geraPrazo}
-                    className="w-4 h-4"
-                    id="gera-prazo"
-                    type="checkbox"
-                    onChange={(e) =>
-                      setFormData({ ...formData, geraPrazo: e.target.checked })
-                    }
-                  />
-                  <span className="text-sm">
-                    Gerar prazo automático no sistema
-                  </span>
+                <label className="flex items-center gap-2 cursor-pointer" htmlFor="gera-prazo">
+                  <input checked={formData.geraPrazo} className="w-4 h-4" id="gera-prazo" type="checkbox" onChange={(e) => setFormData({ ...formData, geraPrazo: e.target.checked })} />
+                  <span className="text-sm">Gerar prazo automático no sistema</span>
                 </label>
               )}
 
@@ -1241,21 +1013,13 @@ function AndamentoModal({
                 <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-2">
                     <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                      <Bell
-                        className="text-blue-600 dark:text-blue-400"
-                        size={20}
-                      />
+                      <Bell className="text-blue-600 dark:text-blue-400" size={20} />
                     </div>
-                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">
-                      Notificações
-                    </h3>
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Notificações</h3>
                   </div>
 
                   <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3">
-                    <label
-                      className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors"
-                      htmlFor="notificar-cliente"
-                    >
+                    <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" htmlFor="notificar-cliente">
                       <input
                         checked={formData.notificarCliente}
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
@@ -1268,21 +1032,13 @@ function AndamentoModal({
                           })
                         }
                       />
-                      <MessageSquare
-                        className="text-slate-600 dark:text-slate-400"
-                        size={18}
-                      />
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Notificar cliente sobre este andamento
-                      </span>
+                      <MessageSquare className="text-slate-600 dark:text-slate-400" size={18} />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Notificar cliente sobre este andamento</span>
                     </label>
 
                     {formData.notificarCliente && (
                       <div className="ml-6 space-y-3 border-l-2 border-blue-200 dark:border-blue-700 pl-4">
-                        <label
-                          className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors"
-                          htmlFor="notificar-email"
-                        >
+                        <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" htmlFor="notificar-email">
                           <input
                             checked={formData.notificarEmail}
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
@@ -1295,19 +1051,11 @@ function AndamentoModal({
                               })
                             }
                           />
-                          <Mail
-                            className="text-blue-600 dark:text-blue-400"
-                            size={18}
-                          />
-                          <span className="text-sm text-slate-700 dark:text-slate-300">
-                            Enviar notificação por email
-                          </span>
+                          <Mail className="text-blue-600 dark:text-blue-400" size={18} />
+                          <span className="text-sm text-slate-700 dark:text-slate-300">Enviar notificação por email</span>
                         </label>
 
-                        <label
-                          className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors"
-                          htmlFor="notificar-whatsapp"
-                        >
+                        <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" htmlFor="notificar-whatsapp">
                           <input
                             checked={formData.notificarWhatsapp}
                             className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
@@ -1320,31 +1068,19 @@ function AndamentoModal({
                               })
                             }
                           />
-                          <Smartphone
-                            className="text-green-600 dark:text-green-400"
-                            size={18}
-                          />
-                          <span className="text-sm text-slate-700 dark:text-slate-300">
-                            Enviar notificação por WhatsApp
-                          </span>
+                          <Smartphone className="text-green-600 dark:text-green-400" size={18} />
+                          <span className="text-sm text-slate-700 dark:text-slate-300">Enviar notificação por WhatsApp</span>
                         </label>
 
                         <div className="mt-4 space-y-2">
-                          <label
-                            className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
-                            htmlFor="modal-mensagem-personalizada"
-                          >
-                            <MessageSquare
-                              className="text-purple-500"
-                              size={16}
-                            />
+                          <label className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2" htmlFor="modal-mensagem-personalizada">
+                            <MessageSquare className="text-purple-500" size={16} />
                             Mensagem personalizada (opcional)
                           </label>
                           <Textarea
                             classNames={{
                               input: "text-slate-700 dark:text-slate-300",
-                              inputWrapper:
-                                "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                              inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
                             }}
                             id="modal-mensagem-personalizada"
                             isReadOnly={isReadOnly}
@@ -1369,18 +1105,10 @@ function AndamentoModal({
                 <>
                   {andamento.documentos.length > 0 && (
                     <div>
-                      <p className="text-sm font-semibold mb-2">
-                        Documentos Anexados:
-                      </p>
+                      <p className="text-sm font-semibold mb-2">Documentos Anexados:</p>
                       <div className="space-y-1">
                         {andamento.documentos.map((doc) => (
-                          <a
-                            key={doc.id}
-                            className="flex items-center gap-2 text-sm text-primary hover:underline"
-                            href={doc.url}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
+                          <a key={doc.id} className="flex items-center gap-2 text-sm text-primary hover:underline" href={doc.url} rel="noopener noreferrer" target="_blank">
                             <Paperclip size={14} />
                             {doc.nome}
                           </a>
@@ -1391,32 +1119,13 @@ function AndamentoModal({
 
                   {andamento.prazosRelacionados.length > 0 && (
                     <div>
-                      <p className="text-sm font-semibold mb-2">
-                        Prazos Relacionados:
-                      </p>
+                      <p className="text-sm font-semibold mb-2">Prazos Relacionados:</p>
                       <div className="space-y-2">
                         {andamento.prazosRelacionados.map((prazo) => (
-                          <div
-                            key={prazo.id}
-                            className="p-2 bg-gray-100 dark:bg-gray-800 rounded"
-                          >
-                            <p className="text-sm font-medium">
-                              {prazo.titulo}
-                            </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">
-                              Vencimento:{" "}
-                              {new Date(
-                                prazo.dataVencimento,
-                              ).toLocaleDateString("pt-BR")}
-                            </p>
-                            <Chip
-                              color={
-                                prazo.status === "ABERTO"
-                                  ? "warning"
-                                  : "success"
-                              }
-                              size="sm"
-                            >
+                          <div key={prazo.id} className="p-2 bg-gray-100 dark:bg-gray-800 rounded">
+                            <p className="text-sm font-medium">{prazo.titulo}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">Vencimento: {new Date(prazo.dataVencimento).toLocaleDateString("pt-BR")}</p>
+                            <Chip color={prazo.status === "ABERTO" ? "warning" : "success"} size="sm">
                               {prazo.status}
                             </Chip>
                           </div>

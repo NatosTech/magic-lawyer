@@ -68,7 +68,7 @@ Um Dockerfile multi stage já foi preparado na raiz do projeto. Ele faz:
 - instalação de dependências
 - prisma generate
 - build de produção do Next.js
-- execução com next start na porta 3000
+- execução com next start na porta 9192
 
 ### Build da imagem
 ```bash
@@ -79,7 +79,7 @@ docker build -t magic-lawyer:latest .
 ```bash
 docker run --rm -p 3000:3000 \
   -e DATABASE_URL="postgresql://postgres:postgres@localhost:5432/magic_lawyer?schema=public" \
-  -e NEXTAUTH_URL="http://localhost:3000" \
+  -e NEXTAUTH_URL="http://localhost:9192" \
   -e NEXTAUTH_SECRET="defina_um_valor_seguro" \
   magic-lawyer:latest
 ```
@@ -119,7 +119,7 @@ services:
       - "3000:3000"
     environment:
       DATABASE_URL: postgresql://<SEU_USUARIO>:<SUA_SENHA>@db:5432/magic_lawyer?schema=public
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:9192
       NEXTAUTH_SECRET: defina_um_valor_seguro
     # Se desejar usar .env local, habilite a linha abaixo
     # env_file:
@@ -145,7 +145,7 @@ Se houver script de seed, rode.
 docker compose exec app npm run seed
 ```
 
-Acesse a aplicação em http://localhost:3000
+Acesse a aplicação em http://localhost:9192
 
 ### Parar e remover
 ```bash
@@ -301,7 +301,7 @@ Um Dockerfile multi stage já foi preparado na raiz do projeto. Ele faz:
 - instalação de dependências
 - prisma generate
 - build de produção do Next.js
-- execução com next start na porta 3000
+- execução com next start na porta 9192
 
 ### Build da imagem
 ```bash
@@ -312,7 +312,7 @@ docker build -t magic-lawyer:latest .
 ```bash
 docker run --rm -p 3000:3000 \
   -e DATABASE_URL="postgresql://postgres:postgres@localhost:5432/magic_lawyer?schema=public" \
-  -e NEXTAUTH_URL="http://localhost:3000" \
+  -e NEXTAUTH_URL="http://localhost:9192" \
   -e NEXTAUTH_SECRET="defina_um_valor_seguro" \
   magic-lawyer:latest
 ```
@@ -352,7 +352,7 @@ services:
       - "3000:3000"
     environment:
       DATABASE_URL: postgresql://<SEU_USUARIO>:<SUA_SENHA>@db:5432/magic_lawyer?schema=public
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:9192
       NEXTAUTH_SECRET: defina_um_valor_seguro
     # Se desejar usar .env local, habilite a linha abaixo
     # env_file:
@@ -378,7 +378,7 @@ Se houver script de seed, rode.
 docker compose exec app npm run seed
 ```
 
-Acesse a aplicação em http://localhost:3000
+Acesse a aplicação em http://localhost:9192
 
 ### Parar e remover
 ```bash
@@ -415,7 +415,7 @@ Este projeto utiliza Auth.js (NextAuth) v5 com App Router.
 Variáveis necessárias:
 
 ```
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:9192
 NEXTAUTH_SECRET=<valor-seguro>
 ```
 

@@ -8,11 +8,41 @@ import bcrypt from "bcryptjs";
 
 import prisma from "./app/lib/prisma";
 import { getTenantAccessibleModules } from "./app/lib/tenant-modules";
+import { getNextAuthConfig, isVercelPreviewDeployment, isLocalDevelopment, isProduction } from "./app/lib/auth-config";
+
+// Função para detectar se é um preview deployment com subdomínio
+function isPreviewWithSubdomain(host: string): boolean {
+  const cleanHost = host.split(":")[0];
+  // Detecta padrões como: sandra.magic-lawyer-4ye22ftxh-magiclawyer.vercel.app
+  return cleanHost.includes("vercel.app") && 
+         !cleanHost.includes("magiclawyer.vercel.app") &&
+         cleanHost.includes(".");
+}
+
+// Função para extrair o subdomínio de um preview deployment
+function extractSubdomainFromPreview(host: string): string | null {
+  const cleanHost = host.split(":")[0];
+  if (isPreviewWithSubdomain(cleanHost)) {
+    const parts = cleanHost.split(".");
+    if (parts.length > 0) {
+      return parts[0]; // Retorna o primeiro parte (ex: "sandra")
+    }
+  }
+  return null;
+}
 
 // Função para extrair tenant do domínio
 function extractTenantFromDomain(host: string): string | null {
   // Remove porta se existir
   const cleanHost = host.split(":")[0];
+
+  // Para preview deployments com subdomínio: sandra.magic-lawyer-4ye22ftxh-magiclawyer.vercel.app
+  if (isPreviewWithSubdomain(cleanHost)) {
+    const subdomain = extractSubdomainFromPreview(cleanHost);
+    if (subdomain) {
+      return subdomain;
+    }
+  }
 
   // Para domínios Vercel: subdomain.magiclawyer.vercel.app
   if (cleanHost.endsWith(".magiclawyer.vercel.app")) {
@@ -67,8 +97,7 @@ export const authOptions: NextAuthOptions = {
     error: "/login",
   },
   // Configuração para aceitar qualquer domínio localhost
-  useSecureCookies: false,
-  // NextAuth v4 usa NEXTAUTH_URL/NEXTAUTH_SECRET do ambiente
+  useSecureCookies: process.env.NODE_ENV === "production",
   providers: [
     Credentials({
       name: "Credenciais",
@@ -232,6 +261,28 @@ export const authOptions: NextAuthOptions = {
               })),
             });
 
+            // IMPORTANTE: Verificar se algum tenant está suspenso/cancelado ANTES de continuar
+            const suspendedTenant = allUsers.find(
+              (u) => u.tenant?.status === "SUSPENDED",
+            );
+            const cancelledTenant = allUsers.find(
+              (u) => u.tenant?.status === "CANCELLED",
+            );
+
+            if (suspendedTenant) {
+              console.warn("[auth] Tenant suspenso detectado no auto-detect", {
+                tenantStatus: suspendedTenant.tenant?.status,
+              });
+              throw new Error("TENANT_SUSPENDED");
+            }
+
+            if (cancelledTenant) {
+              console.warn("[auth] Tenant cancelado detectado no auto-detect", {
+                tenantStatus: cancelledTenant.tenant?.status,
+              });
+              throw new Error("TENANT_CANCELLED");
+            }
+
             // Se encontrou usuário em tenant específico e está no domínio principal, redirecionar
             if (
               allUsers.length > 0 &&
@@ -288,8 +339,18 @@ export const authOptions: NextAuthOptions = {
             },
             include: {
               tenant: {
-                include: {
+                select: {
+                  id: true,
+                  slug: true,
+                  name: true,
+                  status: true,
+                  statusReason: true,
+                  statusChangedAt: true,
+                  sessionVersion: true,
+                  planRevision: true,
                   branding: true,
+                  nomeFantasia: true,
+                  razaoSocial: true,
                 },
               },
               permissoes: {
@@ -355,7 +416,14 @@ export const authOptions: NextAuthOptions = {
               tenantStatus: tenantData?.status,
             });
 
-            return null;
+            // Retornar erro específico baseado no status para exibir mensagem correta
+            if (tenantData?.status === "SUSPENDED") {
+              throw new Error("TENANT_SUSPENDED");
+            } else if (tenantData?.status === "CANCELLED") {
+              throw new Error("TENANT_CANCELLED");
+            } else {
+              throw new Error(`TENANT_STATUS_${tenantData?.status}`);
+            }
           }
 
           const tenantName =
@@ -373,6 +441,11 @@ export const authOptions: NextAuthOptions = {
             user.tenantId,
           );
 
+          // Buscar sessionVersion do usuário
+          const sessionVersion = (user as any).sessionVersion || 1;
+          const tenantSessionVersion = (tenantData as any)?.sessionVersion || 1;
+          const tenantPlanRevision = (tenantData as any)?.planRevision || 1;
+
           const resultUser = {
             id: user.id,
             email: user.email,
@@ -388,11 +461,22 @@ export const authOptions: NextAuthOptions = {
             tenantFaviconUrl: tenantData?.branding?.faviconUrl || undefined,
             permissions,
             tenantModules: accessibleModules,
+            // Campos de versionamento de sessão
+            sessionVersion,
+            tenantSessionVersion,
+            tenantPlanRevision,
+            tenantStatus: tenantData?.status,
+            tenantStatusReason: tenantData?.statusReason,
           } as unknown as User & {
             tenantId: string;
             role: string;
             permissions: string[];
             tenantModules: string[];
+            sessionVersion: number;
+            tenantSessionVersion: number;
+            tenantPlanRevision: number;
+            tenantStatus: string;
+            tenantStatusReason?: string | null;
           };
 
           console.info("[auth] Login autorizado", {
@@ -418,6 +502,21 @@ export const authOptions: NextAuthOptions = {
             throw error;
           }
 
+          // Verificar se é erro de tenant suspenso/cancelado
+          if (
+            error instanceof Error &&
+            (error.message === "TENANT_SUSPENDED" ||
+              error.message === "TENANT_CANCELLED")
+          ) {
+            console.warn("[auth] Tenant suspenso/cancelado detectado", {
+              ...attemptContext,
+              error: error.message,
+            });
+
+            // Re-lançar o erro para ser tratado pelo cliente
+            throw error;
+          }
+
           const safeError =
             error instanceof Error
               ? { message: error.message, stack: error.stack }
@@ -437,6 +536,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({
       token,
       user,
+      trigger,
+      session: sessionUpdate,
     }: {
       token: JWT;
       user?:
@@ -447,9 +548,40 @@ export const authOptions: NextAuthOptions = {
             tenantName?: string;
             tenantLogoUrl?: string;
             tenantFaviconUrl?: string;
+            sessionVersion?: number;
+            tenantSessionVersion?: number;
+            tenantPlanRevision?: number;
+            tenantStatus?: string;
+            tenantStatusReason?: string | null;
           })
         | null;
+      trigger?: "update" | "signIn" | "signUp";
+      session?: Session | Record<string, unknown> | null;
     }): Promise<JWT> {
+      if (trigger === "update" && sessionUpdate) {
+        const rawPayload = (sessionUpdate as any) ?? {};
+        const incomingModules = Array.isArray(rawPayload.tenantModules)
+          ? rawPayload.tenantModules
+          : Array.isArray(rawPayload.user?.tenantModules)
+            ? rawPayload.user?.tenantModules
+            : undefined;
+
+        if (incomingModules) {
+          (token as any).tenantModules = incomingModules;
+        }
+
+        const incomingPlanRevision =
+          typeof rawPayload.tenantPlanRevision === "number"
+            ? rawPayload.tenantPlanRevision
+            : typeof rawPayload.user?.tenantPlanRevision === "number"
+              ? rawPayload.user?.tenantPlanRevision
+              : undefined;
+
+        if (typeof incomingPlanRevision === "number") {
+          (token as any).tenantPlanRevision = incomingPlanRevision;
+        }
+      }
+
       // No login
       if (user) {
         (token as any).id = user.id;
@@ -462,6 +594,14 @@ export const authOptions: NextAuthOptions = {
         (token as any).permissions = (user as any).permissions ?? [];
         (token as any).avatarUrl = (user as any).image; // image contém o avatarUrl
         (token as any).tenantModules = (user as any).tenantModules ?? [];
+        // Campos de versionamento de sessão
+        (token as any).sessionVersion = (user as any).sessionVersion ?? 1;
+        (token as any).tenantSessionVersion =
+          (user as any).tenantSessionVersion ?? 1;
+        (token as any).tenantPlanRevision =
+          (user as any).tenantPlanRevision ?? 1;
+        (token as any).tenantStatus = (user as any).tenantStatus;
+        (token as any).tenantStatusReason = (user as any).tenantStatusReason;
       }
 
       return token;
@@ -500,6 +640,19 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).tenantModules = (token as any).tenantModules as
           | string[]
           | undefined;
+        // Campos de versionamento de sessão
+        (session.user as any).sessionVersion = (token as any).sessionVersion as
+          | number
+          | undefined;
+        (session.user as any).tenantSessionVersion = (token as any)
+          .tenantSessionVersion as number | undefined;
+        (session.user as any).tenantPlanRevision = (token as any)
+          .tenantPlanRevision as number | undefined;
+        (session.user as any).tenantStatus = (token as any).tenantStatus as
+          | string
+          | undefined;
+        (session.user as any).tenantStatusReason = (token as any)
+          .tenantStatusReason as string | null | undefined;
       }
 
       return session;

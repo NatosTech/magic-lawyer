@@ -48,7 +48,10 @@ export async function syncModuleMap(): Promise<{
     // Sistema agora é 100% dinâmico - não precisa gerar arquivo estático
 
     const totalModules = modulos.length;
-    const totalRoutes = modulos.reduce((acc, modulo) => acc + modulo.rotas.length, 0);
+    const totalRoutes = modulos.reduce(
+      (acc, modulo) => acc + modulo.rotas.length,
+      0,
+    );
 
     // Limpar cache do module-map dinâmico
     try {
@@ -62,7 +65,9 @@ export async function syncModuleMap(): Promise<{
     // Cache do Edge Runtime será atualizado automaticamente via revalidação
     // O fallback estático no module-map-edge.ts garante funcionamento
 
-    logger.info(`Module map sincronizado: ${totalModules} módulos, ${totalRoutes} rotas por usuário ${user.email}`);
+    logger.info(
+      `Module map sincronizado: ${totalModules} módulos, ${totalRoutes} rotas por usuário ${user.email}`,
+    );
 
     return {
       success: true,
@@ -189,7 +194,10 @@ export async function getModuleMapStatus(): Promise<{
     }
 
     // Buscar estatísticas dos módulos
-    const [totalModules, totalRoutes] = await Promise.all([prisma.modulo.count({ where: { ativo: true } }), prisma.moduloRota.count({ where: { ativo: true } })]);
+    const [totalModules, totalRoutes] = await Promise.all([
+      prisma.modulo.count({ where: { ativo: true } }),
+      prisma.moduloRota.count({ where: { ativo: true } }),
+    ]);
 
     // Buscar última sincronização do banco de dados
     const lastSyncLog = await prisma.moduleDetectionLog.findFirst({
@@ -203,6 +211,7 @@ export async function getModuleMapStatus(): Promise<{
     if (lastSync) {
       // Verificar se precisa sincronizar (última detecção mais antiga que 5 minutos)
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
       needsSync = lastSync < fiveMinutesAgo;
     }
 

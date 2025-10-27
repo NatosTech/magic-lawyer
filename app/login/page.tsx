@@ -26,11 +26,11 @@ function LoginPageInner() {
   const [tenant, setTenant] = useState("");
   const [loading, setLoading] = useState(false);
   const callbackUrl = params.get("callbackUrl");
+  const reason = params.get("reason"); // Motivo do redirecionamento
 
   const resolveRedirectTarget = useCallback(
     (role?: string | null) => {
-      const defaultTarget =
-        role === "SUPER_ADMIN" ? "/admin/dashboard" : "/dashboard";
+      const defaultTarget = role === "SUPER_ADMIN" ? "/admin/dashboard" : "/dashboard";
 
       if (!callbackUrl) {
         return defaultTarget;
@@ -55,11 +55,6 @@ function LoginPageInner() {
 
           return `${url.pathname}${url.search}${url.hash}` || null;
         } catch (error) {
-          console.warn("[login] Callback inválida, usando padrão", {
-            callbackUrl,
-            error,
-          });
-
           return null;
         }
       })();
@@ -79,8 +74,88 @@ function LoginPageInner() {
 
       return parsedTarget;
     },
-    [callbackUrl],
+    [callbackUrl]
   );
+
+  // Exibir mensagem de motivo do redirecionamento
+  useEffect(() => {
+    if (reason && status !== "authenticated") {
+      let title = "";
+      let description = "";
+      let color: "danger" | "warning" = "danger";
+
+      switch (reason) {
+        case "SUSPENDED":
+        case "TENANT_SUSPENDED":
+          title = "🔒 Escritório Suspenso";
+          description = "Sua conta foi temporariamente suspensa. Entre em contato com o suporte para mais informações.";
+          color = "warning";
+          break;
+        case "CANCELLED":
+        case "TENANT_CANCELLED":
+          title = "❌ Escritório Cancelado";
+          description = "Sua conta foi cancelada. Entre em contato com o suporte para reativar.";
+          color = "danger";
+          break;
+        case "TENANT_NOT_FOUND":
+          title = "❌ Escritório Não Encontrado";
+          description = "O escritório informado não existe ou foi removido do sistema.";
+          color = "danger";
+          break;
+        case "SESSION_VERSION_MISMATCH":
+          title = "🔄 Sessão Expirada";
+          description = "Suas credenciais foram alteradas. Por favor, faça login novamente.";
+          color = "warning";
+          break;
+        case "SESSION_REVOKED":
+          title = "🔒 Sessão Revogada";
+          description = "Sua sessão foi encerrada por segurança. Por favor, faça login novamente.";
+          color = "warning";
+          break;
+        case "USER_DISABLED":
+          title = "🚫 Usuário Desativado";
+          description = "Sua conta foi desativada. Entre em contato com o administrador do escritório.";
+          color = "warning";
+          break;
+        case "USER_ID_MISMATCH":
+          title = "⚠️ Erro de Autenticação";
+          description = "Houve um problema com sua sessão. Por favor, faça login novamente.";
+          color = "warning";
+          break;
+        case "USER_NOT_FOUND":
+          title = "❌ Usuário Não Encontrado";
+          description = "Usuário não encontrado no sistema.";
+          color = "danger";
+          break;
+        case "NOT_AUTHENTICATED":
+          title = "❌ Não Autenticado";
+          description = "Você precisa fazer login para acessar esta página.";
+          color = "warning";
+          break;
+        case "INVALID_PAYLOAD":
+          title = "⚠️ Erro de Comunicação";
+          description = "Houve um problema ao validar sua sessão. Tente novamente.";
+          color = "warning";
+          break;
+        case "INTERNAL_ERROR":
+          title = "⚠️ Erro Interno";
+          description = "Ocorreu um erro no servidor. Tente novamente mais tarde.";
+          color = "danger";
+          break;
+        default:
+          title = "⚠️ Acesso Negado";
+          description = `Motivo: ${reason}. Entre em contato com o suporte.`;
+          color = "danger";
+      }
+
+      addToast({
+        title,
+        description,
+        color,
+        timeout: 8000,
+      });
+    }
+  }, [reason, status]);
 
   useEffect(() => {
     if (status !== "authenticated") {
@@ -129,8 +204,6 @@ function LoginPageInner() {
       tenant: sanitizedTenant || "(auto)",
     };
 
-    console.info("[login] Tentativa de login iniciada", attemptContext);
-
     setLoading(true);
 
     const loginPromise = (async () => {
@@ -143,13 +216,19 @@ function LoginPageInner() {
       });
 
       if (!response) {
-        throw new Error(
-          "Não foi possível contatar o servidor de autenticação.",
-        );
+        throw new Error("Não foi possível contatar o servidor de autenticação.");
       }
 
       if (!response.ok) {
         // Tratamento específico de erros
+        // Erros de status do tenant
+        if (response.error === "TENANT_SUSPENDED") {
+          throw new Error("TENANT_SUSPENDED");
+        }
+        if (response.error === "TENANT_CANCELLED") {
+          throw new Error("TENANT_CANCELLED");
+        }
+
         if (response.error === "CredentialsSignin") {
           // Verificar se deve redirecionar para tenant específico
           const currentHost = window.location.hostname;
@@ -184,9 +263,8 @@ function LoginPageInner() {
             }
           }
 
-          throw new Error(
-            "Usuário não encontrado ou credenciais inválidas. Verifique seu e-mail, senha e escritório.",
-          );
+          // Mensagem específica de erro de credenciais
+          throw new Error("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
         }
 
         // Verificar se é um erro de redirecionamento para tenant
@@ -209,13 +287,8 @@ function LoginPageInner() {
           return;
         }
 
-        throw new Error(
-          response.error ??
-            "Credenciais inválidas. Verifique seus dados e tente novamente.",
-        );
+        throw new Error(response.error ?? "Credenciais inválidas. Verifique seus dados e tente novamente.");
       }
-
-      console.info("[login] Autenticação concluída", attemptContext);
 
       return response;
     })();
@@ -250,15 +323,7 @@ function LoginPageInner() {
 
       router.replace(target);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Ocorreu um erro inesperado durante o login.";
-
-      console.warn("[login] Falha na autenticação", {
-        ...attemptContext,
-        error: message,
-      });
+      const message = error instanceof Error ? error.message : "Ocorreu um erro inesperado durante o login.";
 
       if (loaderKey) {
         closeToast(loaderKey);
@@ -269,13 +334,17 @@ function LoginPageInner() {
       let description = message;
       let color: "danger" | "warning" = "danger";
 
-      if (
-        message.includes("Usuário não encontrado") ||
-        message.includes("credenciais inválidas")
-      ) {
-        title = "Credenciais inválidas";
-        description =
-          "Verifique se seu e-mail, senha e escritório estão corretos. Se não souber o slug do escritório, deixe o campo vazio.";
+      if (message === "TENANT_SUSPENDED") {
+        title = "🔒 Escritório Suspenso";
+        description = "Sua conta foi temporariamente suspensa. Entre em contato com o suporte para mais informações.";
+        color = "warning";
+      } else if (message === "TENANT_CANCELLED") {
+        title = "❌ Escritório Cancelado";
+        description = "Sua conta foi cancelada. Entre em contato com o suporte para reativar.";
+        color = "danger";
+      } else if (message.includes("Email ou senha incorretos") || message.includes("credenciais inválidas")) {
+        title = "❌ Email ou senha incorretos";
+        description = "Verifique se digitou corretamente seu email e senha. Lembre-se: a senha é sensível a maiúsculas e minúsculas.";
         color = "warning";
       } else if (message.includes("Não foi possível contatar")) {
         title = "Erro de conexão";
@@ -304,18 +373,8 @@ function LoginPageInner() {
         radius="full"
         size="sm"
         startContent={
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M15 19l-7-7 7-7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-            />
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
           </svg>
         }
         variant="bordered"
@@ -331,12 +390,8 @@ function LoginPageInner() {
               <Logo className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">
-            Bem-vindo de volta
-          </h1>
-          <p className="text-default-400 text-sm">
-            Entre na sua conta para acessar o escritório
-          </p>
+          <h1 className="text-2xl font-bold text-white mb-2">Bem-vindo de volta</h1>
+          <p className="text-default-400 text-sm">Entre na sua conta para acessar o escritório</p>
         </div>
 
         {/* Card de login */}
@@ -344,22 +399,15 @@ function LoginPageInner() {
           <CardHeader className="flex flex-col gap-2 pb-2">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🔐</span>
-              <h2 className="text-lg font-semibold text-white">
-                Acesso seguro
-              </h2>
+              <h2 className="text-lg font-semibold text-white">Acesso seguro</h2>
             </div>
-            <p className="text-sm text-default-400">
-              Suas credenciais são protegidas com criptografia de ponta
-            </p>
+            <p className="text-sm text-default-400">Suas credenciais são protegidas com criptografia de ponta</p>
             <div className="mt-2 rounded-lg bg-blue-500/10 border border-blue-500/20 p-3">
               <div className="flex items-start gap-2">
                 <span className="text-blue-400 text-sm">💡</span>
                 <div>
                   <p className="text-xs font-medium text-blue-300">Dica:</p>
-                  <p className="text-xs text-blue-200">
-                    Se não souber o slug do escritório, deixe o campo vazio. O
-                    sistema tentará encontrar automaticamente.
-                  </p>
+                  <p className="text-xs text-blue-200">Se não souber o slug do escritório, deixe o campo vazio. O sistema tentará encontrar automaticamente.</p>
                 </div>
               </div>
             </div>
@@ -371,9 +419,7 @@ function LoginPageInner() {
                 isRequired
                 className="mb-4"
                 label="E-mail"
-                startContent={
-                  <span className="text-default-400 text-sm">📧</span>
-                }
+                startContent={<span className="text-default-400 text-sm">📧</span>}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -382,9 +428,7 @@ function LoginPageInner() {
                 isRequired
                 className="mb-4"
                 label="Senha"
-                startContent={
-                  <span className="text-default-400 text-sm">🔒</span>
-                }
+                startContent={<span className="text-default-400 text-sm">🔒</span>}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -394,20 +438,11 @@ function LoginPageInner() {
                 description="Opcional. Se não souber, deixe vazio. Exemplo: meu-escritorio ou meuescritorio.com.br"
                 label="Escritório (slug/domínio)"
                 placeholder="meu-escritorio"
-                startContent={
-                  <span className="text-default-400 text-sm">🏢</span>
-                }
+                startContent={<span className="text-default-400 text-sm">🏢</span>}
                 value={tenant}
                 onChange={(e) => setTenant(e.target.value)}
               />
-              <Button
-                fullWidth
-                color="primary"
-                isLoading={loading}
-                size="lg"
-                startContent={loading ? null : <span>🚀</span>}
-                type="submit"
-              >
+              <Button fullWidth color="primary" isLoading={loading} size="lg" startContent={loading ? null : <span>🚀</span>} type="submit">
                 {loading ? "Conectando..." : "Entrar no sistema"}
               </Button>
             </form>
@@ -416,30 +451,12 @@ function LoginPageInner() {
 
         {/* Links úteis */}
         <div className="mt-6 text-center">
-          <p className="text-xs text-default-500 mb-4">
-            Não tem uma conta ainda?
-          </p>
+          <p className="text-xs text-default-500 mb-4">Não tem uma conta ainda?</p>
           <div className="flex flex-col gap-2">
-            <Button
-              as={NextLink}
-              className="border-white/20 text-white"
-              href="/precos"
-              radius="full"
-              size="sm"
-              startContent={<span>💎</span>}
-              variant="bordered"
-            >
+            <Button as={NextLink} className="border-white/20 text-white" href="/precos" radius="full" size="sm" startContent={<span>💎</span>} variant="bordered">
               Ver planos disponíveis
             </Button>
-            <Button
-              as={NextLink}
-              className="text-default-400"
-              href="/about"
-              radius="full"
-              size="sm"
-              startContent={<span>ℹ️</span>}
-              variant="light"
-            >
+            <Button as={NextLink} className="text-default-400" href="/about" radius="full" size="sm" startContent={<span>ℹ️</span>} variant="light">
               Saiba mais sobre a plataforma
             </Button>
           </div>
@@ -450,9 +467,7 @@ function LoginPageInner() {
           <CardBody className="py-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">✨</span>
-              <h3 className="text-sm font-semibold text-white">
-                Recursos em destaque
-              </h3>
+              <h3 className="text-sm font-semibold text-white">Recursos em destaque</h3>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="flex items-center gap-2">
@@ -477,12 +492,7 @@ function LoginPageInner() {
 
         {/* Badge de segurança */}
         <div className="mt-6 text-center">
-          <Chip
-            color="success"
-            size="sm"
-            startContent={<span>🛡️</span>}
-            variant="flat"
-          >
+          <Chip color="success" size="sm" startContent={<span>🛡️</span>} variant="flat">
             Login 100% seguro
           </Chip>
         </div>

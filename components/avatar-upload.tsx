@@ -17,20 +17,12 @@ interface AvatarUploadProps {
   disabled?: boolean;
 }
 
-export function AvatarUpload({
-  currentAvatarUrl,
-  userName,
-  onAvatarChange,
-  disabled = false,
-}: AvatarUploadProps) {
+export function AvatarUpload({ currentAvatarUrl, userName, onAvatarChange, disabled = false }: AvatarUploadProps) {
   const { update: updateSession } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
-  const handleSaveAvatar = async (
-    imageData: string | FormData | null,
-    isUrl: boolean,
-  ) => {
+  const handleSaveAvatar = async (imageData: string | FormData | null, isUrl: boolean) => {
     if (!imageData) return;
 
     setIsLoading(true);
@@ -71,14 +63,13 @@ export function AvatarUpload({
           window.dispatchEvent(
             new CustomEvent("avatarUpdated", {
               detail: { avatarUrl: "" },
-            }),
+            })
           );
         }
       } else {
         toast.error(result.error || "Erro ao atualizar avatar");
       }
     } catch (error) {
-      console.error("Erro ao salvar avatar:", error);
       toast.error("Erro ao salvar avatar");
     } finally {
       setIsLoading(false);
@@ -104,14 +95,13 @@ export function AvatarUpload({
           window.dispatchEvent(
             new CustomEvent("avatarUpdated", {
               detail: { avatarUrl: "" },
-            }),
+            })
           );
         }
       } else {
         toast.error(result.error || "Erro ao remover avatar");
       }
     } catch (error) {
-      console.error("Erro ao deletar avatar:", error);
       toast.error("Erro ao remover avatar");
     } finally {
       setIsLoading(false);
@@ -123,10 +113,7 @@ export function AvatarUpload({
     try {
       const urlObj = new URL(url);
 
-      return (
-        !urlObj.hostname.includes("cloudinary.com") &&
-        !urlObj.hostname.includes("res.cloudinary.com")
-      );
+      return !urlObj.hostname.includes("cloudinary.com") && !urlObj.hostname.includes("res.cloudinary.com");
     } catch {
       return false;
     }
@@ -136,14 +123,7 @@ export function AvatarUpload({
     <>
       <div className="flex flex-col items-center gap-4">
         <div className="relative">
-          <Avatar
-            isBordered
-            className="w-20 h-20"
-            color="primary"
-            name={userName}
-            size="lg"
-            src={currentAvatarUrl || undefined}
-          />
+          <Avatar isBordered className="w-20 h-20" color="primary" name={userName} size="lg" src={currentAvatarUrl || undefined} />
 
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
@@ -153,26 +133,12 @@ export function AvatarUpload({
         </div>
 
         <div className="flex gap-2">
-          <Button
-            color="primary"
-            isDisabled={disabled || isLoading}
-            size="sm"
-            startContent={<Edit3 className="w-4 h-4" />}
-            variant="bordered"
-            onPress={() => setIsEditorOpen(true)}
-          >
+          <Button color="primary" isDisabled={disabled || isLoading} size="sm" startContent={<Edit3 className="w-4 h-4" />} variant="bordered" onPress={() => setIsEditorOpen(true)}>
             Editar Avatar
           </Button>
 
           {currentAvatarUrl && !isExternalUrl(currentAvatarUrl) && (
-            <Button
-              color="danger"
-              isDisabled={disabled || isLoading}
-              size="sm"
-              startContent={<Trash2 className="w-4 h-4" />}
-              variant="bordered"
-              onPress={handleDelete}
-            >
+            <Button color="danger" isDisabled={disabled || isLoading} size="sm" startContent={<Trash2 className="w-4 h-4" />} variant="bordered" onPress={handleDelete}>
               Remover
             </Button>
           )}
@@ -181,20 +147,11 @@ export function AvatarUpload({
         <div className="text-center">
           <p className="text-xs text-default-400">JPG, PNG, WebP ou URL</p>
           <p className="text-xs text-default-400">Máximo 5MB</p>
-          {currentAvatarUrl && isExternalUrl(currentAvatarUrl) && (
-            <p className="text-xs text-warning-500 mt-1">
-              ⚠️ URL externa - não pode ser removida
-            </p>
-          )}
+          {currentAvatarUrl && isExternalUrl(currentAvatarUrl) && <p className="text-xs text-warning-500 mt-1">⚠️ URL externa - não pode ser removida</p>}
         </div>
       </div>
 
-      <ImageEditorModal
-        currentImageUrl={currentAvatarUrl}
-        isOpen={isEditorOpen}
-        onClose={() => setIsEditorOpen(false)}
-        onSave={handleSaveAvatar}
-      />
+      <ImageEditorModal currentImageUrl={currentAvatarUrl} isOpen={isEditorOpen} onClose={() => setIsEditorOpen(false)} onSave={handleSaveAvatar} />
     </>
   );
 }

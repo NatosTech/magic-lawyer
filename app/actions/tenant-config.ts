@@ -19,6 +19,10 @@ export interface TenantConfigData {
     nomeFantasia: string | null;
     timezone: string;
     status: string;
+    statusReason: string | null;
+    statusChangedAt: string | null;
+    sessionVersion: number;
+    planRevision: number;
     createdAt: string;
     updatedAt: string;
   };
@@ -37,6 +41,7 @@ export interface TenantConfigData {
     valorMensal: number | null;
     valorAnual: number | null;
     moeda: string | null;
+    planRevision: number;
     trialEndsAt: string | null;
     renovaEm: string | null;
     planoVersao: {
@@ -221,6 +226,10 @@ export async function getTenantConfigData(): Promise<{
         nomeFantasia: tenant.nomeFantasia,
         timezone: tenant.timezone,
         status: tenant.status,
+        statusReason: tenant.statusReason,
+        statusChangedAt: tenant.statusChangedAt?.toISOString() ?? null,
+        sessionVersion: tenant.sessionVersion,
+        planRevision: tenant.planRevision,
         createdAt: tenant.createdAt.toISOString(),
         updatedAt: tenant.updatedAt.toISOString(),
       },
@@ -246,6 +255,7 @@ export async function getTenantConfigData(): Promise<{
               tenant.subscription.plano?.valorAnual,
             ),
             moeda: tenant.subscription.plano?.moeda ?? null,
+            planRevision: tenant.subscription.planRevision,
             trialEndsAt: tenant.subscription.trialEndsAt?.toISOString() ?? null,
             renovaEm: tenant.subscription.renovaEm?.toISOString() ?? null,
             planoVersao: tenant.subscription.planoVersao

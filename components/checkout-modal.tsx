@@ -323,7 +323,6 @@ export function CheckoutModal({
         toast.error(result.error || "Erro ao processar pagamento");
       }
     } catch (error) {
-      console.error("Erro no checkout:", error);
       toast.error("Erro ao processar pagamento");
     } finally {
       setIsLoading(false);

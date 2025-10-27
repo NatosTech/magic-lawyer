@@ -54,7 +54,12 @@ export interface ModuloCategoriaListResponse {
 
 // ==================== LISTAR CATEGORIAS ====================
 
-export async function listModuloCategorias(params?: { search?: string; ativo?: boolean; limit?: number; offset?: number }): Promise<ModuloCategoriaListResponse> {
+export async function listModuloCategorias(params?: {
+  search?: string;
+  ativo?: boolean;
+  limit?: number;
+  offset?: number;
+}): Promise<ModuloCategoriaListResponse> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -102,6 +107,7 @@ export async function listModuloCategorias(params?: { search?: string; ativo?: b
     };
   } catch (error) {
     console.error("Erro ao listar categorias de módulos:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -140,6 +146,7 @@ export async function getModuloCategoria(id: string) {
     };
   } catch (error) {
     console.error("Erro ao buscar categoria:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -149,7 +156,9 @@ export async function getModuloCategoria(id: string) {
 
 // ==================== CRIAR CATEGORIA ====================
 
-export async function createModuloCategoria(data: ModuloCategoriaCreateInput): Promise<{ success: boolean; data?: any; error?: string }> {
+export async function createModuloCategoria(
+  data: ModuloCategoriaCreateInput,
+): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -196,6 +205,7 @@ export async function createModuloCategoria(data: ModuloCategoriaCreateInput): P
     };
   } catch (error) {
     console.error("Erro ao criar categoria:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -205,7 +215,10 @@ export async function createModuloCategoria(data: ModuloCategoriaCreateInput): P
 
 // ==================== ATUALIZAR CATEGORIA ====================
 
-export async function updateModuloCategoria(id: string, data: ModuloCategoriaUpdateInput): Promise<{ success: boolean; data?: any; error?: string }> {
+export async function updateModuloCategoria(
+  id: string,
+  data: ModuloCategoriaUpdateInput,
+): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -238,8 +251,13 @@ export async function updateModuloCategoria(id: string, data: ModuloCategoriaUpd
       data: {
         ...(data.nome && { nome: data.nome.trim() }),
         ...(data.slug && { slug: data.slug.trim() }),
-        ...(data.descricao !== undefined && { descricao: data.descricao?.trim() }),
-        ...(data.icone !== undefined && { icone: typeof data.icone === "string" ? data.icone.trim() : data.icone }),
+        ...(data.descricao !== undefined && {
+          descricao: data.descricao?.trim(),
+        }),
+        ...(data.icone !== undefined && {
+          icone:
+            typeof data.icone === "string" ? data.icone.trim() : data.icone,
+        }),
         ...(data.cor && { cor: data.cor }),
         ...(data.ordem !== undefined && { ordem: data.ordem }),
         ...(data.ativo !== undefined && { ativo: data.ativo }),
@@ -255,6 +273,7 @@ export async function updateModuloCategoria(id: string, data: ModuloCategoriaUpd
     };
   } catch (error) {
     console.error("Erro ao atualizar categoria:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -264,7 +283,9 @@ export async function updateModuloCategoria(id: string, data: ModuloCategoriaUpd
 
 // ==================== EXCLUIR CATEGORIA ====================
 
-export async function deleteModuloCategoria(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteModuloCategoria(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -306,6 +327,7 @@ export async function deleteModuloCategoria(id: string): Promise<{ success: bool
     return { success: true };
   } catch (error) {
     console.error("Erro ao excluir categoria:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -315,7 +337,9 @@ export async function deleteModuloCategoria(id: string): Promise<{ success: bool
 
 // ==================== ALTERAR STATUS ====================
 
-export async function toggleModuloCategoriaStatus(id: string): Promise<{ success: boolean; data?: any; error?: string }> {
+export async function toggleModuloCategoriaStatus(
+  id: string,
+): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
     const session = await getServerSession(authOptions);
 
@@ -345,6 +369,7 @@ export async function toggleModuloCategoriaStatus(id: string): Promise<{ success
     };
   } catch (error) {
     console.error("Erro ao alterar status da categoria:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",
@@ -378,6 +403,7 @@ export async function getDashboardModuloCategorias() {
     };
   } catch (error) {
     console.error("Erro ao buscar dashboard de categorias:", error);
+
     return {
       success: false,
       error: "Erro interno do servidor",

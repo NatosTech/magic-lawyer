@@ -33,7 +33,8 @@ const PLANO_VERSAO_STATUS = {
   ARCHIVED: "ARCHIVED",
 } as const;
 
-export type PlanoVersaoStatusValue = (typeof PLANO_VERSAO_STATUS)[keyof typeof PLANO_VERSAO_STATUS];
+export type PlanoVersaoStatusValue =
+  (typeof PLANO_VERSAO_STATUS)[keyof typeof PLANO_VERSAO_STATUS];
 
 export type PlanoVersaoResumo = {
   id: string;
@@ -165,21 +166,28 @@ async function createPlanoVersaoSnapshotTx(
   params: {
     plano: { id: string; nome: string };
     status: PlanoVersaoStatusValue;
-    usuarioId: string;
+    usuarioId?: string | null;
     titulo?: string;
     descricao?: string;
     requireActiveModules?: boolean;
-  }
+  },
 ) {
-  const { plano, status, usuarioId, titulo, descricao, requireActiveModules } = params;
+  const { plano, status, usuarioId, titulo, descricao, requireActiveModules } =
+    params;
 
-  const modulosAtivos: Array<{ moduloId: string }> = await tx.planoModulo.findMany({
-    where: { planoId: plano.id, habilitado: true },
-    select: { moduloId: true },
-  });
+  const modulosAtivos: Array<{ moduloId: string }> =
+    await tx.planoModulo.findMany({
+      where: { planoId: plano.id, habilitado: true },
+      select: { moduloId: true },
+    });
 
-  if ((requireActiveModules ?? status === PLANO_VERSAO_STATUS.PUBLISHED) && modulosAtivos.length === 0) {
-    throw new Error("Nenhum módulo habilitado. Ative ao menos um módulo antes de criar a versão.");
+  if (
+    (requireActiveModules ?? status === PLANO_VERSAO_STATUS.PUBLISHED) &&
+    modulosAtivos.length === 0
+  ) {
+    throw new Error(
+      "Nenhum módulo habilitado. Ative ao menos um módulo antes de criar a versão.",
+    );
   }
 
   const ultimaVersao = await tx.planoVersao.findFirst({
@@ -199,14 +207,14 @@ async function createPlanoVersaoSnapshotTx(
 
   const modulosData = modulosAtivos.map(
     (
-      modulo
+      modulo,
     ): {
       moduloId: string;
       habilitado: boolean;
     } => ({
       moduloId: modulo.moduloId,
       habilitado: true,
-    })
+    }),
   );
 
   const now = new Date();
@@ -218,8 +226,11 @@ async function createPlanoVersaoSnapshotTx(
       status,
       titulo: defaultTitulo,
       descricao,
-      criadoPorId: usuarioId,
-      publicadoPorId: status === PLANO_VERSAO_STATUS.PUBLISHED ? usuarioId : undefined,
+      criadoPorId: usuarioId ?? null,
+      publicadoPorId:
+        status === PLANO_VERSAO_STATUS.PUBLISHED
+          ? (usuarioId ?? null)
+          : undefined,
       publicadoEm: status === PLANO_VERSAO_STATUS.PUBLISHED ? now : undefined,
       modulos:
         modulosData.length > 0
@@ -297,17 +308,29 @@ export type GetEstatisticasPlanosResponse = {
 async function ensureSuperAdmin() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !session?.user?.email) {
     throw new Error("Não autenticado");
   }
 
   const userRole = (session.user as any)?.role;
 
   if (userRole !== "SUPER_ADMIN") {
-    throw new Error("Acesso negado. Apenas Super Admins podem gerenciar planos.");
+    throw new Error(
+      "Acesso negado. Apenas Super Admins podem gerenciar planos.",
+    );
   }
 
-  return session.user.id as string;
+  // Buscar o ID do SuperAdmin correspondente ao usuário
+  const superAdmin = await prisma.superAdmin.findUnique({
+    where: { email: session.user.email },
+    select: { id: true },
+  });
+
+  if (!superAdmin) {
+    throw new Error("Super Admin não encontrado");
+  }
+
+  return superAdmin.id;
 }
 
 // ==================== CRUD PLANOS ====================
@@ -333,7 +356,8 @@ export async function getPlanos(): Promise<GetPlanosResponse> {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -379,12 +403,16 @@ export async function getPlanoById(id: string): Promise<GetPlanoResponse> {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function updatePlano(id: string, data: Partial<Plano>): Promise<GetPlanoResponse> {
+export async function updatePlano(
+  id: string,
+  data: Partial<Plano>,
+): Promise<GetPlanoResponse> {
   try {
     await ensureSuperAdmin();
 
@@ -430,7 +458,8 @@ export async function updatePlano(id: string, data: Partial<Plano>): Promise<Get
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -469,12 +498,15 @@ export async function getModuloCatalogo(): Promise<GetModuloCatalogoResponse> {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function getPlanoConfiguracao(planoId: string): Promise<GetPlanoConfiguracaoResponse> {
+export async function getPlanoConfiguracao(
+  planoId: string,
+): Promise<GetPlanoConfiguracaoResponse> {
   try {
     await ensureSuperAdmin();
 
@@ -510,7 +542,9 @@ export async function getPlanoConfiguracao(planoId: string): Promise<GetPlanoCon
       };
     }
 
-    const modulosHabilitados = new Map(configuracaoAtual.map((modulo) => [modulo.moduloId, modulo.habilitado]));
+    const modulosHabilitados = new Map(
+      configuracaoAtual.map((modulo) => [modulo.moduloId, modulo.habilitado]),
+    );
 
     const catalogModules = catalogo as CatalogModule[];
 
@@ -526,14 +560,18 @@ export async function getPlanoConfiguracao(planoId: string): Promise<GetPlanoCon
       habilitado: modulosHabilitados.get(modulo.id) ?? false,
     }));
 
-    const versoesResumo: PlanoVersaoResumo[] = versoes.map((versao) => toPlanoVersaoResumo(versao));
+    const versoesResumo: PlanoVersaoResumo[] = versoes.map((versao) =>
+      toPlanoVersaoResumo(versao),
+    );
 
     return {
       success: true,
       data: {
         plano: {
           ...plano,
-          valorMensal: plano.valorMensal ? Number(plano.valorMensal) : undefined,
+          valorMensal: plano.valorMensal
+            ? Number(plano.valorMensal)
+            : undefined,
           valorAnual: plano.valorAnual ? Number(plano.valorAnual) : undefined,
         },
         modulos,
@@ -546,7 +584,8 @@ export async function getPlanoConfiguracao(planoId: string): Promise<GetPlanoCon
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -591,7 +630,9 @@ export async function getPlanosMatrix(): Promise<GetPlanoMatrixResponse> {
         statusPorModulo.set(relacao.moduloId, new Map());
       }
 
-      statusPorModulo.get(relacao.moduloId)!.set(relacao.planoId, relacao.habilitado);
+      statusPorModulo
+        .get(relacao.moduloId)!
+        .set(relacao.planoId, relacao.habilitado);
     });
 
     const matriz: PlanoMatrixModuleRow[] = modulos.map((modulo) => ({
@@ -618,12 +659,16 @@ export async function getPlanosMatrix(): Promise<GetPlanoMatrixResponse> {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function setPlanoModulos(planoId: string, updates: PlanoModuloUpdateInput[]): Promise<DefaultActionResponse> {
+export async function setPlanoModulos(
+  planoId: string,
+  updates: PlanoModuloUpdateInput[],
+): Promise<DefaultActionResponse> {
   if (!updates?.length) {
     return { success: true };
   }
@@ -638,7 +683,9 @@ export async function setPlanoModulos(planoId: string, updates: PlanoModuloUpdat
         throw new Error("Plano não encontrado");
       }
 
-      const moduloIds = Array.from(new Set(updates.map((item) => item.moduloId)));
+      const moduloIds = Array.from(
+        new Set(updates.map((item) => item.moduloId)),
+      );
 
       const modulosExistentes = await tx.modulo.findMany({
         where: { id: { in: moduloIds } },
@@ -685,12 +732,16 @@ export async function setPlanoModulos(planoId: string, updates: PlanoModuloUpdat
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function syncPlanoModulos(planoId: string, activeModuloIds: string[]): Promise<DefaultActionResponse> {
+export async function syncPlanoModulos(
+  planoId: string,
+  activeModuloIds: string[],
+): Promise<DefaultActionResponse> {
   try {
     await ensureSuperAdmin();
 
@@ -713,11 +764,19 @@ export async function syncPlanoModulos(planoId: string, activeModuloIds: string[
         },
       });
 
-      const modulosAtuaisSet = new Set(modulosAtuais.filter((m) => m.habilitado).map((m) => m.moduloId));
+      const modulosAtuaisSet = new Set(
+        modulosAtuais.filter((m) => m.habilitado).map((m) => m.moduloId),
+      );
 
-      const modulosParaHabilitar = activeModuloIds.filter((moduloId) => !modulosAtuaisSet.has(moduloId));
+      const modulosParaHabilitar = activeModuloIds.filter(
+        (moduloId) => !modulosAtuaisSet.has(moduloId),
+      );
 
-      const modulosParaDesabilitar = modulosAtuais.filter((modulo) => modulo.habilitado && !activeSet.has(modulo.moduloId)).map((modulo) => modulo.moduloId);
+      const modulosParaDesabilitar = modulosAtuais
+        .filter(
+          (modulo) => modulo.habilitado && !activeSet.has(modulo.moduloId),
+        )
+        .map((modulo) => modulo.moduloId);
 
       if (modulosParaHabilitar.length > 0) {
         await tx.planoModulo.createMany({
@@ -760,14 +819,18 @@ export async function syncPlanoModulos(planoId: string, activeModuloIds: string[
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function createPlanoVersaoDraft(planoId: string, payload?: { titulo?: string; descricao?: string }): Promise<{ success: boolean; data?: PlanoVersaoResumo; error?: string }> {
+export async function createPlanoVersaoDraft(
+  planoId: string,
+  payload?: { titulo?: string; descricao?: string },
+): Promise<{ success: boolean; data?: PlanoVersaoResumo; error?: string }> {
   try {
-    const usuarioId = await ensureSuperAdmin();
+    await ensureSuperAdmin();
 
     const versao = await prisma.$transaction(async (tx) => {
       const plano = await tx.plano.findUnique({
@@ -782,7 +845,7 @@ export async function createPlanoVersaoDraft(planoId: string, payload?: { titulo
       const novaVersao = await createPlanoVersaoSnapshotTx(tx, {
         plano,
         status: PLANO_VERSAO_STATUS.DRAFT,
-        usuarioId,
+        usuarioId: null,
         titulo: payload?.titulo,
         descricao: payload?.descricao,
         requireActiveModules: false,
@@ -802,14 +865,18 @@ export async function createPlanoVersaoDraft(planoId: string, payload?: { titulo
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function createPlanoVersaoReview(planoId: string, payload?: { titulo?: string; descricao?: string }): Promise<{ success: boolean; data?: PlanoVersaoResumo; error?: string }> {
+export async function createPlanoVersaoReview(
+  planoId: string,
+  payload?: { titulo?: string; descricao?: string },
+): Promise<{ success: boolean; data?: PlanoVersaoResumo; error?: string }> {
   try {
-    const usuarioId = await ensureSuperAdmin();
+    await ensureSuperAdmin();
 
     const versao = await prisma.$transaction(async (tx) => {
       const plano = await tx.plano.findUnique({
@@ -824,7 +891,7 @@ export async function createPlanoVersaoReview(planoId: string, payload?: { titul
       const novaVersao = await createPlanoVersaoSnapshotTx(tx, {
         plano,
         status: PLANO_VERSAO_STATUS.REVIEW,
-        usuarioId,
+        usuarioId: null,
         titulo: payload?.titulo,
         descricao: payload?.descricao,
         requireActiveModules: true,
@@ -844,14 +911,15 @@ export async function createPlanoVersaoReview(planoId: string, payload?: { titul
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
 export async function publishPlanoVersao(
   planoId: string,
-  payload?: { titulo?: string; descricao?: string; versaoId?: string }
+  payload?: { titulo?: string; descricao?: string; versaoId?: string },
 ): Promise<{ success: boolean; data?: PlanoVersaoResumo; error?: string }> {
   try {
     const usuarioId = await ensureSuperAdmin();
@@ -897,9 +965,12 @@ export async function publishPlanoVersao(
           where: { id: versaoAlvo.id },
           data: {
             status: PLANO_VERSAO_STATUS.PUBLISHED,
-            titulo: payload?.titulo ?? versaoAlvo.titulo ?? `${plano.nome} · Versão ${versaoAlvo.numero}`,
+            titulo:
+              payload?.titulo ??
+              versaoAlvo.titulo ??
+              `${plano.nome} · Versão ${versaoAlvo.numero}`,
             descricao: payload?.descricao ?? versaoAlvo.descricao,
-            publicadoPorId: usuarioId,
+            publicadoPorId: null,
             publicadoEm: new Date(),
           },
         });
@@ -907,7 +978,7 @@ export async function publishPlanoVersao(
         versaoAlvo = await createPlanoVersaoSnapshotTx(tx, {
           plano,
           status: PLANO_VERSAO_STATUS.PUBLISHED,
-          usuarioId,
+          usuarioId: null,
           titulo: payload?.titulo,
           descricao: payload?.descricao,
           requireActiveModules: true,
@@ -936,7 +1007,8 @@ export async function publishPlanoVersao(
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -958,7 +1030,9 @@ type CreatePlanoInput = {
   moduloSlugs?: string[];
 };
 
-export async function createPlano(input: CreatePlanoInput): Promise<GetPlanoResponse> {
+export async function createPlano(
+  input: CreatePlanoInput,
+): Promise<GetPlanoResponse> {
   try {
     const usuarioId = await ensureSuperAdmin();
 
@@ -1057,12 +1131,16 @@ export async function createPlano(input: CreatePlanoInput): Promise<GetPlanoResp
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
-export async function duplicatePlano(planoId: string, overrides?: Partial<Omit<CreatePlanoInput, "moduloIds" | "moduloSlugs">>): Promise<GetPlanoResponse> {
+export async function duplicatePlano(
+  planoId: string,
+  overrides?: Partial<Omit<CreatePlanoInput, "moduloIds" | "moduloSlugs">>,
+): Promise<GetPlanoResponse> {
   try {
     await ensureSuperAdmin();
 
@@ -1100,23 +1178,41 @@ export async function duplicatePlano(planoId: string, overrides?: Partial<Omit<C
       nome: overrides?.nome ?? `${planoOriginal.nome} (cópia)`,
       slug: slugNormalizado,
       descricao: overrides?.descricao ?? planoOriginal.descricao ?? undefined,
-      valorMensal: overrides?.valorMensal ?? (planoOriginal.valorMensal ? Number(planoOriginal.valorMensal) : undefined),
-      valorAnual: overrides?.valorAnual ?? (planoOriginal.valorAnual ? Number(planoOriginal.valorAnual) : undefined),
+      valorMensal:
+        overrides?.valorMensal ??
+        (planoOriginal.valorMensal
+          ? Number(planoOriginal.valorMensal)
+          : undefined),
+      valorAnual:
+        overrides?.valorAnual ??
+        (planoOriginal.valorAnual
+          ? Number(planoOriginal.valorAnual)
+          : undefined),
       moeda: overrides?.moeda ?? planoOriginal.moeda ?? "BRL",
-      limiteUsuarios: overrides?.limiteUsuarios ?? planoOriginal.limiteUsuarios ?? undefined,
-      limiteProcessos: overrides?.limiteProcessos ?? planoOriginal.limiteProcessos ?? undefined,
-      limiteStorageMb: overrides?.limiteStorageMb ?? planoOriginal.limiteStorageMb ?? undefined,
+      limiteUsuarios:
+        overrides?.limiteUsuarios ?? planoOriginal.limiteUsuarios ?? undefined,
+      limiteProcessos:
+        overrides?.limiteProcessos ??
+        planoOriginal.limiteProcessos ??
+        undefined,
+      limiteStorageMb:
+        overrides?.limiteStorageMb ??
+        planoOriginal.limiteStorageMb ??
+        undefined,
       periodoTeste: overrides?.periodoTeste ?? planoOriginal.periodoTeste ?? 14,
       recursos: overrides?.recursos ?? planoOriginal.recursos ?? undefined,
       ativo: overrides?.ativo ?? false,
-      moduloIds: planoOriginal.modulos.filter((modulo) => modulo.habilitado).map((modulo) => modulo.moduloId),
+      moduloIds: planoOriginal.modulos
+        .filter((modulo) => modulo.habilitado)
+        .map((modulo) => modulo.moduloId),
     });
   } catch (error) {
     logger.error("Erro ao duplicar plano:", error);
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -1127,7 +1223,13 @@ export async function getEstatisticasPlanos(): Promise<GetEstatisticasPlanosResp
   try {
     await ensureSuperAdmin();
 
-    const [totalPlanos, planosAtivos, totalAssinaturas, assinaturasAtivas, faturamentoMensal] = await Promise.all([
+    const [
+      totalPlanos,
+      planosAtivos,
+      totalAssinaturas,
+      assinaturasAtivas,
+      faturamentoMensal,
+    ] = await Promise.all([
       prisma.plano.count(),
       prisma.plano.count({ where: { ativo: true } }),
       prisma.tenantSubscription.count(),
@@ -1165,7 +1267,8 @@ export async function getEstatisticasPlanos(): Promise<GetEstatisticasPlanosResp
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -1206,8 +1309,12 @@ export async function getAssinaturas() {
         plano: assinatura.plano
           ? {
               ...assinatura.plano,
-              valorMensal: assinatura.plano.valorMensal ? Number(assinatura.plano.valorMensal) : undefined,
-              valorAnual: assinatura.plano.valorAnual ? Number(assinatura.plano.valorAnual) : undefined,
+              valorMensal: assinatura.plano.valorMensal
+                ? Number(assinatura.plano.valorMensal)
+                : undefined,
+              valorAnual: assinatura.plano.valorAnual
+                ? Number(assinatura.plano.valorAnual)
+                : undefined,
             }
           : null,
       })),
@@ -1217,7 +1324,8 @@ export async function getAssinaturas() {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }

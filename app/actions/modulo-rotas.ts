@@ -1,6 +1,5 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
 
 import prisma from "@/app/lib/prisma";
@@ -26,7 +25,13 @@ export interface ModuloRotaWithModulo {
 
 // ==================== LISTAR ROTAS ====================
 
-export async function listModuloRotas(params?: { moduloId?: string; search?: string; ativo?: boolean; limit?: number; offset?: number }): Promise<{
+export async function listModuloRotas(params?: {
+  moduloId?: string;
+  search?: string;
+  ativo?: boolean;
+  limit?: number;
+  offset?: number;
+}): Promise<{
   success: boolean;
   data?: {
     rotas: ModuloRotaWithModulo[];
@@ -56,7 +61,11 @@ export async function listModuloRotas(params?: { moduloId?: string; search?: str
     }
 
     if (search) {
-      where.OR = [{ rota: { contains: search, mode: "insensitive" } }, { descricao: { contains: search, mode: "insensitive" } }, { modulo: { nome: { contains: search, mode: "insensitive" } } }];
+      where.OR = [
+        { rota: { contains: search, mode: "insensitive" } },
+        { descricao: { contains: search, mode: "insensitive" } },
+        { modulo: { nome: { contains: search, mode: "insensitive" } } },
+      ];
     }
 
     if (ativo !== undefined) {

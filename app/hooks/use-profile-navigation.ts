@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 
 import { useUserPermissions } from "./use-user-permissions";
+import { useTenantModules } from "./use-tenant-modules";
 
 export interface NavigationItem {
   label: string;
@@ -15,11 +16,16 @@ export interface NavigationItem {
   requiredModules?: string[];
 }
 
-function filterNavigation(items: NavigationItem[], hasModule: (href: string, required?: string[]) => boolean): NavigationItem[] {
+function filterNavigation(
+  items: NavigationItem[],
+  hasModule: (href: string, required?: string[]) => boolean,
+): NavigationItem[] {
   const filtered: NavigationItem[] = [];
 
   for (const item of items) {
-    const children = item.children ? filterNavigation(item.children, hasModule) : undefined;
+    const children = item.children
+      ? filterNavigation(item.children, hasModule)
+      : undefined;
 
     const allowed = hasModule(item.href, item.requiredModules);
 
@@ -52,13 +58,43 @@ function filterNavigation(items: NavigationItem[], hasModule: (href: string, req
 
 export function useProfileNavigation() {
   const { data: session } = useSession();
-  const { userRole, permissions, isAdvogado, isSecretaria, isFinanceiro, isCliente } = useUserPermissions();
+  const {
+    userRole,
+    permissions,
+    isAdvogado,
+    isSecretaria,
+    isFinanceiro,
+    isCliente,
+  } = useUserPermissions();
 
-  const grantedModules = (session?.user as any)?.tenantModules as string[] | undefined;
+  // Buscar módulos via hook realtime (atualiza automaticamente)
+  const { modules: realtimeModules, isLoading: isLoadingModules } =
+    useTenantModules();
+
+  // Debug removido
+
+  // Usar módulos do realtime se disponível, senão usar do session
+  // IMPORTANTE: Mantém uso de session enquanto carrega para evitar sidebar vazio
+  const sessionModules = (session?.user as any)?.tenantModules as
+    | string[]
+    | undefined;
+
+  // Garantir que temos sempre um array válido
+  const grantedModules = useMemo(() => {
+    if (realtimeModules.length > 0) {
+      return realtimeModules;
+    }
+
+    return sessionModules || [];
+  }, [realtimeModules, sessionModules]);
 
   const hasModuleAccess = useCallback(
     (_href: string, required?: string[]) => {
-      if (!grantedModules || grantedModules.includes("*")) {
+      if (!grantedModules || !Array.isArray(grantedModules)) {
+        return false;
+      }
+
+      if (grantedModules.includes("*")) {
         return true;
       }
 
@@ -68,7 +104,7 @@ export function useProfileNavigation() {
 
       return required.some((module) => grantedModules.includes(module));
     },
-    [grantedModules]
+    [grantedModules],
   );
 
   const navigationItems = useMemo(() => {
@@ -136,7 +172,10 @@ export function useProfileNavigation() {
       });
     }
 
-    if (!isCliente && (permissions.canViewAllProcesses || isAdvogado || isSecretaria)) {
+    if (
+      !isCliente &&
+      (permissions.canViewAllProcesses || isAdvogado || isSecretaria)
+    ) {
       items.push({
         label: "Petições",
         href: "/peticoes",
@@ -164,7 +203,10 @@ export function useProfileNavigation() {
       });
     }
 
-    if (!isCliente && (permissions.canViewAllProcesses || isAdvogado || isSecretaria)) {
+    if (
+      !isCliente &&
+      (permissions.canViewAllProcesses || isAdvogado || isSecretaria)
+    ) {
       items.push({
         label: "Andamentos",
         href: "/andamentos",
@@ -253,7 +295,10 @@ export function useProfileNavigation() {
       });
     }
 
-    if (!isCliente && (permissions.canViewAllProcesses || permissions.canManageOfficeSettings)) {
+    if (
+      !isCliente &&
+      (permissions.canViewAllProcesses || permissions.canManageOfficeSettings)
+    ) {
       items.push({
         label: "Causas",
         href: "/causas",
@@ -269,13 +314,19 @@ export function useProfileNavigation() {
         label: "Juízes",
         href: "/juizes",
         icon: "Scale",
-        description: isCliente ? "Informações sobre juízes" : "Base de dados de juízes",
+        description: isCliente
+          ? "Informações sobre juízes"
+          : "Base de dados de juízes",
         section: "Atividades Jurídicas",
         requiredModules: ["juizes"],
       });
     }
 
-    if (permissions.canViewAllEvents || permissions.canCreateEvents || permissions.canViewClientEvents) {
+    if (
+      permissions.canViewAllEvents ||
+      permissions.canCreateEvents ||
+      permissions.canViewClientEvents
+    ) {
       items.push({
         label: "Agenda",
         href: "/agenda",
@@ -314,7 +365,10 @@ export function useProfileNavigation() {
       });
     }
 
-    if (!isCliente && (permissions.canViewAllProcesses || isSecretaria || isAdvogado)) {
+    if (
+      !isCliente &&
+      (permissions.canViewAllProcesses || isSecretaria || isAdvogado)
+    ) {
       items.push({
         label: "Diligências",
         href: "/diligencias",
@@ -325,7 +379,10 @@ export function useProfileNavigation() {
       });
     }
 
-    if (!isCliente && (permissions.canManageOfficeSettings || isSecretaria || isAdvogado)) {
+    if (
+      !isCliente &&
+      (permissions.canManageOfficeSettings || isSecretaria || isAdvogado)
+    ) {
       items.push({
         label: "Regimes de prazo",
         href: "/regimes-prazo",
@@ -341,7 +398,11 @@ export function useProfileNavigation() {
         label: "Financeiro",
         href: "/dashboard/financeiro",
         icon: "DollarSign",
-        description: isCliente ? "Minhas faturas" : isAdvogado ? "Minhas comissões" : "Gestão financeira",
+        description: isCliente
+          ? "Minhas faturas"
+          : isAdvogado
+            ? "Minhas comissões"
+            : "Gestão financeira",
         isAccordion: true,
         section: "Operacional",
         requiredModules: ["financeiro"],
@@ -465,7 +526,14 @@ export function useProfileNavigation() {
     }
 
     return filterNavigation(items, hasModuleAccess);
-  }, [hasModuleAccess, permissions, isCliente, isAdvogado, isSecretaria, isFinanceiro]);
+  }, [
+    hasModuleAccess,
+    permissions,
+    isCliente,
+    isAdvogado,
+    isSecretaria,
+    isFinanceiro,
+  ]);
 
   const secondaryNavigationItems = useMemo(() => {
     const items: NavigationItem[] = [];

@@ -486,6 +486,17 @@ export async function updateTenantStatus(
       },
     });
 
+    // Invalidar sessões de todos os usuários do tenant
+    const { invalidateTenant } = await import(
+      "@/app/lib/realtime/invalidation"
+    );
+
+    await invalidateTenant({
+      tenantId,
+      reason: `STATUS_CHANGED_FROM_${tenant.status}_TO_${status}`,
+      actorId: superAdminId,
+    });
+
     return {
       success: true,
       data: updatedTenant,
@@ -956,6 +967,7 @@ export async function updateTenantSubscription(
           status: payload.status ?? existingSubscription.status,
           trialEndsAt,
           renovaEm,
+          planRevision: { increment: 1 }, // Incrementar sempre que atualizar
         },
         include: {
           plano: true,
@@ -1004,6 +1016,84 @@ export async function updateTenantSubscription(
             trialEndsAt: subscription.trialEndsAt,
             renovaEm: subscription.renovaEm,
           },
+        },
+      });
+    }
+
+    // Invalidar sessões se algo sensível mudou OU se é uma nova subscription
+    const isNewSubscription = !existingSubscription;
+    const hasPlanChanged = planId && existingSubscription?.planoId !== planId;
+    const hasStatusChanged =
+      payload.status && existingSubscription?.status !== payload.status;
+    // Detectar mudança mesmo quando valores são null (limpeza de campos)
+    const hasTrialEndsAtChanged =
+      (trialEndsAt &&
+        existingSubscription?.trialEndsAt?.getTime() !==
+          trialEndsAt.getTime()) ||
+      (!trialEndsAt && existingSubscription?.trialEndsAt !== null) ||
+      (trialEndsAt && !existingSubscription?.trialEndsAt);
+    const hasRenovaEmChanged =
+      (renovaEm &&
+        existingSubscription?.renovaEm?.getTime() !== renovaEm.getTime()) ||
+      (!renovaEm && existingSubscription?.renovaEm !== null) ||
+      (renovaEm && !existingSubscription?.renovaEm);
+
+    // Separar mudanças críticas (exigem logout) de mudanças soft (atualização de UI)
+    const { softUpdateTenant, invalidateTenant } = await import(
+      "@/app/lib/realtime/invalidation"
+    );
+
+    if (hasStatusChanged) {
+      // Mudança de status é CRÍTICA (pode exigir logout)
+      // Verificar se é suspensão/cancelamento
+      const isCriticalStatus =
+        payload.status === "SUSPENSA" || payload.status === "CANCELADA";
+
+      if (isCriticalStatus) {
+        // HARD LOGOUT - usar invalidateTenant
+        await invalidateTenant({
+          tenantId,
+          reason: `SUBSCRIPTION_STATUS_CHANGED_TO_${payload.status}`,
+          actorId: superAdmin?.id || session.user.id,
+        });
+      } else {
+        // SOFT UPDATE - apenas atualizar UI
+        await softUpdateTenant({
+          tenantId,
+          reason: `SUBSCRIPTION_STATUS_CHANGED_TO_${payload.status}`,
+          actorId: superAdmin?.id || session.user.id,
+          planDetails: {
+            planId: subscription.planoId,
+            planRevision: subscription.planRevision,
+          },
+        });
+      }
+    } else if (
+      isNewSubscription ||
+      hasPlanChanged ||
+      hasTrialEndsAtChanged ||
+      hasRenovaEmChanged
+    ) {
+      // Todas essas mudanças são SOFT (não exigem logout)
+      let reason = "";
+
+      if (isNewSubscription) {
+        reason = `SUBSCRIPTION_CREATED`;
+      } else if (hasPlanChanged) {
+        reason = `PLAN_CHANGED_TO_${planId}`;
+      } else if (hasTrialEndsAtChanged) {
+        reason = `TRIAL_ENDS_AT_CHANGED`;
+      } else if (hasRenovaEmChanged) {
+        reason = `RENOVA_EM_CHANGED`;
+      }
+
+      await softUpdateTenant({
+        tenantId,
+        reason,
+        actorId: superAdmin?.id || session.user.id,
+        planDetails: {
+          planId: subscription.planoId,
+          planRevision: subscription.planRevision,
         },
       });
     }
@@ -1480,6 +1570,20 @@ export async function updateTenantUser(
       where: { id: userId },
       data: updateData,
     });
+
+    // Invalidar sessão do usuário se o status (active) mudou
+    if (payload.active !== undefined && payload.active !== user.active) {
+      const { invalidateUser } = await import(
+        "@/app/lib/realtime/invalidation"
+      );
+
+      await invalidateUser({
+        userId,
+        tenantId,
+        reason: payload.active ? "USER_REACTIVATED" : "USER_DEACTIVATED",
+        actorId: session.user.id,
+      });
+    }
 
     await prisma.superAdminAuditLog.create({
       data: {

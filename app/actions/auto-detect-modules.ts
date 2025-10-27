@@ -151,40 +151,12 @@ function formatModuleName(slug: string): string {
 }
 
 function getModuleRoutes(slug: string): string[] {
-  // Rotas básicas para cada módulo
-  const routes = [`/${slug}`];
+  // ⚠️ IMPORTANTE: Rotas agora são gerenciadas COMPLETAMENTE pelo banco de dados
+  // Esta função retorna apenas a rota base do módulo
+  // As rotas específicas devem ser cadastradas via interface de administração (/admin/modulos)
+  // Isso permite flexibilidade total e configuração dinâmica em tempo real
 
-  // Rotas específicas por módulo
-  const specificRoutes: Record<string, string[]> = {
-    dashboard: ["/dashboard"],
-    processos: ["/processos", "/processos/novo", "/processos/[id]"],
-    clientes: ["/clientes", "/clientes/novo", "/clientes/[id]"],
-    advogados: ["/advogados", "/advogados/novo", "/advogados/[id]"],
-    equipe: ["/equipe", "/equipe/novo", "/equipe/[id]"],
-    agenda: ["/agenda", "/agenda/novo", "/agenda/[id]"],
-    documentos: ["/documentos", "/documentos/upload"],
-    tarefas: ["/tarefas", "/tarefas/nova"],
-    diligencias: ["/diligencias", "/diligencias/nova"],
-    andamentos: ["/andamentos", "/andamentos/novo"],
-    financeiro: ["/financeiro", "/financeiro/dashboard"],
-    contratos: ["/contratos", "/contratos/novo", "/contratos/[id]"],
-    honorarios: ["/honorarios", "/honorarios/calcular"],
-    parcelas: ["/parcelas", "/parcelas/nova"],
-    "dados-bancarios": ["/dados-bancarios", "/dados-bancarios/novo"],
-    peticoes: ["/peticoes", "/peticoes/nova"],
-    procuracoes: ["/procuracoes", "/procuracoes/nova"],
-    "modelos-peticao": ["/modelos-peticao", "/modelos-peticao/novo"],
-    "modelos-procuracao": ["/modelos-procuracao", "/modelos-procuracao/novo"],
-    causas: ["/causas", "/causas/nova"],
-    juizes: ["/juizes", "/juizes/novo"],
-    "regimes-prazo": ["/regimes-prazo", "/regimes-prazo/novo"],
-    relatorios: ["/relatorios", "/relatorios/gerar"],
-    configuracoes: ["/configuracoes"],
-    usuario: ["/usuario", "/usuario/perfil"],
-    help: ["/help", "/help/faq"],
-  };
-
-  return specificRoutes[slug] || routes;
+  return [`/${slug}`];
 }
 
 type ScanProtectedModulesResult = {
@@ -195,13 +167,51 @@ type ScanProtectedModulesResult = {
 };
 
 async function scanProtectedModules(): Promise<ScanProtectedModulesResult> {
-  const items = await fs.readdir(PROTECTED_FOLDER, { withFileTypes: true });
+  let moduleDirs: string[] = [];
 
-  const moduleDirs = items
-    .filter((item) => item.isDirectory())
-    .map((item) => item.name)
-    .filter((name) => !name.startsWith(".") && name !== "layout.tsx")
-    .sort();
+  try {
+    // Tentar ler o diretório (funciona em desenvolvimento local)
+    const items = await fs.readdir(PROTECTED_FOLDER, { withFileTypes: true });
+
+    moduleDirs = items
+      .filter((item) => item.isDirectory())
+      .map((item) => item.name)
+      .filter((name) => !name.startsWith(".") && name !== "layout.tsx")
+      .sort();
+  } catch (error) {
+    // Fallback: usar lista estática quando filesystem não está disponível (Vercel produção)
+    logger.warn("Filesystem não acessível, usando lista estática de módulos:", error instanceof Error ? error.message : String(error));
+    
+    // Lista estática baseada nos módulos conhecidos do sistema
+    moduleDirs = [
+      "dashboard",
+      "processos", 
+      "clientes",
+      "advogados",
+      "equipe",
+      "agenda",
+      "documentos",
+      "tarefas",
+      "diligencias",
+      "andamentos",
+      "financeiro",
+      "contratos",
+      "honorarios",
+      "parcelas",
+      "dados-bancarios",
+      "peticoes",
+      "procuracoes",
+      "modelos-peticao",
+      "modelos-procuracao",
+      "causas",
+      "juizes",
+      "regimes-prazo",
+      "relatorios",
+      "configuracoes",
+      "usuario",
+      "help"
+    ].sort();
+  }
 
   const detectedModules: DetectedModule[] = moduleDirs.map((slug, index) => {
     const categoria = MODULE_CATEGORIES[slug] || "Sistema";
@@ -460,9 +470,23 @@ export async function getAutoDetectStatus(): Promise<
       }),
     ]);
 
-    const scanResult = await scanProtectedModules();
+    let scanResult: ScanProtectedModulesResult;
+    let needsSync = false;
 
-    const needsSync = !latestDetection || latestDetection.filesystemHash !== scanResult.filesystemHash;
+    try {
+      scanResult = await scanProtectedModules();
+      needsSync = !latestDetection || latestDetection.filesystemHash !== scanResult.filesystemHash;
+    } catch (error) {
+      // Se não conseguir escanear, assumir que não precisa de sync
+      logger.warn("Erro ao escanear módulos para status:", error instanceof Error ? error.message : String(error));
+      scanResult = {
+        detectedModules: [],
+        moduleSlugs: [],
+        filesystemHash: "fallback",
+        totalRoutes: 0,
+      };
+      needsSync = false;
+    }
 
     return {
       success: true,

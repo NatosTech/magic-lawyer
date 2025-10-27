@@ -1,47 +1,18 @@
 "use client";
 
-import type {
-  JuizFilters,
-  JuizSerializado,
-  JuizFormData,
-} from "@/app/actions/juizes";
+import type { JuizFilters, JuizSerializado, JuizFormData } from "@/app/actions/juizes";
 
 import { useState } from "react";
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/dropdown";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { Select, SelectItem } from "@heroui/select";
 import { Divider } from "@heroui/divider";
 import { Avatar } from "@heroui/avatar";
 import { Textarea } from "@heroui/input";
-import {
-  Plus,
-  Search,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Eye,
-  Star,
-  MapPin,
-  Scale,
-  User,
-  Award,
-  Briefcase,
-  Calendar,
-  Filter,
-  Sparkles,
-  AlertCircle,
-  Download,
-  Copy,
-  Check,
-} from "lucide-react";
+import { Plus, Search, MoreVertical, Edit, Trash2, Eye, Star, MapPin, Scale, User, Award, Briefcase, Calendar, Filter, Sparkles, AlertCircle, Download, Copy, Check } from "lucide-react";
 import { Spinner } from "@heroui/spinner";
 import { toast } from "sonner";
 
@@ -54,16 +25,8 @@ import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { PermissionGuard } from "@/components/permission-guard";
 import { CpfInput } from "@/components/cpf-input";
 import { useJuizes, useJuizFormData } from "@/app/hooks/use-juizes";
-import {
-  deleteJuizTenant,
-  createJuizTenant,
-  updateJuizTenant,
-} from "@/app/actions/juizes";
-import {
-  EspecialidadeJuridica,
-  JuizStatus,
-  JuizNivel,
-} from "@/app/generated/prisma";
+import { deleteJuizTenant, createJuizTenant, updateJuizTenant } from "@/app/actions/juizes";
+import { EspecialidadeJuridica, JuizStatus, JuizNivel } from "@/app/generated/prisma";
 import { JuizFotoUpload } from "@/app/(protected)/juizes/juiz-foto-upload";
 import { title, subtitle } from "@/components/primitives";
 
@@ -71,14 +34,11 @@ export function JuizesContent() {
   const { permissions } = useUserPermissions();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [selectedEspecialidade, setSelectedEspecialidade] =
-    useState<string>("all");
+  const [selectedEspecialidade, setSelectedEspecialidade] = useState<string>("all");
   const [selectedNivel, setSelectedNivel] = useState<string>("all");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedJuiz, setSelectedJuiz] = useState<JuizSerializado | null>(
-    null,
-  );
+  const [selectedJuiz, setSelectedJuiz] = useState<JuizSerializado | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Estados do formulário - tipado com JuizFormData
@@ -112,12 +72,8 @@ export function JuizesContent() {
   // Construir filtros
   const filters: JuizFilters = {
     search: searchTerm || undefined,
-    status:
-      selectedStatus !== "all" ? (selectedStatus as JuizStatus) : undefined,
-    especialidades:
-      selectedEspecialidade !== "all"
-        ? [selectedEspecialidade as EspecialidadeJuridica]
-        : undefined,
+    status: selectedStatus !== "all" ? (selectedStatus as JuizStatus) : undefined,
+    especialidades: selectedEspecialidade !== "all" ? [selectedEspecialidade as EspecialidadeJuridica] : undefined,
     nivel: selectedNivel !== "all" ? (selectedNivel as JuizNivel) : undefined,
   };
 
@@ -137,16 +93,7 @@ export function JuizesContent() {
     { key: "all", label: "Todos" },
     ...(formData?.status?.map((status) => ({
       key: status,
-      label:
-        status === "ATIVO"
-          ? "Ativo"
-          : status === "INATIVO"
-            ? "Inativo"
-            : status === "APOSENTADO"
-              ? "Aposentado"
-              : status === "SUSPENSO"
-                ? "Suspenso"
-                : status,
+      label: status === "ATIVO" ? "Ativo" : status === "INATIVO" ? "Inativo" : status === "APOSENTADO" ? "Aposentado" : status === "SUSPENSO" ? "Suspenso" : status,
     })) || []),
   ];
 
@@ -238,7 +185,6 @@ export function JuizesContent() {
       await exportJuizToPDF(juiz);
       toast.success("PDF gerado com sucesso!");
     } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
       toast.error("Erro ao gerar PDF. Verifique o console para detalhes.");
     }
   };
@@ -246,9 +192,7 @@ export function JuizesContent() {
   const handleEditJuiz = (juiz: JuizSerializado) => {
     setSelectedJuiz(juiz);
 
-    // DEBUG: Verificar dados do juiz
-    console.log("🔍 [handleEditJuiz] Juiz completo:", juiz);
-    console.log("🔍 [handleEditJuiz] OAB do juiz:", juiz.oab);
+    // DEBUG removido para produção
 
     // Popula o formulário com os dados do juiz
     const newFormState: JuizFormData = {
@@ -273,8 +217,7 @@ export function JuizesContent() {
       foto: juiz.foto || "",
     };
 
-    console.log("📝 [handleEditJuiz] FormState após popular:", newFormState);
-    console.log("📋 [handleEditJuiz] OAB no formState:", newFormState.oab);
+    // DEBUG removido para produção
 
     setFormState(newFormState);
     setIsEditModalOpen(true);
@@ -315,9 +258,7 @@ export function JuizesContent() {
         foto: formState.foto || undefined,
       };
 
-      // DEBUG: Log para verificar os dados
-      console.log("📊 Dados do juiz para salvar:", juizData);
-      console.log("📋 FormState.oab:", formState.oab);
+      // DEBUG removido para produção
 
       let result;
 
@@ -354,7 +295,6 @@ export function JuizesContent() {
       // Revalidar dados
       mutate();
     } catch (error) {
-      console.error("Erro ao salvar juiz:", error);
       toast.error("Erro ao salvar juiz");
     } finally {
       setIsSaving(false);
@@ -379,19 +319,13 @@ export function JuizesContent() {
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
               <Scale className="w-5 h-5 text-primary" />
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
-                Base de Juízes
-              </p>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Base de Juízes</p>
             </div>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
-                <h1 className={title({ size: "lg", color: "blue" })}>
-                  Gestão de Juízes
-                </h1>
+                <h1 className={title({ size: "lg", color: "blue" })}>Gestão de Juízes</h1>
                 <p className={subtitle({ fullWidth: true })}>
-                  Base de dados completa com {juizes?.length || 0}{" "}
-                  {juizes?.length === 1 ? "juiz" : "juízes"}, especialidades e
-                  histórico de julgamentos.
+                  Base de dados completa com {juizes?.length || 0} {juizes?.length === 1 ? "juiz" : "juízes"}, especialidades e histórico de julgamentos.
                 </p>
               </div>
               {permissions.canCreateJudgeProfiles && (
@@ -426,12 +360,8 @@ export function JuizesContent() {
                 <Filter className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">
-                  Filtros de Busca
-                </h3>
-                <p className="text-sm text-default-400">
-                  Refine sua pesquisa na base de juízes
-                </p>
+                <h3 className="text-lg font-bold text-white">Filtros de Busca</h3>
+                <p className="text-sm text-default-400">Refine sua pesquisa na base de juízes</p>
               </div>
             </div>
 
@@ -441,18 +371,14 @@ export function JuizesContent() {
             <div className="p-6 pt-5 space-y-5">
               {/* Campo de busca destacado */}
               <div className="space-y-2">
-                <label
-                  className="text-sm font-medium text-default-500 flex items-center gap-2"
-                  htmlFor="juiz-search"
-                >
+                <label className="text-sm font-medium text-default-500 flex items-center gap-2" htmlFor="juiz-search">
                   <Search className="w-4 h-4 text-primary" />
                   Busca Geral
                 </label>
                 <Input
                   classNames={{
                     input: "text-base font-medium",
-                    inputWrapper:
-                      "border-2 border-primary/20 hover:border-primary/40 focus-within:border-primary bg-background/50 backdrop-blur-sm shadow-sm",
+                    inputWrapper: "border-2 border-primary/20 hover:border-primary/40 focus-within:border-primary bg-background/50 backdrop-blur-sm shadow-sm",
                   }}
                   id="juiz-search"
                   placeholder="Digite nome, vara, comarca ou cidade..."
@@ -477,8 +403,7 @@ export function JuizesContent() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <Select
                     classNames={{
-                      trigger:
-                        "border-2 border-primary/20 hover:border-primary/40 data-[focus=true]:border-primary bg-background/50 backdrop-blur-sm shadow-sm",
+                      trigger: "border-2 border-primary/20 hover:border-primary/40 data-[focus=true]:border-primary bg-background/50 backdrop-blur-sm shadow-sm",
                       label: "font-semibold text-default-600",
                       value: "font-medium",
                     }}
@@ -488,44 +413,31 @@ export function JuizesContent() {
                     selectedKeys={[selectedStatus]}
                     size="lg"
                     variant="bordered"
-                    onSelectionChange={(keys) =>
-                      setSelectedStatus(Array.from(keys)[0] as string)
-                    }
+                    onSelectionChange={(keys) => setSelectedStatus(Array.from(keys)[0] as string)}
                   >
-                    {(status) => (
-                      <SelectItem key={status.key}>{status.label}</SelectItem>
-                    )}
+                    {(status) => <SelectItem key={status.key}>{status.label}</SelectItem>}
                   </Select>
 
                   <Select
                     classNames={{
-                      trigger:
-                        "border-2 border-primary/20 hover:border-primary/40 data-[focus=true]:border-primary bg-background/50 backdrop-blur-sm shadow-sm",
+                      trigger: "border-2 border-primary/20 hover:border-primary/40 data-[focus=true]:border-primary bg-background/50 backdrop-blur-sm shadow-sm",
                       label: "font-semibold text-default-600",
                       value: "font-medium",
                     }}
-                    items={[
-                      { key: "all", label: "Todas" },
-                      ...especialidadesOptions,
-                    ]}
+                    items={[{ key: "all", label: "Todas" }, ...especialidadesOptions]}
                     label="Especialidade"
                     placeholder="Selecione a área"
                     selectedKeys={[selectedEspecialidade]}
                     size="lg"
                     variant="bordered"
-                    onSelectionChange={(keys) =>
-                      setSelectedEspecialidade(Array.from(keys)[0] as string)
-                    }
+                    onSelectionChange={(keys) => setSelectedEspecialidade(Array.from(keys)[0] as string)}
                   >
-                    {(esp) => (
-                      <SelectItem key={esp.key}>{esp.label}</SelectItem>
-                    )}
+                    {(esp) => <SelectItem key={esp.key}>{esp.label}</SelectItem>}
                   </Select>
 
                   <Select
                     classNames={{
-                      trigger:
-                        "border-2 border-primary/20 hover:border-primary/40 data-[focus=true]:border-primary bg-background/50 backdrop-blur-sm shadow-sm",
+                      trigger: "border-2 border-primary/20 hover:border-primary/40 data-[focus=true]:border-primary bg-background/50 backdrop-blur-sm shadow-sm",
                       label: "font-semibold text-default-600",
                       value: "font-medium",
                     }}
@@ -535,13 +447,9 @@ export function JuizesContent() {
                     selectedKeys={[selectedNivel]}
                     size="lg"
                     variant="bordered"
-                    onSelectionChange={(keys) =>
-                      setSelectedNivel(Array.from(keys)[0] as string)
-                    }
+                    onSelectionChange={(keys) => setSelectedNivel(Array.from(keys)[0] as string)}
                   >
-                    {(nivel) => (
-                      <SelectItem key={nivel.key}>{nivel.label}</SelectItem>
-                    )}
+                    {(nivel) => <SelectItem key={nivel.key}>{nivel.label}</SelectItem>}
                   </Select>
                 </div>
               </div>
@@ -554,16 +462,10 @@ export function JuizesContent() {
                       <Scale className="w-4 h-4 text-primary" />
                     </div>
                     <span className="text-sm font-medium text-default-600">
-                      {juizes.length}{" "}
-                      {juizes.length === 1
-                        ? "juiz encontrado"
-                        : "juízes encontrados"}
+                      {juizes.length} {juizes.length === 1 ? "juiz encontrado" : "juízes encontrados"}
                     </span>
                   </div>
-                  {(searchTerm ||
-                    selectedStatus !== "all" ||
-                    selectedEspecialidade !== "all" ||
-                    selectedNivel !== "all") && (
+                  {(searchTerm || selectedStatus !== "all" || selectedEspecialidade !== "all" || selectedNivel !== "all") && (
                     <Button
                       className="font-semibold"
                       color="primary"
@@ -597,9 +499,7 @@ export function JuizesContent() {
                 color="primary"
                 size="lg"
               />
-              <p className="mt-4 text-lg text-default-400">
-                Carregando juízes...
-              </p>
+              <p className="mt-4 text-lg text-default-400">Carregando juízes...</p>
             </CardBody>
           </Card>
         )}
@@ -613,16 +513,9 @@ export function JuizesContent() {
                   <AlertCircle className="w-10 h-10 text-danger" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-danger mb-2">
-                Erro ao carregar juízes
-              </h3>
+              <h3 className="text-xl font-bold text-danger mb-2">Erro ao carregar juízes</h3>
               <p className="text-default-400 mb-6">{error}</p>
-              <Button
-                className="font-semibold"
-                color="primary"
-                size="lg"
-                onPress={() => mutate()}
-              >
+              <Button className="font-semibold" color="primary" size="lg" onPress={() => mutate()}>
                 Tentar Novamente
               </Button>
             </CardBody>
@@ -645,68 +538,36 @@ export function JuizesContent() {
                           base: "bg-gradient-to-br from-primary to-secondary",
                           icon: "text-white",
                         }}
-                        icon={
-                          !juiz.foto ? <Scale className="w-5 h-5" /> : undefined
-                        }
+                        icon={!juiz.foto ? <Scale className="w-5 h-5" /> : undefined}
                         size="md"
                         src={juiz.foto || undefined}
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-bold text-white truncate">
-                            {juiz.nome}
-                          </h3>
-                          {juiz.isPremium && (
-                            <Sparkles className="w-4 h-4 text-warning" />
-                          )}
+                          <h3 className="text-lg font-bold text-white truncate">{juiz.nome}</h3>
+                          {juiz.isPremium && <Sparkles className="w-4 h-4 text-warning" />}
                         </div>
-                        <p className="text-sm text-default-400 truncate">
-                          {juiz.nomeCompleto}
-                        </p>
-                        {juiz.oab && (
-                          <p className="text-xs text-default-500 mt-1">
-                            OAB: {juiz.oab}
-                          </p>
-                        )}
+                        <p className="text-sm text-default-400 truncate">{juiz.nomeCompleto}</p>
+                        {juiz.oab && <p className="text-xs text-default-500 mt-1">OAB: {juiz.oab}</p>}
                       </div>
                     </div>
                     <Dropdown>
                       <DropdownTrigger>
-                        <Button
-                          isIconOnly
-                          className="hover:bg-primary/10"
-                          size="sm"
-                          variant="light"
-                        >
+                        <Button isIconOnly className="hover:bg-primary/10" size="sm" variant="light">
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownTrigger>
                       <DropdownMenu variant="flat">
-                        <DropdownItem
-                          key="view"
-                          className="text-primary"
-                          startContent={<Eye className="w-4 h-4" />}
-                          onPress={() => handleViewJuiz(juiz)}
-                        >
+                        <DropdownItem key="view" className="text-primary" startContent={<Eye className="w-4 h-4" />} onPress={() => handleViewJuiz(juiz)}>
                           Ver Detalhes
                         </DropdownItem>
                         {permissions.canEditJudgeProfiles ? (
-                          <DropdownItem
-                            key="edit"
-                            startContent={<Edit className="w-4 h-4" />}
-                            onPress={() => handleEditJuiz(juiz)}
-                          >
+                          <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />} onPress={() => handleEditJuiz(juiz)}>
                             Editar
                           </DropdownItem>
                         ) : null}
                         {permissions.canDeleteJudgeProfiles ? (
-                          <DropdownItem
-                            key="delete"
-                            className="text-danger"
-                            color="danger"
-                            startContent={<Trash2 className="w-4 h-4" />}
-                            onPress={() => handleDeleteJuiz(juiz.id)}
-                          >
+                          <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="w-4 h-4" />} onPress={() => handleDeleteJuiz(juiz.id)}>
                             Excluir
                           </DropdownItem>
                         ) : null}
@@ -777,21 +638,19 @@ export function JuizesContent() {
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {juiz.especialidades
-                      ?.slice(0, 3)
-                      .map((esp: EspecialidadeJuridica) => (
-                        <Chip
-                          key={esp}
-                          classNames={{
-                            base: "border-primary/20",
-                          }}
-                          color="primary"
-                          size="sm"
-                          variant="dot"
-                        >
-                          {esp.replace(/_/g, " ")}
-                        </Chip>
-                      ))}
+                    {juiz.especialidades?.slice(0, 3).map((esp: EspecialidadeJuridica) => (
+                      <Chip
+                        key={esp}
+                        classNames={{
+                          base: "border-primary/20",
+                        }}
+                        color="primary"
+                        size="sm"
+                        variant="dot"
+                      >
+                        {esp.replace(/_/g, " ")}
+                      </Chip>
+                    ))}
                     {juiz.especialidades && juiz.especialidades.length > 3 && (
                       <Chip color="default" size="sm" variant="flat">
                         +{juiz.especialidades.length - 3}
@@ -803,9 +662,7 @@ export function JuizesContent() {
                   <>
                     <Divider />
                     <CardFooter>
-                      <p className="text-sm text-default-500 line-clamp-2 leading-relaxed">
-                        {juiz.biografia}
-                      </p>
+                      <p className="text-sm text-default-500 line-clamp-2 leading-relaxed">{juiz.biografia}</p>
                     </CardFooter>
                   </>
                 )}
@@ -826,14 +683,9 @@ export function JuizesContent() {
                   </div>
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">
-                Nenhum juiz encontrado
-              </h3>
+              <h3 className="text-2xl font-bold text-white mb-3">Nenhum juiz encontrado</h3>
               <p className="text-default-400 text-lg mb-6 max-w-md mx-auto">
-                {searchTerm ||
-                selectedStatus !== "all" ||
-                selectedEspecialidade !== "all" ||
-                selectedNivel !== "all"
+                {searchTerm || selectedStatus !== "all" || selectedEspecialidade !== "all" || selectedNivel !== "all"
                   ? "Tente ajustar os filtros de busca para encontrar outros juízes."
                   : "Comece adicionando juízes à base de dados para começar a gerenciar suas informações."}
               </p>
@@ -918,44 +770,21 @@ export function JuizesContent() {
                     base: "bg-gradient-to-br from-primary to-secondary w-24 h-24 text-large",
                     icon: "text-white",
                   }}
-                  icon={
-                    !selectedJuiz.foto ? (
-                      <Scale className="w-10 h-10" />
-                    ) : undefined
-                  }
+                  icon={!selectedJuiz.foto ? <Scale className="w-10 h-10" /> : undefined}
                   src={selectedJuiz.foto || undefined}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-2xl font-bold text-white">
-                      {selectedJuiz.nome}
-                    </h3>
-                    {selectedJuiz.isPremium && (
-                      <Star className="w-5 h-5 text-warning" />
-                    )}
+                    <h3 className="text-2xl font-bold text-white">{selectedJuiz.nome}</h3>
+                    {selectedJuiz.isPremium && <Star className="w-5 h-5 text-warning" />}
                   </div>
-                  <p className="text-default-400 mb-1">
-                    {selectedJuiz.nomeCompleto}
-                  </p>
-                  {selectedJuiz.oab && (
-                    <p className="text-sm text-default-500">
-                      OAB: {selectedJuiz.oab}
-                    </p>
-                  )}
+                  <p className="text-default-400 mb-1">{selectedJuiz.nomeCompleto}</p>
+                  {selectedJuiz.oab && <p className="text-sm text-default-500">OAB: {selectedJuiz.oab}</p>}
                   <div className="flex gap-2 flex-wrap">
-                    <Chip
-                      color={getStatusColor(selectedJuiz.status)}
-                      size="sm"
-                      variant="flat"
-                    >
+                    <Chip color={getStatusColor(selectedJuiz.status)} size="sm" variant="flat">
                       {selectedJuiz.status}
                     </Chip>
-                    <Chip
-                      color={getNivelColor(selectedJuiz.nivel)}
-                      size="sm"
-                      startContent={<Award className="w-3 h-3" />}
-                      variant="flat"
-                    >
+                    <Chip color={getNivelColor(selectedJuiz.nivel)} size="sm" startContent={<Award className="w-3 h-3" />} variant="flat">
                       {selectedJuiz.nivel.replace(/_/g, " ")}
                     </Chip>
                     {selectedJuiz.isPremium && (
@@ -980,19 +809,13 @@ export function JuizesContent() {
                       <Scale className="w-4 h-4 text-primary" />
                       Vara
                     </p>
-                    <p className="text-white">
-                      {selectedJuiz.vara || "Não informado"}
-                    </p>
+                    <p className="text-white">{selectedJuiz.vara || "Não informado"}</p>
                   </CardBody>
                 </Card>
                 <Card className="border border-white/10">
                   <CardBody className="gap-2">
-                    <p className="text-sm text-default-400 font-semibold">
-                      Comarca
-                    </p>
-                    <p className="text-white">
-                      {selectedJuiz.comarca || "Não informado"}
-                    </p>
+                    <p className="text-sm text-default-400 font-semibold">Comarca</p>
+                    <p className="text-white">{selectedJuiz.comarca || "Não informado"}</p>
                   </CardBody>
                 </Card>
                 <Card className="border border-white/10">
@@ -1008,83 +831,48 @@ export function JuizesContent() {
                 </Card>
                 <Card className="border border-white/10">
                   <CardBody className="gap-2">
-                    <p className="text-sm text-default-400 font-semibold">
-                      CPF
-                    </p>
-                    <p className="text-white font-mono text-sm">
-                      {selectedJuiz.cpf || "Não informado"}
-                    </p>
+                    <p className="text-sm text-default-400 font-semibold">CPF</p>
+                    <p className="text-white font-mono text-sm">{selectedJuiz.cpf || "Não informado"}</p>
                   </CardBody>
                 </Card>
                 <Card className="border border-primary/20 bg-primary/5">
                   <CardBody className="gap-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-default-400 font-semibold">
-                        OAB
-                      </p>
+                      <p className="text-sm text-default-400 font-semibold">OAB</p>
                       {selectedJuiz.oab && (
-                        <Button
-                          isIconOnly
-                          className="transition-all duration-300"
-                          color={copiedOab ? "success" : "primary"}
-                          size="sm"
-                          variant="flat"
-                          onPress={() => handleCopyOab(selectedJuiz.oab!)}
-                        >
-                          {copiedOab ? (
-                            <Check className="w-4 h-4" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
+                        <Button isIconOnly className="transition-all duration-300" color={copiedOab ? "success" : "primary"} size="sm" variant="flat" onPress={() => handleCopyOab(selectedJuiz.oab!)}>
+                          {copiedOab ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                         </Button>
                       )}
                     </div>
-                    <p className="text-primary font-bold text-lg">
-                      {selectedJuiz.oab || "Não informado"}
-                    </p>
+                    <p className="text-primary font-bold text-lg">{selectedJuiz.oab || "Não informado"}</p>
                   </CardBody>
                 </Card>
                 <Card className="border border-white/10">
                   <CardBody className="gap-2">
-                    <p className="text-sm text-default-400 font-semibold">
-                      E-mail
-                    </p>
-                    <p className="text-white text-sm truncate">
-                      {selectedJuiz.email || "Não informado"}
-                    </p>
+                    <p className="text-sm text-default-400 font-semibold">E-mail</p>
+                    <p className="text-white text-sm truncate">{selectedJuiz.email || "Não informado"}</p>
                   </CardBody>
                 </Card>
                 <Card className="border border-white/10">
                   <CardBody className="gap-2">
-                    <p className="text-sm text-default-400 font-semibold">
-                      Telefone
-                    </p>
-                    <p className="text-white">
-                      {selectedJuiz.telefone || "Não informado"}
-                    </p>
+                    <p className="text-sm text-default-400 font-semibold">Telefone</p>
+                    <p className="text-white">{selectedJuiz.telefone || "Não informado"}</p>
                   </CardBody>
                 </Card>
                 {selectedJuiz.endereco && (
                   <Card className="border border-white/10 md:col-span-2">
                     <CardBody className="gap-2">
-                      <p className="text-sm text-default-400 font-semibold">
-                        Endereço Completo
-                      </p>
+                      <p className="text-sm text-default-400 font-semibold">Endereço Completo</p>
                       <p className="text-white">{selectedJuiz.endereco}</p>
-                      {selectedJuiz.cep && (
-                        <p className="text-sm text-default-500">
-                          CEP: {selectedJuiz.cep}
-                        </p>
-                      )}
+                      {selectedJuiz.cep && <p className="text-sm text-default-500">CEP: {selectedJuiz.cep}</p>}
                     </CardBody>
                   </Card>
                 )}
               </div>
 
               {/* Datas Importantes */}
-              {(selectedJuiz.dataNascimento ||
-                selectedJuiz.dataPosse ||
-                selectedJuiz.dataAposentadoria) && (
+              {(selectedJuiz.dataNascimento || selectedJuiz.dataPosse || selectedJuiz.dataAposentadoria) && (
                 <div>
                   <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-primary" />
@@ -1094,42 +882,24 @@ export function JuizesContent() {
                     {selectedJuiz.dataNascimento && (
                       <Card className="border border-white/10">
                         <CardBody className="gap-2">
-                          <p className="text-sm text-default-400 font-semibold">
-                            Data de Nascimento
-                          </p>
-                          <p className="text-white">
-                            {new Date(
-                              selectedJuiz.dataNascimento,
-                            ).toLocaleDateString("pt-BR")}
-                          </p>
+                          <p className="text-sm text-default-400 font-semibold">Data de Nascimento</p>
+                          <p className="text-white">{new Date(selectedJuiz.dataNascimento).toLocaleDateString("pt-BR")}</p>
                         </CardBody>
                       </Card>
                     )}
                     {selectedJuiz.dataPosse && (
                       <Card className="border border-white/10">
                         <CardBody className="gap-2">
-                          <p className="text-sm text-default-400 font-semibold">
-                            Data de Posse
-                          </p>
-                          <p className="text-white">
-                            {new Date(
-                              selectedJuiz.dataPosse,
-                            ).toLocaleDateString("pt-BR")}
-                          </p>
+                          <p className="text-sm text-default-400 font-semibold">Data de Posse</p>
+                          <p className="text-white">{new Date(selectedJuiz.dataPosse).toLocaleDateString("pt-BR")}</p>
                         </CardBody>
                       </Card>
                     )}
                     {selectedJuiz.dataAposentadoria && (
                       <Card className="border border-white/10">
                         <CardBody className="gap-2">
-                          <p className="text-sm text-default-400 font-semibold">
-                            Data de Aposentadoria
-                          </p>
-                          <p className="text-white">
-                            {new Date(
-                              selectedJuiz.dataAposentadoria,
-                            ).toLocaleDateString("pt-BR")}
-                          </p>
+                          <p className="text-sm text-default-400 font-semibold">Data de Aposentadoria</p>
+                          <p className="text-white">{new Date(selectedJuiz.dataAposentadoria).toLocaleDateString("pt-BR")}</p>
                         </CardBody>
                       </Card>
                     )}
@@ -1138,33 +908,24 @@ export function JuizesContent() {
               )}
 
               {/* Especialidades */}
-              {selectedJuiz.especialidades &&
-                selectedJuiz.especialidades.length > 0 && (
-                  <div>
-                    <p className="text-sm text-default-400 font-semibold mb-3">
-                      Especialidades
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedJuiz.especialidades.map(
-                        (esp: EspecialidadeJuridica) => (
-                          <Chip key={esp} color="primary" variant="flat">
-                            {esp.replace(/_/g, " ")}
-                          </Chip>
-                        ),
-                      )}
-                    </div>
+              {selectedJuiz.especialidades && selectedJuiz.especialidades.length > 0 && (
+                <div>
+                  <p className="text-sm text-default-400 font-semibold mb-3">Especialidades</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedJuiz.especialidades.map((esp: EspecialidadeJuridica) => (
+                      <Chip key={esp} color="primary" variant="flat">
+                        {esp.replace(/_/g, " ")}
+                      </Chip>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
               {/* Biografia */}
               {selectedJuiz.biografia && (
                 <div>
-                  <p className="text-sm text-default-400 font-semibold mb-2">
-                    Biografia
-                  </p>
-                  <p className="text-default-300 leading-relaxed">
-                    {selectedJuiz.biografia}
-                  </p>
+                  <p className="text-sm text-default-400 font-semibold mb-2">Biografia</p>
+                  <p className="text-default-300 leading-relaxed">{selectedJuiz.biografia}</p>
                 </div>
               )}
 
@@ -1181,9 +942,7 @@ export function JuizesContent() {
                       </CardHeader>
                       <Divider />
                       <CardBody>
-                        <p className="text-default-300 text-sm leading-relaxed">
-                          {selectedJuiz.formacao}
-                        </p>
+                        <p className="text-default-300 text-sm leading-relaxed">{selectedJuiz.formacao}</p>
                       </CardBody>
                     </Card>
                   )}
@@ -1197,9 +956,7 @@ export function JuizesContent() {
                       </CardHeader>
                       <Divider />
                       <CardBody>
-                        <p className="text-default-300 text-sm leading-relaxed">
-                          {selectedJuiz.experiencia}
-                        </p>
+                        <p className="text-default-300 text-sm leading-relaxed">{selectedJuiz.experiencia}</p>
                       </CardBody>
                     </Card>
                   )}
@@ -1219,9 +976,7 @@ export function JuizesContent() {
                       </CardHeader>
                       <Divider className="bg-warning/20" />
                       <CardBody>
-                        <p className="text-default-300 text-sm leading-relaxed">
-                          {selectedJuiz.premios}
-                        </p>
+                        <p className="text-default-300 text-sm leading-relaxed">{selectedJuiz.premios}</p>
                       </CardBody>
                     </Card>
                   )}
@@ -1235,9 +990,7 @@ export function JuizesContent() {
                       </CardHeader>
                       <Divider className="bg-secondary/20" />
                       <CardBody>
-                        <p className="text-default-300 text-sm leading-relaxed">
-                          {selectedJuiz.publicacoes}
-                        </p>
+                        <p className="text-default-300 text-sm leading-relaxed">{selectedJuiz.publicacoes}</p>
                       </CardBody>
                     </Card>
                   )}
@@ -1245,61 +998,31 @@ export function JuizesContent() {
               )}
 
               {/* Redes Sociais e Links */}
-              {(selectedJuiz.website ||
-                selectedJuiz.linkedin ||
-                selectedJuiz.twitter ||
-                selectedJuiz.instagram) && (
+              {(selectedJuiz.website || selectedJuiz.linkedin || selectedJuiz.twitter || selectedJuiz.instagram) && (
                 <Card className="border border-primary/20 bg-primary/5">
                   <CardHeader>
-                    <p className="text-sm text-primary font-semibold">
-                      Links e Redes Sociais
-                    </p>
+                    <p className="text-sm text-primary font-semibold">Links e Redes Sociais</p>
                   </CardHeader>
                   <Divider className="bg-primary/20" />
                   <CardBody>
                     <div className="flex flex-wrap gap-3">
                       {selectedJuiz.website && (
-                        <Chip
-                          as="a"
-                          color="primary"
-                          href={selectedJuiz.website}
-                          startContent={<Award className="w-3 h-3" />}
-                          target="_blank"
-                          variant="flat"
-                        >
+                        <Chip as="a" color="primary" href={selectedJuiz.website} startContent={<Award className="w-3 h-3" />} target="_blank" variant="flat">
                           Website
                         </Chip>
                       )}
                       {selectedJuiz.linkedin && (
-                        <Chip
-                          as="a"
-                          color="primary"
-                          href={selectedJuiz.linkedin}
-                          target="_blank"
-                          variant="flat"
-                        >
+                        <Chip as="a" color="primary" href={selectedJuiz.linkedin} target="_blank" variant="flat">
                           LinkedIn
                         </Chip>
                       )}
                       {selectedJuiz.twitter && (
-                        <Chip
-                          as="a"
-                          color="primary"
-                          href={`https://twitter.com/${selectedJuiz.twitter.replace("@", "")}`}
-                          target="_blank"
-                          variant="flat"
-                        >
+                        <Chip as="a" color="primary" href={`https://twitter.com/${selectedJuiz.twitter.replace("@", "")}`} target="_blank" variant="flat">
                           Twitter
                         </Chip>
                       )}
                       {selectedJuiz.instagram && (
-                        <Chip
-                          as="a"
-                          color="primary"
-                          href={`https://instagram.com/${selectedJuiz.instagram.replace("@", "")}`}
-                          target="_blank"
-                          variant="flat"
-                        >
+                        <Chip as="a" color="primary" href={`https://instagram.com/${selectedJuiz.instagram.replace("@", "")}`} target="_blank" variant="flat">
                           Instagram
                         </Chip>
                       )}
@@ -1312,15 +1035,11 @@ export function JuizesContent() {
               {selectedJuiz.observacoes && (
                 <Card className="border border-white/10">
                   <CardHeader>
-                    <p className="text-sm text-default-400 font-semibold">
-                      Observações Internas
-                    </p>
+                    <p className="text-sm text-default-400 font-semibold">Observações Internas</p>
                   </CardHeader>
                   <Divider />
                   <CardBody>
-                    <p className="text-default-300 text-sm leading-relaxed italic">
-                      {selectedJuiz.observacoes}
-                    </p>
+                    <p className="text-default-300 text-sm leading-relaxed italic">{selectedJuiz.observacoes}</p>
                   </CardBody>
                 </Card>
               )}
@@ -1344,12 +1063,7 @@ export function JuizesContent() {
               >
                 Cancelar
               </Button>
-              <Button
-                color="primary"
-                isLoading={isSaving}
-                startContent={<Plus className="w-4 h-4" />}
-                onPress={handleSaveJuiz}
-              >
+              <Button color="primary" isLoading={isSaving} startContent={<Plus className="w-4 h-4" />} onPress={handleSaveJuiz}>
                 {isEditModalOpen ? "Salvar Alterações" : "Criar Juiz"}
               </Button>
             </>
@@ -1377,9 +1091,7 @@ export function JuizesContent() {
                 currentFotoUrl={formState.foto}
                 juizId={selectedJuiz?.id}
                 juizNome={formState.nome || "Juiz"}
-                onFotoChange={(url: string) =>
-                  setFormState({ ...formState, foto: url || "" })
-                }
+                onFotoChange={(url: string) => setFormState({ ...formState, foto: url || "" })}
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1390,9 +1102,7 @@ export function JuizesContent() {
                   size="lg"
                   value={formState.nome}
                   variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, nome: value })
-                  }
+                  onValueChange={(value) => setFormState({ ...formState, nome: value })}
                 />
                 <Input
                   label="Nome Completo"
@@ -1400,26 +1110,10 @@ export function JuizesContent() {
                   size="lg"
                   value={formState.nomeCompleto || ""}
                   variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, nomeCompleto: value })
-                  }
+                  onValueChange={(value) => setFormState({ ...formState, nomeCompleto: value })}
                 />
-                <CpfInput
-                  value={formState.cpf || ""}
-                  onChange={(value) =>
-                    setFormState({ ...formState, cpf: value })
-                  }
-                />
-                <Input
-                  label="OAB"
-                  placeholder="Número da OAB"
-                  size="lg"
-                  value={formState.oab || ""}
-                  variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, oab: value })
-                  }
-                />
+                <CpfInput value={formState.cpf || ""} onChange={(value) => setFormState({ ...formState, cpf: value })} />
+                <Input label="OAB" placeholder="Número da OAB" size="lg" value={formState.oab || ""} variant="bordered" onValueChange={(value) => setFormState({ ...formState, oab: value })} />
               </div>
             </div>
 
@@ -1439,9 +1133,7 @@ export function JuizesContent() {
                   type="email"
                   value={formState.email || ""}
                   variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, email: value })
-                  }
+                  onValueChange={(value) => setFormState({ ...formState, email: value })}
                 />
                 <Input
                   label="Telefone"
@@ -1449,9 +1141,7 @@ export function JuizesContent() {
                   size="lg"
                   value={formState.telefone || ""}
                   variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, telefone: value })
-                  }
+                  onValueChange={(value) => setFormState({ ...formState, telefone: value })}
                 />
               </div>
             </div>
@@ -1472,9 +1162,7 @@ export function JuizesContent() {
                   size="lg"
                   value={formState.vara}
                   variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, vara: value })
-                  }
+                  onValueChange={(value) => setFormState({ ...formState, vara: value })}
                 />
                 <Input
                   label="Comarca"
@@ -1482,9 +1170,7 @@ export function JuizesContent() {
                   size="lg"
                   value={formState.comarca || ""}
                   variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, comarca: value })
-                  }
+                  onValueChange={(value) => setFormState({ ...formState, comarca: value })}
                 />
                 <Input
                   label="Cidade"
@@ -1492,9 +1178,7 @@ export function JuizesContent() {
                   size="lg"
                   value={formState.cidade || ""}
                   variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, cidade: value })
-                  }
+                  onValueChange={(value) => setFormState({ ...formState, cidade: value })}
                 />
                 <Input
                   label="Estado"
@@ -1503,9 +1187,7 @@ export function JuizesContent() {
                   size="lg"
                   value={formState.estado}
                   variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, estado: value.toUpperCase() })
-                  }
+                  onValueChange={(value) => setFormState({ ...formState, estado: value.toUpperCase() })}
                 />
                 <Input
                   className="md:col-span-2"
@@ -1514,20 +1196,9 @@ export function JuizesContent() {
                   size="lg"
                   value={formState.endereco || ""}
                   variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, endereco: value })
-                  }
+                  onValueChange={(value) => setFormState({ ...formState, endereco: value })}
                 />
-                <Input
-                  label="CEP"
-                  placeholder="00000-000"
-                  size="lg"
-                  value={formState.cep || ""}
-                  variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, cep: value })
-                  }
-                />
+                <Input label="CEP" placeholder="00000-000" size="lg" value={formState.cep || ""} variant="bordered" onValueChange={(value) => setFormState({ ...formState, cep: value })} />
               </div>
             </div>
 
@@ -1541,9 +1212,7 @@ export function JuizesContent() {
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Select
-                  items={
-                    formData?.status?.map((s) => ({ key: s, label: s })) || []
-                  }
+                  items={formData?.status?.map((s) => ({ key: s, label: s })) || []}
                   label="Status"
                   placeholder="Selecione o status"
                   selectedKeys={[formState.status]}
@@ -1556,9 +1225,7 @@ export function JuizesContent() {
                     })
                   }
                 >
-                  {(item) => (
-                    <SelectItem key={item.key}>{item.label}</SelectItem>
-                  )}
+                  {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
                 </Select>
                 <Select
                   items={
@@ -1579,9 +1246,7 @@ export function JuizesContent() {
                     })
                   }
                 >
-                  {(item) => (
-                    <SelectItem key={item.key}>{item.label}</SelectItem>
-                  )}
+                  {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
                 </Select>
                 <Select
                   items={
@@ -1599,15 +1264,11 @@ export function JuizesContent() {
                   onSelectionChange={(keys) =>
                     setFormState({
                       ...formState,
-                      especialidades: Array.from(
-                        keys,
-                      ) as EspecialidadeJuridica[],
+                      especialidades: Array.from(keys) as EspecialidadeJuridica[],
                     })
                   }
                 >
-                  {(item) => (
-                    <SelectItem key={item.key}>{item.label}</SelectItem>
-                  )}
+                  {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
                 </Select>
               </div>
             </div>
@@ -1627,9 +1288,7 @@ export function JuizesContent() {
                 size="lg"
                 value={formState.biografia || ""}
                 variant="bordered"
-                onValueChange={(value) =>
-                  setFormState({ ...formState, biografia: value })
-                }
+                onValueChange={(value) => setFormState({ ...formState, biografia: value })}
               />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Textarea
@@ -1639,9 +1298,7 @@ export function JuizesContent() {
                   size="lg"
                   value={formState.formacao || ""}
                   variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, formacao: value })
-                  }
+                  onValueChange={(value) => setFormState({ ...formState, formacao: value })}
                 />
                 <Textarea
                   label="Experiência"
@@ -1650,9 +1307,7 @@ export function JuizesContent() {
                   size="lg"
                   value={formState.experiencia || ""}
                   variant="bordered"
-                  onValueChange={(value) =>
-                    setFormState({ ...formState, experiencia: value })
-                  }
+                  onValueChange={(value) => setFormState({ ...formState, experiencia: value })}
                 />
               </div>
             </div>

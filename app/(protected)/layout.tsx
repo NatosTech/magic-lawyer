@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 
+import { SessionGuard } from "./session-guard";
+
 import { getSession } from "@/app/lib/auth";
 import { AppShell } from "@/components/app-shell";
 
@@ -14,5 +16,9 @@ export default async function ProtectedLayout({
     redirect("/login");
   }
 
-  return <AppShell>{children}</AppShell>;
+  return (
+    <SessionGuard>
+      <AppShell>{children}</AppShell>
+    </SessionGuard>
+  );
 }

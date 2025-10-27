@@ -9,6 +9,8 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { ToastProvider } from "@heroui/toast";
 import { SessionProvider } from "next-auth/react";
 
+import { RealtimeProvider } from "./providers/realtime-provider";
+
 export interface ProvidersProps {
   children: React.ReactNode;
   themeProps?: ThemeProviderProps;
@@ -28,8 +30,10 @@ export function Providers({ children, themeProps }: ProvidersProps) {
   return (
     <HeroUIProvider navigate={router.push}>
       <SessionProvider>
-        <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
-        <ToastProvider placement="top-right" />
+        <RealtimeProvider>
+          <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
+          <ToastProvider placement="top-right" />
+        </RealtimeProvider>
       </SessionProvider>
     </HeroUIProvider>
   );

@@ -1,13 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@heroui/modal";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
@@ -47,16 +41,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  useJuizDetalhado,
-  useProcessosDoJuiz,
-  useJulgamentosDoJuiz,
-  useFavoritoJuiz,
-} from "@/app/hooks/use-juizes";
-import {
-  adicionarFavoritoJuiz,
-  removerFavoritoJuiz,
-} from "@/app/actions/juizes";
+import { useJuizDetalhado, useProcessosDoJuiz, useJulgamentosDoJuiz, useFavoritoJuiz } from "@/app/hooks/use-juizes";
+import { adicionarFavoritoJuiz, removerFavoritoJuiz } from "@/app/actions/juizes";
 import { DateUtils } from "@/app/lib/date-utils";
 import { JuizNivel, JuizStatus } from "@/app/generated/prisma";
 
@@ -113,26 +99,14 @@ const getNivelLabel = (nivel: JuizNivel) => {
 export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
   const [isFavoritoLoading, setIsFavoritoLoading] = useState(false);
 
-  console.log("JuizModal - Props:", { juizId, isOpen });
+  // Debug removido para produção
 
-  const {
-    juiz,
-    isLoading,
-    isError,
-    mutate: mutateJuiz,
-  } = useJuizDetalhado(juizId);
+  const { juiz, isLoading, isError, mutate: mutateJuiz } = useJuizDetalhado(juizId);
   const { isFavorito, mutate: mutateFavorito } = useFavoritoJuiz(juizId);
 
-  console.log("JuizModal - Estado:", {
-    juiz: !!juiz,
-    isLoading,
-    isError,
-    isFavorito,
-  });
-  const { processos, isLoading: isLoadingProcessos } =
-    useProcessosDoJuiz(juizId);
-  const { julgamentos, isLoading: isLoadingJulgamentos } =
-    useJulgamentosDoJuiz(juizId);
+  // Debug removido para produção
+  const { processos, isLoading: isLoadingProcessos } = useProcessosDoJuiz(juizId);
+  const { julgamentos, isLoading: isLoadingJulgamentos } = useJulgamentosDoJuiz(juizId);
 
   const handleToggleFavorito = async () => {
     if (!juiz) return;
@@ -150,16 +124,13 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
       if (result.success) {
         // Atualizar o cache do SWR otimisticamente
         await mutateFavorito(!isFavorito, false);
-        toast.success(
-          isFavorito ? "Removido dos favoritos" : "Adicionado aos favoritos",
-        );
+        toast.success(isFavorito ? "Removido dos favoritos" : "Adicionado aos favoritos");
         // Revalidar os dados do juiz
         mutateJuiz();
       } else {
         toast.error(result.error || "Erro ao atualizar favoritos");
       }
     } catch (error) {
-      console.error("Erro ao atualizar favoritos:", error);
       toast.error("Erro ao atualizar favoritos");
     } finally {
       setIsFavoritoLoading(false);
@@ -168,12 +139,7 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
 
   if (isLoading) {
     return (
-      <Modal
-        isOpen={isOpen}
-        scrollBehavior="inside"
-        size="5xl"
-        onClose={onClose}
-      >
+      <Modal isOpen={isOpen} scrollBehavior="inside" size="5xl" onClose={onClose}>
         <ModalContent>
           <div className="flex min-h-[400px] items-center justify-center">
             <Spinner label="Carregando informações do juiz..." size="lg" />
@@ -189,9 +155,7 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
         <ModalContent>
           <ModalBody className="flex min-h-[400px] flex-col items-center justify-center gap-4">
             <Gavel className="h-12 w-12 text-danger" />
-            <p className="text-lg font-semibold text-danger">
-              Erro ao carregar informações do juiz
-            </p>
+            <p className="text-lg font-semibold text-danger">Erro ao carregar informações do juiz</p>
             <Button color="primary" onPress={onClose}>
               Fechar
             </Button>
@@ -206,25 +170,12 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-3">
-            <Avatar
-              className="flex-shrink-0"
-              name={juiz.nome}
-              size="lg"
-              src={juiz.foto || undefined}
-            />
+            <Avatar className="flex-shrink-0" name={juiz.nome} size="lg" src={juiz.foto || undefined} />
             <div className="flex-1">
-              <h3 className="text-xl font-semibold">
-                {juiz.nomeCompleto || juiz.nome}
-              </h3>
-              <p className="text-sm text-default-500">
-                {getNivelLabel(juiz.nivel)}
-              </p>
+              <h3 className="text-xl font-semibold">{juiz.nomeCompleto || juiz.nome}</h3>
+              <p className="text-sm text-default-500">{getNivelLabel(juiz.nivel)}</p>
               <div className="flex items-center gap-2 mt-1">
-                <Chip
-                  color={getStatusColor(juiz.status)}
-                  size="sm"
-                  variant="flat"
-                >
+                <Chip color={getStatusColor(juiz.status)} size="sm" variant="flat">
                   {getStatusLabel(juiz.status)}
                 </Chip>
                 {juiz.tribunal && (
@@ -237,13 +188,7 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
             <Button
               color={isFavorito ? "danger" : "default"}
               isLoading={isFavoritoLoading}
-              startContent={
-                isFavorito ? (
-                  <HeartOff className="h-4 w-4" />
-                ) : (
-                  <Heart className="h-4 w-4" />
-                )
-              }
+              startContent={isFavorito ? <HeartOff className="h-4 w-4" /> : <Heart className="h-4 w-4" />}
               variant="bordered"
               onPress={handleToggleFavorito}
             >
@@ -253,11 +198,7 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
         </ModalHeader>
 
         <ModalBody>
-          <Tabs
-            aria-label="Informações do Juiz"
-            color="primary"
-            variant="underlined"
-          >
+          <Tabs aria-label="Informações do Juiz" color="primary" variant="underlined">
             <Tab
               key="informacoes"
               title={
@@ -281,23 +222,15 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                     <div className="grid gap-4 md:grid-cols-2">
                       {juiz.cpf && (
                         <div>
-                          <p className="text-xs font-semibold uppercase text-default-400">
-                            CPF
-                          </p>
-                          <p className="mt-1 text-sm text-default-600">
-                            {juiz.cpf}
-                          </p>
+                          <p className="text-xs font-semibold uppercase text-default-400">CPF</p>
+                          <p className="mt-1 text-sm text-default-600">{juiz.cpf}</p>
                         </div>
                       )}
 
                       {juiz.oab && (
                         <div>
-                          <p className="text-xs font-semibold uppercase text-default-400">
-                            OAB
-                          </p>
-                          <p className="mt-1 text-sm text-default-600">
-                            {juiz.oab}
-                          </p>
+                          <p className="text-xs font-semibold uppercase text-default-400">OAB</p>
+                          <p className="mt-1 text-sm text-default-600">{juiz.oab}</p>
                         </div>
                       )}
 
@@ -305,13 +238,8 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                         <div className="flex items-center gap-2">
                           <Mail className="h-4 w-4 text-default-400" />
                           <div>
-                            <p className="text-xs font-semibold uppercase text-default-400">
-                              E-mail
-                            </p>
-                            <a
-                              className="mt-1 text-sm text-primary hover:underline"
-                              href={`mailto:${juiz.email}`}
-                            >
+                            <p className="text-xs font-semibold uppercase text-default-400">E-mail</p>
+                            <a className="mt-1 text-sm text-primary hover:underline" href={`mailto:${juiz.email}`}>
                               {juiz.email}
                             </a>
                           </div>
@@ -322,13 +250,8 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                         <div className="flex items-center gap-2">
                           <Phone className="h-4 w-4 text-default-400" />
                           <div>
-                            <p className="text-xs font-semibold uppercase text-default-400">
-                              Telefone
-                            </p>
-                            <a
-                              className="mt-1 text-sm text-primary hover:underline"
-                              href={`tel:${juiz.telefone}`}
-                            >
+                            <p className="text-xs font-semibold uppercase text-default-400">Telefone</p>
+                            <a className="mt-1 text-sm text-primary hover:underline" href={`tel:${juiz.telefone}`}>
                               {juiz.telefone}
                             </a>
                           </div>
@@ -339,12 +262,8 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-default-400" />
                           <div>
-                            <p className="text-xs font-semibold uppercase text-default-400">
-                              Data de Nascimento
-                            </p>
-                            <p className="mt-1 text-sm text-default-600">
-                              {DateUtils.formatDate(juiz.dataNascimento)}
-                            </p>
+                            <p className="text-xs font-semibold uppercase text-default-400">Data de Nascimento</p>
+                            <p className="mt-1 text-sm text-default-600">{DateUtils.formatDate(juiz.dataNascimento)}</p>
                           </div>
                         </div>
                       )}
@@ -353,12 +272,8 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                         <div className="flex items-center gap-2">
                           <Award className="h-4 w-4 text-default-400" />
                           <div>
-                            <p className="text-xs font-semibold uppercase text-default-400">
-                              Data de Posse
-                            </p>
-                            <p className="mt-1 text-sm text-default-600">
-                              {DateUtils.formatDate(juiz.dataPosse)}
-                            </p>
+                            <p className="text-xs font-semibold uppercase text-default-400">Data de Posse</p>
+                            <p className="mt-1 text-sm text-default-600">{DateUtils.formatDate(juiz.dataPosse)}</p>
                           </div>
                         </div>
                       )}
@@ -379,34 +294,22 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                     <div className="grid gap-4 md:grid-cols-2">
                       {juiz.vara && (
                         <div>
-                          <p className="text-xs font-semibold uppercase text-default-400">
-                            Vara
-                          </p>
-                          <p className="mt-1 text-sm text-default-600">
-                            {juiz.vara}
-                          </p>
+                          <p className="text-xs font-semibold uppercase text-default-400">Vara</p>
+                          <p className="mt-1 text-sm text-default-600">{juiz.vara}</p>
                         </div>
                       )}
 
                       {juiz.comarca && (
                         <div>
-                          <p className="text-xs font-semibold uppercase text-default-400">
-                            Comarca
-                          </p>
-                          <p className="mt-1 text-sm text-default-600">
-                            {juiz.comarca}
-                          </p>
+                          <p className="text-xs font-semibold uppercase text-default-400">Comarca</p>
+                          <p className="mt-1 text-sm text-default-600">{juiz.comarca}</p>
                         </div>
                       )}
 
                       {juiz.endereco && (
                         <div className="md:col-span-2">
-                          <p className="text-xs font-semibold uppercase text-default-400">
-                            Endereço
-                          </p>
-                          <p className="mt-1 text-sm text-default-600">
-                            {juiz.endereco}
-                          </p>
+                          <p className="text-xs font-semibold uppercase text-default-400">Endereço</p>
+                          <p className="mt-1 text-sm text-default-600">{juiz.endereco}</p>
                           {juiz.cidade && juiz.estado && (
                             <p className="mt-1 text-sm text-default-500">
                               {juiz.cidade}, {juiz.estado}
@@ -425,58 +328,35 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                         </h5>
                         <div className="grid gap-3 md:grid-cols-2">
                           <div>
-                            <p className="text-xs font-semibold uppercase text-default-400">
-                              Nome
-                            </p>
-                            <p className="mt-1 text-sm text-default-600">
-                              {juiz.tribunal.nome}
-                            </p>
+                            <p className="text-xs font-semibold uppercase text-default-400">Nome</p>
+                            <p className="mt-1 text-sm text-default-600">{juiz.tribunal.nome}</p>
                           </div>
 
                           {juiz.tribunal.sigla && (
                             <div>
-                              <p className="text-xs font-semibold uppercase text-default-400">
-                                Sigla
-                              </p>
-                              <p className="mt-1 text-sm text-default-600">
-                                {juiz.tribunal.sigla}
-                              </p>
+                              <p className="text-xs font-semibold uppercase text-default-400">Sigla</p>
+                              <p className="mt-1 text-sm text-default-600">{juiz.tribunal.sigla}</p>
                             </div>
                           )}
 
                           {juiz.tribunal.esfera && (
                             <div>
-                              <p className="text-xs font-semibold uppercase text-default-400">
-                                Esfera
-                              </p>
-                              <p className="mt-1 text-sm text-default-600">
-                                {juiz.tribunal.esfera}
-                              </p>
+                              <p className="text-xs font-semibold uppercase text-default-400">Esfera</p>
+                              <p className="mt-1 text-sm text-default-600">{juiz.tribunal.esfera}</p>
                             </div>
                           )}
 
                           {juiz.tribunal.uf && (
                             <div>
-                              <p className="text-xs font-semibold uppercase text-default-400">
-                                UF
-                              </p>
-                              <p className="mt-1 text-sm text-default-600">
-                                {juiz.tribunal.uf}
-                              </p>
+                              <p className="text-xs font-semibold uppercase text-default-400">UF</p>
+                              <p className="mt-1 text-sm text-default-600">{juiz.tribunal.uf}</p>
                             </div>
                           )}
 
                           {juiz.tribunal.siteUrl && (
                             <div className="md:col-span-2">
-                              <p className="text-xs font-semibold uppercase text-default-400">
-                                Site
-                              </p>
-                              <a
-                                className="mt-1 text-sm text-primary hover:underline flex items-center gap-1"
-                                href={juiz.tribunal.siteUrl}
-                                rel="noopener noreferrer"
-                                target="_blank"
-                              >
+                              <p className="text-xs font-semibold uppercase text-default-400">Site</p>
+                              <a className="mt-1 text-sm text-primary hover:underline flex items-center gap-1" href={juiz.tribunal.siteUrl} rel="noopener noreferrer" target="_blank">
                                 {juiz.tribunal.siteUrl}
                                 <ExternalLink className="h-3 w-3" />
                               </a>
@@ -501,11 +381,7 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                     <CardBody>
                       <div className="flex flex-wrap gap-2">
                         {juiz.especialidades.map((especialidade) => (
-                          <Chip
-                            key={especialidade}
-                            color="primary"
-                            variant="flat"
-                          >
+                          <Chip key={especialidade} color="primary" variant="flat">
                             {especialidade}
                           </Chip>
                         ))}
@@ -527,34 +403,22 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                     <CardBody className="space-y-4">
                       {juiz.formacao && (
                         <div>
-                          <p className="text-xs font-semibold uppercase text-default-400">
-                            Formação
-                          </p>
-                          <p className="mt-1 text-sm text-default-600 whitespace-pre-line">
-                            {juiz.formacao}
-                          </p>
+                          <p className="text-xs font-semibold uppercase text-default-400">Formação</p>
+                          <p className="mt-1 text-sm text-default-600 whitespace-pre-line">{juiz.formacao}</p>
                         </div>
                       )}
 
                       {juiz.experiencia && (
                         <div>
-                          <p className="text-xs font-semibold uppercase text-default-400">
-                            Experiência
-                          </p>
-                          <p className="mt-1 text-sm text-default-600 whitespace-pre-line">
-                            {juiz.experiencia}
-                          </p>
+                          <p className="text-xs font-semibold uppercase text-default-400">Experiência</p>
+                          <p className="mt-1 text-sm text-default-600 whitespace-pre-line">{juiz.experiencia}</p>
                         </div>
                       )}
 
                       {juiz.biografia && (
                         <div>
-                          <p className="text-xs font-semibold uppercase text-default-400">
-                            Biografia
-                          </p>
-                          <p className="mt-1 text-sm text-default-600 whitespace-pre-line">
-                            {juiz.biografia}
-                          </p>
+                          <p className="text-xs font-semibold uppercase text-default-400">Biografia</p>
+                          <p className="mt-1 text-sm text-default-600 whitespace-pre-line">{juiz.biografia}</p>
                         </div>
                       )}
                     </CardBody>
@@ -574,23 +438,15 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                     <CardBody className="space-y-4">
                       {juiz.premios && (
                         <div>
-                          <p className="text-xs font-semibold uppercase text-default-400">
-                            Prêmios
-                          </p>
-                          <p className="mt-1 text-sm text-default-600 whitespace-pre-line">
-                            {juiz.premios}
-                          </p>
+                          <p className="text-xs font-semibold uppercase text-default-400">Prêmios</p>
+                          <p className="mt-1 text-sm text-default-600 whitespace-pre-line">{juiz.premios}</p>
                         </div>
                       )}
 
                       {juiz.publicacoes && (
                         <div>
-                          <p className="text-xs font-semibold uppercase text-default-400">
-                            Publicações
-                          </p>
-                          <p className="mt-1 text-sm text-default-600 whitespace-pre-line">
-                            {juiz.publicacoes}
-                          </p>
+                          <p className="text-xs font-semibold uppercase text-default-400">Publicações</p>
+                          <p className="mt-1 text-sm text-default-600 whitespace-pre-line">{juiz.publicacoes}</p>
                         </div>
                       )}
                     </CardBody>
@@ -598,10 +454,7 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                 )}
 
                 {/* Links e Redes Sociais */}
-                {(juiz.website ||
-                  juiz.linkedin ||
-                  juiz.twitter ||
-                  juiz.instagram) && (
+                {(juiz.website || juiz.linkedin || juiz.twitter || juiz.instagram) && (
                   <Card className="border border-default-200">
                     <CardHeader>
                       <h4 className="text-lg font-semibold flex items-center gap-2">
@@ -613,48 +466,28 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                     <CardBody>
                       <div className="flex flex-wrap gap-3">
                         {juiz.website && (
-                          <a
-                            className="flex items-center gap-2 text-sm text-primary hover:underline"
-                            href={juiz.website}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
+                          <a className="flex items-center gap-2 text-sm text-primary hover:underline" href={juiz.website} rel="noopener noreferrer" target="_blank">
                             <Globe className="h-4 w-4" />
                             Website
                           </a>
                         )}
 
                         {juiz.linkedin && (
-                          <a
-                            className="flex items-center gap-2 text-sm text-primary hover:underline"
-                            href={juiz.linkedin}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
+                          <a className="flex items-center gap-2 text-sm text-primary hover:underline" href={juiz.linkedin} rel="noopener noreferrer" target="_blank">
                             <Linkedin className="h-4 w-4" />
                             LinkedIn
                           </a>
                         )}
 
                         {juiz.twitter && (
-                          <a
-                            className="flex items-center gap-2 text-sm text-primary hover:underline"
-                            href={juiz.twitter}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
+                          <a className="flex items-center gap-2 text-sm text-primary hover:underline" href={juiz.twitter} rel="noopener noreferrer" target="_blank">
                             <Twitter className="h-4 w-4" />
                             Twitter
                           </a>
                         )}
 
                         {juiz.instagram && (
-                          <a
-                            className="flex items-center gap-2 text-sm text-primary hover:underline"
-                            href={juiz.instagram}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
+                          <a className="flex items-center gap-2 text-sm text-primary hover:underline" href={juiz.instagram} rel="noopener noreferrer" target="_blank">
                             <Instagram className="h-4 w-4" />
                             Instagram
                           </a>
@@ -675,9 +508,7 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                     </CardHeader>
                     <Divider />
                     <CardBody>
-                      <p className="text-sm text-default-600 whitespace-pre-line">
-                        {juiz.observacoes}
-                      </p>
+                      <p className="text-sm text-default-600 whitespace-pre-line">{juiz.observacoes}</p>
                     </CardBody>
                   </Card>
                 )}
@@ -707,21 +538,14 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                   <Card className="border border-default-200">
                     <CardBody className="py-12 text-center">
                       <Scale className="mx-auto h-12 w-12 text-default-300" />
-                      <p className="mt-4 text-lg font-semibold text-default-600">
-                        Nenhum processo encontrado
-                      </p>
-                      <p className="text-sm text-default-500">
-                        Este juiz não possui processos cadastrados no sistema.
-                      </p>
+                      <p className="mt-4 text-lg font-semibold text-default-600">Nenhum processo encontrado</p>
+                      <p className="text-sm text-default-500">Este juiz não possui processos cadastrados no sistema.</p>
                     </CardBody>
                   </Card>
                 ) : (
                   <div className="space-y-3">
                     {processos.map((processo) => (
-                      <Card
-                        key={processo.id}
-                        className="border border-default-200"
-                      >
+                      <Card key={processo.id} className="border border-default-200">
                         <CardBody className="gap-2">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -729,31 +553,15 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                                 <Chip color="primary" size="sm" variant="flat">
                                   {processo.status}
                                 </Chip>
-                                <span className="text-sm font-semibold text-default-700">
-                                  {processo.numero}
-                                </span>
-                                {processo.numeroCnj &&
-                                  processo.numeroCnj !== processo.numero && (
-                                    <span className="text-xs text-default-500">
-                                      CNJ: {processo.numeroCnj}
-                                    </span>
-                                  )}
+                                <span className="text-sm font-semibold text-default-700">{processo.numero}</span>
+                                {processo.numeroCnj && processo.numeroCnj !== processo.numero && <span className="text-xs text-default-500">CNJ: {processo.numeroCnj}</span>}
                               </div>
 
-                              {processo.titulo && (
-                                <p className="text-sm text-default-600 mt-1">
-                                  {processo.titulo}
-                                </p>
-                              )}
+                              {processo.titulo && <p className="text-sm text-default-600 mt-1">{processo.titulo}</p>}
 
                               <div className="flex flex-wrap gap-3 text-xs text-default-500 mt-2">
                                 <span className="flex items-center gap-1">
-                                  {processo.cliente.tipoPessoa ===
-                                  "JURIDICA" ? (
-                                    <Building2 className="h-3 w-3" />
-                                  ) : (
-                                    <User className="h-3 w-3" />
-                                  )}
+                                  {processo.cliente.tipoPessoa === "JURIDICA" ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
                                   {processo.cliente.nome}
                                 </span>
 
@@ -781,22 +589,17 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                                 {processo.dataDistribuicao && (
                                   <span className="flex items-center gap-1">
                                     <Calendar className="h-3 w-3" />
-                                    {DateUtils.formatDate(
-                                      processo.dataDistribuicao,
-                                    )}
+                                    {DateUtils.formatDate(processo.dataDistribuicao)}
                                   </span>
                                 )}
 
                                 {processo.valorCausa && (
                                   <span className="flex items-center gap-1">
                                     <DollarSign className="h-3 w-3" />
-                                    {Number(processo.valorCausa).toLocaleString(
-                                      "pt-BR",
-                                      {
-                                        style: "currency",
-                                        currency: "BRL",
-                                      },
-                                    )}
+                                    {Number(processo.valorCausa).toLocaleString("pt-BR", {
+                                      style: "currency",
+                                      currency: "BRL",
+                                    })}
                                   </span>
                                 )}
                               </div>
@@ -833,83 +636,49 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                   <Card className="border border-default-200">
                     <CardBody className="py-12 text-center">
                       <Gavel className="mx-auto h-12 w-12 text-default-300" />
-                      <p className="mt-4 text-lg font-semibold text-default-600">
-                        Nenhuma decisão encontrada
-                      </p>
-                      <p className="text-sm text-default-500">
-                        Este juiz não possui decisões cadastradas no sistema.
-                      </p>
+                      <p className="mt-4 text-lg font-semibold text-default-600">Nenhuma decisão encontrada</p>
+                      <p className="text-sm text-default-500">Este juiz não possui decisões cadastradas no sistema.</p>
                     </CardBody>
                   </Card>
                 ) : (
                   <div className="space-y-4">
                     {julgamentos.map((julgamento) => (
-                      <Card
-                        key={julgamento.id}
-                        className="border border-default-200"
-                      >
+                      <Card key={julgamento.id} className="border border-default-200">
                         <CardBody className="gap-3">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <Chip
-                                  color="secondary"
-                                  size="sm"
-                                  variant="flat"
-                                >
+                                <Chip color="secondary" size="sm" variant="flat">
                                   {julgamento.tipoJulgamento}
                                 </Chip>
-                                <span className="text-sm font-semibold text-default-700">
-                                  {julgamento.titulo}
-                                </span>
-                                <span className="text-xs text-default-400">
-                                  {DateUtils.formatDate(
-                                    julgamento.dataJulgamento,
-                                  )}
-                                </span>
+                                <span className="text-sm font-semibold text-default-700">{julgamento.titulo}</span>
+                                <span className="text-xs text-default-400">{DateUtils.formatDate(julgamento.dataJulgamento)}</span>
                               </div>
 
-                              {julgamento.descricao && (
-                                <p className="text-sm text-default-600 mt-2">
-                                  {julgamento.descricao}
-                                </p>
-                              )}
+                              {julgamento.descricao && <p className="text-sm text-default-600 mt-2">{julgamento.descricao}</p>}
 
                               {julgamento.resultado && (
                                 <div className="mt-2">
-                                  <p className="text-xs font-semibold uppercase text-default-400">
-                                    Resultado
-                                  </p>
-                                  <p className="text-sm text-default-600 mt-1">
-                                    {julgamento.resultado}
-                                  </p>
+                                  <p className="text-xs font-semibold uppercase text-default-400">Resultado</p>
+                                  <p className="text-sm text-default-600 mt-1">{julgamento.resultado}</p>
                                 </div>
                               )}
 
                               {julgamento.processo && (
                                 <div className="mt-2">
-                                  <p className="text-xs font-semibold uppercase text-default-400">
-                                    Processo
-                                  </p>
+                                  <p className="text-xs font-semibold uppercase text-default-400">Processo</p>
                                   <p className="text-sm text-default-600 mt-1">
-                                    {julgamento.processo.numero} -{" "}
-                                    {julgamento.processo.titulo || "Sem título"}
+                                    {julgamento.processo.numero} - {julgamento.processo.titulo || "Sem título"}
                                   </p>
                                 </div>
                               )}
 
                               <div className="flex flex-wrap gap-2 mt-3">
                                 {julgamento.valorCausa && (
-                                  <Chip
-                                    color="default"
-                                    size="sm"
-                                    variant="flat"
-                                  >
+                                  <Chip color="default" size="sm" variant="flat">
                                     <DollarSign className="h-3 w-3 mr-1" />
                                     Causa:{" "}
-                                    {Number(
-                                      julgamento.valorCausa,
-                                    ).toLocaleString("pt-BR", {
+                                    {Number(julgamento.valorCausa).toLocaleString("pt-BR", {
                                       style: "currency",
                                       currency: "BRL",
                                     })}
@@ -917,16 +686,10 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                                 )}
 
                                 {julgamento.valorCondenacao && (
-                                  <Chip
-                                    color="success"
-                                    size="sm"
-                                    variant="flat"
-                                  >
+                                  <Chip color="success" size="sm" variant="flat">
                                     <DollarSign className="h-3 w-3 mr-1" />
                                     Condenação:{" "}
-                                    {Number(
-                                      julgamento.valorCondenacao,
-                                    ).toLocaleString("pt-BR", {
+                                    {Number(julgamento.valorCondenacao).toLocaleString("pt-BR", {
                                       style: "currency",
                                       currency: "BRL",
                                     })}
@@ -934,32 +697,23 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                                 )}
                               </div>
 
-                              {julgamento.tags &&
-                                julgamento.tags.length > 0 && (
-                                  <div className="mt-3">
-                                    <p className="text-xs font-semibold uppercase text-default-400 mb-2">
-                                      Tags
-                                    </p>
-                                    <div className="flex flex-wrap gap-1">
-                                      {julgamento.tags.map((tag) => (
-                                        <Chip
-                                          key={tag}
-                                          color="primary"
-                                          size="sm"
-                                          variant="flat"
-                                        >
-                                          {tag}
-                                        </Chip>
-                                      ))}
-                                    </div>
+                              {julgamento.tags && julgamento.tags.length > 0 && (
+                                <div className="mt-3">
+                                  <p className="text-xs font-semibold uppercase text-default-400 mb-2">Tags</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {julgamento.tags.map((tag) => (
+                                      <Chip key={tag} color="primary" size="sm" variant="flat">
+                                        {tag}
+                                      </Chip>
+                                    ))}
                                   </div>
-                                )}
+                                </div>
+                              )}
                             </div>
                           </div>
 
                           {/* Pontos Positivos e Negativos */}
-                          {(julgamento.pontosPositivos.length > 0 ||
-                            julgamento.pontosNegativos.length > 0) && (
+                          {(julgamento.pontosPositivos.length > 0 || julgamento.pontosNegativos.length > 0) && (
                             <div className="grid gap-3 md:grid-cols-2 mt-4">
                               {julgamento.pontosPositivos.length > 0 && (
                                 <div>
@@ -968,19 +722,12 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                                     Pontos Positivos
                                   </p>
                                   <ul className="space-y-1">
-                                    {julgamento.pontosPositivos.map(
-                                      (ponto, index) => (
-                                        <li
-                                          key={index}
-                                          className="text-xs text-success-600 flex items-start gap-2"
-                                        >
-                                          <span className="text-success-500 mt-1">
-                                            •
-                                          </span>
-                                          {ponto}
-                                        </li>
-                                      ),
-                                    )}
+                                    {julgamento.pontosPositivos.map((ponto, index) => (
+                                      <li key={index} className="text-xs text-success-600 flex items-start gap-2">
+                                        <span className="text-success-500 mt-1">•</span>
+                                        {ponto}
+                                      </li>
+                                    ))}
                                   </ul>
                                 </div>
                               )}
@@ -992,19 +739,12 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                                     Pontos Negativos
                                   </p>
                                   <ul className="space-y-1">
-                                    {julgamento.pontosNegativos.map(
-                                      (ponto, index) => (
-                                        <li
-                                          key={index}
-                                          className="text-xs text-danger-600 flex items-start gap-2"
-                                        >
-                                          <span className="text-danger-500 mt-1">
-                                            •
-                                          </span>
-                                          {ponto}
-                                        </li>
-                                      ),
-                                    )}
+                                    {julgamento.pontosNegativos.map((ponto, index) => (
+                                      <li key={index} className="text-xs text-danger-600 flex items-start gap-2">
+                                        <span className="text-danger-500 mt-1">•</span>
+                                        {ponto}
+                                      </li>
+                                    ))}
                                   </ul>
                                 </div>
                               )}
@@ -1012,8 +752,7 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                           )}
 
                           {/* Estratégias e Recomendações */}
-                          {(julgamento.estrategias.length > 0 ||
-                            julgamento.recomendacoes.length > 0) && (
+                          {(julgamento.estrategias.length > 0 || julgamento.recomendacoes.length > 0) && (
                             <div className="grid gap-3 md:grid-cols-2 mt-4">
                               {julgamento.estrategias.length > 0 && (
                                 <div>
@@ -1022,19 +761,12 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                                     Estratégias
                                   </p>
                                   <ul className="space-y-1">
-                                    {julgamento.estrategias.map(
-                                      (estrategia, index) => (
-                                        <li
-                                          key={index}
-                                          className="text-xs text-primary-600 flex items-start gap-2"
-                                        >
-                                          <span className="text-primary-500 mt-1">
-                                            •
-                                          </span>
-                                          {estrategia}
-                                        </li>
-                                      ),
-                                    )}
+                                    {julgamento.estrategias.map((estrategia, index) => (
+                                      <li key={index} className="text-xs text-primary-600 flex items-start gap-2">
+                                        <span className="text-primary-500 mt-1">•</span>
+                                        {estrategia}
+                                      </li>
+                                    ))}
                                   </ul>
                                 </div>
                               )}
@@ -1046,19 +778,12 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                                     Recomendações
                                   </p>
                                   <ul className="space-y-1">
-                                    {julgamento.recomendacoes.map(
-                                      (recomendacao, index) => (
-                                        <li
-                                          key={index}
-                                          className="text-xs text-warning-600 flex items-start gap-2"
-                                        >
-                                          <span className="text-warning-500 mt-1">
-                                            •
-                                          </span>
-                                          {recomendacao}
-                                        </li>
-                                      ),
-                                    )}
+                                    {julgamento.recomendacoes.map((recomendacao, index) => (
+                                      <li key={index} className="text-xs text-warning-600 flex items-start gap-2">
+                                        <span className="text-warning-500 mt-1">•</span>
+                                        {recomendacao}
+                                      </li>
+                                    ))}
                                   </ul>
                                 </div>
                               )}
@@ -1067,12 +792,8 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
 
                           {julgamento.observacoes && (
                             <div className="mt-4">
-                              <p className="text-xs font-semibold uppercase text-default-400 mb-2">
-                                Observações
-                              </p>
-                              <p className="text-xs text-default-500 whitespace-pre-line">
-                                {julgamento.observacoes}
-                              </p>
+                              <p className="text-xs font-semibold uppercase text-default-400 mb-2">Observações</p>
+                              <p className="text-xs text-default-500 whitespace-pre-line">{julgamento.observacoes}</p>
                             </div>
                           )}
                         </CardBody>
@@ -1104,37 +825,23 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
                   <CardBody>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-primary">
-                          {juiz._count?.processos || 0}
-                        </div>
-                        <div className="text-xs text-default-500">
-                          Processos
-                        </div>
+                        <div className="text-2xl font-bold text-primary">{juiz._count?.processos || 0}</div>
+                        <div className="text-xs text-default-500">Processos</div>
                       </div>
 
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-secondary">
-                          {juiz._count?.julgamentos || 0}
-                        </div>
-                        <div className="text-xs text-default-500">
-                          Julgamentos
-                        </div>
+                        <div className="text-2xl font-bold text-secondary">{juiz._count?.julgamentos || 0}</div>
+                        <div className="text-xs text-default-500">Julgamentos</div>
                       </div>
 
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-warning">
-                          {juiz._count?.analises || 0}
-                        </div>
+                        <div className="text-2xl font-bold text-warning">{juiz._count?.analises || 0}</div>
                         <div className="text-xs text-default-500">Análises</div>
                       </div>
 
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-success">
-                          {juiz._count?.favoritos || 0}
-                        </div>
-                        <div className="text-xs text-default-500">
-                          Favoritos
-                        </div>
+                        <div className="text-2xl font-bold text-success">{juiz._count?.favoritos || 0}</div>
+                        <div className="text-xs text-default-500">Favoritos</div>
                       </div>
                     </div>
                   </CardBody>

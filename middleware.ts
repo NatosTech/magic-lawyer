@@ -3,10 +3,63 @@ import { NextResponse } from "next/server";
 
 import { isRouteAllowedByModulesEdge } from "@/app/lib/module-map-edge";
 
+// Função para detectar dinamicamente o NEXTAUTH_URL baseado no ambiente
+function getDynamicNextAuthUrl(host: string): string {
+  // Remove porta se existir
+  const cleanHost = host.split(":")[0];
+  
+  // Para desenvolvimento local
+  if (cleanHost.includes("localhost")) {
+    return `http://${cleanHost}`;
+  }
+  
+  // Para preview deployments do Vercel (branches que não são main)
+  if (cleanHost.includes("vercel.app") && !cleanHost.includes("magiclawyer.vercel.app")) {
+    return `https://${cleanHost}`;
+  }
+  
+  // Para domínio principal de produção
+  if (cleanHost.includes("magiclawyer.vercel.app")) {
+    return "https://magiclawyer.vercel.app";
+  }
+  
+  // Para domínios customizados
+  return `https://${cleanHost}`;
+}
+
+// Função para detectar se é um preview deployment com subdomínio
+function isPreviewWithSubdomain(host: string): boolean {
+  const cleanHost = host.split(":")[0];
+  // Detecta padrões como: sandra.magic-lawyer-4ye22ftxh-magiclawyer.vercel.app
+  return cleanHost.includes("vercel.app") && 
+         !cleanHost.includes("magiclawyer.vercel.app") &&
+         cleanHost.includes(".");
+}
+
+// Função para extrair o subdomínio de um preview deployment
+function extractSubdomainFromPreview(host: string): string | null {
+  const cleanHost = host.split(":")[0];
+  if (isPreviewWithSubdomain(cleanHost)) {
+    const parts = cleanHost.split(".");
+    if (parts.length > 0) {
+      return parts[0]; // Retorna o primeiro parte (ex: "sandra")
+    }
+  }
+  return null;
+}
+
 // Função para extrair tenant do domínio
 function extractTenantFromDomain(host: string): string | null {
   // Remove porta se existir
   const cleanHost = host.split(":")[0];
+
+  // Para preview deployments com subdomínio: sandra.magic-lawyer-4ye22ftxh-magiclawyer.vercel.app
+  if (isPreviewWithSubdomain(cleanHost)) {
+    const subdomain = extractSubdomainFromPreview(cleanHost);
+    if (subdomain) {
+      return subdomain;
+    }
+  }
 
   // Para domínios Vercel: subdomain.magiclawyer.vercel.app
   if (cleanHost.endsWith(".magiclawyer.vercel.app")) {
@@ -41,6 +94,65 @@ export default withAuth(
     const token = req.nextauth.token;
     const isAuth = !!token;
     const isAuthPage = req.nextUrl.pathname.startsWith("/login");
+    let sessionChecked = false; // Controlar se verificou sessão nesta execução
+
+    // Validar sessão periodicamente (a cada 15 segundos)
+    if (token && (token as any).tenantId) {
+      const lastCheck = req.cookies.get("ml-last-session-check");
+      const shouldCheck =
+        !lastCheck || Date.now() - Number(lastCheck.value) > 15000;
+
+      if (shouldCheck) {
+        try {
+          const host = req.headers.get("host") || "";
+          const base = getDynamicNextAuthUrl(host);
+          const url = new URL(
+            "/api/internal/session/validate",
+            base,
+          ).toString();
+
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-token": process.env.REALTIME_INTERNAL_TOKEN || "",
+            },
+            body: JSON.stringify({
+              tenantId: (token as any).tenantId,
+              userId: (token as any).id,
+              tenantVersion: (token as any).tenantSessionVersion || 1,
+              userVersion: (token as any).sessionVersion || 1,
+            }),
+          });
+
+          if (response.status === 409) {
+            const data = await response.json();
+            const logoutUrl = new URL("/login", req.url);
+
+            logoutUrl.searchParams.set(
+              "reason",
+              data.reason || "SESSION_REVOKED",
+            );
+
+            const res = NextResponse.redirect(logoutUrl);
+
+            res.cookies.delete("next-auth.session-token");
+            res.cookies.set("ml-session-revoked", "1", { path: "/" });
+
+            return res;
+          }
+
+          // Marcar que verificou nesta execução
+          sessionChecked = true;
+        } catch (error) {
+          console.error("Erro ao validar sessão:", error);
+          // Em caso de erro, continuar normalmente (fail-safe)
+        }
+      }
+    }
+
+    // Continuar com o fluxo normal do middleware...
+    // cookie será setado no final se sessionChecked for true
 
     // Detectar tenant baseado no domínio
     const host = req.headers.get("host") || "";
@@ -172,7 +284,18 @@ export default withAuth(
       }
     }
 
-    return NextResponse.next();
+    // Retornar resposta com cookie de verificação se necessário
+    const response = NextResponse.next();
+
+    if (sessionChecked) {
+      response.cookies.set("ml-last-session-check", Date.now().toString(), {
+        httpOnly: false,
+        path: "/",
+        maxAge: 60, // 1 minuto
+      });
+    }
+
+    return response;
   },
   {
     callbacks: {

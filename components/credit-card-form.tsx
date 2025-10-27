@@ -158,7 +158,6 @@ export default function CreditCardForm({
       }
     } catch (error) {
       toast.error("Erro ao processar pagamento. Tente novamente.");
-      console.error("Erro no pagamento:", error);
       setIsProcessing(false);
     }
   };

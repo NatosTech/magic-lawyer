@@ -46,61 +46,73 @@ import {
   KeyIcon,
   TargetIcon,
   LightbulbIcon,
-  ShieldIcon,
-  DollarSignIcon,
-  WebhookIcon,
-  MessageSquareIcon,
-  LockIcon,
-  BarChartIcon,
-  BotIcon,
-  StoreIcon,
-  FlaskConicalIcon,
   EyeIcon,
-  ScaleIcon,
-  FileTextIcon,
-  UsersIcon,
-  FileIcon,
-  CalendarIcon,
-  CheckSquareIcon,
-  ReceiptIcon,
-  CreditCardIcon,
-  FileSignatureIcon,
-  ClockIcon,
-  ClipboardIcon,
-  BuildingIcon,
-  LayoutDashboardIcon,
-  ListIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { listModulos, getDashboardModulos, updateModuloCategoria } from "@/app/actions/modulos";
+import {
+  listModulos,
+  getDashboardModulos,
+  updateModuloCategoria,
+} from "@/app/actions/modulos";
 import { getModuleMapStatus } from "@/app/actions/sync-module-map";
-import { autoDetectModules, getAutoDetectStatus } from "@/app/actions/auto-detect-modules";
-import { getCategoryIcon, getCategoryColor, getCategoryClasses } from "@/app/lib/category-utils";
+import {
+  autoDetectModules,
+  getAutoDetectStatus,
+} from "@/app/actions/auto-detect-modules";
+import {
+  getCategoryIcon,
+  getCategoryColor,
+  getCategoryClasses,
+} from "@/app/lib/category-utils";
 
 export default function ModulosAdminPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Modals
-  const { isOpen: isHelpOpen, onOpen: onHelpOpen, onClose: onHelpClose } = useDisclosure();
-  const { isOpen: isRoutesModalOpen, onOpen: onRoutesModalOpen, onClose: onRoutesModalClose } = useDisclosure();
+  const {
+    isOpen: isHelpOpen,
+    onOpen: onHelpOpen,
+    onClose: onHelpClose,
+  } = useDisclosure();
+  const {
+    isOpen: isRoutesModalOpen,
+    onOpen: onRoutesModalOpen,
+    onClose: onRoutesModalClose,
+  } = useDisclosure();
   const [selectedModulo, setSelectedModulo] = useState<any>(null);
 
   // SWR hooks
-  const { data: modulosData, mutate: mutateModulos } = useSWR(["modulos", searchTerm], () => listModulos({ search: searchTerm || undefined, limit: 100 }), { refreshInterval: 30000 });
+  const { data: modulosData, mutate: mutateModulos } = useSWR(
+    ["modulos", searchTerm],
+    () => listModulos({ search: searchTerm || undefined, limit: 100 }),
+    { refreshInterval: 30000 },
+  );
 
-  const { data: dashboardData } = useSWR("dashboard-modulos", getDashboardModulos, {
-    refreshInterval: 60000,
-  });
+  const { data: dashboardData } = useSWR(
+    "dashboard-modulos",
+    getDashboardModulos,
+    {
+      refreshInterval: 60000,
+    },
+  );
 
-  const { data: syncStatusData } = useSWR("module-map-status", getModuleMapStatus, {
-    refreshInterval: 30000,
-  });
+  const { data: syncStatusData } = useSWR(
+    "module-map-status",
+    getModuleMapStatus,
+    {
+      refreshInterval: 30000,
+    },
+  );
 
-  const { data: autoDetectStatusData } = useSWR("auto-detect-status", getAutoDetectStatus, {
-    refreshInterval: 30000,
-  });
+  const { data: autoDetectStatusData } = useSWR(
+    "auto-detect-status",
+    getAutoDetectStatus,
+    {
+      refreshInterval: 30000,
+    },
+  );
 
   // Execução automática quando necessário
   useSWR(
@@ -110,13 +122,14 @@ export default function ModulosAdminPage() {
         console.log("🔄 Executando sincronização automática...");
         await handleAutoDetect();
       }
+
       return null;
     },
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
       refreshInterval: 0,
-    }
+    },
   );
 
   const modulos = modulosData?.data?.modulos || [];
@@ -125,7 +138,12 @@ export default function ModulosAdminPage() {
   const autoDetectStatus = autoDetectStatusData?.data;
 
   const refreshAfterChange = useCallback(async () => {
-    await Promise.all([mutateModulos(), mutateCache("dashboard-modulos"), mutateCache("module-map-status"), mutateCache("auto-detect-status")]);
+    await Promise.all([
+      mutateModulos(),
+      mutateCache("dashboard-modulos"),
+      mutateCache("module-map-status"),
+      mutateCache("auto-detect-status"),
+    ]);
   }, [mutateModulos]);
 
   const handleViewRoutes = (modulo: any) => {
@@ -133,7 +151,10 @@ export default function ModulosAdminPage() {
     onRoutesModalOpen();
   };
 
-  const handleUpdateCategoria = async (moduloId: string, categoriaId: string | null) => {
+  const handleUpdateCategoria = async (
+    moduloId: string,
+    categoriaId: string | null,
+  ) => {
     try {
       const result = await updateModuloCategoria(moduloId, categoriaId);
 
@@ -157,10 +178,17 @@ export default function ModulosAdminPage() {
       if (result.success) {
         const { created, updated, removed, total, totalRoutes } = result.data!;
 
-        toast.success(`🚀 Sistema sincronizado! ${created} criados, ${updated} atualizados, ${removed} removidos. Total: ${total} módulos / ${totalRoutes} rotas.`);
+        toast.success(
+          `🚀 Sistema sincronizado! ${created} criados, ${updated} atualizados, ${removed} removidos. Total: ${total} módulos / ${totalRoutes} rotas.`,
+        );
 
         // Forçar atualização de todos os caches
-        await Promise.all([mutateModulos(), mutateCache("dashboard-modulos"), mutateCache("module-map-status"), mutateCache("auto-detect-status")]);
+        await Promise.all([
+          mutateModulos(),
+          mutateCache("dashboard-modulos"),
+          mutateCache("module-map-status"),
+          mutateCache("auto-detect-status"),
+        ]);
       } else {
         toast.error(result.error || "Erro na sincronização");
       }
@@ -174,14 +202,22 @@ export default function ModulosAdminPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header com título e botões */}
-      <motion.div animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between" initial={{ opacity: 0, y: -20 }}>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between"
+        initial={{ opacity: 0, y: -20 }}
+      >
         <div className="flex items-center gap-4">
           <div className="p-3 bg-primary/10 rounded-xl">
             <PuzzleIcon className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Gestão de Módulos</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">Gerencie os módulos disponíveis no sistema</p>
+            <h1 className="text-3xl font-bold text-foreground">
+              Gestão de Módulos
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              Gerencie os módulos disponíveis no sistema
+            </p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -189,12 +225,21 @@ export default function ModulosAdminPage() {
             content={
               <div className="max-w-xs">
                 <p className="font-semibold mb-2">📚 Guia Completo</p>
-                <p className="text-sm">Acesse instruções detalhadas sobre como usar cada funcionalidade da tela de módulos.</p>
+                <p className="text-sm">
+                  Acesse instruções detalhadas sobre como usar cada
+                  funcionalidade da tela de módulos.
+                </p>
               </div>
             }
             placement="bottom"
           >
-            <Button isIconOnly className="text-gray-500 hover:text-primary" color="default" variant="light" onPress={onHelpOpen}>
+            <Button
+              isIconOnly
+              className="text-gray-500 hover:text-primary"
+              color="default"
+              variant="light"
+              onPress={onHelpOpen}
+            >
               <HelpCircleIcon className="w-5 h-5" />
             </Button>
           </Tooltip>
@@ -202,12 +247,21 @@ export default function ModulosAdminPage() {
             content={
               <div className="max-w-xs">
                 <p className="font-semibold mb-2">🔄 Atualizar Página</p>
-                <p className="text-sm">Força o recarregamento completo da página para garantir que todos os dados estejam atualizados.</p>
+                <p className="text-sm">
+                  Força o recarregamento completo da página para garantir que
+                  todos os dados estejam atualizados.
+                </p>
               </div>
             }
             placement="bottom"
           >
-            <Button isIconOnly className="text-gray-500 hover:text-primary" color="default" variant="light" onPress={() => window.location.reload()}>
+            <Button
+              isIconOnly
+              className="text-gray-500 hover:text-primary"
+              color="default"
+              variant="light"
+              onPress={() => window.location.reload()}
+            >
               <RefreshCwIcon className="w-5 h-5" />
             </Button>
           </Tooltip>
@@ -216,27 +270,43 @@ export default function ModulosAdminPage() {
               <div className="max-w-xs">
                 <p className="font-semibold mb-2">🚀 Sincronização Completa</p>
                 <p className="text-sm mb-2">
-                  <strong>O que faz:</strong> Detecta módulos no código + Sincroniza cache + Atualiza sistema de permissões.
+                  <strong>O que faz:</strong> Detecta módulos no código +
+                  Sincroniza cache + Atualiza sistema de permissões.
                 </p>
                 <p className="text-sm mb-2">
-                  <strong>Quando usar:</strong> Após adicionar/remover módulos ou rotas no código.
+                  <strong>Quando usar:</strong> Após adicionar/remover módulos
+                  ou rotas no código.
                 </p>
                 <p className="text-sm">
-                  <strong>Resultado:</strong> Sistema 100% atualizado e funcionando corretamente.
+                  <strong>Resultado:</strong> Sistema 100% atualizado e
+                  funcionando corretamente.
                 </p>
               </div>
             }
             placement="bottom"
           >
-            <Button color="primary" isLoading={loading} startContent={<ZapIcon size={20} />} variant={autoDetectStatus?.needsSync ? "solid" : "bordered"} onPress={handleAutoDetect}>
-              {autoDetectStatus?.needsSync ? "Sincronizar Sistema" : "Sistema OK"}
+            <Button
+              color="primary"
+              isLoading={loading}
+              startContent={<ZapIcon size={20} />}
+              variant={autoDetectStatus?.needsSync ? "solid" : "bordered"}
+              onPress={handleAutoDetect}
+            >
+              {autoDetectStatus?.needsSync
+                ? "Sincronizar Sistema"
+                : "Sistema OK"}
             </Button>
           </Tooltip>
         </div>
       </motion.div>
 
       {/* Card de Instruções Rápidas */}
-      <motion.div animate={{ opacity: 1, y: 0 }} className="mb-6" initial={{ opacity: 0, y: 20 }} transition={{ delay: 0.05 }}>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        transition={{ delay: 0.05 }}
+      >
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-700">
           <CardBody className="p-6">
             <div className="flex items-start gap-4">
@@ -244,28 +314,52 @@ export default function ModulosAdminPage() {
                 <BookOpenIcon className="w-6 h-6 text-blue-600" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">🚀 Como Usar Esta Tela</h3>
+                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                  🚀 Como Usar Esta Tela
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div className="flex items-start gap-2">
-                    <span className="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">✨</span>
+                    <span className="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                      ✨
+                    </span>
                     <div>
-                      <p className="font-medium text-blue-800 dark:text-blue-200">Sincronização Automática</p>
-                      <p className="text-blue-700 dark:text-blue-300 text-xs">O sistema detecta e sincroniza automaticamente quando necessário</p>
+                      <p className="font-medium text-blue-800 dark:text-blue-200">
+                        Sincronização Automática
+                      </p>
+                      <p className="text-blue-700 dark:text-blue-300 text-xs">
+                        O sistema detecta e sincroniza automaticamente quando
+                        necessário
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">🚀</span>
+                    <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                      🚀
+                    </span>
                     <div>
-                      <p className="font-medium text-blue-800 dark:text-blue-200">Sincronização Manual</p>
-                      <p className="text-blue-700 dark:text-blue-300 text-xs">Use "Sincronizar Sistema" para forçar atualização completa</p>
+                      <p className="font-medium text-blue-800 dark:text-blue-200">
+                        Sincronização Manual
+                      </p>
+                      <p className="text-blue-700 dark:text-blue-300 text-xs">
+                        Use "Sincronizar Sistema" para forçar atualização
+                        completa
+                      </p>
                     </div>
                   </div>
                 </div>
                 <div className="mt-4 flex items-center gap-2">
-                  <Button color="primary" size="sm" startContent={<HelpCircleIcon className="w-4 h-4" />} variant="bordered" onPress={onHelpOpen}>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    startContent={<HelpCircleIcon className="w-4 h-4" />}
+                    variant="bordered"
+                    onPress={onHelpOpen}
+                  >
                     Ver Guia Completo
                   </Button>
-                  <span className="text-xs text-blue-600 dark:text-blue-400">Clique nos botões para ver tooltips explicativos</span>
+                  <span className="text-xs text-blue-600 dark:text-blue-400">
+                    Clique nos botões para ver tooltips explicativos
+                  </span>
                 </div>
               </div>
             </div>
@@ -274,13 +368,22 @@ export default function ModulosAdminPage() {
       </motion.div>
 
       {/* Cards de métricas */}
-      <motion.div animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" initial={{ opacity: 0, y: 20 }} transition={{ delay: 0.1 }}>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        initial={{ opacity: 0, y: 20 }}
+        transition={{ delay: 0.1 }}
+      >
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
           <CardBody className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total de Módulos</p>
-                <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{dashboard?.total || 0}</p>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                  Total de Módulos
+                </p>
+                <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                  {dashboard?.total || 0}
+                </p>
               </div>
               <div className="p-3 bg-blue-500/10 rounded-xl">
                 <PuzzleIcon className="w-6 h-6 text-blue-600" />
@@ -293,8 +396,12 @@ export default function ModulosAdminPage() {
           <CardBody className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600 dark:text-green-400">Módulos Ativos</p>
-                <p className="text-3xl font-bold text-green-900 dark:text-green-100">{dashboard?.ativos || 0}</p>
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                  Módulos Ativos
+                </p>
+                <p className="text-3xl font-bold text-green-900 dark:text-green-100">
+                  {dashboard?.ativos || 0}
+                </p>
               </div>
               <div className="p-3 bg-green-500/10 rounded-xl">
                 <CheckCircleIcon className="w-6 h-6 text-green-600" />
@@ -307,8 +414,12 @@ export default function ModulosAdminPage() {
           <CardBody className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Categorias</p>
-                <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">{dashboard?.categorias || 0}</p>
+                <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                  Categorias
+                </p>
+                <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">
+                  {dashboard?.categorias || 0}
+                </p>
               </div>
               <div className="p-3 bg-orange-500/10 rounded-xl">
                 <RouteIcon className="w-6 h-6 text-orange-600" />
@@ -321,7 +432,9 @@ export default function ModulosAdminPage() {
           <CardBody className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Status Sync</p>
+                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">
+                  Status Sync
+                </p>
                 <div className="flex items-center gap-2 mt-1">
                   {syncStatus?.needsSync ? (
                     <Badge color="warning" variant="flat">
@@ -346,20 +459,32 @@ export default function ModulosAdminPage() {
 
       {/* Status de detecção automática */}
       {autoDetectStatus && (
-        <motion.div animate={{ opacity: 1, scale: 1 }} className="cursor-pointer" initial={{ opacity: 0, scale: 0.95 }} transition={{ delay: 0.2 }} whileHover={{ scale: 1.02 }}>
+        <motion.div
+          animate={{ opacity: 1, scale: 1 }}
+          className="cursor-pointer"
+          initial={{ opacity: 0, scale: 0.95 }}
+          transition={{ delay: 0.2 }}
+          whileHover={{ scale: 1.02 }}
+        >
           <Tooltip
             showArrow
             content={
               <div className="max-w-xs">
-                <p className="font-semibold mb-2">🔍 Detecção Automática de Módulos</p>
-                <p className="text-sm mb-2">
-                  <strong>O que faz:</strong> Escaneia automaticamente a pasta <code>app/(protected)/</code> e detecta quais módulos realmente existem no código.
+                <p className="font-semibold mb-2">
+                  🔍 Detecção Automática de Módulos
                 </p>
                 <p className="text-sm mb-2">
-                  <strong>Quando usar:</strong> Sempre que você adicionar ou remover pastas de módulos no código.
+                  <strong>O que faz:</strong> Escaneia automaticamente a pasta{" "}
+                  <code>app/(protected)/</code> e detecta quais módulos
+                  realmente existem no código.
+                </p>
+                <p className="text-sm mb-2">
+                  <strong>Quando usar:</strong> Sempre que você adicionar ou
+                  remover pastas de módulos no código.
                 </p>
                 <p className="text-sm">
-                  <strong>Resultado:</strong> Remove módulos &quot;fantasma&quot; e mantém apenas os reais.
+                  <strong>Resultado:</strong> Remove módulos
+                  &quot;fantasma&quot; e mantém apenas os reais.
                 </p>
               </div>
             }
@@ -381,25 +506,58 @@ export default function ModulosAdminPage() {
                         repeat: autoDetectStatus.needsSync ? Infinity : 0,
                       }}
                     >
-                      {autoDetectStatus.needsSync ? <AlertTriangleIcon className="w-5 h-5 text-orange-600" /> : <CheckCircleIcon className="w-5 h-5 text-green-600" />}
+                      {autoDetectStatus.needsSync ? (
+                        <AlertTriangleIcon className="w-5 h-5 text-orange-600" />
+                      ) : (
+                        <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                      )}
                     </motion.div>
                     <div>
-                      <p className="font-medium text-foreground">{autoDetectStatus.needsSync ? "Módulos Desatualizados" : "Módulos Sincronizados"}</p>
+                      <p className="font-medium text-foreground">
+                        {autoDetectStatus.needsSync
+                          ? "Módulos Desatualizados"
+                          : "Módulos Sincronizados"}
+                      </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Banco: {autoDetectStatus.totalModules} módulos • {autoDetectStatus.totalRoutes} rotas
-                        {typeof autoDetectStatus.filesystemModules === "number" && typeof autoDetectStatus.filesystemRoutes === "number" && (
+                        Banco: {autoDetectStatus.totalModules} módulos •{" "}
+                        {autoDetectStatus.totalRoutes} rotas
+                        {typeof autoDetectStatus.filesystemModules ===
+                          "number" &&
+                          typeof autoDetectStatus.filesystemRoutes ===
+                            "number" && (
+                            <span>
+                              {" "}
+                              • Código: {
+                                autoDetectStatus.filesystemModules
+                              }{" "}
+                              módulos • {autoDetectStatus.filesystemRoutes}{" "}
+                              rotas
+                            </span>
+                          )}
+                        {autoDetectStatus.lastDetection && (
                           <span>
                             {" "}
-                            • Código: {autoDetectStatus.filesystemModules} módulos • {autoDetectStatus.filesystemRoutes} rotas
+                            • Última detecção:{" "}
+                            {new Date(
+                              autoDetectStatus.lastDetection,
+                            ).toLocaleString("pt-BR")}
                           </span>
                         )}
-                        {autoDetectStatus.lastDetection && <span> • Última detecção: {new Date(autoDetectStatus.lastDetection).toLocaleString("pt-BR")}</span>}
                       </p>
                     </div>
                   </div>
                   {autoDetectStatus.needsSync && (
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button color="warning" isLoading={loading} size="sm" startContent={<ZapIcon className="w-4 h-4" />} onPress={handleAutoDetect}>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button
+                        color="warning"
+                        isLoading={loading}
+                        size="sm"
+                        startContent={<ZapIcon className="w-4 h-4" />}
+                        onPress={handleAutoDetect}
+                      >
                         Detectar Agora
                       </Button>
                     </motion.div>
@@ -413,20 +571,32 @@ export default function ModulosAdminPage() {
 
       {/* Status de sincronização */}
       {syncStatus && (
-        <motion.div animate={{ opacity: 1, scale: 1 }} className="cursor-pointer" initial={{ opacity: 0, scale: 0.95 }} transition={{ delay: 0.25 }} whileHover={{ scale: 1.02 }}>
+        <motion.div
+          animate={{ opacity: 1, scale: 1 }}
+          className="cursor-pointer"
+          initial={{ opacity: 0, scale: 0.95 }}
+          transition={{ delay: 0.25 }}
+          whileHover={{ scale: 1.02 }}
+        >
           <Tooltip
             showArrow
             content={
               <div className="max-w-xs">
-                <p className="font-semibold mb-2">⚙️ Sincronização do Module Map</p>
-                <p className="text-sm mb-2">
-                  <strong>O que faz:</strong> Limpa o cache do mapeamento de módulos (API interna e middleware) para refletir imediatamente as rotas cadastradas no banco de dados.
+                <p className="font-semibold mb-2">
+                  ⚙️ Sincronização do Module Map
                 </p>
                 <p className="text-sm mb-2">
-                  <strong>Quando usar:</strong> Após adicionar/remover rotas de módulos ou quando o middleware não reconhece as permissões.
+                  <strong>O que faz:</strong> Limpa o cache do mapeamento de
+                  módulos (API interna e middleware) para refletir imediatamente
+                  as rotas cadastradas no banco de dados.
+                </p>
+                <p className="text-sm mb-2">
+                  <strong>Quando usar:</strong> Após adicionar/remover rotas de
+                  módulos ou quando o middleware não reconhece as permissões.
                 </p>
                 <p className="text-sm">
-                  <strong>Resultado:</strong> O sistema de controle de acesso funciona corretamente.
+                  <strong>Resultado:</strong> O sistema de controle de acesso
+                  funciona corretamente.
                 </p>
               </div>
             }
@@ -448,13 +618,30 @@ export default function ModulosAdminPage() {
                         repeat: syncStatus.needsSync ? Infinity : 0,
                       }}
                     >
-                      {syncStatus.needsSync ? <AlertTriangleIcon className="w-5 h-5 text-warning-600" /> : <CheckCircleIcon className="w-5 h-5 text-success-600" />}
+                      {syncStatus.needsSync ? (
+                        <AlertTriangleIcon className="w-5 h-5 text-warning-600" />
+                      ) : (
+                        <CheckCircleIcon className="w-5 h-5 text-success-600" />
+                      )}
                     </motion.div>
                     <div>
-                      <p className="font-medium text-foreground">{syncStatus.needsSync ? "Module Map Desatualizado" : "Module Map Sincronizado"}</p>
+                      <p className="font-medium text-foreground">
+                        {syncStatus.needsSync
+                          ? "Module Map Desatualizado"
+                          : "Module Map Sincronizado"}
+                      </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {syncStatus.totalModules} módulos • {syncStatus.totalRoutes} rotas
-                        {syncStatus.lastSync && <span> • Última sincronização: {new Date(syncStatus.lastSync).toLocaleString("pt-BR")}</span>}
+                        {syncStatus.totalModules} módulos •{" "}
+                        {syncStatus.totalRoutes} rotas
+                        {syncStatus.lastSync && (
+                          <span>
+                            {" "}
+                            • Última sincronização:{" "}
+                            {new Date(syncStatus.lastSync).toLocaleString(
+                              "pt-BR",
+                            )}
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -466,7 +653,11 @@ export default function ModulosAdminPage() {
       )}
 
       {/* Tabela de módulos */}
-      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ delay: 0.3 }}>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 20 }}
+        transition={{ delay: 0.3 }}
+      >
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between w-full">
@@ -526,52 +717,89 @@ export default function ModulosAdminPage() {
                   const categoriaNome = modulo.categoriaInfo?.nome || "";
                   const CategoryIcon = getCategoryIcon(modulo.categoriaInfo);
                   const categoryColor = getCategoryColor(modulo.categoriaInfo);
-                  const categoryClasses = getCategoryClasses(modulo.categoriaInfo);
+                  const categoryClasses = getCategoryClasses(
+                    modulo.categoriaInfo,
+                  );
 
                   return (
-                    <TableRow key={modulo.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200">
+                    <TableRow
+                      key={modulo.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200"
+                    >
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <motion.div className={`p-2 rounded-lg ${categoryClasses.bg}`} transition={{ type: "spring", stiffness: 300 }} whileHover={{ scale: 1.1, rotate: 5 }}>
-                            <CategoryIcon className={`w-4 h-4 ${categoryClasses.text}`} />
+                          <motion.div
+                            className={`p-2 rounded-lg ${categoryClasses.bg}`}
+                            transition={{ type: "spring", stiffness: 300 }}
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                          >
+                            <CategoryIcon
+                              className={`w-4 h-4 ${categoryClasses.text}`}
+                            />
                           </motion.div>
                           <div>
-                            <p className="font-medium text-foreground">{modulo.nome}</p>
-                            {modulo.descricao && <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">{modulo.descricao}</p>}
+                            <p className="font-medium text-foreground">
+                              {modulo.nome}
+                            </p>
+                            {modulo.descricao && (
+                              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
+                                {modulo.descricao}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <motion.div transition={{ type: "spring", stiffness: 300 }} whileHover={{ scale: 1.05 }}>
-                          <code className="text-sm bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 px-2 py-1 rounded font-mono">{modulo.slug}</code>
+                        <motion.div
+                          transition={{ type: "spring", stiffness: 300 }}
+                          whileHover={{ scale: 1.05 }}
+                        >
+                          <code className="text-sm bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 px-2 py-1 rounded font-mono">
+                            {modulo.slug}
+                          </code>
                         </motion.div>
                       </TableCell>
                       <TableCell>
                         <Select
+                          className="min-w-[200px]"
+                          placeholder="Selecionar categoria"
+                          selectedKeys={
+                            modulo.categoriaId ? [modulo.categoriaId] : []
+                          }
                           size="sm"
                           variant="bordered"
-                          placeholder="Selecionar categoria"
-                          selectedKeys={modulo.categoriaId ? [modulo.categoriaId] : []}
                           onSelectionChange={(keys) => {
                             const selectedKey = Array.from(keys)[0] as string;
-                            handleUpdateCategoria(modulo.id, selectedKey || null);
+
+                            handleUpdateCategoria(
+                              modulo.id,
+                              selectedKey || null,
+                            );
                           }}
-                          className="min-w-[200px]"
                         >
                           <SelectItem key="" textValue="Sem categoria">
                             <div className="flex items-center gap-2">
                               <PuzzleIcon className="w-4 h-4 text-gray-400" />
-                              <span className="text-gray-500">Sem categoria</span>
+                              <span className="text-gray-500">
+                                Sem categoria
+                              </span>
                             </div>
                           </SelectItem>
                           {
                             (modulosData?.data?.categorias?.map((categoria) => {
                               const CatIcon = getCategoryIcon(categoria);
                               const catColor = getCategoryColor(categoria);
+
                               return (
-                                <SelectItem key={categoria.id} textValue={categoria.nome}>
+                                <SelectItem
+                                  key={categoria.id}
+                                  textValue={categoria.nome}
+                                >
                                   <div className="flex items-center gap-2">
-                                    <CatIcon className="w-4 h-4" style={{ color: catColor }} />
+                                    <CatIcon
+                                      className="w-4 h-4"
+                                      style={{ color: catColor }}
+                                    />
                                     <span>{categoria.nome}</span>
                                   </div>
                                 </SelectItem>
@@ -583,8 +811,14 @@ export default function ModulosAdminPage() {
                       <TableCell>
                         <div className="flex items-center justify-center">
                           {modulo.rotas && modulo.rotas.length > 0 ? (
-                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                              <Tooltip content={`Visualizar ${modulo.rotas.length} rotas`} placement="top">
+                            <motion.div
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                            >
+                              <Tooltip
+                                content={`Visualizar ${modulo.rotas.length} rotas`}
+                                placement="top"
+                              >
                                 <Button
                                   isIconOnly
                                   className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
@@ -603,14 +837,21 @@ export default function ModulosAdminPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <motion.div transition={{ type: "spring", stiffness: 300 }} whileHover={{ scale: 1.05 }}>
+                        <motion.div
+                          transition={{ type: "spring", stiffness: 300 }}
+                          whileHover={{ scale: 1.05 }}
+                        >
                           <Chip
                             className={`${modulo.ativo ? "bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30" : "bg-gradient-to-r from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30"}`}
                             color={modulo.ativo ? "success" : "danger"}
                             size="sm"
                             variant="flat"
                           >
-                            {modulo.ativo ? <CheckCircleIcon className="w-3 h-3 mr-1" /> : <XCircleIcon className="w-3 h-3 mr-1" />}
+                            {modulo.ativo ? (
+                              <CheckCircleIcon className="w-3 h-3 mr-1" />
+                            ) : (
+                              <XCircleIcon className="w-3 h-3 mr-1" />
+                            )}
                             {modulo.ativo ? "Ativo" : "Inativo"}
                           </Chip>
                         </motion.div>
@@ -625,7 +866,12 @@ export default function ModulosAdminPage() {
       </motion.div>
 
       {/* Modal de visualização de rotas */}
-      <Modal isOpen={isRoutesModalOpen} scrollBehavior="inside" size="3xl" onClose={onRoutesModalClose}>
+      <Modal
+        isOpen={isRoutesModalOpen}
+        scrollBehavior="inside"
+        size="3xl"
+        onClose={onRoutesModalClose}
+      >
         <ModalContent>
           <ModalHeader className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
@@ -634,7 +880,8 @@ export default function ModulosAdminPage() {
             <div>
               <h2 className="text-xl font-bold">Rotas do Módulo</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {selectedModulo?.nome} - {selectedModulo?.rotas?.length || 0} rotas
+                {selectedModulo?.nome} - {selectedModulo?.rotas?.length || 0}{" "}
+                rotas
               </p>
             </div>
           </ModalHeader>
@@ -642,21 +889,46 @@ export default function ModulosAdminPage() {
             {selectedModulo?.rotas && selectedModulo.rotas.length > 0 ? (
               <div className="grid grid-cols-1 gap-3">
                 {selectedModulo.rotas.map((rota: any, index: number) => (
-                  <motion.div key={rota.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} whileHover={{ scale: 1.02 }}>
+                  <motion.div
+                    key={rota.id}
+                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                  >
                     <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700">
                       <CardBody className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <motion.div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg" whileHover={{ rotate: 5 }} transition={{ type: "spring", stiffness: 300 }}>
+                            <motion.div
+                              className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg"
+                              transition={{ type: "spring", stiffness: 300 }}
+                              whileHover={{ rotate: 5 }}
+                            >
                               <RouteIcon className="w-4 h-4 text-blue-600" />
                             </motion.div>
                             <div>
-                              <p className="font-mono text-sm font-medium text-blue-900 dark:text-blue-100">{rota.rota}</p>
-                              {rota.descricao && <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">{rota.descricao}</p>}
+                              <p className="font-mono text-sm font-medium text-blue-900 dark:text-blue-100">
+                                {rota.rota}
+                              </p>
+                              {rota.descricao && (
+                                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                  {rota.descricao}
+                                </p>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Chip size="sm" color={rota.ativo ? "success" : "danger"} variant="flat" className={rota.ativo ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"}>
+                            <Chip
+                              className={
+                                rota.ativo
+                                  ? "bg-green-100 dark:bg-green-900/30"
+                                  : "bg-red-100 dark:bg-red-900/30"
+                              }
+                              color={rota.ativo ? "success" : "danger"}
+                              size="sm"
+                              variant="flat"
+                            >
                               {rota.ativo ? (
                                 <>
                                   <CheckCircleIcon className="w-3 h-3 mr-1" />
@@ -677,16 +949,26 @@ export default function ModulosAdminPage() {
                 ))}
               </div>
             ) : (
-              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
+              <motion.div
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-8"
+                initial={{ opacity: 0, scale: 0.9 }}
+              >
                 <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                   <RouteIcon className="w-8 h-8 text-gray-400" />
                 </div>
-                <p className="text-gray-500 dark:text-gray-400">Nenhuma rota encontrada para este módulo</p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Nenhuma rota encontrada para este módulo
+                </p>
               </motion.div>
             )}
           </ModalBody>
           <ModalFooter>
-            <Button color="primary" startContent={<ArrowRightIcon className="w-4 h-4" />} onPress={onRoutesModalClose}>
+            <Button
+              color="primary"
+              startContent={<ArrowRightIcon className="w-4 h-4" />}
+              onPress={onRoutesModalClose}
+            >
               Fechar
             </Button>
           </ModalFooter>
@@ -694,7 +976,12 @@ export default function ModulosAdminPage() {
       </Modal>
 
       {/* Modal de ajuda */}
-      <Modal isOpen={isHelpOpen} scrollBehavior="inside" size="4xl" onClose={onHelpClose}>
+      <Modal
+        isOpen={isHelpOpen}
+        scrollBehavior="inside"
+        size="4xl"
+        onClose={onHelpClose}
+      >
         <ModalContent>
           <ModalHeader className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -702,7 +989,9 @@ export default function ModulosAdminPage() {
             </div>
             <div>
               <h2 className="text-xl font-bold">Guia de Gestão de Módulos</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Aprenda como gerenciar os módulos do sistema</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Aprenda como gerenciar os módulos do sistema
+              </p>
             </div>
           </ModalHeader>
           <ModalBody className="space-y-6">
@@ -713,13 +1002,20 @@ export default function ModulosAdminPage() {
                   <TargetIcon className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100">O que são Módulos?</h3>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">Funcionalidades do sistema que podem ser ativadas por plano</p>
+                  <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                    O que são Módulos?
+                  </h3>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    Funcionalidades do sistema que podem ser ativadas por plano
+                  </p>
                 </div>
               </div>
               <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
-                Módulos são funcionalidades do sistema que podem ser ativadas ou desativadas por plano. Cada módulo representa uma área específica como "Gestão de Processos", "Financeiro", etc. Eles
-                controlam o acesso às rotas do sistema através do middleware de autenticação.
+                Módulos são funcionalidades do sistema que podem ser ativadas ou
+                desativadas por plano. Cada módulo representa uma área
+                específica como "Gestão de Processos", "Financeiro", etc. Eles
+                controlam o acesso às rotas do sistema através do middleware de
+                autenticação.
               </p>
             </div>
 
@@ -731,9 +1027,13 @@ export default function ModulosAdminPage() {
                     <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
                       <ZapIcon className="w-5 h-5 text-purple-600" />
                     </div>
-                    <h3 className="font-semibold text-purple-900 dark:text-purple-100">Detecção Automática</h3>
+                    <h3 className="font-semibold text-purple-900 dark:text-purple-100">
+                      Detecção Automática
+                    </h3>
                   </div>
-                  <p className="text-sm text-purple-800 dark:text-purple-200 mb-3">O sistema detecta automaticamente módulos do código.</p>
+                  <p className="text-sm text-purple-800 dark:text-purple-200 mb-3">
+                    O sistema detecta automaticamente módulos do código.
+                  </p>
                   <ul className="text-xs text-purple-700 dark:text-purple-300 space-y-1">
                     <li>• Escaneia a pasta app/(protected)/</li>
                     <li>• Remove módulos "fantasma"</li>
@@ -748,9 +1048,13 @@ export default function ModulosAdminPage() {
                     <div className="p-2 bg-indigo-100 dark:bg-indigo-800 rounded-lg">
                       <SettingsIcon className="w-5 h-5 text-indigo-600" />
                     </div>
-                    <h3 className="font-semibold text-indigo-900 dark:text-indigo-100">Sincronização</h3>
+                    <h3 className="font-semibold text-indigo-900 dark:text-indigo-100">
+                      Sincronização
+                    </h3>
                   </div>
-                  <p className="text-sm text-indigo-800 dark:text-indigo-200 mb-3">Atualiza o cache do mapeamento de módulos.</p>
+                  <p className="text-sm text-indigo-800 dark:text-indigo-200 mb-3">
+                    Atualiza o cache do mapeamento de módulos.
+                  </p>
                   <ul className="text-xs text-indigo-700 dark:text-indigo-300 space-y-1">
                     <li>• Limpa cache da API interna</li>
                     <li>• Atualiza middleware de autenticação</li>
@@ -771,7 +1075,9 @@ export default function ModulosAdminPage() {
               <div className="space-y-4">
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
                   <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
-                    <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</span>
+                    <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                      1
+                    </span>
                     Criar Módulo no Código
                   </h4>
                   <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-1 ml-8">
@@ -784,7 +1090,9 @@ export default function ModulosAdminPage() {
 
                 <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-700">
                   <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2 flex items-center gap-2">
-                    <span className="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</span>
+                    <span className="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                      2
+                    </span>
                     Detectar Módulos Automaticamente
                   </h4>
                   <ol className="text-sm text-purple-800 dark:text-purple-200 space-y-1 ml-8">
@@ -797,7 +1105,9 @@ export default function ModulosAdminPage() {
 
                 <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-700">
                   <h4 className="font-semibold text-orange-900 dark:text-orange-100 mb-2 flex items-center gap-2">
-                    <span className="bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</span>
+                    <span className="bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                      3
+                    </span>
                     Sincronizar com o Sistema
                   </h4>
                   <ol className="text-sm text-orange-800 dark:text-orange-200 space-y-1 ml-8">
@@ -822,35 +1132,50 @@ export default function ModulosAdminPage() {
                   <HelpCircleIcon className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-medium text-sm">Slug Único</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">O slug deve ser único e em formato kebab-case (ex: gestao-processos)</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      O slug deve ser único e em formato kebab-case (ex:
+                      gestao-processos)
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <AlertTriangleIcon className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-medium text-sm">Exclusão Cuidadosa</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Não exclua módulos que estão sendo usados por planos ativos</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Não exclua módulos que estão sendo usados por planos
+                      ativos
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <CheckCircleIcon className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-medium text-sm">Status Ativo</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Apenas módulos ativos aparecem nas opções de planos</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Apenas módulos ativos aparecem nas opções de planos
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <RouteIcon className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-medium text-sm">Rotas e Middleware</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Sempre sincronize após alterar rotas para que o middleware funcione corretamente</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Sempre sincronize após alterar rotas para que o middleware
+                      funcione corretamente
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button color="primary" startContent={<ArrowRightIcon className="w-4 h-4" />} onPress={onHelpClose}>
+            <Button
+              color="primary"
+              startContent={<ArrowRightIcon className="w-4 h-4" />}
+              onPress={onHelpClose}
+            >
               Entendi!
             </Button>
           </ModalFooter>
