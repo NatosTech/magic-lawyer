@@ -270,7 +270,6 @@ export function ModelosProcuracaoContent() {
                     startContent={<Copy className="h-4 w-4" />}
                     onPress={() => {
                       // Implementar cópia do modelo
-                      console.log("Copiar modelo:", modelo.id);
                     }}
                   >
                     Duplicar
@@ -280,7 +279,6 @@ export function ModelosProcuracaoContent() {
                     startContent={<Download className="h-4 w-4" />}
                     onPress={() => {
                       // Implementar download do template
-                      console.log("Download template:", modelo.id);
                     }}
                   >
                     Baixar Template
