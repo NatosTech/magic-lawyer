@@ -1,13 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@heroui/modal";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
@@ -15,10 +9,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { Upload, FileText, X } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  useUploadDocumentoProcuracao,
-  TIPOS_DOCUMENTO,
-} from "@/app/hooks/use-documentos-procuracao";
+import { useUploadDocumentoProcuracao, TIPOS_DOCUMENTO } from "@/app/hooks/use-documentos-procuracao";
 
 interface DocumentoUploadModalProps {
   isOpen: boolean;
@@ -27,17 +18,11 @@ interface DocumentoUploadModalProps {
   onSuccess?: () => void;
 }
 
-export default function DocumentoUploadModal({
-  isOpen,
-  onClose,
-  procuracaoId,
-  onSuccess,
-}: DocumentoUploadModalProps) {
+export default function DocumentoUploadModal({ isOpen, onClose, procuracaoId, onSuccess }: DocumentoUploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState("");
   const [description, setDescription] = useState("");
-  const [tipo, setTipo] =
-    useState<(typeof TIPOS_DOCUMENTO)[number]["value"]>("documento_original");
+  const [tipo, setTipo] = useState<(typeof TIPOS_DOCUMENTO)[number]["value"]>("documento_original");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { upload, isUploading } = useUploadDocumentoProcuracao();
@@ -117,9 +102,7 @@ export default function DocumentoUploadModal({
       onClose();
       onSuccess?.();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Erro ao enviar documento",
-      );
+      toast.error(error instanceof Error ? error.message : "Erro ao enviar documento");
     } finally {
       setIsSubmitting(false);
     }
@@ -155,9 +138,7 @@ export default function DocumentoUploadModal({
                 <Upload className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-semibold">Anexar Documento</h3>
               </div>
-              <p className="text-sm text-default-500">
-                Faça upload de um documento PDF para esta procuração
-              </p>
+              <p className="text-sm text-default-500">Faça upload de um documento PDF para esta procuração</p>
             </ModalHeader>
 
             <ModalBody className="space-y-4">
@@ -167,9 +148,7 @@ export default function DocumentoUploadModal({
                 placeholder="Selecione o tipo"
                 selectedKeys={[tipo]}
                 onSelectionChange={(keys) => {
-                  const selected = Array.from(
-                    keys,
-                  )[0] as (typeof TIPOS_DOCUMENTO)[number]["value"];
+                  const selected = Array.from(keys)[0] as (typeof TIPOS_DOCUMENTO)[number]["value"];
 
                   setTipo(selected);
                 }}
@@ -178,55 +157,29 @@ export default function DocumentoUploadModal({
                   <SelectItem key={tipo.value} textValue={tipo.label}>
                     <div className="flex flex-col">
                       <span className="font-medium">{tipo.label}</span>
-                      <span className="text-xs text-default-400">
-                        {tipo.description}
-                      </span>
+                      <span className="text-xs text-default-400">{tipo.description}</span>
                     </div>
                   </SelectItem>
                 ))}
               </Select>
 
               {/* Nome do Arquivo */}
-              <Input
-                isRequired
-                label="Nome do Arquivo"
-                placeholder="Ex: Procuração Assinada"
-                value={fileName}
-                onValueChange={setFileName}
-              />
+              <Input isRequired label="Nome do Arquivo" placeholder="Ex: Procuração Assinada" value={fileName} onValueChange={setFileName} />
 
               {/* Upload de Arquivo */}
               <div className="space-y-2">
                 <p className="text-sm font-medium">Arquivo PDF</p>
                 <div className="border-2 border-dashed border-default-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
-                  <input
-                    accept=".pdf"
-                    className="hidden"
-                    disabled={isSubmitting || isUploading}
-                    id="file-upload"
-                    type="file"
-                    onChange={handleFileChange}
-                  />
+                  <input accept=".pdf" className="hidden" disabled={isSubmitting || isUploading} id="file-upload" type="file" onChange={handleFileChange} />
                   <label className="cursor-pointer" htmlFor="file-upload">
                     {selectedFile ? (
                       <div className="space-y-2">
                         <FileText className="h-8 w-8 text-primary mx-auto" />
                         <div>
-                          <p className="font-medium text-default-900">
-                            {selectedFile.name}
-                          </p>
-                          <p className="text-sm text-default-500">
-                            {formatFileSize(selectedFile.size)}
-                          </p>
+                          <p className="font-medium text-default-900">{selectedFile.name}</p>
+                          <p className="text-sm text-default-500">{formatFileSize(selectedFile.size)}</p>
                         </div>
-                        <Button
-                          color="danger"
-                          isDisabled={isSubmitting || isUploading}
-                          size="sm"
-                          startContent={<X className="h-3 w-3" />}
-                          variant="light"
-                          onPress={() => setSelectedFile(null)}
-                        >
+                        <Button color="danger" isDisabled={isSubmitting || isUploading} size="sm" startContent={<X className="h-3 w-3" />} variant="light" onPress={() => setSelectedFile(null)}>
                           Remover
                         </Button>
                       </div>
@@ -234,12 +187,8 @@ export default function DocumentoUploadModal({
                       <div className="space-y-2">
                         <Upload className="h-8 w-8 text-default-400 mx-auto" />
                         <div>
-                          <p className="text-sm font-medium text-default-600">
-                            Clique para selecionar um arquivo PDF
-                          </p>
-                          <p className="text-xs text-default-400">
-                            Máximo 10MB
-                          </p>
+                          <p className="text-sm font-medium text-default-600">Clique para selecionar um arquivo PDF</p>
+                          <p className="text-xs text-default-400">Máximo 10MB</p>
                         </div>
                       </div>
                     )}
@@ -248,37 +197,21 @@ export default function DocumentoUploadModal({
               </div>
 
               {/* Descrição */}
-              <Textarea
-                label="Descrição (opcional)"
-                minRows={2}
-                placeholder="Adicione uma descrição sobre o documento..."
-                value={description}
-                onValueChange={setDescription}
-              />
+              <Textarea label="Descrição (opcional)" minRows={2} placeholder="Adicione uma descrição sobre o documento..." value={description} onValueChange={setDescription} />
             </ModalBody>
 
             <ModalFooter>
-              <Button
-                isDisabled={isSubmitting || isUploading}
-                variant="light"
-                onPress={handleClose}
-              >
+              <Button isDisabled={isSubmitting || isUploading} variant="light" onPress={handleClose}>
                 Cancelar
               </Button>
               <Button
                 color="primary"
                 isDisabled={!selectedFile || !fileName.trim()}
                 isLoading={isSubmitting || isUploading}
-                startContent={
-                  !isSubmitting && !isUploading ? (
-                    <Upload className="h-4 w-4" />
-                  ) : undefined
-                }
+                startContent={!isSubmitting && !isUploading ? <Upload className="h-4 w-4" /> : undefined}
                 onPress={handleSubmit}
               >
-                {isSubmitting || isUploading
-                  ? "Enviando..."
-                  : "Enviar Documento"}
+                {isSubmitting || isUploading ? "Enviando..." : "Enviar Documento"}
               </Button>
             </ModalFooter>
           </>

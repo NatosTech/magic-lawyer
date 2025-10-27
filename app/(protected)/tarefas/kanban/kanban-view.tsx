@@ -548,20 +548,6 @@ export default function KanbanView() {
                 selectedKeys={selectedProcessKeys}
                 onSelectionChange={(keys) => {
                   const value = Array.from(keys)[0];
-
-                  console.log("🔍 Kanban Processo - Keys:", keys);
-                  console.log("🔍 Kanban Processo - Valor:", value);
-                  console.log(
-                    "🔍 Kanban Processo - formData.processoId:",
-                    formData.processoId,
-                  );
-                  console.log(
-                    "🔍 Kanban Processo - Processos:",
-                    (processos || []).map((p: any) => ({
-                      id: p.id,
-                      numero: p.numero,
-                    })),
-                  );
                   setFormData({ ...formData, processoId: value as string });
                 }}
               >

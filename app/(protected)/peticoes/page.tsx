@@ -700,7 +700,6 @@ function PeticaoModal({
 
   useEffect(() => {
     if (mode === "create") {
-      console.log("📝 Modal Petição - Modo CREATE");
       setFormData({
         processoId: "",
         titulo: "",
@@ -711,10 +710,6 @@ function PeticaoModal({
       });
       setSelectedFile(null);
     } else if (peticao) {
-      console.log("📝 Modal Petição - Modo EDIT/VIEW", {
-        processoId: peticao.processo.id,
-        processoNumero: peticao.processo.numero,
-      });
       setFormData({
         processoId: peticao.processo.id,
         causaId: peticao.causa?.id,
@@ -894,14 +889,6 @@ function PeticaoModal({
 
   const isReadOnly = mode === "view";
 
-  // 🔍 LOG DE DEBUG - Ver estado do formData no render
-  console.log("🎨 Renderizando Modal Petição:", {
-    mode,
-    formDataProcessoId: formData.processoId,
-    selectedKeys: formData.processoId ? [formData.processoId] : [],
-    totalProcessos: processos.length,
-  });
-
   return (
     <Modal isOpen={isOpen} scrollBehavior="inside" size="3xl" onClose={onClose}>
       <ModalContent>
@@ -925,16 +912,6 @@ function PeticaoModal({
             onSelectionChange={(keys) => {
               const value = Array.from(keys)[0];
 
-              console.log("🔍 Select Processo - Keys recebidas:", keys);
-              console.log("🔍 Select Processo - Valor extraído:", value);
-              console.log(
-                "🔍 Select Processo - formData.processoId atual:",
-                formData.processoId,
-              );
-              console.log(
-                "🔍 Select Processo - Processos disponíveis:",
-                processos.map((p: any) => ({ id: p.id, numero: p.numero })),
-              );
               setFormData({ ...formData, processoId: value as string });
             }}
           >

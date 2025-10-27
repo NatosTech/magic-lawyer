@@ -70,24 +70,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  getCargos,
-  getUsuariosEquipe,
-  getDashboardEquipe,
-  createCargo,
-  updateCargo,
-  deleteCargo,
-  type CargoData,
-  type UsuarioEquipeData,
-} from "@/app/actions/equipe";
-import {
-  getConvitesEquipe,
-  createConviteEquipe,
-  resendConviteEquipe,
-  cancelConviteEquipe,
-  type ConviteEquipeData,
-  type CreateConviteData,
-} from "@/app/actions/convites-equipe";
+import { getCargos, getUsuariosEquipe, getDashboardEquipe, createCargo, updateCargo, deleteCargo, type CargoData, type UsuarioEquipeData } from "@/app/actions/equipe";
+import { getConvitesEquipe, createConviteEquipe, resendConviteEquipe, cancelConviteEquipe, type ConviteEquipeData, type CreateConviteData } from "@/app/actions/convites-equipe";
 import { getAdvogados } from "@/app/actions/advogados";
 
 // ===== COMPONENTES =====
@@ -157,9 +141,7 @@ function DashboardEquipe() {
           </div>
           <div>
             <p className="text-sm text-default-500">Convites Pendentes</p>
-            <p className="text-2xl font-bold">
-              {dashboardData.convitesPendentes}
-            </p>
+            <p className="text-2xl font-bold">{dashboardData.convitesPendentes}</p>
           </div>
         </CardBody>
       </Card>
@@ -171,9 +153,7 @@ function DashboardEquipe() {
           </div>
           <div>
             <p className="text-sm text-default-500">Vinculações Ativas</p>
-            <p className="text-2xl font-bold">
-              {dashboardData.vinculacoesAtivas}
-            </p>
+            <p className="text-2xl font-bold">{dashboardData.vinculacoesAtivas}</p>
           </div>
         </CardBody>
       </Card>
@@ -231,11 +211,7 @@ function CargosTab() {
     const cargo = cargos.find((c) => c.id === cargoId);
     const cargoNome = cargo?.nome || "este cargo";
 
-    if (
-      !confirm(
-        `Tem certeza que deseja excluir o cargo "${cargoNome}"?\n\nEsta ação não pode ser desfeita e pode afetar usuários vinculados a este cargo.`,
-      )
-    ) {
+    if (!confirm(`Tem certeza que deseja excluir o cargo "${cargoNome}"?\n\nEsta ação não pode ser desfeita e pode afetar usuários vinculados a este cargo.`)) {
       return;
     }
 
@@ -245,9 +221,7 @@ function CargosTab() {
       toast.success(`Cargo "${cargoNome}" excluído com sucesso!`);
       loadCargos();
     } catch (error) {
-      toast.error(
-        "Erro ao excluir cargo. Verifique se não há usuários vinculados a este cargo.",
-      );
+      toast.error("Erro ao excluir cargo. Verifique se não há usuários vinculados a este cargo.");
     } finally {
       setActionLoading(null);
     }
@@ -286,9 +260,7 @@ function CargosTab() {
     try {
       const csvContent = [
         // Cabeçalho
-        ["Nome", "Descrição", "Nível", "Status", "Usuários", "Permissões"].join(
-          ",",
-        ),
+        ["Nome", "Descrição", "Nível", "Status", "Usuários", "Permissões"].join(","),
         // Dados
         ...filteredCargos.map((cargo) =>
           [
@@ -298,7 +270,7 @@ function CargosTab() {
             `"${cargo.ativo ? "Ativo" : "Inativo"}"`,
             `"${cargo.usuariosCount}"`,
             `"${cargo.permissoes.length}"`,
-          ].join(","),
+          ].join(",")
         ),
       ].join("\n");
 
@@ -307,10 +279,7 @@ function CargosTab() {
       const url = URL.createObjectURL(blob);
 
       link.setAttribute("href", url);
-      link.setAttribute(
-        "download",
-        `equipe-cargos-${new Date().toISOString().split("T")[0]}.csv`,
-      );
+      link.setAttribute("download", `equipe-cargos-${new Date().toISOString().split("T")[0]}.csv`);
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
@@ -325,11 +294,8 @@ function CargosTab() {
   // Filtros
   const filteredCargos = useMemo(() => {
     return cargos.filter((cargo) => {
-      const matchesSearch =
-        cargo.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cargo.descricao?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesNivel =
-        selectedNivel === "all" || cargo.nivel.toString() === selectedNivel;
+      const matchesSearch = cargo.nome.toLowerCase().includes(searchTerm.toLowerCase()) || cargo.descricao?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesNivel = selectedNivel === "all" || cargo.nivel.toString() === selectedNivel;
 
       return matchesSearch && matchesNivel;
     });
@@ -337,10 +303,7 @@ function CargosTab() {
 
   // Paginação
   const totalPages = Math.ceil(filteredCargos.length / itemsPerPage);
-  const paginatedCargos = filteredCargos.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const paginatedCargos = filteredCargos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   if (loading) {
     return (
@@ -359,12 +322,7 @@ function CargosTab() {
             <Input
               endContent={
                 searchTerm && (
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    variant="light"
-                    onPress={() => setSearchTerm("")}
-                  >
+                  <Button isIconOnly size="sm" variant="light" onPress={() => setSearchTerm("")}>
                     <X className="w-4 h-4" />
                   </Button>
                 )
@@ -376,21 +334,13 @@ function CargosTab() {
             />
           </div>
 
-          <Button
-            startContent={<Filter className="w-4 h-4" />}
-            variant="light"
-            onPress={() => setShowFilters(!showFilters)}
-          >
+          <Button startContent={<Filter className="w-4 h-4" />} variant="light" onPress={() => setShowFilters(!showFilters)}>
             Filtros
           </Button>
         </div>
 
         <div className="flex gap-2">
-          <Button
-            startContent={<Download className="w-4 h-4" />}
-            variant="light"
-            onPress={() => handleExportCargos()}
-          >
+          <Button startContent={<Download className="w-4 h-4" />} variant="light" onPress={() => handleExportCargos()}>
             Exportar
           </Button>
           <Button
@@ -409,12 +359,7 @@ function CargosTab() {
       {/* Filtros expandidos */}
       <AnimatePresence>
         {showFilters && (
-          <motion.div
-            animate={{ opacity: 1, height: "auto" }}
-            className="overflow-hidden"
-            exit={{ opacity: 0, height: 0 }}
-            initial={{ opacity: 0, height: 0 }}
-          >
+          <motion.div animate={{ opacity: 1, height: "auto" }} className="overflow-hidden" exit={{ opacity: 0, height: 0 }} initial={{ opacity: 0, height: 0 }}>
             <Card>
               <CardBody>
                 <div className="flex flex-wrap gap-4">
@@ -422,9 +367,7 @@ function CargosTab() {
                     className="min-w-40"
                     label="Nível"
                     placeholder="Todos os níveis"
-                    selectedKeys={
-                      selectedNivel === "all" ? [] : [selectedNivel]
-                    }
+                    selectedKeys={selectedNivel === "all" ? [] : [selectedNivel]}
                     onSelectionChange={(keys) => {
                       const selected = Array.from(keys)[0] as string;
 
@@ -459,35 +402,19 @@ function CargosTab() {
       {/* Grid de cargos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {paginatedCargos.map((cargo) => (
-          <motion.div
-            key={cargo.id}
-            animate={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div key={cargo.id} animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.3 }}>
             <Card className="h-full">
               <CardHeader className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="text-lg font-semibold">{cargo.nome}</h3>
-                    <Tooltip
-                      content={`Nível ${cargo.nivel} - ${getNivelLabel(cargo.nivel)}`}
-                    >
-                      <Chip
-                        color={getNivelColor(cargo.nivel)}
-                        size="sm"
-                        startContent={<Crown className="w-3 h-3" />}
-                        variant="flat"
-                      >
+                    <Tooltip content={`Nível ${cargo.nivel} - ${getNivelLabel(cargo.nivel)}`}>
+                      <Chip color={getNivelColor(cargo.nivel)} size="sm" startContent={<Crown className="w-3 h-3" />} variant="flat">
                         {getNivelLabel(cargo.nivel)}
                       </Chip>
                     </Tooltip>
                   </div>
-                  {cargo.descricao && (
-                    <p className="text-sm text-default-500 line-clamp-2">
-                      {cargo.descricao}
-                    </p>
-                  )}
+                  {cargo.descricao && <p className="text-sm text-default-500 line-clamp-2">{cargo.descricao}</p>}
                 </div>
                 <Dropdown>
                   <DropdownTrigger>
@@ -496,11 +423,7 @@ function CargosTab() {
                     </Button>
                   </DropdownTrigger>
                   <DropdownMenu>
-                    <DropdownItem
-                      key="edit"
-                      startContent={<Edit className="w-4 h-4" />}
-                      onPress={() => handleEditCargo(cargo)}
-                    >
+                    <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />} onPress={() => handleEditCargo(cargo)}>
                       Editar
                     </DropdownItem>
                     <DropdownItem
@@ -508,13 +431,7 @@ function CargosTab() {
                       className="text-danger"
                       color="danger"
                       isDisabled={actionLoading === cargo.id}
-                      startContent={
-                        actionLoading === cargo.id ? (
-                          <Spinner size="sm" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )
-                      }
+                      startContent={actionLoading === cargo.id ? <Spinner size="sm" /> : <Trash2 className="w-4 h-4" />}
                       onPress={() => handleDeleteCargo(cargo.id)}
                     >
                       {actionLoading === cargo.id ? "Excluindo..." : "Excluir"}
@@ -527,16 +444,10 @@ function CargosTab() {
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-default-400" />
-                      <span className="text-sm text-default-500">
-                        {cargo.usuariosCount} usuário(s)
-                      </span>
+                      <span className="text-sm text-default-500">{cargo.usuariosCount} usuário(s)</span>
                     </div>
                     <Badge color="primary" content={cargo.permissoes.length}>
-                      <Chip
-                        size="sm"
-                        startContent={<Shield className="w-3 h-3" />}
-                        variant="flat"
-                      >
+                      <Chip size="sm" startContent={<Shield className="w-3 h-3" />} variant="flat">
                         Permissões
                       </Chip>
                     </Badge>
@@ -544,9 +455,7 @@ function CargosTab() {
 
                   <div className="flex items-center gap-2">
                     <Switch isDisabled isSelected={cargo.ativo} size="sm" />
-                    <span className="text-sm text-default-500">
-                      {cargo.ativo ? "Ativo" : "Inativo"}
-                    </span>
+                    <span className="text-sm text-default-500">{cargo.ativo ? "Ativo" : "Inativo"}</span>
                   </div>
                 </div>
               </CardBody>
@@ -558,13 +467,7 @@ function CargosTab() {
       {/* Paginação */}
       {totalPages > 1 && (
         <div className="flex justify-center">
-          <Pagination
-            showControls
-            showShadow
-            page={currentPage}
-            total={totalPages}
-            onChange={setCurrentPage}
-          />
+          <Pagination showControls showShadow page={currentPage} total={totalPages} onChange={setCurrentPage} />
         </div>
       )}
 
@@ -573,14 +476,8 @@ function CargosTab() {
         <Card>
           <CardBody className="text-center py-12">
             <Users className="w-12 h-12 text-default-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              Nenhum cargo encontrado
-            </h3>
-            <p className="text-default-500 mb-4">
-              {searchTerm || selectedNivel !== "all"
-                ? "Tente ajustar os filtros de busca"
-                : "Crie o primeiro cargo para começar a organizar sua equipe"}
-            </p>
+            <h3 className="text-lg font-semibold mb-2">Nenhum cargo encontrado</h3>
+            <p className="text-default-500 mb-4">{searchTerm || selectedNivel !== "all" ? "Tente ajustar os filtros de busca" : "Crie o primeiro cargo para começar a organizar sua equipe"}</p>
             {!searchTerm && selectedNivel === "all" && (
               <Button
                 color="primary"
@@ -666,9 +563,7 @@ function CargoModal({
 
     setFormData((prev) => ({
       ...prev,
-      permissoes: prev.permissoes.includes(permissao)
-        ? prev.permissoes.filter((p) => p !== permissao)
-        : [...prev.permissoes, permissao],
+      permissoes: prev.permissoes.includes(permissao) ? prev.permissoes.filter((p) => p !== permissao) : [...prev.permissoes, permissao],
     }));
   }
 
@@ -746,23 +641,13 @@ function CargoModal({
         <ModalHeader>
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold">
-              {cargo ? "Editar Cargo" : "Novo Cargo"}
-            </h2>
+            <h2 className="text-xl font-semibold">{cargo ? "Editar Cargo" : "Novo Cargo"}</h2>
           </div>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                isRequired
-                label="Nome do Cargo"
-                placeholder="Ex: Advogado Sênior"
-                value={formData.nome}
-                onChange={(e) =>
-                  setFormData({ ...formData, nome: e.target.value })
-                }
-              />
+              <Input isRequired label="Nome do Cargo" placeholder="Ex: Advogado Sênior" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} />
 
               <Select
                 label="Nível Hierárquico"
@@ -811,18 +696,11 @@ function CargoModal({
               minRows={3}
               placeholder="Descreva as responsabilidades e funções deste cargo..."
               value={formData.descricao}
-              onChange={(e) =>
-                setFormData({ ...formData, descricao: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
             />
 
             <div className="flex items-center gap-2">
-              <Switch
-                isSelected={formData.ativo}
-                onValueChange={(checked) =>
-                  setFormData({ ...formData, ativo: checked })
-                }
-              />
+              <Switch isSelected={formData.ativo} onValueChange={(checked) => setFormData({ ...formData, ativo: checked })} />
               <span className="text-sm">Cargo ativo</span>
             </div>
 
@@ -842,24 +720,13 @@ function CargoModal({
                     <h5 className="font-medium mb-3 flex items-center gap-2">
                       {modulo.label}
                       <Chip size="sm" variant="flat">
-                        {
-                          acoes.filter((acao) =>
-                            hasPermissao(modulo.key, acao.key),
-                          ).length
-                        }
-                        /{acoes.length}
+                        {acoes.filter((acao) => hasPermissao(modulo.key, acao.key)).length}/{acoes.length}
                       </Chip>
                     </h5>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {acoes.map((acao) => (
                         <div key={acao.key} className="flex items-center gap-2">
-                          <Checkbox
-                            isSelected={hasPermissao(modulo.key, acao.key)}
-                            size="sm"
-                            onValueChange={() =>
-                              togglePermissao(modulo.key, acao.key)
-                            }
-                          />
+                          <Checkbox isSelected={hasPermissao(modulo.key, acao.key)} size="sm" onValueChange={() => togglePermissao(modulo.key, acao.key)} />
                           <span className="text-sm">{acao.label}</span>
                         </div>
                       ))}
@@ -874,12 +741,7 @@ function CargoModal({
           <Button variant="light" onPress={onClose}>
             Cancelar
           </Button>
-          <Button
-            color="primary"
-            isDisabled={!formData.nome.trim()}
-            isLoading={loading}
-            onPress={handleSubmit}
-          >
+          <Button color="primary" isDisabled={!formData.nome.trim()} isLoading={loading} onPress={handleSubmit}>
             {cargo ? "Atualizar" : "Criar"} Cargo
           </Button>
         </ModalFooter>
@@ -908,10 +770,7 @@ function UsuariosTab() {
   async function loadData() {
     try {
       setLoading(true);
-      const [usuariosData, advogadosData] = await Promise.all([
-        getUsuariosEquipe(),
-        getAdvogados(),
-      ]);
+      const [usuariosData, advogadosData] = await Promise.all([getUsuariosEquipe(), getAdvogados()]);
 
       setUsuarios(usuariosData);
       setAdvogados(advogadosData.data || []);
@@ -960,15 +819,7 @@ function UsuariosTab() {
     try {
       const csvContent = [
         // Cabeçalho
-        [
-          "Nome",
-          "Email",
-          "Role",
-          "Tipo",
-          "Status",
-          "Cargos",
-          "Vinculações",
-        ].join(","),
+        ["Nome", "Email", "Role", "Tipo", "Status", "Cargos", "Vinculações"].join(","),
         // Dados
         ...filteredUsuarios.map((usuario) =>
           [
@@ -979,7 +830,7 @@ function UsuariosTab() {
             `"${usuario.active ? "Ativo" : "Inativo"}"`,
             `"${usuario.cargos.map((c) => c.nome).join("; ")}"`,
             `"${usuario.vinculacoes.map((v) => `${v.tipo} → ${v.advogadoNome}`).join("; ")}"`,
-          ].join(","),
+          ].join(",")
         ),
       ].join("\n");
 
@@ -988,10 +839,7 @@ function UsuariosTab() {
       const url = URL.createObjectURL(blob);
 
       link.setAttribute("href", url);
-      link.setAttribute(
-        "download",
-        `equipe-usuarios-${new Date().toISOString().split("T")[0]}.csv`,
-      );
+      link.setAttribute("download", `equipe-usuarios-${new Date().toISOString().split("T")[0]}.csv`);
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
@@ -1011,53 +859,25 @@ function UsuariosTab() {
         usuario.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         usuario.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesRole =
-        selectedRole === "all" || usuario.role === selectedRole;
-      const matchesStatus =
-        selectedStatus === "all" ||
-        (selectedStatus === "active" && usuario.active) ||
-        (selectedStatus === "inactive" && !usuario.active);
+      const matchesRole = selectedRole === "all" || usuario.role === selectedRole;
+      const matchesStatus = selectedStatus === "all" || (selectedStatus === "active" && usuario.active) || (selectedStatus === "inactive" && !usuario.active);
 
       const matchesTipo =
         selectedTipo === "all" ||
-        (selectedTipo === "interno" &&
-          usuario.role === "ADVOGADO" &&
-          !usuario.isExterno) ||
-        (selectedTipo === "externo" &&
-          usuario.role === "ADVOGADO" &&
-          usuario.isExterno) ||
+        (selectedTipo === "interno" && usuario.role === "ADVOGADO" && !usuario.isExterno) ||
+        (selectedTipo === "externo" && usuario.role === "ADVOGADO" && usuario.isExterno) ||
         (selectedTipo === "nao-advogado" && usuario.role !== "ADVOGADO");
 
       const matchesVinculacao =
-        selectedVinculacao === "all" ||
-        (selectedVinculacao === "com-vinculacao" &&
-          usuario.vinculacoes.length > 0) ||
-        (selectedVinculacao === "sem-vinculacao" &&
-          usuario.vinculacoes.length === 0);
+        selectedVinculacao === "all" || (selectedVinculacao === "com-vinculacao" && usuario.vinculacoes.length > 0) || (selectedVinculacao === "sem-vinculacao" && usuario.vinculacoes.length === 0);
 
-      return (
-        matchesSearch &&
-        matchesRole &&
-        matchesStatus &&
-        matchesTipo &&
-        matchesVinculacao
-      );
+      return matchesSearch && matchesRole && matchesStatus && matchesTipo && matchesVinculacao;
     });
-  }, [
-    usuarios,
-    searchTerm,
-    selectedRole,
-    selectedStatus,
-    selectedTipo,
-    selectedVinculacao,
-  ]);
+  }, [usuarios, searchTerm, selectedRole, selectedStatus, selectedTipo, selectedVinculacao]);
 
   // Paginação
   const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage);
-  const paginatedUsuarios = filteredUsuarios.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const paginatedUsuarios = filteredUsuarios.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   if (loading) {
     return (
@@ -1076,12 +896,7 @@ function UsuariosTab() {
             <Input
               endContent={
                 searchTerm && (
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    variant="light"
-                    onPress={() => setSearchTerm("")}
-                  >
+                  <Button isIconOnly size="sm" variant="light" onPress={() => setSearchTerm("")}>
                     <X className="w-4 h-4" />
                   </Button>
                 )
@@ -1093,21 +908,13 @@ function UsuariosTab() {
             />
           </div>
 
-          <Button
-            startContent={<Filter className="w-4 h-4" />}
-            variant="light"
-            onPress={() => setShowFilters(!showFilters)}
-          >
+          <Button startContent={<Filter className="w-4 h-4" />} variant="light" onPress={() => setShowFilters(!showFilters)}>
             Filtros
           </Button>
         </div>
 
         <div className="flex gap-2">
-          <Button
-            startContent={<Download className="w-4 h-4" />}
-            variant="light"
-            onPress={() => handleExportUsuarios()}
-          >
+          <Button startContent={<Download className="w-4 h-4" />} variant="light" onPress={() => handleExportUsuarios()}>
             Exportar
           </Button>
         </div>
@@ -1116,12 +923,7 @@ function UsuariosTab() {
       {/* Filtros expandidos */}
       <AnimatePresence>
         {showFilters && (
-          <motion.div
-            animate={{ opacity: 1, height: "auto" }}
-            className="overflow-hidden"
-            exit={{ opacity: 0, height: 0 }}
-            initial={{ opacity: 0, height: 0 }}
-          >
+          <motion.div animate={{ opacity: 1, height: "auto" }} className="overflow-hidden" exit={{ opacity: 0, height: 0 }} initial={{ opacity: 0, height: 0 }}>
             <Card>
               <CardBody>
                 <div className="flex flex-wrap gap-4">
@@ -1147,9 +949,7 @@ function UsuariosTab() {
                     className="min-w-40"
                     label="Status"
                     placeholder="Todos os status"
-                    selectedKeys={
-                      selectedStatus === "all" ? [] : [selectedStatus]
-                    }
+                    selectedKeys={selectedStatus === "all" ? [] : [selectedStatus]}
                     onSelectionChange={(keys) => {
                       const selected = Array.from(keys)[0] as string;
 
@@ -1182,9 +982,7 @@ function UsuariosTab() {
                     className="min-w-40"
                     label="Vinculação"
                     placeholder="Todas as vinculações"
-                    selectedKeys={
-                      selectedVinculacao === "all" ? [] : [selectedVinculacao]
-                    }
+                    selectedKeys={selectedVinculacao === "all" ? [] : [selectedVinculacao]}
                     onSelectionChange={(keys) => {
                       const selected = Array.from(keys)[0] as string;
 
@@ -1270,29 +1068,15 @@ function UsuariosTab() {
                   <TableRow key={usuario.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar
-                          name={usuario.firstName || usuario.email}
-                          size="sm"
-                        />
+                        <Avatar name={usuario.firstName || usuario.email} size="sm" />
                         <div>
-                          <p className="font-medium">
-                            {usuario.firstName && usuario.lastName
-                              ? `${usuario.firstName} ${usuario.lastName}`
-                              : usuario.email}
-                          </p>
-                          <p className="text-sm text-default-500">
-                            {usuario.email}
-                          </p>
+                          <p className="font-medium">{usuario.firstName && usuario.lastName ? `${usuario.firstName} ${usuario.lastName}` : usuario.email}</p>
+                          <p className="text-sm text-default-500">{usuario.email}</p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        color={getRoleColor(usuario.role)}
-                        size="sm"
-                        startContent={getRoleIcon(usuario.role)}
-                        variant="flat"
-                      >
+                      <Chip color={getRoleColor(usuario.role)} size="sm" startContent={getRoleIcon(usuario.role)} variant="flat">
                         {getRoleLabel(usuario.role)}
                       </Chip>
                     </TableCell>
@@ -1301,13 +1085,7 @@ function UsuariosTab() {
                         <Chip
                           color={usuario.isExterno ? "warning" : "success"}
                           size="sm"
-                          startContent={
-                            usuario.isExterno ? (
-                              <ExternalLink className="w-3 h-3" />
-                            ) : (
-                              <Building2 className="w-3 h-3" />
-                            )
-                          }
+                          startContent={usuario.isExterno ? <ExternalLink className="w-3 h-3" /> : <Building2 className="w-3 h-3" />}
                           variant="flat"
                         >
                           {usuario.isExterno ? "Externo" : "Interno"}
@@ -1319,56 +1097,27 @@ function UsuariosTab() {
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {usuario.cargos.map((cargo) => (
-                          <Chip
-                            key={cargo.id}
-                            color="primary"
-                            size="sm"
-                            variant="flat"
-                          >
+                          <Chip key={cargo.id} color="primary" size="sm" variant="flat">
                             {cargo.nome}
                           </Chip>
                         ))}
-                        {usuario.cargos.length === 0 && (
-                          <span className="text-sm text-default-400">
-                            Sem cargos
-                          </span>
-                        )}
+                        {usuario.cargos.length === 0 && <span className="text-sm text-default-400">Sem cargos</span>}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {usuario.vinculacoes.map((vinculacao) => (
-                          <Tooltip
-                            key={vinculacao.id}
-                            content={
-                              vinculacao.observacoes || "Sem observações"
-                            }
-                          >
+                          <Tooltip key={vinculacao.id} content={vinculacao.observacoes || "Sem observações"}>
                             <Chip color="secondary" size="sm" variant="flat">
                               {vinculacao.tipo} → {vinculacao.advogadoNome}
                             </Chip>
                           </Tooltip>
                         ))}
-                        {usuario.vinculacoes.length === 0 && (
-                          <span className="text-sm text-default-400">
-                            Sem vinculações
-                          </span>
-                        )}
+                        {usuario.vinculacoes.length === 0 && <span className="text-sm text-default-400">Sem vinculações</span>}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        color={usuario.active ? "success" : "default"}
-                        size="sm"
-                        startContent={
-                          usuario.active ? (
-                            <CheckCircle className="w-3 h-3" />
-                          ) : (
-                            <X className="w-3 h-3" />
-                          )
-                        }
-                        variant="flat"
-                      >
+                      <Chip color={usuario.active ? "success" : "default"} size="sm" startContent={usuario.active ? <CheckCircle className="w-3 h-3" /> : <X className="w-3 h-3" />} variant="flat">
                         {usuario.active ? "Ativo" : "Inativo"}
                       </Chip>
                     </TableCell>
@@ -1380,28 +1129,16 @@ function UsuariosTab() {
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu>
-                          <DropdownItem
-                            key="view"
-                            startContent={<Eye className="w-4 h-4" />}
-                          >
+                          <DropdownItem key="view" startContent={<Eye className="w-4 h-4" />}>
                             Visualizar
                           </DropdownItem>
-                          <DropdownItem
-                            key="edit"
-                            startContent={<Edit className="w-4 h-4" />}
-                          >
+                          <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />}>
                             Editar
                           </DropdownItem>
-                          <DropdownItem
-                            key="permissions"
-                            startContent={<Shield className="w-4 h-4" />}
-                          >
+                          <DropdownItem key="permissions" startContent={<Shield className="w-4 h-4" />}>
                             Permissões
                           </DropdownItem>
-                          <DropdownItem
-                            key="link"
-                            startContent={<LinkIcon className="w-4 h-4" />}
-                          >
+                          <DropdownItem key="link" startContent={<LinkIcon className="w-4 h-4" />}>
                             Vincular
                           </DropdownItem>
                         </DropdownMenu>
@@ -1418,13 +1155,7 @@ function UsuariosTab() {
       {/* Paginação */}
       {totalPages > 1 && (
         <div className="flex justify-center">
-          <Pagination
-            showControls
-            showShadow
-            page={currentPage}
-            total={totalPages}
-            onChange={setCurrentPage}
-          />
+          <Pagination showControls showShadow page={currentPage} total={totalPages} onChange={setCurrentPage} />
         </div>
       )}
 
@@ -1433,15 +1164,9 @@ function UsuariosTab() {
         <Card>
           <CardBody className="text-center py-12">
             <Users className="w-12 h-12 text-default-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              Nenhum usuário encontrado
-            </h3>
+            <h3 className="text-lg font-semibold mb-2">Nenhum usuário encontrado</h3>
             <p className="text-default-500">
-              {searchTerm ||
-              selectedRole !== "all" ||
-              selectedStatus !== "all" ||
-              selectedTipo !== "all" ||
-              selectedVinculacao !== "all"
+              {searchTerm || selectedRole !== "all" || selectedStatus !== "all" || selectedTipo !== "all" || selectedVinculacao !== "all"
                 ? "Tente ajustar os filtros de busca"
                 : "Nenhum usuário cadastrado na equipe"}
             </p>
@@ -1473,10 +1198,7 @@ function ConvitesTab() {
   async function loadData() {
     try {
       setLoading(true);
-      const [convitesData, cargosData] = await Promise.all([
-        getConvitesEquipe(),
-        getCargos(),
-      ]);
+      const [convitesData, cargosData] = await Promise.all([getConvitesEquipe(), getCargos()]);
 
       setConvites(convitesData);
       setCargos(cargosData);
@@ -1559,11 +1281,7 @@ function ConvitesTab() {
     const convite = convites.find((c) => c.id === conviteId);
     const email = convite?.email || "este convite";
 
-    if (
-      !confirm(
-        `Tem certeza que deseja cancelar o convite para "${email}"?\n\nEsta ação não pode ser desfeita.`,
-      )
-    ) {
+    if (!confirm(`Tem certeza que deseja cancelar o convite para "${email}"?\n\nEsta ação não pode ser desfeita.`)) {
       return;
     }
 
@@ -1636,15 +1354,9 @@ function ConvitesTab() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Convites de Equipe</h2>
-          <p className="text-default-500">
-            Gerencie os convites enviados para novos membros
-          </p>
+          <p className="text-default-500">Gerencie os convites enviados para novos membros</p>
         </div>
-        <Button
-          color="primary"
-          startContent={<Plus className="w-4 h-4" />}
-          onPress={() => setIsModalOpen(true)}
-        >
+        <Button color="primary" startContent={<Plus className="w-4 h-4" />} onPress={() => setIsModalOpen(true)}>
           Enviar Convite
         </Button>
       </div>
@@ -1653,17 +1365,9 @@ function ConvitesTab() {
         <Card>
           <CardBody className="text-center py-12">
             <Mail className="w-12 h-12 text-default-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              Nenhum convite encontrado
-            </h3>
-            <p className="text-default-500 mb-4">
-              Envie o primeiro convite para começar a expandir sua equipe
-            </p>
-            <Button
-              color="primary"
-              startContent={<Plus className="w-4 h-4" />}
-              onPress={() => setIsModalOpen(true)}
-            >
+            <h3 className="text-lg font-semibold mb-2">Nenhum convite encontrado</h3>
+            <p className="text-default-500 mb-4">Envie o primeiro convite para começar a expandir sua equipe</p>
+            <Button color="primary" startContent={<Plus className="w-4 h-4" />} onPress={() => setIsModalOpen(true)}>
               Enviar Primeiro Convite
             </Button>
           </CardBody>
@@ -1746,37 +1450,22 @@ function ConvitesTab() {
                     </Chip>
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      color={getStatusColor(convite.status)}
-                      size="sm"
-                      startContent={getStatusIcon(convite.status)}
-                      variant="flat"
-                    >
-                      {convite.status.charAt(0).toUpperCase() +
-                        convite.status.slice(1)}
+                    <Chip color={getStatusColor(convite.status)} size="sm" startContent={getStatusIcon(convite.status)} variant="flat">
+                      {convite.status.charAt(0).toUpperCase() + convite.status.slice(1)}
                     </Chip>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3 text-default-400" />
-                      <span className="text-sm">
-                        {formatDate(convite.expiraEm)}
-                      </span>
+                      <span className="text-sm">{formatDate(convite.expiraEm)}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     {convite.enviadoPorUsuario ? (
                       <div className="flex items-center gap-2">
-                        <Avatar
-                          name={
-                            convite.enviadoPorUsuario.firstName ||
-                            convite.enviadoPorUsuario.email
-                          }
-                          size="sm"
-                        />
+                        <Avatar name={convite.enviadoPorUsuario.firstName || convite.enviadoPorUsuario.email} size="sm" />
                         <span className="text-sm">
-                          {convite.enviadoPorUsuario.firstName &&
-                          convite.enviadoPorUsuario.lastName
+                          {convite.enviadoPorUsuario.firstName && convite.enviadoPorUsuario.lastName
                             ? `${convite.enviadoPorUsuario.firstName} ${convite.enviadoPorUsuario.lastName}`
                             : convite.enviadoPorUsuario.email}
                         </span>
@@ -1798,36 +1487,20 @@ function ConvitesTab() {
                             <DropdownItem
                               key="resend"
                               isDisabled={actionLoading === convite.id}
-                              startContent={
-                                actionLoading === convite.id ? (
-                                  <Spinner size="sm" />
-                                ) : (
-                                  <RefreshCw className="w-4 h-4" />
-                                )
-                              }
+                              startContent={actionLoading === convite.id ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
                               onPress={() => handleResendConvite(convite.id)}
                             >
-                              {actionLoading === convite.id
-                                ? "Reenviando..."
-                                : "Reenviar"}
+                              {actionLoading === convite.id ? "Reenviando..." : "Reenviar"}
                             </DropdownItem>
                             <DropdownItem
                               key="cancel"
                               className="text-danger"
                               color="danger"
                               isDisabled={actionLoading === convite.id}
-                              startContent={
-                                actionLoading === convite.id ? (
-                                  <Spinner size="sm" />
-                                ) : (
-                                  <XCircle className="w-4 h-4" />
-                                )
-                              }
+                              startContent={actionLoading === convite.id ? <Spinner size="sm" /> : <XCircle className="w-4 h-4" />}
                               onPress={() => handleCancelConvite(convite.id)}
                             >
-                              {actionLoading === convite.id
-                                ? "Cancelando..."
-                                : "Cancelar"}
+                              {actionLoading === convite.id ? "Cancelando..." : "Cancelar"}
                             </DropdownItem>
                           </>
                         ) : null}
@@ -1842,11 +1515,7 @@ function ConvitesTab() {
       )}
 
       {/* Modal de Novo Convite */}
-      <Modal
-        isOpen={isModalOpen}
-        size="2xl"
-        onClose={() => setIsModalOpen(false)}
-      >
+      <Modal isOpen={isModalOpen} size="2xl" onClose={() => setIsModalOpen(false)}>
         <ModalContent>
           <ModalHeader>
             <div className="flex items-center gap-2">
@@ -1856,25 +1525,9 @@ function ConvitesTab() {
           </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <Input
-                isRequired
-                label="Email"
-                placeholder="email@exemplo.com"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-              />
+              <Input isRequired label="Email" placeholder="email@exemplo.com" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
 
-              <Input
-                label="Nome (opcional)"
-                placeholder="Nome completo"
-                value={formData.nome}
-                onChange={(e) =>
-                  setFormData({ ...formData, nome: e.target.value })
-                }
-              />
+              <Input label="Nome (opcional)" placeholder="Nome completo" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} />
 
               <Select
                 label="Cargo (opcional)"
@@ -1912,9 +1565,7 @@ function ConvitesTab() {
                 minRows={3}
                 placeholder="Mensagem personalizada para o convite..."
                 value={formData.observacoes}
-                onChange={(e) =>
-                  setFormData({ ...formData, observacoes: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
               />
             </div>
           </ModalBody>
@@ -1922,12 +1573,7 @@ function ConvitesTab() {
             <Button variant="light" onPress={() => setIsModalOpen(false)}>
               Cancelar
             </Button>
-            <Button
-              color="primary"
-              isDisabled={!formData.email.trim()}
-              isLoading={loading}
-              onPress={handleCreateConvite}
-            >
+            <Button color="primary" isDisabled={!formData.email.trim()} isLoading={loading} onPress={handleCreateConvite}>
               Enviar Convite
             </Button>
           </ModalFooter>
@@ -1952,14 +1598,7 @@ export default function EquipeContent() {
         // Cabeçalho
         ["Tipo", "Nome", "Email", "Role", "Status", "Detalhes"].join(","),
         // Dados (será preenchido pelas tabs específicas)
-        [
-          "Equipe",
-          "Magic Lawyer",
-          "Exportação completa",
-          "Sistema",
-          "Ativo",
-          `Exportado em ${timestamp}`,
-        ].join(","),
+        ["Equipe", "Magic Lawyer", "Exportação completa", "Sistema", "Ativo", `Exportado em ${timestamp}`].join(","),
       ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -1993,12 +1632,7 @@ export default function EquipeContent() {
                 <Input
                   endContent={
                     searchTerm && (
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        onPress={() => setSearchTerm("")}
-                      >
+                      <Button isIconOnly size="sm" variant="light" onPress={() => setSearchTerm("")}>
                         <X className="w-4 h-4" />
                       </Button>
                     )
@@ -2010,21 +1644,13 @@ export default function EquipeContent() {
                 />
               </div>
 
-              <Button
-                startContent={<Filter className="w-4 h-4" />}
-                variant="light"
-                onPress={() => setShowFilters(!showFilters)}
-              >
+              <Button startContent={<Filter className="w-4 h-4" />} variant="light" onPress={() => setShowFilters(!showFilters)}>
                 Filtros
               </Button>
             </div>
 
             <div className="flex gap-2">
-              <Button
-                startContent={<Download className="w-4 h-4" />}
-                variant="light"
-                onPress={() => handleExportAll()}
-              >
+              <Button startContent={<Download className="w-4 h-4" />} variant="light" onPress={() => handleExportAll()}>
                 Exportar
               </Button>
             </div>
@@ -2033,20 +1659,13 @@ export default function EquipeContent() {
           {/* Filtros expandidos */}
           <AnimatePresence>
             {showFilters && (
-              <motion.div
-                animate={{ opacity: 1, height: "auto" }}
-                className="overflow-hidden mt-4"
-                exit={{ opacity: 0, height: 0 }}
-                initial={{ opacity: 0, height: 0 }}
-              >
+              <motion.div animate={{ opacity: 1, height: "auto" }} className="overflow-hidden mt-4" exit={{ opacity: 0, height: 0 }} initial={{ opacity: 0, height: 0 }}>
                 <div className="flex flex-wrap gap-4">
                   <Select
                     className="min-w-40"
                     label="Seção"
                     placeholder="Todas as seções"
-                    selectedKeys={
-                      selectedSection === "all" ? [] : [selectedSection]
-                    }
+                    selectedKeys={selectedSection === "all" ? [] : [selectedSection]}
                     onSelectionChange={(keys) => {
                       const selected = Array.from(keys)[0] as string;
 
@@ -2082,8 +1701,7 @@ export default function EquipeContent() {
           <Tabs
             aria-label="Gestão de Equipe"
             classNames={{
-              tabList:
-                "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+              tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
               cursor: "w-full bg-primary",
               tab: "max-w-fit px-6 h-12",
               tabContent: "group-data-[selected=true]:text-primary",
