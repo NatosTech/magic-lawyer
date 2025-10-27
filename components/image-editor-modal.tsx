@@ -209,7 +209,6 @@ export function ImageEditorModal({
       }
     } catch (err) {
       setError("Erro ao processar a imagem. Tente novamente.");
-      console.error("Erro ao processar imagem:", err);
     } finally {
       setIsLoading(false);
     }
