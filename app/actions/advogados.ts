@@ -748,7 +748,7 @@ export async function createAdvogado(
         ? {
             email: input.email,
             senhaTemporaria: senhaTemporaria,
-            linkLogin: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/login`,
+            linkLogin: `${process.env.NEXTAUTH_URL || "http://localhost:9192"}/login`,
           }
         : undefined,
     } as any;

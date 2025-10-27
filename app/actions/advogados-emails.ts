@@ -43,7 +43,7 @@ export async function enviarEmailBoasVindas(
         esp.replace(/_/g, " "),
       ),
       senhaTemporaria: senhaTemporaria,
-      linkLogin: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/login`,
+      linkLogin: `${process.env.NEXTAUTH_URL || "http://localhost:9192"}/login`,
     };
 
     const emailSent = await emailService.sendBoasVindasAdvogado(emailData);

@@ -10,7 +10,7 @@ Isso causava problemas de autenticação porque o NextAuth.js precisa que a URL 
 ### 1. Configuração Dinâmica (`app/lib/auth-config.ts`)
 - Detecta automaticamente o tipo de ambiente baseado no domínio
 - Retorna configurações apropriadas para cada ambiente:
-  - **Desenvolvimento local**: `http://localhost:3000`
+  - **Desenvolvimento local**: `http://localhost:9192`
   - **Preview deployments**: `https://[branch-name]-magiclawyer.vercel.app`
   - **Produção**: `https://magiclawyer.vercel.app`
   - **Domínios customizados**: `https://[custom-domain]`
@@ -48,8 +48,8 @@ O sistema agora detecta automaticamente quando você está em um preview deploym
 ## Ambientes Suportados
 
 ### ✅ Desenvolvimento Local
-- Domínio: `localhost:3000`
-- URL: `http://localhost:3000`
+- Domínio: `localhost:9192`
+- URL: `http://localhost:9192`
 - Cookies: Não seguros
 
 ### ✅ Preview Deployments (Branches)
