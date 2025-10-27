@@ -103,7 +103,6 @@ function DashboardEquipe() {
 
         setDashboardData(data);
       } catch (error) {
-        console.error("Erro ao carregar dashboard:", error);
         toast.error("Erro ao carregar dados do dashboard");
       } finally {
         setLoading(false);
@@ -221,7 +220,6 @@ function CargosTab() {
 
       setCargos(data);
     } catch (error) {
-      console.error("Erro ao carregar cargos:", error);
       toast.error("Erro ao carregar cargos");
     } finally {
       setLoading(false);
@@ -247,7 +245,6 @@ function CargosTab() {
       toast.success(`Cargo "${cargoNome}" excluído com sucesso!`);
       loadCargos();
     } catch (error) {
-      console.error("Erro ao excluir cargo:", error);
       toast.error(
         "Erro ao excluir cargo. Verifique se não há usuários vinculados a este cargo.",
       );
@@ -321,7 +318,6 @@ function CargosTab() {
 
       toast.success("Dados exportados com sucesso!");
     } catch (error) {
-      console.error("Erro ao exportar dados:", error);
       toast.error("Erro ao exportar dados");
     }
   }
@@ -738,7 +734,6 @@ function CargoModal({
 
       onSuccess();
     } catch (error) {
-      console.error("Erro ao salvar cargo:", error);
       toast.error("Erro ao salvar cargo");
     } finally {
       setLoading(false);
@@ -921,7 +916,6 @@ function UsuariosTab() {
       setUsuarios(usuariosData);
       setAdvogados(advogadosData.data || []);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados");
     } finally {
       setLoading(false);
@@ -1005,7 +999,6 @@ function UsuariosTab() {
 
       toast.success("Dados exportados com sucesso!");
     } catch (error) {
-      console.error("Erro ao exportar dados:", error);
       toast.error("Erro ao exportar dados");
     }
   }
@@ -1488,7 +1481,6 @@ function ConvitesTab() {
       setConvites(convitesData);
       setCargos(cargosData);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados");
     } finally {
       setLoading(false);
@@ -1543,7 +1535,6 @@ function ConvitesTab() {
       });
       loadData();
     } catch (error) {
-      console.error("Erro ao enviar convite:", error);
       toast.error("Erro ao enviar convite");
     } finally {
       setLoading(false);
@@ -1557,7 +1548,6 @@ function ConvitesTab() {
       toast.success("Convite reenviado com sucesso!");
       loadData();
     } catch (error) {
-      console.error("Erro ao reenviar convite:", error);
       toast.error("Erro ao reenviar convite");
     } finally {
       setActionLoading(null);
@@ -1583,7 +1573,6 @@ function ConvitesTab() {
       toast.success(`Convite para "${email}" cancelado com sucesso!`);
       loadData();
     } catch (error) {
-      console.error("Erro ao cancelar convite:", error);
       toast.error("Erro ao cancelar convite");
     } finally {
       setActionLoading(null);
@@ -1986,7 +1975,6 @@ export default function EquipeContent() {
 
       toast.success("Dados exportados com sucesso!");
     } catch (error) {
-      console.error("Erro ao exportar dados:", error);
       toast.error("Erro ao exportar dados");
     }
   }
