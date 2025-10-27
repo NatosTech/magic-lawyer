@@ -78,7 +78,6 @@ export function AvatarUpload({
         toast.error(result.error || "Erro ao atualizar avatar");
       }
     } catch (error) {
-      console.error("Erro ao salvar avatar:", error);
       toast.error("Erro ao salvar avatar");
     } finally {
       setIsLoading(false);
@@ -111,7 +110,6 @@ export function AvatarUpload({
         toast.error(result.error || "Erro ao remover avatar");
       }
     } catch (error) {
-      console.error("Erro ao deletar avatar:", error);
       toast.error("Erro ao remover avatar");
     } finally {
       setIsLoading(false);
