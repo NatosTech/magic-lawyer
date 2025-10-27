@@ -57,7 +57,7 @@ export default function GoogleCalendarIntegration() {
         setStatus(result.data);
       }
     } catch (error) {
-      console.error("Erro ao carregar status:", error);
+      // Erro silencioso - usuário já tem feedback visual
     }
   };
 
