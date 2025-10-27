@@ -37,7 +37,6 @@ export default function DashboardFinanceiroPage() {
 
   const handleExport = () => {
     // TODO: Implementar exportação de dados
-    console.log("Exportar dados financeiros");
   };
 
   if (error) {
