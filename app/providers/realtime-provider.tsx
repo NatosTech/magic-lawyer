@@ -35,8 +35,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    console.log("[RealtimeProvider] Inicializando cliente Ably...");
-
     // Criar cliente Ably
     const client = new Ably.Realtime({
       key: clientKey,
@@ -47,11 +45,9 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
     // Listener para conexão
     client.connection.on((stateChange) => {
-      console.log("[RealtimeProvider] Estado da conexão:", stateChange.current);
       setIsConnected(stateChange.current === "connected");
 
       if (stateChange.current === "connected") {
-        console.log("[RealtimeProvider] ✅ Conectado ao Ably");
         subscribeToTenantChannel(session.user);
       }
 
@@ -62,7 +58,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
     // Cleanup ao desmontar
     return () => {
-      console.log("[RealtimeProvider] Desconectando...");
       client.close();
       channelsRef.current.clear();
       subscriptionsRef.current.clear();
@@ -76,8 +71,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     const tenantId = user.tenantId;
 
     if (!tenantId) {
-      console.log("[RealtimeProvider] Usuário sem tenant, pulando subscribe");
-
       return;
     }
 
@@ -86,12 +79,8 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
     // Se já está subscribed, não fazer de novo (evitar duplicados em reconexão)
     if (channelsRef.current.has(channelName)) {
-      console.log("[RealtimeProvider] Já está subscribed ao canal, pulando");
-
       return;
     }
-
-    console.log("[RealtimeProvider] Subscribing ao canal:", channelName);
 
     const channel = clientRef.current!.channels.get(channelName);
 
@@ -102,8 +91,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
     eventTypes.forEach((eventType) => {
       channel.subscribe(eventType, (message) => {
-        console.log("[RealtimeProvider] Evento recebido:", eventType, message.data);
-
         // Notificar listeners
         const handlers = subscriptionsRef.current.get(eventType) || [];
 
@@ -116,8 +103,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         });
       });
     });
-
-    console.log("[RealtimeProvider] ✅ Subscribed aos eventos do tenant");
   }
 
   /**
@@ -129,8 +114,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
     handlers.push(handler);
     subscriptionsRef.current.set(eventType, handlers);
-
-    console.log(`[RealtimeProvider] Handler registrado para: ${eventType}`);
 
     // Retornar função de unsubscribe
     return () => {
