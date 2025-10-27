@@ -295,7 +295,6 @@ export default function EventoForm({
         toast.error(result.error || "Erro ao salvar evento");
       }
     } catch (error) {
-      console.error("Erro ao salvar evento:", error);
       toast.error("Erro interno do servidor");
     } finally {
       setIsLoading(false);
