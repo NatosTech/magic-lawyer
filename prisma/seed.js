@@ -55,7 +55,7 @@ async function main() {
     await seedCategoriasTarefa(prisma);
     await seedModulos(prisma);
   } catch (error) {
-    console.warn("⚠️ Algunos seeds básicos já existem:", error.message);
+    console.warn("⚠️ Alguns seeds básicos já existem:", error.message);
   }
 
   // Detectar módulos automaticamente antes de criar planos
