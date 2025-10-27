@@ -117,7 +117,6 @@ export default function DocumentoUploadModal({
       onClose();
       onSuccess?.();
     } catch (error) {
-      console.error("Erro ao fazer upload:", error);
       toast.error(
         error instanceof Error ? error.message : "Erro ao enviar documento",
       );
