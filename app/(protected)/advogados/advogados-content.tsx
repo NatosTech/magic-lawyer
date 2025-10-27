@@ -243,10 +243,7 @@ export default function AdvogadosContent() {
     error: performanceGeralError,
   } = usePerformanceGeral();
 
-  // Debug logs
-  console.log("Performance Debug:", {
-    performanceData,
-    isLoadingPerformance,
+  // Debug logs removidos para produção
     performanceError,
     performanceGeral,
     isLoadingPerformanceGeral,
@@ -847,7 +844,6 @@ export default function AdvogadosContent() {
         toast.error(result.error || "Erro ao criar advogado");
       }
     } catch (error) {
-      console.error("Erro ao criar advogado:", error);
       toast.error("Erro ao criar advogado");
     } finally {
       setIsSaving(false);
@@ -962,7 +958,6 @@ export default function AdvogadosContent() {
         toast.error(result.error || "Erro ao enviar email de boas-vindas");
       }
     } catch (error) {
-      console.error("Erro ao enviar email de boas-vindas:", error);
       toast.error("Erro interno ao enviar email");
     }
   };
@@ -1026,7 +1021,6 @@ export default function AdvogadosContent() {
         toast.error(result.error || "Erro ao atualizar advogado");
       }
     } catch (error) {
-      console.error("Erro ao atualizar advogado:", error);
       toast.error("Erro ao atualizar advogado");
     } finally {
       setIsSaving(false);
@@ -1046,7 +1040,6 @@ export default function AdvogadosContent() {
         toast.error(result.error || "Erro ao excluir advogado");
       }
     } catch (error) {
-      console.error("Erro ao excluir advogado:", error);
       toast.error("Erro ao excluir advogado");
     }
   };
@@ -1063,7 +1056,6 @@ export default function AdvogadosContent() {
         toast.error(result.error || "Erro ao fazer upload do avatar");
       }
     } catch (error) {
-      console.error("Erro ao fazer upload do avatar:", error);
       toast.error("Erro ao fazer upload do avatar");
     } finally {
       setIsUploadingAvatar(false);
@@ -1083,7 +1075,6 @@ export default function AdvogadosContent() {
         toast.error(result.error || "Erro ao remover avatar");
       }
     } catch (error) {
-      console.error("Erro ao remover avatar:", error);
       toast.error("Erro ao remover avatar");
     }
   };
@@ -1142,7 +1133,6 @@ export default function AdvogadosContent() {
         toast.error(result.error || "Erro ao atualizar avatar");
       }
     } catch (error) {
-      console.error("Erro ao salvar avatar:", error);
       toast.error("Erro ao salvar avatar");
     } finally {
       setIsUploadingAvatar(false);
@@ -1163,7 +1153,6 @@ export default function AdvogadosContent() {
         toast.error(result.error || "Erro ao remover avatar");
       }
     } catch (error) {
-      console.error("Erro ao remover avatar:", error);
       toast.error("Erro ao remover avatar");
     }
   };
@@ -1220,7 +1209,6 @@ export default function AdvogadosContent() {
         toast.error(result.error || "Erro ao converter advogado");
       }
     } catch (error) {
-      console.error("Erro ao converter advogado:", error);
       toast.error("Erro ao converter advogado");
     }
   };
@@ -1269,7 +1257,6 @@ export default function AdvogadosContent() {
 
       toast.success("Arquivo CSV exportado com sucesso!");
     } catch (error) {
-      console.error("Erro ao exportar CSV:", error);
       toast.error("Erro ao exportar arquivo CSV");
     }
   };
@@ -1351,7 +1338,6 @@ export default function AdvogadosContent() {
 
       toast.success("Relatório PDF gerado com sucesso!");
     } catch (error) {
-      console.error("Erro ao exportar PDF:", error);
       toast.error("Erro ao gerar relatório PDF");
     }
   };
@@ -1387,7 +1373,6 @@ export default function AdvogadosContent() {
       setSelectedAdvogados([]);
       mutate();
     } catch (error) {
-      console.error("Erro ao ativar advogados:", error);
       toast.error("Erro ao ativar advogados");
     } finally {
       setIsBulkActionLoading(false);
@@ -1415,7 +1400,6 @@ export default function AdvogadosContent() {
       setSelectedAdvogados([]);
       mutate();
     } catch (error) {
-      console.error("Erro ao desativar advogados:", error);
       toast.error("Erro ao desativar advogados");
     } finally {
       setIsBulkActionLoading(false);
@@ -1443,7 +1427,6 @@ export default function AdvogadosContent() {
       setSelectedAdvogados([]);
       mutate();
     } catch (error) {
-      console.error("Erro ao excluir advogados:", error);
       toast.error("Erro ao excluir advogados");
     } finally {
       setIsBulkActionLoading(false);
@@ -3351,9 +3334,7 @@ export default function AdvogadosContent() {
                                   key="view"
                                   startContent={<Eye className="h-4 w-4" />}
                                   onPress={() => {
-                                    console.log(
-                                      "Abrindo modal de visualização",
-                                    );
+                                    // Abrir modal de visualização
                                     handleViewAdvogado(advogado);
                                   }}
                                 >
@@ -3402,7 +3383,6 @@ export default function AdvogadosContent() {
                                   key="edit"
                                   startContent={<Edit className="h-4 w-4" />}
                                   onPress={() => {
-                                    console.log("Abrindo modal de edição");
                                     handleEditAdvogado(advogado);
                                   }}
                                 >
