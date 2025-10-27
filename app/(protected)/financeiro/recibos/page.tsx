@@ -190,10 +190,7 @@ export default function RecibosPage() {
     }
   }, [paginaAtual, totalPaginasFiltrado]);
 
-  // Debug: Log dos dados recebidos
-  console.log("🔍 Dados recebidos na página:", {
-    recibosData,
-    recibos: recibos.length,
+  // Debug removido para produção
     total,
     totalPaginas,
     filtrados: filteredRecibos.length,
@@ -322,10 +319,10 @@ export default function RecibosPage() {
         // Limpar URL após um tempo
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       } else {
-        console.error("Erro ao gerar comprovante:", result.error);
+        toast.error("Erro ao gerar comprovante");
       }
     } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
+      toast.error("Erro ao gerar PDF");
     } finally {
       setCarregandoPDF(false);
     }
