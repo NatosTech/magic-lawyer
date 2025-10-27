@@ -151,11 +151,7 @@ export default function AndamentosPage() {
     getDashboardAndamentos,
   );
 
-  // Debug temporário
-  console.log("Dashboard data:", dashboardData);
-  console.log("Dashboard data.data:", dashboardData?.data);
-  console.log("Dashboard data.data.total:", dashboardData?.data?.total);
-  console.log("Dashboard data.data.porTipo:", dashboardData?.data?.porTipo);
+  // Debug temporário removido para produção
 
   const { data: processosData } = useSWR("processos-list", getAllProcessos);
 
