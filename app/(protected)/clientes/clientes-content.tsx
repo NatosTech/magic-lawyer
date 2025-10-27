@@ -333,7 +333,6 @@ export function ClientesContent() {
         toast.error(result.error || "Erro ao resetar senha");
       }
     } catch (error) {
-      console.error("Erro ao resetar senha:", error);
       toast.error("Erro ao resetar senha");
     } finally {
       setIsResettingPassword(false);
