@@ -113,7 +113,7 @@ const getNivelLabel = (nivel: JuizNivel) => {
 export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
   const [isFavoritoLoading, setIsFavoritoLoading] = useState(false);
 
-  console.log("JuizModal - Props:", { juizId, isOpen });
+  // Debug removido para produção
 
   const {
     juiz,
@@ -123,9 +123,7 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
   } = useJuizDetalhado(juizId);
   const { isFavorito, mutate: mutateFavorito } = useFavoritoJuiz(juizId);
 
-  console.log("JuizModal - Estado:", {
-    juiz: !!juiz,
-    isLoading,
+  // Debug removido para produção
     isError,
     isFavorito,
   });
@@ -159,7 +157,6 @@ export default function JuizModal({ juizId, isOpen, onClose }: JuizModalProps) {
         toast.error(result.error || "Erro ao atualizar favoritos");
       }
     } catch (error) {
-      console.error("Erro ao atualizar favoritos:", error);
       toast.error("Erro ao atualizar favoritos");
     } finally {
       setIsFavoritoLoading(false);
