@@ -12,30 +12,20 @@ export async function POST(request: Request) {
     // Verificar se o token interno está configurado corretamente
     const expectedToken = process.env.REALTIME_INTERNAL_TOKEN;
     if (!expectedToken || expectedToken.trim() === "") {
-      return NextResponse.json(
-        { success: false, error: "Configuração ausente: REALTIME_INTERNAL_TOKEN não definido" },
-        { status: 500 },
-      );
+      return NextResponse.json({ success: false, error: "Configuração ausente: REALTIME_INTERNAL_TOKEN não definido" }, { status: 500 });
     }
 
     // Verificar token de autenticação interno
     const token = request.headers.get("x-internal-token");
 
     if (!token || token !== expectedToken) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const { tenantId, userId, tenantVersion, userVersion } =
-      await request.json();
+    const { tenantId, userId, tenantVersion, userVersion } = await request.json();
 
     if (!tenantId || !tenantVersion) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields" },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
     // Validar tenant
@@ -56,7 +46,7 @@ export async function POST(request: Request) {
           entity: "TENANT",
           reason: "TENANT_NOT_FOUND",
         },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -68,7 +58,7 @@ export async function POST(request: Request) {
           reason: tenant.status,
           details: { statusReason: tenant.statusReason },
         },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
@@ -83,7 +73,7 @@ export async function POST(request: Request) {
             providedVersion: tenantVersion,
           },
         },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
@@ -105,7 +95,7 @@ export async function POST(request: Request) {
             entity: "USER",
             reason: "USER_NOT_FOUND",
           },
-          { status: 404 },
+          { status: 404 }
         );
       }
 
@@ -116,7 +106,7 @@ export async function POST(request: Request) {
             entity: "USER",
             reason: "USER_DISABLED",
           },
-          { status: 409 },
+          { status: 409 }
         );
       }
 
@@ -131,7 +121,7 @@ export async function POST(request: Request) {
               providedVersion: userVersion,
             },
           },
-          { status: 409 },
+          { status: 409 }
         );
       }
     }
@@ -144,14 +134,11 @@ export async function POST(request: Request) {
         headers: {
           "Cache-Control": "no-store, max-age=0",
         },
-      },
+      }
     );
   } catch (error) {
     console.error("Erro ao validar sessão:", error);
 
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
