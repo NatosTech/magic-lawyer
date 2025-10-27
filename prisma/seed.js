@@ -1,3 +1,14 @@
+const path = require("path");
+
+const tsNodeInstanceKey = Symbol.for("ts-node.register.instance");
+if (!process[tsNodeInstanceKey]) {
+  require("ts-node").register({
+    project: path.resolve(__dirname, "../scripts/tsconfig.json"),
+    transpileOnly: true,
+  });
+}
+
+const { autoDetectModulesCore } = require("../lib/module-detection-core");
 const { PrismaClient, Prisma } = require("../app/generated/prisma");
 
 const seedAreasProcesso = require("./seeds/areasProcesso");
@@ -61,10 +72,10 @@ async function main() {
   // Detectar módulos automaticamente antes de criar planos
   console.log("\n🔍 Detectando módulos automaticamente...");
   try {
-    // Executar detecção via comando
-    const { execSync } = require("child_process");
-    execSync("npx tsx -e \"import('./app/actions/auto-detect-modules.ts').then(m => m.autoDetectModules())\"", { stdio: "inherit" });
-    console.log("✅ Módulos detectados com sucesso!");
+    const result = await autoDetectModulesCore();
+    console.log(
+      `✅ Módulos detectados com sucesso! (${result.created} criados, ${result.updated} atualizados, ${result.removed} removidos)`,
+    );
   } catch (error) {
     console.warn("⚠️ Erro na detecção automática de módulos:", error.message);
   }
