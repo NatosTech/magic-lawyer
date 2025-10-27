@@ -10,10 +10,39 @@ import prisma from "./app/lib/prisma";
 import { getTenantAccessibleModules } from "./app/lib/tenant-modules";
 import { getNextAuthConfig, isVercelPreviewDeployment, isLocalDevelopment, isProduction } from "./app/lib/auth-config";
 
+// Função para detectar se é um preview deployment com subdomínio
+function isPreviewWithSubdomain(host: string): boolean {
+  const cleanHost = host.split(":")[0];
+  // Detecta padrões como: sandra.magic-lawyer-4ye22ftxh-magiclawyer.vercel.app
+  return cleanHost.includes("vercel.app") && 
+         !cleanHost.includes("magiclawyer.vercel.app") &&
+         cleanHost.includes(".");
+}
+
+// Função para extrair o subdomínio de um preview deployment
+function extractSubdomainFromPreview(host: string): string | null {
+  const cleanHost = host.split(":")[0];
+  if (isPreviewWithSubdomain(cleanHost)) {
+    const parts = cleanHost.split(".");
+    if (parts.length > 0) {
+      return parts[0]; // Retorna o primeiro parte (ex: "sandra")
+    }
+  }
+  return null;
+}
+
 // Função para extrair tenant do domínio
 function extractTenantFromDomain(host: string): string | null {
   // Remove porta se existir
   const cleanHost = host.split(":")[0];
+
+  // Para preview deployments com subdomínio: sandra.magic-lawyer-4ye22ftxh-magiclawyer.vercel.app
+  if (isPreviewWithSubdomain(cleanHost)) {
+    const subdomain = extractSubdomainFromPreview(cleanHost);
+    if (subdomain) {
+      return subdomain;
+    }
+  }
 
   // Para domínios Vercel: subdomain.magiclawyer.vercel.app
   if (cleanHost.endsWith(".magiclawyer.vercel.app")) {

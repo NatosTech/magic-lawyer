@@ -31,9 +31,19 @@ Isso causava problemas de autenticação porque o NextAuth.js precisa que a URL 
 ## Como Funciona
 
 1. **Requisição chega** → Middleware detecta o domínio
-2. **Configuração dinâmica** → `getNextAuthConfig()` retorna configuração apropriada
-3. **NextAuth aplica** → URL de callback correta baseada no domínio atual
-4. **Autenticação funciona** → Login funciona em qualquer ambiente
+2. **Detecção de ambiente** → Identifica se é preview deployment com subdomínio
+3. **Configuração dinâmica** → `getNextAuthConfig()` retorna configuração apropriada
+4. **NextAuth aplica** → URL de callback correta baseada no domínio atual
+5. **Autenticação funciona** → Login funciona em qualquer ambiente
+
+### Detecção de Preview Deployments com Subdomínios
+
+O sistema agora detecta automaticamente quando você está em um preview deployment com subdomínio de tenant:
+
+- **Padrão detectado**: `sandra.magic-lawyer-4ye22ftxh-magiclawyer.vercel.app`
+- **Subdomínio extraído**: `sandra`
+- **Domínio mantido**: `https://sandra.magic-lawyer-4ye22ftxh-magiclawyer.vercel.app`
+- **Resultado**: Login funciona no domínio do preview, não redireciona para produção
 
 ## Ambientes Suportados
 
@@ -46,6 +56,12 @@ Isso causava problemas de autenticação porque o NextAuth.js precisa que a URL 
 - Domínio: `magic-lawyer-git-[branch]-magiclawyer.vercel.app`
 - URL: `https://magic-lawyer-git-[branch]-magiclawyer.vercel.app`
 - Cookies: Seguros
+
+### ✅ Preview Deployments com Subdomínios (Tenants)
+- Domínio: `sandra.magic-lawyer-git-[branch]-magiclawyer.vercel.app`
+- URL: `https://sandra.magic-lawyer-git-[branch]-magiclawyer.vercel.app`
+- Cookies: Seguros
+- **Mantém o domínio do preview** - Não redireciona para produção
 
 ### ✅ Produção (Main Branch)
 - Domínio: `magiclawyer.vercel.app`
