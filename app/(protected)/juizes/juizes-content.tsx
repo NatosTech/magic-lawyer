@@ -238,7 +238,6 @@ export function JuizesContent() {
       await exportJuizToPDF(juiz);
       toast.success("PDF gerado com sucesso!");
     } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
       toast.error("Erro ao gerar PDF. Verifique o console para detalhes.");
     }
   };
@@ -246,9 +245,7 @@ export function JuizesContent() {
   const handleEditJuiz = (juiz: JuizSerializado) => {
     setSelectedJuiz(juiz);
 
-    // DEBUG: Verificar dados do juiz
-    console.log("🔍 [handleEditJuiz] Juiz completo:", juiz);
-    console.log("🔍 [handleEditJuiz] OAB do juiz:", juiz.oab);
+    // DEBUG removido para produção
 
     // Popula o formulário com os dados do juiz
     const newFormState: JuizFormData = {
@@ -273,8 +270,7 @@ export function JuizesContent() {
       foto: juiz.foto || "",
     };
 
-    console.log("📝 [handleEditJuiz] FormState após popular:", newFormState);
-    console.log("📋 [handleEditJuiz] OAB no formState:", newFormState.oab);
+    // DEBUG removido para produção
 
     setFormState(newFormState);
     setIsEditModalOpen(true);
@@ -315,9 +311,7 @@ export function JuizesContent() {
         foto: formState.foto || undefined,
       };
 
-      // DEBUG: Log para verificar os dados
-      console.log("📊 Dados do juiz para salvar:", juizData);
-      console.log("📋 FormState.oab:", formState.oab);
+      // DEBUG removido para produção
 
       let result;
 
@@ -354,7 +348,6 @@ export function JuizesContent() {
       // Revalidar dados
       mutate();
     } catch (error) {
-      console.error("Erro ao salvar juiz:", error);
       toast.error("Erro ao salvar juiz");
     } finally {
       setIsSaving(false);
