@@ -111,7 +111,6 @@ export default function ContratosContent() {
         toast.error(result.error || "Erro ao vincular procuração");
       }
     } catch (error) {
-      console.error("Erro ao vincular procuração:", error);
       toast.error("Erro ao processar vinculação");
     } finally {
       setIsLinking(false);
