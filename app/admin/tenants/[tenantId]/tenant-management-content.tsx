@@ -160,6 +160,21 @@ export function TenantManagementContent({
 
   const tenantData = data ?? initialData;
 
+  // Helper para revalidação com tratamento de erro melhorado
+  const revalidateWithErrorHandling = async (context: string) => {
+    try {
+      await mutate(undefined, { revalidate: true });
+    } catch (err) {
+      console.warn(`[tenant-management] Revalidação (${context}) falhou`, err);
+      addToast({
+        title: "⚠️ Dados podem estar desatualizados",
+        description: `Falha ao atualizar dados automaticamente. Recarregue a página se necessário.`,
+        color: "warning",
+        duration: 8000,
+      });
+    }
+  };
+
   const [detailsForm, setDetailsForm] = useState<UpdateTenantDetailsInput>({
     name: tenantData.tenant.name,
     slug: tenantData.tenant.slug,
@@ -268,9 +283,7 @@ export function TenantManagementContent({
         color: "success",
       });
 
-      mutate(undefined, { revalidate: true }).catch((err) => {
-        console.warn("[tenant-management] Revalidação falhou", err);
-      });
+      await revalidateWithErrorHandling("detalhes");
     } finally {
       setIsSavingDetails(false);
     }
@@ -301,9 +314,7 @@ export function TenantManagementContent({
       });
 
       setTenantStatusState(status);
-      mutate(undefined, { revalidate: true }).catch((err) => {
-        console.warn("[tenant-management] Revalidação (status) falhou", err);
-      });
+      await revalidateWithErrorHandling("status");
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -340,12 +351,7 @@ export function TenantManagementContent({
         color: "success",
       });
 
-      mutate(undefined, { revalidate: true }).catch((err) => {
-        console.warn(
-          "[tenant-management] Revalidação (assinatura) falhou",
-          err,
-        );
-      });
+      await revalidateWithErrorHandling("assinatura");
     } finally {
       setIsSavingSubscription(false);
     }
@@ -375,9 +381,7 @@ export function TenantManagementContent({
         color: "success",
       });
 
-      mutate(undefined, { revalidate: true }).catch((err) => {
-        console.warn("[tenant-management] Revalidação (branding) falhou", err);
-      });
+      await revalidateWithErrorHandling("branding");
     } finally {
       setIsSavingBranding(false);
     }
@@ -410,12 +414,7 @@ export function TenantManagementContent({
         });
       }
 
-      mutate(undefined, { revalidate: true }).catch((err) => {
-        console.warn(
-          "[tenant-management] Revalidação (user active) falhou",
-          err,
-        );
-      });
+      await revalidateWithErrorHandling("user active");
     } finally {
       setPendingUserId(null);
       setIsUpdatingUser(false);
@@ -452,12 +451,7 @@ export function TenantManagementContent({
         });
       }
 
-      mutate(undefined, { revalidate: true }).catch((err) => {
-        console.warn(
-          "[tenant-management] Revalidação (reset senha) falhou",
-          err,
-        );
-      });
+      await revalidateWithErrorHandling("reset senha");
     } finally {
       setPendingUserId(null);
       setIsUpdatingUser(false);
