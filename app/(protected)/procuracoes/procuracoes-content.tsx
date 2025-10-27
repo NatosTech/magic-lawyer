@@ -483,7 +483,6 @@ export function ProcuracoesContent() {
                     startContent={<Download className="h-4 w-4" />}
                     onPress={() => {
                       // Implementar download do PDF
-                      console.log("Download PDF:", procuracao.id);
                     }}
                   >
                     Baixar PDF
