@@ -80,10 +80,7 @@ import useSWR from "swr";
 import { AdvogadoHistorico } from "./components/advogado-historico";
 import { AdvogadoNotificacoes } from "./components/advogado-notificacoes";
 import { AdvogadoFormModal } from "./components/advogado-form-modal";
-import {
-  type EnderecoFormData,
-  type DadosBancariosFormData,
-} from "./components/types";
+import { type EnderecoFormData, type DadosBancariosFormData } from "./components/types";
 
 import { ImageEditorModal } from "@/components/image-editor-modal";
 import {
@@ -98,28 +95,15 @@ import {
   type CreateAdvogadoInput,
   type UpdateAdvogadoInput,
 } from "@/app/actions/advogados";
-import {
-  useAdvogadosPerformance,
-  usePerformanceGeral,
-} from "@/app/hooks/use-advogados-performance";
-import {
-  useAdvogadosComissoes,
-  useComissoesGeral,
-} from "@/app/hooks/use-advogados-comissoes";
+import { useAdvogadosPerformance, usePerformanceGeral } from "@/app/hooks/use-advogados-performance";
+import { useAdvogadosComissoes, useComissoesGeral } from "@/app/hooks/use-advogados-comissoes";
 import { useBancosDisponiveis } from "@/app/hooks/use-bancos";
-import {
-  useTiposConta,
-  useTiposContaBancaria,
-  useTiposChavePix,
-} from "@/app/hooks/use-dados-bancarios";
+import { useTiposConta, useTiposContaBancaria, useTiposChavePix } from "@/app/hooks/use-dados-bancarios";
 import { enviarEmailBoasVindas } from "@/app/actions/advogados-emails";
 import { title } from "@/components/primitives";
 import { EspecialidadeJuridica } from "@/app/generated/prisma";
 
-const createEndereco = (
-  apelido = "Principal",
-  principal = true,
-): EnderecoFormData => ({
+const createEndereco = (apelido = "Principal", principal = true): EnderecoFormData => ({
   apelido,
   tipo: "ESCRITORIO",
   principal,
@@ -157,15 +141,11 @@ const createContaBancaria = (principal = true): DadosBancariosFormData => ({
 });
 
 export default function AdvogadosContent() {
-  const { data, error, isLoading, mutate } = useSWR(
-    "advogados-do-tenant",
-    getAdvogadosDoTenant,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      refreshInterval: 0,
-    },
-  );
+  const { data, error, isLoading, mutate } = useSWR("advogados-do-tenant", getAdvogadosDoTenant, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    refreshInterval: 0,
+  });
 
   const advogados = data?.advogados || [];
   const loading = isLoading;
@@ -174,8 +154,7 @@ export default function AdvogadosContent() {
   // Estados para modais e filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [selectedEspecialidade, setSelectedEspecialidade] =
-    useState<string>("all");
+  const [selectedEspecialidade, setSelectedEspecialidade] = useState<string>("all");
   const [selectedTipo, setSelectedTipo] = useState<string>("all"); // Novo filtro para tipo de advogado
   const [showFilters, setShowFilters] = useState(false);
   const [sortField, setSortField] = useState<string>("nome");
@@ -190,14 +169,11 @@ export default function AdvogadosContent() {
   const [dataInicio, setDataInicio] = useState<string>("");
   const [dataFim, setDataFim] = useState<string>("");
   const [showPerformanceReports, setShowPerformanceReports] = useState(false);
-  const [showCommissionsDashboard, setShowCommissionsDashboard] =
-    useState(false);
+  const [showCommissionsDashboard, setShowCommissionsDashboard] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [selectedAdvogado, setSelectedAdvogado] = useState<Advogado | null>(
-    null,
-  );
+  const [selectedAdvogado, setSelectedAdvogado] = useState<Advogado | null>(null);
   const [isHistoricoModalOpen, setIsHistoricoModalOpen] = useState(false);
   const [isNotificacoesModalOpen, setIsNotificacoesModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -209,8 +185,7 @@ export default function AdvogadosContent() {
     linkLogin: string;
   } | null>(null);
   const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
-  const [selectedAdvogadoForAvatar, setSelectedAdvogadoForAvatar] =
-    useState<Advogado | null>(null);
+  const [selectedAdvogadoForAvatar, setSelectedAdvogadoForAvatar] = useState<Advogado | null>(null);
 
   // Hook para debounce da busca
   const useDebounce = (value: string, delay: number) => {
@@ -232,24 +207,14 @@ export default function AdvogadosContent() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Hooks de performance
-  const {
-    performance: performanceData,
-    isLoading: isLoadingPerformance,
-    error: performanceError,
-  } = useAdvogadosPerformance();
-  const {
-    performance: performanceGeral,
-    isLoading: isLoadingPerformanceGeral,
-    error: performanceGeralError,
-  } = usePerformanceGeral();
+  const { performance: performanceData, isLoading: isLoadingPerformance, error: performanceError } = useAdvogadosPerformance();
+  const { performance: performanceGeral, isLoading: isLoadingPerformanceGeral, error: performanceGeralError } = usePerformanceGeral();
 
   // Debug logs removidos para produção
 
   // Hooks de comissões
-  const { comissoes: comissoesData, isLoading: isLoadingComissoes } =
-    useAdvogadosComissoes();
-  const { comissoes: comissoesGeral, isLoading: isLoadingComissoesGeral } =
-    useComissoesGeral();
+  const { comissoes: comissoesData, isLoading: isLoadingComissoes } = useAdvogadosComissoes();
+  const { comissoes: comissoesGeral, isLoading: isLoadingComissoesGeral } = useComissoesGeral();
 
   // Hook de estados do Brasil
 
@@ -260,12 +225,8 @@ export default function AdvogadosContent() {
   const { tipos: tiposChavePix } = useTiposChavePix();
 
   // Estados para múltiplos endereços e dados bancários
-  const [enderecos, setEnderecos] = useState<EnderecoFormData[]>([
-    createEndereco(),
-  ]);
-  const [contasBancarias, setContasBancarias] = useState<
-    DadosBancariosFormData[]
-  >([createContaBancaria()]);
+  const [enderecos, setEnderecos] = useState<EnderecoFormData[]>([createEndereco()]);
+  const [contasBancarias, setContasBancarias] = useState<DadosBancariosFormData[]>([createContaBancaria()]);
 
   // Estado do formulário
   const initialFormState: CreateAdvogadoInput = {
@@ -335,20 +296,16 @@ export default function AdvogadosContent() {
     },
   };
 
-  const [formState, setFormState] =
-    useState<CreateAdvogadoInput>(initialFormState);
+  const [formState, setFormState] = useState<CreateAdvogadoInput>(initialFormState);
 
   useEffect(() => {
     if (enderecos.length === 0) {
-      setFormState((prev) =>
-        prev.endereco ? { ...prev, endereco: undefined } : prev,
-      );
+      setFormState((prev) => (prev.endereco ? { ...prev, endereco: undefined } : prev));
 
       return;
     }
 
-    const principalEndereco =
-      enderecos.find((endereco) => endereco.principal) ?? enderecos[0];
+    const principalEndereco = enderecos.find((endereco) => endereco.principal) ?? enderecos[0];
 
     if (!principalEndereco) {
       return;
@@ -401,8 +358,7 @@ export default function AdvogadosContent() {
   useEffect(() => {
     setContasBancarias((prev) =>
       prev.map((conta) => {
-        const nomeSugerido =
-          `${formState.firstName || ""} ${formState.lastName || ""}`.trim();
+        const nomeSugerido = `${formState.firstName || ""} ${formState.lastName || ""}`.trim();
         const documentoSugerido = formState.cpf || "";
         const emailSugerido = formState.email || "";
         const telefoneSugerido = formState.phone || "";
@@ -412,12 +368,7 @@ export default function AdvogadosContent() {
         const titularEmail = conta.titularEmail || emailSugerido;
         const titularTelefone = conta.titularTelefone || telefoneSugerido;
 
-        if (
-          conta.titularNome === titularNome &&
-          conta.titularDocumento === titularDocumento &&
-          conta.titularEmail === titularEmail &&
-          conta.titularTelefone === titularTelefone
-        ) {
+        if (conta.titularNome === titularNome && conta.titularDocumento === titularDocumento && conta.titularEmail === titularEmail && conta.titularTelefone === titularTelefone) {
           return conta;
         }
 
@@ -428,15 +379,9 @@ export default function AdvogadosContent() {
           titularEmail,
           titularTelefone,
         };
-      }),
+      })
     );
-  }, [
-    formState.firstName,
-    formState.lastName,
-    formState.cpf,
-    formState.email,
-    formState.phone,
-  ]);
+  }, [formState.firstName, formState.lastName, formState.cpf, formState.email, formState.phone]);
 
   // Funções auxiliares
   const getNomeCompleto = (advogado: Advogado) => {
@@ -472,11 +417,7 @@ export default function AdvogadosContent() {
   };
 
   // Função de ordenação
-  const sortAdvogados = (
-    advogados: Advogado[],
-    field: string,
-    direction: "asc" | "desc",
-  ) => {
+  const sortAdvogados = (advogados: Advogado[], field: string, direction: "asc" | "desc") => {
     return [...advogados].sort((a, b) => {
       let aValue: any;
       let bValue: any;
@@ -526,53 +467,26 @@ export default function AdvogadosContent() {
       const oab = getOAB(advogado).toLowerCase();
 
       const matchSearch =
-        !debouncedSearchTerm ||
-        nomeCompleto.includes(debouncedSearchTerm.toLowerCase()) ||
-        email.includes(debouncedSearchTerm.toLowerCase()) ||
-        oab.includes(debouncedSearchTerm.toLowerCase());
+        !debouncedSearchTerm || nomeCompleto.includes(debouncedSearchTerm.toLowerCase()) || email.includes(debouncedSearchTerm.toLowerCase()) || oab.includes(debouncedSearchTerm.toLowerCase());
 
       // Filtro de status - quando "all" ou vazio, mostra todos
-      const matchStatus =
-        !selectedStatus ||
-        selectedStatus === "all" ||
-        (selectedStatus === "active" && advogado.usuario.active) ||
-        (selectedStatus === "inactive" && !advogado.usuario.active);
+      const matchStatus = !selectedStatus || selectedStatus === "all" || (selectedStatus === "active" && advogado.usuario.active) || (selectedStatus === "inactive" && !advogado.usuario.active);
 
       // Filtro de especialidade - quando "all" ou vazio, mostra todos
-      const matchEspecialidade =
-        !selectedEspecialidade ||
-        selectedEspecialidade === "all" ||
-        advogado.especialidades.includes(
-          selectedEspecialidade as EspecialidadeJuridica,
-        );
+      const matchEspecialidade = !selectedEspecialidade || selectedEspecialidade === "all" || advogado.especialidades.includes(selectedEspecialidade as EspecialidadeJuridica);
 
       // Filtro de tipo - quando "all" ou vazio, mostra todos
-      const matchTipo =
-        !selectedTipo ||
-        selectedTipo === "all" ||
-        (selectedTipo === "escritorio" && !advogado.isExterno) ||
-        (selectedTipo === "externo" && advogado.isExterno);
+      const matchTipo = !selectedTipo || selectedTipo === "all" || (selectedTipo === "escritorio" && !advogado.isExterno) || (selectedTipo === "externo" && advogado.isExterno);
 
       // Filtros avançados
-      const matchComissaoMin =
-        !comissaoMin || advogado.comissaoPadrao >= parseFloat(comissaoMin);
-      const matchComissaoMax =
-        !comissaoMax || advogado.comissaoPadrao <= parseFloat(comissaoMax);
+      const matchComissaoMin = !comissaoMin || advogado.comissaoPadrao >= parseFloat(comissaoMin);
+      const matchComissaoMax = !comissaoMax || advogado.comissaoPadrao <= parseFloat(comissaoMax);
 
       // Para data de cadastro, vamos usar a data de criação do usuário (simulado)
       const matchDataInicio = !dataInicio || true; // Em produção, comparar com data de criação
       const matchDataFim = !dataFim || true; // Em produção, comparar com data de criação
 
-      return (
-        matchSearch &&
-        matchStatus &&
-        matchEspecialidade &&
-        matchTipo &&
-        matchComissaoMin &&
-        matchComissaoMax &&
-        matchDataInicio &&
-        matchDataFim
-      );
+      return matchSearch && matchStatus && matchEspecialidade && matchTipo && matchComissaoMin && matchComissaoMax && matchDataInicio && matchDataFim;
     });
 
     const sorted = sortAdvogados(filtered, sortField, sortDirection);
@@ -582,21 +496,7 @@ export default function AdvogadosContent() {
     const endIndex = startIndex + itemsPerPage;
 
     return sorted.slice(startIndex, endIndex);
-  }, [
-    advogados,
-    debouncedSearchTerm,
-    selectedStatus,
-    selectedEspecialidade,
-    selectedTipo,
-    sortField,
-    sortDirection,
-    currentPage,
-    itemsPerPage,
-    comissaoMin,
-    comissaoMax,
-    dataInicio,
-    dataFim,
-  ]);
+  }, [advogados, debouncedSearchTerm, selectedStatus, selectedEspecialidade, selectedTipo, sortField, sortDirection, currentPage, itemsPerPage, comissaoMin, comissaoMax, dataInicio, dataFim]);
 
   // Calcular total de advogados filtrados (sem paginação)
   const totalAdvogadosFiltrados = useMemo(() => {
@@ -606,59 +506,25 @@ export default function AdvogadosContent() {
       const oab = getOAB(advogado).toLowerCase();
 
       const matchSearch =
-        !debouncedSearchTerm ||
-        nomeCompleto.includes(debouncedSearchTerm.toLowerCase()) ||
-        email.includes(debouncedSearchTerm.toLowerCase()) ||
-        oab.includes(debouncedSearchTerm.toLowerCase());
+        !debouncedSearchTerm || nomeCompleto.includes(debouncedSearchTerm.toLowerCase()) || email.includes(debouncedSearchTerm.toLowerCase()) || oab.includes(debouncedSearchTerm.toLowerCase());
 
-      const matchStatus =
-        selectedStatus === "all" ||
-        (selectedStatus === "active" && advogado.usuario.active) ||
-        (selectedStatus === "inactive" && !advogado.usuario.active);
+      const matchStatus = selectedStatus === "all" || (selectedStatus === "active" && advogado.usuario.active) || (selectedStatus === "inactive" && !advogado.usuario.active);
 
-      const matchEspecialidade =
-        selectedEspecialidade === "all" ||
-        advogado.especialidades.includes(
-          selectedEspecialidade as EspecialidadeJuridica,
-        );
+      const matchEspecialidade = selectedEspecialidade === "all" || advogado.especialidades.includes(selectedEspecialidade as EspecialidadeJuridica);
 
-      const matchTipo =
-        selectedTipo === "all" ||
-        (selectedTipo === "escritorio" && !advogado.isExterno) ||
-        (selectedTipo === "externo" && advogado.isExterno);
+      const matchTipo = selectedTipo === "all" || (selectedTipo === "escritorio" && !advogado.isExterno) || (selectedTipo === "externo" && advogado.isExterno);
 
       // Filtros avançados
-      const matchComissaoMin =
-        !comissaoMin || advogado.comissaoPadrao >= parseFloat(comissaoMin);
-      const matchComissaoMax =
-        !comissaoMax || advogado.comissaoPadrao <= parseFloat(comissaoMax);
+      const matchComissaoMin = !comissaoMin || advogado.comissaoPadrao >= parseFloat(comissaoMin);
+      const matchComissaoMax = !comissaoMax || advogado.comissaoPadrao <= parseFloat(comissaoMax);
 
       // Para data de cadastro, vamos usar a data de criação do usuário (simulado)
       const matchDataInicio = !dataInicio || true; // Em produção, comparar com data de criação
       const matchDataFim = !dataFim || true; // Em produção, comparar com data de criação
 
-      return (
-        matchSearch &&
-        matchStatus &&
-        matchEspecialidade &&
-        matchTipo &&
-        matchComissaoMin &&
-        matchComissaoMax &&
-        matchDataInicio &&
-        matchDataFim
-      );
+      return matchSearch && matchStatus && matchEspecialidade && matchTipo && matchComissaoMin && matchComissaoMax && matchDataInicio && matchDataFim;
     }).length;
-  }, [
-    advogados,
-    debouncedSearchTerm,
-    selectedStatus,
-    selectedEspecialidade,
-    selectedTipo,
-    comissaoMin,
-    comissaoMax,
-    dataInicio,
-    dataFim,
-  ]);
+  }, [advogados, debouncedSearchTerm, selectedStatus, selectedEspecialidade, selectedTipo, comissaoMin, comissaoMax, dataInicio, dataFim]);
 
   // Calcular informações de paginação
   const totalPages = Math.ceil(totalAdvogadosFiltrados / itemsPerPage);
@@ -680,8 +546,7 @@ export default function AdvogadosContent() {
     const total = advogados.length;
     const ativos = advogados.filter((a) => a.usuario.active).length;
     const comOAB = advogados.filter((a) => a.oabNumero && a.oabUf).length;
-    const especialidades = new Set(advogados.flatMap((a) => a.especialidades))
-      .size;
+    const especialidades = new Set(advogados.flatMap((a) => a.especialidades)).size;
     const externos = advogados.filter((a) => a.isExterno).length;
     const escritorio = advogados.filter((a) => !a.isExterno).length;
 
@@ -689,11 +554,7 @@ export default function AdvogadosContent() {
   }, [advogados]);
 
   // Verificar se há filtros ativos
-  const hasActiveFilters =
-    searchTerm ||
-    selectedStatus !== "all" ||
-    selectedEspecialidade !== "all" ||
-    selectedTipo !== "all";
+  const hasActiveFilters = searchTerm || selectedStatus !== "all" || selectedEspecialidade !== "all" || selectedTipo !== "all";
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -733,17 +594,12 @@ export default function AdvogadosContent() {
           observacoes: endereco.observacoes || "",
         }))
         .filter((endereco) => {
-          const campos = [
-            endereco.logradouro,
-            endereco.cidade,
-            endereco.estado,
-          ];
+          const campos = [endereco.logradouro, endereco.cidade, endereco.estado];
 
           return campos.some((valor) => valor && valor.trim().length > 0);
         });
 
-      const enderecoPrincipal =
-        enderecosPayload.find((item) => item.principal) ?? enderecosPayload[0];
+      const enderecoPrincipal = enderecosPayload.find((item) => item.principal) ?? enderecosPayload[0];
 
       const contasPayload = contasBancarias
         .map((conta, index) => ({
@@ -755,9 +611,7 @@ export default function AdvogadosContent() {
           tipoContaBancaria: conta.tipoContaBancaria,
           chavePix: conta.chavePix || "",
           tipoChavePix: conta.tipoChavePix,
-          titularNome:
-            conta.titularNome ||
-            `${formState.firstName} ${formState.lastName}`.trim(),
+          titularNome: conta.titularNome || `${formState.firstName} ${formState.lastName}`.trim(),
           titularDocumento: conta.titularDocumento || formState.cpf || "",
           titularEmail: conta.titularEmail || formState.email || "",
           titularTelefone: conta.titularTelefone || formState.phone || "",
@@ -768,14 +622,7 @@ export default function AdvogadosContent() {
           principal: conta.principal ?? index === 0,
           observacoes: conta.observacoes || "",
         }))
-        .filter(
-          (conta) =>
-            conta.bancoCodigo &&
-            conta.agencia &&
-            conta.conta &&
-            conta.titularNome &&
-            conta.titularDocumento,
-        );
+        .filter((conta) => conta.bancoCodigo && conta.agencia && conta.conta && conta.titularNome && conta.titularDocumento);
 
       const input: CreateAdvogadoInput = {
         firstName: formState.firstName,
@@ -1078,10 +925,7 @@ export default function AdvogadosContent() {
     setIsAvatarEditorOpen(true);
   };
 
-  const handleSaveAvatar = async (
-    imageData: string | FormData | null,
-    isUrl: boolean,
-  ) => {
+  const handleSaveAvatar = async (imageData: string | FormData | null, isUrl: boolean) => {
     if (!imageData || !selectedAdvogadoForAvatar) return;
 
     setIsUploadingAvatar(true);
@@ -1102,10 +946,7 @@ export default function AdvogadosContent() {
         const file = imageData.get("file") as File;
 
         if (file) {
-          result = await uploadAvatarAdvogado(
-            selectedAdvogadoForAvatar.id,
-            file,
-          );
+          result = await uploadAvatarAdvogado(selectedAdvogadoForAvatar.id, file);
         } else {
           throw new Error("Arquivo não encontrado no FormData");
         }
@@ -1163,35 +1004,15 @@ export default function AdvogadosContent() {
   // Resetar paginação quando filtros mudarem
   useEffect(() => {
     setCurrentPage(1);
-  }, [
-    searchTerm,
-    selectedStatus,
-    selectedEspecialidade,
-    selectedTipo,
-    comissaoMin,
-    comissaoMax,
-    dataInicio,
-    dataFim,
-  ]);
+  }, [searchTerm, selectedStatus, selectedEspecialidade, selectedTipo, comissaoMin, comissaoMax, dataInicio, dataFim]);
 
   // Resetar seleção quando filtros mudarem
   useEffect(() => {
     setSelectedAdvogados([]);
-  }, [
-    searchTerm,
-    selectedStatus,
-    selectedEspecialidade,
-    selectedTipo,
-    currentPage,
-  ]);
+  }, [searchTerm, selectedStatus, selectedEspecialidade, selectedTipo, currentPage]);
 
   const handleConvertToInterno = async (advogadoId: string) => {
-    if (
-      !confirm(
-        "Tem certeza que deseja transformar este advogado externo em interno? Esta ação não pode ser desfeita.",
-      )
-    )
-      return;
+    if (!confirm("Tem certeza que deseja transformar este advogado externo em interno? Esta ação não pode ser desfeita.")) return;
 
     try {
       const result = await convertAdvogadoExternoToInterno(advogadoId);
@@ -1226,24 +1047,14 @@ export default function AdvogadosContent() {
       }));
 
       const headers = Object.keys(csvData[0]);
-      const csvContent = [
-        headers.join(","),
-        ...csvData.map((row) =>
-          headers
-            .map((header) => `"${row[header as keyof typeof row]}"`)
-            .join(","),
-        ),
-      ].join("\n");
+      const csvContent = [headers.join(","), ...csvData.map((row) => headers.map((header) => `"${row[header as keyof typeof row]}"`).join(","))].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
 
       link.setAttribute("href", url);
-      link.setAttribute(
-        "download",
-        `advogados_${new Date().toISOString().split("T")[0]}.csv`,
-      );
+      link.setAttribute("download", `advogados_${new Date().toISOString().split("T")[0]}.csv`);
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
@@ -1309,7 +1120,7 @@ export default function AdvogadosContent() {
                   <td>${advogado.isExterno ? "Externo" : "Interno"}</td>
                   <td>Padrão: ${advogado.comissaoPadrao}% | Ação: ${advogado.comissaoAcaoGanha}% | Honorários: ${advogado.comissaoHonorarios}%</td>
                 </tr>
-              `,
+              `
                 )
                 .join("")}
             </tbody>
@@ -1346,11 +1157,7 @@ export default function AdvogadosContent() {
   };
 
   const handleSelectAdvogado = (advogadoId: string) => {
-    setSelectedAdvogados((prev) =>
-      prev.includes(advogadoId)
-        ? prev.filter((id) => id !== advogadoId)
-        : [...prev, advogadoId],
-    );
+    setSelectedAdvogados((prev) => (prev.includes(advogadoId) ? prev.filter((id) => id !== advogadoId) : [...prev, advogadoId]));
   };
 
   const handleBulkActivate = async () => {
@@ -1361,9 +1168,7 @@ export default function AdvogadosContent() {
       // Simular ação em lote (em produção, seria uma action no backend)
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      toast.success(
-        `${selectedAdvogados.length} advogado(s) ativado(s) com sucesso!`,
-      );
+      toast.success(`${selectedAdvogados.length} advogado(s) ativado(s) com sucesso!`);
       setSelectedAdvogados([]);
       mutate();
     } catch (error) {
@@ -1376,21 +1181,14 @@ export default function AdvogadosContent() {
   const handleBulkDeactivate = async () => {
     if (selectedAdvogados.length === 0) return;
 
-    if (
-      !confirm(
-        `Tem certeza que deseja desativar ${selectedAdvogados.length} advogado(s)?`,
-      )
-    )
-      return;
+    if (!confirm(`Tem certeza que deseja desativar ${selectedAdvogados.length} advogado(s)?`)) return;
 
     setIsBulkActionLoading(true);
     try {
       // Simular ação em lote (em produção, seria uma action no backend)
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      toast.success(
-        `${selectedAdvogados.length} advogado(s) desativado(s) com sucesso!`,
-      );
+      toast.success(`${selectedAdvogados.length} advogado(s) desativado(s) com sucesso!`);
       setSelectedAdvogados([]);
       mutate();
     } catch (error) {
@@ -1403,21 +1201,14 @@ export default function AdvogadosContent() {
   const handleBulkDelete = async () => {
     if (selectedAdvogados.length === 0) return;
 
-    if (
-      !confirm(
-        `Tem certeza que deseja excluir ${selectedAdvogados.length} advogado(s)? Esta ação não pode ser desfeita.`,
-      )
-    )
-      return;
+    if (!confirm(`Tem certeza que deseja excluir ${selectedAdvogados.length} advogado(s)? Esta ação não pode ser desfeita.`)) return;
 
     setIsBulkActionLoading(true);
     try {
       // Simular ação em lote (em produção, seria uma action no backend)
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      toast.success(
-        `${selectedAdvogados.length} advogado(s) excluído(s) com sucesso!`,
-      );
+      toast.success(`${selectedAdvogados.length} advogado(s) excluído(s) com sucesso!`);
       setSelectedAdvogados([]);
       mutate();
     } catch (error) {
@@ -1435,8 +1226,7 @@ export default function AdvogadosContent() {
     setDataFim("");
   };
 
-  const hasAdvancedFilters =
-    comissaoMin || comissaoMax || dataInicio || dataFim;
+  const hasAdvancedFilters = comissaoMin || comissaoMax || dataInicio || dataFim;
 
   // Funções de validação
   const validateEmail = (email: string): boolean => {
@@ -1479,14 +1269,8 @@ export default function AdvogadosContent() {
     }
 
     // Validar OAB
-    if (
-      formState.oabNumero &&
-      formState.oabUf &&
-      !validateOAB(formState.oabNumero, formState.oabUf)
-    ) {
-      errors.push(
-        "OAB inválida. Número deve ter até 6 dígitos e UF deve ter 2 caracteres",
-      );
+    if (formState.oabNumero && formState.oabUf && !validateOAB(formState.oabNumero, formState.oabUf)) {
+      errors.push("OAB inválida. Número deve ter até 6 dígitos e UF deve ter 2 caracteres");
     }
 
     // Validar telefone
@@ -1495,22 +1279,13 @@ export default function AdvogadosContent() {
     }
 
     // Validar comissões (devem ser entre 0 e 100)
-    if (
-      (formState.comissaoPadrao ?? 0) < 0 ||
-      (formState.comissaoPadrao ?? 0) > 100
-    ) {
+    if ((formState.comissaoPadrao ?? 0) < 0 || (formState.comissaoPadrao ?? 0) > 100) {
       errors.push("Comissão padrão deve estar entre 0 e 100%");
     }
-    if (
-      (formState.comissaoAcaoGanha ?? 0) < 0 ||
-      (formState.comissaoAcaoGanha ?? 0) > 100
-    ) {
+    if ((formState.comissaoAcaoGanha ?? 0) < 0 || (formState.comissaoAcaoGanha ?? 0) > 100) {
       errors.push("Comissão ação ganha deve estar entre 0 e 100%");
     }
-    if (
-      (formState.comissaoHonorarios ?? 0) < 0 ||
-      (formState.comissaoHonorarios ?? 0) > 100
-    ) {
+    if ((formState.comissaoHonorarios ?? 0) < 0 || (formState.comissaoHonorarios ?? 0) > 100) {
       errors.push("Comissão honorários deve estar entre 0 e 100%");
     }
 
@@ -1582,46 +1357,24 @@ export default function AdvogadosContent() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header Melhorado */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        className="flex justify-between items-center"
-        initial={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.5 }}
-      >
+      <motion.div animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center" initial={{ opacity: 0, y: -20 }} transition={{ duration: 0.5 }}>
         <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>
-            Equipe de Advogados
-          </h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            Gerencie os advogados do seu escritório de advocacia
-          </p>
+          <h1 className={title({ size: "lg", color: "blue" })}>Equipe de Advogados</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Gerencie os advogados do seu escritório de advocacia</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Dropdown>
             <DropdownTrigger>
-              <Button
-                className="border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 w-full sm:w-auto"
-                size="sm"
-                startContent={<Download size={20} />}
-                variant="bordered"
-              >
+              <Button className="border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 w-full sm:w-auto" size="sm" startContent={<Download size={20} />} variant="bordered">
                 <span className="hidden sm:inline">Exportar</span>
                 <span className="sm:hidden">Exportar</span>
               </Button>
             </DropdownTrigger>
             <DropdownMenu aria-label="Opções de exportação">
-              <DropdownItem
-                key="csv"
-                startContent={<Table className="h-4 w-4" />}
-                onPress={exportToCSV}
-              >
+              <DropdownItem key="csv" startContent={<Table className="h-4 w-4" />} onPress={exportToCSV}>
                 Exportar para CSV
               </DropdownItem>
-              <DropdownItem
-                key="pdf"
-                startContent={<FileText className="h-4 w-4" />}
-                onPress={exportToPDF}
-              >
+              <DropdownItem key="pdf" startContent={<FileText className="h-4 w-4" />} onPress={exportToPDF}>
                 Exportar para PDF
               </DropdownItem>
             </DropdownMenu>
@@ -1639,9 +1392,7 @@ export default function AdvogadosContent() {
             className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto"
             size="sm"
             startContent={<DollarSign size={20} />}
-            onPress={() =>
-              setShowCommissionsDashboard(!showCommissionsDashboard)
-            }
+            onPress={() => setShowCommissionsDashboard(!showCommissionsDashboard)}
           >
             <span className="hidden sm:inline">Comissões</span>
             <span className="sm:hidden">Comissões</span>
@@ -1666,11 +1417,7 @@ export default function AdvogadosContent() {
       {/* Dashboard Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Card Total de Advogados */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.1 }}>
           <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -1678,41 +1425,23 @@ export default function AdvogadosContent() {
                   <Users className="text-white" size={24} />
                 </div>
                 <Badge color="success" content="+" variant="shadow">
-                  <TrendingUp
-                    className="text-blue-600 dark:text-blue-400"
-                    size={20}
-                  />
+                  <TrendingUp className="text-blue-600 dark:text-blue-400" size={20} />
                 </Badge>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
-                  Total de Advogados
-                </p>
-                <p className="text-4xl font-bold text-blue-800 dark:text-blue-200">
-                  {metrics.total}
-                </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400">
-                  Equipe do escritório
-                </p>
+                <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Total de Advogados</p>
+                <p className="text-4xl font-bold text-blue-800 dark:text-blue-200">{metrics.total}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">Equipe do escritório</p>
               </div>
               <div className="mt-4">
-                <Progress
-                  className="opacity-60"
-                  color="primary"
-                  size="sm"
-                  value={75}
-                />
+                <Progress className="opacity-60" color="primary" size="sm" value={75} />
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card Advogados Ativos */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.2 }}>
           <Card className="bg-gradient-to-br from-green-50 via-emerald-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -1720,45 +1449,23 @@ export default function AdvogadosContent() {
                   <CheckCircle className="text-white" size={24} />
                 </div>
                 <Badge color="success" content="✓" variant="shadow">
-                  <Activity
-                    className="text-green-600 dark:text-green-400"
-                    size={20}
-                  />
+                  <Activity className="text-green-600 dark:text-green-400" size={20} />
                 </Badge>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">
-                  Advogados Ativos
-                </p>
-                <p className="text-4xl font-bold text-green-800 dark:text-green-200">
-                  {metrics.ativos}
-                </p>
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  Em atividade
-                </p>
+                <p className="text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">Advogados Ativos</p>
+                <p className="text-4xl font-bold text-green-800 dark:text-green-200">{metrics.ativos}</p>
+                <p className="text-xs text-green-600 dark:text-green-400">Em atividade</p>
               </div>
               <div className="mt-4">
-                <Progress
-                  className="opacity-60"
-                  color="success"
-                  size="sm"
-                  value={
-                    metrics.total > 0
-                      ? (metrics.ativos / metrics.total) * 100
-                      : 0
-                  }
-                />
+                <Progress className="opacity-60" color="success" size="sm" value={metrics.total > 0 ? (metrics.ativos / metrics.total) * 100 : 0} />
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card Com OAB */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.3 }}>
           <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -1766,45 +1473,23 @@ export default function AdvogadosContent() {
                   <ScaleIcon className="text-white" size={24} />
                 </div>
                 <Badge color="secondary" content="OAB" variant="shadow">
-                  <Shield
-                    className="text-purple-600 dark:text-purple-400"
-                    size={20}
-                  />
+                  <Shield className="text-purple-600 dark:text-purple-400" size={20} />
                 </Badge>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">
-                  Com OAB
-                </p>
-                <p className="text-4xl font-bold text-purple-800 dark:text-purple-200">
-                  {metrics.comOAB}
-                </p>
-                <p className="text-xs text-purple-600 dark:text-purple-400">
-                  Registrados na OAB
-                </p>
+                <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Com OAB</p>
+                <p className="text-4xl font-bold text-purple-800 dark:text-purple-200">{metrics.comOAB}</p>
+                <p className="text-xs text-purple-600 dark:text-purple-400">Registrados na OAB</p>
               </div>
               <div className="mt-4">
-                <Progress
-                  className="opacity-60"
-                  color="secondary"
-                  size="sm"
-                  value={
-                    metrics.total > 0
-                      ? (metrics.comOAB / metrics.total) * 100
-                      : 0
-                  }
-                />
+                <Progress className="opacity-60" color="secondary" size="sm" value={metrics.total > 0 ? (metrics.comOAB / metrics.total) * 100 : 0} />
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card Especialidades */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.4 }}>
           <Card className="bg-gradient-to-br from-orange-50 via-amber-100 to-yellow-200 dark:from-orange-900/30 dark:via-amber-800/20 dark:to-yellow-900/30 border-orange-300 dark:border-orange-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -1812,30 +1497,16 @@ export default function AdvogadosContent() {
                   <Star className="text-white" size={24} />
                 </div>
                 <Badge color="warning" content="+" variant="shadow">
-                  <Award
-                    className="text-orange-600 dark:text-orange-400"
-                    size={20}
-                  />
+                  <Award className="text-orange-600 dark:text-orange-400" size={20} />
                 </Badge>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide">
-                  Especialidades
-                </p>
-                <p className="text-4xl font-bold text-orange-800 dark:text-orange-200">
-                  {metrics.especialidades}
-                </p>
-                <p className="text-xs text-orange-600 dark:text-orange-400">
-                  Áreas de atuação
-                </p>
+                <p className="text-sm font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide">Especialidades</p>
+                <p className="text-4xl font-bold text-orange-800 dark:text-orange-200">{metrics.especialidades}</p>
+                <p className="text-xs text-orange-600 dark:text-orange-400">Áreas de atuação</p>
               </div>
               <div className="mt-4">
-                <Progress
-                  className="opacity-60"
-                  color="warning"
-                  size="sm"
-                  value={75}
-                />
+                <Progress className="opacity-60" color="warning" size="sm" value={75} />
               </div>
             </CardBody>
           </Card>
@@ -1845,11 +1516,7 @@ export default function AdvogadosContent() {
       {/* Cards Adicionais para Advogados Externos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Card Advogados do Escritório */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.5 }}>
           <Card className="bg-gradient-to-br from-emerald-50 via-green-100 to-teal-200 dark:from-emerald-900/30 dark:via-green-800/20 dark:to-teal-900/30 border-emerald-300 dark:border-emerald-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -1857,45 +1524,23 @@ export default function AdvogadosContent() {
                   <Building2 className="text-white" size={24} />
                 </div>
                 <Badge color="success" content="🏢" variant="shadow">
-                  <Users
-                    className="text-emerald-600 dark:text-emerald-400"
-                    size={20}
-                  />
+                  <Users className="text-emerald-600 dark:text-emerald-400" size={20} />
                 </Badge>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
-                  Do Escritório
-                </p>
-                <p className="text-4xl font-bold text-emerald-800 dark:text-emerald-200">
-                  {metrics.escritorio}
-                </p>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                  Equipe interna
-                </p>
+                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">Do Escritório</p>
+                <p className="text-4xl font-bold text-emerald-800 dark:text-emerald-200">{metrics.escritorio}</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400">Equipe interna</p>
               </div>
               <div className="mt-4">
-                <Progress
-                  className="opacity-60"
-                  color="success"
-                  size="sm"
-                  value={
-                    metrics.total > 0
-                      ? (metrics.escritorio / metrics.total) * 100
-                      : 0
-                  }
-                />
+                <Progress className="opacity-60" color="success" size="sm" value={metrics.total > 0 ? (metrics.escritorio / metrics.total) * 100 : 0} />
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card Advogados Externos Identificados */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.6 }}>
           <Card className="bg-gradient-to-br from-rose-50 via-pink-100 to-red-200 dark:from-rose-900/30 dark:via-pink-800/20 dark:to-red-900/30 border-rose-300 dark:border-rose-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -1907,27 +1552,12 @@ export default function AdvogadosContent() {
                 </Badge>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-rose-700 dark:text-rose-300 uppercase tracking-wide">
-                  Externos Identificados
-                </p>
-                <p className="text-4xl font-bold text-rose-800 dark:text-rose-200">
-                  {metrics.externos}
-                </p>
-                <p className="text-xs text-rose-600 dark:text-rose-400">
-                  Encontrados em processos
-                </p>
+                <p className="text-sm font-semibold text-rose-700 dark:text-rose-300 uppercase tracking-wide">Externos Identificados</p>
+                <p className="text-4xl font-bold text-rose-800 dark:text-rose-200">{metrics.externos}</p>
+                <p className="text-xs text-rose-600 dark:text-rose-400">Encontrados em processos</p>
               </div>
               <div className="mt-4">
-                <Progress
-                  className="opacity-60"
-                  color="danger"
-                  size="sm"
-                  value={
-                    metrics.total > 0
-                      ? (metrics.externos / metrics.total) * 100
-                      : 0
-                  }
-                />
+                <Progress className="opacity-60" color="danger" size="sm" value={metrics.total > 0 ? (metrics.externos / metrics.total) * 100 : 0} />
               </div>
             </CardBody>
           </Card>
@@ -1935,11 +1565,7 @@ export default function AdvogadosContent() {
       </div>
 
       {/* Filtros Avançados */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.3 }}
-      >
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
         <Card className="shadow-lg border-2 border-slate-200 dark:border-slate-700">
           <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between w-full">
@@ -1948,47 +1574,14 @@ export default function AdvogadosContent() {
                   <Filter className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                    Filtros Inteligentes
-                  </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Encontre exatamente o advogado que precisa
-                  </p>
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Filtros Inteligentes</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Encontre exatamente o advogado que precisa</p>
                 </div>
                 {hasActiveFilters && (
-                  <motion.div
-                    animate={{ scale: 1 }}
-                    initial={{ scale: 0 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  >
-                    <Badge
-                      color="primary"
-                      content={
-                        [
-                          searchTerm,
-                          selectedStatus !== "all",
-                          selectedEspecialidade !== "all",
-                          selectedTipo !== "all",
-                        ].filter(Boolean).length
-                      }
-                      size="lg"
-                      variant="shadow"
-                    >
-                      <Chip
-                        className="font-semibold"
-                        color="primary"
-                        size="lg"
-                        variant="flat"
-                      >
-                        {
-                          [
-                            searchTerm,
-                            selectedStatus !== "all",
-                            selectedEspecialidade !== "all",
-                            selectedTipo !== "all",
-                          ].filter(Boolean).length
-                        }{" "}
-                        filtro(s) ativo(s)
+                  <motion.div animate={{ scale: 1 }} initial={{ scale: 0 }} transition={{ type: "spring", stiffness: 500, damping: 30 }}>
+                    <Badge color="primary" content={[searchTerm, selectedStatus !== "all", selectedEspecialidade !== "all", selectedTipo !== "all"].filter(Boolean).length} size="lg" variant="shadow">
+                      <Chip className="font-semibold" color="primary" size="lg" variant="flat">
+                        {[searchTerm, selectedStatus !== "all", selectedEspecialidade !== "all", selectedTipo !== "all"].filter(Boolean).length} filtro(s) ativo(s)
                       </Chip>
                     </Badge>
                   </motion.div>
@@ -2008,21 +1601,12 @@ export default function AdvogadosContent() {
                     Limpar
                   </Button>
                 </Tooltip>
-                <Tooltip
-                  color="primary"
-                  content={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-                >
+                <Tooltip color="primary" content={showFilters ? "Ocultar filtros" : "Mostrar filtros"}>
                   <Button
                     className="hover:scale-105 transition-transform"
                     color="primary"
                     size="sm"
-                    startContent={
-                      showFilters ? (
-                        <XCircle className="w-4 h-4" />
-                      ) : (
-                        <Filter className="w-4 h-4" />
-                      )
-                    }
+                    startContent={showFilters ? <XCircle className="w-4 h-4" /> : <Filter className="w-4 h-4" />}
                     variant="light"
                     onPress={() => setShowFilters(!showFilters)}
                   >
@@ -2040,12 +1624,7 @@ export default function AdvogadosContent() {
                   >
                     Avançados
                     {hasAdvancedFilters && (
-                      <Badge
-                        className="ml-1"
-                        color="primary"
-                        content="!"
-                        size="sm"
-                      >
+                      <Badge className="ml-1" color="primary" content="!" size="sm">
                         !
                       </Badge>
                     )}
@@ -2057,67 +1636,40 @@ export default function AdvogadosContent() {
 
           <AnimatePresence>
             {showFilters && (
-              <motion.div
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                initial={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-              >
+              <motion.div animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} initial={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
                 <CardBody className="p-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                     {/* Filtro por Busca */}
-                    <motion.div
-                      animate={{ opacity: 1, x: 0 }}
-                      className="space-y-3"
-                      initial={{ opacity: 0, x: -20 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      <label
-                        className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300"
-                        htmlFor="filtro-busca"
-                      >
+                    <motion.div animate={{ opacity: 1, x: 0 }} className="space-y-3" initial={{ opacity: 0, x: -20 }} transition={{ delay: 0.1 }}>
+                      <label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300" htmlFor="filtro-busca">
                         <Search className="w-4 h-4 text-blue-500" />
                         Busca Inteligente
                       </label>
                       <Input
                         classNames={{
                           input: "text-slate-700 dark:text-slate-300",
-                          inputWrapper:
-                            "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500",
+                          inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500",
                         }}
                         id="filtro-busca"
                         placeholder="Nome, email, OAB..."
                         size="md"
-                        startContent={
-                          <Search className="w-4 h-4 text-default-400" />
-                        }
+                        startContent={<Search className="w-4 h-4 text-default-400" />}
                         value={searchTerm}
                         variant="bordered"
                         onValueChange={setSearchTerm}
                       />
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Busca em nomes, emails e OAB
-                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Busca em nomes, emails e OAB</p>
                     </motion.div>
 
                     {/* Filtro por Status */}
-                    <motion.div
-                      animate={{ opacity: 1, x: 0 }}
-                      className="space-y-3"
-                      initial={{ opacity: 0, x: -20 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <label
-                        className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300"
-                        htmlFor="filtro-status"
-                      >
+                    <motion.div animate={{ opacity: 1, x: 0 }} className="space-y-3" initial={{ opacity: 0, x: -20 }} transition={{ delay: 0.2 }}>
+                      <label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300" htmlFor="filtro-status">
                         <Activity className="w-4 h-4 text-green-500" />
                         Status
                       </label>
                       <Select
                         classNames={{
-                          trigger:
-                            "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-green-400 dark:hover:border-green-500",
+                          trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-green-400 dark:hover:border-green-500",
                         }}
                         id="filtro-status"
                         placeholder="Selecione o status"
@@ -2129,52 +1681,33 @@ export default function AdvogadosContent() {
                         {statusOptions.map((option) => (
                           <SelectItem key={option.key} textValue={option.label}>
                             <div className="flex items-center gap-2">
-                              {option.key === "all" && (
-                                <Users className="w-4 h-4" />
-                              )}
-                              {option.key === "active" && (
-                                <CheckCircle className="w-4 h-4" />
-                              )}
-                              {option.key === "inactive" && (
-                                <XCircle className="w-4 h-4" />
-                              )}
+                              {option.key === "all" && <Users className="w-4 h-4" />}
+                              {option.key === "active" && <CheckCircle className="w-4 h-4" />}
+                              {option.key === "inactive" && <XCircle className="w-4 h-4" />}
                               <span>{option.label}</span>
                             </div>
                           </SelectItem>
                         ))}
                       </Select>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Filtre por status do advogado
-                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Filtre por status do advogado</p>
                     </motion.div>
 
                     {/* Filtro por Especialidade */}
-                    <motion.div
-                      animate={{ opacity: 1, x: 0 }}
-                      className="space-y-3"
-                      initial={{ opacity: 0, x: -20 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <label
-                        className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300"
-                        htmlFor="filtro-especialidade"
-                      >
+                    <motion.div animate={{ opacity: 1, x: 0 }} className="space-y-3" initial={{ opacity: 0, x: -20 }} transition={{ delay: 0.3 }}>
+                      <label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300" htmlFor="filtro-especialidade">
                         <Star className="w-4 h-4 text-purple-500" />
                         Especialidade
                       </label>
                       <Select
                         classNames={{
-                          trigger:
-                            "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-purple-400 dark:hover:border-purple-500",
+                          trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-purple-400 dark:hover:border-purple-500",
                         }}
                         id="filtro-especialidade"
                         placeholder="Selecione a especialidade"
                         selectedKeys={[selectedEspecialidade]}
                         size="md"
                         variant="bordered"
-                        onChange={(e) =>
-                          setSelectedEspecialidade(e.target.value)
-                        }
+                        onChange={(e) => setSelectedEspecialidade(e.target.value)}
                       >
                         {especialidadeOptions.map((option) => (
                           <SelectItem key={option.key} textValue={option.label}>
@@ -2185,29 +1718,18 @@ export default function AdvogadosContent() {
                           </SelectItem>
                         ))}
                       </Select>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Filtre por área de atuação
-                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Filtre por área de atuação</p>
                     </motion.div>
 
                     {/* Filtro por Tipo */}
-                    <motion.div
-                      animate={{ opacity: 1, x: 0 }}
-                      className="space-y-3"
-                      initial={{ opacity: 0, x: -20 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      <label
-                        className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300"
-                        htmlFor="filtro-tipo"
-                      >
+                    <motion.div animate={{ opacity: 1, x: 0 }} className="space-y-3" initial={{ opacity: 0, x: -20 }} transition={{ delay: 0.4 }}>
+                      <label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300" htmlFor="filtro-tipo">
                         <Building2 className="w-4 h-4 text-indigo-500" />
                         Tipo de Advogado
                       </label>
                       <Select
                         classNames={{
-                          trigger:
-                            "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500",
+                          trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500",
                         }}
                         id="filtro-tipo"
                         placeholder="Selecione o tipo"
@@ -2219,23 +1741,15 @@ export default function AdvogadosContent() {
                         {tipoOptions.map((option) => (
                           <SelectItem key={option.key} textValue={option.label}>
                             <div className="flex items-center gap-2">
-                              {option.key === "all" && (
-                                <Users className="w-4 h-4" />
-                              )}
-                              {option.key === "escritorio" && (
-                                <Building2 className="w-4 h-4" />
-                              )}
-                              {option.key === "externo" && (
-                                <User className="w-4 h-4" />
-                              )}
+                              {option.key === "all" && <Users className="w-4 h-4" />}
+                              {option.key === "escritorio" && <Building2 className="w-4 h-4" />}
+                              {option.key === "externo" && <User className="w-4 h-4" />}
                               <span>{option.label}</span>
                             </div>
                           </SelectItem>
                         ))}
                       </Select>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Filtre por tipo de advogado
-                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Filtre por tipo de advogado</p>
                     </motion.div>
                   </div>
 
@@ -2259,32 +1773,17 @@ export default function AdvogadosContent() {
                         )}
                         {selectedStatus !== "all" && (
                           <Chip color="success" size="sm" variant="flat">
-                            Status:{" "}
-                            {
-                              statusOptions.find(
-                                (opt) => opt.key === selectedStatus,
-                              )?.label
-                            }
+                            Status: {statusOptions.find((opt) => opt.key === selectedStatus)?.label}
                           </Chip>
                         )}
                         {selectedEspecialidade !== "all" && (
                           <Chip color="secondary" size="sm" variant="flat">
-                            Especialidade:{" "}
-                            {
-                              especialidadeOptions.find(
-                                (opt) => opt.key === selectedEspecialidade,
-                              )?.label
-                            }
+                            Especialidade: {especialidadeOptions.find((opt) => opt.key === selectedEspecialidade)?.label}
                           </Chip>
                         )}
                         {selectedTipo !== "all" && (
                           <Chip color="warning" size="sm" variant="flat">
-                            Tipo:{" "}
-                            {
-                              tipoOptions.find(
-                                (opt) => opt.key === selectedTipo,
-                              )?.label
-                            }
+                            Tipo: {tipoOptions.find((opt) => opt.key === selectedTipo)?.label}
                           </Chip>
                         )}
                       </div>
@@ -2298,12 +1797,7 @@ export default function AdvogadosContent() {
           {/* Filtros Avançados */}
           <AnimatePresence>
             {showAdvancedFilters && (
-              <motion.div
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                initial={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-              >
+              <motion.div animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} initial={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
                 <CardBody className="p-6 border-t border-slate-200 dark:border-slate-700">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -2311,14 +1805,7 @@ export default function AdvogadosContent() {
                         <Filter className="h-5 w-5" />
                         Filtros Avançados
                       </h4>
-                      <Button
-                        color="danger"
-                        isDisabled={!hasAdvancedFilters}
-                        size="sm"
-                        startContent={<X className="h-4 w-4" />}
-                        variant="light"
-                        onPress={clearAdvancedFilters}
-                      >
+                      <Button color="danger" isDisabled={!hasAdvancedFilters} size="sm" startContent={<X className="h-4 w-4" />} variant="light" onPress={clearAdvancedFilters}>
                         Limpar Filtros
                       </Button>
                     </div>
@@ -2330,15 +1817,7 @@ export default function AdvogadosContent() {
                           <DollarSign className="h-4 w-4" />
                           Comissão Mínima (%)
                         </label>
-                        <Input
-                          max="100"
-                          min="0"
-                          placeholder="Ex: 5"
-                          size="sm"
-                          type="number"
-                          value={comissaoMin}
-                          onChange={(e) => setComissaoMin(e.target.value)}
-                        />
+                        <Input max="100" min="0" placeholder="Ex: 5" size="sm" type="number" value={comissaoMin} onChange={(e) => setComissaoMin(e.target.value)} />
                       </div>
 
                       {/* Filtro de Comissão Máxima */}
@@ -2347,15 +1826,7 @@ export default function AdvogadosContent() {
                           <DollarSign className="h-4 w-4" />
                           Comissão Máxima (%)
                         </label>
-                        <Input
-                          max="100"
-                          min="0"
-                          placeholder="Ex: 20"
-                          size="sm"
-                          type="number"
-                          value={comissaoMax}
-                          onChange={(e) => setComissaoMax(e.target.value)}
-                        />
+                        <Input max="100" min="0" placeholder="Ex: 20" size="sm" type="number" value={comissaoMax} onChange={(e) => setComissaoMax(e.target.value)} />
                       </div>
 
                       {/* Filtro de Data de Início */}
@@ -2364,12 +1835,7 @@ export default function AdvogadosContent() {
                           <Calendar className="h-4 w-4" />
                           Data de Início
                         </label>
-                        <Input
-                          size="sm"
-                          type="date"
-                          value={dataInicio}
-                          onChange={(e) => setDataInicio(e.target.value)}
-                        />
+                        <Input size="sm" type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
                       </div>
 
                       {/* Filtro de Data de Fim */}
@@ -2378,12 +1844,7 @@ export default function AdvogadosContent() {
                           <Calendar className="h-4 w-4" />
                           Data de Fim
                         </label>
-                        <Input
-                          size="sm"
-                          type="date"
-                          value={dataFim}
-                          onChange={(e) => setDataFim(e.target.value)}
-                        />
+                        <Input size="sm" type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
                       </div>
                     </div>
 
@@ -2391,18 +1852,13 @@ export default function AdvogadosContent() {
                     {hasAdvancedFilters && (
                       <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                         <p className="text-sm text-blue-800 dark:text-blue-200">
-                          <strong>Filtros ativos:</strong>{" "}
-                          {comissaoMin && `Comissão mín: ${comissaoMin}%`}
+                          <strong>Filtros ativos:</strong> {comissaoMin && `Comissão mín: ${comissaoMin}%`}
                           {comissaoMin && comissaoMax && ", "}
                           {comissaoMax && `Comissão máx: ${comissaoMax}%`}
-                          {(comissaoMin || comissaoMax) &&
-                            (dataInicio || dataFim) &&
-                            ", "}
-                          {dataInicio &&
-                            `De: ${new Date(dataInicio).toLocaleDateString("pt-BR")}`}
+                          {(comissaoMin || comissaoMax) && (dataInicio || dataFim) && ", "}
+                          {dataInicio && `De: ${new Date(dataInicio).toLocaleDateString("pt-BR")}`}
                           {dataInicio && dataFim && " "}
-                          {dataFim &&
-                            `Até: ${new Date(dataFim).toLocaleDateString("pt-BR")}`}
+                          {dataFim && `Até: ${new Date(dataFim).toLocaleDateString("pt-BR")}`}
                         </p>
                       </div>
                     )}
@@ -2417,13 +1873,7 @@ export default function AdvogadosContent() {
       {/* Relatórios de Performance */}
       <AnimatePresence>
         {showPerformanceReports && (
-          <motion.div
-            animate={{ opacity: 1, height: "auto" }}
-            className="overflow-hidden"
-            exit={{ opacity: 0, height: 0 }}
-            initial={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div animate={{ opacity: 1, height: "auto" }} className="overflow-hidden" exit={{ opacity: 0, height: 0 }} initial={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
             <Card className="shadow-lg border-2 border-green-200 dark:border-green-700">
               <CardHeader className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 border-b border-green-200 dark:border-green-700">
                 <div className="flex items-center justify-between w-full">
@@ -2432,21 +1882,11 @@ export default function AdvogadosContent() {
                       <BarChart3 className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-green-800 dark:text-green-200">
-                        Relatórios de Performance
-                      </h3>
-                      <p className="text-sm text-green-600 dark:text-green-400">
-                        Análise detalhada do desempenho dos advogados
-                      </p>
+                      <h3 className="text-lg font-bold text-green-800 dark:text-green-200">Relatórios de Performance</h3>
+                      <p className="text-sm text-green-600 dark:text-green-400">Análise detalhada do desempenho dos advogados</p>
                     </div>
                   </div>
-                  <Button
-                    color="danger"
-                    size="sm"
-                    startContent={<X className="h-4 w-4" />}
-                    variant="light"
-                    onPress={() => setShowPerformanceReports(false)}
-                  >
+                  <Button color="danger" size="sm" startContent={<X className="h-4 w-4" />} variant="light" onPress={() => setShowPerformanceReports(false)}>
                     Fechar
                   </Button>
                 </div>
@@ -2455,21 +1895,13 @@ export default function AdvogadosContent() {
                 {isLoadingPerformance || isLoadingPerformanceGeral ? (
                   <div className="flex flex-col items-center justify-center py-8">
                     <Spinner size="lg" />
-                    <p className="mt-4 text-slate-600 dark:text-slate-400">
-                      Carregando relatórios de performance...
-                    </p>
+                    <p className="mt-4 text-slate-600 dark:text-slate-400">Carregando relatórios de performance...</p>
                   </div>
                 ) : performanceError || performanceGeralError ? (
                   <div className="flex flex-col items-center justify-center py-8">
                     <div className="text-danger text-center">
-                      <p className="text-lg font-semibold">
-                        Erro ao carregar relatórios
-                      </p>
-                      <p className="text-sm mt-2">
-                        {performanceError?.message ||
-                          performanceGeralError?.message ||
-                          "Erro desconhecido"}
-                      </p>
+                      <p className="text-lg font-semibold">Erro ao carregar relatórios</p>
+                      <p className="text-sm mt-2">{performanceError?.message || performanceGeralError?.message || "Erro desconhecido"}</p>
                     </div>
                     <Button
                       className="mt-4"
@@ -2492,12 +1924,8 @@ export default function AdvogadosContent() {
                             <div className="p-2 bg-blue-500 rounded-full w-fit mx-auto mb-2">
                               <Users className="h-5 w-5 text-white" />
                             </div>
-                            <h4 className="text-2xl font-bold text-blue-800 dark:text-blue-200">
-                              {performanceGeral.totalAdvogados}
-                            </h4>
-                            <p className="text-sm text-blue-600 dark:text-blue-400">
-                              Total de Advogados
-                            </p>
+                            <h4 className="text-2xl font-bold text-blue-800 dark:text-blue-200">{performanceGeral.totalAdvogados}</h4>
+                            <p className="text-sm text-blue-600 dark:text-blue-400">Total de Advogados</p>
                           </CardBody>
                         </Card>
 
@@ -2506,12 +1934,8 @@ export default function AdvogadosContent() {
                             <div className="p-2 bg-green-500 rounded-full w-fit mx-auto mb-2">
                               <Scale className="h-5 w-5 text-white" />
                             </div>
-                            <h4 className="text-2xl font-bold text-green-800 dark:text-green-200">
-                              {performanceGeral.totalProcessos}
-                            </h4>
-                            <p className="text-sm text-green-600 dark:text-green-400">
-                              Total de Processos
-                            </p>
+                            <h4 className="text-2xl font-bold text-green-800 dark:text-green-200">{performanceGeral.totalProcessos}</h4>
+                            <p className="text-sm text-green-600 dark:text-green-400">Total de Processos</p>
                           </CardBody>
                         </Card>
 
@@ -2520,12 +1944,8 @@ export default function AdvogadosContent() {
                             <div className="p-2 bg-purple-500 rounded-full w-fit mx-auto mb-2">
                               <TrendingUp className="h-5 w-5 text-white" />
                             </div>
-                            <h4 className="text-2xl font-bold text-purple-800 dark:text-purple-200">
-                              {performanceGeral.taxaSucessoGeral}%
-                            </h4>
-                            <p className="text-sm text-purple-600 dark:text-purple-400">
-                              Taxa de Sucesso
-                            </p>
+                            <h4 className="text-2xl font-bold text-purple-800 dark:text-purple-200">{performanceGeral.taxaSucessoGeral}%</h4>
+                            <p className="text-sm text-purple-600 dark:text-purple-400">Taxa de Sucesso</p>
                           </CardBody>
                         </Card>
 
@@ -2534,60 +1954,41 @@ export default function AdvogadosContent() {
                             <div className="p-2 bg-orange-500 rounded-full w-fit mx-auto mb-2">
                               <DollarSign className="h-5 w-5 text-white" />
                             </div>
-                            <h4 className="text-2xl font-bold text-orange-800 dark:text-orange-200">
-                              R${" "}
-                              {performanceGeral.comissaoTotal.toLocaleString(
-                                "pt-BR",
-                                { minimumFractionDigits: 2 },
-                              )}
-                            </h4>
-                            <p className="text-sm text-orange-600 dark:text-orange-400">
-                              Comissões Totais
-                            </p>
+                            <h4 className="text-2xl font-bold text-orange-800 dark:text-orange-200">R$ {performanceGeral.comissaoTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h4>
+                            <p className="text-sm text-orange-600 dark:text-orange-400">Comissões Totais</p>
                           </CardBody>
                         </Card>
                       </div>
                     )}
 
                     {/* Top Performers */}
-                    {performanceGeral?.topPerformers &&
-                      performanceGeral.topPerformers.length > 0 && (
-                        <div>
-                          <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                            <Crown className="h-5 w-5 text-yellow-500" />
-                            Top Performers
-                          </h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {performanceGeral.topPerformers.map(
-                              (performer, index) => (
-                                <Card
-                                  key={performer.advogadoId}
-                                  className="border border-slate-200 dark:border-slate-700"
-                                >
-                                  <CardBody className="p-4">
-                                    <div className="flex items-center gap-3">
-                                      <div
-                                        className={`p-2 rounded-full ${index === 0 ? "bg-yellow-500" : index === 1 ? "bg-gray-400" : index === 2 ? "bg-orange-500" : "bg-slate-300"}`}
-                                      >
-                                        <Crown className="h-4 w-4 text-white" />
-                                      </div>
-                                      <div className="flex-1">
-                                        <h5 className="font-semibold text-slate-800 dark:text-slate-200">
-                                          {performer.advogadoNome}
-                                        </h5>
-                                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                                          {performer.totalProcessos} processos •{" "}
-                                          {performer.taxaSucesso}% sucesso
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </CardBody>
-                                </Card>
-                              ),
-                            )}
-                          </div>
+                    {performanceGeral?.topPerformers && performanceGeral.topPerformers.length > 0 && (
+                      <div>
+                        <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+                          <Crown className="h-5 w-5 text-yellow-500" />
+                          Top Performers
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {performanceGeral.topPerformers.map((performer, index) => (
+                            <Card key={performer.advogadoId} className="border border-slate-200 dark:border-slate-700">
+                              <CardBody className="p-4">
+                                <div className="flex items-center gap-3">
+                                  <div className={`p-2 rounded-full ${index === 0 ? "bg-yellow-500" : index === 1 ? "bg-gray-400" : index === 2 ? "bg-orange-500" : "bg-slate-300"}`}>
+                                    <Crown className="h-4 w-4 text-white" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <h5 className="font-semibold text-slate-800 dark:text-slate-200">{performer.advogadoNome}</h5>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                                      {performer.totalProcessos} processos • {performer.taxaSucesso}% sucesso
+                                    </p>
+                                  </div>
+                                </div>
+                              </CardBody>
+                            </Card>
+                          ))}
                         </div>
-                      )}
+                      </div>
+                    )}
 
                     {/* Performance Individual */}
                     {performanceData && performanceData.length > 0 && (
@@ -2598,54 +1999,28 @@ export default function AdvogadosContent() {
                         </h4>
                         <div className="space-y-4">
                           {performanceData.slice(0, 5).map((advogado) => (
-                            <Card
-                              key={advogado.advogadoId}
-                              className="border border-slate-200 dark:border-slate-700"
-                            >
+                            <Card key={advogado.advogadoId} className="border border-slate-200 dark:border-slate-700">
                               <CardBody className="p-4">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-3">
-                                    <Avatar
-                                      className="bg-blue-500 text-white"
-                                      name={advogado.advogadoNome}
-                                    />
+                                    <Avatar className="bg-blue-500 text-white" name={advogado.advogadoNome} />
                                     <div>
-                                      <h5 className="font-semibold text-slate-800 dark:text-slate-200">
-                                        {advogado.advogadoNome}
-                                      </h5>
-                                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                                        OAB {advogado.advogadoOAB}
-                                      </p>
+                                      <h5 className="font-semibold text-slate-800 dark:text-slate-200">{advogado.advogadoNome}</h5>
+                                      <p className="text-sm text-slate-600 dark:text-slate-400">OAB {advogado.advogadoOAB}</p>
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-4 text-sm">
                                     <div className="text-center">
-                                      <p className="font-semibold text-slate-800 dark:text-slate-200">
-                                        {advogado.totalProcessos}
-                                      </p>
-                                      <p className="text-slate-600 dark:text-slate-400">
-                                        Processos
-                                      </p>
+                                      <p className="font-semibold text-slate-800 dark:text-slate-200">{advogado.totalProcessos}</p>
+                                      <p className="text-slate-600 dark:text-slate-400">Processos</p>
                                     </div>
                                     <div className="text-center">
-                                      <p className="font-semibold text-green-600 dark:text-green-400">
-                                        {advogado.taxaSucesso}%
-                                      </p>
-                                      <p className="text-slate-600 dark:text-slate-400">
-                                        Sucesso
-                                      </p>
+                                      <p className="font-semibold text-green-600 dark:text-green-400">{advogado.taxaSucesso}%</p>
+                                      <p className="text-slate-600 dark:text-slate-400">Sucesso</p>
                                     </div>
                                     <div className="text-center">
-                                      <p className="font-semibold text-blue-600 dark:text-blue-400">
-                                        R${" "}
-                                        {advogado.totalComissoes.toLocaleString(
-                                          "pt-BR",
-                                          { minimumFractionDigits: 2 },
-                                        )}
-                                      </p>
-                                      <p className="text-slate-600 dark:text-slate-400">
-                                        Comissões
-                                      </p>
+                                      <p className="font-semibold text-blue-600 dark:text-blue-400">R$ {advogado.totalComissoes.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                                      <p className="text-slate-600 dark:text-slate-400">Comissões</p>
                                     </div>
                                   </div>
                                 </div>
@@ -2666,13 +2041,7 @@ export default function AdvogadosContent() {
       {/* Dashboard de Comissões */}
       <AnimatePresence>
         {showCommissionsDashboard && (
-          <motion.div
-            animate={{ opacity: 1, height: "auto" }}
-            className="overflow-hidden"
-            exit={{ opacity: 0, height: 0 }}
-            initial={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div animate={{ opacity: 1, height: "auto" }} className="overflow-hidden" exit={{ opacity: 0, height: 0 }} initial={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
             <Card className="shadow-lg border-2 border-purple-200 dark:border-purple-700">
               <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 border-b border-purple-200 dark:border-purple-700">
                 <div className="flex items-center justify-between w-full">
@@ -2681,21 +2050,11 @@ export default function AdvogadosContent() {
                       <DollarSign className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-purple-800 dark:text-purple-200">
-                        Dashboard de Comissões
-                      </h3>
-                      <p className="text-sm text-purple-600 dark:text-purple-400">
-                        Controle e análise de comissões dos advogados
-                      </p>
+                      <h3 className="text-lg font-bold text-purple-800 dark:text-purple-200">Dashboard de Comissões</h3>
+                      <p className="text-sm text-purple-600 dark:text-purple-400">Controle e análise de comissões dos advogados</p>
                     </div>
                   </div>
-                  <Button
-                    color="danger"
-                    size="sm"
-                    startContent={<X className="h-4 w-4" />}
-                    variant="light"
-                    onPress={() => setShowCommissionsDashboard(false)}
-                  >
+                  <Button color="danger" size="sm" startContent={<X className="h-4 w-4" />} variant="light" onPress={() => setShowCommissionsDashboard(false)}>
                     Fechar
                   </Button>
                 </div>
@@ -2704,9 +2063,7 @@ export default function AdvogadosContent() {
                 {isLoadingComissoes || isLoadingComissoesGeral ? (
                   <div className="flex flex-col items-center justify-center py-8">
                     <Spinner size="lg" />
-                    <p className="mt-4 text-slate-600 dark:text-slate-400">
-                      Carregando dashboard de comissões...
-                    </p>
+                    <p className="mt-4 text-slate-600 dark:text-slate-400">Carregando dashboard de comissões...</p>
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -2719,15 +2076,9 @@ export default function AdvogadosContent() {
                               <DollarSign className="h-5 w-5 text-white" />
                             </div>
                             <h4 className="text-2xl font-bold text-green-800 dark:text-green-200">
-                              R${" "}
-                              {comissoesGeral.totalComissoesCalculadas.toLocaleString(
-                                "pt-BR",
-                                { minimumFractionDigits: 2 },
-                              )}
+                              R$ {comissoesGeral.totalComissoesCalculadas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                             </h4>
-                            <p className="text-sm text-green-600 dark:text-green-400">
-                              Total Calculado
-                            </p>
+                            <p className="text-sm text-green-600 dark:text-green-400">Total Calculado</p>
                           </CardBody>
                         </Card>
 
@@ -2736,16 +2087,8 @@ export default function AdvogadosContent() {
                             <div className="p-2 bg-blue-500 rounded-full w-fit mx-auto mb-2">
                               <CheckCircle className="h-5 w-5 text-white" />
                             </div>
-                            <h4 className="text-2xl font-bold text-blue-800 dark:text-blue-200">
-                              R${" "}
-                              {comissoesGeral.totalComissoesPagas.toLocaleString(
-                                "pt-BR",
-                                { minimumFractionDigits: 2 },
-                              )}
-                            </h4>
-                            <p className="text-sm text-blue-600 dark:text-blue-400">
-                              Total Pago
-                            </p>
+                            <h4 className="text-2xl font-bold text-blue-800 dark:text-blue-200">R$ {comissoesGeral.totalComissoesPagas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h4>
+                            <p className="text-sm text-blue-600 dark:text-blue-400">Total Pago</p>
                           </CardBody>
                         </Card>
 
@@ -2755,15 +2098,9 @@ export default function AdvogadosContent() {
                               <Clock className="h-5 w-5 text-white" />
                             </div>
                             <h4 className="text-2xl font-bold text-orange-800 dark:text-orange-200">
-                              R${" "}
-                              {comissoesGeral.totalComissoesPendentes.toLocaleString(
-                                "pt-BR",
-                                { minimumFractionDigits: 2 },
-                              )}
+                              R$ {comissoesGeral.totalComissoesPendentes.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                             </h4>
-                            <p className="text-sm text-orange-600 dark:text-orange-400">
-                              Pendente
-                            </p>
+                            <p className="text-sm text-orange-600 dark:text-orange-400">Pendente</p>
                           </CardBody>
                         </Card>
 
@@ -2772,16 +2109,8 @@ export default function AdvogadosContent() {
                             <div className="p-2 bg-purple-500 rounded-full w-fit mx-auto mb-2">
                               <TrendingUp className="h-5 w-5 text-white" />
                             </div>
-                            <h4 className="text-2xl font-bold text-purple-800 dark:text-purple-200">
-                              R${" "}
-                              {comissoesGeral.comissaoMedia.toLocaleString(
-                                "pt-BR",
-                                { minimumFractionDigits: 2 },
-                              )}
-                            </h4>
-                            <p className="text-sm text-purple-600 dark:text-purple-400">
-                              Média por Advogado
-                            </p>
+                            <h4 className="text-2xl font-bold text-purple-800 dark:text-purple-200">R$ {comissoesGeral.comissaoMedia.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</h4>
+                            <p className="text-sm text-purple-600 dark:text-purple-400">Média por Advogado</p>
                           </CardBody>
                         </Card>
                       </div>
@@ -2795,12 +2124,8 @@ export default function AdvogadosContent() {
                             <div className="p-2 bg-green-500 rounded-full w-fit mx-auto mb-2">
                               <CheckCircle className="h-5 w-5 text-white" />
                             </div>
-                            <h4 className="text-2xl font-bold text-green-800 dark:text-green-200">
-                              {comissoesGeral.advogadosEmDia}
-                            </h4>
-                            <p className="text-sm text-green-600 dark:text-green-400">
-                              Em Dia
-                            </p>
+                            <h4 className="text-2xl font-bold text-green-800 dark:text-green-200">{comissoesGeral.advogadosEmDia}</h4>
+                            <p className="text-sm text-green-600 dark:text-green-400">Em Dia</p>
                           </CardBody>
                         </Card>
 
@@ -2809,12 +2134,8 @@ export default function AdvogadosContent() {
                             <div className="p-2 bg-yellow-500 rounded-full w-fit mx-auto mb-2">
                               <Clock className="h-5 w-5 text-white" />
                             </div>
-                            <h4 className="text-2xl font-bold text-yellow-800 dark:text-yellow-200">
-                              {comissoesGeral.advogadosPendentes}
-                            </h4>
-                            <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                              Pendentes
-                            </p>
+                            <h4 className="text-2xl font-bold text-yellow-800 dark:text-yellow-200">{comissoesGeral.advogadosPendentes}</h4>
+                            <p className="text-sm text-yellow-600 dark:text-yellow-400">Pendentes</p>
                           </CardBody>
                         </Card>
 
@@ -2823,71 +2144,43 @@ export default function AdvogadosContent() {
                             <div className="p-2 bg-red-500 rounded-full w-fit mx-auto mb-2">
                               <XCircle className="h-5 w-5 text-white" />
                             </div>
-                            <h4 className="text-2xl font-bold text-red-800 dark:text-red-200">
-                              {comissoesGeral.advogadosAtrasados}
-                            </h4>
-                            <p className="text-sm text-red-600 dark:text-red-400">
-                              Atrasados
-                            </p>
+                            <h4 className="text-2xl font-bold text-red-800 dark:text-red-200">{comissoesGeral.advogadosAtrasados}</h4>
+                            <p className="text-sm text-red-600 dark:text-red-400">Atrasados</p>
                           </CardBody>
                         </Card>
                       </div>
                     )}
 
                     {/* Próximos Vencimentos */}
-                    {comissoesGeral?.proximosVencimentos &&
-                      comissoesGeral.proximosVencimentos.length > 0 && (
-                        <div>
-                          <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
-                            <Calendar className="h-5 w-5 text-orange-500" />
-                            Próximos Vencimentos
-                          </h4>
-                          <div className="space-y-3">
-                            {comissoesGeral.proximosVencimentos.map(
-                              (vencimento) => (
-                                <Card
-                                  key={vencimento.advogadoId}
-                                  className="border border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20"
-                                >
-                                  <CardBody className="p-4">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-3">
-                                        <Avatar
-                                          className="bg-orange-500 text-white"
-                                          name={vencimento.advogadoNome}
-                                        />
-                                        <div>
-                                          <h5 className="font-semibold text-slate-800 dark:text-slate-200">
-                                            {vencimento.advogadoNome}
-                                          </h5>
-                                          <p className="text-sm text-slate-600 dark:text-slate-400">
-                                            Vence em{" "}
-                                            {vencimento.vencimento.toLocaleDateString(
-                                              "pt-BR",
-                                            )}
-                                          </p>
-                                        </div>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                                          R${" "}
-                                          {vencimento.valor.toLocaleString(
-                                            "pt-BR",
-                                            { minimumFractionDigits: 2 },
-                                          )}
-                                        </p>
-                                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                                          Comissão
-                                        </p>
-                                      </div>
+                    {comissoesGeral?.proximosVencimentos && comissoesGeral.proximosVencimentos.length > 0 && (
+                      <div>
+                        <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+                          <Calendar className="h-5 w-5 text-orange-500" />
+                          Próximos Vencimentos
+                        </h4>
+                        <div className="space-y-3">
+                          {comissoesGeral.proximosVencimentos.map((vencimento) => (
+                            <Card key={vencimento.advogadoId} className="border border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20">
+                              <CardBody className="p-4">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <Avatar className="bg-orange-500 text-white" name={vencimento.advogadoNome} />
+                                    <div>
+                                      <h5 className="font-semibold text-slate-800 dark:text-slate-200">{vencimento.advogadoNome}</h5>
+                                      <p className="text-sm text-slate-600 dark:text-slate-400">Vence em {vencimento.vencimento.toLocaleDateString("pt-BR")}</p>
                                     </div>
-                                  </CardBody>
-                                </Card>
-                              ),
-                            )}
-                          </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-lg font-bold text-orange-600 dark:text-orange-400">R$ {vencimento.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">Comissão</p>
+                                  </div>
+                                </div>
+                              </CardBody>
+                            </Card>
+                          ))}
                         </div>
-                      )}
+                      </div>
+                    )}
 
                     {/* Comissões por Advogado */}
                     {comissoesData && comissoesData.length > 0 && (
@@ -2898,82 +2191,32 @@ export default function AdvogadosContent() {
                         </h4>
                         <div className="space-y-4">
                           {comissoesData.slice(0, 5).map((advogado) => (
-                            <Card
-                              key={advogado.advogadoId}
-                              className="border border-slate-200 dark:border-slate-700"
-                            >
+                            <Card key={advogado.advogadoId} className="border border-slate-200 dark:border-slate-700">
                               <CardBody className="p-4">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-3">
-                                    <Avatar
-                                      className="bg-green-500 text-white"
-                                      name={advogado.advogadoNome}
-                                    />
+                                    <Avatar className="bg-green-500 text-white" name={advogado.advogadoNome} />
                                     <div>
-                                      <h5 className="font-semibold text-slate-800 dark:text-slate-200">
-                                        {advogado.advogadoNome}
-                                      </h5>
-                                      <p className="text-sm text-slate-600 dark:text-slate-400">
-                                        OAB {advogado.advogadoOAB}
-                                      </p>
+                                      <h5 className="font-semibold text-slate-800 dark:text-slate-200">{advogado.advogadoNome}</h5>
+                                      <p className="text-sm text-slate-600 dark:text-slate-400">OAB {advogado.advogadoOAB}</p>
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-6 text-sm">
                                     <div className="text-center">
-                                      <p className="font-semibold text-green-600 dark:text-green-400">
-                                        R${" "}
-                                        {advogado.comissaoCalculada.toLocaleString(
-                                          "pt-BR",
-                                          { minimumFractionDigits: 2 },
-                                        )}
-                                      </p>
-                                      <p className="text-slate-600 dark:text-slate-400">
-                                        Calculada
-                                      </p>
+                                      <p className="font-semibold text-green-600 dark:text-green-400">R$ {advogado.comissaoCalculada.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                                      <p className="text-slate-600 dark:text-slate-400">Calculada</p>
                                     </div>
                                     <div className="text-center">
-                                      <p className="font-semibold text-blue-600 dark:text-blue-400">
-                                        R${" "}
-                                        {advogado.comissaoPaga.toLocaleString(
-                                          "pt-BR",
-                                          { minimumFractionDigits: 2 },
-                                        )}
-                                      </p>
-                                      <p className="text-slate-600 dark:text-slate-400">
-                                        Paga
-                                      </p>
+                                      <p className="font-semibold text-blue-600 dark:text-blue-400">R$ {advogado.comissaoPaga.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                                      <p className="text-slate-600 dark:text-slate-400">Paga</p>
                                     </div>
                                     <div className="text-center">
-                                      <p className="font-semibold text-orange-600 dark:text-orange-400">
-                                        R${" "}
-                                        {advogado.comissaoPendente.toLocaleString(
-                                          "pt-BR",
-                                          { minimumFractionDigits: 2 },
-                                        )}
-                                      </p>
-                                      <p className="text-slate-600 dark:text-slate-400">
-                                        Pendente
-                                      </p>
+                                      <p className="font-semibold text-orange-600 dark:text-orange-400">R$ {advogado.comissaoPendente.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                                      <p className="text-slate-600 dark:text-slate-400">Pendente</p>
                                     </div>
                                     <div className="text-center">
-                                      <Chip
-                                        color={
-                                          advogado.statusComissao === "EM_DIA"
-                                            ? "success"
-                                            : advogado.statusComissao ===
-                                                "PENDENTE"
-                                              ? "warning"
-                                              : "danger"
-                                        }
-                                        size="sm"
-                                        variant="flat"
-                                      >
-                                        {advogado.statusComissao === "EM_DIA"
-                                          ? "Em Dia"
-                                          : advogado.statusComissao ===
-                                              "PENDENTE"
-                                            ? "Pendente"
-                                            : "Atrasado"}
+                                      <Chip color={advogado.statusComissao === "EM_DIA" ? "success" : advogado.statusComissao === "PENDENTE" ? "warning" : "danger"} size="sm" variant="flat">
+                                        {advogado.statusComissao === "EM_DIA" ? "Em Dia" : advogado.statusComissao === "PENDENTE" ? "Pendente" : "Atrasado"}
                                       </Chip>
                                     </div>
                                   </div>
@@ -2993,18 +2236,13 @@ export default function AdvogadosContent() {
       </AnimatePresence>
 
       {/* Controles de Paginação */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-      >
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.4, delay: 0.1 }}>
         <Card className="shadow-lg border border-slate-200 dark:border-slate-700">
           <CardBody className="p-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
                 <span className="text-sm text-slate-600 dark:text-slate-400 text-center sm:text-left">
-                  Mostrando {startItem} a {endItem} de {totalAdvogadosFiltrados}{" "}
-                  advogados
+                  Mostrando {startItem} a {endItem} de {totalAdvogadosFiltrados} advogados
                 </span>
                 <div className="flex items-center gap-2">
                   <Select
@@ -3023,22 +2261,10 @@ export default function AdvogadosContent() {
                     <SelectItem key="20">20</SelectItem>
                     <SelectItem key="50">50</SelectItem>
                   </Select>
-                  <span className="text-sm text-slate-600 dark:text-slate-400">
-                    por página
-                  </span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">por página</span>
                 </div>
               </div>
-              {totalPages > 1 && (
-                <Pagination
-                  showControls
-                  showShadow
-                  className="flex-shrink-0"
-                  page={currentPage}
-                  size="sm"
-                  total={totalPages}
-                  onChange={setCurrentPage}
-                />
-              )}
+              {totalPages > 1 && <Pagination showControls showShadow className="flex-shrink-0" page={currentPage} size="sm" total={totalPages} onChange={setCurrentPage} />}
             </div>
           </CardBody>
         </Card>
@@ -3046,20 +2272,13 @@ export default function AdvogadosContent() {
 
       {/* Barra de Ações em Lote */}
       {selectedAdvogados.length > 0 && (
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          initial={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} initial={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
           <Card className="shadow-lg border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
             <CardBody className="p-4">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <CheckSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <span className="font-medium text-blue-800 dark:text-blue-200 text-center sm:text-left">
-                    {selectedAdvogados.length} advogado(s) selecionado(s)
-                  </span>
+                  <span className="font-medium text-blue-800 dark:text-blue-200 text-center sm:text-left">{selectedAdvogados.length} advogado(s) selecionado(s)</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-end">
                   <Button
@@ -3095,11 +2314,7 @@ export default function AdvogadosContent() {
                   >
                     Excluir
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="light"
-                    onPress={() => setSelectedAdvogados([])}
-                  >
+                  <Button size="sm" variant="light" onPress={() => setSelectedAdvogados([])}>
                     Cancelar
                   </Button>
                 </div>
@@ -3110,11 +2325,7 @@ export default function AdvogadosContent() {
       )}
 
       {/* Lista de Advogados Melhorada */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-      >
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.4, delay: 0.1 }}>
         <Card className="shadow-xl border-2 border-slate-200 dark:border-slate-700">
           <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between w-full">
@@ -3123,64 +2334,33 @@ export default function AdvogadosContent() {
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
-                    Equipe de Advogados
-                  </h2>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {advogadosFiltrados.length} advogado(s) encontrado(s)
-                  </p>
+                  <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Equipe de Advogados</h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{advogadosFiltrados.length} advogado(s) encontrado(s)</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox
-                  isIndeterminate={
-                    selectedAdvogados.length > 0 &&
-                    selectedAdvogados.length < advogadosFiltrados.length
-                  }
-                  isSelected={
-                    selectedAdvogados.length === advogadosFiltrados.length &&
-                    advogadosFiltrados.length > 0
-                  }
+                  isIndeterminate={selectedAdvogados.length > 0 && selectedAdvogados.length < advogadosFiltrados.length}
+                  isSelected={selectedAdvogados.length === advogadosFiltrados.length && advogadosFiltrados.length > 0}
                   size="sm"
                   onValueChange={handleSelectAll}
                 >
-                  <span className="text-sm text-slate-600 dark:text-slate-400">
-                    Selecionar Todos
-                  </span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Selecionar Todos</span>
                 </Checkbox>
-                <Badge
-                  color="primary"
-                  content={advogadosFiltrados.length}
-                  size="lg"
-                  variant="shadow"
-                >
-                  <Target
-                    className="text-indigo-600 dark:text-indigo-400"
-                    size={20}
-                  />
+                <Badge color="primary" content={advogadosFiltrados.length} size="lg" variant="shadow">
+                  <Target className="text-indigo-600 dark:text-indigo-400" size={20} />
                 </Badge>
               </div>
             </div>
           </CardHeader>
           <CardBody className="p-6">
             {advogadosFiltrados.length === 0 ? (
-              <motion.div
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-16"
-                initial={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-              >
+              <motion.div animate={{ opacity: 1, scale: 1 }} className="text-center py-16" initial={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.3 }}>
                 <div className="p-6 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
                   <Users className="text-slate-400" size={48} />
                 </div>
-                <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Nenhum advogado encontrado
-                </h3>
-                <p className="text-slate-500 dark:text-slate-400 mb-6">
-                  {hasActiveFilters
-                    ? "Tente ajustar os filtros para encontrar advogados"
-                    : "Comece adicionando seu primeiro advogado"}
-                </p>
+                <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">Nenhum advogado encontrado</h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-6">{hasActiveFilters ? "Tente ajustar os filtros para encontrar advogados" : "Comece adicionando seu primeiro advogado"}</p>
                 {!hasActiveFilters && (
                   <Button
                     className="bg-gradient-to-r from-blue-600 to-indigo-600"
@@ -3218,16 +2398,7 @@ export default function AdvogadosContent() {
                       >
                         <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700 p-4">
                           <div className="flex gap-3 w-full">
-                            <Checkbox
-                              className="mt-2 flex-shrink-0"
-                              isSelected={selectedAdvogados.includes(
-                                advogado.id,
-                              )}
-                              size="sm"
-                              onValueChange={() =>
-                                handleSelectAdvogado(advogado.id)
-                              }
-                            />
+                            <Checkbox className="mt-2 flex-shrink-0" isSelected={selectedAdvogados.includes(advogado.id)} size="sm" onValueChange={() => handleSelectAdvogado(advogado.id)} />
                             <motion.div
                               className="flex-shrink-0 relative group"
                               transition={{
@@ -3237,40 +2408,18 @@ export default function AdvogadosContent() {
                               }}
                               whileHover={{ scale: 1.1, rotate: 5 }}
                             >
-                              <Avatar
-                                showFallback
-                                className="bg-blue-500 text-white shadow-lg"
-                                name={getInitials(getNomeCompleto(advogado))}
-                                size="lg"
-                                src={advogado.usuario.avatarUrl || undefined}
-                              />
-                              {isUploadingAvatar &&
-                                selectedAdvogadoForAvatar?.id ===
-                                  advogado.id && (
-                                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                                    <Spinner color="white" size="sm" />
-                                  </div>
-                                )}
+                              <Avatar showFallback className="bg-blue-500 text-white shadow-lg" name={getInitials(getNomeCompleto(advogado))} size="lg" src={advogado.usuario.avatarUrl || undefined} />
+                              {isUploadingAvatar && selectedAdvogadoForAvatar?.id === advogado.id && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                                  <Spinner color="white" size="sm" />
+                                </div>
+                              )}
                               <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1">
-                                <Button
-                                  isIconOnly
-                                  className="h-6 w-6 min-w-6"
-                                  color="primary"
-                                  size="sm"
-                                  variant="solid"
-                                  onPress={() => handleEditAvatar(advogado)}
-                                >
+                                <Button isIconOnly className="h-6 w-6 min-w-6" color="primary" size="sm" variant="solid" onPress={() => handleEditAvatar(advogado)}>
                                   <Edit className="h-3 w-3" />
                                 </Button>
                                 {advogado.usuario.avatarUrl && (
-                                  <Button
-                                    isIconOnly
-                                    className="h-6 w-6 min-w-6"
-                                    color="danger"
-                                    size="sm"
-                                    variant="solid"
-                                    onPress={() => handleRemoveAvatar(advogado)}
-                                  >
+                                  <Button isIconOnly className="h-6 w-6 min-w-6" color="danger" size="sm" variant="solid" onPress={() => handleRemoveAvatar(advogado)}>
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
                                 )}
@@ -3283,22 +2432,11 @@ export default function AdvogadosContent() {
                                 </h3>
                                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                                   {advogado.isExterno && (
-                                    <Chip
-                                      color="warning"
-                                      size="sm"
-                                      startContent={<Eye className="h-3 w-3" />}
-                                      variant="flat"
-                                    >
+                                    <Chip color="warning" size="sm" startContent={<Eye className="h-3 w-3" />} variant="flat">
                                       Externo
                                     </Chip>
                                   )}
-                                  <Chip
-                                    color={getStatusColor(
-                                      advogado.usuario.active,
-                                    )}
-                                    size="sm"
-                                    variant="flat"
-                                  >
+                                  <Chip color={getStatusColor(advogado.usuario.active)} size="sm" variant="flat">
                                     {getStatusText(advogado.usuario.active)}
                                   </Chip>
                                 </div>
@@ -3314,12 +2452,7 @@ export default function AdvogadosContent() {
                             </div>
                             <Dropdown>
                               <DropdownTrigger>
-                                <Button
-                                  isIconOnly
-                                  className="hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-110 transition-all"
-                                  size="sm"
-                                  variant="light"
-                                >
+                                <Button isIconOnly className="hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-110 transition-all" size="sm" variant="light">
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownTrigger>
@@ -3338,10 +2471,7 @@ export default function AdvogadosContent() {
                                   key="profile"
                                   startContent={<User className="h-4 w-4" />}
                                   onPress={() => {
-                                    window.open(
-                                      `/advogados/${advogado.id}`,
-                                      "_blank",
-                                    );
+                                    window.open(`/advogados/${advogado.id}`, "_blank");
                                   }}
                                 >
                                   Perfil Completo
@@ -3387,25 +2517,13 @@ export default function AdvogadosContent() {
                                     key="convert"
                                     className="text-warning"
                                     color="warning"
-                                    startContent={
-                                      <UserPlus className="h-4 w-4" />
-                                    }
-                                    onPress={() =>
-                                      handleConvertToInterno(advogado.id)
-                                    }
+                                    startContent={<UserPlus className="h-4 w-4" />}
+                                    onPress={() => handleConvertToInterno(advogado.id)}
                                   >
                                     Transformar em Interno
                                   </DropdownItem>
                                 ) : null}
-                                <DropdownItem
-                                  key="delete"
-                                  className="text-danger"
-                                  color="danger"
-                                  startContent={<Trash2 className="h-4 w-4" />}
-                                  onPress={() =>
-                                    handleDeleteAdvogado(advogado.id)
-                                  }
-                                >
+                                <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="h-4 w-4" />} onPress={() => handleDeleteAdvogado(advogado.id)}>
                                   Excluir
                                 </DropdownItem>
                               </DropdownMenu>
@@ -3417,24 +2535,18 @@ export default function AdvogadosContent() {
                           <div className="space-y-2">
                             <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                               <MailIcon className="h-3 w-3 text-blue-500" />
-                              <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                                {advogado.usuario.email}
-                              </span>
+                              <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{advogado.usuario.email}</span>
                             </div>
                             {advogado.telefone && (
                               <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                                 <Phone className="h-3 w-3 text-green-500" />
-                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                                  {advogado.telefone}
-                                </span>
+                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{advogado.telefone}</span>
                               </div>
                             )}
                             {advogado.whatsapp && (
                               <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                                 <Smartphone className="h-3 w-3 text-green-500" />
-                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                                  {advogado.whatsapp}
-                                </span>
+                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{advogado.whatsapp}</span>
                               </div>
                             )}
                           </div>
@@ -3446,67 +2558,34 @@ export default function AdvogadosContent() {
                             {/* Contagem de Processos - Para todos os advogados */}
                             <div className="space-y-2">
                               <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                                {advogado.isExterno
-                                  ? "Processos Identificados"
-                                  : "Processos Responsável"}
+                                {advogado.isExterno ? "Processos Identificados" : "Processos Responsável"}
                               </p>
                               <div className="flex items-center gap-2">
-                                <Chip
-                                  color={
-                                    advogado.isExterno ? "warning" : "primary"
-                                  }
-                                  size="sm"
-                                  startContent={
-                                    <FileText className="h-3 w-3" />
-                                  }
-                                  variant="flat"
-                                >
+                                <Chip color={advogado.isExterno ? "warning" : "primary"} size="sm" startContent={<FileText className="h-3 w-3" />} variant="flat">
                                   {advogado.processosCount || 0} processo(s)
                                 </Chip>
-                                {advogado.isExterno && (
-                                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                                    Advogado externo identificado
-                                  </span>
-                                )}
+                                {advogado.isExterno && <span className="text-xs text-slate-500 dark:text-slate-400">Advogado externo identificado</span>}
                               </div>
                             </div>
 
                             {/* Especialidades - Para advogados internos */}
-                            {!advogado.isExterno &&
-                              advogado.especialidades.length > 0 && (
-                                <div className="space-y-2">
-                                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                                    Especialidades
-                                  </p>
-                                  <div className="flex flex-wrap gap-1">
-                                    {advogado.especialidades
-                                      .slice(0, 2)
-                                      .map((especialidade) => (
-                                        <Chip
-                                          key={especialidade}
-                                          className="text-xs"
-                                          color="secondary"
-                                          size="sm"
-                                          variant="flat"
-                                        >
-                                          {especialidadeOptions.find(
-                                            (opt) => opt.key === especialidade,
-                                          )?.label || especialidade}
-                                        </Chip>
-                                      ))}
-                                    {advogado.especialidades.length > 2 && (
-                                      <Chip
-                                        className="text-xs"
-                                        color="default"
-                                        size="sm"
-                                        variant="flat"
-                                      >
-                                        +{advogado.especialidades.length - 2}
-                                      </Chip>
-                                    )}
-                                  </div>
+                            {!advogado.isExterno && advogado.especialidades.length > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Especialidades</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {advogado.especialidades.slice(0, 2).map((especialidade) => (
+                                    <Chip key={especialidade} className="text-xs" color="secondary" size="sm" variant="flat">
+                                      {especialidadeOptions.find((opt) => opt.key === especialidade)?.label || especialidade}
+                                    </Chip>
+                                  ))}
+                                  {advogado.especialidades.length > 2 && (
+                                    <Chip className="text-xs" color="default" size="sm" variant="flat">
+                                      +{advogado.especialidades.length - 2}
+                                    </Chip>
+                                  )}
                                 </div>
-                              )}
+                              </div>
+                            )}
                           </div>
 
                           {/* Ações */}
@@ -3519,9 +2598,7 @@ export default function AdvogadosContent() {
                               variant="flat"
                               onPress={() => handleViewAdvogado(advogado)}
                             >
-                              <span className="hidden sm:inline">
-                                Ver Detalhes
-                              </span>
+                              <span className="hidden sm:inline">Ver Detalhes</span>
                               <span className="sm:hidden">Ver</span>
                             </Button>
                             <Button
@@ -3591,11 +2668,7 @@ export default function AdvogadosContent() {
       />
 
       {/* Modal de Visualização do Advogado */}
-      <Modal
-        isOpen={isViewModalOpen}
-        size="2xl"
-        onOpenChange={setIsViewModalOpen}
-      >
+      <Modal isOpen={isViewModalOpen} size="2xl" onOpenChange={setIsViewModalOpen}>
         <ModalContent>
           <ModalHeader>Detalhes do Advogado</ModalHeader>
           <ModalBody>
@@ -3611,32 +2684,16 @@ export default function AdvogadosContent() {
                     src={selectedAdvogado.usuario.avatarUrl || undefined}
                   />
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                      {getNomeCompleto(selectedAdvogado)}
-                    </h3>
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">{getNomeCompleto(selectedAdvogado)}</h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <Chip
-                        color={getStatusColor(selectedAdvogado.usuario.active)}
-                        size="sm"
-                        variant="flat"
-                      >
+                      <Chip color={getStatusColor(selectedAdvogado.usuario.active)} size="sm" variant="flat">
                         {getStatusText(selectedAdvogado.usuario.active)}
                       </Chip>
-                      <Chip
-                        color="primary"
-                        size="sm"
-                        startContent={<ScaleIcon className="h-3 w-3" />}
-                        variant="flat"
-                      >
+                      <Chip color="primary" size="sm" startContent={<ScaleIcon className="h-3 w-3" />} variant="flat">
                         {getOAB(selectedAdvogado)}
                       </Chip>
                       {selectedAdvogado.isExterno && (
-                        <Chip
-                          color="warning"
-                          size="sm"
-                          startContent={<Eye className="h-3 w-3" />}
-                          variant="flat"
-                        >
+                        <Chip color="warning" size="sm" startContent={<Eye className="h-3 w-3" />} variant="flat">
                           Advogado Externo Identificado
                         </Chip>
                       )}
@@ -3654,24 +2711,16 @@ export default function AdvogadosContent() {
                     <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                       <MailIcon className="h-4 w-4 text-blue-500" />
                       <div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Email
-                        </p>
-                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          {selectedAdvogado.usuario.email}
-                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Email</p>
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{selectedAdvogado.usuario.email}</p>
                       </div>
                     </div>
                     {selectedAdvogado.telefone && (
                       <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                         <Phone className="h-4 w-4 text-green-500" />
                         <div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Telefone
-                          </p>
-                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                            {selectedAdvogado.telefone}
-                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Telefone</p>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{selectedAdvogado.telefone}</p>
                         </div>
                       </div>
                     )}
@@ -3679,12 +2728,8 @@ export default function AdvogadosContent() {
                       <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                         <Smartphone className="h-4 w-4 text-green-500" />
                         <div>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            WhatsApp
-                          </p>
-                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                            {selectedAdvogado.whatsapp}
-                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">WhatsApp</p>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{selectedAdvogado.whatsapp}</p>
                         </div>
                       </div>
                     )}
@@ -3701,16 +2746,9 @@ export default function AdvogadosContent() {
                     <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700">
                       <div className="flex items-center gap-2 mb-2">
                         <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                          Este advogado foi identificado em{" "}
-                          {selectedAdvogado.processosCount || 0} processo(s) do
-                          seu escritório
-                        </p>
+                        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Este advogado foi identificado em {selectedAdvogado.processosCount || 0} processo(s) do seu escritório</p>
                       </div>
-                      <p className="text-xs text-amber-700 dark:text-amber-300">
-                        Ele não faz parte da equipe do escritório, mas aparece
-                        como advogado de outras partes nos processos.
-                      </p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300">Ele não faz parte da equipe do escritório, mas aparece como advogado de outras partes nos processos.</p>
                     </div>
                   </div>
                 ) : (
@@ -3721,20 +2759,11 @@ export default function AdvogadosContent() {
                         Especialidades
                       </h4>
                       <div className="flex flex-wrap gap-2">
-                        {selectedAdvogado.especialidades.map(
-                          (especialidade) => (
-                            <Chip
-                              key={especialidade}
-                              color="secondary"
-                              startContent={<Star className="h-3 w-3" />}
-                              variant="flat"
-                            >
-                              {especialidadeOptions.find(
-                                (opt) => opt.key === especialidade,
-                              )?.label || especialidade}
-                            </Chip>
-                          ),
-                        )}
+                        {selectedAdvogado.especialidades.map((especialidade) => (
+                          <Chip key={especialidade} color="secondary" startContent={<Star className="h-3 w-3" />} variant="flat">
+                            {especialidadeOptions.find((opt) => opt.key === especialidade)?.label || especialidade}
+                          </Chip>
+                        ))}
                       </div>
                     </div>
                   )
@@ -3752,12 +2781,8 @@ export default function AdvogadosContent() {
                         <div className="flex items-center gap-2">
                           <Percent className="h-5 w-5 text-blue-500" />
                           <div>
-                            <p className="text-xs text-blue-600 dark:text-blue-400">
-                              Padrão
-                            </p>
-                            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                              {selectedAdvogado.comissaoPadrao}%
-                            </p>
+                            <p className="text-xs text-blue-600 dark:text-blue-400">Padrão</p>
+                            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{selectedAdvogado.comissaoPadrao}%</p>
                           </div>
                         </div>
                       </div>
@@ -3765,12 +2790,8 @@ export default function AdvogadosContent() {
                         <div className="flex items-center gap-2">
                           <Percent className="h-5 w-5 text-green-500" />
                           <div>
-                            <p className="text-xs text-green-600 dark:text-green-400">
-                              Ação Ganha
-                            </p>
-                            <p className="text-2xl font-bold text-green-700 dark:text-green-300">
-                              {selectedAdvogado.comissaoAcaoGanha}%
-                            </p>
+                            <p className="text-xs text-green-600 dark:text-green-400">Ação Ganha</p>
+                            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{selectedAdvogado.comissaoAcaoGanha}%</p>
                           </div>
                         </div>
                       </div>
@@ -3778,12 +2799,8 @@ export default function AdvogadosContent() {
                         <div className="flex items-center gap-2">
                           <Percent className="h-5 w-5 text-purple-500" />
                           <div>
-                            <p className="text-xs text-purple-600 dark:text-purple-400">
-                              Honorários
-                            </p>
-                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                              {selectedAdvogado.comissaoHonorarios}%
-                            </p>
+                            <p className="text-xs text-purple-600 dark:text-purple-400">Honorários</p>
+                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{selectedAdvogado.comissaoHonorarios}%</p>
                           </div>
                         </div>
                       </div>
@@ -3803,16 +2820,10 @@ export default function AdvogadosContent() {
                         <div className="p-2 bg-blue-500 rounded-lg">
                           <ScaleIcon className="h-4 w-4 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                          Processos
-                        </span>
+                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Processos</span>
                       </div>
-                      <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">
-                        {selectedAdvogado.processosCount || 0}
-                      </p>
-                      <p className="text-xs text-blue-600 dark:text-blue-400">
-                        Vinculados
-                      </p>
+                      <p className="text-2xl font-bold text-blue-800 dark:text-blue-200">{selectedAdvogado.processosCount || 0}</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">Vinculados</p>
                     </div>
 
                     <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 rounded-lg border border-green-200 dark:border-green-700">
@@ -3820,16 +2831,10 @@ export default function AdvogadosContent() {
                         <div className="p-2 bg-green-500 rounded-lg">
                           <Percent className="h-4 w-4 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                          Comissão
-                        </span>
+                        <span className="text-sm font-medium text-green-700 dark:text-green-300">Comissão</span>
                       </div>
-                      <p className="text-2xl font-bold text-green-800 dark:text-green-200">
-                        {selectedAdvogado.comissaoPadrao}%
-                      </p>
-                      <p className="text-xs text-green-600 dark:text-green-400">
-                        Padrão
-                      </p>
+                      <p className="text-2xl font-bold text-green-800 dark:text-green-200">{selectedAdvogado.comissaoPadrao}%</p>
+                      <p className="text-xs text-green-600 dark:text-green-400">Padrão</p>
                     </div>
 
                     <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 rounded-lg border border-purple-200 dark:border-purple-700">
@@ -3837,16 +2842,10 @@ export default function AdvogadosContent() {
                         <div className="p-2 bg-purple-500 rounded-lg">
                           <Star className="h-4 w-4 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                          Especialidades
-                        </span>
+                        <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Especialidades</span>
                       </div>
-                      <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">
-                        {selectedAdvogado.especialidades.length}
-                      </p>
-                      <p className="text-xs text-purple-600 dark:text-purple-400">
-                        Áreas
-                      </p>
+                      <p className="text-2xl font-bold text-purple-800 dark:text-purple-200">{selectedAdvogado.especialidades.length}</p>
+                      <p className="text-xs text-purple-600 dark:text-purple-400">Áreas</p>
                     </div>
 
                     <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/20 rounded-lg border border-orange-200 dark:border-orange-700">
@@ -3854,16 +2853,10 @@ export default function AdvogadosContent() {
                         <div className="p-2 bg-orange-500 rounded-lg">
                           <Clock className="h-4 w-4 text-white" />
                         </div>
-                        <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                          Status
-                        </span>
+                        <span className="text-sm font-medium text-orange-700 dark:text-orange-300">Status</span>
                       </div>
-                      <p className="text-lg font-bold text-orange-800 dark:text-orange-200">
-                        {selectedAdvogado.usuario.active ? "Ativo" : "Inativo"}
-                      </p>
-                      <p className="text-xs text-orange-600 dark:text-orange-400">
-                        {selectedAdvogado.isExterno ? "Externo" : "Interno"}
-                      </p>
+                      <p className="text-lg font-bold text-orange-800 dark:text-orange-200">{selectedAdvogado.usuario.active ? "Ativo" : "Inativo"}</p>
+                      <p className="text-xs text-orange-600 dark:text-orange-400">{selectedAdvogado.isExterno ? "Externo" : "Interno"}</p>
                     </div>
                   </div>
                 </div>
@@ -3876,9 +2869,7 @@ export default function AdvogadosContent() {
                       Biografia
                     </h4>
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                      <p className="text-sm text-slate-700 dark:text-slate-300">
-                        {selectedAdvogado.bio}
-                      </p>
+                      <p className="text-sm text-slate-700 dark:text-slate-300">{selectedAdvogado.bio}</p>
                     </div>
                   </div>
                 )}
@@ -3892,10 +2883,7 @@ export default function AdvogadosContent() {
                           <Eye className="h-5 w-5" />
                           <span className="font-medium">Advogado Externo</span>
                         </div>
-                        <p className="text-sm text-amber-600 dark:text-amber-400">
-                          Este advogado foi identificado automaticamente através
-                          dos processos.
-                        </p>
+                        <p className="text-sm text-amber-600 dark:text-amber-400">Este advogado foi identificado automaticamente através dos processos.</p>
                       </div>
                       <Button
                         className="w-full"
@@ -3933,30 +2921,16 @@ export default function AdvogadosContent() {
 
       {/* Modal de Histórico */}
       {selectedAdvogado && (
-        <AdvogadoHistorico
-          advogadoId={selectedAdvogado.id}
-          advogadoNome={getNomeCompleto(selectedAdvogado)}
-          isOpen={isHistoricoModalOpen}
-          onClose={() => setIsHistoricoModalOpen(false)}
-        />
+        <AdvogadoHistorico advogadoId={selectedAdvogado.id} advogadoNome={getNomeCompleto(selectedAdvogado)} isOpen={isHistoricoModalOpen} onClose={() => setIsHistoricoModalOpen(false)} />
       )}
 
       {/* Modal de Notificações */}
       {selectedAdvogado && (
-        <AdvogadoNotificacoes
-          advogadoId={selectedAdvogado.id}
-          advogadoNome={getNomeCompleto(selectedAdvogado)}
-          isOpen={isNotificacoesModalOpen}
-          onClose={() => setIsNotificacoesModalOpen(false)}
-        />
+        <AdvogadoNotificacoes advogadoId={selectedAdvogado.id} advogadoNome={getNomeCompleto(selectedAdvogado)} isOpen={isNotificacoesModalOpen} onClose={() => setIsNotificacoesModalOpen(false)} />
       )}
 
       {/* Modal de Credenciais Temporárias */}
-      <Modal
-        isOpen={isCredenciaisModalOpen}
-        size="lg"
-        onOpenChange={setIsCredenciaisModalOpen}
-      >
+      <Modal isOpen={isCredenciaisModalOpen} size="lg" onOpenChange={setIsCredenciaisModalOpen}>
         <ModalContent>
           <ModalHeader className="flex items-center gap-2">
             <Key className="h-5 w-5 text-success" />
@@ -3968,14 +2942,9 @@ export default function AdvogadosContent() {
                 <div className="p-4 bg-success-50 dark:bg-success-900/20 rounded-lg border border-success-200 dark:border-success-800">
                   <div className="flex items-center gap-2 mb-3">
                     <CheckCircle className="h-5 w-5 text-success" />
-                    <h4 className="font-semibold text-success-700 dark:text-success-300">
-                      Acesso ao Sistema Criado com Sucesso!
-                    </h4>
+                    <h4 className="font-semibold text-success-700 dark:text-success-300">Acesso ao Sistema Criado com Sucesso!</h4>
                   </div>
-                  <p className="text-sm text-success-600 dark:text-success-400 mb-4">
-                    As credenciais de acesso foram geradas e enviadas por email.
-                    Guarde estas informações em local seguro:
-                  </p>
+                  <p className="text-sm text-success-600 dark:text-success-400 mb-4">As credenciais de acesso foram geradas e enviadas por email. Guarde estas informações em local seguro:</p>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border">
@@ -3983,33 +2952,23 @@ export default function AdvogadosContent() {
                         <Mail className="h-4 w-4 text-default-500" />
                         <span className="text-sm font-medium">Email:</span>
                       </div>
-                      <code className="text-sm bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
-                        {credenciaisTemporarias.email}
-                      </code>
+                      <code className="text-sm bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">{credenciaisTemporarias.email}</code>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border">
                       <div className="flex items-center gap-2">
                         <Key className="h-4 w-4 text-default-500" />
-                        <span className="text-sm font-medium">
-                          Senha Temporária:
-                        </span>
+                        <span className="text-sm font-medium">Senha Temporária:</span>
                       </div>
-                      <code className="text-sm bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono">
-                        {credenciaisTemporarias.senhaTemporaria}
-                      </code>
+                      <code className="text-sm bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono">{credenciaisTemporarias.senhaTemporaria}</code>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-default-500" />
-                        <span className="text-sm font-medium">
-                          Link de Acesso:
-                        </span>
+                        <span className="text-sm font-medium">Link de Acesso:</span>
                       </div>
-                      <code className="text-sm bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
-                        {credenciaisTemporarias.linkLogin}
-                      </code>
+                      <code className="text-sm bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">{credenciaisTemporarias.linkLogin}</code>
                     </div>
                   </div>
 
@@ -4019,13 +2978,8 @@ export default function AdvogadosContent() {
                       <div className="text-sm text-warning-700 dark:text-warning-300">
                         <p className="font-medium mb-1">Importante:</p>
                         <ul className="space-y-1 text-xs">
-                          <li>
-                            • A senha temporária deve ser alterada no primeiro
-                            acesso
-                          </li>
-                          <li>
-                            • As credenciais também foram enviadas por email
-                          </li>
+                          <li>• A senha temporária deve ser alterada no primeiro acesso</li>
+                          <li>• As credenciais também foram enviadas por email</li>
                           <li>• Guarde estas informações em local seguro</li>
                         </ul>
                       </div>
