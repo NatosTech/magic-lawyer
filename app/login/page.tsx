@@ -55,11 +55,6 @@ function LoginPageInner() {
 
           return `${url.pathname}${url.search}${url.hash}` || null;
         } catch (error) {
-          console.warn("[login] Callback inválida, usando padrão", {
-            callbackUrl,
-            error,
-          });
-
           return null;
         }
       })();
@@ -209,8 +204,6 @@ function LoginPageInner() {
       tenant: sanitizedTenant || "(auto)",
     };
 
-    console.info("[login] Tentativa de login iniciada", attemptContext);
-
     setLoading(true);
 
     const loginPromise = (async () => {
@@ -297,8 +290,6 @@ function LoginPageInner() {
         throw new Error(response.error ?? "Credenciais inválidas. Verifique seus dados e tente novamente.");
       }
 
-      console.info("[login] Autenticação concluída", attemptContext);
-
       return response;
     })();
 
@@ -333,11 +324,6 @@ function LoginPageInner() {
       router.replace(target);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Ocorreu um erro inesperado durante o login.";
-
-      console.warn("[login] Falha na autenticação", {
-        ...attemptContext,
-        error: message,
-      });
 
       if (loaderKey) {
         closeToast(loaderKey);
