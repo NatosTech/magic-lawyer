@@ -1,6 +1,8 @@
 // Exportações principais
 export { NotificationService } from "./notification-service";
 export { NotificationHelper } from "./notification-helper";
+export { NotificationMigrationService } from "./notification-migration";
+export { HybridNotificationService } from "./hybrid-notification-service";
 
 // Tipos e interfaces
 export type {

@@ -1,6 +1,12 @@
 export type NotificationUrgency = "CRITICAL" | "HIGH" | "MEDIUM" | "INFO";
 export type NotificationChannel = "REALTIME" | "EMAIL" | "SMS" | "PUSH";
 
+// Tipos do sistema legado para migração
+export type LegacyNotificationType = "SISTEMA" | "PRAZO" | "DOCUMENTO" | "MENSAGEM" | "FINANCEIRO" | "OUTRO";
+export type LegacyNotificationPriority = "BAIXA" | "MEDIA" | "ALTA" | "CRITICA";
+export type LegacyNotificationChannel = "IN_APP" | "EMAIL" | "SMS" | "WHATSAPP" | "TELEGRAM" | "PUSH";
+export type LegacyNotificationStatus = "NAO_LIDA" | "LIDA" | "ARQUIVADA";
+
 export interface NotificationEvent {
   type: string;
   tenantId: string;

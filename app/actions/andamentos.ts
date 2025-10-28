@@ -80,9 +80,7 @@ async function getUserId(): Promise<string> {
 // LISTAGEM
 // ============================================
 
-export async function listAndamentos(
-  filters: AndamentoFilters,
-): Promise<ActionResponse<any[]>> {
+export async function listAndamentos(filters: AndamentoFilters): Promise<ActionResponse<any[]>> {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -106,10 +104,7 @@ export async function listAndamentos(
 
     // Busca textual
     if (filters.searchTerm) {
-      where.OR = [
-        { titulo: { contains: filters.searchTerm, mode: "insensitive" } },
-        { descricao: { contains: filters.searchTerm, mode: "insensitive" } },
-      ];
+      where.OR = [{ titulo: { contains: filters.searchTerm, mode: "insensitive" } }, { descricao: { contains: filters.searchTerm, mode: "insensitive" } }];
     }
 
     const andamentos = await prisma.movimentacaoProcesso.findMany({
@@ -170,9 +165,7 @@ export async function listAndamentos(
 // BUSCAR INDIVIDUAL
 // ============================================
 
-export async function getAndamento(
-  andamentoId: string,
-): Promise<ActionResponse<any>> {
+export async function getAndamento(andamentoId: string): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -256,9 +249,7 @@ export async function getAndamento(
 // CRIAR ANDAMENTO
 // ============================================
 
-export async function createAndamento(
-  input: AndamentoCreateInput,
-): Promise<ActionResponse<any>> {
+export async function createAndamento(input: AndamentoCreateInput): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -315,7 +306,7 @@ export async function createAndamento(
 
     // Se marcado para gerar prazo automático
     if (input.geraPrazo && input.prazo) {
-      await prisma.processoPrazo.create({
+      const prazo = await prisma.processoPrazo.create({
         data: {
           tenantId,
           processoId: input.processoId,
@@ -326,7 +317,48 @@ export async function createAndamento(
           origemMovimentacaoId: andamento.id,
         },
       });
+
+      // Notificar sobre o novo prazo usando sistema híbrido
+      const { publishNotification } = await import("@/app/actions/notifications-hybrid");
+
+      await publishNotification({
+        type: "prazo.created",
+        title: "Novo Prazo Criado",
+        message: `Prazo "${input.titulo}" foi criado para o processo ${processo.numero}. Vencimento: ${input.prazo.toLocaleDateString("pt-BR")}.`,
+        urgency: "HIGH",
+        channels: ["REALTIME"],
+        payload: {
+          prazoId: prazo.id,
+          processoId: input.processoId,
+          processoNumero: processo.numero,
+          titulo: input.titulo,
+          dataVencimento: input.prazo,
+        },
+        referenciaTipo: "PRAZO",
+        referenciaId: prazo.id,
+      });
     }
+
+    // Notificar sobre o novo andamento usando sistema híbrido
+    const { publishNotification } = await import("@/app/actions/notifications-hybrid");
+
+    await publishNotification({
+      type: "andamento.created",
+      title: "Novo Andamento",
+      message: `Andamento "${input.titulo}" foi adicionado ao processo ${processo.numero}.`,
+      urgency: "MEDIUM",
+      channels: ["REALTIME"],
+      payload: {
+        andamentoId: andamento.id,
+        processoId: input.processoId,
+        processoNumero: processo.numero,
+        titulo: input.titulo,
+        tipo: input.tipo,
+        dataMovimentacao: input.dataMovimentacao || new Date(),
+      },
+      referenciaTipo: "ANDAMENTO",
+      referenciaId: andamento.id,
+    });
 
     revalidatePath("/processos");
     revalidatePath(`/processos/${input.processoId}`);
@@ -349,10 +381,7 @@ export async function createAndamento(
 // ATUALIZAR ANDAMENTO
 // ============================================
 
-export async function updateAndamento(
-  andamentoId: string,
-  input: AndamentoUpdateInput,
-): Promise<ActionResponse<any>> {
+export async function updateAndamento(andamentoId: string, input: AndamentoUpdateInput): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -425,9 +454,7 @@ export async function updateAndamento(
 // EXCLUIR ANDAMENTO
 // ============================================
 
-export async function deleteAndamento(
-  andamentoId: string,
-): Promise<ActionResponse<null>> {
+export async function deleteAndamento(andamentoId: string): Promise<ActionResponse<null>> {
   try {
     const tenantId = await getTenantId();
 
@@ -471,9 +498,7 @@ export async function deleteAndamento(
 // DASHBOARD/MÉTRICAS
 // ============================================
 
-export async function getDashboardAndamentos(
-  processoId?: string,
-): Promise<ActionResponse<any>> {
+export async function getDashboardAndamentos(processoId?: string): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -527,21 +552,12 @@ export async function getDashboardAndamentos(
       _count: count,
     }));
 
-    const ultimosAndamentos = andamentos
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.dataMovimentacao).getTime() -
-          new Date(a.dataMovimentacao).getTime(),
-      )
-      .slice(0, 10);
+    const ultimosAndamentos = andamentos.sort((a: any, b: any) => new Date(b.dataMovimentacao).getTime() - new Date(a.dataMovimentacao).getTime()).slice(0, 10);
 
     // Debug temporário
     console.log("getDashboardAndamentos - total:", total);
     console.log("getDashboardAndamentos - porTipo:", porTipoArray);
-    console.log(
-      "getDashboardAndamentos - ultimosAndamentos:",
-      ultimosAndamentos.length,
-    );
+    console.log("getDashboardAndamentos - ultimosAndamentos:", ultimosAndamentos.length);
 
     return {
       success: true,
@@ -565,19 +581,10 @@ export async function getDashboardAndamentos(
 // TIPOS DE MOVIMENTAÇÃO
 // ============================================
 
-export async function getTiposMovimentacao(): Promise<
-  ActionResponse<MovimentacaoTipo[]>
-> {
+export async function getTiposMovimentacao(): Promise<ActionResponse<MovimentacaoTipo[]>> {
   try {
     // Retornar os tipos do enum
-    const tipos: MovimentacaoTipo[] = [
-      "ANDAMENTO",
-      "PRAZO",
-      "INTIMACAO",
-      "AUDIENCIA",
-      "ANEXO",
-      "OUTRO",
-    ];
+    const tipos: MovimentacaoTipo[] = ["ANDAMENTO", "PRAZO", "INTIMACAO", "AUDIENCIA", "ANEXO", "OUTRO"];
 
     return {
       success: true,

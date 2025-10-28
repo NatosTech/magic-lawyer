@@ -48,7 +48,9 @@ export async function testRedisConnection(): Promise<boolean> {
  * Configuração BullMQ
  */
 export const bullMQConfig = {
-  connection: createRedisConnection(),
+  get connection() {
+    return createRedisConnection();
+  },
   defaultJobOptions: {
     removeOnComplete: 100,
     removeOnFail: 50,
