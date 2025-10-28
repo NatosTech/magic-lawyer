@@ -173,6 +173,11 @@ model Tenant {
   equipeHistorico              EquipeHistorico[]
   equipeConvites               EquipeConvite[]
 
+  // Sistema de Notificações
+  notifications                Notification[]
+  notificationPreferences      NotificationPreference[]
+  notificationTemplates        NotificationTemplate[]
+
   @@index([status])
   @@index([superAdminId])
   @@index([sessionVersion])
@@ -362,6 +367,10 @@ model Usuario {
   vinculacoesComoServidor UsuarioVinculacao[]          @relation("UsuarioServidor")
   equipeHistorico         EquipeHistorico[]
   equipeConvites          EquipeConvite[]
+
+  // Sistema de Notificações
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
 
   @@unique([email, tenantId])
   @@unique([tenantId, cpf])
@@ -3091,5 +3100,92 @@ model EquipeConvite {
   @@index([tenantId, status])
   @@index([token])
   @@index([expiraEm])
+  @@schema("magiclawyer")
+}
+
+// ===== SISTEMA DE NOTIFICAÇÕES PUSH =====
+
+enum NotificationUrgency {
+  CRITICAL
+  HIGH
+  MEDIUM
+  INFO
+
+  @@schema("magiclawyer")
+}
+
+enum NotificationChannel {
+  REALTIME
+  EMAIL
+  SMS
+  PUSH
+
+  @@schema("magiclawyer")
+}
+
+model Notification {
+  id          String             @id @default(cuid())
+  tenantId    String
+  userId      String
+  type        String             // 'processo.created', 'prazo.expiring_7d', etc.
+  title       String
+  message     String
+  payload     Json?              // Dados específicos do evento
+  urgency     NotificationUrgency @default(MEDIUM)
+  channels    NotificationChannel[]
+  readAt      DateTime?
+  createdAt   DateTime           @default(now())
+  expiresAt   DateTime?
+
+  // Relacionamentos
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   Usuario @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId])
+  @@index([tenantId, type])
+  @@index([tenantId, urgency])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@schema("magiclawyer")
+}
+
+model NotificationPreference {
+  id        String             @id @default(cuid())
+  tenantId  String
+  userId    String
+  eventType String             // 'processo.created', 'prazo.expiring_7d'
+  enabled   Boolean            @default(true)
+  channels  NotificationChannel[] @default([REALTIME])
+  urgency   NotificationUrgency @default(MEDIUM)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  // Relacionamentos
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   Usuario @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, eventType])
+  @@index([tenantId, userId])
+  @@index([tenantId, eventType])
+  @@schema("magiclawyer")
+}
+
+model NotificationTemplate {
+  id        String   @id @default(cuid())
+  tenantId  String
+  eventType String   // 'processo.created', 'prazo.expiring_7d'
+  title     String
+  message   String
+  variables Json?    // Variáveis disponíveis para substituição
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, eventType])
+  @@index([tenantId, eventType])
+  @@index([isDefault])
   @@schema("magiclawyer")
 }

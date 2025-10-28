@@ -1,6 +1,6 @@
 {
   "name": "magic-lawyer",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "private": true,
   "scripts": {
     "dev": "pkill -f 'next dev' || true && cross-env PORT=9192 next dev --turbopack",
@@ -19,7 +19,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "prisma db seed",
+    "notifications:test-full": "node scripts/test-notifications.js",
     "setup": "npm install && npm run db:up && npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed",
     "setup:dev": "pkill -f 'next' || true && pkill -f 'ngrok' || true && pkill -f 'node.*magic-lawyer' || true && sleep 2 && npm install && npm run db:up && rm -rf prisma/migrations && PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"SIM, quero resetar o banco de desenvolvimento\" npx prisma db push --force-reset --accept-data-loss && npm run prisma:seed && npm run dev:with-ngrok",
     "setup:dev:windows": "powershell -Command \"Get-Process node, next, ngrok -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Seconds 2; npm install; npm run db:up; if (Test-Path prisma/migrations) { Remove-Item -Recurse -Force prisma/migrations }; $env:PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION='SIM, quero resetar o banco de desenvolvimento'; npx prisma db push --force-reset --accept-data-loss; npm run prisma:seed; Get-Process node, ngrok -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Seconds 2; concurrently 'npm run dev' 'ngrok http 9192' 'node scripts/wait-and-cleanup.js'\"",
@@ -89,6 +89,7 @@
     "asaas": "^1.1.0",
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
+    "bullmq": "^5.61.2",
     "cloudinary": "^2.7.0",
     "clsx": "2.1.1",
     "crypto-js": "^4.2.0",
@@ -96,6 +97,7 @@
     "framer-motion": "11.18.2",
     "googleapis": "^161.0.0",
     "intl-messageformat": "10.7.16",
+    "ioredis": "^5.8.2",
     "jspdf": "^3.0.3",
     "lucide-react": "^0.544.0",
     "motion": "^12.23.24",
