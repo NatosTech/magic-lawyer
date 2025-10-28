@@ -2,13 +2,7 @@
  * Tipos para eventos de tempo real via WebSocket/Ably
  */
 
-export type RealtimeEventType =
-  | "tenant-status"
-  | "tenant-soft-update"
-  | "plan-update"
-  | "user-status"
-  | "system-changelog"
-  | "notification.new";
+export type RealtimeEventType = "tenant-status" | "tenant-soft-update" | "plan-update" | "user-status" | "system-changelog" | "notification.new";
 
 export interface RealtimeEvent {
   type: RealtimeEventType;
@@ -52,9 +46,4 @@ export interface ChangelogEventPayload {
   visibility: "ALL" | "TENANT" | "ADMIN";
 }
 
-export type RealtimeEventPayload =
-  | TenantStatusEventPayload
-  | TenantSoftUpdateEventPayload
-  | PlanUpdateEventPayload
-  | UserStatusEventPayload
-  | ChangelogEventPayload;
+export type RealtimeEventPayload = TenantStatusEventPayload | TenantSoftUpdateEventPayload | PlanUpdateEventPayload | UserStatusEventPayload | ChangelogEventPayload;
