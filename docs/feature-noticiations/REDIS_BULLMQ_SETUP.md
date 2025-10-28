@@ -1,7 +1,7 @@
 # 🔧 Configuração Redis + BullMQ - Sistema de Notificações
 
 **Data:** 25/01/2025  
-**Status:** ✅ **Implementado**
+**Status:** ⚠️ **Infraestrutura Criada, Integração Pendente**
 
 ---
 
@@ -130,14 +130,38 @@ console.log(stats);
 
 ---
 
-## 🚀 **Próximos Passos:**
+## ⚠️ **STATUS REAL DA INFRAESTRUTURA**
 
-1. **Configurar Redis no Vercel** (addon)
-2. **Testar worker localmente**
-3. **Implementar canais EMAIL/SMS/PUSH**
-4. **Adicionar deduplicação**
-5. **Implementar cron jobs para prazos**
+### **✅ Criado mas NÃO Integrado:**
+- ✅ Redis conectado no Vercel (Upstash)
+- ✅ BullMQ worker criado
+- ✅ API endpoints funcionando
+- ✅ Infraestrutura configurada
+- ❌ **Sistema não integrado** - Aplicação ainda usa legado
+
+### **🚨 Problemas Críticos:**
+- ❌ **Sistema legado ativo** - Notificacao/NotificacaoUsuario ainda em uso
+- ❌ **Nenhuma integração** - Módulos não chamam NotificationService
+- ❌ **Worker não usado** - Jobs não são processados pela aplicação
+- ❌ **Scripts quebrados** - start-notifications-worker.js não funciona
+
+### **📊 Status Atual (Não Reflete Uso Real):**
+```json
+{
+  "success": true,
+  "data": {
+    "worker": { "waiting": 0, "active": 0, "completed": 0, "failed": 0 },
+    "queue": { "waiting": 0, "active": 0, "completed": 0, "failed": 0, "delayed": 0 },
+    "status": "running"
+  }
+}
+```
+
+### **⚠️ Observação Importante:**
+- Worker funciona quando chamado via API
+- Mas **nenhuma parte da aplicação** usa o novo sistema
+- Sistema legado (`app/actions/notifications.ts`) ainda processa todas as notificações
 
 ---
 
-**Status:** ✅ **Redis + BullMQ Implementado** - Pronto para configuração no Vercel
+**Status:** ⚠️ **Infraestrutura Criada, Integração Crítica Pendente** - Sistema legado ainda ativo

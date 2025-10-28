@@ -1,7 +1,7 @@
 # 🏗️ Arquitetura Técnica - Sistema de Notificações Push
 
 **Data de Criação:** 25/01/2025  
-**Status:** ⏳ **Em Desenvolvimento** - Etapa 2
+**Status:** ⏳ **Em Desenvolvimento** - Backend criado, mas não integrado
 
 ---
 
@@ -271,13 +271,13 @@ if (existingNotification) {
 }
 ```
 
-### **Push Mobile** (Futuro)
+### **WhatsApp** (Planejado)
 ```typescript
-// Via Firebase/APNs
+// Integração a definir (ex.: Zenvia, Twilio, Meta Cloud API)
 {
-  title: 'Novo processo criado',
-  body: 'Processo 1234567-89 foi criado',
-  data: { processoId: 'proc-789' }
+  to: '+55XXXXXXXXXXX',
+  template: 'processo-created-whatsapp',
+  variables: { numero: '1234567-89', cliente: 'João Silva' }
 }
 ```
 
@@ -285,7 +285,7 @@ if (existingNotification) {
 
 ## 🔧 **CONFIGURAÇÕES DE AMBIENTE**
 
-### **Variáveis Necessárias**
+### **Variáveis Implementadas**
 ```bash
 # Ably (já configurado)
 ABLY_API_KEY=xxx
@@ -293,141 +293,44 @@ NEXT_PUBLIC_ABLY_CLIENT_KEY=xxx
 REALTIME_CHANNEL_PREFIX=ml-dev
 NEXT_PUBLIC_REALTIME_CHANNEL_PREFIX=ml-dev
 
-# Notificações (novas)
-NOTIFICATION_RETENTION_DAYS=30
-NOTIFICATION_BATCH_SIZE=100
-NOTIFICATION_RATE_LIMIT=1000
-NOTIFICATION_DEDUP_TTL_MINUTES=5
+# Redis (implementado)
+REDIS_URL=rediss://...  # Vercel Redis (Upstash)
 
-# Email (já configurado)
-EMAIL_FROM=noreply@magiclawyer.com
-SMTP_HOST=smtp.resend.com
-SMTP_PORT=587
-SMTP_USER=resend
-SMTP_PASS=xxx
-
-# Redis (para BullMQ)
-REDIS_URL=redis://localhost:6379
-REDIS_PASSWORD=xxx
-
-# Rate Limiting
+# Rate Limiting (implementado)
 NOTIFICATION_RATE_LIMIT_PER_USER=100
 NOTIFICATION_RATE_LIMIT_PER_TENANT=1000
 ```
 
-### **Quadro de Configurações por Ambiente**
-| Ambiente | Redis | Ably | Rate Limit | Observações |
-|----------|-------|------|------------|-------------|
-| **Development** | Local | Sandbox | 1000/h | Para testes |
-| **Staging** | Cloud | Production | 5000/h | Pré-produção |
-| **Production** | Cloud | Production | 10000/h | Produção |
 
 ---
 
-## 🛡️ **SEGURANÇA E COMPLIANCE**
+## ⚠️ **STATUS REAL DO SISTEMA**
 
-### **LGPD**
-- Opt-in/opt-out por usuário
-- Retenção de dados por 30 dias
-- Logs de consentimento
-- Exportação de dados
+### **✅ Implementado:**
+1. ✅ **Schema Prisma** - Tabelas Notification, NotificationPreference, NotificationTemplate criadas
+2. ✅ **BullMQ + Redis** - Infraestrutura de fila configurada
+3. ✅ **NotificationService** - Serviço base criado
+4. ✅ **Worker Assíncrono** - Worker BullMQ implementado
+5. ✅ **API Management** - Endpoints de gerenciamento
 
-### **Isolamento Multi-tenant**
-- Canais separados por tenant
-- Validação de permissões
-- Dados isolados no banco
+### **❌ NÃO Implementado:**
+1. ❌ **Integração Real** - Sistema ainda usa Notificacao/NotificacaoUsuario legado
+2. ❌ **Deduplicação** - Não há hash SHA256 nem TTL implementado
+3. ❌ **Fallback HTTP** - Não há polling quando Ably falha
+4. ❌ **Canais EMAIL/WHATSAPP** - Apenas console.log (ou aguardando API)
+5. ❌ **Cron Jobs** - Não há agendador de prazos
+6. ❌ **Webhooks Asaas** - Não há integração com pagamentos
+7. ❌ **NotificationFactory/Policy** - Classes não existem
+8. ❌ **Migração** - Sistema legado ainda em uso
 
-### **Rate Limiting**
-- **Middleware Next.js**: 100 notificações/minuto por usuário
-- **Ably Built-in**: 1000 notificações/hora por tenant
-- **NotificationService**: Backoff automático quando limites são atingidos
-- **Configuração**: `NOTIFICATION_RATE_LIMIT_PER_USER` e `NOTIFICATION_RATE_LIMIT_PER_TENANT`
-
----
-
-## 📈 **MÉTRICAS E MONITORAMENTO**
-
-### **KPIs**
-- Taxa de entrega (target: >99%)
-- Tempo médio de entrega (target: <1s)
-- Taxa de leitura (target: >80%)
-- Satisfação do usuário
-
-### **Alertas**
-- Falha na entrega >5%
-- Latência >5s
-- Erro de conexão Ably
-- Quota excedida
+### **🔧 Próximos Passos Críticos:**
+1. **Migrar sistema legado** - Substituir Notificacao/NotificacaoUsuario
+2. **Implementar deduplicação** - Hash + TTL no Redis
+3. **Implementar canais reais** - EMAIL e WHATSAPP funcionais
+4. **Integrar com módulos** - Conectar Server Actions ao novo sistema
+5. **Implementar cron jobs** - Agendador de prazos
+6. **Implementar webhooks** - Integração Asaas
 
 ---
 
-## 🔄 **MIGRAÇÃO DE DADOS**
-
-### **Seeds Iniciais**
-```typescript
-// Preferências padrão por role
-const defaultPreferences = {
-  SUPER_ADMIN: ['processo.*', 'cliente.*', 'financeiro.*', 'equipe.*'],
-  ADMIN: ['processo.*', 'cliente.*', 'financeiro.*', 'equipe.*'],
-  ADVOGADO: ['processo.*', 'cliente.*', 'agenda.*', 'prazo.*'],
-  SECRETARIA: ['processo.*', 'cliente.*', 'agenda.*', 'prazo.*'],
-  FINANCEIRO: ['financeiro.*', 'contrato.*', 'pagamento.*'],
-  CLIENTE: ['processo.*', 'contrato.*', 'pagamento.*']
-};
-```
-
-### **Estratégia de Expansão de Curingas**
-```typescript
-// O Prisma não suporta curingas nativamente
-// Solução: Expandir curingas para eventos específicos no seed
-
-const expandWildcards = (wildcardPattern: string): string[] => {
-  const eventMap = {
-    'processo.*': ['processo.created', 'processo.updated', 'processo.status_changed'],
-    'cliente.*': ['cliente.created', 'cliente.updated', 'cliente.document_uploaded'],
-    'financeiro.*': ['pagamento.paid', 'pagamento.failed', 'boleto.generated'],
-    'equipe.*': ['equipe.user_invited', 'equipe.user_joined', 'equipe.permissions_changed']
-  };
-  
-  return eventMap[wildcardPattern] || [wildcardPattern];
-};
-
-// No seed, expandir curingas para eventos específicos
-for (const [role, patterns] of Object.entries(defaultPreferences)) {
-  for (const pattern of patterns) {
-    const specificEvents = expandWildcards(pattern);
-    for (const eventType of specificEvents) {
-      await createPreference(tenantId, userId, eventType, config);
-    }
-  }
-}
-```
-
-### **Templates Padrão**
-```typescript
-// Templates para cada tipo de evento
-const defaultTemplates = {
-  'processo.created': {
-    title: 'Novo processo criado',
-    message: 'Processo {numero} foi criado para {cliente}'
-  },
-  'prazo.expiring_7d': {
-    title: 'Prazo próximo do vencimento',
-    message: 'Prazo do processo {numero} vence em 7 dias'
-  }
-};
-```
-
----
-
-## ✅ **PRÓXIMOS PASSOS**
-
-1. ✅ **Arquitetura Definida** - Este documento
-2. ⏳ **Implementar Schema** - Criar tabelas no Prisma
-3. ⏳ **NotificationPublisher** - Serviço core de notificações
-4. ⏳ **Templates System** - Sistema de templates
-5. ⏳ **Preferências** - Sistema de preferências por usuário
-
----
-
-**Status:** ⏳ **Em Desenvolvimento** - Etapa 2
+**Status:** ⏳ **Backend Criado, Integração Pendente** - Sistema legado ainda em uso

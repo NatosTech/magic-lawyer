@@ -12,7 +12,7 @@
 - [x] Listar todos os eventos de gatilho existentes por módulo (processos, prazos, finance, agenda, documentos, CRM, integrações externas).
 - [x] Identificar lacunas de eventos ainda não rastreados e aprovar novos gatilhos com negócio.
 - [x] Mapear quais tipos de usuários precisam receber cada evento (responsável, equipe, cliente, terceiros).
-- [x] Definir canais por evento (tempo real via WebSocket, email, push mobile futuro, SMS opcional).
+- [x] Definir canais por evento (notificação in-app em tempo real, email e WhatsApp).
 - [ ] **Documentar payload mínimo de cada evento (campos obrigatórios, IDs, metadados)**.
   - **Critério**: [Tabela completa com payloads obrigatórios para todos os eventos no catálogo]
 - [ ] **Homologar matriz Evento × Usuário × Canal com stakeholders**.
@@ -24,23 +24,23 @@
 
 ## Etapa 2 — Arquitetura Técnica e Infraestrutura ⏳ **EM ANDAMENTO**
 - [x] Escolher stack realtime (Ably já instalado vs WebSocket self-hosted) e documentar motivos.
-- [ ] **Definir topologia (event bus, fila, workers, broadcasting) com diagramas atualizados**.
+- [x] **Definir topologia (event bus, fila, workers, broadcasting) com diagramas atualizados**.
   - **Critério**: [Diagrama atualizado com BullMQ Queue e Worker implementados]
-- [ ] **Planejar escalabilidade: sharding, tolerância a falhas, política de reconexão**.
+- [x] **Planejar escalabilidade: sharding, tolerância a falhas, política de reconexão**.
   - **Critério**: [Estratégia de escalabilidade documentada com métricas específicas]
-- [ ] **Definir formato contratual dos eventos (`NotificationEvent` TypeScript + schema Prisma)**.
+- [x] **Definir formato contratual dos eventos (`NotificationEvent` TypeScript + schema Prisma)**.
   - **Critério**: [Schema Prisma implementado com tipos TypeScript correspondentes]
-- [ ] **Planejar storage eventual para histórico (tabela `Notification` + `NotificationPreference`)**.
+- [x] **Planejar storage eventual para histórico (tabela `Notification` + `NotificationPreference`)**.
   - **Critério**: [Tabelas implementadas com índices e política de retenção LGPD]
 - [ ] **Definir mecanismo de deduplicação/anti-spam (hash por evento + TTL)**.
   - **Critério**: [Sistema de deduplicação implementado com hash SHA256 e TTL de 5 minutos]
-- [ ] **Documentar atualização necessária em `.env` e secrets (keys realtime, Redis, etc.)**.
+- [x] **Documentar atualização necessária em `.env` e secrets (keys realtime, Redis, etc.)**.
   - **Critério**: [Documentação completa de variáveis de ambiente com valores por ambiente]
-- [ ] **Validar requisitos de auditoria (timestamp, origem, usuário que disparou)**.
+- [x] **Validar requisitos de auditoria (timestamp, origem, usuário que disparou)**.
   - **Critério**: [Logs estruturados implementados com correlação de eventos]
 - [ ] **Especificar fallback HTTP/REST para clientes sem socket**.
   - **Critério**: [Fallback HTTP implementado com polling de 30s quando Ably falha]
-- [ ] **Elaborar plano de migração de dados se preciso (seed de preferências padrão)**.
+- [x] **Elaborar plano de migração de dados se preciso (seed de preferências padrão)**.
   - **Critério**: [Seed implementado com expansão de curingas para eventos específicos]
 
 ## Etapa 3 — Backend Core de Notificações ⏳ **EM ANDAMENTO**
@@ -48,11 +48,11 @@
 - [ ] **Implementar camada de domínio (`NotificationFactory`, `NotificationPolicy`)**.
   - **Critério**: [Factory e Policy implementados com validações de negócio]
 - [x] Implementar persistência Prisma (tabelas, migrations, seeds iniciais).
-- [ ] **Criar fila/worker (ex: BullMQ ou equivalente) para processamento assíncrono**.
+- [x] **Criar fila/worker (ex: BullMQ ou equivalente) para processamento assíncrono**.
   - **Critério**: [BullMQ instalado e configurado, worker implementado para processamento assíncrono]
-- [ ] **Implementar publisher genérico `NotificationPublisher` com suporte a vários canais**.
-  - **Critério**: [Publisher implementado com suporte a REALTIME, EMAIL, SMS, PUSH]
-- [ ] **Criar gateway WebSocket/Realtime integrando com Ably (ou solução escolhida)**.
+- [ ] **Implementar publisher genérico `NotificationPublisher` com suporte a in-app, email e WhatsApp**.
+  - **Critério**: [Publisher implementado com suporte a REALTIME (in-app), EMAIL e WHATSAPP]
+- [x] **Criar gateway WebSocket/Realtime integrando com Ably (ou solução escolhida)**.
   - **Critério**: [Gateway Ably implementado com autenticação e reconexão automática]
 - [ ] **Implementar serviço de agendamento para notificações de prazo (cron + timezone)**.
   - **Critério**: [Cron job implementado com suporte a timezone, alertas D-7, D-3, D-1, H-2]
@@ -118,18 +118,10 @@
   - **Critério**: [Centro de notificações com filtros por módulo, urgência, data funcionando]
 - [ ] **Inserir contadores de não lidos em layout principal, header e mobile**.
   - **Critério**: [Badge de contador em header, sidebar e mobile, atualização em tempo real]
-- [ ] **Implementar push específico por tipo de usuário (ADMIN)**.
-  - **Critério**: [ADMIN recebe todos os eventos críticos e de administração via realtime + email]
-- [ ] **Implementar push específico por tipo de usuário (ADVOGADO)**.
-  - **Critério**: [ADVOGADO recebe eventos de processos, prazos, agenda via realtime + email críticos]
-- [ ] **Implementar push específico por tipo de usuário (SECRETARIA)**.
-  - **Critério**: [SECRETARIA recebe eventos operacionais via realtime, sem spam]
-- [ ] **Implementar push específico por tipo de usuário (CONTROLLER/FINANCEIRO)**.
-  - **Critério**: [FINANCEIRO recebe eventos financeiros críticos via realtime + email]
-- [ ] **Implementar push específico por tipo de usuário (CLIENTE/PORTAL)**.
-  - **Critério**: [CLIENTE recebe eventos de seus processos/contratos via realtime]
-- [ ] **Implementar push específico por tipo de usuário (CONVIDADO EXTERNO/ADVOGADO TERCEIRO)**.
-  - **Critério**: [CONVIDADO EXTERNO recebe apenas eventos relevantes aos seus processos]
+- [ ] **Configurar notificações in-app + email por tipo de usuário (ADMIN, ADVOGADO, SECRETARIA, CONTROLLER/FINANCEIRO, CLIENTE, CONVIDADO EXTERNO)**.
+  - **Critério**: [Matrix de eventos × canal definida e implementada para cada perfil]
+- [ ] **Planejar disparos de WhatsApp por perfil (ativar após escolha da API)**.
+  - **Critério**: [Documento com eventos elegíveis, payload e responsável por validação de consentimento]
 - [ ] **Garantir visualização contextual dentro de cada módulo (cards com deep link)**.
   - **Critério**: [Notificações com deep links funcionando em todos os módulos]
 - [ ] **Implementar marcação de lido, arquivar, fixar, deletar (quando permitido)**.
@@ -150,8 +142,8 @@
   - **Critério**: [Presets aplicados automaticamente baseados no role do usuário]
 - [ ] **Permitir silenciar temporariamente (snooze) por evento/módulo**.
   - **Critério**: [Funcionalidade snooze implementada com timer configurável]
-- [ ] **Permitir seleção de canais (tempo real, email, SMS futuro) por evento**.
-  - **Critério**: [Seleção de canais por evento funcionando, persistência no banco]
+- [ ] **Permitir seleção de canais (in-app, email, WhatsApp futuro) por evento**.
+  - **Critério**: [Seleção de canais por evento funcionando; WhatsApp permanece desativado até integração oficial]
 - [ ] **Integrar preferências com LGPD (coleta, logs de consentimento)**.
   - **Critério**: [Logs de consentimento implementados, retenção de 30 dias configurada]
 - [ ] **Implementar painel admin para forçar notificações críticas**.

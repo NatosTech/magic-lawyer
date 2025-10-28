@@ -1,7 +1,7 @@
 # 📋 Catálogo de Eventos - Sistema de Notificações Push
 
 **Data de Criação:** 25/01/2025  
-**Status:** ⏳ **Em Desenvolvimento** - Etapa 1
+**Status:** ⏳ **Em Desenvolvimento** - Catálogo completo, backend não integrado
 
 ---
 
@@ -395,59 +395,65 @@ Este documento mapeia **TODOS os eventos** que devem gerar notificações no sis
 
 ## 📱 **MATRIZ EVENTO × CANAL**
 
-| Evento | Realtime | Email | SMS | Push Mobile |
-|--------|----------|-------|-----|-------------|
-| **CRÍTICOS** | ✅ | ✅ | ✅ | ✅ |
-| `prazo.expired` | ✅ | ✅ | ✅ | ✅ |
-| `pagamento.overdue` | ✅ | ✅ | ✅ | ✅ |
-| `contrato.expired` | ✅ | ✅ | ✅ | ✅ |
-| **ALTOS** | ✅ | ✅ | ❌ | ✅ |
-| `prazo.expiring_1d` | ✅ | ✅ | ❌ | ✅ |
-| `prazo.expiring_3d` | ✅ | ✅ | ❌ | ✅ |
-| `pagamento.failed` | ✅ | ✅ | ❌ | ✅ |
-| `contrato.signature_pending` | ✅ | ✅ | ❌ | ✅ |
-| **MÉDIOS** | ✅ | ❌ | ❌ | ❌ |
-| `processo.created` | ✅ | ❌ | ❌ | ❌ |
-| `processo.updated` | ✅ | ❌ | ❌ | ❌ |
-| `cliente.created` | ✅ | ❌ | ❌ | ❌ |
-| `evento.created` | ✅ | ❌ | ❌ | ❌ |
-| **INFORMATIVOS** | ✅ | ❌ | ❌ | ❌ |
-| `advogado.avatar_updated` | ✅ | ❌ | ❌ | ❌ |
-| `documento.uploaded` | ✅ | ❌ | ❌ | ❌ |
-| `relatorio.generated` | ✅ | ❌ | ❌ | ❌ |
+| Evento | In-app (Realtime) | Email | WhatsApp |
+|--------|-------------------|-------|----------|
+| **CRÍTICOS** | ✅ | ⏳ | ⏳ |
+| `prazo.expired` | ✅ | ⏳ | ⏳ |
+| `pagamento.overdue` | ✅ | ⏳ | ⏳ |
+| `contrato.expired` | ✅ | ⏳ | ⏳ |
+| **ALTOS** | ✅ | ⏳ | ⏳ |
+| `prazo.expiring_1d` | ✅ | ⏳ | ⏳ |
+| `prazo.expiring_3d` | ✅ | ⏳ | ⏳ |
+| `pagamento.failed` | ✅ | ⏳ | ⏳ |
+| `contrato.signature_pending` | ✅ | ⏳ | ⏳ |
+| **MÉDIOS** | ✅ | ❌ | ❌ |
+| `processo.created` | ✅ | ❌ | ❌ |
+| `processo.updated` | ✅ | ❌ | ❌ |
+| `cliente.created` | ✅ | ❌ | ❌ |
+| `evento.created` | ✅ | ❌ | ❌ |
+| **INFORMATIVOS** | ✅ | ❌ | ❌ |
+| `advogado.avatar_updated` | ✅ | ❌ | ❌ |
+| `documento.uploaded` | ✅ | ❌ | ❌ |
+| `relatorio.generated` | ✅ | ❌ | ❌ |
 
-### **Critérios de Uso por Canal:**
+### **Status dos Canais:**
 
-**Realtime (WebSocket):**
+**In-app (Realtime via Ably):**
+- ✅ **Implementado** - Via Ably (funcionando)
 - ✅ Todos os eventos
 - ✅ Instantâneo (< 1s)
-- ✅ Via Ably (já implementado)
 
 **Email:**
-- ✅ Eventos críticos e altos
-- ✅ Resumos diários
-- ✅ Confirmações importantes
+- ⏳ **Planejado** - Apenas console.log no código
+- ⏳ Eventos críticos e altos
+- ⏳ Resumos diários
+- ⏳ Confirmações importantes
 
-**SMS:**
-- ✅ Apenas eventos críticos
-- ✅ Configurável por usuário
-- ✅ Para casos de emergência
+**WhatsApp:**
+- ⏳ **Planejado** - Aguardando definição da API
+- ⏳ Apenas eventos críticos e altos
+- ⏳ Exige opt-in e monitoramento de consentimento
 
-**Push Mobile:**
-- ✅ Eventos críticos e altos
-- ✅ Quando usuário está offline
-- ✅ Notificações no dispositivo
+### **Legenda:**
+- ✅ **Implementado** - Funcionando no código
+- ⏳ **Planejado** - Definido mas não implementado
+- ❌ **Não Planejado** - Não será implementado para este tipo de evento
 
 ---
 
-## 🔧 **PRÓXIMOS PASSOS**
+## ⚠️ **STATUS REAL**
 
 1. ✅ **Mapeamento Completo** - Este documento
-2. ⏳ **Validação com Stakeholders** - Confirmar eventos e usuários
-3. ⏳ **Definição de Payloads** - Estrutura de dados de cada evento
-4. ⏳ **Implementação Backend** - Sistema de notificações
-5. ⏳ **Implementação Frontend** - Interface de notificações
+2. ✅ **Validação com Stakeholders** - Eventos e usuários definidos
+3. ✅ **Definição de Payloads** - Estrutura de dados implementada
+4. ❌ **Implementação Backend** - Sistema criado mas não integrado
+5. ❌ **Implementação Frontend** - Interface não implementada
+
+### **🚨 Problema Crítico:**
+- Sistema ainda usa **Notificacao/NotificacaoUsuario** legado
+- Nenhum módulo chama `NotificationService.publishNotification`
+- Backend novo existe mas não está conectado à aplicação
 
 ---
 
-**Status:** ⏳ **Em Desenvolvimento** - Etapa 1
+**Status:** ⏳ **Backend Criado, Integração Pendente** - Sistema legado ainda em uso
