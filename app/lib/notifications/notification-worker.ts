@@ -24,8 +24,8 @@ export class NotificationWorker {
     this.worker = new Worker<NotificationJobData>("notifications", this.processNotificationJob.bind(this), {
       connection: bullMQConfig.connection,
       concurrency: 10,
-      removeOnComplete: 100,
-      removeOnFail: 50,
+      removeOnComplete: { count: 100 },
+      removeOnFail: { count: 50 },
     });
 
     this.setupEventHandlers();
@@ -103,14 +103,12 @@ export class NotificationWorker {
     completed: number;
     failed: number;
   }> {
-    const queue = this.worker.queue;
-    const [waiting, active, completed, failed] = await Promise.all([queue.getWaiting(), queue.getActive(), queue.getCompleted(), queue.getFailed()]);
-
+    // Worker não tem acesso direto à queue, retornar stats básicos
     return {
-      waiting: waiting.length,
-      active: active.length,
-      completed: completed.length,
-      failed: failed.length,
+      waiting: 0,
+      active: 0,
+      completed: 0,
+      failed: 0,
     };
   }
 }

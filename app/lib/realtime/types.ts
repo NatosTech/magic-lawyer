@@ -7,7 +7,8 @@ export type RealtimeEventType =
   | "tenant-soft-update"
   | "plan-update"
   | "user-status"
-  | "system-changelog";
+  | "system-changelog"
+  | "notification.new";
 
 export interface RealtimeEvent {
   type: RealtimeEventType;

@@ -17,16 +17,14 @@ export function createRedisConnection(): Redis {
       tls: {
         rejectUnauthorized: false,
       },
-      retryDelayOnFailover: 100,
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: null, // Necessário para BullMQ
       lazyConnect: true,
     });
   }
 
   // Configuração para desenvolvimento local
   return new Redis(redisUrl, {
-    retryDelayOnFailover: 100,
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: null, // Necessário para BullMQ
     lazyConnect: true,
   });
 }
