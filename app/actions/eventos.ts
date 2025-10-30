@@ -9,12 +9,18 @@ import prisma from "@/app/lib/prisma";
 import { getTenantWithBranding } from "@/app/lib/tenant";
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
-import { syncEventoWithGoogle, removeEventoFromGoogle } from "@/app/actions/google-calendar";
+import {
+  syncEventoWithGoogle,
+  removeEventoFromGoogle,
+} from "@/app/actions/google-calendar";
 
 // Usar tipos do Prisma - sempre sincronizado com o banco!
 
 // Tipo para criação de evento (sem campos auto-gerados)
-export type EventoFormData = Omit<Evento, "id" | "tenantId" | "criadoPorId" | "createdAt" | "updatedAt"> & {
+export type EventoFormData = Omit<
+  Evento,
+  "id" | "tenantId" | "criadoPorId" | "createdAt" | "updatedAt"
+> & {
   dataInicio: string; // String para o formulário, será convertido para Date
   dataFim: string; // String para o formulário, será convertido para Date
 };
@@ -297,7 +303,8 @@ export async function getEventos(filters?: {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -395,7 +402,8 @@ export async function getEventoById(id: string) {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -438,7 +446,8 @@ export async function createEvento(formData: EventoFormData) {
       if (!processo) {
         return {
           success: false,
-          error: "Processo selecionado não foi encontrado. Verifique se o processo existe e pertence ao seu escritório.",
+          error:
+            "Processo selecionado não foi encontrado. Verifique se o processo existe e pertence ao seu escritório.",
         };
       }
     }
@@ -455,7 +464,8 @@ export async function createEvento(formData: EventoFormData) {
       if (!cliente) {
         return {
           success: false,
-          error: "Cliente selecionado não foi encontrado. Verifique se o cliente existe e pertence ao seu escritório.",
+          error:
+            "Cliente selecionado não foi encontrado. Verifique se o cliente existe e pertence ao seu escritório.",
         };
       }
     }
@@ -477,7 +487,8 @@ export async function createEvento(formData: EventoFormData) {
       if (!advogado) {
         return {
           success: false,
-          error: "Advogado selecionado não foi encontrado. Verifique se o advogado existe e pertence ao seu escritório.",
+          error:
+            "Advogado selecionado não foi encontrado. Verifique se o advogado existe e pertence ao seu escritório.",
         };
       }
     }
@@ -552,7 +563,9 @@ export async function createEvento(formData: EventoFormData) {
       });
 
       // Criar notificações para os participantes usando sistema híbrido
-      const { publishNotification } = await import("@/app/actions/notifications-hybrid");
+      const { publishNotification } = await import(
+        "@/app/actions/notifications-hybrid"
+      );
 
       for (const email of formData.participantes) {
         await publishNotification({
@@ -594,19 +607,25 @@ export async function createEvento(formData: EventoFormData) {
       if (error.message.includes("P2003")) {
         return {
           success: false,
-          error: "Erro de referência: um dos itens selecionados (processo, cliente ou advogado) não existe mais. Por favor, recarregue a página e tente novamente.",
+          error:
+            "Erro de referência: um dos itens selecionados (processo, cliente ou advogado) não existe mais. Por favor, recarregue a página e tente novamente.",
         };
       }
       if (error.message.includes("P2002")) {
         return {
           success: false,
-          error: "Já existe um evento com essas características. Verifique os dados e tente novamente.",
+          error:
+            "Já existe um evento com essas características. Verifique os dados e tente novamente.",
         };
       }
-      if (error.message.includes("ZodError") || error.message.includes("Validation")) {
+      if (
+        error.message.includes("ZodError") ||
+        error.message.includes("Validation")
+      ) {
         return {
           success: false,
-          error: "Dados inválidos. Verifique se todos os campos obrigatórios estão preenchidos corretamente.",
+          error:
+            "Dados inválidos. Verifique se todos os campos obrigatórios estão preenchidos corretamente.",
         };
       }
     }
@@ -619,7 +638,10 @@ export async function createEvento(formData: EventoFormData) {
 }
 
 // Atualizar evento
-export async function updateEvento(id: string, formData: Partial<EventoFormData>) {
+export async function updateEvento(
+  id: string,
+  formData: Partial<EventoFormData>,
+) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -669,7 +691,8 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
       if (!processo) {
         return {
           success: false,
-          error: "Processo selecionado não foi encontrado. Verifique se o processo existe e pertence ao seu escritório.",
+          error:
+            "Processo selecionado não foi encontrado. Verifique se o processo existe e pertence ao seu escritório.",
         };
       }
     }
@@ -685,7 +708,8 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
       if (!cliente) {
         return {
           success: false,
-          error: "Cliente selecionado não foi encontrado. Verifique se o cliente existe e pertence ao seu escritório.",
+          error:
+            "Cliente selecionado não foi encontrado. Verifique se o cliente existe e pertence ao seu escritório.",
         };
       }
     }
@@ -701,7 +725,8 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
       if (!advogado) {
         return {
           success: false,
-          error: "Advogado selecionado não foi encontrado. Verifique se o advogado existe e pertence ao seu escritório.",
+          error:
+            "Advogado selecionado não foi encontrado. Verifique se o advogado existe e pertence ao seu escritório.",
         };
       }
     }
@@ -774,10 +799,19 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
 
     // Verificar se houve mudanças que exigem re-confirmação
     const mudancasCriticas =
-      eventoAtual.dataInicio.getTime() !== (formData?.dataInicio ? new Date(formData.dataInicio).getTime() : eventoAtual.dataInicio.getTime()) ||
-      eventoAtual.dataFim.getTime() !== (formData?.dataFim ? new Date(formData.dataFim).getTime() : eventoAtual.dataFim.getTime()) ||
+      eventoAtual.dataInicio.getTime() !==
+        (formData?.dataInicio
+          ? new Date(formData.dataInicio).getTime()
+          : eventoAtual.dataInicio.getTime()) ||
+      eventoAtual.dataFim.getTime() !==
+        (formData?.dataFim
+          ? new Date(formData.dataFim).getTime()
+          : eventoAtual.dataFim.getTime()) ||
       eventoAtual.local !== (formData?.local || eventoAtual.local) ||
-      JSON.stringify(eventoAtual.participantes.sort()) !== JSON.stringify((formData?.participantes || eventoAtual.participantes).sort());
+      JSON.stringify(eventoAtual.participantes.sort()) !==
+        JSON.stringify(
+          (formData?.participantes || eventoAtual.participantes).sort(),
+        );
 
     if (mudancasCriticas) {
       // Resetar todas as confirmações para PENDENTE
@@ -794,10 +828,13 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
       });
 
       // Criar notificações para todos os participantes sobre a mudança usando sistema híbrido
-      const participantes = formData?.participantes || eventoAtual.participantes;
+      const participantes =
+        formData?.participantes || eventoAtual.participantes;
 
       if (participantes.length > 0) {
-        const { publishNotification } = await import("@/app/actions/notifications-hybrid");
+        const { publishNotification } = await import(
+          "@/app/actions/notifications-hybrid"
+        );
 
         for (const email of participantes) {
           await publishNotification({
@@ -838,7 +875,8 @@ export async function updateEvento(id: string, formData: Partial<EventoFormData>
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -892,7 +930,8 @@ export async function deleteEvento(id: string) {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -945,13 +984,19 @@ export async function marcarEventoComoRealizado(id: string) {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
 
 // Confirmar participação em evento
-export async function confirmarParticipacaoEvento(eventoId: string, participanteEmail: string, status: EventoConfirmacaoStatus, observacoes?: string) {
+export async function confirmarParticipacaoEvento(
+  eventoId: string,
+  participanteEmail: string,
+  status: EventoConfirmacaoStatus,
+  observacoes?: string,
+) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -979,7 +1024,9 @@ export async function confirmarParticipacaoEvento(eventoId: string, participante
 
     // Verificar se o participante está na lista de participantes do evento
     if (!evento.participantes.includes(participanteEmail)) {
-      throw new Error("Participante não está na lista de participantes do evento");
+      throw new Error(
+        "Participante não está na lista de participantes do evento",
+      );
     }
 
     // Atualizar ou criar confirmação
@@ -1014,11 +1061,15 @@ export async function confirmarParticipacaoEvento(eventoId: string, participante
     };
 
     const statusLabel = statusLabels[status];
-    const outrosParticipantes = evento.participantes.filter((email) => email !== participanteEmail);
+    const outrosParticipantes = evento.participantes.filter(
+      (email) => email !== participanteEmail,
+    );
 
     if (outrosParticipantes.length > 0) {
       // Criar notificações para outros participantes usando sistema híbrido
-      const { publishNotification } = await import("@/app/actions/notifications-hybrid");
+      const { publishNotification } = await import(
+        "@/app/actions/notifications-hybrid"
+      );
 
       for (const email of outrosParticipantes) {
         await publishNotification({
@@ -1048,7 +1099,8 @@ export async function confirmarParticipacaoEvento(eventoId: string, participante
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -1084,7 +1136,8 @@ export async function getConfirmacoesEvento(eventoId: string) {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }
@@ -1149,7 +1202,8 @@ export async function getEventoFormData() {
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro interno do servidor",
+      error:
+        error instanceof Error ? error.message : "Erro interno do servidor",
     };
   }
 }

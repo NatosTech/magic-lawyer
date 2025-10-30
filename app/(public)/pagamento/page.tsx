@@ -79,6 +79,7 @@ export default function PagamentoPage() {
 
       if (sessionData) {
         const data = JSON.parse(sessionData);
+
         setPaymentData({
           checkoutId: checkoutIdParam,
           paymentData: data.paymentData,

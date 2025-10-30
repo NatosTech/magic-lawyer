@@ -1,9 +1,9 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
+
 import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notification-service";
 import { NotificationEvent } from "@/app/lib/notifications/types";
-
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
 
@@ -99,8 +99,14 @@ export async function publishNotification(event: {
 /**
  * FUNÇÃO LEGADA: Buscar notificações (mantida para compatibilidade)
  */
-export async function getNotifications(options: GetNotificationsOptions = {}): Promise<NotificationsResponse> {
-  const { tenantId, userId: sessionUserId, isSuperAdmin } = await ensureSession();
+export async function getNotifications(
+  options: GetNotificationsOptions = {},
+): Promise<NotificationsResponse> {
+  const {
+    tenantId,
+    userId: sessionUserId,
+    isSuperAdmin,
+  } = await ensureSession();
 
   const take = Math.min(options.limit ?? 50, 100);
 
@@ -156,7 +162,10 @@ export async function getNotifications(options: GetNotificationsOptions = {}): P
 /**
  * FUNÇÃO LEGADA: Definir status de notificação (mantida para compatibilidade)
  */
-export async function setNotificationStatus(id: string, status: NotificationStatus): Promise<void> {
+export async function setNotificationStatus(
+  id: string,
+  status: NotificationStatus,
+): Promise<void> {
   const { tenantId, userId, isSuperAdmin } = await ensureSession();
 
   // SuperAdmin não tem notificações por enquanto
@@ -180,7 +189,12 @@ export async function setNotificationStatus(id: string, status: NotificationStat
     },
     data: {
       status,
-      lidoEm: status === "LIDA" ? new Date() : status === "NAO_LIDA" ? null : undefined,
+      lidoEm:
+        status === "LIDA"
+          ? new Date()
+          : status === "NAO_LIDA"
+            ? null
+            : undefined,
       reabertoEm: status === "NAO_LIDA" ? new Date() : undefined,
       updatedAt: new Date(),
     },

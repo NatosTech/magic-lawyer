@@ -23,7 +23,6 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 import { NotificationCenter } from "@/components/notifications/notification-center";
-import { SearchBar } from "@/components/searchbar";
 import { Logo } from "@/components/icons";
 
 const navIconStroke = 1.6;

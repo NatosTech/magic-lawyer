@@ -1,4 +1,5 @@
 import { Worker, Job } from "bullmq";
+
 import { bullMQConfig } from "./redis-config";
 import { NotificationService } from "./notification-service";
 
@@ -21,12 +22,16 @@ export class NotificationWorker {
   private worker: Worker<NotificationJobData>;
 
   constructor() {
-    this.worker = new Worker<NotificationJobData>("notifications", this.processNotificationJob.bind(this), {
-      connection: bullMQConfig.connection,
-      concurrency: 10,
-      removeOnComplete: { count: 100 },
-      removeOnFail: { count: 50 },
-    });
+    this.worker = new Worker<NotificationJobData>(
+      "notifications",
+      this.processNotificationJob.bind(this),
+      {
+        connection: bullMQConfig.connection,
+        concurrency: 10,
+        removeOnComplete: { count: 100 },
+        removeOnFail: { count: 50 },
+      },
+    );
 
     this.setupEventHandlers();
   }
@@ -34,10 +39,14 @@ export class NotificationWorker {
   /**
    * Processa job de notificação
    */
-  private async processNotificationJob(job: Job<NotificationJobData>): Promise<void> {
+  private async processNotificationJob(
+    job: Job<NotificationJobData>,
+  ): Promise<void> {
     const { type, tenantId, userId, payload, urgency, channels } = job.data;
 
-    console.log(`[NotificationWorker] Processing job ${job.id}: ${type} for user ${userId}`);
+    console.log(
+      `[NotificationWorker] Processing job ${job.id}: ${type} for user ${userId}`,
+    );
 
     try {
       // Publicar notificação usando o método síncrono
@@ -123,6 +132,7 @@ export function getNotificationWorker(): NotificationWorker {
   if (!notificationWorker) {
     notificationWorker = new NotificationWorker();
   }
+
   return notificationWorker;
 }
 
@@ -131,6 +141,7 @@ export function getNotificationWorker(): NotificationWorker {
  */
 export async function startNotificationWorker(): Promise<void> {
   const worker = getNotificationWorker();
+
   await worker.start();
 }
 

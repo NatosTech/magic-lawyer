@@ -1,6 +1,7 @@
-import { PrismaClient } from "@/app/generated/prisma";
 import { NotificationService } from "./notification-service";
 import { NotificationEvent } from "./types";
+
+import { PrismaClient } from "@/app/generated/prisma";
 
 const prisma = new PrismaClient();
 
@@ -27,8 +28,13 @@ export class NotificationMigrationService {
   /**
    * Mapeia prioridades do sistema legado para o novo sistema
    */
-  private static mapLegacyPriorityToNew(legacyPriority: string): "CRITICAL" | "HIGH" | "MEDIUM" | "INFO" {
-    const priorityMapping: Record<string, "CRITICAL" | "HIGH" | "MEDIUM" | "INFO"> = {
+  private static mapLegacyPriorityToNew(
+    legacyPriority: string,
+  ): "CRITICAL" | "HIGH" | "MEDIUM" | "INFO" {
+    const priorityMapping: Record<
+      string,
+      "CRITICAL" | "HIGH" | "MEDIUM" | "INFO"
+    > = {
       CRITICA: "CRITICAL",
       ALTA: "HIGH",
       MEDIA: "MEDIUM",
@@ -41,7 +47,9 @@ export class NotificationMigrationService {
   /**
    * Mapeia canais do sistema legado para o novo sistema
    */
-  private static mapLegacyChannelsToNew(legacyChannels: string[]): ("REALTIME" | "EMAIL" | "PUSH")[] {
+  private static mapLegacyChannelsToNew(
+    legacyChannels: string[],
+  ): ("REALTIME" | "EMAIL" | "PUSH")[] {
     const channelMapping: Record<string, "REALTIME" | "EMAIL" | "PUSH"> = {
       IN_APP: "REALTIME",
       EMAIL: "EMAIL",
@@ -51,13 +59,17 @@ export class NotificationMigrationService {
       PUSH: "PUSH",
     };
 
-    return legacyChannels.map((channel) => channelMapping[channel] || "REALTIME");
+    return legacyChannels.map(
+      (channel) => channelMapping[channel] || "REALTIME",
+    );
   }
 
   /**
    * Migra uma notificação do sistema legado para o novo sistema
    */
-  static async migrateLegacyNotification(legacyNotificationId: string): Promise<void> {
+  static async migrateLegacyNotification(
+    legacyNotificationId: string,
+  ): Promise<void> {
     try {
       // Buscar notificação legada
       const legacyNotification = await prisma.notificacao.findUnique({
@@ -68,7 +80,10 @@ export class NotificationMigrationService {
       });
 
       if (!legacyNotification) {
-        console.log(`[Migration] Notificação legada ${legacyNotificationId} não encontrada`);
+        console.log(
+          `[Migration] Notificação legada ${legacyNotificationId} não encontrada`,
+        );
+
         return;
       }
 
@@ -96,10 +111,15 @@ export class NotificationMigrationService {
         // Publicar no novo sistema
         await NotificationService.publishNotification(event);
 
-        console.log(`[Migration] Notificação ${legacyNotificationId} migrada para usuário ${destino.usuarioId}`);
+        console.log(
+          `[Migration] Notificação ${legacyNotificationId} migrada para usuário ${destino.usuarioId}`,
+        );
       }
     } catch (error) {
-      console.error(`[Migration] Erro ao migrar notificação ${legacyNotificationId}:`, error);
+      console.error(
+        `[Migration] Erro ao migrar notificação ${legacyNotificationId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -107,7 +127,10 @@ export class NotificationMigrationService {
   /**
    * Migra todas as notificações legadas não migradas
    */
-  static async migrateAllLegacyNotifications(): Promise<{ migrated: number; errors: number }> {
+  static async migrateAllLegacyNotifications(): Promise<{
+    migrated: number;
+    errors: number;
+  }> {
     let migrated = 0;
     let errors = 0;
 
@@ -126,19 +149,26 @@ export class NotificationMigrationService {
         take: 100, // Processar em lotes
       });
 
-      console.log(`[Migration] Encontradas ${legacyNotifications.length} notificações legadas para migrar`);
+      console.log(
+        `[Migration] Encontradas ${legacyNotifications.length} notificações legadas para migrar`,
+      );
 
       for (const notification of legacyNotifications) {
         try {
           await this.migrateLegacyNotification(notification.id);
           migrated++;
         } catch (error) {
-          console.error(`[Migration] Erro ao migrar notificação ${notification.id}:`, error);
+          console.error(
+            `[Migration] Erro ao migrar notificação ${notification.id}:`,
+            error,
+          );
           errors++;
         }
       }
 
-      console.log(`[Migration] Migração concluída: ${migrated} migradas, ${errors} erros`);
+      console.log(
+        `[Migration] Migração concluída: ${migrated} migradas, ${errors} erros`,
+      );
 
       return { migrated, errors };
     } catch (error) {
@@ -165,29 +195,51 @@ export class NotificationMigrationService {
   }): Promise<string> {
     try {
       // Validar tipos antes de criar
-      const validTypes = ["SISTEMA", "PRAZO", "DOCUMENTO", "MENSAGEM", "FINANCEIRO", "OUTRO"];
+      const validTypes = [
+        "SISTEMA",
+        "PRAZO",
+        "DOCUMENTO",
+        "MENSAGEM",
+        "FINANCEIRO",
+        "OUTRO",
+      ];
       const validPriorities = ["BAIXA", "MEDIA", "ALTA", "CRITICA"];
-      const validChannels = ["IN_APP", "EMAIL", "SMS", "WHATSAPP", "TELEGRAM", "PUSH"];
+      const validChannels = [
+        "IN_APP",
+        "EMAIL",
+        "SMS",
+        "WHATSAPP",
+        "TELEGRAM",
+        "PUSH",
+      ];
 
       if (!validTypes.includes(data.tipo)) {
-        throw new Error(`Tipo inválido: ${data.tipo}. Tipos válidos: ${validTypes.join(", ")}`);
+        throw new Error(
+          `Tipo inválido: ${data.tipo}. Tipos válidos: ${validTypes.join(", ")}`,
+        );
       }
 
       if (!validPriorities.includes(data.prioridade)) {
-        throw new Error(`Prioridade inválida: ${data.prioridade}. Prioridades válidas: ${validPriorities.join(", ")}`);
+        throw new Error(
+          `Prioridade inválida: ${data.prioridade}. Prioridades válidas: ${validPriorities.join(", ")}`,
+        );
       }
 
       for (const canal of data.canais) {
         if (!validChannels.includes(canal)) {
-          throw new Error(`Canal inválido: ${canal}. Canais válidos: ${validChannels.join(", ")}`);
+          throw new Error(
+            `Canal inválido: ${canal}. Canais válidos: ${validChannels.join(", ")}`,
+          );
         }
       }
 
       // Para testes, usar tenantId fixo se não existir
       let tenantId = data.tenantId;
+
       if (tenantId === "test-tenant") {
         // Buscar primeiro tenant disponível ou criar um de teste
         const existingTenant = await prisma.tenant.findFirst();
+
         if (existingTenant) {
           tenantId = existingTenant.id;
         } else {
@@ -204,6 +256,7 @@ export class NotificationMigrationService {
               status: "ACTIVE",
             },
           });
+
           tenantId = testTenant.id;
         }
       }
@@ -226,11 +279,13 @@ export class NotificationMigrationService {
 
       // Para testes, usar usuário real se não existir
       let userIds = data.userIds;
+
       if (userIds.includes("test-user")) {
         // Buscar primeiro usuário disponível ou criar um de teste
         const existingUser = await prisma.usuario.findFirst({
           where: { tenantId: tenantId },
         });
+
         if (existingUser) {
           userIds = [existingUser.id];
         } else {
@@ -245,6 +300,7 @@ export class NotificationMigrationService {
               active: true,
             },
           });
+
           userIds = [testUser.id];
         }
       }
@@ -262,7 +318,9 @@ export class NotificationMigrationService {
         data: destinosData,
       });
 
-      console.log(`[Legacy] Notificação ${notification.id} criada para ${data.userIds.length} usuários`);
+      console.log(
+        `[Legacy] Notificação ${notification.id} criada para ${data.userIds.length} usuários`,
+      );
 
       return notification.id;
     } catch (error) {
@@ -274,7 +332,9 @@ export class NotificationMigrationService {
   /**
    * Verifica se uma notificação já foi migrada
    */
-  static async isNotificationMigrated(legacyNotificationId: string): Promise<boolean> {
+  static async isNotificationMigrated(
+    legacyNotificationId: string,
+  ): Promise<boolean> {
     try {
       // Verificar se existe no novo sistema
       const newNotification = await prisma.notification.findFirst({
@@ -288,7 +348,11 @@ export class NotificationMigrationService {
 
       return !!newNotification;
     } catch (error) {
-      console.error(`[Migration] Erro ao verificar migração da notificação ${legacyNotificationId}:`, error);
+      console.error(
+        `[Migration] Erro ao verificar migração da notificação ${legacyNotificationId}:`,
+        error,
+      );
+
       return false;
     }
   }

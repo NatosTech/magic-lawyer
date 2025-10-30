@@ -204,14 +204,18 @@ export function useProfileNavigation() {
     }
 
     if (
-      !isCliente &&
-      (permissions.canViewAllProcesses || isAdvogado || isSecretaria)
+      isCliente ||
+      permissions.canViewAllProcesses ||
+      isAdvogado ||
+      isSecretaria
     ) {
       items.push({
         label: "Andamentos",
         href: "/andamentos",
         icon: "Activity",
-        description: "Timeline de movimentações processuais",
+        description: isCliente
+          ? "Timeline dos meus andamentos"
+          : "Timeline de movimentações processuais",
         section: "Atividades Jurídicas",
         requiredModules: ["andamentos"],
       });

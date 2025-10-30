@@ -1869,7 +1869,9 @@ export async function createProcesso(data: ProcessoCreateInput) {
     // Notificação: processo criado (responsável ou usuário atual)
     try {
       const responsavelUserId =
-        (processo.advogadoResponsavel?.usuario as any)?.id || (user.id as string);
+        (processo.advogadoResponsavel?.usuario as any)?.id ||
+        (user.id as string);
+
       await ProcessoNotificationIntegration.notifyProcessoCreated({
         processoId: processo.id,
         numero: processo.numero,
@@ -2078,7 +2080,14 @@ export async function updateProcesso(
           area: true,
           advogadoResponsavel: {
             include: {
-              usuario: { select: { id: true, firstName: true, lastName: true, email: true } },
+              usuario: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
             },
           },
           juiz: true,
@@ -2134,7 +2143,8 @@ export async function updateProcesso(
     // Notificações: processo atualizado e mudança de status
     try {
       const responsavelUserId =
-        (atualizado.advogadoResponsavel?.usuario as any)?.id || (user.id as string);
+        (atualizado.advogadoResponsavel?.usuario as any)?.id ||
+        (user.id as string);
 
       await HybridNotificationService.publishNotification({
         type: "processo.updated",

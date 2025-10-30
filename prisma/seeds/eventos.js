@@ -174,13 +174,12 @@ async function seedEventos() {
       processoUniao && {
         tenantId: tenantSandra.id,
         titulo: "Audiência de Videoconciliação - CEJUSC (Tainá x Robson)",
-        descricao:
-          "Audiência VÍDEOCONCILIAÇÃO designada pelo CEJUSC Processual – Família Conciliação.\nTAINA X ROBSON (remessa de 07/10). Sessão confirmada para 18/12/2025 às 11:00.",
+        descricao: "Audiência VÍDEOCONCILIAÇÃO designada pelo CEJUSC Processual – Família Conciliação.\nTAINA X ROBSON (remessa de 07/10). Sessão confirmada para 18/12/2025 às 11:00.",
         tipo: "AUDIENCIA",
         dataInicio: new Date("2025-12-18T11:00:00-03:00"),
         dataFim: new Date("2025-12-18T12:00:00-03:00"),
         local: "Videoconferência - CEJUSC Processual (Família Conciliação)",
-        participantes: ["sandra@adv.br", "robsonnonato@magiclawyer.com", "taina.luisa@externo.br"],
+        participantes: ["sandra@adv.br", "magiclawyersaas@gmail.com", "taina.luisa@externo.br"],
         processoId: processoUniao.id,
         clienteId: robsonCliente?.id ?? null,
         advogadoResponsavelId: sandra.advogado.id,

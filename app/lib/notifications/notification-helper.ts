@@ -1,4 +1,4 @@
-import { NotificationService, NotificationEvent } from "./notification-service";
+import { NotificationService } from "./notification-service";
 
 /**
  * Helper para facilitar o uso do serviço de notificações
@@ -15,7 +15,7 @@ export class NotificationHelper {
       numero: string;
       cliente: string;
       advogado?: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "processo.created",
@@ -40,7 +40,7 @@ export class NotificationHelper {
       vencimento: string;
       diasRestantes: number;
     },
-    urgency: "CRITICAL" | "HIGH" | "MEDIUM" = "HIGH"
+    urgency: "CRITICAL" | "HIGH" | "MEDIUM" = "HIGH",
   ): Promise<void> {
     const eventType = `prazo.expiring_${payload.diasRestantes}d`;
 
@@ -65,7 +65,7 @@ export class NotificationHelper {
       numero: string;
       descricao: string;
       vencimento: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "prazo.expired",
@@ -87,7 +87,7 @@ export class NotificationHelper {
       nome: string;
       documento: string;
       advogado?: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "cliente.created",
@@ -110,7 +110,7 @@ export class NotificationHelper {
       cliente: string;
       valor: number;
       advogado?: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "contrato.created",
@@ -132,7 +132,7 @@ export class NotificationHelper {
       numero: string;
       cliente: string;
       assinadoPor: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "contrato.signed",
@@ -155,7 +155,7 @@ export class NotificationHelper {
       formaPagamento: string;
       cliente: string;
       contrato?: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "pagamento.paid",
@@ -178,7 +178,7 @@ export class NotificationHelper {
       cliente: string;
       diasAtraso: number;
       contrato?: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "pagamento.overdue",
@@ -202,7 +202,7 @@ export class NotificationHelper {
       hora: string;
       tipo: string;
       participantes: string[];
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "evento.created",
@@ -226,7 +226,7 @@ export class NotificationHelper {
       hora: string;
       minutosRestantes: number;
     },
-    reminderType: "1h" | "1d" = "1h"
+    reminderType: "1h" | "1d" = "1h",
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: `evento.reminder_${reminderType}`,
@@ -249,7 +249,7 @@ export class NotificationHelper {
       nome?: string;
       cargo?: string;
       enviadoPor: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "equipe.user_invited",
@@ -271,7 +271,7 @@ export class NotificationHelper {
       nome: string;
       email: string;
       cargo?: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "equipe.user_joined",
@@ -294,7 +294,7 @@ export class NotificationHelper {
       permissoesAntigas: string[];
       permissoesNovas: string[];
       alteradoPor: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "equipe.permissions_changed",
@@ -318,7 +318,7 @@ export class NotificationHelper {
       categoria?: string;
       atribuidoPara?: string;
       criadoPor: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "tarefa.created",
@@ -340,7 +340,7 @@ export class NotificationHelper {
       titulo: string;
       atribuidoPara: string;
       atribuidoPor: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "tarefa.assigned",
@@ -362,7 +362,7 @@ export class NotificationHelper {
       titulo: string;
       concluidoPor: string;
       tempoGasto?: number;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "tarefa.completed",
@@ -386,7 +386,7 @@ export class NotificationHelper {
       formato: string;
       tamanho: number;
       geradoPor: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "relatorio.generated",
@@ -409,7 +409,7 @@ export class NotificationHelper {
       nome: string;
       erro: string;
       geradoPor: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "relatorio.failed",
@@ -434,7 +434,7 @@ export class NotificationHelper {
       processoId?: string;
       clienteId?: string;
       uploadadoPor: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "documento.uploaded",
@@ -456,7 +456,7 @@ export class NotificationHelper {
       nome: string;
       aprovadoPor: string;
       observacoes?: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "documento.approved",
@@ -478,7 +478,7 @@ export class NotificationHelper {
       nome: string;
       rejeitadoPor: string;
       motivo: string;
-    }
+    },
   ): Promise<void> {
     await NotificationService.publishNotification({
       type: "documento.rejected",

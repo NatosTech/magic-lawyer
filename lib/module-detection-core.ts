@@ -3,6 +3,7 @@ import { createHash } from "crypto";
 import path from "path";
 
 import prisma from "../app/lib/prisma";
+
 import logger from "./logger";
 
 export type DetectedModule = {
@@ -188,7 +189,8 @@ export async function scanProtectedModules(): Promise<ScanProtectedModulesResult
   const detectedModules: DetectedModule[] = moduleDirs.map((slug, index) => {
     const categoria = MODULE_CATEGORIES[slug] || "Sistema";
     const icone = CATEGORY_ICONS[categoria] || "PuzzleIcon";
-    const descricao = MODULE_DESCRIPTIONS[slug] || `Módulo ${formatModuleName(slug)}`;
+    const descricao =
+      MODULE_DESCRIPTIONS[slug] || `Módulo ${formatModuleName(slug)}`;
     const rotas = getModuleRoutes(slug);
 
     return {
@@ -211,7 +213,10 @@ export async function scanProtectedModules(): Promise<ScanProtectedModulesResult
   );
 
   const filesystemHash = createHash("sha256").update(hashSource).digest("hex");
-  const totalRoutes = detectedModules.reduce((acc, module) => acc + module.rotas.length, 0);
+  const totalRoutes = detectedModules.reduce(
+    (acc, module) => acc + module.rotas.length,
+    0,
+  );
 
   return {
     detectedModules,
@@ -238,7 +243,10 @@ async function syncModuleRoutes(slug: string, routes: string[]): Promise<void> {
     const existingRoutePaths = new Set(existingRoutes.map((r) => r.rota));
     const newRoutePaths = new Set(routes);
 
-    const routesToAdd = routes.filter((route) => !existingRoutePaths.has(route));
+    const routesToAdd = routes.filter(
+      (route) => !existingRoutePaths.has(route),
+    );
+
     for (const route of routesToAdd) {
       await prisma.moduloRota.create({
         data: {
@@ -250,7 +258,10 @@ async function syncModuleRoutes(slug: string, routes: string[]): Promise<void> {
       });
     }
 
-    const routesToRemove = existingRoutes.filter((r) => !newRoutePaths.has(r.rota));
+    const routesToRemove = existingRoutes.filter(
+      (r) => !newRoutePaths.has(r.rota),
+    );
+
     for (const route of routesToRemove) {
       await prisma.moduloRota.delete({
         where: { id: route.id },
@@ -264,7 +275,8 @@ async function syncModuleRoutes(slug: string, routes: string[]): Promise<void> {
 export async function autoDetectModulesCore(): Promise<AutoDetectModulesCoreResult> {
   logger.info("Iniciando detecção automática de módulos (core)");
 
-  const { detectedModules, moduleSlugs, filesystemHash, totalRoutes } = await scanProtectedModules();
+  const { detectedModules, moduleSlugs, filesystemHash, totalRoutes } =
+    await scanProtectedModules();
 
   logger.info(`Módulos detectados no código: ${moduleSlugs.join(", ")}`);
 
@@ -320,7 +332,9 @@ export async function autoDetectModulesCore(): Promise<AutoDetectModulesCoreResu
     await syncModuleRoutes(module.slug, module.rotas);
   }
 
-  const modulesToRemove = existingModules.filter((m) => !detectedSlugs.has(m.slug));
+  const modulesToRemove = existingModules.filter(
+    (m) => !detectedSlugs.has(m.slug),
+  );
 
   for (const module of modulesToRemove) {
     const planUsage = await prisma.planoModulo.count({
@@ -337,7 +351,9 @@ export async function autoDetectModulesCore(): Promise<AutoDetectModulesCoreResu
       });
 
       removed++;
-      logger.info(`Módulo removido: ${module.slug} (não existe mais no código)`);
+      logger.info(
+        `Módulo removido: ${module.slug} (não existe mais no código)`,
+      );
     } else {
       logger.warn(
         `Módulo ${module.slug} não pode ser removido pois está sendo usado por ${planUsage} plano(s)`,
@@ -359,6 +375,7 @@ export async function autoDetectModulesCore(): Promise<AutoDetectModulesCoreResu
 
   try {
     const { clearModuleMapCache } = await import("../app/lib/module-map");
+
     clearModuleMapCache();
     logger.info("Cache de module-map limpo automaticamente");
   } catch (error) {

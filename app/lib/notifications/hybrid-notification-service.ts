@@ -17,20 +17,25 @@ export class HybridNotificationService {
    */
   static async publishNotification(event: NotificationEvent): Promise<void> {
     if (this.useNewSystem) {
-      // Usar novo sistema
       await NotificationService.publishNotification(event);
-      console.log(`[Hybrid] Notificação ${event.type} publicada via NOVO sistema`);
+      console.log(
+        `[Hybrid] Notificação ${event.type} publicada via NOVO sistema`,
+      );
     } else {
       // Usar sistema legado
       await this.publishLegacyNotification(event);
-      console.log(`[Hybrid] Notificação ${event.type} publicada via SISTEMA LEGADO`);
+      console.log(
+        `[Hybrid] Notificação ${event.type} publicada via SISTEMA LEGADO`,
+      );
     }
   }
 
   /**
    * Publica notificação no sistema legado
    */
-  private static async publishLegacyNotification(event: NotificationEvent): Promise<void> {
+  private static async publishLegacyNotification(
+    event: NotificationEvent,
+  ): Promise<void> {
     try {
       // Mapear evento para formato legado
       const legacyData = this.mapEventToLegacy(event);
@@ -101,14 +106,19 @@ export class HybridNotificationService {
       mensagem,
       tipo: typeMapping[event.type] || "OUTRO",
       prioridade: urgencyMapping[event.urgency || "MEDIUM"] || "MEDIA",
-      canais: event.channels?.map((ch) => channelMapping[ch] || "IN_APP") || ["IN_APP"],
+      canais: event.channels?.map((ch) => channelMapping[ch] || "IN_APP") || [
+        "IN_APP",
+      ],
     };
   }
 
   /**
    * Gera conteúdo legado baseado no evento
    */
-  private static generateLegacyContent(event: NotificationEvent): { titulo: string; mensagem: string } {
+  private static generateLegacyContent(event: NotificationEvent): {
+    titulo: string;
+    mensagem: string;
+  } {
     const payload = event.payload;
 
     switch (event.type) {
@@ -139,7 +149,10 @@ export class HybridNotificationService {
       default:
         return {
           titulo: payload.titulo || "Notificação",
-          mensagem: payload.mensagem || payload.message || "Nova notificação disponível.",
+          mensagem:
+            payload.mensagem ||
+            payload.message ||
+            "Nova notificação disponível.",
         };
     }
   }
@@ -149,7 +162,9 @@ export class HybridNotificationService {
    */
   static setUseNewSystem(useNew: boolean): void {
     this.useNewSystem = useNew;
-    console.log(`[Hybrid] Sistema alterado para: ${useNew ? "NOVO" : "LEGADO"}`);
+    console.log(
+      `[Hybrid] Sistema alterado para: ${useNew ? "NOVO" : "LEGADO"}`,
+    );
   }
 
   /**
@@ -162,12 +177,18 @@ export class HybridNotificationService {
   /**
    * Migra notificações legadas para o novo sistema
    */
-  static async migrateLegacyNotifications(): Promise<{ migrated: number; errors: number }> {
+  static async migrateLegacyNotifications(): Promise<{
+    migrated: number;
+    errors: number;
+  }> {
     console.log("[Hybrid] Iniciando migração de notificações legadas...");
-    const result = await NotificationMigrationService.migrateAllLegacyNotifications();
+    const result =
+      await NotificationMigrationService.migrateAllLegacyNotifications();
 
     if (result.migrated > 0) {
-      console.log(`[Hybrid] Migração concluída: ${result.migrated} notificações migradas`);
+      console.log(
+        `[Hybrid] Migração concluída: ${result.migrated} notificações migradas`,
+      );
     }
 
     return result;

@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { startNotificationWorker, stopNotificationWorker, getNotificationWorker } from "@/app/lib/notifications/notification-worker";
+
+import {
+  startNotificationWorker,
+  stopNotificationWorker,
+  getNotificationWorker,
+} from "@/app/lib/notifications/notification-worker";
 import { getNotificationQueue } from "@/app/lib/notifications/notification-queue";
 
 /**
@@ -15,7 +20,11 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao iniciar worker:", error);
-    return NextResponse.json({ success: false, error: "Erro ao iniciar worker" }, { status: 500 });
+
+    return NextResponse.json(
+      { success: false, error: "Erro ao iniciar worker" },
+      { status: 500 },
+    );
   }
 }
 
@@ -32,7 +41,11 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao parar worker:", error);
-    return NextResponse.json({ success: false, error: "Erro ao parar worker" }, { status: 500 });
+
+    return NextResponse.json(
+      { success: false, error: "Erro ao parar worker" },
+      { status: 500 },
+    );
   }
 }
 
@@ -44,7 +57,10 @@ export async function GET(request: NextRequest) {
     const worker = getNotificationWorker();
     const queue = getNotificationQueue();
 
-    const [workerStats, queueStats] = await Promise.all([worker.getStats(), queue.getQueueStats()]);
+    const [workerStats, queueStats] = await Promise.all([
+      worker.getStats(),
+      queue.getQueueStats(),
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -56,6 +72,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao obter status:", error);
-    return NextResponse.json({ success: false, error: "Erro ao obter status" }, { status: 500 });
+
+    return NextResponse.json(
+      { success: false, error: "Erro ao obter status" },
+      { status: 500 },
+    );
   }
 }

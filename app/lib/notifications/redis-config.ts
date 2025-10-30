@@ -35,11 +35,14 @@ export function createRedisConnection(): Redis {
 export async function testRedisConnection(): Promise<boolean> {
   try {
     const redis = createRedisConnection();
+
     await redis.ping();
     await redis.disconnect();
+
     return true;
   } catch (error) {
     console.error("Redis connection failed:", error);
+
     return false;
   }
 }

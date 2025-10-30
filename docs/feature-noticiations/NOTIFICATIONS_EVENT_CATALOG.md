@@ -425,7 +425,7 @@ Este documento mapeia **TODOS os eventos** que devem gerar notificações no sis
 
 **Email:**
 - ✅ **Implementado** - Resend com remetente `onboarding@resend.dev`
-- ✅ Eventos críticos e altos (entrega validada para `magiclawyersaas@gmail.com`)
+- ✅ Eventos críticos e altos (entrega validada para `robsonnonatoiii@gmail.com`)
 - 🟡 Resumos diários (a implementar)
 - 🟡 Confirmações automáticas por módulo
 

@@ -7,22 +7,25 @@ import { isRouteAllowedByModulesEdge } from "@/app/lib/module-map-edge";
 function getDynamicNextAuthUrl(host: string): string {
   // Remove porta se existir
   const cleanHost = host.split(":")[0];
-  
+
   // Para desenvolvimento local
   if (cleanHost.includes("localhost")) {
     return `http://${cleanHost}`;
   }
-  
+
   // Para preview deployments do Vercel (branches que não são main)
-  if (cleanHost.includes("vercel.app") && !cleanHost.includes("magiclawyer.vercel.app")) {
+  if (
+    cleanHost.includes("vercel.app") &&
+    !cleanHost.includes("magiclawyer.vercel.app")
+  ) {
     return `https://${cleanHost}`;
   }
-  
+
   // Para domínio principal de produção
   if (cleanHost.includes("magiclawyer.vercel.app")) {
     return "https://magiclawyer.vercel.app";
   }
-  
+
   // Para domínios customizados
   return `https://${cleanHost}`;
 }
@@ -30,21 +33,27 @@ function getDynamicNextAuthUrl(host: string): string {
 // Função para detectar se é um preview deployment com subdomínio
 function isPreviewWithSubdomain(host: string): boolean {
   const cleanHost = host.split(":")[0];
+
   // Detecta padrões como: sandra.magic-lawyer-4ye22ftxh-magiclawyer.vercel.app
-  return cleanHost.includes("vercel.app") && 
-         !cleanHost.includes("magiclawyer.vercel.app") &&
-         cleanHost.includes(".");
+  return (
+    cleanHost.includes("vercel.app") &&
+    !cleanHost.includes("magiclawyer.vercel.app") &&
+    cleanHost.includes(".")
+  );
 }
 
 // Função para extrair o subdomínio de um preview deployment
 function extractSubdomainFromPreview(host: string): string | null {
   const cleanHost = host.split(":")[0];
+
   if (isPreviewWithSubdomain(cleanHost)) {
     const parts = cleanHost.split(".");
+
     if (parts.length > 0) {
       return parts[0]; // Retorna o primeiro parte (ex: "sandra")
     }
   }
+
   return null;
 }
 
@@ -56,6 +65,7 @@ function extractTenantFromDomain(host: string): string | null {
   // Para preview deployments com subdomínio: sandra.magic-lawyer-4ye22ftxh-magiclawyer.vercel.app
   if (isPreviewWithSubdomain(cleanHost)) {
     const subdomain = extractSubdomainFromPreview(cleanHost);
+
     if (subdomain) {
       return subdomain;
     }
@@ -106,7 +116,9 @@ export default withAuth(
         try {
           const host = req.headers.get("host") || "";
           // Em desenvolvimento local, evitar fetch para evitar falhas intermitentes no Edge
-          const isLocalhost = host.includes("localhost") || host.startsWith("127.0.0.1");
+          const isLocalhost =
+            host.includes("localhost") || host.startsWith("127.0.0.1");
+
           if (isLocalhost) {
             sessionChecked = true; // marca e não valida via HTTP em dev
             throw new Error("skip-local-session-check");

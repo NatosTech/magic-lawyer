@@ -107,7 +107,10 @@ export async function enviarNotificacaoEmail(
         data: { message: "Notificação por email enviada com sucesso" },
       };
     } else {
-      return { success: false, error: emailResult.error || "Erro ao enviar notificação por email" };
+      return {
+        success: false,
+        error: emailResult.error || "Erro ao enviar notificação por email",
+      };
     }
   } catch (error) {
     console.error("Erro ao enviar notificação por email:", error);

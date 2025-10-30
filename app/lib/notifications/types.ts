@@ -2,9 +2,21 @@ export type NotificationUrgency = "CRITICAL" | "HIGH" | "MEDIUM" | "INFO";
 export type NotificationChannel = "REALTIME" | "EMAIL" | "PUSH";
 
 // Tipos do sistema legado para migração
-export type LegacyNotificationType = "SISTEMA" | "PRAZO" | "DOCUMENTO" | "MENSAGEM" | "FINANCEIRO" | "OUTRO";
+export type LegacyNotificationType =
+  | "SISTEMA"
+  | "PRAZO"
+  | "DOCUMENTO"
+  | "MENSAGEM"
+  | "FINANCEIRO"
+  | "OUTRO";
 export type LegacyNotificationPriority = "BAIXA" | "MEDIA" | "ALTA" | "CRITICA";
-export type LegacyNotificationChannel = "IN_APP" | "EMAIL" | "SMS" | "WHATSAPP" | "TELEGRAM" | "PUSH";
+export type LegacyNotificationChannel =
+  | "IN_APP"
+  | "EMAIL"
+  | "SMS"
+  | "WHATSAPP"
+  | "TELEGRAM"
+  | "PUSH";
 export type LegacyNotificationStatus = "NAO_LIDA" | "LIDA" | "ARQUIVADA";
 
 export interface NotificationEvent {
@@ -62,15 +74,41 @@ export interface NotificationStats {
 }
 
 // Eventos específicos por módulo
-export type ProcessoEventType = "processo.created" | "processo.updated" | "processo.status_changed" | "processo.document_uploaded" | "processo.part_added";
+export type ProcessoEventType =
+  | "processo.created"
+  | "processo.updated"
+  | "processo.status_changed"
+  | "processo.document_uploaded"
+  | "processo.part_added";
 
-export type PrazoEventType = "prazo.created" | "prazo.updated" | "prazo.expiring_7d" | "prazo.expiring_3d" | "prazo.expiring_1d" | "prazo.expiring_2h" | "prazo.expired";
+export type PrazoEventType =
+  | "prazo.created"
+  | "prazo.updated"
+  | "prazo.expiring_7d"
+  | "prazo.expiring_3d"
+  | "prazo.expiring_1d"
+  | "prazo.expiring_2h"
+  | "prazo.expired";
 
-export type ClienteEventType = "cliente.created" | "cliente.updated" | "cliente.document_uploaded" | "cliente.contact_added";
+export type ClienteEventType =
+  | "cliente.created"
+  | "cliente.updated"
+  | "cliente.document_uploaded"
+  | "cliente.contact_added";
 
-export type AdvogadoEventType = "advogado.created" | "advogado.updated" | "advogado.avatar_updated" | "advogado.permissions_changed";
+export type AdvogadoEventType =
+  | "advogado.created"
+  | "advogado.updated"
+  | "advogado.avatar_updated"
+  | "advogado.permissions_changed";
 
-export type EquipeEventType = "equipe.cargo_created" | "equipe.cargo_updated" | "equipe.user_invited" | "equipe.user_joined" | "equipe.permissions_changed" | "equipe.user_removed";
+export type EquipeEventType =
+  | "equipe.cargo_created"
+  | "equipe.cargo_updated"
+  | "equipe.user_invited"
+  | "equipe.user_joined"
+  | "equipe.permissions_changed"
+  | "equipe.user_removed";
 
 export type FinanceiroEventType =
   | "contrato.created"
@@ -89,19 +127,54 @@ export type FinanceiroEventType =
   | "honorario.updated"
   | "honorario.paid";
 
-export type AgendaEventType = "evento.created" | "evento.updated" | "evento.cancelled" | "evento.reminder_1h" | "evento.reminder_1d" | "evento.google_synced";
+export type AgendaEventType =
+  | "evento.created"
+  | "evento.updated"
+  | "evento.cancelled"
+  | "evento.reminder_1h"
+  | "evento.reminder_1d"
+  | "evento.google_synced";
 
-export type DocumentoEventType = "documento.uploaded" | "documento.approved" | "documento.rejected" | "documento.expired" | "modelo.created" | "modelo.updated" | "modelo.used";
+export type DocumentoEventType =
+  | "documento.uploaded"
+  | "documento.approved"
+  | "documento.rejected"
+  | "documento.expired"
+  | "modelo.created"
+  | "modelo.updated"
+  | "modelo.used";
 
-export type ContratoEventType = "contrato.created" | "contrato.updated" | "contrato.signed" | "contrato.expired" | "contrato.cancelled";
+export type ContratoEventType =
+  | "contrato.created"
+  | "contrato.updated"
+  | "contrato.signed"
+  | "contrato.expired"
+  | "contrato.cancelled";
 
-export type ProcuracaoEventType = "procuracao.created" | "procuracao.updated" | "procuracao.signed" | "procuracao.expired";
+export type ProcuracaoEventType =
+  | "procuracao.created"
+  | "procuracao.updated"
+  | "procuracao.signed"
+  | "procuracao.expired";
 
-export type JuizEventType = "juiz.created" | "juiz.updated" | "juiz.favorited" | "juiz.unfavorited";
+export type JuizEventType =
+  | "juiz.created"
+  | "juiz.updated"
+  | "juiz.favorited"
+  | "juiz.unfavorited";
 
-export type TarefaEventType = "tarefa.created" | "tarefa.updated" | "tarefa.assigned" | "tarefa.completed" | "tarefa.moved";
+export type TarefaEventType =
+  | "tarefa.created"
+  | "tarefa.updated"
+  | "tarefa.assigned"
+  | "tarefa.completed"
+  | "tarefa.moved";
 
-export type RelatorioEventType = "relatorio.generated" | "relatorio.exported" | "relatorio.scheduled" | "relatorio.failed";
+export type RelatorioEventType =
+  | "relatorio.generated"
+  | "relatorio.exported"
+  | "relatorio.scheduled"
+  | "relatorio.failed";
 
 // Union type com todos os eventos
 export type AllEventTypes =

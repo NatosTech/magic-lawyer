@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Badge } from "@heroui/badge";
@@ -18,6 +18,7 @@ import { Tooltip } from "@heroui/tooltip";
 import { addToast } from "@heroui/toast";
 import { useDisclosure } from "@heroui/react";
 
+import { useRealtime } from "@/app/providers/realtime-provider";
 import {
   useNotifications,
   type NotificationStatus,
@@ -61,6 +62,7 @@ export const NotificationCenter = () => {
     markAllAsRead,
     clearAll,
   } = useNotifications();
+  const { subscribe } = useRealtime();
 
   // Hook para notificações de desenvolvimento (só em DEV)
   const {
@@ -87,6 +89,16 @@ export const NotificationCenter = () => {
       </Badge>
     );
   }, [totalUnreadCount]);
+
+  // Realtime: invalidar quando chegar notification.new para o usuário atual
+  useEffect(() => {
+    const unsubscribe = subscribe("notification.new", () => {
+      // força um refetch rápido do SWR das notificações
+      router.refresh();
+    });
+
+    return unsubscribe;
+  }, [subscribe, router]);
 
   const handleStatusChange = async (id: string, status: NotificationStatus) => {
     try {

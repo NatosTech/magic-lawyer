@@ -65,7 +65,9 @@ export function AdminAppShell({ children }: AdminAppShellProps) {
         />
         <BreadcrumbNav />
         <main className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-10 pt-3 sm:px-4 sm:pt-6 md:px-6 md:pt-8">
-          <div className="mx-auto w-full max-w-full xl:max-w-6xl space-y-6">{children}</div>
+          <div className="mx-auto w-full max-w-full xl:max-w-6xl space-y-6">
+            {children}
+          </div>
         </main>
       </div>
     </div>

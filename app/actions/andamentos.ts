@@ -80,7 +80,9 @@ async function getUserId(): Promise<string> {
 // LISTAGEM
 // ============================================
 
-export async function listAndamentos(filters: AndamentoFilters): Promise<ActionResponse<any[]>> {
+export async function listAndamentos(
+  filters: AndamentoFilters,
+): Promise<ActionResponse<any[]>> {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -104,7 +106,10 @@ export async function listAndamentos(filters: AndamentoFilters): Promise<ActionR
 
     // Busca textual
     if (filters.searchTerm) {
-      where.OR = [{ titulo: { contains: filters.searchTerm, mode: "insensitive" } }, { descricao: { contains: filters.searchTerm, mode: "insensitive" } }];
+      where.OR = [
+        { titulo: { contains: filters.searchTerm, mode: "insensitive" } },
+        { descricao: { contains: filters.searchTerm, mode: "insensitive" } },
+      ];
     }
 
     const andamentos = await prisma.movimentacaoProcesso.findMany({
@@ -165,7 +170,9 @@ export async function listAndamentos(filters: AndamentoFilters): Promise<ActionR
 // BUSCAR INDIVIDUAL
 // ============================================
 
-export async function getAndamento(andamentoId: string): Promise<ActionResponse<any>> {
+export async function getAndamento(
+  andamentoId: string,
+): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -249,7 +256,9 @@ export async function getAndamento(andamentoId: string): Promise<ActionResponse<
 // CRIAR ANDAMENTO
 // ============================================
 
-export async function createAndamento(input: AndamentoCreateInput): Promise<ActionResponse<any>> {
+export async function createAndamento(
+  input: AndamentoCreateInput,
+): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -319,7 +328,9 @@ export async function createAndamento(input: AndamentoCreateInput): Promise<Acti
       });
 
       // Notificar sobre o novo prazo usando sistema híbrido
-      const { publishNotification } = await import("@/app/actions/notifications-hybrid");
+      const { publishNotification } = await import(
+        "@/app/actions/notifications-hybrid"
+      );
 
       await publishNotification({
         type: "prazo.created",
@@ -343,18 +354,32 @@ export async function createAndamento(input: AndamentoCreateInput): Promise<Acti
     try {
       const advogado = await prisma.processo.findFirst({
         where: { id: input.processoId, tenantId },
-        select: { advogadoResponsavel: { select: { usuario: { select: { id: true } } } }, cliente: { select: { usuarioId: true, nome: true } }, numero: true },
+        select: {
+          advogadoResponsavel: {
+            select: { usuario: { select: { id: true } } },
+          },
+          cliente: { select: { usuarioId: true, nome: true } },
+          numero: true,
+        },
       });
 
       const targetUserIds: string[] = [];
-      const advogadoUserId = (advogado?.advogadoResponsavel?.usuario as any)?.id;
-      if (advogadoUserId) targetUserIds.push(advogadoUserId);
-      if (advogado?.cliente?.usuarioId) targetUserIds.push(advogado.cliente.usuarioId);
+      const advogadoUserId = (advogado?.advogadoResponsavel?.usuario as any)
+        ?.id;
 
-      const channels = input.notificarEmail ? ["REALTIME", "EMAIL"] : ["REALTIME"] as ("REALTIME"|"EMAIL")[];
+      if (advogadoUserId) targetUserIds.push(advogadoUserId);
+      if (advogado?.cliente?.usuarioId)
+        targetUserIds.push(advogado.cliente.usuarioId);
+
+      const channels = input.notificarEmail
+        ? ["REALTIME", "EMAIL"]
+        : (["REALTIME"] as ("REALTIME" | "EMAIL")[]);
 
       for (const uid of targetUserIds) {
-        const { HybridNotificationService } = await import("@/app/lib/notifications/hybrid-notification-service");
+        const { HybridNotificationService } = await import(
+          "@/app/lib/notifications/hybrid-notification-service"
+        );
+
         await HybridNotificationService.publishNotification({
           type: "andamento.created",
           tenantId,
@@ -364,6 +389,7 @@ export async function createAndamento(input: AndamentoCreateInput): Promise<Acti
             processoId: input.processoId,
             processoNumero: processo.numero,
             titulo: input.titulo,
+            descricao: input.descricao ?? andamento.descricao ?? null,
             tipo: input.tipo,
             dataMovimentacao: input.dataMovimentacao || new Date(),
           },
@@ -372,7 +398,10 @@ export async function createAndamento(input: AndamentoCreateInput): Promise<Acti
         } as any);
       }
     } catch (e) {
-      console.warn("Falha ao emitir notificações de andamento criado para envolvidos", e);
+      console.warn(
+        "Falha ao emitir notificações de andamento criado para envolvidos",
+        e,
+      );
     }
 
     revalidatePath("/processos");
@@ -396,7 +425,10 @@ export async function createAndamento(input: AndamentoCreateInput): Promise<Acti
 // ATUALIZAR ANDAMENTO
 // ============================================
 
-export async function updateAndamento(andamentoId: string, input: AndamentoUpdateInput): Promise<ActionResponse<any>> {
+export async function updateAndamento(
+  andamentoId: string,
+  input: AndamentoUpdateInput,
+): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
 
@@ -448,29 +480,58 @@ export async function updateAndamento(andamentoId: string, input: AndamentoUpdat
       },
     });
 
-    // Notificar atualização de andamento usando sistema híbrido
+    // Notificar atualização de andamento para envolvidos (advogado responsável e cliente)
     try {
-      const { publishNotification } = await import("@/app/actions/notifications-hybrid");
-
-      await publishNotification({
-        type: "andamento.updated",
-        title: "Andamento Atualizado",
-        message: `Andamento "${andamento.titulo}" foi atualizado no processo ${andamento.processo.numero}.`,
-        urgency: "MEDIUM",
-        channels: ["REALTIME"],
-        payload: {
-          andamentoId: andamento.id,
-          processoId: andamento.processo.id,
-          processoNumero: andamento.processo.numero,
-          titulo: andamento.titulo,
-          tipo: andamento.tipo,
-          dataMovimentacao: andamento.dataMovimentacao,
+      const proc = await prisma.processo.findFirst({
+        where: { id: andamento.processo.id, tenantId },
+        select: {
+          numero: true,
+          advogadoResponsavel: {
+            select: { usuario: { select: { id: true } } },
+          },
+          cliente: { select: { usuarioId: true } },
         },
-        referenciaTipo: "ANDAMENTO",
-        referenciaId: andamento.id,
       });
+
+      const targetUserIds: string[] = [];
+      const advogadoUserId = (proc?.advogadoResponsavel?.usuario as any)?.id;
+
+      if (advogadoUserId) targetUserIds.push(advogadoUserId);
+      if (proc?.cliente?.usuarioId) targetUserIds.push(proc.cliente.usuarioId);
+
+      const channels = input.notificarEmail
+        ? ["REALTIME", "EMAIL"]
+        : (["REALTIME"] as ("REALTIME" | "EMAIL")[]);
+
+      const { HybridNotificationService } = await import(
+        "@/app/lib/notifications/hybrid-notification-service"
+      );
+
+      await Promise.all(
+        targetUserIds.map((uid) =>
+          HybridNotificationService.publishNotification({
+            type: "andamento.updated",
+            tenantId,
+            userId: uid,
+          payload: {
+            andamentoId: andamento.id,
+            processoId: andamento.processo.id,
+            processoNumero: proc?.numero || andamento.processo.numero,
+            titulo: andamento.titulo,
+            descricao: andamento.descricao ?? null,
+            tipo: andamento.tipo,
+            dataMovimentacao: andamento.dataMovimentacao,
+          },
+            urgency: "MEDIUM",
+            channels,
+          } as any),
+        ),
+      );
     } catch (e) {
-      console.warn("Falha ao emitir notificação de andamento atualizado", e);
+      console.warn(
+        "Falha ao emitir notificações de andamento atualizado para envolvidos",
+        e,
+      );
     }
 
     revalidatePath("/processos");
@@ -494,7 +555,9 @@ export async function updateAndamento(andamentoId: string, input: AndamentoUpdat
 // EXCLUIR ANDAMENTO
 // ============================================
 
-export async function deleteAndamento(andamentoId: string): Promise<ActionResponse<null>> {
+export async function deleteAndamento(
+  andamentoId: string,
+): Promise<ActionResponse<null>> {
   try {
     const tenantId = await getTenantId();
 
@@ -538,7 +601,9 @@ export async function deleteAndamento(andamentoId: string): Promise<ActionRespon
 // DASHBOARD/MÉTRICAS
 // ============================================
 
-export async function getDashboardAndamentos(processoId?: string): Promise<ActionResponse<any>> {
+export async function getDashboardAndamentos(
+  processoId?: string,
+): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
@@ -592,12 +657,21 @@ export async function getDashboardAndamentos(processoId?: string): Promise<Actio
       _count: count,
     }));
 
-    const ultimosAndamentos = andamentos.sort((a: any, b: any) => new Date(b.dataMovimentacao).getTime() - new Date(a.dataMovimentacao).getTime()).slice(0, 10);
+    const ultimosAndamentos = andamentos
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.dataMovimentacao).getTime() -
+          new Date(a.dataMovimentacao).getTime(),
+      )
+      .slice(0, 10);
 
     // Debug temporário
     console.log("getDashboardAndamentos - total:", total);
     console.log("getDashboardAndamentos - porTipo:", porTipoArray);
-    console.log("getDashboardAndamentos - ultimosAndamentos:", ultimosAndamentos.length);
+    console.log(
+      "getDashboardAndamentos - ultimosAndamentos:",
+      ultimosAndamentos.length,
+    );
 
     return {
       success: true,
@@ -621,10 +695,19 @@ export async function getDashboardAndamentos(processoId?: string): Promise<Actio
 // TIPOS DE MOVIMENTAÇÃO
 // ============================================
 
-export async function getTiposMovimentacao(): Promise<ActionResponse<MovimentacaoTipo[]>> {
+export async function getTiposMovimentacao(): Promise<
+  ActionResponse<MovimentacaoTipo[]>
+> {
   try {
     // Retornar os tipos do enum
-    const tipos: MovimentacaoTipo[] = ["ANDAMENTO", "PRAZO", "INTIMACAO", "AUDIENCIA", "ANEXO", "OUTRO"];
+    const tipos: MovimentacaoTipo[] = [
+      "ANDAMENTO",
+      "PRAZO",
+      "INTIMACAO",
+      "AUDIENCIA",
+      "ANEXO",
+      "OUTRO",
+    ];
 
     return {
       success: true,

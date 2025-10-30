@@ -1,4 +1,5 @@
 import { Queue } from "bullmq";
+
 import { bullMQConfig } from "./redis-config";
 import { NotificationJobData } from "./notification-worker";
 
@@ -25,7 +26,9 @@ export class NotificationQueue {
         delay: 0,
       });
 
-      console.log(`[NotificationQueue] Job ${job.id} added to queue: ${data.type}`);
+      console.log(
+        `[NotificationQueue] Job ${job.id} added to queue: ${data.type}`,
+      );
     } catch (error) {
       console.error("[NotificationQueue] Failed to add job:", error);
       throw error;
@@ -35,14 +38,19 @@ export class NotificationQueue {
   /**
    * Adiciona job com delay (para notificações agendadas)
    */
-  async addScheduledNotificationJob(data: NotificationJobData, delayMs: number): Promise<void> {
+  async addScheduledNotificationJob(
+    data: NotificationJobData,
+    delayMs: number,
+  ): Promise<void> {
     try {
       const job = await this.queue.add("scheduled-notification", data, {
         priority: this.getPriority(data.urgency),
         delay: delayMs,
       });
 
-      console.log(`[NotificationQueue] Scheduled job ${job.id} added: ${data.type} (delay: ${delayMs}ms)`);
+      console.log(
+        `[NotificationQueue] Scheduled job ${job.id} added: ${data.type} (delay: ${delayMs}ms)`,
+      );
     } catch (error) {
       console.error("[NotificationQueue] Failed to add scheduled job:", error);
       throw error;
@@ -52,7 +60,10 @@ export class NotificationQueue {
   /**
    * Adiciona job recorrente (para cron jobs)
    */
-  async addRecurringNotificationJob(data: NotificationJobData, cronPattern: string): Promise<void> {
+  async addRecurringNotificationJob(
+    data: NotificationJobData,
+    cronPattern: string,
+  ): Promise<void> {
     try {
       const job = await this.queue.add("recurring-notification", data, {
         priority: this.getPriority(data.urgency),
@@ -61,7 +72,9 @@ export class NotificationQueue {
         removeOnFail: 5,
       });
 
-      console.log(`[NotificationQueue] Recurring job ${job.id} added: ${data.type} (cron: ${cronPattern})`);
+      console.log(
+        `[NotificationQueue] Recurring job ${job.id} added: ${data.type} (cron: ${cronPattern})`,
+      );
     } catch (error) {
       console.error("[NotificationQueue] Failed to add recurring job:", error);
       throw error;
@@ -153,5 +166,6 @@ export function getNotificationQueue(): NotificationQueue {
   if (!notificationQueue) {
     notificationQueue = new NotificationQueue();
   }
+
   return notificationQueue;
 }

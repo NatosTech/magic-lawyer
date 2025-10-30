@@ -56,6 +56,7 @@ export function CentralizedSearchBar({
 
     document.addEventListener("keydown", handleKeyDown);
     const handleOpen = () => setIsOpen(true);
+
     window.addEventListener("open-search", handleOpen as EventListener);
 
     return () => {

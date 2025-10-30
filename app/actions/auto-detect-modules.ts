@@ -28,7 +28,9 @@ async function checkSuperAdmin() {
   const userRole = (session?.user as any)?.role;
 
   if (!session || userRole !== "SUPER_ADMIN") {
-    throw new Error("Não autorizado: Apenas SuperAdmin pode realizar esta ação.");
+    throw new Error(
+      "Não autorizado: Apenas SuperAdmin pode realizar esta ação.",
+    );
   }
 
   return session.user;
@@ -37,6 +39,7 @@ async function checkSuperAdmin() {
 export async function autoDetectModules(): Promise<AutoDetectResponse> {
   try {
     const user = await checkSuperAdmin();
+
     logger.info(`Iniciando detecção automática de módulos por ${user.email}`);
 
     const result = await autoDetectModulesCore();
@@ -100,7 +103,9 @@ export async function getAutoDetectStatus(): Promise<
 
     try {
       scanResult = await scanProtectedModules();
-      needsSync = !latestDetection || latestDetection.filesystemHash !== scanResult.filesystemHash;
+      needsSync =
+        !latestDetection ||
+        latestDetection.filesystemHash !== scanResult.filesystemHash;
     } catch (error) {
       logger.warn(
         "Erro ao escanear módulos para status:",

@@ -307,10 +307,10 @@ REDIS_URL=rediss://...  # Vercel Redis (Upstash)
 # Resend (email operacional em dev)
 RESEND_API_KEY=...
 RESEND_FROM_EMAIL="Magic Lawyer Test <onboarding@resend.dev>"
-NOTIFICATION_TEST_EMAIL=magiclawyersaas@gmail.com
+NOTIFICATION_TEST_EMAIL=robsonnonatoiii@gmail.com
 
 # Usuário de teste gerado automaticamente
-NOTIFICATION_TEST_USER_EMAIL=magiclawyersaas@gmail.com
+NOTIFICATION_TEST_USER_EMAIL=robsonnonatoiii@gmail.com
 
 # Rate Limiting (implementado)
 NOTIFICATION_RATE_LIMIT_PER_USER=100

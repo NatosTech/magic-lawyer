@@ -1,17 +1,32 @@
 #!/usr/bin/env node
 
 /**
- * Script para iniciar o worker de notificações
- * Uso: npm run notifications:worker
+ * Script para iniciar o worker de notificações.
+ * Uso: npm run dev:worker
  */
 
-const { testRedisConnection } = require("./app/lib/notifications/redis-config.cjs");
+require("dotenv").config();
+
+require("ts-node").register({
+  transpileOnly: true,
+  compilerOptions: {
+    module: "CommonJS",
+    moduleResolution: "Node",
+    esModuleInterop: true,
+    baseUrl: ".",
+  },
+});
+require("tsconfig-paths/register");
+
+const path = require("path");
 
 async function main() {
   console.log("🚀 Iniciando Worker de Notificações...");
 
   try {
-    // Testar conexão Redis
+    const { testRedisConnection } = require(path.join(__dirname, "../app/lib/notifications/redis-config"));
+    const { startNotificationWorker, stopNotificationWorker } = require(path.join(__dirname, "../app/lib/notifications/notification-worker"));
+
     console.log("📡 Testando conexão Redis...");
     const redisConnected = await testRedisConnection();
 
@@ -22,30 +37,29 @@ async function main() {
 
     console.log("✅ Conexão Redis OK");
 
-    // Iniciar worker
     console.log("👷 Iniciando worker...");
     await startNotificationWorker();
 
     console.log("✅ Worker iniciado com sucesso!");
     console.log("📊 Monitoramento disponível em: /api/admin/notifications/worker");
 
-    // Manter processo vivo
     process.on("SIGINT", async () => {
       console.log("\n🛑 Parando worker...");
-      const { stopNotificationWorker } = require("./app/lib/notifications/notification-worker");
       await stopNotificationWorker();
       console.log("✅ Worker parado");
       process.exit(0);
     });
 
-    // Manter processo vivo
     setInterval(() => {
       // Heartbeat
-    }, 30000);
+    }, 30_000);
   } catch (error) {
     console.error("❌ Erro ao iniciar worker:", error);
     process.exit(1);
   }
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  console.error("❌ Erro inesperado no worker:", error);
+  process.exit(1);
+});

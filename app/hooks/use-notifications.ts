@@ -10,7 +10,7 @@ import {
   clearAllNotifications,
   type NotificationStatus,
   type NotificationsResponse,
-} from "@/app/actions/notifications";
+} from "@/app/actions/notifications-new";
 
 export type NotificationItem = {
   id: string;

@@ -11,7 +11,14 @@ export class ProcessoNotificationIntegration {
    * Notifica quando um processo é criado
    * Usa o sistema híbrido para compatibilidade durante a transição
    */
-  static async notifyProcessoCreated(data: { processoId: string; numero: string; tenantId: string; userId: string; clienteNome?: string; advogadoNome?: string }): Promise<void> {
+  static async notifyProcessoCreated(data: {
+    processoId: string;
+    numero: string;
+    tenantId: string;
+    userId: string;
+    clienteNome?: string;
+    advogadoNome?: string;
+  }): Promise<void> {
     const event: NotificationEvent = {
       type: "processo.created",
       tenantId: data.tenantId,
@@ -36,8 +43,21 @@ export class ProcessoNotificationIntegration {
   /**
    * Notifica quando um prazo está próximo do vencimento
    */
-  static async notifyPrazoExpiring(data: { prazoId: string; processoId: string; processoNumero: string; titulo: string; diasRestantes: number; tenantId: string; userId: string }): Promise<void> {
-    const urgency = data.diasRestantes <= 1 ? "CRITICAL" : data.diasRestantes <= 3 ? "HIGH" : "MEDIUM";
+  static async notifyPrazoExpiring(data: {
+    prazoId: string;
+    processoId: string;
+    processoNumero: string;
+    titulo: string;
+    diasRestantes: number;
+    tenantId: string;
+    userId: string;
+  }): Promise<void> {
+    const urgency =
+      data.diasRestantes <= 1
+        ? "CRITICAL"
+        : data.diasRestantes <= 3
+          ? "HIGH"
+          : "MEDIUM";
 
     const event: NotificationEvent = {
       type: "prazo.expiring",
@@ -64,7 +84,14 @@ export class ProcessoNotificationIntegration {
   /**
    * Notifica quando um documento é enviado
    */
-  static async notifyDocumentoUploaded(data: { documentoId: string; processoId: string; processoNumero: string; nomeArquivo: string; tenantId: string; userId: string }): Promise<void> {
+  static async notifyDocumentoUploaded(data: {
+    documentoId: string;
+    processoId: string;
+    processoNumero: string;
+    nomeArquivo: string;
+    tenantId: string;
+    userId: string;
+  }): Promise<void> {
     const event: NotificationEvent = {
       type: "documento.uploaded",
       tenantId: data.tenantId,
@@ -89,7 +116,14 @@ export class ProcessoNotificationIntegration {
   /**
    * Notifica quando um pagamento é confirmado
    */
-  static async notifyPagamentoPaid(data: { pagamentoId: string; valor: number; processoId?: string; processoNumero?: string; tenantId: string; userId: string }): Promise<void> {
+  static async notifyPagamentoPaid(data: {
+    pagamentoId: string;
+    valor: number;
+    processoId?: string;
+    processoNumero?: string;
+    tenantId: string;
+    userId: string;
+  }): Promise<void> {
     const event: NotificationEvent = {
       type: "pagamento.paid",
       tenantId: data.tenantId,
@@ -114,7 +148,14 @@ export class ProcessoNotificationIntegration {
   /**
    * Notifica quando um evento é criado
    */
-  static async notifyEventoCreated(data: { eventoId: string; titulo: string; dataInicio: Date; local?: string; tenantId: string; userId: string }): Promise<void> {
+  static async notifyEventoCreated(data: {
+    eventoId: string;
+    titulo: string;
+    dataInicio: Date;
+    local?: string;
+    tenantId: string;
+    userId: string;
+  }): Promise<void> {
     const event: NotificationEvent = {
       type: "evento.created",
       tenantId: data.tenantId,

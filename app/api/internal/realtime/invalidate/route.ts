@@ -10,9 +10,13 @@ export async function POST(request: Request) {
   try {
     // Verificar se o token interno está configurado corretamente
     const expectedToken = process.env.REALTIME_INTERNAL_TOKEN;
+
     if (!expectedToken || expectedToken.trim() === "") {
       return NextResponse.json(
-        { success: false, error: "Configuração ausente: REALTIME_INTERNAL_TOKEN não definido" },
+        {
+          success: false,
+          error: "Configuração ausente: REALTIME_INTERNAL_TOKEN não definido",
+        },
         { status: 500 },
       );
     }

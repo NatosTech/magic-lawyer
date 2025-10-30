@@ -128,12 +128,16 @@ export async function uploadDocumentoPeticao(
           select: {
             id: true,
             numero: true,
-            advogadoResponsavel: { select: { usuario: { select: { id: true } } } },
+            advogadoResponsavel: {
+              select: { usuario: { select: { id: true } } },
+            },
           },
         });
 
         if (processo) {
-          const targetUserId = (processo.advogadoResponsavel?.usuario as any)?.id || userId;
+          const targetUserId =
+            (processo.advogadoResponsavel?.usuario as any)?.id || userId;
+
           await HybridNotificationService.publishNotification({
             type: "processo.document_uploaded",
             tenantId,

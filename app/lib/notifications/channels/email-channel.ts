@@ -1,3 +1,4 @@
+import prisma from "@/app/lib/prisma";
 import { emailService } from "@/app/lib/email-service";
 import { NotificationEvent } from "../types";
 
@@ -14,21 +15,40 @@ export class EmailChannel {
     userEmail: string,
     userName: string,
     title: string,
-    message: string
+    message: string,
   ): Promise<{ success: boolean; error?: string; messageId?: string }> {
     try {
       // Verificar se RESEND_API_KEY está configurado
       if (!process.env.RESEND_API_KEY) {
         console.warn("[EmailChannel] RESEND_API_KEY não configurado");
+
         return {
           success: false,
           error: "RESEND_API_KEY não configurado",
         };
       }
 
+      const tenant = event.tenantId
+        ? await prisma.tenant.findUnique({
+            where: { id: event.tenantId },
+            select: {
+              slug: true,
+              domain: true,
+              branding: { select: { customDomainText: true } },
+            },
+          })
+        : null;
+
+      const tenantBaseUrl = this.resolveTenantBaseUrl(tenant);
+
       // Gerar link de ação baseado no tipo de evento
-      const linkAcao = this.generateActionLink(event);
-      const textoAcao = this.generateActionText(event);
+      const linkAcao = tenantBaseUrl
+        ? this.generateActionLink(event, tenantBaseUrl)
+        : undefined;
+      const textoAcao =
+        tenantBaseUrl && linkAcao ? this.generateActionText(event) : undefined;
+
+      const enrichedMessage = this.enrichMessage(message, event);
 
       // Enviar email usando o serviço existente
       const result = await emailService.sendNotificacaoAdvogado({
@@ -36,20 +56,27 @@ export class EmailChannel {
         email: userEmail,
         tipo: event.type,
         titulo: title,
-        mensagem: message,
+        mensagem: enrichedMessage,
         linkAcao,
         textoAcao,
       });
 
       if (result.success) {
-        console.log(`[EmailChannel] Email enviado com sucesso para ${userEmail}`);
+        console.log(
+          `[EmailChannel] Email enviado com sucesso para ${userEmail}`,
+        );
+
         return { success: true, messageId: result.messageId };
       }
 
-      console.error(`[EmailChannel] Falha ao enviar email para ${userEmail}: ${result.error}`);
+      console.error(
+        `[EmailChannel] Falha ao enviar email para ${userEmail}: ${result.error}`,
+      );
+
       return { success: false, error: result.error || "Falha ao enviar email" };
     } catch (error) {
       console.error("[EmailChannel] Erro ao enviar email:", error);
+
       return {
         success: false,
         error: error instanceof Error ? error.message : "Erro desconhecido",
@@ -60,41 +87,63 @@ export class EmailChannel {
   /**
    * Gera link de ação baseado no tipo de evento
    */
-  private static generateActionLink(event: NotificationEvent): string | undefined {
-    const baseUrl = process.env.NEXTAUTH_URL || "https://magiclawyer.vercel.app";
+  private static generateActionLink(
+    event: NotificationEvent,
+    baseUrl?: string,
+  ): string | undefined {
+    if (!baseUrl) {
+      return undefined;
+    }
+
+    const normalizedBase = baseUrl.replace(/\/+$/, "");
 
     switch (event.type) {
       case "processo.created":
-        return event.payload.processoId ? `${baseUrl}/processos/${event.payload.processoId}` : undefined;
+        return event.payload.processoId
+          ? `${normalizedBase}/processos/${event.payload.processoId}`
+          : undefined;
 
       case "prazo.expiring":
       case "prazo.expiring_7d":
       case "prazo.expiring_3d":
       case "prazo.expiring_1d":
-        return event.payload.processoId ? `${baseUrl}/processos/${event.payload.processoId}` : `${baseUrl}/andamentos`;
+        return event.payload.processoId
+          ? `${normalizedBase}/processos/${event.payload.processoId}`
+          : `${normalizedBase}/andamentos`;
 
       case "documento.uploaded":
-        return event.payload.processoId ? `${baseUrl}/processos/${event.payload.processoId}` : undefined;
+        return event.payload.processoId
+          ? `${normalizedBase}/processos/${event.payload.processoId}`
+          : undefined;
 
       case "pagamento.paid":
       case "pagamento.pending":
       case "pagamento.overdue":
-        return `${baseUrl}/financeiro`;
+        return `${normalizedBase}/financeiro`;
 
       case "evento.created":
       case "evento.updated":
       case "evento.confirmation_updated":
-        return event.payload.eventoId ? `${baseUrl}/agenda/${event.payload.eventoId}` : `${baseUrl}/agenda`;
+        return event.payload.eventoId
+          ? `${normalizedBase}/agenda/${event.payload.eventoId}`
+          : `${normalizedBase}/agenda`;
+      case "andamento.created":
+      case "andamento.updated":
+        return event.payload.processoId
+          ? `${normalizedBase}/processos/${event.payload.processoId}`
+          : `${normalizedBase}/andamentos`;
 
       default:
-        return `${baseUrl}/dashboard`;
+        return `${normalizedBase}/dashboard`;
     }
   }
 
   /**
    * Gera texto do botão de ação baseado no tipo de evento
    */
-  private static generateActionText(event: NotificationEvent): string | undefined {
+  private static generateActionText(
+    event: NotificationEvent,
+  ): string | undefined {
     switch (event.type) {
       case "processo.created":
         return "Ver Processo";
@@ -118,6 +167,10 @@ export class EmailChannel {
       case "evento.confirmation_updated":
         return "Ver Evento";
 
+      case "andamento.created":
+      case "andamento.updated":
+        return "Ver andamento";
+
       default:
         return "Acessar Plataforma";
     }
@@ -128,9 +181,132 @@ export class EmailChannel {
    */
   static isValidEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     return emailRegex.test(email);
   }
+
+  private static resolveTenantBaseUrl(
+    tenant:
+      | {
+          slug: string | null;
+          domain: string | null;
+          branding: { customDomainText: string | null } | null;
+        }
+      | null
+      | undefined,
+  ): string | undefined {
+    if (!tenant) {
+      return undefined;
+    }
+
+    const defaultBase =
+      process.env.NEXTAUTH_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://magiclawyer.vercel.app";
+
+    const getProtocol = (raw: string) => {
+      try {
+        const url = new URL(
+          raw.startsWith("http://") || raw.startsWith("https://")
+            ? raw
+            : `https://${raw}`,
+        );
+
+        return url.protocol || "https:";
+      } catch {
+        return "https:";
+      }
+    };
+
+    const ensureProtocol = (value: string, protocol: string) => {
+      if (/^https?:\/\//i.test(value)) {
+        return value;
+      }
+
+      return `${protocol}//${value}`;
+    };
+
+    const candidateDomain =
+      tenant.branding?.customDomainText?.trim() || tenant.domain?.trim();
+
+    if (candidateDomain) {
+      return ensureProtocol(candidateDomain, getProtocol(defaultBase));
+    }
+
+    if (!tenant.slug) {
+      return undefined;
+    }
+
+    try {
+      const base = new URL(
+        defaultBase.startsWith("http://") || defaultBase.startsWith("https://")
+          ? defaultBase
+          : `https://${defaultBase}`,
+      );
+      const host = base.host;
+      const protocol = base.protocol || "https:";
+
+      return `${protocol}//${tenant.slug}.${host}`;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private static enrichMessage(
+    originalMessage: string,
+    event: NotificationEvent,
+  ): string {
+    const details: string[] = [];
+
+    if (
+      event.type === "andamento.created" ||
+      event.type === "andamento.updated"
+    ) {
+      const payload = event.payload || {};
+
+      if (payload.processoNumero) {
+        details.push(`Processo: ${payload.processoNumero}`);
+      }
+
+      if (payload.titulo) {
+        details.push(`Andamento: ${payload.titulo}`);
+      }
+
+      if (payload.tipo) {
+        details.push(`Tipo: ${payload.tipo}`);
+      }
+
+      const formattedDate = this.formatDate(payload.dataMovimentacao);
+      if (formattedDate) {
+        details.push(`Data/Hora: ${formattedDate}`);
+      }
+
+      if (payload.descricao) {
+        details.push(`Descrição: ${payload.descricao}`);
+      }
+    }
+
+    if (!details.length) {
+      return originalMessage;
+    }
+
+    return `${originalMessage}\n\n${details.join("\n")}`;
+  }
+
+  private static formatDate(value: unknown): string | null {
+    if (!value) {
+      return null;
+    }
+
+    const date = new Date(value as any);
+
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(date);
+  }
 }
-
-
-

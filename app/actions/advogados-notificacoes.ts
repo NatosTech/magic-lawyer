@@ -1,12 +1,12 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
+import { revalidatePath } from "next/cache";
+
 import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notification-service";
 import { NotificationEvent } from "@/app/lib/notifications/types";
-
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
-import { revalidatePath } from "next/cache";
 
 // Re-exportar função do arquivo legacy que ainda não foi migrada
 export { getEstatisticasNotificacoes } from "./advogados-notificacoes-legacy";
@@ -52,9 +52,11 @@ interface ActionResponse<T = any> {
 
 async function getSession() {
   const session = await getServerSession(authOptions);
+
   if (!session?.user) {
     throw new Error("Não autenticado");
   }
+
   return session;
 }
 
@@ -65,7 +67,9 @@ async function getSession() {
 /**
  * Cria uma nova notificação para um advogado usando sistema híbrido
  */
-export async function createNotificacaoAdvogado(input: CreateNotificacaoInput): Promise<ActionResponse<NotificacaoData>> {
+export async function createNotificacaoAdvogado(
+  input: CreateNotificacaoInput,
+): Promise<ActionResponse<NotificacaoData>> {
   try {
     const session = await getSession();
 
@@ -101,7 +105,10 @@ export async function createNotificacaoAdvogado(input: CreateNotificacaoInput): 
       userId: advogado.usuarioId,
       payload: {
         advogadoId: input.advogadoId,
-        advogadoNome: `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() || advogado.usuario?.email || "Advogado",
+        advogadoNome:
+          `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() ||
+          advogado.usuario?.email ||
+          "Advogado",
         tipo: input.tipo,
         titulo: input.titulo,
         mensagem: input.mensagem,
@@ -109,7 +116,12 @@ export async function createNotificacaoAdvogado(input: CreateNotificacaoInput): 
         acaoUrl: input.acaoUrl,
         acaoTexto: input.acaoTexto,
       },
-      urgency: input.prioridade === "ALTA" ? "HIGH" : input.prioridade === "CRITICA" ? "CRITICAL" : "MEDIUM",
+      urgency:
+        input.prioridade === "ALTA"
+          ? "HIGH"
+          : input.prioridade === "CRITICA"
+            ? "CRITICAL"
+            : "MEDIUM",
       channels: ["REALTIME"],
     };
 
@@ -119,7 +131,10 @@ export async function createNotificacaoAdvogado(input: CreateNotificacaoInput): 
     const notificacao: NotificacaoData = {
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       advogadoId: input.advogadoId,
-      advogadoNome: `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() || advogado.usuario?.email || "Advogado",
+      advogadoNome:
+        `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() ||
+        advogado.usuario?.email ||
+        "Advogado",
       tipo: input.tipo,
       titulo: input.titulo,
       mensagem: input.mensagem,
@@ -144,7 +159,9 @@ export async function createNotificacaoAdvogado(input: CreateNotificacaoInput): 
 /**
  * Busca notificações de um advogado específico usando sistema híbrido
  */
-export async function getNotificacoesAdvogado(advogadoId: string): Promise<ActionResponse<NotificacaoData[]>> {
+export async function getNotificacoesAdvogado(
+  advogadoId: string,
+): Promise<ActionResponse<NotificacaoData[]>> {
   try {
     const session = await getSession();
 
@@ -175,7 +192,9 @@ export async function getNotificacoesAdvogado(advogadoId: string): Promise<Actio
 
     // Buscar notificações usando sistema de notificações unificado
     // Importar a função de busca de notificações do sistema híbrido
-    const { getNotifications } = await import("@/app/actions/notifications-hybrid");
+    const { getNotifications } = await import(
+      "@/app/actions/notifications-hybrid"
+    );
 
     // Buscar notificações do usuário associado ao advogado (não do usuário logado!)
     const notificationsResponse = await getNotifications({
@@ -184,20 +203,26 @@ export async function getNotificacoesAdvogado(advogadoId: string): Promise<Actio
     });
 
     // Converter para o formato esperado pelo módulo de advogados
-    const notificacoes: NotificacaoData[] = notificationsResponse.notifications.map((notif) => ({
-      id: notif.id,
-      advogadoId: advogadoId,
-      advogadoNome: `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() || advogado.usuario?.email || "Advogado",
-      tipo: notif.tipo as any,
-      titulo: notif.titulo,
-      mensagem: notif.mensagem,
-      lida: notif.status === "LIDA",
-      prioridade: notif.prioridade as any,
-      dataCriacao: new Date(notif.createdAt),
-      dataLeitura: notif.lidoEm ? new Date(notif.lidoEm) : null,
-      acaoUrl: notif.referenciaId ? `/processos/${notif.referenciaId}` : undefined,
-      acaoTexto: notif.referenciaId ? "Ver Detalhes" : undefined,
-    }));
+    const notificacoes: NotificacaoData[] =
+      notificationsResponse.notifications.map((notif) => ({
+        id: notif.id,
+        advogadoId: advogadoId,
+        advogadoNome:
+          `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() ||
+          advogado.usuario?.email ||
+          "Advogado",
+        tipo: notif.tipo as any,
+        titulo: notif.titulo,
+        mensagem: notif.mensagem,
+        lida: notif.status === "LIDA",
+        prioridade: notif.prioridade as any,
+        dataCriacao: new Date(notif.createdAt),
+        dataLeitura: notif.lidoEm ? new Date(notif.lidoEm) : null,
+        acaoUrl: notif.referenciaId
+          ? `/processos/${notif.referenciaId}`
+          : undefined,
+        acaoTexto: notif.referenciaId ? "Ver Detalhes" : undefined,
+      }));
 
     return { success: true, data: notificacoes };
   } catch (error) {
@@ -210,7 +235,9 @@ export async function getNotificacoesAdvogado(advogadoId: string): Promise<Actio
 /**
  * Marca uma notificação como lida usando sistema híbrido
  */
-export async function marcarNotificacaoComoLida(notificacaoId: string): Promise<ActionResponse> {
+export async function marcarNotificacaoComoLida(
+  notificacaoId: string,
+): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -219,7 +246,10 @@ export async function marcarNotificacaoComoLida(notificacaoId: string): Promise<
     }
 
     // Usar sistema híbrido para marcar como lida
-    const { markNotificationAsRead } = await import("@/app/actions/notifications-hybrid");
+    const { markNotificationAsRead } = await import(
+      "@/app/actions/notifications-hybrid"
+    );
+
     await markNotificationAsRead(notificacaoId);
 
     revalidatePath("/advogados");
@@ -235,7 +265,9 @@ export async function marcarNotificacaoComoLida(notificacaoId: string): Promise<
 /**
  * Marca todas as notificações de um advogado como lidas usando sistema híbrido
  */
-export async function marcarTodasNotificacoesComoLidas(advogadoId: string): Promise<ActionResponse> {
+export async function marcarTodasNotificacoesComoLidas(
+  advogadoId: string,
+): Promise<ActionResponse> {
   try {
     const session = await getSession();
 
@@ -256,7 +288,10 @@ export async function marcarTodasNotificacoesComoLidas(advogadoId: string): Prom
     }
 
     // Usar sistema híbrido para marcar todas como lidas
-    const { markAllNotificationsAsRead } = await import("@/app/actions/notifications-hybrid");
+    const { markAllNotificationsAsRead } = await import(
+      "@/app/actions/notifications-hybrid"
+    );
+
     await markAllNotificationsAsRead();
 
     revalidatePath("/advogados");

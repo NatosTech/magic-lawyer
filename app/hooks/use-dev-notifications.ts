@@ -65,18 +65,6 @@ export function useDevNotifications() {
         });
       }
 
-      // Webhook config
-      if (devInfo?.ngrok) {
-        notifications.push({
-          id: "dev-webhook-config",
-          type: "warning",
-          title: "Webhook Config",
-          message: `Configure o webhook no Asaas: ${devInfo.ngrok}/api/webhooks/asaas`,
-          timestamp: new Date(Date.now() - 60000),
-          read: false,
-        });
-      }
-
       // Tenants ativos
       if (devInfo?.tenants && devInfo.tenants.length > 0) {
         notifications.push({

@@ -274,6 +274,8 @@ export const getNotificacaoTemplate = (data: {
   linkAcao?: string;
   textoAcao?: string;
 }): EmailTemplate => {
+  const messageHtml = data.mensagem.replace(/\n/g, "<br />");
+
   return {
     subject: `🔔 Magic Lawyer - ${data.titulo}`,
     html: `
@@ -356,7 +358,7 @@ export const getNotificacaoTemplate = (data: {
           <p>Olá <strong>${data.nome}</strong>,</p>
 
           <div class="notification-content">
-            <p>${data.mensagem}</p>
+            <p>${messageHtml}</p>
           </div>
 
           ${
@@ -406,10 +408,16 @@ class EmailService {
 
   constructor() {
     this.resend = new Resend(process.env.RESEND_API_KEY);
-    this.defaultFrom = process.env.RESEND_FROM_EMAIL && process.env.RESEND_FROM_EMAIL.trim().length > 0 ? process.env.RESEND_FROM_EMAIL : "Magic Lawyer Test <onboarding@resend.dev>";
+    this.defaultFrom =
+      process.env.RESEND_FROM_EMAIL &&
+      process.env.RESEND_FROM_EMAIL.trim().length > 0
+        ? process.env.RESEND_FROM_EMAIL
+        : "Magic Lawyer Test <onboarding@resend.dev>";
   }
 
-  async sendEmail(emailData: EmailData): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendEmail(
+    emailData: EmailData,
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       if (!process.env.RESEND_API_KEY) {
         console.error("RESEND_API_KEY not configured");
@@ -428,7 +436,10 @@ class EmailService {
       if (error) {
         console.error("Error sending email:", error);
 
-        return { success: false, error: error.message || "Error sending email" };
+        return {
+          success: false,
+          error: error.message || "Error sending email",
+        };
       }
 
       console.log("Email sent successfully:", data?.id);
@@ -439,7 +450,10 @@ class EmailService {
 
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error sending email",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown error sending email",
       };
     }
   }
