@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { UploadService } from "@/lib/upload-service";
+import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notification-service";
 
 const uploadService = UploadService.getInstance();
 
@@ -118,6 +119,41 @@ export async function uploadDocumentoPeticao(
 
     revalidatePath("/peticoes");
     revalidatePath(`/processos/${peticao.processoId}`);
+
+    // Notificação: documento anexado ao processo da petição
+    try {
+      if (peticao.processoId) {
+        const processo = await prisma.processo.findFirst({
+          where: { id: peticao.processoId, tenantId },
+          select: {
+            id: true,
+            numero: true,
+            advogadoResponsavel: { select: { usuario: { select: { id: true } } } },
+          },
+        });
+
+        if (processo) {
+          const targetUserId = (processo.advogadoResponsavel?.usuario as any)?.id || userId;
+          await HybridNotificationService.publishNotification({
+            type: "processo.document_uploaded",
+            tenantId,
+            userId: targetUserId,
+            payload: {
+              documentoId: documento.id,
+              processoId: processo.id,
+              numero: processo.numero,
+              documentName: originalName,
+              referenciaTipo: "DOCUMENTO",
+              referenciaId: documento.id,
+            },
+            urgency: "MEDIUM",
+            channels: ["REALTIME"],
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Falha ao emitir notificação de documento (petição)", e);
+    }
 
     return {
       success: true,

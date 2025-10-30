@@ -9,6 +9,7 @@ import type {
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/app/lib/auth";
+import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notification-service";
 import prisma from "@/app/lib/prisma";
 import { UploadService, CloudinaryFolderNode } from "@/lib/upload-service";
 import logger from "@/lib/logger";
@@ -901,11 +902,46 @@ export async function uploadDocumentoExplorer(
 
     revalidatePath("/documentos");
 
-    return {
-      success: true,
-      documentoId: documento.id,
-      url: uploadResult.url,
-    };
+  // Notificações: documento anexado em processo(s)
+  try {
+    if (processos.length) {
+      const responsaveis = await prisma.processo.findMany({
+        where: { id: { in: processos.map((p) => p.id) }, tenantId: user.tenantId },
+        select: {
+          id: true,
+          numero: true,
+          advogadoResponsavel: { select: { usuario: { select: { id: true } } } },
+        },
+      });
+
+      for (const proc of responsaveis) {
+        const targetUserId = (proc.advogadoResponsavel?.usuario as any)?.id || (user.id as string);
+        await HybridNotificationService.publishNotification({
+          type: "processo.document_uploaded",
+          tenantId: user.tenantId,
+          userId: targetUserId,
+          payload: {
+            documentoId: documento.id,
+            processoId: proc.id,
+            numero: proc.numero,
+            documentName: file.name,
+            referenciaTipo: "DOCUMENTO",
+            referenciaId: documento.id,
+          },
+          urgency: "MEDIUM",
+          channels: ["REALTIME"],
+        });
+      }
+    }
+  } catch (e) {
+    logger.warn("Falha ao emitir notificação de documento anexado", e);
+  }
+
+  return {
+    success: true,
+    documentoId: documento.id,
+    url: uploadResult.url,
+  };
   } catch (error) {
     logger.error("Erro ao enviar documento pelo explorador:", error);
 

@@ -339,26 +339,41 @@ export async function createAndamento(input: AndamentoCreateInput): Promise<Acti
       });
     }
 
-    // Notificar sobre o novo andamento usando sistema híbrido
-    const { publishNotification } = await import("@/app/actions/notifications-hybrid");
+    // Notificar envolvidos (advogado responsável e cliente, se existir)
+    try {
+      const advogado = await prisma.processo.findFirst({
+        where: { id: input.processoId, tenantId },
+        select: { advogadoResponsavel: { select: { usuario: { select: { id: true } } } }, cliente: { select: { usuarioId: true, nome: true } }, numero: true },
+      });
 
-    await publishNotification({
-      type: "andamento.created",
-      title: "Novo Andamento",
-      message: `Andamento "${input.titulo}" foi adicionado ao processo ${processo.numero}.`,
-      urgency: "MEDIUM",
-      channels: ["REALTIME"],
-      payload: {
-        andamentoId: andamento.id,
-        processoId: input.processoId,
-        processoNumero: processo.numero,
-        titulo: input.titulo,
-        tipo: input.tipo,
-        dataMovimentacao: input.dataMovimentacao || new Date(),
-      },
-      referenciaTipo: "ANDAMENTO",
-      referenciaId: andamento.id,
-    });
+      const targetUserIds: string[] = [];
+      const advogadoUserId = (advogado?.advogadoResponsavel?.usuario as any)?.id;
+      if (advogadoUserId) targetUserIds.push(advogadoUserId);
+      if (advogado?.cliente?.usuarioId) targetUserIds.push(advogado.cliente.usuarioId);
+
+      const channels = input.notificarEmail ? ["REALTIME", "EMAIL"] : ["REALTIME"] as ("REALTIME"|"EMAIL")[];
+
+      for (const uid of targetUserIds) {
+        const { HybridNotificationService } = await import("@/app/lib/notifications/hybrid-notification-service");
+        await HybridNotificationService.publishNotification({
+          type: "andamento.created",
+          tenantId,
+          userId: uid,
+          payload: {
+            andamentoId: andamento.id,
+            processoId: input.processoId,
+            processoNumero: processo.numero,
+            titulo: input.titulo,
+            tipo: input.tipo,
+            dataMovimentacao: input.dataMovimentacao || new Date(),
+          },
+          urgency: "MEDIUM",
+          channels,
+        } as any);
+      }
+    } catch (e) {
+      console.warn("Falha ao emitir notificações de andamento criado para envolvidos", e);
+    }
 
     revalidatePath("/processos");
     revalidatePath(`/processos/${input.processoId}`);
@@ -432,6 +447,31 @@ export async function updateAndamento(andamentoId: string, input: AndamentoUpdat
         },
       },
     });
+
+    // Notificar atualização de andamento usando sistema híbrido
+    try {
+      const { publishNotification } = await import("@/app/actions/notifications-hybrid");
+
+      await publishNotification({
+        type: "andamento.updated",
+        title: "Andamento Atualizado",
+        message: `Andamento "${andamento.titulo}" foi atualizado no processo ${andamento.processo.numero}.`,
+        urgency: "MEDIUM",
+        channels: ["REALTIME"],
+        payload: {
+          andamentoId: andamento.id,
+          processoId: andamento.processo.id,
+          processoNumero: andamento.processo.numero,
+          titulo: andamento.titulo,
+          tipo: andamento.tipo,
+          dataMovimentacao: andamento.dataMovimentacao,
+        },
+        referenciaTipo: "ANDAMENTO",
+        referenciaId: andamento.id,
+      });
+    } catch (e) {
+      console.warn("Falha ao emitir notificação de andamento atualizado", e);
+    }
 
     revalidatePath("/processos");
     revalidatePath(`/processos/${andamento.processoId}`);
