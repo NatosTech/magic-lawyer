@@ -105,7 +105,13 @@ export default withAuth(
       if (shouldCheck) {
         try {
           const host = req.headers.get("host") || "";
-          const base = getDynamicNextAuthUrl(host);
+          // Em desenvolvimento local, evitar fetch para evitar falhas intermitentes no Edge
+          const isLocalhost = host.includes("localhost") || host.startsWith("127.0.0.1");
+          if (isLocalhost) {
+            sessionChecked = true; // marca e não valida via HTTP em dev
+            throw new Error("skip-local-session-check");
+          }
+          const base = req.nextUrl.origin || getDynamicNextAuthUrl(host);
           const url = new URL(
             "/api/internal/session/validate",
             base,
@@ -145,7 +151,10 @@ export default withAuth(
           // Marcar que verificou nesta execução
           sessionChecked = true;
         } catch (error) {
-          console.error("Erro ao validar sessão:", error);
+          // Em dev/edge, falhas de rede não devem quebrar nem poluir o console
+          if ((error as Error)?.message !== "skip-local-session-check") {
+            console.warn("[middleware] sessão não validada (continuando)");
+          }
           // Em caso de erro, continuar normalmente (fail-safe)
         }
       }
