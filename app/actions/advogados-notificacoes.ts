@@ -8,6 +8,9 @@ import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
 import { revalidatePath } from "next/cache";
 
+// Re-exportar função do arquivo legacy que ainda não foi migrada
+export { getEstatisticasNotificacoes } from "./advogados-notificacoes-legacy";
+
 // =============================================
 // TIPOS E INTERFACES
 // =============================================

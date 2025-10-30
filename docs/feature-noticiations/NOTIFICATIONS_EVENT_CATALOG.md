@@ -395,26 +395,26 @@ Este documento mapeia **TODOS os eventos** que devem gerar notificações no sis
 
 ## 📱 **MATRIZ EVENTO × CANAL**
 
-| Evento | In-app (Realtime) | Email | WhatsApp |
-|--------|-------------------|-------|----------|
-| **CRÍTICOS** | ✅ | ⏳ | ⏳ |
-| `prazo.expired` | ✅ | ⏳ | ⏳ |
-| `pagamento.overdue` | ✅ | ⏳ | ⏳ |
-| `contrato.expired` | ✅ | ⏳ | ⏳ |
-| **ALTOS** | ✅ | ⏳ | ⏳ |
-| `prazo.expiring_1d` | ✅ | ⏳ | ⏳ |
-| `prazo.expiring_3d` | ✅ | ⏳ | ⏳ |
-| `pagamento.failed` | ✅ | ⏳ | ⏳ |
-| `contrato.signature_pending` | ✅ | ⏳ | ⏳ |
-| **MÉDIOS** | ✅ | ❌ | ❌ |
-| `processo.created` | ✅ | ❌ | ❌ |
-| `processo.updated` | ✅ | ❌ | ❌ |
-| `cliente.created` | ✅ | ❌ | ❌ |
-| `evento.created` | ✅ | ❌ | ❌ |
-| **INFORMATIVOS** | ✅ | ❌ | ❌ |
-| `advogado.avatar_updated` | ✅ | ❌ | ❌ |
-| `documento.uploaded` | ✅ | ❌ | ❌ |
-| `relatorio.generated` | ✅ | ❌ | ❌ |
+| Evento | In-app (Realtime) | Email (Resend) |
+|--------|-------------------|----------------|
+| **CRÍTICOS** | ✅ | ✅ (template padrão) |
+| `prazo.expired` | ✅ | ✅ |
+| `pagamento.overdue` | ✅ | ✅ |
+| `contrato.expired` | ✅ | ✅ |
+| **ALTOS** | ✅ | ✅ (enfileirado) |
+| `prazo.expiring_1d` | ✅ | ✅ |
+| `prazo.expiring_3d` | ✅ | ✅ |
+| `pagamento.failed` | ✅ | ✅ |
+| `contrato.signature_pending` | ✅ | ✅ |
+| **MÉDIOS** | ✅ | 🟡 (habilitar por evento) |
+| `processo.created` | ✅ | 🟡 |
+| `processo.updated` | ✅ | 🟡 |
+| `cliente.created` | ✅ | 🟡 |
+| `evento.created` | ✅ | 🟡 |
+| **INFORMATIVOS** | ✅ | 🟡 |
+| `advogado.avatar_updated` | ✅ | 🟡 |
+| `documento.uploaded` | ✅ | 🟡 |
+| `relatorio.generated` | ✅ | 🟡 |
 
 ### **Status dos Canais:**
 
@@ -424,15 +424,10 @@ Este documento mapeia **TODOS os eventos** que devem gerar notificações no sis
 - ✅ Instantâneo (< 1s)
 
 **Email:**
-- ⏳ **Planejado** - Apenas console.log no código
-- ⏳ Eventos críticos e altos
-- ⏳ Resumos diários
-- ⏳ Confirmações importantes
-
-**WhatsApp:**
-- ⏳ **Planejado** - Aguardando definição da API
-- ⏳ Apenas eventos críticos e altos
-- ⏳ Exige opt-in e monitoramento de consentimento
+- ✅ **Implementado** - Resend com remetente `onboarding@resend.dev`
+- ✅ Eventos críticos e altos (entrega validada para `magiclawyersaas@gmail.com`)
+- 🟡 Resumos diários (a implementar)
+- 🟡 Confirmações automáticas por módulo
 
 ### **Legenda:**
 - ✅ **Implementado** - Funcionando no código
@@ -446,14 +441,14 @@ Este documento mapeia **TODOS os eventos** que devem gerar notificações no sis
 1. ✅ **Mapeamento Completo** - Este documento
 2. ✅ **Validação com Stakeholders** - Eventos e usuários definidos
 3. ✅ **Definição de Payloads** - Estrutura de dados implementada
-4. ❌ **Implementação Backend** - Sistema criado mas não integrado
+4. ⏳ **Implementação Backend** - Sistema híbrido envia via fila + canais reais (resta ativar por padrão)
 5. ❌ **Implementação Frontend** - Interface não implementada
 
 ### **🚨 Problema Crítico:**
-- Sistema ainda usa **Notificacao/NotificacaoUsuario** legado
-- Nenhum módulo chama `NotificationService.publishNotification`
-- Backend novo existe mas não está conectado à aplicação
+- Sistema ainda usa **Notificacao/NotificacaoUsuario** legado via `HybridNotificationService`
+- Módulos migrados: eventos, andamentos, prazos (demais módulos pendentes)
+- Necessário ativar `NOTIFICATION_USE_NEW_SYSTEM=true` após homologação completa
 
 ---
 
-**Status:** ⏳ **Backend Criado, Integração Pendente** - Sistema legado ainda em uso
+**Status:** ⏳ **Backend Criado, Migração em Progresso** - Sistema híbrido até concluir rollout

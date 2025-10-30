@@ -48,7 +48,6 @@ export const NOTIFICATION_URGENCY = {
 export const NOTIFICATION_CHANNEL = {
   REALTIME: "REALTIME" as const,
   EMAIL: "EMAIL" as const,
-  SMS: "SMS" as const,
   PUSH: "PUSH" as const,
 } as const;
 

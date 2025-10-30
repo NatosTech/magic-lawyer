@@ -89,7 +89,7 @@ export async function enviarNotificacaoEmail(
       `${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() ||
       advogado.usuario.email;
 
-    const emailSent = await emailService.sendNotificacaoAdvogado({
+    const emailResult = await emailService.sendNotificacaoAdvogado({
       nome: nomeCompleto,
       email: advogado.usuario.email,
       tipo,
@@ -99,7 +99,7 @@ export async function enviarNotificacaoEmail(
       textoAcao,
     });
 
-    if (emailSent) {
+    if (emailResult.success) {
       revalidatePath("/advogados");
 
       return {
@@ -107,7 +107,7 @@ export async function enviarNotificacaoEmail(
         data: { message: "Notificação por email enviada com sucesso" },
       };
     } else {
-      return { success: false, error: "Erro ao enviar notificação por email" };
+      return { success: false, error: emailResult.error || "Erro ao enviar notificação por email" };
     }
   } catch (error) {
     console.error("Erro ao enviar notificação por email:", error);

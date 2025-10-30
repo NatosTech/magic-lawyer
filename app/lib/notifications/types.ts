@@ -1,5 +1,5 @@
 export type NotificationUrgency = "CRITICAL" | "HIGH" | "MEDIUM" | "INFO";
-export type NotificationChannel = "REALTIME" | "EMAIL" | "SMS" | "PUSH";
+export type NotificationChannel = "REALTIME" | "EMAIL" | "PUSH";
 
 // Tipos do sistema legado para migração
 export type LegacyNotificationType = "SISTEMA" | "PRAZO" | "DOCUMENTO" | "MENSAGEM" | "FINANCEIRO" | "OUTRO";

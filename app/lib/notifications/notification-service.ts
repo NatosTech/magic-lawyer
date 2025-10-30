@@ -1,11 +1,12 @@
 import { PrismaClient } from "@/app/generated/prisma";
 import { publishRealtimeEvent } from "@/app/lib/realtime/publisher";
 import { getNotificationQueue } from "./notification-queue";
+import { EmailChannel } from "./channels/email-channel";
 
 const prisma = new PrismaClient();
 
 export type NotificationUrgency = "CRITICAL" | "HIGH" | "MEDIUM" | "INFO";
-export type NotificationChannel = "REALTIME" | "EMAIL" | "SMS" | "PUSH";
+export type NotificationChannel = "REALTIME" | "EMAIL" | "PUSH";
 
 export interface NotificationEvent {
   type: string;
@@ -55,6 +56,8 @@ export class NotificationService {
    */
   static async processNotificationSync(event: NotificationEvent): Promise<void> {
     try {
+      console.log(`[NotificationService] 📱 Processando notificação ${event.type} para usuário ${event.userId}`);
+
       // 1. Verificar se o usuário tem permissão para receber esta notificação
       const hasPermission = await this.checkUserPermission(event);
       if (!hasPermission) {
@@ -79,7 +82,10 @@ export class NotificationService {
       // 4. Substituir variáveis no template
       const { title, message } = this.replaceVariables(template, event.payload);
 
-      // 5. Salvar notificação no banco
+      // 5. Determinar canais a usar (prioriza canais do evento, senão usa preferências)
+      const channelsToUse = event.channels && event.channels.length > 0 ? event.channels : preferences.channels;
+
+      // 6. Salvar notificação no banco
       const notification = await prisma.notification.create({
         data: {
           tenantId: event.tenantId,
@@ -89,13 +95,13 @@ export class NotificationService {
           message,
           payload: event.payload,
           urgency: event.urgency || preferences.urgency,
-          channels: preferences.channels,
+          channels: channelsToUse,
           expiresAt: this.calculateExpiration(event.urgency || preferences.urgency),
         },
       });
 
-      // 6. Enviar via canais configurados
-      await this.deliverNotification(notification, preferences.channels);
+      // 7. Enviar via canais configurados
+      await this.deliverNotification(notification, channelsToUse);
 
       console.log(`[NotificationService] Notificação ${notification.id} processada para usuário ${event.userId}`);
     } catch (error) {
@@ -258,28 +264,96 @@ export class NotificationService {
    * Entrega a notificação pelos canais configurados
    */
   private static async deliverNotification(notification: any, channels: NotificationChannel[]): Promise<void> {
-    const promises = channels.map((channel) => {
-      switch (channel) {
-        case "REALTIME":
-          return this.deliverRealtime(notification);
-        case "EMAIL":
-          return this.deliverEmail(notification);
-        case "SMS":
-          return this.deliverSMS(notification);
-        case "PUSH":
-          return this.deliverPush(notification);
-        default:
-          return Promise.resolve();
-      }
+    console.log(`[NotificationService] 📱 Processando canais: ${channels.join(",")}`);
+
+    await Promise.allSettled(
+      channels.map((channel) => this.processChannelDelivery(notification, channel))
+    );
+  }
+
+  private static getProviderForChannel(channel: NotificationChannel): string {
+    switch (channel) {
+      case "EMAIL":
+        return "RESEND";
+      case "PUSH":
+        return "PUSH_GATEWAY";
+      case "REALTIME":
+      default:
+        return "ABLY";
+    }
+  }
+
+  private static async processChannelDelivery(notification: any, channel: NotificationChannel): Promise<void> {
+    console.log(`[NotificationService] 🔄 Processando canal: ${channel}`);
+
+    const provider = this.getProviderForChannel(channel);
+    const delivery = await prisma.notificationDelivery.create({
+      data: {
+        notificationId: notification.id,
+        channel,
+        provider,
+        status: "PENDING",
+      },
     });
 
-    await Promise.allSettled(promises);
+    try {
+      let result:
+        | { success: true; messageId?: string; metadata?: Record<string, any> }
+        | { success: false; error?: string; messageId?: string; metadata?: Record<string, any> };
+
+      switch (channel) {
+        case "REALTIME":
+          result = await this.deliverRealtime(notification);
+          break;
+        case "EMAIL":
+          result = await this.deliverEmail(notification);
+          break;
+        case "PUSH":
+          result = await this.deliverPush(notification);
+          break;
+        default:
+          result = { success: false, error: `Canal ${channel} não suportado` };
+          break;
+      }
+
+      if (result.success) {
+        await prisma.notificationDelivery.update({
+          where: { id: delivery.id },
+          data: {
+            status: "SENT",
+            providerMessageId: result.messageId,
+            metadata: result.metadata,
+          },
+        });
+      } else {
+        await prisma.notificationDelivery.update({
+          where: { id: delivery.id },
+          data: {
+            status: "FAILED",
+            providerMessageId: result.messageId,
+            errorMessage: result.error?.slice(0, 500),
+            metadata: result.metadata,
+          },
+        });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro desconhecido";
+      await prisma.notificationDelivery.update({
+        where: { id: delivery.id },
+        data: {
+          status: "FAILED",
+          errorMessage: message.slice(0, 500),
+        },
+      });
+
+      console.error(`[NotificationService] Erro no canal ${channel}:`, error);
+    }
   }
 
   /**
    * Entrega via tempo real (Ably)
    */
-  private static async deliverRealtime(notification: any): Promise<void> {
+  private static async deliverRealtime(notification: any): Promise<{ success: boolean }> {
     await publishRealtimeEvent("notification.new", {
       tenantId: notification.tenantId,
       userId: notification.userId,
@@ -293,30 +367,77 @@ export class NotificationService {
         createdAt: notification.createdAt,
       },
     });
+
+    return { success: true };
   }
 
   /**
    * Entrega via email
    */
-  private static async deliverEmail(notification: any): Promise<void> {
-    // TODO: Implementar envio de email
-    console.log(`[NotificationService] Email enviado para notificação ${notification.id}`);
-  }
+  private static async deliverEmail(notification: any): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    try {
+      // Buscar dados do usuário para obter email e nome
+      const user = await prisma.usuario.findUnique({
+        where: { id: notification.userId },
+        select: {
+          email: true,
+          firstName: true,
+          lastName: true,
+        },
+      });
 
-  /**
-   * Entrega via SMS
-   */
-  private static async deliverSMS(notification: any): Promise<void> {
-    // TODO: Implementar envio de SMS
-    console.log(`[NotificationService] SMS enviado para notificação ${notification.id}`);
+      if (!user || !user.email) {
+        console.warn(`[NotificationService] Usuário ${notification.userId} não tem email configurado`);
+        return { success: false, error: "Usuário sem email configurado" };
+      }
+
+      // Validar email
+      if (!EmailChannel.isValidEmail(user.email)) {
+        console.warn(`[NotificationService] Email inválido para usuário ${notification.userId}: ${user.email}`);
+        return { success: false, error: `Email inválido: ${user.email}` };
+      }
+
+      const userName = `${user.firstName} ${user.lastName}`.trim();
+
+      // Enviar email
+      const result = await EmailChannel.send(
+        {
+          type: notification.type,
+          tenantId: notification.tenantId,
+          userId: notification.userId,
+          payload: notification.payload,
+          urgency: notification.urgency,
+          channels: notification.channels,
+        },
+        user.email,
+        userName,
+        notification.title,
+        notification.message
+      );
+
+      if (result.success) {
+        console.log(`[NotificationService] ✅ Email enviado com sucesso para ${user.email} (notificação ${notification.id})`);
+        return { success: true, messageId: result.messageId };
+      }
+
+      console.error(`[NotificationService] ❌ Falha ao enviar email para ${user.email}: ${result.error}`);
+      return { success: false, error: result.error, messageId: result.messageId };
+    } catch (error) {
+      console.error(`[NotificationService] Erro ao processar envio de email:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Erro desconhecido",
+      };
+    }
   }
 
   /**
    * Entrega via push mobile
    */
-  private static async deliverPush(notification: any): Promise<void> {
-    // TODO: Implementar push mobile
+  private static async deliverPush(notification: any): Promise<{ success: boolean }> {
+    // TODO: Implementar push mobile real
     console.log(`[NotificationService] Push mobile enviado para notificação ${notification.id}`);
+    return { success: true };
   }
 
   /**

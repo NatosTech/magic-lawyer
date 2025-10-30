@@ -6,10 +6,6 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/auth";
 import prisma from "@/app/lib/prisma";
 import {
-  whatsappService,
-  sendAndamentoNotification,
-} from "@/lib/whatsapp-service";
-import {
   emailService,
   sendAndamentoEmailNotification,
 } from "@/lib/email-service";
@@ -17,11 +13,6 @@ import {
 export interface NotificacaoResult {
   success: boolean;
   error?: string;
-  whatsapp?: {
-    success: boolean;
-    error?: string;
-    provider?: string;
-  };
   email?: {
     success: boolean;
     error?: string;
@@ -35,7 +26,6 @@ export interface NotificacaoResult {
 export async function enviarNotificacaoAndamento(
   andamentoId: string,
   options: {
-    notificarWhatsapp?: boolean;
     notificarEmail?: boolean;
     mensagemPersonalizada?: string;
   } = {},
@@ -83,46 +73,6 @@ export async function enviarNotificacaoAndamento(
       success: true,
     };
 
-    // Envia WhatsApp se solicitado e cliente tem telefone
-    if (options.notificarWhatsapp && cliente.celular) {
-      try {
-        const whatsappResult = await sendAndamentoNotification(
-          cliente.celular,
-          {
-            titulo: andamento.titulo,
-            descricao: andamento.descricao || undefined,
-            processo: {
-              numero: andamento.processo.numero,
-              titulo: andamento.processo.titulo || undefined,
-            },
-            dataMovimentacao: andamento.dataMovimentacao,
-            mensagemPersonalizada: options.mensagemPersonalizada,
-          },
-        );
-
-        resultado.whatsapp = {
-          success: whatsappResult.success,
-          error: whatsappResult.error,
-          provider: whatsappResult.provider,
-        };
-
-        // Atualiza o andamento com status da notificação
-        await prisma.movimentacaoProcesso.update({
-          where: { id: andamentoId },
-          data: {
-            notificarWhatsapp: true,
-            mensagemPersonalizada: options.mensagemPersonalizada,
-          },
-        });
-      } catch (error) {
-        resultado.whatsapp = {
-          success: false,
-          error:
-            error instanceof Error ? error.message : "Erro ao enviar WhatsApp",
-        };
-      }
-    }
-
     // Envia email se solicitado e cliente tem email
     if (options.notificarEmail && cliente.email) {
       try {
@@ -165,7 +115,7 @@ export async function enviarNotificacaoAndamento(
     }
 
     // Se nenhuma notificação foi solicitada
-    if (!options.notificarWhatsapp && !options.notificarEmail) {
+    if (!options.notificarEmail) {
       return {
         success: false,
         error: "Nenhuma notificação foi solicitada",
@@ -173,10 +123,9 @@ export async function enviarNotificacaoAndamento(
     }
 
     // Verifica se pelo menos uma notificação foi enviada com sucesso
-    const whatsappSuccess = resultado.whatsapp?.success ?? true;
     const emailSuccess = resultado.email?.success ?? true;
 
-    resultado.success = whatsappSuccess && emailSuccess;
+    resultado.success = emailSuccess;
 
     revalidatePath("/andamentos");
 
@@ -184,43 +133,6 @@ export async function enviarNotificacaoAndamento(
   } catch (error) {
     console.error("Erro ao enviar notificação de andamento:", error);
 
-    return {
-      success: false,
-      error:
-        error instanceof Error ? error.message : "Erro interno do servidor",
-    };
-  }
-}
-
-/**
- * Testa envio de WhatsApp para número específico
- */
-export async function testarWhatsApp(
-  numero: string,
-  mensagem: string = "Teste de integração WhatsApp - Magic Lawyer",
-): Promise<{ success: boolean; error?: string; provider?: string }> {
-  try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.tenantId) {
-      return {
-        success: false,
-        error: "Usuário não autenticado",
-      };
-    }
-
-    const resultado = await whatsappService.sendMessage({
-      to: whatsappService.formatPhoneNumber(numero),
-      message: mensagem,
-      type: "text",
-    });
-
-    return {
-      success: resultado.success,
-      error: resultado.error,
-      provider: resultado.provider,
-    };
-  } catch (error) {
     return {
       success: false,
       error:
@@ -277,7 +189,6 @@ export async function testarEmail(
  * Obtém status dos provedores de notificação
  */
 export async function obterStatusProvedores(): Promise<{
-  whatsapp: Array<{ name: string; configured: boolean }>;
   email: Array<{ name: string; configured: boolean }>;
 }> {
   try {
@@ -288,14 +199,12 @@ export async function obterStatusProvedores(): Promise<{
     }
 
     return {
-      whatsapp: whatsappService.getProvidersStatus(),
       email: emailService.getProvidersStatus(),
     };
   } catch (error) {
     console.error("Erro ao obter status dos provedores:", error);
 
     return {
-      whatsapp: [],
       email: [],
     };
   }
@@ -307,7 +216,6 @@ export async function obterStatusProvedores(): Promise<{
 export async function enviarNotificacoesLote(
   andamentoIds: string[],
   options: {
-    notificarWhatsapp?: boolean;
     notificarEmail?: boolean;
     mensagemPersonalizada?: string;
   } = {},

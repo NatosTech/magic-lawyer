@@ -22,10 +22,10 @@
 - ❌ **Fallback HTTP não implementado**
 
 ### **Etapa 3 - Backend Core** ⚠️ **PARCIALMENTE IMPLEMENTADA**
-- ❌ **Sistema antigo ainda em uso** - Notificacao/NotificacaoUsuario ativo
-- ✅ Novo sistema (`Notification`) criado mas não integrado
-- ✅ Fila/worker assíncrono criado mas não usado
-- ❌ **Canais não implementados** - Apenas console.log com TODO
+- ⚠️ **Sistema híbrido ativo** - Notificacao/NotificacaoUsuario ainda padrão (`NOTIFICATION_USE_NEW_SYSTEM=false`)
+- ✅ Novo sistema (`Notification`) recebendo eventos (eventos/prazos/andamentos) via fila
+- ✅ Fila/worker assíncrono em uso com `NotificationDelivery`
+- ✅ **Canais implementados** - Ably (in-app) e Resend (email)
 - ❌ **Deduplicação não implementada**
 - ❌ **Agendador de prazos não implementado**
 - ❌ **Webhooks Asaas não implementados**
@@ -61,14 +61,13 @@
 
 ## 🚀 **PRÓXIMOS PASSOS CRÍTICOS**
 
-1. ❌ **Sistema Base**: BullMQ + Redis criados mas não integrados
-2. ❌ **Worker Assíncrono**: Criado mas não usado pela aplicação
-3. ❌ **API Management**: Endpoints funcionam mas não conectados
-4. ❌ **Produção**: Sistema legado ainda em uso
-5. ⚠️ **Migração Urgente**: Substituir Notificacao/NotificacaoUsuario
-6. ⚠️ **Integração Real**: Conectar módulos ao novo sistema
-7. ⚠️ **Selecionar e integrar API de WhatsApp**: Definir fornecedor (ex.: Meta Cloud API/Twilio) e implementar canal
+1. ⚠️ **Ativar novo sistema em produção**: Revisar `NOTIFICATION_USE_NEW_SYSTEM` e completar migração dos módulos restantes
+2. ❌ **Deduplicação**: Implementar hash + TTL no Redis
+3. ❌ **Fallback HTTP**: Provisionar polling quando Ably falhar
+4. ❌ **Agendador de prazos**: Cron jobs para D-7/D-3/D-1/H-2
+5. ❌ **Webhooks Asaas**: Gerar eventos automáticos de pagamento
+6. ❌ **NotificationFactory/Policy**: Camada de domínio com validações
 
 ---
 
-**Status:** ⚠️ **Backend Criado, Integração Crítica Pendente** - Sistema legado ainda ativo
+**Status:** ⚠️ **Backend Criado, Migração Parcial** - Sistema híbrido aguardando rollout total

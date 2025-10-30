@@ -73,8 +73,6 @@ export class HybridNotificationService {
       "pagamento.paid": "FINANCEIRO",
       "evento.created": "OUTRO",
       "test.simple": "SISTEMA",
-      "prazo.expiring": "PRAZO",
-      "documento.uploaded": "DOCUMENTO",
     };
 
     // Mapear urgência
@@ -89,7 +87,6 @@ export class HybridNotificationService {
     const channelMapping: Record<string, string> = {
       REALTIME: "IN_APP",
       EMAIL: "EMAIL",
-      SMS: "SMS",
       PUSH: "PUSH",
     };
 

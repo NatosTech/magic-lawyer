@@ -402,21 +402,23 @@ export const getNotificacaoTemplate = (data: {
 
 class EmailService {
   private resend: Resend;
+  private defaultFrom: string;
 
   constructor() {
     this.resend = new Resend(process.env.RESEND_API_KEY);
+    this.defaultFrom = process.env.RESEND_FROM_EMAIL && process.env.RESEND_FROM_EMAIL.trim().length > 0 ? process.env.RESEND_FROM_EMAIL : "Magic Lawyer Test <onboarding@resend.dev>";
   }
 
-  async sendEmail(emailData: EmailData): Promise<boolean> {
+  async sendEmail(emailData: EmailData): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       if (!process.env.RESEND_API_KEY) {
         console.error("RESEND_API_KEY not configured");
 
-        return false;
+        return { success: false, error: "RESEND_API_KEY not configured" };
       }
 
       const { data, error } = await this.resend.emails.send({
-        from: emailData.from || "Magic Lawyer <notificacoes@magiclawyer.com>",
+        from: emailData.from || this.defaultFrom,
         to: [emailData.to],
         subject: emailData.subject,
         html: emailData.html,
@@ -426,28 +428,33 @@ class EmailService {
       if (error) {
         console.error("Error sending email:", error);
 
-        return false;
+        return { success: false, error: error.message || "Error sending email" };
       }
 
       console.log("Email sent successfully:", data?.id);
 
-      return true;
+      return { success: true, messageId: data?.id || undefined };
     } catch (error) {
       console.error("Error sending email:", error);
 
-      return false;
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error sending email",
+      };
     }
   }
 
   async sendBoasVindasAdvogado(data: AdvogadoEmailData): Promise<boolean> {
     const template = getBoasVindasTemplate(data);
 
-    return this.sendEmail({
+    const result = await this.sendEmail({
       to: data.email,
       subject: template.subject,
       html: template.html,
       text: template.text,
     });
+
+    return result.success;
   }
 
   async sendNotificacaoAdvogado(data: {
@@ -458,7 +465,7 @@ class EmailService {
     mensagem: string;
     linkAcao?: string;
     textoAcao?: string;
-  }): Promise<boolean> {
+  }): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const template = getNotificacaoTemplate(data);
 
     return this.sendEmail({
@@ -476,14 +483,13 @@ class EmailService {
         return false;
       }
       // Resend não tem um método de verificação direto, então vamos tentar enviar um email de teste
-      const { error } = await this.resend.emails.send({
-        from: "Magic Lawyer <notificacoes@magiclawyer.com>",
-        to: ["test@example.com"],
-        subject: "Test Connection",
+      const result = await this.sendEmail({
+        to: process.env.NOTIFICATION_TEST_EMAIL || "test@example.com",
+        subject: "Magic Lawyer - Test Connection",
         html: "<p>Test</p>",
       });
 
-      return !error;
+      return result.success;
     } catch (error) {
       console.error("Email connection test failed:", error);
 

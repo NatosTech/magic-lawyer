@@ -47,7 +47,7 @@ export class ProcessoNotificationIntegration {
         prazoId: data.prazoId,
         processoId: data.processoId,
         processoNumero: data.processoNumero,
-        titulo: data.titulo,
+        tituloOriginal: data.titulo,
         diasRestantes: data.diasRestantes,
         titulo: `Prazo Próximo do Vencimento`,
         mensagem: `Prazo "${data.titulo}" do processo ${data.processoNumero} vence em ${data.diasRestantes} dias.`,
@@ -121,7 +121,7 @@ export class ProcessoNotificationIntegration {
       userId: data.userId,
       payload: {
         eventoId: data.eventoId,
-        titulo: data.titulo,
+        tituloOriginal: data.titulo,
         dataInicio: data.dataInicio.toISOString(),
         local: data.local,
         titulo: "Novo Evento Agendado",

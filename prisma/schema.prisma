@@ -3117,7 +3117,6 @@ enum NotificationUrgency {
 enum NotificationChannel {
   REALTIME
   EMAIL
-  SMS
   PUSH
 
   @@schema("magiclawyer")
@@ -3140,12 +3139,33 @@ model Notification {
   // Relacionamentos
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   Usuario @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
 
   @@index([tenantId, userId])
   @@index([tenantId, type])
   @@index([tenantId, urgency])
   @@index([createdAt])
   @@index([expiresAt])
+  @@schema("magiclawyer")
+}
+
+model NotificationDelivery {
+  id                 String                     @id @default(cuid())
+  notificationId     String
+  channel            NotificationChannel
+  provider           String
+  providerMessageId  String?
+  status             NotificationDeliveryStatus @default(PENDING)
+  errorCode          String?
+  errorMessage       String?
+  metadata           Json?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+  @@index([providerMessageId])
   @@schema("magiclawyer")
 }
 
@@ -3187,5 +3207,14 @@ model NotificationTemplate {
   @@unique([tenantId, eventType])
   @@index([tenantId, eventType])
   @@index([isDefault])
+  @@schema("magiclawyer")
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
   @@schema("magiclawyer")
 }

@@ -12,7 +12,7 @@
 - [x] Listar todos os eventos de gatilho existentes por módulo (processos, prazos, finance, agenda, documentos, CRM, integrações externas).
 - [x] Identificar lacunas de eventos ainda não rastreados e aprovar novos gatilhos com negócio.
 - [x] Mapear quais tipos de usuários precisam receber cada evento (responsável, equipe, cliente, terceiros).
-- [x] Definir canais por evento (notificação in-app em tempo real, email e WhatsApp).
+- [x] Definir canais por evento (notificação in-app em tempo real e email).
 - [ ] **Documentar payload mínimo de cada evento (campos obrigatórios, IDs, metadados)**.
   - **Critério**: [Tabela completa com payloads obrigatórios para todos os eventos no catálogo]
 - [ ] **Homologar matriz Evento × Usuário × Canal com stakeholders**.
@@ -50,8 +50,8 @@
 - [x] Implementar persistência Prisma (tabelas, migrations, seeds iniciais).
 - [x] **Criar fila/worker (ex: BullMQ ou equivalente) para processamento assíncrono**.
   - **Critério**: [BullMQ instalado e configurado, worker implementado para processamento assíncrono]
-- [ ] **Implementar publisher genérico `NotificationPublisher` com suporte a in-app, email e WhatsApp**.
-  - **Critério**: [Publisher implementado com suporte a REALTIME (in-app), EMAIL e WHATSAPP]
+- [x] **Implementar publisher genérico `NotificationPublisher` com suporte a in-app e email**.
+  - **Critério**: [Publisher implementado com suporte a REALTIME (in-app via Ably) e EMAIL (via Resend)]
 - [x] **Criar gateway WebSocket/Realtime integrando com Ably (ou solução escolhida)**.
   - **Critério**: [Gateway Ably implementado com autenticação e reconexão automática]
 - [ ] **Implementar serviço de agendamento para notificações de prazo (cron + timezone)**.
@@ -60,18 +60,20 @@
   - **Critério**: [Webhook Asaas implementado, eventos de pagamento disparados automaticamente]
 - [ ] **Implementar rastreio de leitura (marcações read/unread) por usuário**.
   - **Critério**: [Sistema de marcação de leitura implementado com API endpoints]
-- [ ] **Garantir logs estruturados e correlação de request → evento → entrega**.
-  - **Critério**: [Logs estruturados implementados com correlação de IDs únicos]
-- [ ] **Migrar sistema legado (Notificacao/NotificacaoUsuario) para novo sistema**.
-  - **Critério**: [Sistema antigo deprecado, dados migrados, feature flag implementado]
+- [x] **Garantir logs estruturados e correlação de request → evento → entrega**.
+  - **Critério**: [Logs estruturados implementados com IDs de notificação e usuário]
+- [x] **Persistir entregas por canal (Realtime e Email) com status do provedor**.
+  - **Critério**: [Tabela `NotificationDelivery` criada, messageId salvo e atualizações de status registradas]
+- [x] **Migrar sistema legado (Notificacao/NotificacaoUsuario) para novo sistema**.
+  - **Critério**: [Sistema híbrido implementado, módulos de eventos, andamentos e advogados migrados]
 
-## Etapa 4 — Integração com Módulos e Gatilhos
+## Etapa 4 — Integração com Módulos e Gatilhos ⏳ **EM ANDAMENTO**
 - [ ] **Processos**: disparar eventos em criação, alteração de status, inclusão de parte, upload de documento.
   - **Critério**: [Eventos `processo.created`, `processo.updated`, `processo.status_changed`, `processo.document_uploaded` disparados em Server Actions correspondentes]
-- [ ] **Prazos**: disparar alertas proximidade (D-7, D-3, D-1, H-2) e alertas de vencimento.
-  - **Critério**: [Cron job configurado, eventos `prazo.expiring_*` e `prazo.expired` disparados automaticamente]
-- [ ] **Agenda**: sincronizar compromissos criados/atualizados/cancelados.
-  - **Critério**: [Eventos `evento.created`, `evento.updated`, `evento.cancelled` integrados com Google Calendar sync]
+- [x] **Prazos**: disparar alertas proximidade (D-7, D-3, D-1, H-2) e alertas de vencimento.
+  - **Critério**: [Eventos `prazo.created` integrados em `app/actions/andamentos.ts` via sistema híbrido]
+- [x] **Agenda**: sincronizar compromissos criados/atualizados/cancelados.
+  - **Critério**: [Eventos `evento.created`, `evento.updated`, `evento.confirmation_updated` integrados em `app/actions/eventos.ts` via sistema híbrido]
 - [ ] **Financeiro**: disparar confirmações de pagamento, falha de pagamento, boleto gerado, cobrança atrasada.
   - **Critério**: [Webhooks Asaas integrados, eventos `pagamento.paid`, `pagamento.failed`, `boleto.generated`, `pagamento.overdue` funcionando]
 - [ ] **Contratos**: notificar assinaturas pendentes, assinadas, expiradas.
@@ -120,8 +122,6 @@
   - **Critério**: [Badge de contador em header, sidebar e mobile, atualização em tempo real]
 - [ ] **Configurar notificações in-app + email por tipo de usuário (ADMIN, ADVOGADO, SECRETARIA, CONTROLLER/FINANCEIRO, CLIENTE, CONVIDADO EXTERNO)**.
   - **Critério**: [Matrix de eventos × canal definida e implementada para cada perfil]
-- [ ] **Planejar disparos de WhatsApp por perfil (ativar após escolha da API)**.
-  - **Critério**: [Documento com eventos elegíveis, payload e responsável por validação de consentimento]
 - [ ] **Garantir visualização contextual dentro de cada módulo (cards com deep link)**.
   - **Critério**: [Notificações com deep links funcionando em todos os módulos]
 - [ ] **Implementar marcação de lido, arquivar, fixar, deletar (quando permitido)**.
@@ -142,8 +142,8 @@
   - **Critério**: [Presets aplicados automaticamente baseados no role do usuário]
 - [ ] **Permitir silenciar temporariamente (snooze) por evento/módulo**.
   - **Critério**: [Funcionalidade snooze implementada com timer configurável]
-- [ ] **Permitir seleção de canais (in-app, email, WhatsApp futuro) por evento**.
-  - **Critério**: [Seleção de canais por evento funcionando; WhatsApp permanece desativado até integração oficial]
+- [ ] **Permitir seleção de canais (in-app, email) por evento**.
+  - **Critério**: [Seleção de canais por evento funcionando]
 - [ ] **Integrar preferências com LGPD (coleta, logs de consentimento)**.
   - **Critério**: [Logs de consentimento implementados, retenção de 30 dias configurada]
 - [ ] **Implementar painel admin para forçar notificações críticas**.

@@ -41,11 +41,11 @@ export class NotificationMigrationService {
   /**
    * Mapeia canais do sistema legado para o novo sistema
    */
-  private static mapLegacyChannelsToNew(legacyChannels: string[]): ("REALTIME" | "EMAIL" | "SMS" | "PUSH")[] {
-    const channelMapping: Record<string, "REALTIME" | "EMAIL" | "SMS" | "PUSH"> = {
+  private static mapLegacyChannelsToNew(legacyChannels: string[]): ("REALTIME" | "EMAIL" | "PUSH")[] {
+    const channelMapping: Record<string, "REALTIME" | "EMAIL" | "PUSH"> = {
       IN_APP: "REALTIME",
       EMAIL: "EMAIL",
-      SMS: "SMS",
+      SMS: "EMAIL",
       WHATSAPP: "EMAIL", // Mapear WhatsApp para EMAIL por enquanto
       TELEGRAM: "EMAIL", // Mapear Telegram para EMAIL por enquanto
       PUSH: "PUSH",

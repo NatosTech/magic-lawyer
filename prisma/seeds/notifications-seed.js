@@ -197,7 +197,6 @@ async function createDefaultTemplates(tenantId) {
       title: "Documento rejeitado",
       message: "Documento {nome} foi rejeitado",
       variables: { nome: "string", rejeitadoPor: "string", motivo: "string" },
-    },
     {
       eventType: "relatorio.generated",
       title: "Relatório gerado",
@@ -269,6 +268,9 @@ async function createDefaultPreferences(tenantId, userId, role) {
   }
 }
 
+/**
+ * Garante tenant/usuário de teste e preferências específicas para canais de teste
+ */
 /**
  * Retorna preferências padrão baseadas no role
  */

@@ -1,7 +1,7 @@
 # 🏗️ Arquitetura Técnica - Sistema de Notificações Push
 
 **Data de Criação:** 25/01/2025  
-**Status:** ⏳ **Em Desenvolvimento** - Backend criado, mas não integrado
+**Status:** ⏳ **Em Desenvolvimento** - Backend com fila e rastreio de entrega (Realtime + Email)
 
 ---
 
@@ -58,6 +58,7 @@ graph TB
         Notifications[Notification Table]
         Preferences[NotificationPreferences]
         Templates[NotificationTemplates]
+        Deliveries[NotificationDelivery]
     end
     
     subgraph "Integrações"
@@ -75,6 +76,7 @@ graph TB
     Worker --> Ably
     Worker --> DB
     Worker --> Email
+    Worker --> Deliveries
     Ably --> Channels
     Channels --> Provider
     API --> Email
@@ -134,6 +136,25 @@ CREATE TABLE NotificationPreferences (
 );
 ```
 
+### **Tabela: NotificationDelivery**
+```sql
+CREATE TABLE NotificationDelivery (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  notificationId UUID NOT NULL REFERENCES Notification(id) ON DELETE CASCADE,
+  channel NotificationChannel NOT NULL,
+  provider VARCHAR(50) NOT NULL, -- ABLY, RESEND, etc.
+  providerMessageId VARCHAR(255),
+  status NotificationDeliveryStatus DEFAULT 'PENDING',
+  errorCode VARCHAR(50),
+  errorMessage VARCHAR(500),
+  metadata JSONB,
+  createdAt TIMESTAMP DEFAULT NOW(),
+  updatedAt TIMESTAMP DEFAULT NOW()
+);
+```
+
+> **NotificationDeliveryStatus:** `PENDING`, `SENT`, `DELIVERED`, `READ`, `FAILED`
+
 ### **Tabela: NotificationTemplate**
 ```sql
 CREATE TABLE NotificationTemplate (
@@ -183,9 +204,10 @@ await publishNotification({
 2. Aplicar preferências de notificação
 3. Verificar deduplicação (hash + TTL)
 4. Gerar template personalizado
-5. Salvar no banco de dados
-6. Enviar via Ably (tempo real)
-7. Enviar via email (se configurado)
+5. Salvar no banco de dados (Notification)
+6. Registrar deliveries por canal (NotificationDelivery - status PENDING)
+7. Enviar via canais configurados (Ably e Resend)
+8. Atualizar status do delivery -> SENT/FAILED com messageId do provedor
 ```
 
 ### **3. Deduplicação/Anti-Spam**
@@ -221,8 +243,6 @@ if (existingNotification) {
 4. Atualizar contador de não lidos
 5. Salvar como lida (opcional)
 ```
-
----
 
 ## 🚀 **ESCALABILIDADE**
 
@@ -271,18 +291,6 @@ if (existingNotification) {
 }
 ```
 
-### **WhatsApp** (Planejado)
-```typescript
-// Integração a definir (ex.: Zenvia, Twilio, Meta Cloud API)
-{
-  to: '+55XXXXXXXXXXX',
-  template: 'processo-created-whatsapp',
-  variables: { numero: '1234567-89', cliente: 'João Silva' }
-}
-```
-
----
-
 ## 🔧 **CONFIGURAÇÕES DE AMBIENTE**
 
 ### **Variáveis Implementadas**
@@ -296,6 +304,14 @@ NEXT_PUBLIC_REALTIME_CHANNEL_PREFIX=ml-dev
 # Redis (implementado)
 REDIS_URL=rediss://...  # Vercel Redis (Upstash)
 
+# Resend (email operacional em dev)
+RESEND_API_KEY=...
+RESEND_FROM_EMAIL="Magic Lawyer Test <onboarding@resend.dev>"
+NOTIFICATION_TEST_EMAIL=magiclawyersaas@gmail.com
+
+# Usuário de teste gerado automaticamente
+NOTIFICATION_TEST_USER_EMAIL=magiclawyersaas@gmail.com
+
 # Rate Limiting (implementado)
 NOTIFICATION_RATE_LIMIT_PER_USER=100
 NOTIFICATION_RATE_LIMIT_PER_TENANT=1000
@@ -307,30 +323,29 @@ NOTIFICATION_RATE_LIMIT_PER_TENANT=1000
 ## ⚠️ **STATUS REAL DO SISTEMA**
 
 ### **✅ Implementado:**
-1. ✅ **Schema Prisma** - Tabelas Notification, NotificationPreference, NotificationTemplate criadas
+1. ✅ **Schema Prisma** - Notification, NotificationPreference, NotificationTemplate + NotificationDelivery
 2. ✅ **BullMQ + Redis** - Infraestrutura de fila configurada
-3. ✅ **NotificationService** - Serviço base criado
+3. ✅ **NotificationService** - Serviço base + registro de deliveries e messageId
 4. ✅ **Worker Assíncrono** - Worker BullMQ implementado
 5. ✅ **API Management** - Endpoints de gerenciamento
+6. ✅ **Canais Reais** - Ably (in-app) e Resend (email com domínio `onboarding@resend.dev`)
 
 ### **❌ NÃO Implementado:**
-1. ❌ **Integração Real** - Sistema ainda usa Notificacao/NotificacaoUsuario legado
-2. ❌ **Deduplicação** - Não há hash SHA256 nem TTL implementado
-3. ❌ **Fallback HTTP** - Não há polling quando Ably falha
-4. ❌ **Canais EMAIL/WHATSAPP** - Apenas console.log (ou aguardando API)
-5. ❌ **Cron Jobs** - Não há agendador de prazos
-6. ❌ **Webhooks Asaas** - Não há integração com pagamentos
-7. ❌ **NotificationFactory/Policy** - Classes não existem
-8. ❌ **Migração** - Sistema legado ainda em uso
+1. ❌ **Deduplicação** - Falta hash SHA256 + TTL no Redis
+2. ❌ **Fallback HTTP** - Polling quando Ably falha ainda não implementado
+3. ❌ **Cron Jobs** - Agendador de prazos pendente
+4. ❌ **Webhooks Asaas** - Integração de pagamentos sem eventos
+5. ❌ **NotificationFactory/Policy** - Camada de domínio não existe
+6. ❌ **Rollout definitivo** - Sistema híbrido ainda mantém legado (`NOTIFICATION_USE_NEW_SYSTEM=false` por padrão)
 
 ### **🔧 Próximos Passos Críticos:**
-1. **Migrar sistema legado** - Substituir Notificacao/NotificacaoUsuario
+1. **Ativar novo sistema por padrão** - Revisar flag `NOTIFICATION_USE_NEW_SYSTEM` e concluir migração de módulos restantes
 2. **Implementar deduplicação** - Hash + TTL no Redis
-3. **Implementar canais reais** - EMAIL e WHATSAPP funcionais
-4. **Integrar com módulos** - Conectar Server Actions ao novo sistema
-5. **Implementar cron jobs** - Agendador de prazos
-6. **Implementar webhooks** - Integração Asaas
+3. **Integrar com módulos** - Conectar Server Actions restantes ao novo sistema
+4. **Implementar cron jobs** - Agendador de prazos
+5. **Implementar webhooks Asaas** - Eventos financeiros automáticos
+6. **Entregar fallback HTTP + testes de carga** - Garantir resiliência frontend
 
 ---
 
-**Status:** ⏳ **Backend Criado, Integração Pendente** - Sistema legado ainda em uso
+**Status:** ⏳ **Backend Criado, Migração em Progresso** - Sistema híbrido ativo até finalizar rollout

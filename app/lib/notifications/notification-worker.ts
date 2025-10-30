@@ -11,7 +11,7 @@ export interface NotificationJobData {
   userId: string;
   payload: Record<string, any>;
   urgency: "CRITICAL" | "HIGH" | "MEDIUM" | "INFO";
-  channels: ("REALTIME" | "EMAIL" | "SMS" | "PUSH")[];
+  channels: ("REALTIME" | "EMAIL" | "PUSH")[];
 }
 
 /**
