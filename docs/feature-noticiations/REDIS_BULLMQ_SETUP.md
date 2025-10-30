@@ -1,7 +1,7 @@
 # 🔧 Configuração Redis + BullMQ - Sistema de Notificações
 
 **Data:** 25/01/2025  
-**Status:** ⚠️ **Infraestrutura Criada, Integração Pendente**
+**Status:** ✅ **Infraestrutura Integrada ao NotificationService (fila em uso)**
 
 ---
 
@@ -157,10 +157,9 @@ console.log(stats);
 }
 ```
 
-### **⚠️ Observação Importante:**
-- Worker funciona quando chamado via API
-- Mas **nenhuma parte da aplicação** usa o novo sistema
-- Sistema legado (`app/actions/notifications.ts`) ainda processa todas as notificações
+### **⚠️ Observação Importante (Atualizado):**
+- Worker/queue integrados ao `NotificationService` (jobs adicionados via Server Actions)
+- Sistema híbrido ainda existe, mas novo sistema está default ON quando a env não está definida
 
 ---
 

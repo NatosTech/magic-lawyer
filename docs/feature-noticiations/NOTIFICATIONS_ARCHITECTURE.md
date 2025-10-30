@@ -330,17 +330,17 @@ NOTIFICATION_RATE_LIMIT_PER_TENANT=1000
 5. ✅ **API Management** - Endpoints de gerenciamento
 6. ✅ **Canais Reais** - Ably (in-app) e Resend (email com domínio `onboarding@resend.dev`)
 
-### **❌ NÃO Implementado:**
-1. ❌ **Deduplicação** - Falta hash SHA256 + TTL no Redis
+### **❌/✅ Status Atualizado:**
+1. ✅ **Deduplicação** - Implementada (hash SHA256 + TTL 5min em Redis)
 2. ❌ **Fallback HTTP** - Polling quando Ably falha ainda não implementado
 3. ❌ **Cron Jobs** - Agendador de prazos pendente
 4. ❌ **Webhooks Asaas** - Integração de pagamentos sem eventos
 5. ❌ **NotificationFactory/Policy** - Camada de domínio não existe
-6. ❌ **Rollout definitivo** - Sistema híbrido ainda mantém legado (`NOTIFICATION_USE_NEW_SYSTEM=false` por padrão)
+6. ⚠️ **Rollout** - Híbrido mantém legado; default agora é novo sistema ON quando env não definida
 
 ### **🔧 Próximos Passos Críticos:**
-1. **Ativar novo sistema por padrão** - Revisar flag `NOTIFICATION_USE_NEW_SYSTEM` e concluir migração de módulos restantes
-2. **Implementar deduplicação** - Hash + TTL no Redis
+1. **Finalizar migração** - Concluir migração dos módulos restantes e validar produção
+2. ~Implementar deduplicação~ - JÁ IMPLEMENTADO
 3. **Integrar com módulos** - Conectar Server Actions restantes ao novo sistema
 4. **Implementar cron jobs** - Agendador de prazos
 5. **Implementar webhooks Asaas** - Eventos financeiros automáticos

@@ -441,7 +441,7 @@ Este documento mapeia **TODOS os eventos** que devem gerar notificações no sis
 1. ✅ **Mapeamento Completo** - Este documento
 2. ✅ **Validação com Stakeholders** - Eventos e usuários definidos
 3. ✅ **Definição de Payloads** - Estrutura de dados implementada
-4. ⏳ **Implementação Backend** - Sistema híbrido envia via fila + canais reais (resta ativar por padrão)
+4. ⏳ **Implementação Backend** - Sistema híbrido envia via fila + canais reais (default ON quando env não definida)
 5. ❌ **Implementação Frontend** - Interface não implementada
 
 ### **🚨 Problema Crítico:**

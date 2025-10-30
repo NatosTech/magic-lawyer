@@ -2,6 +2,8 @@ import { PrismaClient } from "@/app/generated/prisma";
 import { publishRealtimeEvent } from "@/app/lib/realtime/publisher";
 import { getNotificationQueue } from "./notification-queue";
 import { EmailChannel } from "./channels/email-channel";
+import { createRedisConnection } from "./redis-config";
+import crypto from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -32,6 +34,22 @@ export class NotificationService {
    */
   static async publishNotification(event: NotificationEvent): Promise<void> {
     try {
+      // Deduplicação simples: chave única por (tenantId, userId, type, payloadHash) com TTL de 5 minutos
+      const redis = createRedisConnection();
+      const payloadHash = crypto
+        .createHash("sha256")
+        .update(JSON.stringify(event.payload))
+        .digest("hex");
+      const dedupKey = `notif:d:${event.tenantId}:${event.userId}:${event.type}:${payloadHash}`;
+
+      // SET NX PX=300000 => só seta se não existir (evita duplicatas)
+      const setResult = await redis.set(dedupKey, "1", "PX", 5 * 60 * 1000, "NX");
+      await redis.disconnect();
+      if (setResult !== "OK") {
+        console.log(`[NotificationService] 🔁 Evento duplicado ignorado (${event.type}) para usuário ${event.userId}`);
+        return;
+      }
+
       const queue = getNotificationQueue();
 
       // Adiciona job à fila para processamento assíncrono

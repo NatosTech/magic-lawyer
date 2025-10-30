@@ -11,6 +11,8 @@ import {
   ProcessoPrazoStatus,
   ProcessoPolo,
 } from "@/app/generated/prisma";
+import { ProcessoNotificationIntegration } from "@/app/lib/notifications/examples/processo-integration";
+import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notification-service";
 
 // ============================================
 // TYPES - Prisma Type Safety (Best Practice)
@@ -1864,6 +1866,22 @@ export async function createProcesso(data: ProcessoCreateInput) {
       }),
     );
 
+    // Notificação: processo criado (responsável ou usuário atual)
+    try {
+      const responsavelUserId =
+        (processo.advogadoResponsavel?.usuario as any)?.id || (user.id as string);
+      await ProcessoNotificationIntegration.notifyProcessoCreated({
+        processoId: processo.id,
+        numero: processo.numero,
+        tenantId: user.tenantId,
+        userId: responsavelUserId,
+        clienteNome: processo.cliente?.nome,
+        advogadoNome: (processo.advogadoResponsavel?.usuario as any)?.firstName,
+      });
+    } catch (e) {
+      logger.warn("Falha ao emitir notificação de processo criado", e);
+    }
+
     return {
       success: true,
       processo: serialized,
@@ -2060,7 +2078,7 @@ export async function updateProcesso(
           area: true,
           advogadoResponsavel: {
             include: {
-              usuario: true,
+              usuario: { select: { id: true, firstName: true, lastName: true, email: true } },
             },
           },
           juiz: true,
@@ -2112,6 +2130,47 @@ export async function updateProcesso(
         return value;
       }),
     );
+
+    // Notificações: processo atualizado e mudança de status
+    try {
+      const responsavelUserId =
+        (atualizado.advogadoResponsavel?.usuario as any)?.id || (user.id as string);
+
+      await HybridNotificationService.publishNotification({
+        type: "processo.updated",
+        tenantId: tenantId,
+        userId: responsavelUserId,
+        payload: {
+          processoId,
+          numero: atualizado.numero,
+          changes: Object.keys(data || {}),
+          referenciaTipo: "PROCESSO",
+          referenciaId: processoId,
+        },
+        urgency: "MEDIUM",
+        channels: ["REALTIME"],
+      });
+
+      if (data.status && data.status !== processo.status) {
+        await HybridNotificationService.publishNotification({
+          type: "processo.status_changed",
+          tenantId: tenantId,
+          userId: responsavelUserId,
+          payload: {
+            processoId,
+            numero: atualizado.numero,
+            oldStatus: processo.status,
+            newStatus: data.status,
+            referenciaTipo: "PROCESSO",
+            referenciaId: processoId,
+          },
+          urgency: "HIGH",
+          channels: ["REALTIME", "EMAIL"],
+        });
+      }
+    } catch (e) {
+      logger.warn("Falha ao emitir notificações de processo atualizado", e);
+    }
 
     return {
       success: true,

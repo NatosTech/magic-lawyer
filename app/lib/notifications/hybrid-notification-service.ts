@@ -7,7 +7,10 @@ import { NotificationEvent } from "./types";
  * durante o período de transição
  */
 export class HybridNotificationService {
-  private static useNewSystem = process.env.NOTIFICATION_USE_NEW_SYSTEM === "true";
+  private static useNewSystem =
+    process.env.NOTIFICATION_USE_NEW_SYSTEM === undefined
+      ? true
+      : process.env.NOTIFICATION_USE_NEW_SYSTEM === "true";
 
   /**
    * Publica uma notificação usando o sistema apropriado

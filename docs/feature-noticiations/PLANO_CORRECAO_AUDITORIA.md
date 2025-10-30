@@ -26,7 +26,7 @@
 - ✅ Novo sistema (`Notification`) recebendo eventos (eventos/prazos/andamentos) via fila
 - ✅ Fila/worker assíncrono em uso com `NotificationDelivery`
 - ✅ **Canais implementados** - Ably (in-app) e Resend (email)
-- ❌ **Deduplicação não implementada**
+- ✅ **Deduplicação implementada** (hash SHA256 do payload + TTL 5min em Redis)
 - ❌ **Agendador de prazos não implementado**
 - ❌ **Webhooks Asaas não implementados**
 - ❌ **NotificationFactory/Policy não existem**
@@ -46,11 +46,11 @@
 - ✅ Redis configurado no Vercel (Upstash)
 - ✅ Worker assíncrono criado
 - ✅ API de gerenciamento implementada
-- ❌ **Sistema não integrado** - Ainda usa legado
+- ⚠️ **Sistema parcialmente integrado** - Novo sistema ativado por padrão quando a env não está definida; híbrido ainda disponível via flag
 
-### **FASE 3: Integração Crítica** ❌ **NÃO IMPLEMENTADA**
-- ❌ **Migração do sistema legado** - Notificacao/NotificacaoUsuario ainda ativo
-- ❌ **Implementar deduplicação** - Hash + TTL no Redis
+### **FASE 3: Integração Crítica** ⚠️ **EM PROGRESSO**
+- ⚠️ **Migração do sistema legado** - Híbrido ativo; novo sistema default ligado (flag pode desativar)
+- ✅ **Implementar deduplicação** - Concluída (Redis)
 - ❌ **Implementar canais reais** - EMAIL em produção e WHATSAPP (após escolha da API)
 - ❌ **Integrar com módulos** - Conectar Server Actions ao novo sistema
 - ❌ **Implementar cron jobs** - Agendador de prazos
@@ -61,8 +61,8 @@
 
 ## 🚀 **PRÓXIMOS PASSOS CRÍTICOS**
 
-1. ⚠️ **Ativar novo sistema em produção**: Revisar `NOTIFICATION_USE_NEW_SYSTEM` e completar migração dos módulos restantes
-2. ❌ **Deduplicação**: Implementar hash + TTL no Redis
+1. ⚠️ **Ativar novo sistema em produção**: Revisar `NOTIFICATION_USE_NEW_SYSTEM` (default agora é ON) e completar migração dos módulos restantes
+2. ✅ **Deduplicação**: Implementada (hash + TTL no Redis)
 3. ❌ **Fallback HTTP**: Provisionar polling quando Ably falhar
 4. ❌ **Agendador de prazos**: Cron jobs para D-7/D-3/D-1/H-2
 5. ❌ **Webhooks Asaas**: Gerar eventos automáticos de pagamento

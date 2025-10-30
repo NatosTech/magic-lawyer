@@ -32,7 +32,7 @@
   - **Critério**: [Schema Prisma implementado com tipos TypeScript correspondentes]
 - [x] **Planejar storage eventual para histórico (tabela `Notification` + `NotificationPreference`)**.
   - **Critério**: [Tabelas implementadas com índices e política de retenção LGPD]
-- [ ] **Definir mecanismo de deduplicação/anti-spam (hash por evento + TTL)**.
+- [x] **Definir mecanismo de deduplicação/anti-spam (hash por evento + TTL)**.
   - **Critério**: [Sistema de deduplicação implementado com hash SHA256 e TTL de 5 minutos]
 - [x] **Documentar atualização necessária em `.env` e secrets (keys realtime, Redis, etc.)**.
   - **Critério**: [Documentação completa de variáveis de ambiente com valores por ambiente]
@@ -68,8 +68,8 @@
   - **Critério**: [Sistema híbrido implementado, módulos de eventos, andamentos e advogados migrados]
 
 ## Etapa 4 — Integração com Módulos e Gatilhos ⏳ **EM ANDAMENTO**
-- [ ] **Processos**: disparar eventos em criação, alteração de status, inclusão de parte, upload de documento.
-  - **Critério**: [Eventos `processo.created`, `processo.updated`, `processo.status_changed`, `processo.document_uploaded` disparados em Server Actions correspondentes]
+- [x] **Processos (PARCIAL)**: criação e alteração de status implementadas. Upload de documento pendente.
+  - **Critério**: [Eventos `processo.created`, `processo.updated`, `processo.status_changed` disparados em Server Actions]
 - [x] **Prazos**: disparar alertas proximidade (D-7, D-3, D-1, H-2) e alertas de vencimento.
   - **Critério**: [Eventos `prazo.created` integrados em `app/actions/andamentos.ts` via sistema híbrido]
 - [x] **Agenda**: sincronizar compromissos criados/atualizados/cancelados.
