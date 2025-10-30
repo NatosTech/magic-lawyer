@@ -146,7 +146,7 @@
 - [x] **Webhooks** - Integração com sistemas externos
 - [x] **API de CEP** - Busca automática de endereços
 - [x] **Validação de CPF/CNPJ** - APIs de validação
-- [ ] **WhatsApp Business API** - Comunicação automatizada
+- [ ] **WhatsApp Business API** - Comunicação automatizada _(adiada para a fase final; aguardando regras de negócio e definição clara da API da Meta)_
 - [ ] **APIs Jurídicas** - Consulta processual, OAB, CNJ
 - [ ] **Assinaturas Digitais** - ICP-Brasil A1/A3
 - [ ] **Sistema de Jurisprudência** - Consulta e armazenamento de decisões
@@ -160,7 +160,7 @@
 ### 📋 **9. SISTEMA DE NOTIFICAÇÕES**
 - [x] **Notificações Push** - Sistema de eventos em tempo real com Ably
 - [x] **Notificações por Email** - Alertas automáticos
-- [ ] **Notificações por WhatsApp** - Mensagens automáticas
+- [ ] **Notificações por WhatsApp** - Mensagens automáticas _(postergada para o encerramento do projeto, após estabilizar realtime + email)_
 - [x] **Notificações no Sistema** - Badge de contador
 - [ ] **Configurações de Notificação** - Preferências por usuário
 - [x] **Histórico de Notificações** - Lista com filtros
@@ -526,7 +526,7 @@
 ### 🎯 **PRÓXIMAS IMPLEMENTAÇÕES (PRIORIDADE)**
 1. **Sistema de Jurisprudência** - Consulta e armazenamento de decisões
 2. **Sistema de Notificações Push** - WebSocket para tempo real
-3. **Sistema de Notificações WhatsApp** - Mensagens automáticas
+3. **Sistema de Notificações WhatsApp** - Mensagens automáticas _(executar apenas na etapa final, quando tivermos regras e opt-in definidos)_
 4. **Sistema de Chat Interno** - Comunicação entre membros da equipe
 5. **Sistema de IA Jurídica** - Assistente jurídico e automação
 6. **Analytics e Business Intelligence** - Métricas e relatórios avançados
@@ -544,7 +544,7 @@
 **FASE 1 (Alta Prioridade - 1-2 semanas):**
 - Sistema de Jurisprudência
 - Sistema de Notificações Push
-- Sistema de Notificações WhatsApp
+- Sistema de Notificações WhatsApp _(programado para a fase final do cronograma)_
 
 **FASE 2 (Média Prioridade - 1-2 semanas):**
 - Sistema de Chat Interno
