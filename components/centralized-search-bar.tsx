@@ -55,8 +55,13 @@ export function CentralizedSearchBar({
     };
 
     document.addEventListener("keydown", handleKeyDown);
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener("open-search", handleOpen as EventListener);
 
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("open-search", handleOpen as EventListener);
+    };
   }, [isMac, isOpen]);
 
   // Focus input when modal opens

@@ -3,19 +3,10 @@
 import type { ReactNode, SVGProps } from "react";
 
 import { useMemo, useEffect } from "react";
-import {
-  Navbar as HeroUINavbar,
-  NavbarBrand,
-  NavbarContent,
-} from "@heroui/navbar";
+import { Navbar as HeroUINavbar, NavbarBrand, NavbarContent } from "@heroui/navbar";
 import { Button } from "@heroui/button";
 import { link as linkStyles } from "@heroui/theme";
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/dropdown";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { Avatar } from "@heroui/avatar";
 import { Badge } from "@heroui/badge";
 import clsx from "clsx";
@@ -54,17 +45,7 @@ type NavbarProps = {
 };
 
 const MenuIcon = ({ className, ...props }: SVGProps<SVGSVGElement>) => (
-  <svg
-    aria-hidden
-    className={clsx("h-5 w-5", className)}
-    fill="none"
-    stroke="currentColor"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    strokeWidth={2}
-    viewBox="0 0 24 24"
-    {...props}
-  >
+  <svg aria-hidden className={clsx("h-5 w-5", className)} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24" {...props}>
     <line x1="3" x2="21" y1="6" y2="6" />
     <line x1="3" x2="21" y1="12" y2="12" />
     <line x1="3" x2="21" y1="18" y2="18" />
@@ -74,16 +55,10 @@ const MenuIcon = ({ className, ...props }: SVGProps<SVGSVGElement>) => (
 const toTitleCase = (value: string) =>
   value
     .split(" ")
-    .map((part) =>
-      part.length > 0 ? part[0].toUpperCase() + part.slice(1) : part,
-    )
+    .map((part) => (part.length > 0 ? part[0].toUpperCase() + part.slice(1) : part))
     .join(" ");
 
-export const Navbar = ({
-  onOpenSidebar,
-  rightExtras,
-  showAuthenticatedSecondaryNav = true,
-}: NavbarProps) => {
+export const Navbar = ({ onOpenSidebar, rightExtras, showAuthenticatedSecondaryNav = true }: NavbarProps) => {
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -92,27 +67,15 @@ export const Navbar = ({
   const tenantLogoUrl = session?.user?.tenantLogoUrl || undefined;
   const tenantName = session?.user?.tenantName || "Magic Lawyer";
   const hasTenantBranding = Boolean(session?.user?.tenantName || tenantLogoUrl);
-  const brandSubtitle = hasTenantBranding
-    ? "Portal do escritório"
-    : "SaaS jurídico white label";
-  const brandTitleClasses = clsx(
-    "text-sm font-semibold text-primary",
-    hasTenantBranding ? "tracking-tight" : "uppercase tracking-[0.3em]",
-  );
-  const userDisplayName =
-    session?.user?.name || session?.user?.email || "Usuário";
+  const brandSubtitle = hasTenantBranding ? "Portal do escritório" : "SaaS jurídico white label";
+  const brandTitleClasses = clsx("text-xs sm:text-sm font-semibold text-primary", hasTenantBranding ? "tracking-tight" : "uppercase tracking-[0.3em]");
+  const userDisplayName = session?.user?.name || session?.user?.email || "Usuário";
   const userEmail = session?.user?.email || "Conta Magic Lawyer";
-  const userAvatar =
-    avatarUrl || (session?.user as any)?.avatarUrl || undefined;
+  const userAvatar = avatarUrl || (session?.user as any)?.avatarUrl || undefined;
   const userRole = (session?.user as any)?.role as UserRole | undefined;
-  const userPermissions =
-    ((session?.user as any)?.permissions as TenantPermission[] | undefined) ??
-    [];
+  const userPermissions = ((session?.user as any)?.permissions as TenantPermission[] | undefined) ?? [];
   const isSuperAdmin = userRole === UserRole.SUPER_ADMIN;
-  const hasPermission = (permission?: string) =>
-    !permission ||
-    isSuperAdmin ||
-    userPermissions.includes(permission as TenantPermission);
+  const hasPermission = (permission?: string) => !permission || isSuperAdmin || userPermissions.includes(permission as TenantPermission);
 
   // Escutar evento customizado de atualização do avatar
   useEffect(() => {
@@ -121,24 +84,16 @@ export const Navbar = ({
       mutateAvatar();
     };
 
-    window.addEventListener(
-      "avatarUpdated",
-      handleAvatarUpdate as EventListener,
-    );
+    window.addEventListener("avatarUpdated", handleAvatarUpdate as EventListener);
 
     return () => {
-      window.removeEventListener(
-        "avatarUpdated",
-        handleAvatarUpdate as EventListener,
-      );
+      window.removeEventListener("avatarUpdated", handleAvatarUpdate as EventListener);
     };
   }, [mutateAvatar]);
 
   const appVersion = packageInfo.version ?? "0.0.0";
 
-  const canManageTenantSettings = hasPermission(
-    TENANT_PERMISSIONS.manageOfficeSettings,
-  );
+  const canManageTenantSettings = hasPermission(TENANT_PERMISSIONS.manageOfficeSettings);
 
   const renderNavLink = (label: string, href: string) => {
     const isActive = pathname === href;
@@ -149,9 +104,7 @@ export const Navbar = ({
         className={clsx(
           linkStyles({ color: "foreground" }),
           "relative px-4 py-2 text-sm font-medium transition-colors",
-          isActive
-            ? "bg-primary/15 text-primary"
-            : "text-default-500 hover:text-primary",
+          isActive ? "bg-primary/15 text-primary" : "text-default-500 hover:text-primary"
         )}
         href={href}
       >
@@ -193,9 +146,7 @@ export const Navbar = ({
     const items = segments.map((segment, index) => {
       const href = `/${segments.slice(0, index + 1).join("/")}`;
       const normalized = segment.replace(/-/g, " ");
-      const label = breadcrumbLabelMap[segment]
-        ? breadcrumbLabelMap[segment]
-        : toTitleCase(normalized);
+      const label = breadcrumbLabelMap[segment] ? breadcrumbLabelMap[segment] : toTitleCase(normalized);
 
       return {
         href,
@@ -214,20 +165,15 @@ export const Navbar = ({
     if (!showAuthenticatedSecondaryNav) return null;
 
     return (
-      <div className="mx-auto w-full max-w-6xl border-b border-divider bg-background/60 px-6 py-3 backdrop-blur-xl">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="mx-auto w-full max-w-full xl:max-w-6xl border-b border-divider bg-background/60 px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 backdrop-blur-xl overflow-x-auto">
+        <div className="flex flex-nowrap items-center gap-2">
           {siteConfig.navItemsAuthenticated.map((item) => {
             const isActive = pathname.startsWith(item.href);
 
             return (
               <NextLink
                 key={item.href}
-                className={clsx(
-                  "px-4 py-2 text-sm font-medium transition rounded-md",
-                  isActive
-                    ? "bg-primary/25 text-primary"
-                    : "text-default-500 hover:text-primary hover:bg-default-100",
-                )}
+                className={clsx("px-4 py-2 text-sm font-medium transition rounded-md", isActive ? "bg-primary/25 text-primary" : "text-default-500 hover:text-primary hover:bg-default-100")}
                 href={item.href}
               >
                 {item.label}
@@ -241,11 +187,7 @@ export const Navbar = ({
 
   return (
     <div className="sticky top-0 z-50 flex flex-col">
-      <HeroUINavbar
-        className="border-b border-divider bg-background/95 backdrop-blur-xl py-2"
-        isBordered={false}
-        maxWidth="full"
-      >
+      <HeroUINavbar className="border-b border-divider bg-background/95 backdrop-blur-xl py-1 md:py-2" isBordered={false} maxWidth="full">
         {/* Seção Esquerda - Brand e Menu Mobile */}
         <NavbarContent className="flex-shrink-0 min-w-0" justify="start">
           {onOpenSidebar ? (
@@ -261,14 +203,10 @@ export const Navbar = ({
           ) : null}
           <NavbarBrand className="min-w-0">
             <NextLink className="flex items-center gap-2" href="/">
-              <span className="flex flex-col leading-tight">
-                <span className={brandTitleClasses}>{tenantName}</span>
-                <span className="text-xs text-default-400">
-                  {brandSubtitle}
-                </span>
-                <span className="text-[10px] uppercase tracking-wide text-default-600">
-                  versão {appVersion}
-                </span>
+              <span className="flex min-w-0 flex-col leading-tight">
+                <span className={clsx(brandTitleClasses, "truncate max-w-[120px] sm:max-w-[180px] lg:max-w-none")}>{tenantName}</span>
+                <span className="block text-xs text-default-400 truncate max-w-[160px] sm:max-w-[220px] lg:max-w-none">{brandSubtitle}</span>
+                <span className="hidden md:block text-[10px] uppercase tracking-wide text-default-600">versão {appVersion}</span>
               </span>
             </NextLink>
           </NavbarBrand>
@@ -276,88 +214,74 @@ export const Navbar = ({
 
         {/* Seção Central - Search Bar */}
         {session?.user && (
-          <NavbarContent className="flex-1 min-w-0 px-4" justify="center">
-            <CentralizedSearchBar className="w-full max-w-3xl" />
-          </NavbarContent>
+          <>
+            {/* Botão de lupa até xl (modo 50% usa botão) */}
+            <NavbarContent className="flex-1 min-w-0 px-1 sm:px-2 xl:hidden" justify="center">
+              <Button
+                isIconOnly
+                aria-label="Buscar"
+                className="h-8 w-8 min-w-8 border border-divider bg-content1 text-default-600 hover:text-primary"
+                radius="full"
+                size="sm"
+                variant="light"
+                onPress={() => window.dispatchEvent(new CustomEvent("open-search"))}
+              >
+                {/* lucide search svg inline to avoid extra import churn */}
+                <svg aria-hidden className="h-4 w-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" x2="16.65" y1="21" y2="16.65" />
+                </svg>
+              </Button>
+            </NavbarContent>
+
+            {/* Barra de busca apenas em ≥xl (telas largas/PC) */}
+            <NavbarContent className="hidden xl:flex flex-1 min-w-0 px-1 sm:px-3" justify="center">
+              <CentralizedSearchBar className="w-full max-w-[380px] lg:max-w-[640px] xl:max-w-2xl" />
+            </NavbarContent>
+          </>
         )}
 
         {/* Seção Direita - Ações */}
         <NavbarContent className="flex-shrink-0 min-w-0" justify="end">
           {session?.user ? rightExtras : null}
           {session?.user ? (
-            <div className="hidden sm:block">
+            <div className="hidden lg:block">
               <NotificationCenter />
             </div>
           ) : null}
-          <ThemeSwitch />
+          <div className="hidden lg:block">
+            <ThemeSwitch />
+          </div>
           {session?.user ? (
             <div className="hidden sm:block">
               <Dropdown placement="bottom-end">
                 <DropdownTrigger>
-                  <Button
-                    className="min-w-0 p-2 h-auto gap-2 border border-divider bg-content1 shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
-                    variant="light"
-                  >
+                  <Button className="min-w-0 p-1.5 sm:p-2 h-auto gap-2 border border-divider bg-content1 shadow-sm transition hover:border-primary/40 hover:bg-primary/5" variant="light">
                     <Badge
-                      color={
-                        userRole === "ADMIN"
-                          ? "danger"
-                          : userRole === "ADVOGADO"
-                            ? "primary"
-                            : "default"
-                      }
+                      color={userRole === "ADMIN" ? "danger" : userRole === "ADVOGADO" ? "primary" : "default"}
                       content={userRole?.replace(/_/g, " ").charAt(0) || "U"}
                       placement="bottom-right"
                       shape="circle"
                       size="sm"
                     >
-                      <Avatar
-                        isBordered
-                        className="w-8 h-8 text-xs"
-                        name={userDisplayName}
-                        size="sm"
-                        src={userAvatar}
-                      />
+                      <Avatar isBordered className="w-8 h-8 text-xs" name={userDisplayName} size="sm" src={userAvatar} />
                     </Badge>
-                    <div className="hidden md:block min-w-0 flex-1 text-left">
-                      <p className="text-sm font-medium truncate">
-                        {userDisplayName}
-                      </p>
-                      <p className="text-xs text-default-500 truncate">
-                        {userRole?.replace(/_/g, " ").toLowerCase()}
-                      </p>
+                    <div className="hidden xl:block min-w-0 flex-1 text-left">
+                      <p className="text-sm font-medium truncate">{userDisplayName}</p>
+                      <p className="text-xs text-default-500 truncate">{userRole?.replace(/_/g, " ").toLowerCase()}</p>
                     </div>
                   </Button>
                 </DropdownTrigger>
-                <DropdownMenu
-                  aria-label="Menu do usuário"
-                  className="min-w-[220px]"
-                  onAction={(key) => handleUserAction(String(key))}
-                >
-                  <DropdownItem
-                    key="profile"
-                    description={
-                      isSuperAdmin
-                        ? "Configurações do sistema"
-                        : "Gerenciar informações pessoais"
-                    }
-                  >
+                <DropdownMenu aria-label="Menu do usuário" className="min-w-[220px]" onAction={(key) => handleUserAction(String(key))}>
+                  <DropdownItem key="profile" description={isSuperAdmin ? "Configurações do sistema" : "Gerenciar informações pessoais"}>
                     {isSuperAdmin ? "Configurações" : "Meu perfil"}
                   </DropdownItem>
                   {!isSuperAdmin && canManageTenantSettings ? (
-                    <DropdownItem
-                      key="tenant-settings"
-                      description="Branding, domínios e integrações do escritório"
-                    >
+                    <DropdownItem key="tenant-settings" description="Branding, domínios e integrações do escritório">
                       Configurações do escritório
                     </DropdownItem>
                   ) : null}
-                  <DropdownItem
-                    key="logout"
-                    className="text-danger"
-                    color="danger"
-                    description="Encerrar sessão com segurança"
-                  >
+                  <DropdownItem key="logout" className="text-danger" color="danger" description="Encerrar sessão com segurança">
                     Sair
                   </DropdownItem>
                 </DropdownMenu>
