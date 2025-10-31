@@ -550,11 +550,18 @@ export function TenantManagementContent({
         </CardBody>
       </Card>
 
-      <Tabs
-        aria-label="Painel de gerenciamento do tenant"
-        color="primary"
-        variant="bordered"
-      >
+      <div className="w-full">
+        <Tabs
+          aria-label="Painel de gerenciamento do tenant"
+          color="primary"
+          variant="bordered"
+          classNames={{
+            base: "w-full",
+            tabList: "gap-2 justify-center w-full",
+            tab: "min-w-[180px] px-8 py-4 text-base font-medium",
+            panel: "w-full",
+          }}
+        >
         <Tab
           key="overview"
           title={
@@ -644,7 +651,8 @@ export function TenantManagementContent({
         >
           <AuditTab />
         </Tab>
-      </Tabs>
+        </Tabs>
+      </div>
 
       {isLoading ? (
         <div className="flex justify-center">
@@ -1430,6 +1438,13 @@ function EmailTab({ tenantId }: { tenantId: string }) {
               label="Tipo de credencial" 
               description={formType === "DEFAULT" ? "Uso geral (notificações, agenda, etc.)" : "Comunicações administrativas"}
               selectedKeys={formType ? [formType] : []}
+              startContent={
+                formType === "DEFAULT" ? (
+                  <Bell className="h-4 w-4 text-primary" />
+                ) : formType === "ADMIN" ? (
+                  <Shield className="h-4 w-4 text-secondary" />
+                ) : null
+              }
               onSelectionChange={(keys) => {
                 const value = Array.from(keys)[0] as string;
                 if (typeof value === "string") setFormType(value as "DEFAULT" | "ADMIN");

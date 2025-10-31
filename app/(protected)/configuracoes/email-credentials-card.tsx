@@ -243,6 +243,13 @@ export function EmailCredentialsCard() {
               label="Tipo de credencial"
               description={formType === "DEFAULT" ? "Uso geral (notificações, agenda, etc.)" : "Comunicações administrativas"}
               selectedKeys={formType ? [formType] : []}
+              startContent={
+                formType === "DEFAULT" ? (
+                  <Bell className="h-4 w-4 text-primary" />
+                ) : formType === "ADMIN" ? (
+                  <Shield className="h-4 w-4 text-secondary" />
+                ) : null
+              }
               onSelectionChange={(keys) => {
                 const value = Array.from(keys)[0] as string;
                 if (typeof value === "string") setFormType(value as "DEFAULT" | "ADMIN");
