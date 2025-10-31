@@ -1,4 +1,6 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
+
+import prisma from "@/app/lib/prisma";
 
 // =============================================
 // TYPES
@@ -403,75 +405,110 @@ export const getNotificacaoTemplate = (data: {
 // =============================================
 
 class EmailService {
-  private resend: Resend;
-  private defaultFrom: string;
-
-  constructor() {
-    this.resend = new Resend(process.env.RESEND_API_KEY);
-    this.defaultFrom =
-      process.env.RESEND_FROM_EMAIL &&
-      process.env.RESEND_FROM_EMAIL.trim().length > 0
-        ? process.env.RESEND_FROM_EMAIL
-        : "Magic Lawyer Test <onboarding@resend.dev>";
+  private resolveFromName(tenantId: string, fallbackName?: string) {
+    return prisma.tenantBranding
+      .findUnique({ where: { tenantId } })
+      .then((branding) => branding?.emailFromName || fallbackName || "Magic Lawyer");
   }
 
-  async sendEmail(
-    emailData: EmailData,
+  private async getTenantEmailCredential(
+    tenantId: string,
+    type: "DEFAULT" | "ADMIN" = "DEFAULT",
+  ) {
+    const cred = await prisma.tenantEmailCredential.findUnique({
+      where: { tenantId_type: { tenantId, type } },
+    });
+
+    if (!cred && type === "DEFAULT") {
+      // tentar ADMIN como fallback
+      return prisma.tenantEmailCredential.findUnique({
+        where: { tenantId_type: { tenantId, type: "ADMIN" } },
+      });
+    }
+
+    return cred;
+  }
+
+  private createTransporter({
+    email,
+    appPassword,
+  }: {
+    email: string;
+    appPassword: string;
+  }) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: Number(process.env.SMTP_PORT || 465),
+      secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : true,
+      auth: {
+        user: email,
+        pass: appPassword,
+      },
+    });
+  }
+
+  async sendEmailPerTenant(
+    tenantId: string,
+    emailData: EmailData & { credentialType?: "DEFAULT" | "ADMIN"; fromNameFallback?: string },
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      if (!process.env.RESEND_API_KEY) {
-        console.error("RESEND_API_KEY not configured");
+      const credential = await this.getTenantEmailCredential(
+        tenantId,
+        emailData.credentialType || "DEFAULT",
+      );
 
-        return { success: false, error: "RESEND_API_KEY not configured" };
+      if (!credential) {
+        return { success: false, error: "Credenciais de email não configuradas para o tenant" };
       }
 
-      const { data, error } = await this.resend.emails.send({
-        from: emailData.from || this.defaultFrom,
-        to: [emailData.to],
+      const transporter = this.createTransporter({
+        email: credential.email,
+        appPassword: credential.appPassword,
+      });
+
+      const fromName = await this.resolveFromName(tenantId, credential.fromName || emailData.fromNameFallback);
+      const from = emailData.from || `${fromName} <${credential.email}>`;
+
+      const info = await transporter.sendMail({
+        from,
+        to: emailData.to,
         subject: emailData.subject,
         html: emailData.html,
         text: emailData.text || emailData.html.replace(/<[^>]*>/g, ""),
       });
 
-      if (error) {
-        console.error("Error sending email:", error);
-
-        return {
-          success: false,
-          error: error.message || "Error sending email",
-        };
-      }
-
-      console.log("Email sent successfully:", data?.id);
-
-      return { success: true, messageId: data?.id || undefined };
+      return { success: true, messageId: info.messageId };
     } catch (error) {
-      console.error("Error sending email:", error);
+      console.error("Error sending email (per-tenant):", error);
 
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unknown error sending email",
+        error: error instanceof Error ? error.message : "Unknown error sending email",
       };
     }
   }
 
-  async sendBoasVindasAdvogado(data: AdvogadoEmailData): Promise<boolean> {
+  async sendBoasVindasAdvogado(
+    tenantId: string,
+    data: AdvogadoEmailData,
+  ): Promise<boolean> {
     const template = getBoasVindasTemplate(data);
 
-    const result = await this.sendEmail({
+    const result = await this.sendEmailPerTenant(tenantId, {
       to: data.email,
       subject: template.subject,
       html: template.html,
       text: template.text,
+      credentialType: "ADMIN",
+      fromNameFallback: "Magic Lawyer",
     });
 
     return result.success;
   }
 
-  async sendNotificacaoAdvogado(data: {
+  async sendNotificacaoAdvogado(
+    tenantId: string,
+    data: {
     nome: string;
     email: string;
     tipo: string;
@@ -479,37 +516,60 @@ class EmailService {
     mensagem: string;
     linkAcao?: string;
     textoAcao?: string;
-  }): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    },
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const template = getNotificacaoTemplate(data);
 
-    return this.sendEmail({
+    return this.sendEmailPerTenant(tenantId, {
       to: data.email,
       subject: template.subject,
       html: template.html,
       text: template.text,
+      credentialType: "DEFAULT",
     });
   }
 
-  // Método para testar a configuração de email
-  async testConnection(): Promise<boolean> {
+  // Método para testar a configuração de email por tenant
+  async testConnection(tenantId: string, type: "DEFAULT" | "ADMIN" = "DEFAULT"): Promise<boolean> {
     try {
-      if (!process.env.RESEND_API_KEY) {
-        return false;
-      }
-      // Resend não tem um método de verificação direto, então vamos tentar enviar um email de teste
-      const result = await this.sendEmail({
-        to: process.env.NOTIFICATION_TEST_EMAIL || "test@example.com",
-        subject: "Magic Lawyer - Test Connection",
-        html: "<p>Test</p>",
+      const credential = await this.getTenantEmailCredential(tenantId, type);
+      if (!credential) return false;
+
+      const transporter = this.createTransporter({
+        email: credential.email,
+        appPassword: credential.appPassword,
       });
 
-      return result.success;
+      await transporter.verify();
+
+      return true;
     } catch (error) {
       console.error("Email connection test failed:", error);
 
       return false;
     }
   }
+
+  async getProvidersStatus(
+    tenantId: string,
+  ): Promise<Array<{ name: string; configured: boolean }>> {
+    const [defaultCred, adminCred] = await Promise.all([
+      this.getTenantEmailCredential(tenantId, "DEFAULT"),
+      this.getTenantEmailCredential(tenantId, "ADMIN"),
+    ]);
+
+    return [
+      {
+        name: "Nodemailer (DEFAULT)",
+        configured: Boolean(defaultCred),
+      },
+      {
+        name: "Nodemailer (ADMIN)",
+        configured: Boolean(adminCred),
+      },
+    ];
+  }
+
 }
 
 export const emailService = new EmailService();

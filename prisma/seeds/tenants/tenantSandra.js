@@ -96,6 +96,48 @@ async function seedTenantSandra(prisma, Prisma) {
     },
   });
 
+  await prisma.tenantEmailCredential.upsert({
+    where: {
+      tenantId_type: {
+        tenantId: tenant.id,
+        type: "DEFAULT",
+      },
+    },
+    update: {
+      email: "magiclawyersaas@gmail.com",
+      appPassword: "dxijwnbycpucxevl",
+      fromName: "Sandra Advocacia",
+    },
+    create: {
+      tenantId: tenant.id,
+      type: "DEFAULT",
+      email: "magiclawyersaas@gmail.com",
+      appPassword: "dxijwnbycpucxevl",
+      fromName: "Sandra Advocacia",
+    },
+  });
+
+  await prisma.tenantEmailCredential.upsert({
+    where: {
+      tenantId_type: {
+        tenantId: tenant.id,
+        type: "ADMIN",
+      },
+    },
+    update: {
+      email: "robsonnonatoiii@gmail.com",
+      appPassword: "hcwwwqxqzrhdgeuj",
+      fromName: "Administração Sandra Advocacia",
+    },
+    create: {
+      tenantId: tenant.id,
+      type: "ADMIN",
+      email: "robsonnonatoiii@gmail.com",
+      appPassword: "hcwwwqxqzrhdgeuj",
+      fromName: "Administração Sandra Advocacia",
+    },
+  });
+
   const enderecos = [
     {
       apelido: "Matriz São Paulo",

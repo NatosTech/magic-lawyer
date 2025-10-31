@@ -1,6 +1,4 @@
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { emailService } from "@/app/lib/email-service";
 
 export interface ConviteEmailData {
   email: string;
@@ -13,7 +11,10 @@ export interface ConviteEmailData {
   role: string;
 }
 
-export async function sendConviteEmail(data: ConviteEmailData): Promise<void> {
+export async function sendConviteEmail(
+  tenantId: string,
+  data: ConviteEmailData,
+): Promise<void> {
   const {
     email,
     nome,
@@ -37,11 +38,8 @@ export async function sendConviteEmail(data: ConviteEmailData): Promise<void> {
   const roleLabel = getRoleLabel(role);
 
   try {
-    await resend.emails.send({
-      from: "Magic Lawyer <noreply@magiclawyer.com.br>",
-      to: [email],
-      subject: `Convite para participar da equipe ${nomeEscritorio}`,
-      html: `
+    const subject = `Convite para participar da equipe ${nomeEscritorio}`;
+    const html = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -219,8 +217,21 @@ export async function sendConviteEmail(data: ConviteEmailData): Promise<void> {
           </div>
         </body>
         </html>
-      `,
+      `;
+
+    const result = await emailService.sendEmailPerTenant(tenantId, {
+      to: email,
+      subject,
+      html,
+      from: undefined,
+      text: undefined,
+      credentialType: "ADMIN",
+      fromNameFallback: nomeEscritorio,
     });
+
+    if (!result.success) {
+      throw new Error(result.error || "Falha ao enviar email de convite");
+    }
   } catch (error) {
     console.error("Erro ao enviar email de convite:", error);
     throw new Error("Erro ao enviar email de convite");

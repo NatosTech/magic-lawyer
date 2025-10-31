@@ -77,7 +77,7 @@ npm run prisma:studio      # Interface visual
 - **UI**: HeroUI + Tailwind CSS
 - **Auth**: NextAuth.js
 - **Payments**: Asaas API
-- **Email**: Resend
+- **Email**: Nodemailer (per-tenant via credenciais SMTP)
 - **Storage**: Cloudinary
 
 ## 📁 Estrutura
@@ -111,8 +111,12 @@ ASAAS_API_KEY="\$aact_hmlg_sua-api-key"
 ASAAS_ENVIRONMENT="sandbox"
 ASAAS_WEBHOOK_SECRET="seu-webhook-secret"
 
-# Email
-RESEND_API_KEY="re_sua-api-key"
+# Email (SMTP per-tenant)
+# Credenciais são cadastradas por tenant em TenantEmailCredential (DEFAULT/ADMIN)
+# SMTP_HOST, SMTP_PORT e SMTP_SECURE são usados como defaults para todos os tenants (opcional)
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="465"
+SMTP_SECURE="true"
 
 # Encryption
 ENCRYPTION_KEY="sua-chave"

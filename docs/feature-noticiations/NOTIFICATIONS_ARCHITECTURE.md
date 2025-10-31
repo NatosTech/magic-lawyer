@@ -206,7 +206,7 @@ await publishNotification({
 4. Gerar template personalizado
 5. Salvar no banco de dados (Notification)
 6. Registrar deliveries por canal (NotificationDelivery - status PENDING)
-7. Enviar via canais configurados (Ably e Resend)
+7. Enviar via canais configurados (Ably e Email per-tenant via Nodemailer)
 8. Atualizar status do delivery -> SENT/FAILED com messageId do provedor
 ```
 
@@ -304,9 +304,10 @@ NEXT_PUBLIC_REALTIME_CHANNEL_PREFIX=ml-dev
 # Redis (implementado)
 REDIS_URL=rediss://...  # Vercel Redis (Upstash)
 
-# Resend (email operacional em dev)
-RESEND_API_KEY=...
-RESEND_FROM_EMAIL="Magic Lawyer Test <onboarding@resend.dev>"
+# Email per-tenant (opcional como defaults globais; credenciais ficam no banco)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
 NOTIFICATION_TEST_EMAIL=robsonnonatoiii@gmail.com
 
 # Usuário de teste gerado automaticamente
@@ -328,7 +329,7 @@ NOTIFICATION_RATE_LIMIT_PER_TENANT=1000
 3. ✅ **NotificationService** - Serviço base + registro de deliveries e messageId
 4. ✅ **Worker Assíncrono** - Worker BullMQ implementado
 5. ✅ **API Management** - Endpoints de gerenciamento
-6. ✅ **Canais Reais** - Ably (in-app) e Resend (email com domínio `onboarding@resend.dev`)
+6. ✅ **Canais Reais** - Ably (in-app) e Email (Nodemailer per-tenant)
 
 ### **❌/✅ Status Atualizado:**
 1. ✅ **Deduplicação** - Implementada (hash SHA256 + TTL 5min em Redis)
@@ -348,4 +349,4 @@ NOTIFICATION_RATE_LIMIT_PER_TENANT=1000
 
 ---
 
-**Status:** ⏳ **Backend Criado, Migração em Progresso** - Sistema híbrido ativo até finalizar rollout
+**Status:** ✅ **Backend Migrado para Email per-tenant** - Sistema novo como padrão

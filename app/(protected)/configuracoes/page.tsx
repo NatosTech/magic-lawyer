@@ -11,6 +11,7 @@ import { title, subtitle } from "@/components/primitives";
 import { getSession } from "@/app/lib/auth";
 import { TENANT_PERMISSIONS } from "@/types";
 import { getTenantConfigData } from "@/app/actions/tenant-config";
+import { EmailCredentialsCard } from "./email-credentials-card";
 
 export const metadata: Metadata = {
   title: "Configurações do escritório",
@@ -401,6 +402,9 @@ export default async function ConfiguracoesPage() {
           </CardBody>
         </Card>
       )}
+
+      {/* Credenciais SMTP */}
+      <EmailCredentialsCard />
 
       {/* Ações */}
       <Card className="border border-white/10 bg-white/5">

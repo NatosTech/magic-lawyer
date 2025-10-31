@@ -18,15 +18,6 @@ export class EmailChannel {
     message: string,
   ): Promise<{ success: boolean; error?: string; messageId?: string }> {
     try {
-      // Verificar se RESEND_API_KEY está configurado
-      if (!process.env.RESEND_API_KEY) {
-        console.warn("[EmailChannel] RESEND_API_KEY não configurado");
-
-        return {
-          success: false,
-          error: "RESEND_API_KEY não configurado",
-        };
-      }
 
       const tenant = event.tenantId
         ? await prisma.tenant.findUnique({
@@ -50,8 +41,8 @@ export class EmailChannel {
 
       const enrichedMessage = this.enrichMessage(message, event);
 
-      // Enviar email usando o serviço existente
-      const result = await emailService.sendNotificacaoAdvogado({
+      // Enviar email usando o novo serviço per-tenant
+      const result = await emailService.sendNotificacaoAdvogado(event.tenantId, {
         nome: userName,
         email: userEmail,
         tipo: event.type,

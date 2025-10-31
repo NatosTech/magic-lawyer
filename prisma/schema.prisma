@@ -135,6 +135,7 @@ model Tenant {
   procuracaoProcessos   ProcuracaoProcesso[]
   documentosProcuracao  DocumentoProcuracao[]
   tarefas               Tarefa[]
+  emailCredentials      TenantEmailCredential[]
   superAdmin            SuperAdmin?            @relation("SuperAdminTenant", fields: [superAdminId], references: [id])
   branding              TenantBranding?
   enderecos             Endereco[]
@@ -285,6 +286,28 @@ model TenantBranding {
   updatedAt          DateTime @updatedAt
   tenant             Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@schema("magiclawyer")
+}
+
+enum TenantEmailCredentialType {
+  DEFAULT
+  ADMIN
+
+  @@schema("magiclawyer")
+}
+
+model TenantEmailCredential {
+  id          String                     @id @default(cuid())
+  tenantId    String
+  type        TenantEmailCredentialType  @default(DEFAULT)
+  email       String
+  appPassword String
+  fromName    String?
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+  tenant      Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, type])
   @@schema("magiclawyer")
 }
 

@@ -1,5 +1,6 @@
 import prisma from "./prisma";
-import { sendEmail, emailTemplates } from "./email";
+import { emailTemplates } from "./email";
+import { emailService } from "@/app/lib/email-service";
 import { sendDocumentForSigning, checkDocumentStatus } from "./clicksign";
 
 import logger from "@/lib/logger";
@@ -173,10 +174,11 @@ export const enviarDocumentoParaAssinatura = async (
           descricao: documentoAssinatura.descricao ?? undefined,
         });
 
-        await sendEmail({
+        await emailService.sendEmailPerTenant(documentoAssinatura.tenantId, {
           to: documentoAssinatura.cliente.email,
           subject: template.subject,
           html: template.html,
+          credentialType: "DEFAULT",
         });
       } catch (error) {
         logger.error("Erro ao enviar email de assinatura:", error);
@@ -485,10 +487,11 @@ export const reenviarLinkAssinatura = async (documentoAssinaturaId: string) => {
           descricao: documentoAssinatura.descricao ?? undefined,
         });
 
-        await sendEmail({
+        await emailService.sendEmailPerTenant(documentoAssinatura.tenantId, {
           to: documentoAssinatura.cliente.email,
           subject: `Reenvio: ${template.subject}`,
           html: template.html,
+          credentialType: "DEFAULT",
         });
       } catch (error) {
         logger.error("Erro ao reenviar email de assinatura:", error);

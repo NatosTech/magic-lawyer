@@ -201,7 +201,7 @@ export async function createConviteEquipe(
     });
 
     if (tenant) {
-      await sendConviteEmail({
+      await sendConviteEmail(session.user.tenantId!, {
         email: convite.email,
         nome: convite.nome || undefined,
         nomeEscritorio: tenant.name,
@@ -318,7 +318,7 @@ export async function resendConviteEquipe(
     });
 
     if (tenant) {
-      await sendConviteEmail({
+      await sendConviteEmail(session.user.tenantId!, {
         email: updatedConvite.email,
         nome: updatedConvite.nome || undefined,
         nomeEscritorio: tenant.name,

@@ -35,26 +35,15 @@ export class NotificationService {
     try {
       // Deduplicação simples: chave única por (tenantId, userId, type, payloadHash) com TTL de 5 minutos
       const redis = createRedisConnection();
-      const payloadHash = crypto
-        .createHash("sha256")
-        .update(JSON.stringify(event.payload))
-        .digest("hex");
+      const payloadHash = crypto.createHash("sha256").update(JSON.stringify(event.payload)).digest("hex");
       const dedupKey = `notif:d:${event.tenantId}:${event.userId}:${event.type}:${payloadHash}`;
 
       // SET NX PX=300000 => só seta se não existir (evita duplicatas)
-      const setResult = await redis.set(
-        dedupKey,
-        "1",
-        "PX",
-        5 * 60 * 1000,
-        "NX",
-      );
+      const setResult = await redis.set(dedupKey, "1", "PX", 5 * 60 * 1000, "NX");
 
       await redis.disconnect();
       if (setResult !== "OK") {
-        console.log(
-          `[NotificationService] 🔁 Evento duplicado ignorado (${event.type}) para usuário ${event.userId}`,
-        );
+        console.log(`[NotificationService] 🔁 Evento duplicado ignorado (${event.type}) para usuário ${event.userId}`);
 
         return;
       }
@@ -68,10 +57,7 @@ export class NotificationService {
         channels: event.channels || ["REALTIME"],
       });
     } catch (error) {
-      console.error(
-        `[NotificationService] Erro ao adicionar job à fila:`,
-        error,
-      );
+      console.error(`[NotificationService] Erro ao adicionar job à fila:`, error);
       throw error;
     }
   }
@@ -79,53 +65,36 @@ export class NotificationService {
   /**
    * Processa notificação de forma síncrona (usado pelo worker)
    */
-  static async processNotificationSync(
-    event: NotificationEvent,
-  ): Promise<void> {
+  static async processNotificationSync(event: NotificationEvent): Promise<void> {
     try {
-      console.log(
-        `[NotificationService] 📱 Processando notificação ${event.type} para usuário ${event.userId}`,
-      );
+      console.log(`[NotificationService] 📱 Processando notificação ${event.type} para usuário ${event.userId}`);
 
       // 1. Verificar se o usuário tem permissão para receber esta notificação
       const hasPermission = await this.checkUserPermission(event);
 
       if (!hasPermission) {
-        console.log(
-          `[NotificationService] Usuário ${event.userId} não tem permissão para receber ${event.type}`,
-        );
+        console.log(`[NotificationService] Usuário ${event.userId} não tem permissão para receber ${event.type}`);
 
         return;
       }
 
       // 2. Verificar preferências do usuário
-      const preferences = await this.getUserPreferences(
-        event.tenantId,
-        event.userId,
-        event.type,
-      );
+      const preferences = await this.getUserPreferences(event.tenantId, event.userId, event.type);
 
       if (!preferences.enabled) {
-        console.log(
-          `[NotificationService] Notificação ${event.type} desabilitada para usuário ${event.userId}`,
-        );
+        console.log(`[NotificationService] Notificação ${event.type} desabilitada para usuário ${event.userId}`);
 
         return;
       }
 
       // 3. Gerar template da notificação
-      const template =
-        (await this.generateTemplate(event)) ??
-        this.buildFallbackTemplate(event);
+      const template = (await this.generateTemplate(event)) ?? this.buildFallbackTemplate(event);
 
       // 4. Substituir variáveis no template
       const { title, message } = this.replaceVariables(template, event.payload);
 
       // 5. Determinar canais a usar (prioriza canais do evento, senão usa preferências)
-      const channelsToUse =
-        event.channels && event.channels.length > 0
-          ? event.channels
-          : preferences.channels;
+      const channelsToUse = event.channels && event.channels.length > 0 ? event.channels : preferences.channels;
 
       // 6. Salvar notificação no banco
       const notification = await prisma.notification.create({
@@ -138,23 +107,16 @@ export class NotificationService {
           payload: event.payload,
           urgency: event.urgency || preferences.urgency,
           channels: channelsToUse,
-          expiresAt: this.calculateExpiration(
-            event.urgency || preferences.urgency,
-          ),
+          expiresAt: this.calculateExpiration(event.urgency || preferences.urgency),
         },
       });
 
       // 7. Enviar via canais configurados
       await this.deliverNotification(notification, channelsToUse);
 
-      console.log(
-        `[NotificationService] Notificação ${notification.id} processada para usuário ${event.userId}`,
-      );
+      console.log(`[NotificationService] Notificação ${notification.id} processada para usuário ${event.userId}`);
     } catch (error) {
-      console.error(
-        `[NotificationService] Erro ao processar notificação:`,
-        error,
-      );
+      console.error(`[NotificationService] Erro ao processar notificação:`, error);
       throw error;
     }
   }
@@ -162,13 +124,7 @@ export class NotificationService {
   /**
    * Publica notificação para múltiplos usuários
    */
-  static async publishToMultipleUsers(
-    eventType: string,
-    tenantId: string,
-    userIds: string[],
-    payload: Record<string, any>,
-    urgency: NotificationUrgency = "MEDIUM",
-  ): Promise<void> {
+  static async publishToMultipleUsers(eventType: string, tenantId: string, userIds: string[], payload: Record<string, any>, urgency: NotificationUrgency = "MEDIUM"): Promise<void> {
     const promises = userIds.map((userId) =>
       this.publishNotification({
         type: eventType,
@@ -176,7 +132,7 @@ export class NotificationService {
         userId,
         payload,
         urgency,
-      }),
+      })
     );
 
     await Promise.allSettled(promises);
@@ -185,13 +141,7 @@ export class NotificationService {
   /**
    * Publica notificação para todos os usuários de um tenant com um role específico
    */
-  static async publishToRole(
-    eventType: string,
-    tenantId: string,
-    role: string,
-    payload: Record<string, any>,
-    urgency: NotificationUrgency = "MEDIUM",
-  ): Promise<void> {
+  static async publishToRole(eventType: string, tenantId: string, role: string, payload: Record<string, any>, urgency: NotificationUrgency = "MEDIUM"): Promise<void> {
     const users = await prisma.usuario.findMany({
       where: {
         tenantId,
@@ -203,21 +153,13 @@ export class NotificationService {
 
     const userIds = users.map((user) => user.id);
 
-    await this.publishToMultipleUsers(
-      eventType,
-      tenantId,
-      userIds,
-      payload,
-      urgency,
-    );
+    await this.publishToMultipleUsers(eventType, tenantId, userIds, payload, urgency);
   }
 
   /**
    * Verifica se o usuário tem permissão para receber a notificação
    */
-  private static async checkUserPermission(
-    event: NotificationEvent,
-  ): Promise<boolean> {
+  private static async checkUserPermission(event: NotificationEvent): Promise<boolean> {
     // Verificar se o usuário existe e está ativo
     const user = await prisma.usuario.findFirst({
       where: {
@@ -236,7 +178,7 @@ export class NotificationService {
   private static async getUserPreferences(
     tenantId: string,
     userId: string,
-    eventType: string,
+    eventType: string
   ): Promise<{
     enabled: boolean;
     channels: NotificationChannel[];
@@ -267,9 +209,7 @@ export class NotificationService {
       select: { role: true },
     });
 
-    const defaultPreferences = this.getDefaultPreferencesByRole(
-      user?.role || "SECRETARIA",
-    );
+    const defaultPreferences = this.getDefaultPreferencesByRole(user?.role || "SECRETARIA");
 
     return defaultPreferences[eventType] || defaultPreferences.default;
   }
@@ -277,9 +217,7 @@ export class NotificationService {
   /**
    * Gera template para a notificação
    */
-  private static async generateTemplate(
-    event: NotificationEvent,
-  ): Promise<NotificationTemplate | null> {
+  private static async generateTemplate(event: NotificationEvent): Promise<NotificationTemplate | null> {
     // Buscar template específico do tenant
     const template = await prisma.notificationTemplate.findUnique({
       where: {
@@ -307,10 +245,7 @@ export class NotificationService {
   /**
    * Substitui variáveis no template
    */
-  private static replaceVariables(
-    template: NotificationTemplate,
-    payload: Record<string, any>,
-  ): { title: string; message: string } {
+  private static replaceVariables(template: NotificationTemplate, payload: Record<string, any>): { title: string; message: string } {
     let title = template.title;
     let message = template.message;
 
@@ -328,24 +263,16 @@ export class NotificationService {
   /**
    * Template genérico quando não existir um específico para o evento
    */
-  private static buildFallbackTemplate(
-    event: NotificationEvent,
-  ): NotificationTemplate {
+  private static buildFallbackTemplate(event: NotificationEvent): NotificationTemplate {
     const prettyType = event.type
       .split(".")
       .map((segment) => segment.replace(/_/g, " "))
       .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
       .join(" - ");
 
-    const defaultTitle =
-      (event.payload.title as string | undefined) ||
-      (event.payload.titulo as string | undefined) ||
-      `Atualização: ${prettyType}`;
+    const defaultTitle = (event.payload.title as string | undefined) || (event.payload.titulo as string | undefined) || `Atualização: ${prettyType}`;
 
-    const defaultMessage =
-      (event.payload.message as string | undefined) ||
-      (event.payload.mensagem as string | undefined) ||
-      `Você recebeu uma nova atualização (${prettyType}).`;
+    const defaultMessage = (event.payload.message as string | undefined) || (event.payload.mensagem as string | undefined) || `Você recebeu uma nova atualização (${prettyType}).`;
 
     return {
       title: defaultTitle,
@@ -371,19 +298,10 @@ export class NotificationService {
   /**
    * Entrega a notificação pelos canais configurados
    */
-  private static async deliverNotification(
-    notification: any,
-    channels: NotificationChannel[],
-  ): Promise<void> {
-    console.log(
-      `[NotificationService] 📱 Processando canais: ${channels.join(",")}`,
-    );
+  private static async deliverNotification(notification: any, channels: NotificationChannel[]): Promise<void> {
+    console.log(`[NotificationService] 📱 Processando canais: ${channels.join(",")}`);
 
-    await Promise.allSettled(
-      channels.map((channel) =>
-        this.processChannelDelivery(notification, channel),
-      ),
-    );
+    await Promise.allSettled(channels.map((channel) => this.processChannelDelivery(notification, channel)));
   }
 
   private static getProviderForChannel(channel: NotificationChannel): string {
@@ -398,10 +316,7 @@ export class NotificationService {
     }
   }
 
-  private static async processChannelDelivery(
-    notification: any,
-    channel: NotificationChannel,
-  ): Promise<void> {
+  private static async processChannelDelivery(notification: any, channel: NotificationChannel): Promise<void> {
     console.log(`[NotificationService] 🔄 Processando canal: ${channel}`);
 
     const provider = this.getProviderForChannel(channel);
@@ -460,8 +375,7 @@ export class NotificationService {
         });
       }
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Erro desconhecido";
+      const message = error instanceof Error ? error.message : "Erro desconhecido";
 
       await prisma.notificationDelivery.update({
         where: { id: delivery.id },
@@ -478,9 +392,7 @@ export class NotificationService {
   /**
    * Entrega via tempo real (Ably)
    */
-  private static async deliverRealtime(
-    notification: any,
-  ): Promise<{ success: boolean }> {
+  private static async deliverRealtime(notification: any): Promise<{ success: boolean }> {
     await publishRealtimeEvent("notification.new", {
       tenantId: notification.tenantId,
       userId: notification.userId,
@@ -501,9 +413,7 @@ export class NotificationService {
   /**
    * Entrega via email
    */
-  private static async deliverEmail(
-    notification: any,
-  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  private static async deliverEmail(notification: any): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       // Buscar dados do usuário para obter email e nome
       const user = await prisma.usuario.findUnique({
@@ -516,18 +426,14 @@ export class NotificationService {
       });
 
       if (!user || !user.email) {
-        console.warn(
-          `[NotificationService] Usuário ${notification.userId} não tem email configurado`,
-        );
+        console.warn(`[NotificationService] Usuário ${notification.userId} não tem email configurado`);
 
         return { success: false, error: "Usuário sem email configurado" };
       }
 
       // Validar email
       if (!EmailChannel.isValidEmail(user.email)) {
-        console.warn(
-          `[NotificationService] Email inválido para usuário ${notification.userId}: ${user.email}`,
-        );
+        console.warn(`[NotificationService] Email inválido para usuário ${notification.userId}: ${user.email}`);
 
         return { success: false, error: `Email inválido: ${user.email}` };
       }
@@ -547,20 +453,16 @@ export class NotificationService {
         user.email,
         userName,
         notification.title,
-        notification.message,
+        notification.message
       );
 
       if (result.success) {
-        console.log(
-          `[NotificationService] ✅ Email enviado com sucesso para ${user.email} (notificação ${notification.id})`,
-        );
+        console.log(`[NotificationService] ✅ Email enviado com sucesso para ${user.email} (notificação ${notification.id})`);
 
         return { success: true, messageId: result.messageId };
       }
 
-      console.error(
-        `[NotificationService] ❌ Falha ao enviar email para ${user.email}: ${result.error}`,
-      );
+      console.error(`[NotificationService] ❌ Falha ao enviar email para ${user.email}: ${result.error}`);
 
       return {
         success: false,
@@ -568,10 +470,7 @@ export class NotificationService {
         messageId: result.messageId,
       };
     } catch (error) {
-      console.error(
-        `[NotificationService] Erro ao processar envio de email:`,
-        error,
-      );
+      console.error(`[NotificationService] Erro ao processar envio de email:`, error);
 
       return {
         success: false,
@@ -583,13 +482,9 @@ export class NotificationService {
   /**
    * Entrega via push mobile
    */
-  private static async deliverPush(
-    notification: any,
-  ): Promise<{ success: boolean }> {
+  private static async deliverPush(notification: any): Promise<{ success: boolean }> {
     // TODO: Implementar push mobile real
-    console.log(
-      `[NotificationService] Push mobile enviado para notificação ${notification.id}`,
-    );
+    console.log(`[NotificationService] Push mobile enviado para notificação ${notification.id}`);
 
     return { success: true };
   }
@@ -597,9 +492,7 @@ export class NotificationService {
   /**
    * Preferências padrão por role
    */
-  private static getDefaultPreferencesByRole(
-    role: string,
-  ): Record<string, any> {
+  private static getDefaultPreferencesByRole(role: string): Record<string, any> {
     const preferences = {
       SUPER_ADMIN: {
         default: {
@@ -735,9 +628,7 @@ export class NotificationService {
       },
     };
 
-    return (
-      preferences[role as keyof typeof preferences] || preferences.SECRETARIA
-    );
+    return preferences[role as keyof typeof preferences] || preferences.SECRETARIA;
   }
 
   /**
@@ -811,13 +702,11 @@ export class NotificationService {
       },
       "andamento.created": {
         title: "Novo andamento registrado",
-        message:
-          'Um novo andamento "{titulo}" foi adicionado ao processo {processoNumero}.',
+        message: 'Um novo andamento "{titulo}" foi adicionado ao processo {processoNumero}.',
       },
       "andamento.updated": {
         title: "Andamento atualizado",
-        message:
-          'O andamento "{titulo}" do processo {processoNumero} foi atualizado.',
+        message: 'O andamento "{titulo}" do processo {processoNumero} foi atualizado.',
       },
     };
   }

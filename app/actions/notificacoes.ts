@@ -5,10 +5,7 @@ import { getServerSession } from "next-auth/next";
 
 import { authOptions } from "@/auth";
 import prisma from "@/app/lib/prisma";
-import {
-  emailService,
-  sendAndamentoEmailNotification,
-} from "@/lib/email-service";
+import { emailService } from "@/app/lib/email-service";
 
 export interface NotificacaoResult {
   success: boolean;
@@ -76,26 +73,60 @@ export async function enviarNotificacaoAndamento(
     // Envia email se solicitado e cliente tem email
     if (options.notificarEmail && cliente.email) {
       try {
-        const emailResult = await sendAndamentoEmailNotification(
-          cliente.email,
-          {
-            titulo: andamento.titulo,
-            descricao: andamento.descricao || undefined,
-            processo: {
-              numero: andamento.processo.numero,
-              titulo: andamento.processo.titulo || undefined,
-            },
-            dataMovimentacao: andamento.dataMovimentacao,
-            mensagemPersonalizada: options.mensagemPersonalizada,
-          },
-          cliente.nome,
-          session.user.tenantName || "Escritório de Advocacia",
-        );
+        const assunto = `Atualização do processo ${andamento.processo.numero}`;
+        const data = new Date(andamento.dataMovimentacao);
+        const dataFormatada = data.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+        const horaFormatada = data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+        const descricao = andamento.descricao
+          ? `<p style=\"margin: 8px 0; color: #374151;\">${andamento.descricao}</p>`
+          : "";
+        const mensagemPersonalizada = options.mensagemPersonalizada
+          ? `<div style=\"margin-top: 20px; padding: 16px; border-left: 4px solid #3b82f6; background: #eff6ff; border-radius: 8px;\">
+               <p style=\"margin: 0; font-weight: 600; color: #1d4ed8;\">Mensagem do escritório:</p>
+               <p style=\"margin: 8px 0 0; color: #1e40af;\">${options.mensagemPersonalizada}</p>
+             </div>`
+          : "";
+
+        const html = `
+          <!DOCTYPE html>
+          <html>
+            <head><meta charset=\"utf-8\" /></head>
+            <body style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; padding: 24px; color: #111827;\">
+              <div style=\"max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); overflow: hidden;\">
+                <div style=\"background: linear-gradient(135deg, #0ea5e9, #2563eb); padding: 24px;\">
+                  <h1 style=\"margin: 0; color: #ffffff; font-size: 20px; font-weight: 600;\">Atualização de andamento</h1>
+                  <p style=\"margin: 4px 0 0; color: rgba(255,255,255,0.85);\">${session.user.tenantName || "Escritório de Advocacia"}</p>
+                </div>
+                <div style=\"padding: 24px;\">
+                  <p>Olá, <strong>${cliente.nome}</strong></p>
+                  <p>O processo <strong>${andamento.processo.numero}</strong> ${andamento.processo.titulo ? `(${andamento.processo.titulo})` : ""} recebeu uma nova atualização:</p>
+                  <div style=\"margin: 20px 0; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc;\">
+                    <p style=\"margin: 0; font-size: 16px; font-weight: 600; color: #1d4ed8;\">${andamento.titulo}</p>
+                    ${descricao}
+                    <p style=\"margin: 8px 0 0; font-size: 14px; color: #64748b;\">Data da movimentação: <strong>${dataFormatada}</strong> às <strong>${horaFormatada}</strong></p>
+                  </div>
+                  ${mensagemPersonalizada}
+                </div>
+                <div style=\"padding: 16px 24px; background: #f8fafc; font-size: 12px; color: #94a3b8;\">
+                  <p style=\"margin: 0;\">${session.user.tenantName || "Escritório de Advocacia"}</p>
+                  <p style=\"margin: 4px 0 0;\">Este email foi enviado automaticamente pelo Magic Lawyer.</p>
+                </div>
+              </div>
+            </body>
+          </html>`;
+
+        const emailResult = await emailService.sendEmailPerTenant(session.user.tenantId, {
+          to: cliente.email,
+          subject: assunto,
+          html,
+          credentialType: "DEFAULT",
+          fromNameFallback: session.user.tenantName || "Magic Lawyer",
+        });
 
         resultado.email = {
           success: emailResult.success,
           error: emailResult.error,
-          provider: emailResult.provider,
         };
 
         // Atualiza o andamento com status da notificação
@@ -159,7 +190,7 @@ export async function testarEmail(
       };
     }
 
-    const resultado = await emailService.sendEmail({
+    const resultado = await emailService.sendEmailPerTenant(session.user.tenantId, {
       to: email,
       subject: assunto,
       html: `
@@ -174,7 +205,7 @@ export async function testarEmail(
     return {
       success: resultado.success,
       error: resultado.error,
-      provider: resultado.provider,
+      provider: undefined,
     };
   } catch (error) {
     return {
@@ -199,7 +230,7 @@ export async function obterStatusProvedores(): Promise<{
     }
 
     return {
-      email: emailService.getProvidersStatus(),
+      email: await emailService.getProvidersStatus(session.user.tenantId),
     };
   } catch (error) {
     console.error("Erro ao obter status dos provedores:", error);

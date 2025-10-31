@@ -6,10 +6,7 @@ import { nanoid } from "nanoid";
 import bcrypt from "bcryptjs";
 
 import prisma, { toNumber } from "@/app/lib/prisma";
-import {
-  enviarEmailCredenciais,
-  enviarEmailConfirmacao,
-} from "@/lib/email-service";
+import { emailService } from "@/app/lib/email-service";
 
 export type ProcessarPagamentoConfirmadoResult =
   | {
@@ -122,25 +119,46 @@ export async function processarPagamentoConfirmado(
     const valorPlano = toNumber(plano.valorMensal) ?? 0;
 
     try {
-      await enviarEmailConfirmacao({
-        email: checkoutData.email,
-        nome: checkoutData.nomeResponsavel,
-        valor: valorPlano,
-        formaPagamento: checkoutData.formaPagamento,
-        tenantDomain: checkoutSession.tenantDomain,
+      const assunto = `✅ Pagamento confirmado - Magic Lawyer`;
+      const html = `
+        <h2>Pagamento Confirmado</h2>
+        <p>Olá <strong>${checkoutData.nomeResponsavel}</strong>, seu pagamento foi processado com sucesso.</p>
+        <p><strong>Plano:</strong> ${plano.nome} — <strong>Valor:</strong> R$ ${valorPlano.toFixed(2)}</p>
+        <p>Seu domínio: ${checkoutSession.tenantDomain}</p>
+      `;
+
+      await emailService.sendEmailPerTenant(tenant.id, {
+        to: checkoutData.email,
+        subject: assunto,
+        html,
+        credentialType: "ADMIN",
+        fromNameFallback: checkoutData.nomeEmpresa,
       });
     } catch (emailError) {
       console.error("Erro ao enviar email de confirmação:", emailError);
     }
 
     try {
-      await enviarEmailCredenciais({
-        email: checkoutData.email,
-        nome: checkoutData.nomeResponsavel,
-        tenantDomain: checkoutSession.tenantDomain,
-        senhaTemporaria,
-        plano: plano.nome,
+      const htmlCred = `
+        <h2>Bem-vindo ao Magic Lawyer!</h2>
+        <p>Olá <strong>${checkoutData.nomeResponsavel}</strong>, sua conta foi criada com sucesso.</p>
+        <p><strong>Email:</strong> ${checkoutData.email}</p>
+        <p><strong>Senha Temporária:</strong> ${senhaTemporaria}</p>
+        <p><strong>Plano:</strong> ${plano.nome}</p>
+        <p><strong>URL de acesso:</strong> https://${checkoutSession.tenantDomain}</p>
+      `;
+
+      const sent = await emailService.sendEmailPerTenant(tenant.id, {
+        to: checkoutData.email,
+        subject: `🎉 Bem-vindo ao Magic Lawyer! Suas credenciais de acesso`,
+        html: htmlCred,
+        credentialType: "ADMIN",
+        fromNameFallback: checkoutData.nomeEmpresa,
       });
+
+      if (!sent.success) {
+        console.warn("Falha ao enviar credenciais:", sent.error);
+      }
     } catch (emailError) {
       console.error("Erro ao enviar email de credenciais:", emailError);
     }
