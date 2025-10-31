@@ -107,7 +107,12 @@ export default withAuth(
     let sessionChecked = false; // Controlar se verificou sessão nesta execução
 
     // Validar sessão periodicamente (a cada 15 segundos)
-    if (token && (token as any).tenantId) {
+    const userRole = (token as any)?.role;
+    const isSuperAdmin = userRole === "SUPER_ADMIN";
+    const hasTenantId = !!(token as any)?.tenantId;
+
+    // Validação para usuários com tenant (usuários comuns)
+    if (token && hasTenantId && !isSuperAdmin) {
       const lastCheck = req.cookies.get("ml-last-session-check");
       const shouldCheck =
         !lastCheck || Date.now() - Number(lastCheck.value) > 15000;
@@ -172,6 +177,69 @@ export default withAuth(
       }
     }
 
+    // Validação para SuperAdmin (apenas quando está acessando rotas /admin)
+    if (token && isSuperAdmin && req.nextUrl.pathname.startsWith("/admin")) {
+      const lastCheck = req.cookies.get("ml-last-superadmin-check");
+      const shouldCheck =
+        !lastCheck || Date.now() - Number(lastCheck.value) > 15000;
+
+      if (shouldCheck) {
+        try {
+          const host = req.headers.get("host") || "";
+          // Em desenvolvimento local, evitar fetch para evitar falhas intermitentes no Edge
+          const isLocalhost =
+            host.includes("localhost") || host.startsWith("127.0.0.1");
+
+          if (isLocalhost) {
+            sessionChecked = true; // marca e não valida via HTTP em dev
+            throw new Error("skip-local-session-check");
+          }
+          const base = req.nextUrl.origin || getDynamicNextAuthUrl(host);
+          const url = new URL(
+            "/api/internal/session/validate-superadmin",
+            base,
+          ).toString();
+
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-token": process.env.REALTIME_INTERNAL_TOKEN || "",
+            },
+            body: JSON.stringify({
+              superAdminId: (token as any).id,
+            }),
+          });
+
+          if (response.status === 404 || response.status === 409) {
+            const data = await response.json();
+            const logoutUrl = new URL("/login", req.url);
+
+            logoutUrl.searchParams.set(
+              "reason",
+              data.reason || "SESSION_REVOKED",
+            );
+
+            const res = NextResponse.redirect(logoutUrl);
+
+            res.cookies.delete("next-auth.session-token");
+            res.cookies.set("ml-session-revoked", "1", { path: "/" });
+
+            return res;
+          }
+
+          // Marcar que verificou nesta execução
+          sessionChecked = true;
+        } catch (error) {
+          // Em dev/edge, falhas de rede não devem quebrar nem poluir o console
+          if ((error as Error)?.message !== "skip-local-session-check") {
+            console.warn("[middleware] sessão SuperAdmin não validada (continuando)");
+          }
+          // Em caso de erro, continuar normalmente (fail-safe)
+        }
+      }
+    }
+
     // Continuar com o fluxo normal do middleware...
     // cookie será setado no final se sessionChecked for true
 
@@ -208,7 +276,18 @@ export default withAuth(
     }
 
     // Se está logado e está na página de login, redireciona baseado no role do usuário
+    // EXCETO se há um reason na query indicando que a sessão foi invalidada
     if (isAuth && isAuthPage) {
+      const reason = req.nextUrl.searchParams.get("reason");
+      
+      // Se há um reason de invalidação, não redirecionar (deixar mostrar a página de login)
+      if (reason && (reason === "SUPER_ADMIN_NOT_FOUND" || reason === "SESSION_REVOKED" || reason === "VALIDATION_ERROR")) {
+        // Limpar cookie e deixar mostrar página de login
+        const response = NextResponse.next();
+        response.cookies.delete("next-auth.session-token");
+        return response;
+      }
+      
       const userRole = (token as any)?.role;
       const isSuperAdmin = userRole === "SUPER_ADMIN";
 
@@ -309,11 +388,22 @@ export default withAuth(
     const response = NextResponse.next();
 
     if (sessionChecked) {
-      response.cookies.set("ml-last-session-check", Date.now().toString(), {
-        httpOnly: false,
-        path: "/",
-        maxAge: 60, // 1 minuto
-      });
+      // Cookie para usuários com tenant
+      if (hasTenantId && !isSuperAdmin) {
+        response.cookies.set("ml-last-session-check", Date.now().toString(), {
+          httpOnly: false,
+          path: "/",
+          maxAge: 60, // 1 minuto
+        });
+      }
+      // Cookie para SuperAdmin
+      if (isSuperAdmin) {
+        response.cookies.set("ml-last-superadmin-check", Date.now().toString(), {
+          httpOnly: false,
+          path: "/",
+          maxAge: 60, // 1 minuto
+        });
+      }
     }
 
     return response;
