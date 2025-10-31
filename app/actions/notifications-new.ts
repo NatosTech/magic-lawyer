@@ -32,21 +32,49 @@ export type NotificationsResponse = {
 async function ensureSession() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id || !session?.user?.tenantId) {
+  if (!session?.user?.id) {
+    throw new Error("Não autenticado");
+  }
+
+  const userRole = (session.user as any)?.role;
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
+  const tenantId = (session.user as any)?.tenantId as string | null;
+
+  // SuperAdmin não tem tenantId, mas está autenticado
+  if (isSuperAdmin) {
+    return {
+      userId: (session.user as any).id as string,
+      tenantId: null, // SuperAdmin não tem tenant
+      isSuperAdmin: true,
+    };
+  }
+
+  // Usuários comuns precisam de tenantId
+  if (!tenantId) {
     throw new Error("Não autenticado");
   }
 
   return {
     userId: (session.user as any).id as string,
-    tenantId: (session.user as any).tenantId as string,
+    tenantId: tenantId,
+    isSuperAdmin: false,
   };
 }
 
 export async function getNotifications(
   options: GetOptions = {},
 ): Promise<NotificationsResponse> {
-  const { userId, tenantId } = await ensureSession();
+  const { userId, tenantId, isSuperAdmin } = await ensureSession();
   const take = Math.min(options.limit ?? 50, 100);
+
+  // SuperAdmin não tem notificações específicas (sistema multi-tenant)
+  // Retorna array vazio para evitar erros
+  if (isSuperAdmin) {
+    return {
+      notifications: [],
+      unreadCount: 0,
+    };
+  }
 
   const notifications = await prisma.notification.findMany({
     where: { tenantId, userId },
@@ -83,7 +111,12 @@ export async function setNotificationStatus(
   id: string,
   status: NotificationStatus,
 ): Promise<void> {
-  const { userId, tenantId } = await ensureSession();
+  const { userId, tenantId, isSuperAdmin } = await ensureSession();
+
+  // SuperAdmin não tem notificações para atualizar
+  if (isSuperAdmin) {
+    return;
+  }
 
   await prisma.notification.updateMany({
     where: { id, tenantId, userId },
@@ -99,7 +132,12 @@ export async function setNotificationStatus(
 }
 
 export async function markAllNotificationsAsRead(): Promise<void> {
-  const { userId, tenantId } = await ensureSession();
+  const { userId, tenantId, isSuperAdmin } = await ensureSession();
+
+  // SuperAdmin não tem notificações para marcar
+  if (isSuperAdmin) {
+    return;
+  }
 
   await prisma.notification.updateMany({
     where: { tenantId, userId, readAt: null },
@@ -108,7 +146,12 @@ export async function markAllNotificationsAsRead(): Promise<void> {
 }
 
 export async function clearAllNotifications(): Promise<void> {
-  const { userId, tenantId } = await ensureSession();
+  const { userId, tenantId, isSuperAdmin } = await ensureSession();
+
+  // SuperAdmin não tem notificações para limpar
+  if (isSuperAdmin) {
+    return;
+  }
 
   await prisma.notification.deleteMany({ where: { tenantId, userId } });
 }
