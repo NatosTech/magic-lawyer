@@ -348,6 +348,70 @@ export async function createContrato(data: ContratoCreateInput) {
       },
     });
 
+    // Notificar criação do contrato
+    try {
+      const { NotificationService } = await import(
+        "@/app/lib/notifications/notification-service"
+      );
+      const { NotificationFactory } = await import(
+        "@/app/lib/notifications/domain/notification-factory"
+      );
+
+      // Determinar destinatários
+      const recipients: string[] = [];
+
+      // Admin do tenant
+      const admin = await prisma.usuario.findFirst({
+        where: {
+          tenantId: user.tenantId,
+          role: "ADMIN",
+        },
+        select: { id: true },
+      });
+
+      if (admin) recipients.push(admin.id);
+
+      // Advogado responsável
+      if (contrato.advogadoResponsavel?.usuario?.id) {
+        recipients.push(contrato.advogadoResponsavel.usuario.id);
+      }
+
+      // Cliente (se tiver usuário)
+      const clienteUsuario = await prisma.usuario.findFirst({
+        where: {
+          tenantId: user.tenantId,
+          clienteId: contrato.clienteId,
+        },
+        select: { id: true },
+      });
+
+      if (clienteUsuario) recipients.push(clienteUsuario.id);
+
+      // Enviar notificação para cada destinatário
+      for (const recipientId of recipients) {
+        const event = NotificationFactory.createEvent(
+          "contrato.created",
+          user.tenantId,
+          recipientId,
+          {
+            contratoId: contrato.id,
+            titulo: contrato.titulo,
+            clienteNome: contrato.cliente.nome,
+            valor: Number(contrato.valor),
+            status: contrato.status,
+          },
+        );
+
+        await NotificationService.publishNotification(event);
+      }
+    } catch (notificationError) {
+      // Não falhar criação do contrato se notificação falhar
+      console.error(
+        "[Contrato] Erro ao enviar notificação:",
+        notificationError,
+      );
+    }
+
     // Converter Decimals para number antes de retornar
     const contratoSerializado = {
       ...contrato,
@@ -722,6 +786,13 @@ export async function updateContrato(
     if (data.dadosBancariosId !== undefined)
       updateData.dadosBancariosId = data.dadosBancariosId;
 
+    // Detectar mudança de status para notificações
+    const statusChanged =
+      data.status !== undefined &&
+      data.status !== contratoExistente.status;
+    const oldStatus = contratoExistente.status;
+    const newStatus = data.status;
+
     // Atualizar contrato
     const contratoAtualizado = await prisma.contrato.update({
       where: { id: contratoId },
@@ -753,6 +824,91 @@ export async function updateContrato(
         },
       },
     });
+
+    // Notificar mudança de status
+    if (statusChanged && newStatus) {
+      try {
+        const { NotificationService } = await import(
+          "@/app/lib/notifications/notification-service"
+        );
+        const { NotificationFactory } = await import(
+          "@/app/lib/notifications/domain/notification-factory"
+        );
+
+        // Determinar tipo de evento baseado no novo status
+        let eventType: string;
+
+        if (newStatus === "ATIVO") {
+          eventType = "contrato.signed";
+        } else if (newStatus === "CANCELADO") {
+          eventType = "contrato.cancelled";
+        } else {
+          eventType = "contrato.status_changed";
+        }
+
+        // Verificar expiração (se dataFim foi definida e passou)
+        if (
+          contratoAtualizado.dataFim &&
+          new Date(contratoAtualizado.dataFim) < new Date()
+        ) {
+          eventType = "contrato.expired";
+        }
+
+        // Determinar destinatários
+        const recipients: string[] = [];
+
+        // Admin do tenant
+        const admin = await prisma.usuario.findFirst({
+          where: {
+            tenantId: user.tenantId,
+            role: "ADMIN",
+          },
+          select: { id: true },
+        });
+
+        if (admin) recipients.push(admin.id);
+
+        // Advogado responsável
+        if (contratoAtualizado.advogadoResponsavel?.usuario?.id) {
+          recipients.push(contratoAtualizado.advogadoResponsavel.usuario.id);
+        }
+
+        // Cliente
+        const clienteUsuario = await prisma.usuario.findFirst({
+          where: {
+            tenantId: user.tenantId,
+            clienteId: contratoAtualizado.clienteId,
+          },
+          select: { id: true },
+        });
+
+        if (clienteUsuario) recipients.push(clienteUsuario.id);
+
+        // Enviar notificação
+        for (const recipientId of recipients) {
+          const event = NotificationFactory.createEvent(
+            eventType as any,
+            user.tenantId,
+            recipientId,
+            {
+              contratoId: contratoAtualizado.id,
+              titulo: contratoAtualizado.titulo,
+              clienteNome: contratoAtualizado.cliente.nome,
+              statusAnterior: oldStatus,
+              statusNovo: newStatus,
+              valor: Number(contratoAtualizado.valor),
+            },
+          );
+
+          await NotificationService.publishNotification(event);
+        }
+      } catch (notificationError) {
+        console.error(
+          "[Contrato] Erro ao enviar notificação de status:",
+          notificationError,
+        );
+      }
+    }
 
     // Converter Decimal para number
     const contratoSerializado = {

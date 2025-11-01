@@ -432,6 +432,86 @@ export async function gerarPixDinamico(data: {
       dadosPagamento,
     });
 
+    // Notificar criação de pagamento PIX
+    try {
+      const { NotificationService } = await import(
+        "@/app/lib/notifications/notification-service"
+      );
+      const { NotificationFactory } = await import(
+        "@/app/lib/notifications/domain/notification-factory"
+      );
+
+      // Buscar dados da parcela e contrato
+      const parcelaCompleta = await prisma.contratoParcela.findUnique({
+        where: { id: parcela.id },
+        include: {
+          contrato: {
+            include: {
+              cliente: true,
+              advogadoResponsavel: {
+                include: {
+                  usuario: {
+                    select: { id: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (parcelaCompleta) {
+        const recipients: string[] = [];
+
+        // Admin do tenant
+        const admin = await prisma.usuario.findFirst({
+          where: {
+            tenantId: parcelaCompleta.tenantId,
+            role: "ADMIN",
+          },
+          select: { id: true },
+        });
+
+        if (admin) recipients.push(admin.id);
+
+        // Advogado responsável
+        if (parcelaCompleta.contrato.advogadoResponsavel?.usuario?.id) {
+          recipients.push(
+            parcelaCompleta.contrato.advogadoResponsavel.usuario.id,
+          );
+        }
+
+        // Responsável pela parcela
+        if (parcelaCompleta.responsavelUsuarioId) {
+          recipients.push(parcelaCompleta.responsavelUsuarioId);
+        }
+
+        // Enviar notificação
+        for (const recipientId of recipients) {
+          const event = NotificationFactory.createEvent(
+            "boleto.generated",
+            parcelaCompleta.tenantId,
+            recipientId,
+            {
+              parcelaId: parcelaCompleta.id,
+              contratoId: parcelaCompleta.contratoId,
+              valor: Number(parcelaCompleta.valor),
+              metodo: "PIX",
+              clienteNome: parcelaCompleta.contrato.cliente.nome,
+              dataVencimento: parcelaCompleta.dataVencimento.toISOString(),
+            },
+          );
+
+          await NotificationService.publishNotification(event);
+        }
+      }
+    } catch (notificationError) {
+      console.error(
+        "[CobrancaAsaas] Erro ao enviar notificação PIX:",
+        notificationError,
+      );
+    }
+
     revalidatePath("/parcelas");
 
     return {
@@ -522,6 +602,87 @@ export async function gerarBoletoAsaas(data: {
       asaasPayment,
       dadosPagamento,
     });
+
+    // Notificar criação de boleto
+    try {
+      const { NotificationService } = await import(
+        "@/app/lib/notifications/notification-service"
+      );
+      const { NotificationFactory } = await import(
+        "@/app/lib/notifications/domain/notification-factory"
+      );
+
+      // Buscar dados da parcela e contrato
+      const parcelaCompleta = await prisma.contratoParcela.findUnique({
+        where: { id: parcela.id },
+        include: {
+          contrato: {
+            include: {
+              cliente: true,
+              advogadoResponsavel: {
+                include: {
+                  usuario: {
+                    select: { id: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (parcelaCompleta) {
+        const recipients: string[] = [];
+
+        // Admin do tenant
+        const admin = await prisma.usuario.findFirst({
+          where: {
+            tenantId: parcelaCompleta.tenantId,
+            role: "ADMIN",
+          },
+          select: { id: true },
+        });
+
+        if (admin) recipients.push(admin.id);
+
+        // Advogado responsável
+        if (parcelaCompleta.contrato.advogadoResponsavel?.usuario?.id) {
+          recipients.push(
+            parcelaCompleta.contrato.advogadoResponsavel.usuario.id,
+          );
+        }
+
+        // Responsável pela parcela
+        if (parcelaCompleta.responsavelUsuarioId) {
+          recipients.push(parcelaCompleta.responsavelUsuarioId);
+        }
+
+        // Enviar notificação
+        for (const recipientId of recipients) {
+          const event = NotificationFactory.createEvent(
+            "boleto.generated",
+            parcelaCompleta.tenantId,
+            recipientId,
+            {
+              parcelaId: parcelaCompleta.id,
+              contratoId: parcelaCompleta.contratoId,
+              valor: Number(parcelaCompleta.valor),
+              metodo: "BOLETO",
+              clienteNome: parcelaCompleta.contrato.cliente.nome,
+              dataVencimento: parcelaCompleta.dataVencimento.toISOString(),
+              linhaDigitavel,
+            },
+          );
+
+          await NotificationService.publishNotification(event);
+        }
+      }
+    } catch (notificationError) {
+      console.error(
+        "[CobrancaAsaas] Erro ao enviar notificação boleto:",
+        notificationError,
+      );
+    }
 
     revalidatePath("/parcelas");
 

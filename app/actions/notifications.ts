@@ -4,6 +4,11 @@ import { getServerSession } from "next-auth/next";
 
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
+import { NotificationPolicy } from "@/app/lib/notifications/domain/notification-policy";
+import type {
+  NotificationChannel,
+  NotificationUrgency,
+} from "@/app/lib/notifications/notification-service";
 
 export type NotificationStatus = "NAO_LIDA" | "LIDA" | "ARQUIVADA";
 
@@ -193,4 +198,279 @@ export async function clearAllNotifications(): Promise<void> {
       usuarioId: userId,
     },
   });
+}
+
+// ============================================
+// SERVER ACTIONS - NOVO SISTEMA DE NOTIFICAÇÕES
+// ============================================
+
+/**
+ * Marca notificação do novo sistema como lida
+ */
+export async function markNewNotificationAsRead(
+  notificationId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { tenantId, userId } = await ensureSession();
+
+    if (!tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Verificar se notificação existe e pertence ao usuário
+    const notification = await prisma.notification.findFirst({
+      where: {
+        id: notificationId,
+        tenantId,
+        userId,
+      },
+    });
+
+    if (!notification) {
+      return { success: false, error: "Notificação não encontrada" };
+    }
+
+    // Marcar como lida
+    await prisma.notification.update({
+      where: { id: notificationId },
+      data: {
+        readAt: new Date(),
+      },
+    });
+
+    // Atualizar status de entrega para READ se houver entrega REALTIME
+    await prisma.notificationDelivery.updateMany({
+      where: {
+        notificationId,
+        channel: "REALTIME",
+        status: { in: ["PENDING", "SENT", "DELIVERED"] },
+      },
+      data: {
+        status: "READ",
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("[markNewNotificationAsRead] Erro:", error);
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro interno",
+    };
+  }
+}
+
+/**
+ * Marca notificação do novo sistema como não lida
+ */
+export async function markNewNotificationAsUnread(
+  notificationId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { tenantId, userId } = await ensureSession();
+
+    if (!tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Verificar se notificação existe e pertence ao usuário
+    const notification = await prisma.notification.findFirst({
+      where: {
+        id: notificationId,
+        tenantId,
+        userId,
+      },
+    });
+
+    if (!notification) {
+      return { success: false, error: "Notificação não encontrada" };
+    }
+
+    // Marcar como não lida (remover readAt)
+    await prisma.notification.update({
+      where: { id: notificationId },
+      data: {
+        readAt: null,
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("[markNewNotificationAsUnread] Erro:", error);
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro interno",
+    };
+  }
+}
+
+/**
+ * Busca preferências de notificações do usuário
+ */
+export async function getNotificationPreferences(): Promise<{
+  success: boolean;
+  preferences?: Array<{
+    eventType: string;
+    enabled: boolean;
+    channels: string[];
+    urgency: string;
+  }>;
+  defaultEventTypes?: string[];
+  error?: string;
+}> {
+  try {
+    const { tenantId, userId } = await ensureSession();
+
+    if (!tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Buscar todas as preferências do usuário
+    const preferences = await prisma.notificationPreference.findMany({
+      where: {
+        tenantId,
+        userId,
+      },
+      orderBy: {
+        eventType: "asc",
+      },
+    });
+
+    // Buscar preferências padrão (globais) para eventos sem preferência específica
+    const defaultPreferences = await prisma.notificationTemplate.findMany({
+      where: {
+        tenantId,
+        isDefault: true,
+      },
+      select: {
+        eventType: true,
+      },
+    });
+
+    return {
+      success: true,
+      preferences: preferences.map((p) => ({
+        eventType: p.eventType,
+        enabled: p.enabled,
+        channels: p.channels,
+        urgency: p.urgency,
+      })),
+      defaultEventTypes: defaultPreferences.map((t) => t.eventType),
+    };
+  } catch (error) {
+    console.error("[getNotificationPreferences] Erro:", error);
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro interno",
+    };
+  }
+}
+
+/**
+ * Atualiza preferência de notificação do usuário
+ */
+export async function updateNotificationPreference(data: {
+  eventType: string;
+  enabled?: boolean;
+  channels?: string[];
+  urgency?: string;
+}): Promise<{
+  success: boolean;
+  preference?: {
+    eventType: string;
+    enabled: boolean;
+    channels: string[];
+    urgency: string;
+  };
+  error?: string;
+}> {
+  try {
+    const { tenantId, userId } = await ensureSession();
+
+    if (!tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    if (!data.eventType) {
+      return { success: false, error: "eventType é obrigatório" };
+    }
+
+    // Validar que o evento pode ser desabilitado (eventos críticos não podem)
+    if (!data.enabled && !NotificationPolicy.canDisableEvent(data.eventType)) {
+      return {
+        success: false,
+        error: `Evento "${data.eventType}" é crítico e não pode ser desabilitado`,
+      };
+    }
+
+    // Validar canais
+    const validChannels: NotificationChannel[] = ["REALTIME", "EMAIL", "PUSH"];
+    const validChannelsProvided = Array.isArray(data.channels)
+      ? data.channels.filter((c) => validChannels.includes(c as NotificationChannel))
+      : ["REALTIME"];
+
+    if (validChannelsProvided.length === 0) {
+      return {
+        success: false,
+        error: "Pelo menos um canal válido deve ser informado",
+      };
+    }
+
+    // Validar urgência
+    const validUrgencies: NotificationUrgency[] = [
+      "CRITICAL",
+      "HIGH",
+      "MEDIUM",
+      "INFO",
+    ];
+    const validUrgency =
+      data.urgency && validUrgencies.includes(data.urgency as NotificationUrgency)
+        ? (data.urgency as NotificationUrgency)
+        : "MEDIUM";
+
+    // Criar ou atualizar preferência
+    const preference = await prisma.notificationPreference.upsert({
+      where: {
+        tenantId_userId_eventType: {
+          tenantId,
+          userId,
+          eventType: data.eventType,
+        },
+      },
+      create: {
+        tenantId,
+        userId,
+        eventType: data.eventType,
+        enabled: data.enabled ?? true,
+        channels: validChannelsProvided,
+        urgency: validUrgency,
+      },
+      update: {
+        enabled: data.enabled ?? true,
+        channels: validChannelsProvided,
+        urgency: validUrgency,
+        updatedAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      preference: {
+        eventType: preference.eventType,
+        enabled: preference.enabled,
+        channels: preference.channels,
+        urgency: preference.urgency,
+      },
+    };
+  } catch (error) {
+    console.error("[updateNotificationPreference] Erro:", error);
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro interno",
+    };
+  }
 }
