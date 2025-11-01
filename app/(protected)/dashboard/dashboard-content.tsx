@@ -422,7 +422,7 @@ function renderListItem(item: DashboardListItem) {
   );
 }
 
-function renderTrendItem(trend: DashboardTrend) {
+function renderTrendItem(trend: DashboardTrend, index: number) {
   const previous =
     typeof trend.previous === "number" ? trend.previous : undefined;
   const delta = previous !== undefined ? trend.value - previous : undefined;
@@ -433,10 +433,11 @@ function renderTrendItem(trend: DashboardTrend) {
   const trendTone =
     delta === undefined ? "secondary" : delta >= 0 ? "success" : "danger";
   const styles = toneStyles[trendTone] ?? toneStyles.default;
+  const key = trend.id ?? `${trend.label}-${trend.type ?? "trend"}-${index}`;
 
   return (
     <li
-      key={trend.id}
+      key={key}
       className={`rounded-2xl border px-4 py-3 ${styles.container}`}
     >
       <div className="flex items-center justify-between gap-3">
@@ -727,7 +728,9 @@ export function DashboardContent() {
               ))}
             </ul>
           ) : trends.length > 0 ? (
-            <ul className="space-y-3">{trends.map(renderTrendItem)}</ul>
+            <ul className="space-y-3">
+              {trends.map((trend, index) => renderTrendItem(trend, index))}
+            </ul>
           ) : (
             <p className="text-sm text-default-500">
               Ainda sem séries históricas suficientes para exibir tendências.

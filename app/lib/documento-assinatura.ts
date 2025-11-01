@@ -1,8 +1,8 @@
 import prisma from "./prisma";
 import { emailTemplates } from "./email";
-import { emailService } from "@/app/lib/email-service";
 import { sendDocumentForSigning, checkDocumentStatus } from "./clicksign";
 
+import { emailService } from "@/app/lib/email-service";
 import logger from "@/lib/logger";
 
 // Interface para criar assinatura de documento

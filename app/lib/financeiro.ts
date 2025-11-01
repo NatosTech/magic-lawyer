@@ -1,7 +1,7 @@
 import prisma from "./prisma";
 import { emailTemplates } from "./email";
-import { emailService } from "@/app/lib/email-service";
 
+import { emailService } from "@/app/lib/email-service";
 import logger from "@/lib/logger";
 
 // Interface para resumo financeiro do cliente

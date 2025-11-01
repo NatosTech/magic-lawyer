@@ -42,7 +42,7 @@ export class NotificationHelper {
     },
     urgency: "CRITICAL" | "HIGH" | "MEDIUM" = "HIGH",
   ): Promise<void> {
-    const eventType = `prazo.expiring_${payload.diasRestantes}d`;
+    const eventType = this.getPrazoEventType(payload.diasRestantes);
 
     await NotificationService.publishNotification({
       type: eventType,
@@ -487,5 +487,18 @@ export class NotificationHelper {
       payload,
       urgency: "HIGH",
     });
+  }
+
+  private static getPrazoEventType(diasRestantes: number): string {
+    switch (diasRestantes) {
+      case 7:
+        return "prazo.expiring_7d";
+      case 3:
+        return "prazo.expiring_3d";
+      case 1:
+        return "prazo.expiring_1d";
+      default:
+        return "prazo.expiring";
+    }
   }
 }

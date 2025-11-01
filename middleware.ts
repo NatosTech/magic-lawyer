@@ -101,6 +101,8 @@ function extractTenantFromDomain(host: string): string | null {
 
 export default withAuth(
   async function middleware(req) {
+    const pathname = req.nextUrl.pathname;
+
     const token = req.nextauth.token;
     const isAuth = !!token;
     const isAuthPage = req.nextUrl.pathname.startsWith("/login");
@@ -233,7 +235,9 @@ export default withAuth(
         } catch (error) {
           // Em dev/edge, falhas de rede não devem quebrar nem poluir o console
           if ((error as Error)?.message !== "skip-local-session-check") {
-            console.warn("[middleware] sessão SuperAdmin não validada (continuando)");
+            console.warn(
+              "[middleware] sessão SuperAdmin não validada (continuando)",
+            );
           }
           // Em caso de erro, continuar normalmente (fail-safe)
         }
@@ -279,15 +283,22 @@ export default withAuth(
     // EXCETO se há um reason na query indicando que a sessão foi invalidada
     if (isAuth && isAuthPage) {
       const reason = req.nextUrl.searchParams.get("reason");
-      
+
       // Se há um reason de invalidação, não redirecionar (deixar mostrar a página de login)
-      if (reason && (reason === "SUPER_ADMIN_NOT_FOUND" || reason === "SESSION_REVOKED" || reason === "VALIDATION_ERROR")) {
+      if (
+        reason &&
+        (reason === "SUPER_ADMIN_NOT_FOUND" ||
+          reason === "SESSION_REVOKED" ||
+          reason === "VALIDATION_ERROR")
+      ) {
         // Limpar cookie e deixar mostrar página de login
         const response = NextResponse.next();
+
         response.cookies.delete("next-auth.session-token");
+
         return response;
       }
-      
+
       const userRole = (token as any)?.role;
       const isSuperAdmin = userRole === "SUPER_ADMIN";
 
@@ -398,11 +409,15 @@ export default withAuth(
       }
       // Cookie para SuperAdmin
       if (isSuperAdmin) {
-        response.cookies.set("ml-last-superadmin-check", Date.now().toString(), {
-          httpOnly: false,
-          path: "/",
-          maxAge: 60, // 1 minuto
-        });
+        response.cookies.set(
+          "ml-last-superadmin-check",
+          Date.now().toString(),
+          {
+            httpOnly: false,
+            path: "/",
+            maxAge: 60, // 1 minuto
+          },
+        );
       }
     }
 

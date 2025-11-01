@@ -75,8 +75,15 @@ export async function enviarNotificacaoAndamento(
       try {
         const assunto = `Atualização do processo ${andamento.processo.numero}`;
         const data = new Date(andamento.dataMovimentacao);
-        const dataFormatada = data.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-        const horaFormatada = data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        const dataFormatada = data.toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+        const horaFormatada = data.toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
 
         const descricao = andamento.descricao
           ? `<p style=\"margin: 8px 0; color: #374151;\">${andamento.descricao}</p>`
@@ -116,13 +123,16 @@ export async function enviarNotificacaoAndamento(
             </body>
           </html>`;
 
-        const emailResult = await emailService.sendEmailPerTenant(session.user.tenantId, {
-          to: cliente.email,
-          subject: assunto,
-          html,
-          credentialType: "DEFAULT",
-          fromNameFallback: session.user.tenantName || "Magic Lawyer",
-        });
+        const emailResult = await emailService.sendEmailPerTenant(
+          session.user.tenantId,
+          {
+            to: cliente.email,
+            subject: assunto,
+            html,
+            credentialType: "DEFAULT",
+            fromNameFallback: session.user.tenantName || "Magic Lawyer",
+          },
+        );
 
         resultado.email = {
           success: emailResult.success,
@@ -190,17 +200,20 @@ export async function testarEmail(
       };
     }
 
-    const resultado = await emailService.sendEmailPerTenant(session.user.tenantId, {
-      to: email,
-      subject: assunto,
-      html: `
+    const resultado = await emailService.sendEmailPerTenant(
+      session.user.tenantId,
+      {
+        to: email,
+        subject: assunto,
+        html: `
         <h2>Teste de Integração</h2>
         <p>${mensagem}</p>
         <p><strong>Data/Hora:</strong> ${new Date().toLocaleString("pt-BR")}</p>
         <p><strong>Tenant:</strong> ${session.user.tenantName || "N/A"}</p>
       `,
-      text: `${mensagem}\n\nData/Hora: ${new Date().toLocaleString("pt-BR")}\nTenant: ${session.user.tenantName || "N/A"}`,
-    });
+        text: `${mensagem}\n\nData/Hora: ${new Date().toLocaleString("pt-BR")}\nTenant: ${session.user.tenantName || "N/A"}`,
+      },
+    );
 
     return {
       success: resultado.success,

@@ -51,19 +51,36 @@ async function createDefaultTemplates(tenantId) {
     {
       eventType: "processo.updated",
       title: "Processo atualizado",
-      message: "Processo {numero} foi atualizado",
-      variables: { numero: "string", alteracoes: "string" },
+      message: "Processo {numero} foi atualizado: {changesSummary}",
+      variables: {
+        numero: "string",
+        changesSummary: "string",
+        diff: "json",
+      },
     },
     {
       eventType: "processo.status_changed",
       title: "Status do processo alterado",
-      message: "Processo {numero} mudou para {status}",
-      variables: { numero: "string", status: "string", statusAnterior: "string" },
+      message: "Processo {numero} mudou de {oldStatusLabel} para {newStatusLabel}",
+      variables: {
+        numero: "string",
+        oldStatusLabel: "string",
+        newStatusLabel: "string",
+        oldStatus: "string",
+        newStatus: "string",
+        additionalChangesSummary: "string",
+      },
     },
     {
       eventType: "prazo.expiring_7d",
       title: "Prazo próximo do vencimento",
       message: "Prazo do processo {numero} vence em 7 dias",
+      variables: { numero: "string", descricao: "string", vencimento: "string" },
+    },
+    {
+      eventType: "prazo.expiring",
+      title: "Prazo próximo do vencimento",
+      message: "Prazo do processo {numero} está próximo do vencimento",
       variables: { numero: "string", descricao: "string", vencimento: "string" },
     },
     {
@@ -197,6 +214,7 @@ async function createDefaultTemplates(tenantId) {
       title: "Documento rejeitado",
       message: "Documento {nome} foi rejeitado",
       variables: { nome: "string", rejeitadoPor: "string", motivo: "string" },
+    },
     {
       eventType: "relatorio.generated",
       title: "Relatório gerado",

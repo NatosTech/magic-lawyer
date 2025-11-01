@@ -1,8 +1,8 @@
 import prisma from "./prisma";
 import { emailTemplates } from "./email";
-import { emailService } from "@/app/lib/email-service";
 import { syncEventWithGoogle } from "./google-calendar";
 
+import { emailService } from "@/app/lib/email-service";
 import logger from "@/lib/logger";
 
 // Interface para criar evento

@@ -28,13 +28,13 @@ import {
   Eye,
   EyeOff,
   Plus,
-  Send,
   Bell,
   Shield,
   Clock,
   Users,
   Zap,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 import {
   listTenantEmailCredentials,
@@ -42,7 +42,6 @@ import {
   deleteTenantEmailCredential,
   testTenantEmailConnection,
 } from "@/app/actions/tenant-email-credentials";
-import { useSession } from "next-auth/react";
 
 export function EmailCredentialsCard() {
   const { data: session } = useSession();
@@ -53,7 +52,9 @@ export function EmailCredentialsCard() {
     async () => {
       if (!tenantId) return [];
       const res = await listTenantEmailCredentials(tenantId);
+
       if (!res.success) throw new Error("Falha ao carregar credenciais");
+
       return res.data as Array<{
         id: string;
         type: "DEFAULT" | "ADMIN";
@@ -76,6 +77,7 @@ export function EmailCredentialsCard() {
   useEffect(() => {
     if (!data) return;
     const existing = data.find((c) => c.type === formType);
+
     setFormEmail(existing?.email ?? "");
     setFormFromName(existing?.fromName ?? "");
   }, [data, formType]);
@@ -87,6 +89,7 @@ export function EmailCredentialsCard() {
         description: "Tenant ID não encontrado",
         color: "danger",
       });
+
       return;
     }
 
@@ -96,6 +99,7 @@ export function EmailCredentialsCard() {
         description: "Informe email e senha de app",
         color: "warning",
       });
+
       return;
     }
 
@@ -108,6 +112,7 @@ export function EmailCredentialsCard() {
         appPassword: formAppPassword,
         fromName: formFromName || null,
       });
+
       if (!res.success) throw new Error("Falha ao salvar credenciais");
       addToast({
         title: "Credenciais salvas",
@@ -135,6 +140,7 @@ export function EmailCredentialsCard() {
         description: "Tenant ID não encontrado",
         color: "danger",
       });
+
       return;
     }
     try {
@@ -162,11 +168,13 @@ export function EmailCredentialsCard() {
         description: "Tenant ID não encontrado",
         color: "danger",
       });
+
       return;
     }
     setIsTesting(type);
     try {
       const res = await testTenantEmailConnection(tenantId, type);
+
       if (res.success) {
         addToast({
           title: "✅ Conexão verificada com sucesso",
@@ -185,8 +193,10 @@ export function EmailCredentialsCard() {
     } catch (error) {
       addToast({
         title: "❌ Erro ao testar conexão",
-          description:
-          error instanceof Error ? error.message : "Erro desconhecido ao verificar conexão",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Erro desconhecido ao verificar conexão",
         color: "danger",
         timeout: 8000,
       });
@@ -209,9 +219,17 @@ export function EmailCredentialsCard() {
               <Info className="h-5 w-5 text-warning" />
             </div>
             <div className="flex-1 space-y-2">
-              <h3 className="text-sm font-semibold text-warning">📧 Configuração de Envio de Emails</h3>
+              <h3 className="text-sm font-semibold text-warning">
+                📧 Configuração de Envio de Emails
+              </h3>
               <p className="text-sm text-default-300">
-                Esta seção configura as <strong>credenciais de envio</strong> que o sistema utiliza para <strong>enviar emails automaticamente</strong> (notificações, convites, faturas, lembretes, etc.). Os emails que você encontra em outras seções são apenas <strong>informações de contato</strong> e não são usados para envio.
+                Esta seção configura as <strong>credenciais de envio</strong>{" "}
+                que o sistema utiliza para{" "}
+                <strong>enviar emails automaticamente</strong> (notificações,
+                convites, faturas, lembretes, etc.). Os emails que você encontra
+                em outras seções são apenas{" "}
+                <strong>informações de contato</strong> e não são usados para
+                envio.
               </p>
             </div>
           </div>
@@ -240,8 +258,12 @@ export function EmailCredentialsCard() {
         <CardBody className="space-y-4">
           <div className="grid gap-3 md:grid-cols-3">
             <Select
+              description={
+                formType === "DEFAULT"
+                  ? "Uso geral (notificações, agenda, etc.)"
+                  : "Comunicações administrativas"
+              }
               label="Tipo de credencial"
-              description={formType === "DEFAULT" ? "Uso geral (notificações, agenda, etc.)" : "Comunicações administrativas"}
               selectedKeys={formType ? [formType] : []}
               startContent={
                 formType === "DEFAULT" ? (
@@ -252,72 +274,74 @@ export function EmailCredentialsCard() {
               }
               onSelectionChange={(keys) => {
                 const value = Array.from(keys)[0] as string;
-                if (typeof value === "string") setFormType(value as "DEFAULT" | "ADMIN");
+
+                if (typeof value === "string")
+                  setFormType(value as "DEFAULT" | "ADMIN");
               }}
             >
-              <SelectItem 
-                key="DEFAULT" 
-                textValue="DEFAULT - Uso Geral"
+              <SelectItem
+                key="DEFAULT"
                 description="Usado para envio de notificações automáticas (andamentos, lembretes, convites, faturas), emails da agenda e outras comunicações gerais do sistema."
                 startContent={<Bell className="h-4 w-4 text-primary" />}
+                textValue="DEFAULT - Uso Geral"
               >
                 <div className="flex items-center gap-2">
                   <Bell className="h-4 w-4 text-primary" />
                   <span>DEFAULT</span>
-                  <Chip size="sm" color="primary" variant="flat">Uso Geral</Chip>
+                  <Chip color="primary" size="sm" variant="flat">
+                    Uso Geral
+                  </Chip>
                 </div>
               </SelectItem>
-              <SelectItem 
-                key="ADMIN" 
-                textValue="ADMIN - Administrativo"
+              <SelectItem
+                key="ADMIN"
                 description="Usado exclusivamente para comunicações administrativas importantes, como boas-vindas de novos advogados, credenciais iniciais e notificações críticas do sistema."
                 startContent={<Shield className="h-4 w-4 text-secondary" />}
+                textValue="ADMIN - Administrativo"
               >
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-secondary" />
                   <span>ADMIN</span>
-                  <Chip size="sm" color="secondary" variant="flat">Administrativo</Chip>
+                  <Chip color="secondary" size="sm" variant="flat">
+                    Administrativo
+                  </Chip>
                 </div>
               </SelectItem>
             </Select>
             <Input
-              label="De (From Name)"
               description="Nome que aparece como remetente"
-              value={formFromName}
-              onValueChange={setFormFromName}
+              label="De (From Name)"
               placeholder="Ex.: Sandra Advocacia"
               startContent={<Mail className="h-4 w-4 text-primary" />}
+              value={formFromName}
+              onValueChange={setFormFromName}
             />
             <Input
               isRequired
-              label="Email do Provedor"
               description="Email da conta de envio (Gmail, Outlook, etc.)"
+              label="Email do Provedor"
+              placeholder="email@provedor.com"
+              startContent={<Mail className="h-4 w-4 text-success" />}
               type="email"
               value={formEmail}
               onValueChange={setFormEmail}
-              placeholder="email@provedor.com"
-              startContent={<Mail className="h-4 w-4 text-success" />}
             />
           </div>
           <div className="grid gap-3 md:grid-cols-1">
             <Input
               isRequired
-              label="Senha de App"
               description="Senha de aplicativo do provedor (não a senha da conta)"
-              type={isPasswordVisible ? "text" : "password"}
-              value={formAppPassword}
-              onValueChange={setFormAppPassword}
-              placeholder="senha de app/provedor"
-              startContent={<KeyRound className="h-4 w-4 text-warning" />}
               endContent={
                 formAppPassword ? (
                   <Button
                     isIconOnly
+                    aria-label={
+                      isPasswordVisible ? "Ocultar senha" : "Mostrar senha"
+                    }
                     className="min-w-6 w-6 h-6 text-default-400 hover:text-default-600"
                     size="sm"
                     variant="light"
                     onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                    aria-label={isPasswordVisible ? "Ocultar senha" : "Mostrar senha"}
                   >
                     {isPasswordVisible ? (
                       <EyeOff className="h-4 w-4" />
@@ -327,15 +351,23 @@ export function EmailCredentialsCard() {
                   </Button>
                 ) : null
               }
+              label="Senha de App"
+              placeholder="senha de app/provedor"
+              startContent={<KeyRound className="h-4 w-4 text-warning" />}
+              type={isPasswordVisible ? "text" : "password"}
+              value={formAppPassword}
+              onValueChange={setFormAppPassword}
             />
           </div>
           <div className="flex gap-3 justify-end">
             <Button
               color="primary"
-              radius="full"
+              endContent={
+                !isSaving ? <CheckCircle2 className="h-4 w-4" /> : null
+              }
               isLoading={isSaving}
+              radius="full"
               startContent={!isSaving ? <Plus className="h-4 w-4" /> : null}
-              endContent={!isSaving ? <CheckCircle2 className="h-4 w-4" /> : null}
               onPress={handleSave}
             >
               {isSaving ? "Salvando..." : "Salvar credenciais"}
@@ -380,20 +412,20 @@ export function EmailCredentialsCard() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {c.type === "DEFAULT" ? (
-                          <Chip 
-                            color="primary" 
-                            size="sm" 
-                            variant="flat"
+                          <Chip
+                            color="primary"
+                            size="sm"
                             startContent={<Bell className="h-3 w-3" />}
+                            variant="flat"
                           >
                             DEFAULT
                           </Chip>
                         ) : (
-                          <Chip 
-                            color="secondary" 
-                            size="sm" 
-                            variant="flat"
+                          <Chip
+                            color="secondary"
+                            size="sm"
                             startContent={<Shield className="h-3 w-3" />}
+                            variant="flat"
                           >
                             ADMIN
                           </Chip>
@@ -417,19 +449,23 @@ export function EmailCredentialsCard() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-default-400" />
-                        <span className="text-default-500">{new Date(c.updatedAt).toLocaleString("pt-BR")}</span>
+                        <span className="text-default-500">
+                          {new Date(c.updatedAt).toLocaleString("pt-BR")}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
                         <Tooltip content="Testa a conexão com o servidor de email do provedor (Gmail, Outlook, etc.) sem enviar email. Verifica se as credenciais estão corretas.">
                           <Button
-                            size="sm"
-                            radius="full"
-                            variant="solid"
                             color="success"
                             isLoading={isTesting === c.type}
-                            startContent={!isTesting ? <Zap className="h-4 w-4" /> : null}
+                            radius="full"
+                            size="sm"
+                            startContent={
+                              !isTesting ? <Zap className="h-4 w-4" /> : null
+                            }
+                            variant="solid"
                             onPress={() => handleTest(c.type)}
                           >
                             {isTesting === c.type ? "Testando..." : "Testar"}
@@ -437,11 +473,11 @@ export function EmailCredentialsCard() {
                         </Tooltip>
                         <Tooltip content="Remove permanentemente esta credencial. O sistema não poderá mais enviar emails usando este tipo.">
                           <Button
-                            size="sm"
-                            radius="full"
-                            variant="bordered"
                             color="danger"
+                            radius="full"
+                            size="sm"
                             startContent={<XCircle className="h-4 w-4" />}
+                            variant="bordered"
                             onPress={() => handleDelete(c.type)}
                           >
                             Remover
@@ -463,4 +499,3 @@ export function EmailCredentialsCard() {
     </div>
   );
 }
-

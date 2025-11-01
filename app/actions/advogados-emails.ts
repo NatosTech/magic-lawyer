@@ -108,13 +108,13 @@ export async function enviarNotificacaoEmail(
     const emailResult = await emailService.sendNotificacaoAdvogado(
       session.user.tenantId,
       {
-      nome: nomeCompleto,
-      email: advogado.usuario.email,
-      tipo,
-      titulo,
-      mensagem,
-      linkAcao,
-      textoAcao,
+        nome: nomeCompleto,
+        email: advogado.usuario.email,
+        tipo,
+        titulo,
+        mensagem,
+        linkAcao,
+        textoAcao,
       },
     );
 

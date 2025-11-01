@@ -7,11 +7,12 @@ import { Chip } from "@heroui/chip";
 import { Badge } from "@heroui/badge";
 import NextLink from "next/link";
 
+import { EmailCredentialsCard } from "./email-credentials-card";
+
 import { title, subtitle } from "@/components/primitives";
 import { getSession } from "@/app/lib/auth";
 import { TENANT_PERMISSIONS } from "@/types";
 import { getTenantConfigData } from "@/app/actions/tenant-config";
-import { EmailCredentialsCard } from "./email-credentials-card";
 
 export const metadata: Metadata = {
   title: "Configurações do escritório",

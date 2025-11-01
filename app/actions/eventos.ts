@@ -582,7 +582,7 @@ export async function createEvento(formData: EventoFormData) {
             eventoData: evento.dataInicio,
             eventoLocal: evento.local,
           },
-          referenciaTipo: "EVENTO",
+          referenciaTipo: "evento",
           referenciaId: evento.id,
         });
       }
@@ -852,7 +852,7 @@ export async function updateEvento(
               eventoData: evento.dataInicio,
               eventoLocal: evento.local,
             },
-            referenciaTipo: "EVENTO",
+            referenciaTipo: "evento",
             referenciaId: evento.id,
           });
         }
@@ -1085,7 +1085,7 @@ export async function confirmarParticipacaoEvento(
             tipoConfirmacao: "RESPONSE",
             destinatarioEmail: email,
           },
-          referenciaTipo: "EVENTO",
+          referenciaTipo: "evento",
           referenciaId: eventoId,
         });
       }

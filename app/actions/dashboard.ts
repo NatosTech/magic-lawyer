@@ -887,14 +887,14 @@ async function buildAdminDashboard(
   }));
 
   const trends = [
-    ...processSeries.map((trend) => ({
+    ...processSeries.map((trend, index) => ({
       ...trend,
-      id: `process-${trend.id}`,
+      id: `process-${trend.id}-${index}`,
       label: `Processos ${trend.label}`,
     })),
-    ...revenueSeries.map((trend) => ({
+    ...revenueSeries.map((trend, index) => ({
       ...trend,
-      id: `receita-${trend.id}`,
+      id: `receita-${trend.id}-${index}`,
       label: `Receita ${trend.label}`,
     })),
   ];
@@ -1301,14 +1301,14 @@ async function buildAdvogadoDashboard(
   }));
 
   const trends = [
-    ...ownProcessSeries.map((trend) => ({
+    ...ownProcessSeries.map((trend, index) => ({
       ...trend,
-      id: `meus-processos-${trend.id}`,
+      id: `meus-processos-${trend.id}-${index}`,
       label: `Processos ${trend.label}`,
     })),
-    ...assinaturaSeries.map((trend) => ({
+    ...assinaturaSeries.map((trend, index) => ({
       ...trend,
-      id: `assinaturas-${trend.id}`,
+      id: `assinaturas-${trend.id}-${index}`,
       label: `Assinaturas ${trend.label}`,
     })),
   ];
@@ -1668,14 +1668,14 @@ async function buildFinanceiroDashboard(
   );
 
   const trends = [
-    ...receitaSeries.map((trend) => ({
+    ...receitaSeries.map((trend, index) => ({
       ...trend,
-      id: `receita-${trend.id}`,
+      id: `receita-${trend.id}-${index}`,
       label: `Receita ${trend.label}`,
     })),
-    ...faturaSeries.map((trend) => ({
+    ...faturaSeries.map((trend, index) => ({
       ...trend,
-      id: `faturas-${trend.id}`,
+      id: `faturas-${trend.id}-${index}`,
       label: `Faturas ${trend.label}`,
     })),
   ];
@@ -1979,14 +1979,14 @@ async function buildSecretariaDashboard(
   );
 
   const trends = [
-    ...eventosSeries.map((trend) => ({
+    ...eventosSeries.map((trend, index) => ({
       ...trend,
-      id: `eventos-${trend.id}`,
+      id: `eventos-${trend.id}-${index}`,
       label: `Eventos ${trend.label}`,
     })),
-    ...clientesSeries.map((trend) => ({
+    ...clientesSeries.map((trend, index) => ({
       ...trend,
-      id: `clientes-${trend.id}`,
+      id: `clientes-${trend.id}-${index}`,
       label: `Clientes ${trend.label}`,
     })),
   ];
@@ -2303,14 +2303,14 @@ async function buildClienteDashboard(
   }));
 
   const trends = [
-    ...processoSeries.map((trend) => ({
+    ...processoSeries.map((trend, index) => ({
       ...trend,
-      id: `processos-${trend.id}`,
+      id: `processos-${trend.id}-${index}`,
       label: `Processos ${trend.label}`,
     })),
-    ...documentoSeries.map((trend) => ({
+    ...documentoSeries.map((trend, index) => ({
       ...trend,
-      id: `documentos-${trend.id}`,
+      id: `documentos-${trend.id}-${index}`,
       label: `Documentos ${trend.label}`,
     })),
   ];

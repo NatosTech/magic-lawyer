@@ -408,7 +408,9 @@ class EmailService {
   private resolveFromName(tenantId: string, fallbackName?: string) {
     return prisma.tenantBranding
       .findUnique({ where: { tenantId } })
-      .then((branding) => branding?.emailFromName || fallbackName || "Magic Lawyer");
+      .then(
+        (branding) => branding?.emailFromName || fallbackName || "Magic Lawyer",
+      );
   }
 
   private async getTenantEmailCredential(
@@ -439,7 +441,9 @@ class EmailService {
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST || "smtp.gmail.com",
       port: Number(process.env.SMTP_PORT || 465),
-      secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : true,
+      secure: process.env.SMTP_SECURE
+        ? process.env.SMTP_SECURE === "true"
+        : true,
       auth: {
         user: email,
         pass: appPassword,
@@ -449,7 +453,10 @@ class EmailService {
 
   async sendEmailPerTenant(
     tenantId: string,
-    emailData: EmailData & { credentialType?: "DEFAULT" | "ADMIN"; fromNameFallback?: string },
+    emailData: EmailData & {
+      credentialType?: "DEFAULT" | "ADMIN";
+      fromNameFallback?: string;
+    },
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       const credential = await this.getTenantEmailCredential(
@@ -458,7 +465,10 @@ class EmailService {
       );
 
       if (!credential) {
-        return { success: false, error: "Credenciais de email não configuradas para o tenant" };
+        return {
+          success: false,
+          error: "Credenciais de email não configuradas para o tenant",
+        };
       }
 
       const transporter = this.createTransporter({
@@ -466,7 +476,10 @@ class EmailService {
         appPassword: credential.appPassword,
       });
 
-      const fromName = await this.resolveFromName(tenantId, credential.fromName || emailData.fromNameFallback);
+      const fromName = await this.resolveFromName(
+        tenantId,
+        credential.fromName || emailData.fromNameFallback,
+      );
       const from = emailData.from || `${fromName} <${credential.email}>`;
 
       const info = await transporter.sendMail({
@@ -483,7 +496,10 @@ class EmailService {
 
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error sending email",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown error sending email",
       };
     }
   }
@@ -509,13 +525,13 @@ class EmailService {
   async sendNotificacaoAdvogado(
     tenantId: string,
     data: {
-    nome: string;
-    email: string;
-    tipo: string;
-    titulo: string;
-    mensagem: string;
-    linkAcao?: string;
-    textoAcao?: string;
+      nome: string;
+      email: string;
+      tipo: string;
+      titulo: string;
+      mensagem: string;
+      linkAcao?: string;
+      textoAcao?: string;
     },
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const template = getNotificacaoTemplate(data);
@@ -530,9 +546,13 @@ class EmailService {
   }
 
   // Método para testar a configuração de email por tenant
-  async testConnection(tenantId: string, type: "DEFAULT" | "ADMIN" = "DEFAULT"): Promise<boolean> {
+  async testConnection(
+    tenantId: string,
+    type: "DEFAULT" | "ADMIN" = "DEFAULT",
+  ): Promise<boolean> {
     try {
       const credential = await this.getTenantEmailCredential(tenantId, type);
+
       if (!credential) return false;
 
       const transporter = this.createTransporter({
@@ -569,7 +589,6 @@ class EmailService {
       },
     ];
   }
-
 }
 
 export const emailService = new EmailService();

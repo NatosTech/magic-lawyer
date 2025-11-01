@@ -1,7 +1,8 @@
+import type { NotificationJobData } from "./notification-worker";
+
 import { Queue } from "bullmq";
 
 import { bullMQConfig } from "./redis-config";
-import { NotificationJobData } from "./notification-worker";
 
 /**
  * Queue para adicionar jobs de notificação

@@ -345,7 +345,7 @@ export async function createAndamento(
           titulo: input.titulo,
           dataVencimento: input.prazo,
         },
-        referenciaTipo: "PRAZO",
+        referenciaTipo: "prazo",
         referenciaId: prazo.id,
       });
     }
@@ -513,15 +513,15 @@ export async function updateAndamento(
             type: "andamento.updated",
             tenantId,
             userId: uid,
-          payload: {
-            andamentoId: andamento.id,
-            processoId: andamento.processo.id,
-            processoNumero: proc?.numero || andamento.processo.numero,
-            titulo: andamento.titulo,
-            descricao: andamento.descricao ?? null,
-            tipo: andamento.tipo,
-            dataMovimentacao: andamento.dataMovimentacao,
-          },
+            payload: {
+              andamentoId: andamento.id,
+              processoId: andamento.processo.id,
+              processoNumero: proc?.numero || andamento.processo.numero,
+              titulo: andamento.titulo,
+              descricao: andamento.descricao ?? null,
+              tipo: andamento.tipo,
+              dataMovimentacao: andamento.dataMovimentacao,
+            },
             urgency: "MEDIUM",
             channels,
           } as any),

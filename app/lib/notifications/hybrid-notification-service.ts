@@ -21,6 +21,18 @@ export class HybridNotificationService {
       console.log(
         `[Hybrid] Notificação ${event.type} publicada via NOVO sistema`,
       );
+
+      try {
+        await this.publishLegacyNotification(event);
+        console.log(
+          `[Hybrid] Notificação ${event.type} replicada no sistema legado para compatibilidade`,
+        );
+      } catch (legacyError) {
+        console.error(
+          "[Hybrid] Falha ao replicar notificação no sistema legado:",
+          legacyError,
+        );
+      }
     } else {
       // Usar sistema legado
       await this.publishLegacyNotification(event);
@@ -78,6 +90,8 @@ export class HybridNotificationService {
       "financeiro.payment": "FINANCEIRO",
       "general.notification": "OUTRO",
       "processo.created": "SISTEMA",
+      "processo.updated": "SISTEMA",
+      "processo.status_changed": "SISTEMA",
       "pagamento.paid": "FINANCEIRO",
       "evento.created": "OUTRO",
       "test.simple": "SISTEMA",
@@ -133,6 +147,35 @@ export class HybridNotificationService {
           titulo: "Novo Processo Criado",
           mensagem: `Processo "${payload.numero || "sem número"}" foi criado com sucesso.`,
         };
+      case "processo.updated": {
+        const summary =
+          payload.changesSummary ||
+          payload.additionalChangesSummary ||
+          (Array.isArray(payload.changes) ? payload.changes.join(", ") : "");
+        const detalhes = summary ? `: ${summary}` : "";
+
+        return {
+          titulo: "Processo Atualizado",
+          mensagem: `Processo "${payload.numero || "sem número"}" foi atualizado${detalhes}.`,
+        };
+      }
+      case "processo.status_changed": {
+        const oldLabel =
+          payload.oldStatusLabel || payload.oldStatus || "status anterior";
+        const newLabel =
+          payload.newStatusLabel ||
+          payload.status ||
+          payload.newStatus ||
+          "novo status";
+        const extras = payload.additionalChangesSummary
+          ? ` (outras alterações: ${payload.additionalChangesSummary})`
+          : "";
+
+        return {
+          titulo: "Status do Processo Alterado",
+          mensagem: `Processo "${payload.numero || "sem número"}" mudou de ${oldLabel} para ${newLabel}${extras}.`,
+        };
+      }
 
       case "pagamento.paid":
         return {

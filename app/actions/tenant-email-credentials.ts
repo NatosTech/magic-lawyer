@@ -6,7 +6,15 @@ import { emailService } from "@/app/lib/email-service";
 export async function listTenantEmailCredentials(tenantId: string) {
   const creds = await prisma.tenantEmailCredential.findMany({
     where: { tenantId },
-    select: { id: true, type: true, email: true, appPassword: true, fromName: true, createdAt: true, updatedAt: true },
+    select: {
+      id: true,
+      type: true,
+      email: true,
+      appPassword: true,
+      fromName: true,
+      createdAt: true,
+      updatedAt: true,
+    },
     orderBy: { type: "asc" },
   });
 
@@ -31,13 +39,21 @@ export async function upsertTenantEmailCredential(params: {
   return { success: true } as const;
 }
 
-export async function deleteTenantEmailCredential(tenantId: string, type: "DEFAULT" | "ADMIN") {
-  await prisma.tenantEmailCredential.delete({ where: { tenantId_type: { tenantId, type } } }).catch(() => void 0);
+export async function deleteTenantEmailCredential(
+  tenantId: string,
+  type: "DEFAULT" | "ADMIN",
+) {
+  await prisma.tenantEmailCredential
+    .delete({ where: { tenantId_type: { tenantId, type } } })
+    .catch(() => void 0);
 
   return { success: true } as const;
 }
 
-export async function testTenantEmailConnection(tenantId: string, type: "DEFAULT" | "ADMIN" = "DEFAULT") {
+export async function testTenantEmailConnection(
+  tenantId: string,
+  type: "DEFAULT" | "ADMIN" = "DEFAULT",
+) {
   const ok = await emailService.testConnection(tenantId, type);
 
   return { success: ok } as const;
@@ -46,12 +62,15 @@ export async function testTenantEmailConnection(tenantId: string, type: "DEFAULT
 /**
  * Registra auditoria quando SuperAdmin visualiza senha de app
  */
-export async function logPasswordView(tenantId: string, credentialType: "DEFAULT" | "ADMIN") {
+export async function logPasswordView(
+  tenantId: string,
+  credentialType: "DEFAULT" | "ADMIN",
+) {
   const { getServerSession } = await import("next-auth/next");
   const { authOptions } = await import("@/auth");
-  
+
   const session = await getServerSession(authOptions);
-  
+
   if (!session?.user || (session.user as any)?.role !== "SUPER_ADMIN") {
     return { success: false, error: "Não autorizado" } as const;
   }
@@ -81,7 +100,3 @@ export async function logPasswordView(tenantId: string, credentialType: "DEFAULT
 
   return { success: true } as const;
 }
-
-
-
-

@@ -1,6 +1,7 @@
+import { NotificationEvent } from "../types";
+
 import prisma from "@/app/lib/prisma";
 import { emailService } from "@/app/lib/email-service";
-import { NotificationEvent } from "../types";
 
 /**
  * Canal de EMAIL para notificações
@@ -18,7 +19,6 @@ export class EmailChannel {
     message: string,
   ): Promise<{ success: boolean; error?: string; messageId?: string }> {
     try {
-
       const tenant = event.tenantId
         ? await prisma.tenant.findUnique({
             where: { id: event.tenantId },
@@ -42,15 +42,18 @@ export class EmailChannel {
       const enrichedMessage = this.enrichMessage(message, event);
 
       // Enviar email usando o novo serviço per-tenant
-      const result = await emailService.sendNotificacaoAdvogado(event.tenantId, {
-        nome: userName,
-        email: userEmail,
-        tipo: event.type,
-        titulo: title,
-        mensagem: enrichedMessage,
-        linkAcao,
-        textoAcao,
-      });
+      const result = await emailService.sendNotificacaoAdvogado(
+        event.tenantId,
+        {
+          nome: userName,
+          email: userEmail,
+          tipo: event.type,
+          titulo: title,
+          mensagem: enrichedMessage,
+          linkAcao,
+          textoAcao,
+        },
+      );
 
       if (result.success) {
         console.log(
@@ -268,6 +271,7 @@ export class EmailChannel {
       }
 
       const formattedDate = this.formatDate(payload.dataMovimentacao);
+
       if (formattedDate) {
         details.push(`Data/Hora: ${formattedDate}`);
       }

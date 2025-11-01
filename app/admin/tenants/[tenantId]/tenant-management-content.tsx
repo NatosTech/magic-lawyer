@@ -40,12 +40,10 @@ import {
   Mail,
   Eye,
   EyeOff,
-  Send,
   Server,
   Info,
   CheckCircle2,
   XCircle,
-  AlertCircle,
   Bell,
   Shield,
   Clock,
@@ -553,104 +551,115 @@ export function TenantManagementContent({
       <div className="w-full">
         <Tabs
           aria-label="Painel de gerenciamento do tenant"
-          color="primary"
-          variant="bordered"
           classNames={{
             base: "w-full",
             tabList: "gap-2 justify-center w-full",
             tab: "min-w-[180px] px-8 py-4 text-base font-medium",
             panel: "w-full",
           }}
+          color="primary"
+          variant="bordered"
         >
-        <Tab
-          key="overview"
-          title={
-            <TabTitle
-              icon={<Building2 className="h-4 w-4" />}
-              label="Visão geral"
+          <Tab
+            key="overview"
+            title={
+              <TabTitle
+                icon={<Building2 className="h-4 w-4" />}
+                label="Visão geral"
+              />
+            }
+          >
+            <OverviewTab
+              detailsForm={detailsForm}
+              handleSaveDetails={handleSaveDetails}
+              handleStatusChange={handleStatusChange}
+              isSavingDetails={isSavingDetails}
+              isUpdatingStatus={isUpdatingStatus}
+              setDetailsForm={setDetailsForm}
+              tenantStatus={tenantStatusState}
             />
-          }
-        >
-          <OverviewTab
-            detailsForm={detailsForm}
-            handleSaveDetails={handleSaveDetails}
-            handleStatusChange={handleStatusChange}
-            isSavingDetails={isSavingDetails}
-            isUpdatingStatus={isUpdatingStatus}
-            setDetailsForm={setDetailsForm}
-            tenantStatus={tenantStatusState}
-          />
-        </Tab>
+          </Tab>
 
-      <Tab
-        key="email"
-        title={<TabTitle icon={<Mail className="h-4 w-4" />} label="Envio de Email" />}
-      >
-        <EmailTab tenantId={tenantId} />
-      </Tab>
+          <Tab
+            key="email"
+            title={
+              <TabTitle
+                icon={<Mail className="h-4 w-4" />}
+                label="Envio de Email"
+              />
+            }
+          >
+            <EmailTab tenantId={tenantId} />
+          </Tab>
 
-        <Tab
-          key="finance"
-          title={
-            <TabTitle
-              icon={<CreditCard className="h-4 w-4" />}
-              label="Financeiro"
+          <Tab
+            key="finance"
+            title={
+              <TabTitle
+                icon={<CreditCard className="h-4 w-4" />}
+                label="Financeiro"
+              />
+            }
+          >
+            <FinanceTab
+              handleSaveSubscription={handleSaveSubscription}
+              invoices={tenantData.invoices}
+              isSavingSubscription={isSavingSubscription}
+              metrics={tenantData.metrics}
+              planOptions={planOptions}
+              setSubscriptionForm={setSubscriptionForm}
+              subscriptionForm={subscriptionForm}
             />
-          }
-        >
-          <FinanceTab
-            handleSaveSubscription={handleSaveSubscription}
-            invoices={tenantData.invoices}
-            isSavingSubscription={isSavingSubscription}
-            metrics={tenantData.metrics}
-            planOptions={planOptions}
-            setSubscriptionForm={setSubscriptionForm}
-            subscriptionForm={subscriptionForm}
-          />
-        </Tab>
+          </Tab>
 
-        <Tab
-          key="users"
-          title={
-            <TabTitle icon={<Users2 className="h-4 w-4" />} label="Usuários" />
-          }
-        >
-          <UsersTab
-            isUpdatingUser={isUpdatingUser}
-            pendingUserId={pendingUserId}
-            userRoleOptions={userRoleOptions}
-            users={tenantData.users}
-            onOpenUserModal={handleOpenUserModal}
-            onResetPassword={handleResetUserPassword}
-            onToggleActive={handleToggleUserActive}
-          />
-        </Tab>
-
-        <Tab
-          key="branding"
-          title={
-            <TabTitle icon={<Palette className="h-4 w-4" />} label="Branding" />
-          }
-        >
-          <BrandingTab
-            brandingForm={brandingForm}
-            handleSaveBranding={handleSaveBranding}
-            isSavingBranding={isSavingBranding}
-            setBrandingForm={setBrandingForm}
-          />
-        </Tab>
-
-        <Tab
-          key="auditoria"
-          title={
-            <TabTitle
-              icon={<FileText className="h-4 w-4" />}
-              label="Auditoria"
+          <Tab
+            key="users"
+            title={
+              <TabTitle
+                icon={<Users2 className="h-4 w-4" />}
+                label="Usuários"
+              />
+            }
+          >
+            <UsersTab
+              isUpdatingUser={isUpdatingUser}
+              pendingUserId={pendingUserId}
+              userRoleOptions={userRoleOptions}
+              users={tenantData.users}
+              onOpenUserModal={handleOpenUserModal}
+              onResetPassword={handleResetUserPassword}
+              onToggleActive={handleToggleUserActive}
             />
-          }
-        >
-          <AuditTab />
-        </Tab>
+          </Tab>
+
+          <Tab
+            key="branding"
+            title={
+              <TabTitle
+                icon={<Palette className="h-4 w-4" />}
+                label="Branding"
+              />
+            }
+          >
+            <BrandingTab
+              brandingForm={brandingForm}
+              handleSaveBranding={handleSaveBranding}
+              isSavingBranding={isSavingBranding}
+              setBrandingForm={setBrandingForm}
+            />
+          </Tab>
+
+          <Tab
+            key="auditoria"
+            title={
+              <TabTitle
+                icon={<FileText className="h-4 w-4" />}
+                label="Auditoria"
+              />
+            }
+          >
+            <AuditTab />
+          </Tab>
         </Tabs>
       </div>
 
@@ -1304,14 +1313,24 @@ function BrandingTab({
   );
 }
 function EmailTab({ tenantId }: { tenantId: string }) {
-  const { data, mutate, isLoading } = useSWR([
-    "tenant-email-creds",
-    tenantId,
-  ], async () => {
-    const res = await listTenantEmailCredentials(tenantId);
-    if (!res.success) throw new Error("Falha ao carregar credenciais");
-    return res.data as Array<{ id: string; type: "DEFAULT" | "ADMIN"; email: string; appPassword: string; fromName: string | null; createdAt: string; updatedAt: string }>;
-  });
+  const { data, mutate, isLoading } = useSWR(
+    ["tenant-email-creds", tenantId],
+    async () => {
+      const res = await listTenantEmailCredentials(tenantId);
+
+      if (!res.success) throw new Error("Falha ao carregar credenciais");
+
+      return res.data as Array<{
+        id: string;
+        type: "DEFAULT" | "ADMIN";
+        email: string;
+        appPassword: string;
+        fromName: string | null;
+        createdAt: string;
+        updatedAt: string;
+      }>;
+    },
+  );
 
   const [formType, setFormType] = useState<"DEFAULT" | "ADMIN">("DEFAULT");
   const [formEmail, setFormEmail] = useState("");
@@ -1324,6 +1343,7 @@ function EmailTab({ tenantId }: { tenantId: string }) {
   useEffect(() => {
     if (!data) return;
     const existing = data.find((c) => c.type === formType);
+
     setFormEmail(existing?.email ?? "");
     setFormFromName(existing?.fromName ?? "");
     setFormAppPassword(existing?.appPassword ?? "");
@@ -1340,7 +1360,12 @@ function EmailTab({ tenantId }: { tenantId: string }) {
 
   const handleSave = async () => {
     if (!formEmail || !formAppPassword) {
-      addToast({ title: "Campos obrigatórios", description: "Informe email e senha de app", color: "warning" });
+      addToast({
+        title: "Campos obrigatórios",
+        description: "Informe email e senha de app",
+        color: "warning",
+      });
+
       return;
     }
     setIsSaving(true);
@@ -1352,8 +1377,13 @@ function EmailTab({ tenantId }: { tenantId: string }) {
         appPassword: formAppPassword,
         fromName: formFromName || null,
       });
+
       if (!res.success) throw new Error("Falha ao salvar credenciais");
-      addToast({ title: "Credenciais salvas", description: `${formType} atualizado`, color: "success" });
+      addToast({
+        title: "Credenciais salvas",
+        description: `${formType} atualizado`,
+        color: "success",
+      });
       // Não limpar a senha após salvar - manter o valor do banco visível
       setIsPasswordVisible(false); // Ocultar novamente após salvar
       await mutate();
@@ -1364,7 +1394,11 @@ function EmailTab({ tenantId }: { tenantId: string }) {
 
   const handleDelete = async (type: "DEFAULT" | "ADMIN") => {
     await deleteTenantEmailCredential(tenantId, type);
-    addToast({ title: "Removido", description: `${type} excluído`, color: "success" });
+    addToast({
+      title: "Removido",
+      description: `${type} excluído`,
+      color: "success",
+    });
     await mutate();
   };
 
@@ -1372,6 +1406,7 @@ function EmailTab({ tenantId }: { tenantId: string }) {
     setIsTesting(type);
     try {
       const res = await testTenantEmailConnection(tenantId, type);
+
       if (res.success) {
         addToast({
           title: "✅ Conexão verificada com sucesso",
@@ -1390,7 +1425,10 @@ function EmailTab({ tenantId }: { tenantId: string }) {
     } catch (error) {
       addToast({
         title: "❌ Erro ao testar conexão",
-          description: error instanceof Error ? error.message : "Erro desconhecido ao verificar conexão",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Erro desconhecido ao verificar conexão",
         color: "danger",
         timeout: 8000,
       });
@@ -1409,9 +1447,17 @@ function EmailTab({ tenantId }: { tenantId: string }) {
               <Info className="h-5 w-5 text-warning" />
             </div>
             <div className="flex-1 space-y-2">
-              <h3 className="text-sm font-semibold text-warning">📧 Configuração de Envio de Emails</h3>
+              <h3 className="text-sm font-semibold text-warning">
+                📧 Configuração de Envio de Emails
+              </h3>
               <p className="text-sm text-default-300">
-                Esta aba configura as <strong>credenciais de envio</strong> que o sistema utiliza para <strong>enviar emails automaticamente</strong> (notificações, convites, faturas, lembretes, etc.). Os emails que você encontra em outras abas são apenas <strong>informações de contato</strong> e não são usados para envio.
+                Esta aba configura as <strong>credenciais de envio</strong> que
+                o sistema utiliza para{" "}
+                <strong>enviar emails automaticamente</strong> (notificações,
+                convites, faturas, lembretes, etc.). Os emails que você encontra
+                em outras abas são apenas{" "}
+                <strong>informações de contato</strong> e não são usados para
+                envio.
               </p>
             </div>
           </div>
@@ -1426,17 +1472,26 @@ function EmailTab({ tenantId }: { tenantId: string }) {
               <Server className="h-5 w-5 text-default-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Credenciais de Envio de Email</h2>
-              <p className="text-sm text-default-400">Gerencie as credenciais DEFAULT/ADMIN usadas para envio de emails.</p>
+              <h2 className="text-lg font-semibold text-white">
+                Credenciais de Envio de Email
+              </h2>
+              <p className="text-sm text-default-400">
+                Gerencie as credenciais DEFAULT/ADMIN usadas para envio de
+                emails.
+              </p>
             </div>
           </div>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody className="space-y-4">
           <div className="grid gap-3 md:grid-cols-3">
-            <Select 
-              label="Tipo de credencial" 
-              description={formType === "DEFAULT" ? "Uso geral (notificações, agenda, etc.)" : "Comunicações administrativas"}
+            <Select
+              description={
+                formType === "DEFAULT"
+                  ? "Uso geral (notificações, agenda, etc.)"
+                  : "Comunicações administrativas"
+              }
+              label="Tipo de credencial"
               selectedKeys={formType ? [formType] : []}
               startContent={
                 formType === "DEFAULT" ? (
@@ -1447,71 +1502,73 @@ function EmailTab({ tenantId }: { tenantId: string }) {
               }
               onSelectionChange={(keys) => {
                 const value = Array.from(keys)[0] as string;
-                if (typeof value === "string") setFormType(value as "DEFAULT" | "ADMIN");
+
+                if (typeof value === "string")
+                  setFormType(value as "DEFAULT" | "ADMIN");
               }}
             >
-              <SelectItem 
-                key="DEFAULT" 
-                textValue="DEFAULT - Uso Geral"
+              <SelectItem
+                key="DEFAULT"
                 description="Usado para envio de notificações automáticas (andamentos, lembretes, convites, faturas), emails da agenda e outras comunicações gerais do sistema."
                 startContent={<Bell className="h-4 w-4 text-primary" />}
+                textValue="DEFAULT - Uso Geral"
               >
                 <div className="flex items-center gap-2">
                   <Bell className="h-4 w-4 text-primary" />
                   <span>DEFAULT</span>
-                  <Chip size="sm" color="primary" variant="flat">Uso Geral</Chip>
+                  <Chip color="primary" size="sm" variant="flat">
+                    Uso Geral
+                  </Chip>
                 </div>
               </SelectItem>
-              <SelectItem 
-                key="ADMIN" 
-                textValue="ADMIN - Administrativo"
+              <SelectItem
+                key="ADMIN"
                 description="Usado exclusivamente para comunicações administrativas importantes, como boas-vindas de novos advogados, credenciais iniciais e notificações críticas do sistema."
                 startContent={<Shield className="h-4 w-4 text-secondary" />}
+                textValue="ADMIN - Administrativo"
               >
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-secondary" />
                   <span>ADMIN</span>
-                  <Chip size="sm" color="secondary" variant="flat">Administrativo</Chip>
+                  <Chip color="secondary" size="sm" variant="flat">
+                    Administrativo
+                  </Chip>
                 </div>
               </SelectItem>
             </Select>
-            <Input 
-              label="De (From Name)" 
+            <Input
               description="Nome que aparece como remetente"
-              value={formFromName} 
-              onValueChange={setFormFromName} 
+              label="De (From Name)"
               placeholder="Ex.: Sandra Advocacia"
               startContent={<Mail className="h-4 w-4 text-primary" />}
+              value={formFromName}
+              onValueChange={setFormFromName}
             />
-            <Input 
-              isRequired 
-              label="Email do Provedor" 
+            <Input
+              isRequired
               description="Email da conta de envio (Gmail, Outlook, etc.)"
-              type="email" 
-              value={formEmail} 
-              onValueChange={setFormEmail} 
+              label="Email do Provedor"
               placeholder="email@provedor.com"
               startContent={<Mail className="h-4 w-4 text-success" />}
+              type="email"
+              value={formEmail}
+              onValueChange={setFormEmail}
             />
             <div className="md:col-span-3">
               <Input
                 isRequired
-                label="Senha de App"
                 description="Senha de aplicativo do provedor (não a senha da conta)"
-                type={isPasswordVisible ? "text" : "password"}
-                value={formAppPassword}
-                onValueChange={setFormAppPassword}
-                placeholder="senha de app/provedor"
-                startContent={<KeyRound className="h-4 w-4 text-warning" />}
                 endContent={
                   formAppPassword ? (
                     <Button
                       isIconOnly
+                      aria-label={
+                        isPasswordVisible ? "Ocultar senha" : "Mostrar senha"
+                      }
                       className="min-w-6 w-6 h-6 text-default-400 hover:text-default-600"
                       size="sm"
                       variant="light"
                       onPress={handleTogglePasswordVisibility}
-                      aria-label={isPasswordVisible ? "Ocultar senha" : "Mostrar senha"}
                     >
                       {isPasswordVisible ? (
                         <EyeOff className="h-4 w-4" />
@@ -1521,16 +1578,24 @@ function EmailTab({ tenantId }: { tenantId: string }) {
                     </Button>
                   ) : null
                 }
+                label="Senha de App"
+                placeholder="senha de app/provedor"
+                startContent={<KeyRound className="h-4 w-4 text-warning" />}
+                type={isPasswordVisible ? "text" : "password"}
+                value={formAppPassword}
+                onValueChange={setFormAppPassword}
               />
             </div>
           </div>
           <div className="flex gap-3 justify-end">
-            <Button 
-              color="primary" 
-              radius="full" 
-              isLoading={isSaving} 
+            <Button
+              color="primary"
+              endContent={
+                !isSaving ? <CheckCircle2 className="h-4 w-4" /> : null
+              }
+              isLoading={isSaving}
+              radius="full"
               startContent={!isSaving ? <Plus className="h-4 w-4" /> : null}
-              endContent={!isSaving ? <CheckCircle2 className="h-4 w-4" /> : null}
               onPress={handleSave}
             >
               {isSaving ? "Salvando..." : "Salvar credenciais"}
@@ -1547,8 +1612,12 @@ function EmailTab({ tenantId }: { tenantId: string }) {
               <CheckCircle2 className="h-5 w-5 text-success" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Credenciais cadastradas</h2>
-              <p className="text-sm text-default-400">Visualize, teste e remova credenciais existentes.</p>
+              <h2 className="text-lg font-semibold text-white">
+                Credenciais cadastradas
+              </h2>
+              <p className="text-sm text-default-400">
+                Visualize, teste e remova credenciais existentes.
+              </p>
             </div>
           </div>
         </CardHeader>
@@ -1571,20 +1640,20 @@ function EmailTab({ tenantId }: { tenantId: string }) {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {c.type === "DEFAULT" ? (
-                          <Chip 
-                            color="primary" 
-                            size="sm" 
-                            variant="flat"
+                          <Chip
+                            color="primary"
+                            size="sm"
                             startContent={<Bell className="h-3 w-3" />}
+                            variant="flat"
                           >
                             DEFAULT
                           </Chip>
                         ) : (
-                          <Chip 
-                            color="secondary" 
-                            size="sm" 
-                            variant="flat"
+                          <Chip
+                            color="secondary"
+                            size="sm"
                             startContent={<Shield className="h-3 w-3" />}
+                            variant="flat"
                           >
                             ADMIN
                           </Chip>
@@ -1600,37 +1669,43 @@ function EmailTab({ tenantId }: { tenantId: string }) {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-primary" />
-                        <span className="text-default-500">{c.fromName ?? "—"}</span>
+                        <span className="text-default-500">
+                          {c.fromName ?? "—"}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-default-400" />
-                        <span className="text-default-500">{new Date(c.updatedAt).toLocaleString("pt-BR")}</span>
+                        <span className="text-default-500">
+                          {new Date(c.updatedAt).toLocaleString("pt-BR")}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
                         <Tooltip content="Testa a conexão com o servidor de email do provedor (Gmail, Outlook, etc.) sem enviar email. Verifica se as credenciais estão corretas.">
-                          <Button 
-                            size="sm" 
-                            radius="full" 
-                            variant="solid" 
-                            color="success" 
+                          <Button
+                            color="success"
                             isLoading={isTesting === c.type}
-                            startContent={!isTesting ? <Zap className="h-4 w-4" /> : null}
+                            radius="full"
+                            size="sm"
+                            startContent={
+                              !isTesting ? <Zap className="h-4 w-4" /> : null
+                            }
+                            variant="solid"
                             onPress={() => handleTest(c.type)}
                           >
                             {isTesting === c.type ? "Testando..." : "Testar"}
                           </Button>
                         </Tooltip>
                         <Tooltip content="Remove permanentemente esta credencial. O sistema não poderá mais enviar emails usando este tipo.">
-                          <Button 
-                            size="sm" 
-                            radius="full" 
-                            variant="bordered" 
-                            color="danger" 
+                          <Button
+                            color="danger"
+                            radius="full"
+                            size="sm"
                             startContent={<XCircle className="h-4 w-4" />}
+                            variant="bordered"
                             onPress={() => handleDelete(c.type)}
                           >
                             Remover
@@ -1643,14 +1718,15 @@ function EmailTab({ tenantId }: { tenantId: string }) {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-default-400">Nenhuma credencial cadastrada.</p>
+            <p className="text-sm text-default-400">
+              Nenhuma credencial cadastrada.
+            </p>
           )}
         </CardBody>
       </Card>
     </div>
   );
 }
-
 
 function AuditTab() {
   return (

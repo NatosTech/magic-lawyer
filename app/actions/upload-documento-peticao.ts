@@ -147,7 +147,7 @@ export async function uploadDocumentoPeticao(
               processoId: processo.id,
               numero: processo.numero,
               documentName: originalName,
-              referenciaTipo: "DOCUMENTO",
+              referenciaTipo: "documento",
               referenciaId: documento.id,
             },
             urgency: "MEDIUM",

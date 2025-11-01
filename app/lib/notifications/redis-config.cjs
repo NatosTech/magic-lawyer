@@ -18,7 +18,7 @@ function createRedisConnection() {
         rejectUnauthorized: false,
       },
       retryDelayOnFailover: 100,
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: null,
       lazyConnect: true,
     });
   }
@@ -26,7 +26,7 @@ function createRedisConnection() {
   // Configuração para desenvolvimento local
   return new Redis(redisUrl, {
     retryDelayOnFailover: 100,
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: null,
     lazyConnect: true,
   });
 }

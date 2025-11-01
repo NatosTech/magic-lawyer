@@ -9,10 +9,12 @@ require("dotenv").config();
 
 require("ts-node").register({
   transpileOnly: true,
+  skipProject: true,
   compilerOptions: {
     module: "CommonJS",
     moduleResolution: "Node",
     esModuleInterop: true,
+    allowJs: false,
     baseUrl: ".",
   },
 });

@@ -13,6 +13,7 @@ import {
 } from "@/app/generated/prisma";
 import { ProcessoNotificationIntegration } from "@/app/lib/notifications/examples/processo-integration";
 import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notification-service";
+import { buildProcessoDiff } from "@/app/lib/processos/diff";
 
 // ============================================
 // TYPES - Prisma Type Safety (Best Practice)
@@ -465,6 +466,60 @@ async function ensureProcessMutationAccess(
       clienteId: true,
       advogadoResponsavelId: true,
       numero: true,
+      status: true,
+      titulo: true,
+      descricao: true,
+      fase: true,
+      grau: true,
+      numeroInterno: true,
+      numeroCnj: true,
+      classeProcessual: true,
+      vara: true,
+      comarca: true,
+      foro: true,
+      prazoPrincipal: true,
+      valorCausa: true,
+      areaId: true,
+      tribunalId: true,
+      juizId: true,
+      pastaCompartilhadaUrl: true,
+      cliente: {
+        select: {
+          id: true,
+          nome: true,
+        },
+      },
+      advogadoResponsavel: {
+        select: {
+          id: true,
+          usuario: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      },
+      area: {
+        select: {
+          id: true,
+          nome: true,
+        },
+      },
+      tribunal: {
+        select: {
+          id: true,
+          nome: true,
+        },
+      },
+      juiz: {
+        select: {
+          id: true,
+          nome: true,
+        },
+      },
     },
   });
 
@@ -2121,6 +2176,8 @@ export async function updateProcesso(
       return processoAtualizado;
     });
 
+    const diff = buildProcessoDiff(processo as any, atualizado as any);
+
     const converted = convertAllDecimalFields(
       atualizado,
     ) as any as ProcessoDetalhado;
@@ -2140,42 +2197,91 @@ export async function updateProcesso(
       }),
     );
 
-    // Notificações: processo atualizado e mudança de status
+    // Notificações, diff estruturado e auditoria da alteração
     try {
-      const responsavelUserId =
-        (atualizado.advogadoResponsavel?.usuario as any)?.id ||
-        (user.id as string);
+      if (diff.items.length > 0) {
+        const responsavelUserId =
+          (atualizado.advogadoResponsavel?.usuario as any)?.id ||
+          (user.id as string);
+        const statusChange = diff.statusChange;
+        const changesSummary = statusChange
+          ? diff.otherChangesSummary
+          : diff.summary;
 
-      await HybridNotificationService.publishNotification({
-        type: "processo.updated",
-        tenantId: tenantId,
-        userId: responsavelUserId,
-        payload: {
+        const notificationPayload: Record<string, any> = {
           processoId,
           numero: atualizado.numero,
-          changes: Object.keys(data || {}),
-          referenciaTipo: "PROCESSO",
+          referenciaTipo: "processo",
           referenciaId: processoId,
-        },
-        urgency: "MEDIUM",
-        channels: ["REALTIME"],
-      });
+          diff: diff.items,
+          changes: diff.items.map((item) => item.field),
+        };
 
-      if (data.status && data.status !== processo.status) {
+        if (changesSummary) {
+          notificationPayload.changesSummary = changesSummary;
+        }
+
+        if (statusChange) {
+          notificationPayload.oldStatus = statusChange.beforeRaw;
+          notificationPayload.newStatus = statusChange.afterRaw;
+          notificationPayload.oldStatusLabel = statusChange.before;
+          notificationPayload.newStatusLabel = statusChange.after;
+          notificationPayload.statusLabel = statusChange.after;
+          notificationPayload.status = statusChange.after;
+          notificationPayload.statusSummary = `${statusChange.before} → ${statusChange.after}`;
+
+          if (diff.otherChangesSummary) {
+            notificationPayload.additionalChangesSummary =
+              diff.otherChangesSummary;
+          }
+        }
+
         await HybridNotificationService.publishNotification({
-          type: "processo.status_changed",
+          type: statusChange ? "processo.status_changed" : "processo.updated",
           tenantId: tenantId,
           userId: responsavelUserId,
-          payload: {
-            processoId,
-            numero: atualizado.numero,
-            oldStatus: processo.status,
-            newStatus: data.status,
-            referenciaTipo: "PROCESSO",
-            referenciaId: processoId,
+          payload: notificationPayload,
+          urgency: statusChange ? "HIGH" : "MEDIUM",
+          channels: statusChange ? ["REALTIME", "EMAIL"] : ["REALTIME"],
+        });
+
+        const actorName =
+          `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+          (user.email as string | undefined) ||
+          "Usuário";
+
+        await prisma.auditLog.create({
+          data: {
+            tenantId,
+            usuarioId: user.id,
+            acao: statusChange
+              ? "PROCESSO_STATUS_ALTERADO"
+              : "PROCESSO_ATUALIZADO",
+            entidade: "Processo",
+            entidadeId: processoId,
+            dados: {
+              processoId,
+              numero: atualizado.numero,
+              diff: diff.items,
+              changesSummary:
+                changesSummary ||
+                (statusChange
+                  ? `${statusChange.before} → ${statusChange.after}`
+                  : "Alterações registradas"),
+              statusChange: statusChange
+                ? {
+                    de: statusChange.before,
+                    para: statusChange.after,
+                    deCodigo: statusChange.beforeRaw,
+                    paraCodigo: statusChange.afterRaw,
+                  }
+                : undefined,
+              executadoPor: actorName,
+              executadoPorId: user.id,
+              executadoEm: new Date().toISOString(),
+            },
+            ip: null,
           },
-          urgency: "HIGH",
-          channels: ["REALTIME", "EMAIL"],
         });
       }
     } catch (e) {

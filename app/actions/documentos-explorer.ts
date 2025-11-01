@@ -814,7 +814,7 @@ export async function uploadDocumentoExplorer(
         data: {
           tenantId: user.tenantId,
           nome: file.name,
-          tipo: "PROCESSO",
+          tipo: "processo",
           descricao: options.description,
           url: uploadedUrl,
           tamanhoBytes: file.size,
@@ -933,7 +933,7 @@ export async function uploadDocumentoExplorer(
               processoId: proc.id,
               numero: proc.numero,
               documentName: file.name,
-              referenciaTipo: "DOCUMENTO",
+              referenciaTipo: "documento",
               referenciaId: documento.id,
             },
             urgency: "MEDIUM",
