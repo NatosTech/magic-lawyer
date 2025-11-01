@@ -13,14 +13,14 @@
 - [x] Identificar lacunas de eventos ainda não rastreados e aprovar novos gatilhos com negócio.
 - [x] Mapear quais tipos de usuários precisam receber cada evento (responsável, equipe, cliente, terceiros).
 - [x] Definir canais por evento (notificação in-app em tempo real e email).
-- [ ] **Documentar payload mínimo de cada evento (campos obrigatórios, IDs, metadados)**.
-  - **Critério**: [Tabela completa com payloads obrigatórios para todos os eventos no catálogo]
+- [x] **Documentar payload mínimo de cada evento (campos obrigatórios, IDs, metadados)**.
+  - **Critério**: [Tabela completa com payloads obrigatórios para todos os eventos no catálogo] ✅ **CONCLUÍDO** - Tabela oficial criada em `NOTIFICATIONS_EVENT_CATALOG.md` com 75+ eventos
 - [ ] **Homologar matriz Evento × Usuário × Canal com stakeholders**.
-  - **Critério**: [Matriz validada com stakeholders, incluindo CONTROLLER e CONVIDADO EXTERNO]
-- [ ] **Definir políticas de urgência (crítico, alto, médio, informativo) para priorização de fila**.
-  - **Critério**: [Políticas de urgência definidas e aplicadas a todos os eventos]
-- [ ] **Registrar requisitos de compliance (LGPD, retenção, opt-in/out)**.
-  - **Critério**: [Requisitos LGPD documentados, política de retenção de 30 dias definida]
+  - **Critério**: [Matriz validada com stakeholders, incluindo CONTROLLER e CONVIDADO EXTERNO] ⚠️ **PENDENTE** - Matriz documentada em `NOTIFICATIONS_EVENT_CATALOG.md` mas aguardando homologação formal com stakeholders
+- [x] **Definir políticas de urgência (crítico, alto, médio, informativo) para priorização de fila**.
+  - **Critério**: [Políticas de urgência definidas e aplicadas a todos os eventos] ✅ **CONCLUÍDO** - Políticas documentadas e implementadas no código (NotificationPolicy)
+- [x] **Registrar requisitos de compliance (LGPD, retenção, opt-in/out)**.
+  - **Critério**: [Requisitos LGPD documentados, política de retenção de 30 dias definida] ✅ **CONCLUÍDO** - Seção completa de requisitos LGPD no catálogo
 
 ## Etapa 2 — Arquitetura Técnica e Infraestrutura ⏳ **EM ANDAMENTO**
 - [x] Escolher stack realtime (Ably já instalado vs WebSocket self-hosted) e documentar motivos.
@@ -45,8 +45,8 @@
 
 ## Etapa 3 — Backend Core de Notificações ⏳ **EM ANDAMENTO**
 - [x] Criar módulo `notification-service` (ou pasta dedicada) com responsabilidade única.
-- [ ] **Implementar camada de domínio (`NotificationFactory`, `NotificationPolicy`)**.
-  - **Critério**: [Factory e Policy implementados com validações de negócio]
+- [x] **Implementar camada de domínio (`NotificationFactory`, `NotificationPolicy`)**.
+  - **Critério**: [Factory e Policy implementados com validações de negócio] ✅ **CONCLUÍDO** - Implementado em `app/lib/notifications/domain/` com validações, sanitização e regras de negócio. **NOTA**: Bug de preferências corrigido (canais agora respeitam preferências do usuário)
 - [x] Implementar persistência Prisma (tabelas, migrations, seeds iniciais).
 - [x] **Criar fila/worker (ex: BullMQ ou equivalente) para processamento assíncrono**.
   - **Critério**: [BullMQ instalado e configurado, worker implementado para processamento assíncrono]
@@ -54,10 +54,10 @@
   - **Critério**: [Publisher implementado com suporte a REALTIME (in-app via Ably) e EMAIL (via Resend)]
 - [x] **Criar gateway WebSocket/Realtime integrando com Ably (ou solução escolhida)**.
   - **Critério**: [Gateway Ably implementado com autenticação e reconexão automática]
-- [ ] **Implementar serviço de agendamento para notificações de prazo (cron + timezone)**.
-  - **Critério**: [Cron job implementado com suporte a timezone, alertas D-7, D-3, D-1, H-2]
-- [ ] **Implementar serviço de escuta de pagamentos (webhooks Asaas) gerando eventos**.
-  - **Critério**: [Webhook Asaas implementado, eventos de pagamento disparados automaticamente]
+- [x] **Implementar serviço de agendamento para notificações de prazo (cron + timezone)**.
+  - **Critério**: [Cron job implementado com suporte a timezone, alertas D-7, D-3, D-1, H-2] ✅ **CONCLUÍDO** - `DeadlineSchedulerService` implementado e cron job `/api/cron/check-deadlines` criado (executa diariamente às 8:00 UTC)
+- [x] **Implementar serviço de escuta de pagamentos (webhooks Asaas) gerando eventos**.
+  - **Critério**: [Webhook Asaas implementado, eventos de pagamento disparados automaticamente] ✅ **CONCLUÍDO** - `AsaasWebhookService` implementado e integrado no webhook existente `/api/webhooks/asaas`
 - [ ] **Implementar rastreio de leitura (marcações read/unread) por usuário**.
   - **Critério**: [Sistema de marcação de leitura implementado com API endpoints]
 - [x] **Garantir logs estruturados e correlação de request → evento → entrega**.

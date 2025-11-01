@@ -5,6 +5,8 @@ import crypto from "crypto";
 import { EmailChannel } from "./channels/email-channel";
 import { getNotificationQueue } from "./notification-queue";
 import { createRedisConnection } from "./redis-config";
+import { NotificationFactory } from "./domain/notification-factory";
+import { NotificationPolicy } from "./domain/notification-policy";
 
 import prisma from "@/app/lib/prisma";
 import { publishRealtimeEvent } from "@/app/lib/realtime/publisher";
@@ -34,16 +36,29 @@ export interface NotificationTemplate {
 export class NotificationService {
   /**
    * Publica uma notificação para um usuário (assíncrono via fila)
+   * Usa NotificationFactory para criar e validar o evento
    */
   static async publishNotification(event: NotificationEvent): Promise<void> {
     try {
+      // Usar Factory para criar/validar evento (aplica validações e sanitizações)
+      const validatedEvent = NotificationFactory.createEvent(
+        event.type,
+        event.tenantId,
+        event.userId,
+        event.payload,
+        {
+          urgency: event.urgency,
+          channels: event.channels,
+        },
+      );
+
       // Deduplicação simples: chave única por (tenantId, userId, type, payloadHash) com TTL de 5 minutos
       const redis = createRedisConnection();
       const payloadHash = crypto
         .createHash("sha256")
-        .update(JSON.stringify(event.payload))
+        .update(JSON.stringify(validatedEvent.payload))
         .digest("hex");
-      const dedupKey = `notif:d:${event.tenantId}:${event.userId}:${event.type}:${payloadHash}`;
+      const dedupKey = `notif:d:${validatedEvent.tenantId}:${validatedEvent.userId}:${validatedEvent.type}:${payloadHash}`;
 
       // SET NX PX=300000 => só seta se não existir (evita duplicatas)
       const setResult = await redis.set(
@@ -57,25 +72,28 @@ export class NotificationService {
       await redis.disconnect();
       if (setResult !== "OK") {
         console.log(
-          `[NotificationService] 🔁 Evento duplicado ignorado (${event.type}) para usuário ${event.userId}`,
+          `[NotificationService] 🔁 Evento duplicado ignorado (${validatedEvent.type}) para usuário ${validatedEvent.userId}`,
         );
 
         return;
       }
 
+      // Determinar prioridade na fila baseada na urgência
+      const priority = NotificationPolicy.getQueuePriority(validatedEvent.urgency || "MEDIUM");
+
       const jobPayload: NotificationJobData = {
-        type: event.type,
-        tenantId: event.tenantId,
-        userId: event.userId,
-        payload: event.payload,
-        urgency: event.urgency || "MEDIUM",
-        channels: event.channels || ["REALTIME"],
+        type: validatedEvent.type,
+        tenantId: validatedEvent.tenantId,
+        userId: validatedEvent.userId,
+        payload: validatedEvent.payload,
+        urgency: validatedEvent.urgency || "MEDIUM",
+        channels: validatedEvent.channels || ["REALTIME"],
       };
 
       try {
         const queue = getNotificationQueue();
 
-        await queue.addNotificationJob(jobPayload);
+        await queue.addNotificationJob(jobPayload, priority);
       } catch (queueError) {
         console.error(
           "[NotificationService] Falha ao enfileirar notificação, processando de forma síncrona:",
@@ -114,19 +132,30 @@ export class NotificationService {
         return;
       }
 
-      // 2. Verificar preferências do usuário
+      // 2. Verificar preferências do usuário (usando Policy para validação)
       const preferences = await this.getUserPreferences(
         event.tenantId,
         event.userId,
         event.type,
       );
 
-      if (!preferences.enabled) {
+      // Validar se evento pode ser desabilitado (Policy)
+      const canDisable = NotificationPolicy.canDisableEvent(event.type);
+
+      if (!preferences.enabled && canDisable) {
         console.log(
           `[NotificationService] Notificação ${event.type} desabilitada para usuário ${event.userId}`,
         );
 
         return;
+      }
+
+      // Eventos críticos não podem ser desabilitados (forçar enabled)
+      if (!preferences.enabled && !canDisable) {
+        console.log(
+          `[NotificationService] Evento crítico ${event.type} não pode ser desabilitado, forçando ativação`,
+        );
+        preferences.enabled = true;
       }
 
       // 3. Gerar template da notificação
@@ -137,11 +166,31 @@ export class NotificationService {
       // 4. Substituir variáveis no template
       const { title, message } = this.replaceVariables(template, event.payload);
 
-      // 5. Determinar canais a usar (prioriza canais do evento, senão usa preferências)
-      const channelsToUse =
-        event.channels && event.channels.length > 0
-          ? event.channels
-          : preferences.channels;
+      // 5. Determinar canais a usar
+      // - Se evento CRITICAL: sempre REALTIME + EMAIL (ignora preferências)
+      // - Se evento especificou canais explicitamente: usa os canais do evento (override)
+      // - Caso contrário: respeita preferências do usuário
+      let channelsToUse: NotificationChannel[];
+
+      if (event.urgency === "CRITICAL") {
+        // Eventos críticos sempre vão por REALTIME + EMAIL
+        channelsToUse = ["REALTIME", "EMAIL"];
+      } else if (event.channels && event.channels.length > 0) {
+        // Se o evento especificou canais explicitamente (override), usa eles
+        // Mas filtra para manter apenas canais habilitados nas preferências (exceto CRITICAL)
+        const enabledChannels = preferences.channels;
+        channelsToUse = event.channels.filter((channel) =>
+          enabledChannels.includes(channel),
+        );
+
+        // Se após filtrar não sobrar nenhum, usa as preferências
+        if (channelsToUse.length === 0) {
+          channelsToUse = preferences.channels;
+        }
+      } else {
+        // Caso padrão: respeita preferências do usuário
+        channelsToUse = preferences.channels;
+      }
 
       // 6. Salvar notificação no banco
       const notification = await prisma.notification.create({

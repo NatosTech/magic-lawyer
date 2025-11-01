@@ -11,13 +11,33 @@ O Magic Lawyer utiliza cron jobs do Vercel para automatizar tarefas de manutenç
 - **Frequência**: Diariamente às 2:00 UTC
 - **Endpoint**: `/api/cron/cleanup-documents`
 
+## ⏰ **Verificação de Prazos**
+
+### **Funcionalidade**
+- **Objetivo**: Verificar prazos próximos do vencimento e disparar notificações (D-7, D-3, D-1, H-2)
+- **Frequência**: Diariamente às 8:00 UTC
+- **Endpoint**: `/api/cron/check-deadlines`
+
 ### **Como Funciona**
-1. **Busca** todos os documentos no banco de dados
-2. **Verifica** se cada arquivo ainda existe no Cloudinary
-3. **Remove** registros órfãos do banco de dados
-4. **Registra** estatísticas da operação
+1. **Busca** prazos que expiram em 7 dias (D-7)
+2. **Busca** prazos que expiram em 3 dias (D-3)
+3. **Busca** prazos que expiram em 1 dia (D-1)
+4. **Busca** prazos que expiram em 2 horas (H-2)
+5. **Busca** prazos já vencidos (últimas 24h)
+6. **Dispara** notificações para responsáveis via sistema de notificações
+7. **Registra** timestamps no Redis para evitar duplicatas
 
 ### **Logs de Execução**
+```
+🕐 [DeadlineScheduler] Iniciando verificação de prazos...
+🕐 [DeadlineScheduler] Encontrados 5 prazos expirando em 7 dias
+🕐 [DeadlineScheduler] Encontrados 2 prazos expirando em 3 dias
+🕐 [DeadlineScheduler] Encontrados 1 prazos expirando em 1 dia
+🕐 [DeadlineScheduler] Encontrados 0 prazos vencidos
+✅ [DeadlineScheduler] Verificação de prazos concluída com sucesso
+```
+
+### **Logs de Execução (Limpeza de Documentos)**
 ```
 🧹 Iniciando limpeza de documentos órfãos...
 📊 Encontrados 150 documentos no banco
@@ -70,8 +90,18 @@ vercel deploy --prod
 
 ### **Via cURL**
 ```bash
+# Limpeza de documentos
 curl -X GET "https://seu-dominio.vercel.app/api/cron/cleanup-documents" \
   -H "Authorization: Bearer sua-chave-secreta"
+
+# Verificação de prazos
+curl -X GET "https://seu-dominio.vercel.app/api/cron/check-deadlines" \
+  -H "Authorization: Bearer sua-chave-secreta"
+```
+
+### **Via npm script (Local)**
+```bash
+npm run test:deadline-scheduler
 ```
 
 ### **Via Vercel Dashboard**
@@ -87,9 +117,16 @@ curl -X GET "https://seu-dominio.vercel.app/api/cron/cleanup-documents" \
 - Monitore execuções e erros
 
 ### **Métricas Importantes**
+
+**Limpeza de Documentos:**
 - **totalProcessed**: Documentos verificados
 - **totalDeleted**: Documentos órfãos removidos
 - **totalErrors**: Erros durante a execução
+
+**Verificação de Prazos:**
+- Verifique logs para contagem de prazos encontrados por intervalo
+- Verifique tabela `Notification` para notificações criadas
+- Verifique Redis para cache de timestamps
 
 ## 🚨 **Troubleshooting**
 
@@ -117,6 +154,7 @@ curl -H "Authorization: Bearer $CRON_SECRET" ...
 
 ### **Cronograma Atual**
 - **Limpeza de Documentos**: `0 2 * * *` (2:00 UTC diariamente)
+- **Verificação de Prazos**: `0 8 * * *` (8:00 UTC diariamente) - Notificações de prazos expirando
 
 ### **Fuso Horário**
 - **UTC**: Horário de referência

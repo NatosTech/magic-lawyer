@@ -19,16 +19,19 @@ export class NotificationQueue {
 
   /**
    * Adiciona job de notificação à fila
+   * @param priority Prioridade opcional (se não fornecida, calcula baseado na urgência)
    */
-  async addNotificationJob(data: NotificationJobData): Promise<void> {
+  async addNotificationJob(data: NotificationJobData, priority?: number): Promise<void> {
     try {
+      const jobPriority = priority ?? this.getPriority(data.urgency);
+
       const job = await this.queue.add("notification", data, {
-        priority: this.getPriority(data.urgency),
+        priority: jobPriority,
         delay: 0,
       });
 
       console.log(
-        `[NotificationQueue] Job ${job.id} added to queue: ${data.type}`,
+        `[NotificationQueue] Job ${job.id} added to queue: ${data.type} (priority: ${jobPriority})`,
       );
     } catch (error) {
       console.error("[NotificationQueue] Failed to add job:", error);
