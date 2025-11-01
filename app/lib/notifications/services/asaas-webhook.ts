@@ -10,7 +10,7 @@ import { NotificationFactory } from "../domain/notification-factory";
 /**
  * Tipos de eventos do webhook Asaas
  */
-type AsaasWebhookEvent =
+export type AsaasWebhookEvent =
   | "PAYMENT_CREATED"
   | "PAYMENT_UPDATED"
   | "PAYMENT_CONFIRMED"
@@ -25,7 +25,7 @@ type AsaasWebhookEvent =
   | "PAYMENT_APPROVED_BY_RISK_ANALYSIS"
   | "PAYMENT_REPROVED_BY_RISK_ANALYSIS";
 
-interface AsaasWebhookPayload {
+export interface AsaasWebhookPayload {
   event: AsaasWebhookEvent;
   payment: {
     id: string;
@@ -391,4 +391,3 @@ export class AsaasWebhookService {
     return Array.from(new Set(recipients)); // Remover duplicatas
   }
 }
-

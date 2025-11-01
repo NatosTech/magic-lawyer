@@ -380,7 +380,9 @@ export async function createContrato(data: ContratoCreateInput) {
       const clienteUsuario = await prisma.usuario.findFirst({
         where: {
           tenantId: user.tenantId,
-          clienteId: contrato.clienteId,
+          clientes: {
+            some: { id: contrato.clienteId },
+          },
         },
         select: { id: true },
       });
@@ -821,6 +823,7 @@ export async function updateContrato(
             id: true,
             usuario: {
               select: {
+                id: true,
                 firstName: true,
                 lastName: true,
               },
@@ -882,7 +885,9 @@ export async function updateContrato(
         const clienteUsuario = await prisma.usuario.findFirst({
           where: {
             tenantId: user.tenantId,
-            clienteId: contratoAtualizado.clienteId,
+            clientes: {
+              some: { id: contratoAtualizado.clienteId },
+            },
           },
           select: { id: true },
         });

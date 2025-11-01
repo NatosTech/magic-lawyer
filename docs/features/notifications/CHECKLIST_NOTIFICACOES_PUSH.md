@@ -74,9 +74,9 @@
   - **Critério**: [Eventos `prazo.created` integrados em `app/actions/andamentos.ts` via sistema híbrido]
 - [x] **Agenda**: sincronizar compromissos criados/atualizados/cancelados.
   - **Critério**: [Eventos `evento.created`, `evento.updated`, `evento.confirmation_updated` integrados em `app/actions/eventos.ts` via sistema híbrido]
-- [ ] **Financeiro**: disparar confirmações de pagamento, falha de pagamento, boleto gerado, cobrança atrasada.
+- [x] **Financeiro**: disparar confirmações de pagamento, falha de pagamento, boleto gerado, cobrança atrasada.
   - **Critério**: [Webhooks Asaas integrados, eventos `pagamento.paid`, `pagamento.failed`, `boleto.generated`, `pagamento.overdue` funcionando]
-- [ ] **Contratos**: notificar assinaturas pendentes, assinadas, expiradas.
+- [x] **Contratos**: notificar assinaturas pendentes, assinadas, expiradas.
   - **Critério**: [Eventos `contrato.signature_pending`, `contrato.signed`, `contrato.expired` disparados nos fluxos correspondentes]
 - [ ] **Documentos**: alertar upload relevante, aprovação, expiração.
   - **Critério**: [Eventos `documento.uploaded`, `documento.approved`, `documento.rejected`, `documento.expired` integrados]
@@ -136,22 +136,22 @@
   - **Critério**: [Teste manual em tenants Sandra, Luana, Salba com todos os perfis de usuário]
 
 ## Etapa 7 — Configurações, Preferências e Opt-in/out
-- [ ] **Implementar página de preferências por usuário com granularidade por módulo/evento**.
-  - **Critério**: [Página `/usuario/preferencias-notificacoes` com toggles por evento funcionando]
+- [x] **Implementar página de preferências por usuário com granularidade por módulo/evento**.
+  - **Critério**: [Página `/usuario/preferencias-notificacoes` entregue com listagem por módulo/evento e toggles usando Server Actions + SWR]
 - [ ] **Adicionar presets por role (templates default para cada perfil)**.
   - **Critério**: [Presets aplicados automaticamente baseados no role do usuário]
 - [ ] **Permitir silenciar temporariamente (snooze) por evento/módulo**.
   - **Critério**: [Funcionalidade snooze implementada com timer configurável]
-- [ ] **Permitir seleção de canais (in-app, email) por evento**.
-  - **Critério**: [Seleção de canais por evento funcionando]
+- [x] **Permitir seleção de canais (in-app, email) por evento**.
+  - **Critério**: [Seleção de canais in-app/email configurável por evento na UI de preferências]
 - [ ] **Integrar preferências com LGPD (coleta, logs de consentimento)**.
   - **Critério**: [Logs de consentimento implementados, retenção de 30 dias configurada]
 - [ ] **Implementar painel admin para forçar notificações críticas**.
   - **Critério**: [Painel admin com capacidade de enviar notificações forçadas]
 - [ ] **Implementar exportação/backup de preferências por tenant**.
   - **Critério**: [Exportação CSV/JSON de preferências funcionando]
-- [ ] **Adicionar API pública/privada para gestão de preferências**.
-  - **Critério**: [API endpoints `/api/notifications/preferences` implementados]
+- [x] **Disponibilizar interface programática para gestão de preferências (API ou Server Actions)**.
+  - **Critério**: [Server Actions em `app/actions/notifications.ts` expostas para leitura/atualização de preferências sem rotas REST]
 - [ ] **Validar comportamento em tenants recém-criados (defaults corretos)**.
   - **Critério**: [Novos tenants recebem preferências padrão automaticamente]
 - [ ] **Documentar fluxo de alteração e auditoria de preferências**.

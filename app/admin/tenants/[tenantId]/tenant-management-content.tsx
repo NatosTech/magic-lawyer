@@ -1320,15 +1320,15 @@ function EmailTab({ tenantId }: { tenantId: string }) {
 
       if (!res.success) throw new Error("Falha ao carregar credenciais");
 
-      return res.data as Array<{
-        id: string;
-        type: "DEFAULT" | "ADMIN";
-        email: string;
-        appPassword: string;
-        fromName: string | null;
-        createdAt: string;
-        updatedAt: string;
-      }>;
+      return res.data.map((cred) => ({
+        id: cred.id,
+        type: cred.type,
+        email: cred.email,
+        appPassword: cred.appPassword,
+        fromName: cred.fromName,
+        createdAt: cred.createdAt.toISOString(),
+        updatedAt: cred.updatedAt.toISOString(),
+      }));
     },
   );
 

@@ -660,8 +660,9 @@ export async function gerarBoletoAsaas(data: {
         // Enviar notificação
         const pagamentoId = asaasPayment.id;
         const boletoId =
-          asaasPayment.invoiceNumber ||
           asaasPayment.identificationField ||
+          asaasPayment.boletoUrl ||
+          asaasPayment.invoiceUrl ||
           asaasPayment.id;
         const vencimentoIso = vencimento.toISOString();
 

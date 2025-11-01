@@ -433,7 +433,7 @@ function renderTrendItem(trend: DashboardTrend, index: number) {
   const trendTone =
     delta === undefined ? "secondary" : delta >= 0 ? "success" : "danger";
   const styles = toneStyles[trendTone] ?? toneStyles.default;
-  const key = trend.id ?? `${trend.label}-${trend.type ?? "trend"}-${index}`;
+  const key = trend.id ?? `${trend.label}-trend-${index}`;
 
   return (
     <li

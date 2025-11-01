@@ -55,14 +55,14 @@ export function EmailCredentialsCard() {
 
       if (!res.success) throw new Error("Falha ao carregar credenciais");
 
-      return res.data as Array<{
-        id: string;
-        type: "DEFAULT" | "ADMIN";
-        email: string;
-        fromName: string | null;
-        createdAt: string;
-        updatedAt: string;
-      }>;
+      return res.data.map((cred) => ({
+        id: cred.id,
+        type: cred.type,
+        email: cred.email,
+        fromName: cred.fromName,
+        createdAt: cred.createdAt.toISOString(),
+        updatedAt: cred.updatedAt.toISOString(),
+      }));
     },
   );
 

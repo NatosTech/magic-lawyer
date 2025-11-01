@@ -3,7 +3,10 @@
  * Execute: npx tsx scripts/test-asaas-webhook.ts
  */
 
-import { AsaasWebhookService } from "../app/lib/notifications/services/asaas-webhook";
+import {
+  AsaasWebhookService,
+  type AsaasWebhookPayload,
+} from "../app/lib/notifications/services/asaas-webhook";
 
 /**
  * Simula um webhook de pagamento confirmado
@@ -11,7 +14,7 @@ import { AsaasWebhookService } from "../app/lib/notifications/services/asaas-web
 async function testPaymentConfirmed() {
   console.log("🧪 Testando webhook PAYMENT_CONFIRMED...");
 
-  const mockWebhook = {
+  const mockWebhook: AsaasWebhookPayload = {
     event: "PAYMENT_CONFIRMED",
     payment: {
       id: "pay_test_123",
@@ -46,7 +49,7 @@ async function testPaymentConfirmed() {
 async function testPaymentOverdue() {
   console.log("🧪 Testando webhook PAYMENT_OVERDUE...");
 
-  const mockWebhook = {
+  const mockWebhook: AsaasWebhookPayload = {
     event: "PAYMENT_OVERDUE",
     payment: {
       id: "pay_test_456",
@@ -98,4 +101,3 @@ async function runTests() {
 if (require.main === module) {
   runTests().catch(console.error);
 }
-

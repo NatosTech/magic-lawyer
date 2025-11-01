@@ -1,6 +1,6 @@
 {
   "name": "magic-lawyer",
-  "version": "3.2.0",
+  "version": "3.4.0",
   "private": true,
   "scripts": {
     "dev": "pkill -f 'next dev' || true && cross-env PORT=9192 next dev --turbopack",
@@ -34,11 +34,12 @@
     "kill:all": "pkill -f 'next' || true && pkill -f 'ngrok' || true && pkill -f 'node.*magic-lawyer' || true && pkill -f 'concurrently' || true && sleep 3",
     "restart:dev": "npx ts-node --project scripts/tsconfig.json scripts/restart-dev.ts",
     "cleanup:asaas": "node scripts/cleanup-asaas.js",
-    "test:notifications": "npx tsx scripts/test-notifications.ts",
-    "smoke:notifications": "npx tsx scripts/smoke-test-notifications.ts",
-    "test:cron": "npm run test:notifications && npm run smoke:notifications && curl -s -X GET \"http://localhost:9192/api/cron/check-deadlines\" -H \"Authorization: Bearer ${CRON_SECRET:-test-secret}\" > /dev/null && curl -s -X GET \"http://localhost:9192/api/cron/check-contracts\" -H \"Authorization: Bearer ${CRON_SECRET:-test-secret}\" > /dev/null",
-    "test:all": "npm run test:notifications && npm run smoke:notifications && npx tsx scripts/test-asaas-webhook.ts && npm run test:cron",
-    "fix:tenant-status": "npx tsx scripts/fix-tenant-status-simple.ts"
+    "notifications:test": "npx tsx scripts/test-notifications.ts",
+    "notifications:smoke": "npx tsx scripts/smoke-test-notifications.ts",
+    "notifications:webhook": "npx tsx scripts/test-asaas-webhook.ts",
+    "notifications:crons": "curl -sSf -X GET \"http://localhost:9192/api/cron/check-deadlines\" -H \"Authorization: Bearer ${CRON_SECRET:-test-secret}\" > /dev/null && curl -sSf -X GET \"http://localhost:9192/api/cron/check-contracts\" -H \"Authorization: Bearer ${CRON_SECRET:-test-secret}\" > /dev/null",
+    "notifications:all": "npm run notifications:test && npm run notifications:webhook && npm run notifications:smoke && npm run notifications:crons",
+    "notifications:repair": "npx tsx scripts/fix-tenant-status-simple.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

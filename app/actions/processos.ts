@@ -2250,6 +2250,39 @@ export async function updateProcesso(
           (user.email as string | undefined) ||
           "Usuário";
 
+        const auditDiff: Prisma.JsonArray = diff.items.map((item) => ({
+          field: item.field,
+          label: item.label,
+          before: item.before,
+          after: item.after,
+          beforeRaw: item.beforeRaw ?? null,
+          afterRaw: item.afterRaw ?? null,
+        })) as Prisma.JsonArray;
+
+        const auditStatusChange: Prisma.JsonValue = statusChange
+          ? {
+              de: statusChange.before,
+              para: statusChange.after,
+              deCodigo: statusChange.beforeRaw ?? null,
+              paraCodigo: statusChange.afterRaw ?? null,
+            }
+          : null;
+
+        const auditDados: Prisma.JsonObject = {
+          processoId,
+          numero: atualizado.numero,
+          diff: auditDiff,
+          changesSummary:
+            changesSummary ||
+            (statusChange
+              ? `${statusChange.before} → ${statusChange.after}`
+              : "Alterações registradas"),
+          statusChange: auditStatusChange,
+          executadoPor: actorName,
+          executadoPorId: user.id,
+          executadoEm: new Date().toISOString(),
+        };
+
         await prisma.auditLog.create({
           data: {
             tenantId,
@@ -2259,27 +2292,7 @@ export async function updateProcesso(
               : "PROCESSO_ATUALIZADO",
             entidade: "Processo",
             entidadeId: processoId,
-            dados: {
-              processoId,
-              numero: atualizado.numero,
-              diff: diff.items,
-              changesSummary:
-                changesSummary ||
-                (statusChange
-                  ? `${statusChange.before} → ${statusChange.after}`
-                  : "Alterações registradas"),
-              statusChange: statusChange
-                ? {
-                    de: statusChange.before,
-                    para: statusChange.after,
-                    deCodigo: statusChange.beforeRaw,
-                    paraCodigo: statusChange.afterRaw,
-                  }
-                : undefined,
-              executadoPor: actorName,
-              executadoPorId: user.id,
-              executadoEm: new Date().toISOString(),
-            },
+            dados: auditDados,
             ip: null,
           },
         });

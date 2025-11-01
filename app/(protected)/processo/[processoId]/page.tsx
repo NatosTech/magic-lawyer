@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
 
 type PageProps = {
-  params: {
+  params: Promise<{
     processoId: string;
-  };
+  }>;
 };
 
-export default function ProcessoAliasPage({ params }: PageProps) {
-  redirect(`/processos/${params.processoId}`);
+export default async function ProcessoAliasPage({ params }: PageProps) {
+  const { processoId } = await params;
+
+  redirect(`/processos/${processoId}`);
 }

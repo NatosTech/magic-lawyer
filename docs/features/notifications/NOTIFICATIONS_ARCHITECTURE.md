@@ -293,29 +293,32 @@ if (existingNotification) {
 
 ## 🔧 **CONFIGURAÇÕES DE AMBIENTE**
 
-### **Variáveis Implementadas**
+### **Variáveis de Ambiente Necessárias**
 ```bash
-# Ably (já configurado)
-ABLY_API_KEY=xxx
-NEXT_PUBLIC_ABLY_CLIENT_KEY=xxx
+# Realtime
+ABLY_API_KEY=...
+NEXT_PUBLIC_ABLY_CLIENT_KEY=...
 REALTIME_CHANNEL_PREFIX=ml-dev
 NEXT_PUBLIC_REALTIME_CHANNEL_PREFIX=ml-dev
+REALTIME_INTERNAL_TOKEN=...
 
-# Redis (implementado)
-REDIS_URL=rediss://...  # Vercel Redis (Upstash)
+# Toggle do sistema novo
+NOTIFICATION_USE_NEW_SYSTEM=true
 
-# Email per-tenant (opcional como defaults globais; credenciais ficam no banco)
+# Redis (deduplicação e fila)
+REDIS_URL=rediss://...
+
+# Email (credenciais globais opcionais; preferencialmente por tenant)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=465
 SMTP_SECURE=true
-NOTIFICATION_TEST_EMAIL=robsonnonatoiii@gmail.com
+SMTP_USER=...
+SMTP_PASS=...
 
-# Usuário de teste gerado automaticamente
-NOTIFICATION_TEST_USER_EMAIL=robsonnonatoiii@gmail.com
-
-# Rate Limiting (implementado)
-NOTIFICATION_RATE_LIMIT_PER_USER=100
-NOTIFICATION_RATE_LIMIT_PER_TENANT=1000
+# Crons e integrações externas
+CRON_SECRET=...
+ASAAS_API_KEY=...
+ASAAS_WEBHOOK_SECRET=...
 ```
 
 
@@ -326,27 +329,28 @@ NOTIFICATION_RATE_LIMIT_PER_TENANT=1000
 ### **✅ Implementado:**
 1. ✅ **Schema Prisma** - Notification, NotificationPreference, NotificationTemplate + NotificationDelivery
 2. ✅ **BullMQ + Redis** - Infraestrutura de fila configurada
-3. ✅ **NotificationService** - Serviço base + registro de deliveries e messageId
-4. ✅ **Worker Assíncrono** - Worker BullMQ implementado
-5. ✅ **API Management** - Endpoints de gerenciamento
-6. ✅ **Canais Reais** - Ably (in-app) e Email (Nodemailer per-tenant)
+3. ✅ **NotificationService** - Serviço base + registro de deliveries, deduplicação e canal dinâmico
+4. ✅ **Worker Assíncrono** - Worker BullMQ operacional
+5. ✅ **Camada de Domínio** - `NotificationFactory` e `NotificationPolicy` aplicando regras de negócio
+6. ✅ **Canais Reais** - Ably (in-app) e Email (Nodemailer por tenant)
+7. ✅ **Crons Oficiais** - Prazos (`/api/cron/check-deadlines`) e contratos (`/api/cron/check-contracts`) agendados na Vercel
+8. ✅ **Webhook Asaas** - Eventos mapeados: criação, pagamento, falha, atraso e estorno
+9. ✅ **Página de Preferências** - `/usuario/preferencias-notificacoes` com seleção de canais
 
-### **❌/✅ Status Atualizado:**
-1. ✅ **Deduplicação** - Implementada (hash SHA256 + TTL 5min em Redis)
-2. ❌ **Fallback HTTP** - Polling quando Ably falha ainda não implementado
-3. ❌ **Cron Jobs** - Agendador de prazos pendente
-4. ❌ **Webhooks Asaas** - Integração de pagamentos sem eventos
-5. ❌ **NotificationFactory/Policy** - Camada de domínio não existe
-6. ⚠️ **Rollout** - Híbrido mantém legado; default agora é novo sistema ON quando env não definida
+### **⚠️/❌ Pontos de Atenção:**
+1. ⚠️ **Fallback HTTP/Polling** - Invalidação via API implementada; polling a cada 30s para clientes offline ainda pendente
+2. ⚠️ **Rollout** - Sistema híbrido ativo; é necessário plano de migração completa dos consumidores legados
+3. ⚠️ **Auditoria de Preferências** - Falta log dedicado de consentimento LGPD e presets por role
+4. ❌ **Documentos & Equipe** - Eventos ainda não disparados para esses módulos
+5. ❌ **Métricas/Observabilidade** - Dashboards e alertas de entrega não configurados
 
 ### **🔧 Próximos Passos Críticos:**
-1. **Finalizar migração** - Concluir migração dos módulos restantes e validar produção
-2. ~Implementar deduplicação~ - JÁ IMPLEMENTADO
-3. **Integrar com módulos** - Conectar Server Actions restantes ao novo sistema
-4. **Implementar cron jobs** - Agendador de prazos
-5. **Implementar webhooks Asaas** - Eventos financeiros automáticos
-6. **Entregar fallback HTTP + testes de carga** - Garantir resiliência frontend
+1. **Finalizar integração dos módulos pendentes** - Documentos, Equipe e lembretes adicionais de Agenda
+2. **Implementar fallback HTTP completo** - Polling tolerante a falhas para ambientes sem WebSocket
+3. **Concluir rollout híbrido** - Migrar leitores legados para `NotificationDelivery`
+4. **Adicionar auditoria de preferências** - Consentimento LGPD, presets por role e exportação por tenant
+5. **Instrumentar métricas** - Dashboards, alertas e testes de carga para fila/worker
 
 ---
 
-**Status:** ✅ **Backend Migrado para Email per-tenant** - Sistema novo como padrão
+**Status:** ✅ **Backend consolidado no novo sistema de notificações** — rollout completo ainda em andamento

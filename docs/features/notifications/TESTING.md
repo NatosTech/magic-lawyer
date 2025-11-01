@@ -6,7 +6,13 @@
 
 **Via Script:**
 ```bash
-npm run test:notifications
+npm run notifications:test
+
+# Smoke test end-to-end (inclui criação de processo, prazo, pagamento etc.)
+npm run notifications:smoke
+
+# Pacote completo (teste unitário + webhook + smoke + crons)
+npm run notifications:all
 ```
 
 **Via Endpoint (Desenvolvimento):**
@@ -35,10 +41,10 @@ curl "http://localhost:9192/api/test/notifications?type=prazo.expiring_7d&tenant
 
 **Manual (Desenvolvimento):**
 ```bash
-# Via npm script
-npm run test:deadline-scheduler
+# Via script agrupado (prazos + contratos)
+npm run notifications:crons
 
-# Ou diretamente
+# Ou diretamente (útil para depuração)
 curl -X GET "http://localhost:9192/api/cron/check-deadlines" \
   -H "Authorization: Bearer ${CRON_SECRET:-test-secret}"
 ```
@@ -54,7 +60,7 @@ await DeadlineSchedulerService.checkExpiringDeadlines();
 
 **Simulação Manual:**
 ```bash
-npm run test:webhook
+npm run notifications:webhook
 ```
 
 **Webhook Real:**
@@ -173,12 +179,16 @@ REDIS_URL=rediss://...
 # Ably (para realtime)
 ABLY_API_KEY=...
 NEXT_PUBLIC_ABLY_CLIENT_KEY=...
+REALTIME_INTERNAL_TOKEN=...
 
 # Email (para envio)
 SMTP_HOST=...
 SMTP_PORT=...
 SMTP_USER=...
 SMTP_PASS=...
+
+# Flags de recursos
+NOTIFICATION_USE_NEW_SYSTEM=true
 
 # Cron (para autenticação)
 CRON_SECRET=...
@@ -203,4 +213,3 @@ ASAAS_WEBHOOK_SECRET=...
 - Verificar preferências do usuário (pode estar desabilitado)
 - Verificar se Ably está conectado no frontend
 - Verificar logs de entrega em `NotificationDelivery`
-

@@ -101,7 +101,7 @@ curl -X GET "https://seu-dominio.vercel.app/api/cron/check-deadlines" \
 
 ### **Via npm script (Local)**
 ```bash
-npm run test:deadline-scheduler
+npm run notifications:crons
 ```
 
 ### **Via Vercel Dashboard**

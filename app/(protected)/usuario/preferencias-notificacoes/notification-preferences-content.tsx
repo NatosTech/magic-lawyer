@@ -312,9 +312,7 @@ export function NotificationPreferencesContent() {
                               >
                                 {Object.entries(URGENCY_LABELS).map(
                                   ([key, label]) => (
-                                    <SelectItem key={key} value={key}>
-                                      {label}
-                                    </SelectItem>
+                                    <SelectItem key={key}>{label}</SelectItem>
                                   ),
                                 )}
                               </Select>
@@ -385,4 +383,3 @@ export function NotificationPreferencesContent() {
     </div>
   );
 }
-

@@ -76,14 +76,22 @@ export async function getNotifications(
     };
   }
 
+  if (!tenantId) {
+    throw new Error("Tenant não encontrado");
+  }
+
   const notifications = await prisma.notification.findMany({
-    where: { tenantId, userId },
+    where: { tenantId: tenantId ?? undefined, userId },
     orderBy: { createdAt: "desc" },
     take,
   });
 
   const unreadCount = await prisma.notification.count({
-    where: { tenantId, userId, readAt: null },
+    where: {
+      tenantId: tenantId ?? undefined,
+      userId,
+      readAt: null,
+    },
   });
 
   return {
@@ -119,7 +127,11 @@ export async function setNotificationStatus(
   }
 
   await prisma.notification.updateMany({
-    where: { id, tenantId, userId },
+    where: {
+      id,
+      tenantId: tenantId ?? undefined,
+      userId,
+    },
     data: {
       readAt:
         status === "LIDA"
@@ -140,7 +152,11 @@ export async function markAllNotificationsAsRead(): Promise<void> {
   }
 
   await prisma.notification.updateMany({
-    where: { tenantId, userId, readAt: null },
+    where: {
+      tenantId: tenantId ?? undefined,
+      userId,
+      readAt: null,
+    },
     data: { readAt: new Date() },
   });
 }
@@ -153,5 +169,10 @@ export async function clearAllNotifications(): Promise<void> {
     return;
   }
 
-  await prisma.notification.deleteMany({ where: { tenantId, userId } });
+  await prisma.notification.deleteMany({
+    where: {
+      tenantId: tenantId ?? undefined,
+      userId,
+    },
+  });
 }

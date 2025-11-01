@@ -314,7 +314,7 @@ export async function getNotificationPreferences(): Promise<{
   preferences?: Array<{
     eventType: string;
     enabled: boolean;
-    channels: string[];
+    channels: NotificationChannel[];
     urgency: string;
   }>;
   defaultEventTypes?: string[];
@@ -349,14 +349,24 @@ export async function getNotificationPreferences(): Promise<{
       },
     });
 
-    return {
-      success: true,
-      preferences: preferences.map((p) => ({
+    const preferencesPayload = preferences.map((p) => {
+      const parsedChannels = p.channels as NotificationChannel[] | null | undefined;
+      const channels: NotificationChannel[] =
+        parsedChannels && parsedChannels.length > 0
+          ? parsedChannels
+          : (["REALTIME"] as NotificationChannel[]);
+
+      return {
         eventType: p.eventType,
         enabled: p.enabled,
-        channels: p.channels,
+        channels,
         urgency: p.urgency,
-      })),
+      };
+    });
+
+    return {
+      success: true,
+      preferences: preferencesPayload,
       defaultEventTypes: defaultPreferences.map((t) => t.eventType),
     };
   } catch (error) {
@@ -375,14 +385,14 @@ export async function getNotificationPreferences(): Promise<{
 export async function updateNotificationPreference(data: {
   eventType: string;
   enabled?: boolean;
-  channels?: string[];
+  channels?: NotificationChannel[];
   urgency?: string;
 }): Promise<{
   success: boolean;
   preference?: {
     eventType: string;
     enabled: boolean;
-    channels: string[];
+    channels: NotificationChannel[];
     urgency: string;
   };
   error?: string;
@@ -407,12 +417,12 @@ export async function updateNotificationPreference(data: {
     }
 
     // Validar canais
-    const validChannels: NotificationChannel[] = ["REALTIME", "EMAIL", "PUSH"];
-    const validChannelsProvided = Array.isArray(data.channels)
-      ? data.channels.filter((c) => validChannels.includes(c as NotificationChannel))
-      : ["REALTIME"];
+    const channelsToPersist: NotificationChannel[] =
+      Array.isArray(data.channels) && data.channels.length > 0
+        ? data.channels
+        : ["REALTIME"];
 
-    if (validChannelsProvided.length === 0) {
+    if (channelsToPersist.length === 0) {
       return {
         success: false,
         error: "Pelo menos um canal válido deve ser informado",
@@ -445,12 +455,12 @@ export async function updateNotificationPreference(data: {
         userId,
         eventType: data.eventType,
         enabled: data.enabled ?? true,
-        channels: validChannelsProvided,
+        channels: channelsToPersist,
         urgency: validUrgency,
       },
       update: {
         enabled: data.enabled ?? true,
-        channels: validChannelsProvided,
+        channels: channelsToPersist,
         urgency: validUrgency,
         updatedAt: new Date(),
       },

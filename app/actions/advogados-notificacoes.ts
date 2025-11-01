@@ -8,9 +8,6 @@ import { NotificationEvent } from "@/app/lib/notifications/types";
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
 
-// Re-exportar função do arquivo legacy que ainda não foi migrada
-export { getEstatisticasNotificacoes } from "./advogados-notificacoes-legacy";
-
 // =============================================
 // TIPOS E INTERFACES
 // =============================================
@@ -44,6 +41,27 @@ interface ActionResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+// =============================================
+// LEGACY COMPATIBILITY
+// =============================================
+
+export async function getEstatisticasNotificacoes(
+  advogadoId: string,
+): Promise<
+  ActionResponse<{
+    total: number;
+    naoLidas: number;
+    porTipo: Record<string, number>;
+    porPrioridade: Record<string, number>;
+  }>
+> {
+  const { getEstatisticasNotificacoes: legacyGet } = await import(
+    "./advogados-notificacoes-legacy"
+  );
+
+  return legacyGet(advogadoId);
 }
 
 // =============================================

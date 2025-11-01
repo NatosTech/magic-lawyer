@@ -205,9 +205,10 @@ npm run prisma:seed     # Popula banco com dados de teste
 ### Testes
 
 ```bash
-npm run test:notifications       # Testa sistema de notificações
-npm run test:webhook            # Testa webhooks do Asaas
-npm run test:deadline-scheduler # Testa agendador de prazos
+npm run notifications:test     # Testes unitários do domínio de notificações
+npm run notifications:webhook  # Simula webhooks do Asaas
+npm run notifications:smoke    # Smoke test end-to-end
+npm run notifications:crons    # Executa manualmente os crons de prazos e contratos
 ```
 
 ---
