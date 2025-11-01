@@ -206,10 +206,69 @@ export async function cancelarAssinatura(
       };
     }
 
-    await prisma.assinaturaPeticao.update({
+    const assinaturaAtualizada = await prisma.assinaturaPeticao.update({
       where: { id: assinaturaId },
       data: { status: "REJEITADO" },
+      include: {
+        peticao: {
+          include: {
+            processo: {
+              select: {
+                id: true,
+                numero: true,
+                documentoId: true,
+                advogadoResponsavel: {
+                  select: {
+                    usuario: {
+                      select: { id: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
+
+    // Disparar notificação de documento rejeitado se houver documento vinculado
+    if (assinaturaAtualizada.peticao?.processo?.documentoId) {
+      try {
+        const { DocumentNotifier } = await import(
+          "@/app/lib/notifications/document-notifier"
+        );
+
+        const documento = await prisma.documento.findUnique({
+          where: { id: assinaturaAtualizada.peticao.processo.documentoId },
+          select: {
+            id: true,
+            nome: true,
+            processoId: true,
+            clienteId: true,
+            uploadedById: true,
+            tenantId: true,
+          },
+        });
+
+        if (documento) {
+          await DocumentNotifier.notifyRejected({
+            tenantId: documento.tenantId,
+            documentoId: documento.id,
+            nome: documento.nome,
+            processoIds: documento.processoId ? [documento.processoId] : undefined,
+            clienteId: documento.clienteId,
+            uploaderUserId: documento.uploadedById,
+            actorNome: "Usuário",
+            motivo: "Assinatura cancelada",
+          });
+        }
+      } catch (error) {
+        console.error(
+          "[Assinaturas] Erro ao notificar rejeição de documento:",
+          error,
+        );
+      }
+    }
 
     revalidatePath("/peticoes");
 

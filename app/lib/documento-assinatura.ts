@@ -267,6 +267,8 @@ export const verificarStatusAssinatura = async (
 
     // Atualizar status no banco se mudou
     if (novoStatus !== documentoAssinatura.status) {
+      const oldStatus = documentoAssinatura.status;
+      
       await prisma.documentoAssinatura.update({
         where: { id: documentoAssinaturaId },
         data: {
@@ -274,7 +276,108 @@ export const verificarStatusAssinatura = async (
           dataAssinatura: signedAt ? new Date(signedAt) : null,
           urlAssinado: downloadUrl,
         },
+        include: {
+          documento: {
+            select: {
+              id: true,
+              nome: true,
+              processoId: true,
+              clienteId: true,
+              uploadedById: true,
+              processo: {
+                select: {
+                  id: true,
+                  numero: true,
+                  advogadoResponsavel: {
+                    select: {
+                      usuario: {
+                        select: {
+                          id: true,
+                          firstName: true,
+                          lastName: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
+
+      // Disparar notificações baseado no novo status
+      const { DocumentNotifier } = await import(
+        "@/app/lib/notifications/document-notifier"
+      );
+
+      if (novoStatus === "ASSINADO" && oldStatus !== "ASSINADO") {
+        const documento = await prisma.documentoAssinatura.findUnique({
+          where: { id: documentoAssinaturaId },
+          include: {
+            documento: {
+              select: {
+                id: true,
+                nome: true,
+                processoId: true,
+                clienteId: true,
+                uploadedById: true,
+                processo: {
+                  select: {
+                    id: true,
+                    numero: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (documento?.documento) {
+          await DocumentNotifier.notifyApproved({
+            tenantId: documento.tenantId,
+            documentoId: documento.documento.id,
+            nome: documento.documento.nome,
+            processoIds: documento.documento.processoId
+              ? [documento.documento.processoId]
+              : undefined,
+            clienteId: documento.documento.clienteId,
+            uploaderUserId: documento.documento.uploadedById,
+            actorNome: signedAt ? "Cliente" : "Sistema",
+            observacoes: downloadUrl ? "Documento assinado com sucesso" : undefined,
+          });
+        }
+      } else if (novoStatus === "REJEITADO" && oldStatus !== "REJEITADO") {
+        const documento = await prisma.documentoAssinatura.findUnique({
+          where: { id: documentoAssinaturaId },
+          include: {
+            documento: {
+              select: {
+                id: true,
+                nome: true,
+                processoId: true,
+                clienteId: true,
+                uploadedById: true,
+              },
+            },
+          },
+        });
+
+        if (documento?.documento) {
+          await DocumentNotifier.notifyRejected({
+            tenantId: documento.tenantId,
+            documentoId: documento.documento.id,
+            nome: documento.documento.nome,
+            processoIds: documento.documento.processoId
+              ? [documento.documento.processoId]
+              : undefined,
+            clienteId: documento.documento.clienteId,
+            uploaderUserId: documento.documento.uploadedById,
+            actorNome: "Cliente",
+            motivo: "Assinatura rejeitada pelo cliente",
+          });
+        }
+      }
     }
 
     return {

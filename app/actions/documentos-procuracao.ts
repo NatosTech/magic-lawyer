@@ -7,6 +7,7 @@ import { authOptions } from "@/auth";
 import { UploadService, DocumentUploadOptions } from "@/lib/upload-service";
 import { PrismaClient } from "@/app/generated/prisma";
 import logger from "@/lib/logger";
+import { DocumentNotifier } from "@/app/lib/notifications/document-notifier";
 
 const prisma = new PrismaClient();
 
@@ -59,6 +60,10 @@ export async function uploadDocumentoProcuracao(
 
     const user = session.user as any;
     const tenantId = user.tenantId;
+    const uploaderDisplayName =
+      `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+      user.email ||
+      user.id;
 
     // Verificar se a procuração existe e pertence ao tenant
     const procuracao = await prisma.procuracao.findFirst({
@@ -69,6 +74,7 @@ export async function uploadDocumentoProcuracao(
       select: {
         id: true,
         numero: true,
+        clienteId: true,
       },
     });
 
@@ -152,6 +158,26 @@ export async function uploadDocumentoProcuracao(
 
     // Revalidar cache
     revalidatePath(`/procuracoes/${procuracaoId}`);
+
+    try {
+      await DocumentNotifier.notifyUploaded({
+        tenantId,
+        documentoId: documento.id,
+        nome: documento.fileName,
+        tipo: options.tipo,
+        tamanhoBytes: documento.size,
+        uploaderUserId: user.id,
+        uploaderNome: uploaderDisplayName,
+        processoIds: undefined,
+        clienteId: procuracao.clienteId,
+        visivelParaCliente: false,
+      });
+    } catch (error) {
+      logger.warn(
+        "Falha ao emitir notificações de documento.uploaded (procuração)",
+        error,
+      );
+    }
 
     return {
       success: true,

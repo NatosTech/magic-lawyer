@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   description: "Catálogo de causas e assuntos processuais do escritório.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function CausasPage() {
   return <CausasContent />;
 }

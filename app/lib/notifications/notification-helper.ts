@@ -489,6 +489,29 @@ export class NotificationHelper {
     });
   }
 
+  /**
+   * Notifica sobre expiração de documento
+   */
+  static async notifyDocumentoExpired(
+    tenantId: string,
+    userId: string,
+    payload: {
+      documentoId: string;
+      nome: string;
+      dataExpiracao?: string;
+      processoId?: string;
+      processoNumero?: string;
+    },
+  ): Promise<void> {
+    await NotificationService.publishNotification({
+      type: "documento.expired",
+      tenantId,
+      userId,
+      payload,
+      urgency: "MEDIUM",
+    });
+  }
+
   private static getPrazoEventType(diasRestantes: number): string {
     switch (diasRestantes) {
       case 7:

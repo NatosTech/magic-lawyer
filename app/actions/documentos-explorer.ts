@@ -13,6 +13,7 @@ import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notifi
 import prisma from "@/app/lib/prisma";
 import { UploadService, CloudinaryFolderNode } from "@/lib/upload-service";
 import logger from "@/lib/logger";
+import { DocumentNotifier } from "@/app/lib/notifications/document-notifier";
 
 export interface DocumentExplorerFile {
   id: string;
@@ -662,7 +663,14 @@ export async function uploadDocumentoExplorer(
       return { success: false, error: "Não autorizado" };
     }
 
-    const user = session.user as any as SessionUser;
+    const rawSessionUser = session.user as any;
+    const user = rawSessionUser as SessionUser;
+    const uploaderDisplayName =
+      `${rawSessionUser.firstName ?? ""} ${
+        rawSessionUser.lastName ?? ""
+      }`.trim() ||
+      rawSessionUser.email ||
+      rawSessionUser.id;
 
     if (!user.tenantId || !user.tenantSlug) {
       return { success: false, error: "Tenant não encontrado" };
@@ -809,6 +817,11 @@ export async function uploadDocumentoExplorer(
     const primaryProcessoId = processos[0]?.id ?? null;
     const primaryContratoId = contratos[0]?.id ?? null;
 
+    const isVisibleToClient =
+      typeof options.visivelParaCliente === "boolean"
+        ? options.visivelParaCliente
+        : true;
+
     const documento = await prisma.$transaction(async (tx) => {
       const createdDocumento = await tx.documento.create({
         data: {
@@ -823,10 +836,7 @@ export async function uploadDocumentoExplorer(
           clienteId: cliente.id,
           contratoId: primaryContratoId,
           uploadedById: user.id,
-          visivelParaCliente:
-            typeof options.visivelParaCliente === "boolean"
-              ? options.visivelParaCliente
-              : true,
+          visivelParaCliente: isVisibleToClient,
           visivelParaEquipe: true,
           metadados: {
             folderPath: uploadedFolderPath,
@@ -857,10 +867,7 @@ export async function uploadDocumentoExplorer(
             processoId: proc.id,
             documentoId: createdDocumento.id,
             createdById: user.id,
-            visivelParaCliente:
-              typeof options.visivelParaCliente === "boolean"
-                ? options.visivelParaCliente
-                : true,
+            visivelParaCliente: isVisibleToClient,
           })),
           skipDuplicates: true,
         });
@@ -943,6 +950,23 @@ export async function uploadDocumentoExplorer(
       }
     } catch (e) {
       logger.warn("Falha ao emitir notificação de documento anexado", e);
+    }
+
+    try {
+      await DocumentNotifier.notifyUploaded({
+        tenantId: user.tenantId,
+        documentoId: documento.id,
+        nome: documento.nome,
+        tipo: documento.tipo,
+        tamanhoBytes: documento.tamanhoBytes,
+        uploaderUserId: user.id,
+        uploaderNome: uploaderDisplayName,
+        processoIds: processos.map((proc) => proc.id),
+        clienteId: cliente.id,
+        visivelParaCliente: isVisibleToClient,
+      });
+    } catch (error) {
+      logger.warn("Falha ao emitir notificações de documento.uploaded", error);
     }
 
     return {

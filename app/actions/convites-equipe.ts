@@ -8,6 +8,7 @@ import { UserRole } from "@/app/generated/prisma";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { sendConviteEmail } from "@/app/lib/email-convite";
+import { NotificationHelper } from "@/app/lib/notifications/notification-helper";
 
 export interface ConviteEquipeData {
   id: string;
@@ -218,6 +219,40 @@ export async function createConviteEquipe(
   }
 
   revalidatePath("/equipe");
+
+  try {
+    const actor = session.user as any;
+    const actorName =
+      `${actor.firstName ?? ""} ${actor.lastName ?? ""}`.trim() ||
+      actor.email ||
+      actor.id;
+
+    const destinatarios = await prisma.usuario.findMany({
+      where: {
+        tenantId: session.user.tenantId,
+        active: true,
+        role: { in: [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECRETARIA] },
+        id: {
+          not: session.user.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    await Promise.all(
+      destinatarios.map(({ id }) =>
+        NotificationHelper.notifyEquipeUserInvited(session.user.tenantId!, id, {
+          conviteId: convite.id,
+          email: convite.email,
+          nome: convite.nome || undefined,
+          cargo: convite.cargo?.nome || undefined,
+          enviadoPor: actorName,
+        }),
+      ),
+    );
+  } catch (error) {
+    console.warn("Falha ao emitir notificações de equipe.user_invited", error);
+  }
 
   return {
     id: convite.id,
@@ -557,6 +592,20 @@ export async function acceptConviteEquipe(
     });
   }
 
+  let cargoNome: string | undefined;
+
+  if (convite.cargoId) {
+    const cargo = await prisma.cargo.findFirst({
+      where: {
+        id: convite.cargoId,
+        tenantId: convite.tenantId,
+      },
+      select: { nome: true },
+    });
+
+    cargoNome = cargo?.nome || undefined;
+  }
+
   // Marcar convite como aceito
   await prisma.equipeConvite.update({
     where: {
@@ -568,6 +617,39 @@ export async function acceptConviteEquipe(
       updatedAt: new Date(),
     },
   });
+
+  const novoUsuarioNome =
+    `${novoUsuario.firstName ?? ""} ${novoUsuario.lastName ?? ""}`.trim() ||
+    novoUsuario.email;
+
+  try {
+    const destinatarios = await prisma.usuario.findMany({
+      where: {
+        tenantId: convite.tenantId,
+        active: true,
+        role: {
+          in: [UserRole.ADMIN, UserRole.SECRETARIA, UserRole.SUPER_ADMIN],
+        },
+        id: {
+          not: novoUsuario.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    await Promise.all(
+      destinatarios.map(({ id }) =>
+        NotificationHelper.notifyEquipeUserJoined(convite.tenantId, id, {
+          usuarioId: novoUsuario.id,
+          nome: novoUsuarioNome,
+          email: novoUsuario.email,
+          cargo: cargoNome,
+        }),
+      ),
+    );
+  } catch (error) {
+    console.warn("Falha ao emitir notificações de equipe.user_joined", error);
+  }
 }
 
 // Rejeitar convite

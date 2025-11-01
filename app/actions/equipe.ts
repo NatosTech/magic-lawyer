@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { UserRole } from "@/app/generated/prisma";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
+import { NotificationHelper } from "@/app/lib/notifications/notification-helper";
 
 // ===== TIPOS E INTERFACES =====
 
@@ -688,6 +689,23 @@ export async function adicionarPermissaoIndividual(
     );
   }
 
+  const actor = session.user as any;
+  const actorName =
+    `${actor.firstName ?? ""} ${actor.lastName ?? ""}`.trim() ||
+    actor.email ||
+    actor.id;
+
+  const existingPermission = await prisma.usuarioPermissaoIndividual.findUnique({
+    where: {
+      tenantId_usuarioId_modulo_acao: {
+        tenantId: session.user.tenantId,
+        usuarioId: usuarioId,
+        modulo: modulo,
+        acao: acao,
+      },
+    },
+  });
+
   await prisma.usuarioPermissaoIndividual.upsert({
     where: {
       tenantId_usuarioId_modulo_acao: {
@@ -725,6 +743,73 @@ export async function adicionarPermissaoIndividual(
       realizadoPor: session.user.id!,
     },
   });
+
+  try {
+    const targetUser = await prisma.usuario.findFirst({
+      where: { id: usuarioId, tenantId: session.user.tenantId },
+      select: { firstName: true, lastName: true, email: true },
+    });
+
+    const admins = await prisma.usuario.findMany({
+      where: {
+        tenantId: session.user.tenantId,
+        active: true,
+        role: {
+          in: [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECRETARIA],
+        },
+        id: {
+          not: session.user.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    const recipients = new Set<string>();
+
+    if (usuarioId !== session.user.id) {
+      recipients.add(usuarioId);
+    }
+
+    admins.forEach(({ id }) => {
+      if (id !== usuarioId) {
+        recipients.add(id);
+      }
+    });
+
+    if (recipients.size && targetUser) {
+      const permissaoLabel = `${modulo}.${acao}`;
+      const oldPermissions = existingPermission
+        ? [`${permissaoLabel}: ${existingPermission.permitido ? "PERMITIDO" : "NEGADO"}`]
+        : [];
+      const newPermissions = [`${permissaoLabel}: ${permitido ? "PERMITIDO" : "NEGADO"}`];
+
+      const targetUserName =
+        `${targetUser.firstName ?? ""} ${targetUser.lastName ?? ""}`.trim() ||
+        targetUser.email ||
+        usuarioId;
+
+      await Promise.all(
+        Array.from(recipients).map((id) =>
+          NotificationHelper.notifyEquipePermissionsChanged(
+            session.user.tenantId!,
+            id,
+            {
+              usuarioId,
+              nome: targetUserName,
+              permissoesAntigas: oldPermissions,
+              permissoesNovas: newPermissions,
+              alteradoPor: actorName,
+            },
+          ),
+        ),
+      );
+    }
+  } catch (error) {
+    console.warn(
+      "Falha ao emitir notificações de equipe.permissions_changed",
+      error,
+    );
+  }
 
   revalidatePath("/equipe");
 }
