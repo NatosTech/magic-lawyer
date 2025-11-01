@@ -865,7 +865,7 @@ export class NotificationService {
       "andamento.updated": {
         title: "Andamento atualizado",
         message:
-          'O andamento "{titulo}" do processo {processoNumero} foi atualizado.',
+          'O andamento "{titulo}" do processo {processoNumero} foi atualizado: {changesSummary}',
       },
     };
   }

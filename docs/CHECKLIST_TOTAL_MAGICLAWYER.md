@@ -30,6 +30,17 @@
 
 ## 🎯 **SISTEMA CORE - GESTÃO JURÍDICA**
 
+### 🧾 **Auditoria Transversal (Backlog Obrigatório)**
+- [ ] **Processos (CRUD completo)** – registrar create/update/delete em `magiclawyer.auditLog`, armazenando diff por campo, usuário responsável, relação com tenant e referências cruzadas.
+- [ ] **Andamentos (CRUD completo)** – auditar criação, edição e exclusão usando apenas o schema existente (`auditLog` / `auditLogChange`), incluindo diffs de campos, associações e flags de notificação.
+- [ ] **Prazos & Agenda** – logar CRUD de prazos, tarefas, eventos e cron jobs com snapshots e vínculos ao processo.
+- [ ] **Documentos & Uploads** – auditar uploads, atualizações de metadados, versionamento e exclusões, preservando hashes/URLs dentro do schema de auditoria.
+- [ ] **Clientes & Partes** – rastrear todas as alterações sensíveis (dados pessoais, contatos, vinculações) via `auditLog`, evitando qualquer solução fora do schema oficial.
+- [ ] **Contratos, Honorários e Recebimentos** – registrar diffs financeiros (valores, condições, assinaturas, parcelamentos) respeitando o schema existente; estender com novas colunas se necessário.
+- [ ] **Financeiro (pagamentos, parcelas, faturas)** – garantir auditoria de status, conciliações, estornos e ajustes manuais.
+- [ ] **Configurações & Credenciais** – auditar alterações em integrações (e-mail, webhooks, módulos, planos) reutilizando as tabelas de auditoria atuais.
+- [ ] **Notificações & Preferências** – registrar edições de templates, políticas e disparos manuais no `auditLog`.
+
 ### 📋 **1. GESTÃO DE PROCESSOS**
 - [x] **CRUD Completo de Processos** - Criar, editar, visualizar, excluir
 - [x] **Numeração Automática** - Sistema de numeração sequencial

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { MovimentacaoTipo } from "@/app/generated/prisma";
+import { buildAndamentoDiff } from "@/app/lib/andamentos/diff";
 
 // ============================================
 // TIPOS
@@ -438,6 +439,19 @@ export async function updateAndamento(
         id: andamentoId,
         tenantId,
       },
+      select: {
+        id: true,
+        processoId: true,
+        titulo: true,
+        descricao: true,
+        tipo: true,
+        dataMovimentacao: true,
+        prazo: true,
+        notificarCliente: true,
+        notificarEmail: true,
+        notificarWhatsapp: true,
+        mensagemPersonalizada: true,
+      },
     });
 
     if (!andamentoExistente) {
@@ -480,13 +494,17 @@ export async function updateAndamento(
       },
     });
 
+    const diff = buildAndamentoDiff(andamentoExistente, andamento);
+    const hasChanges = diff.items.length > 0;
+
     // Notificar atualização de andamento para envolvidos (advogado responsável e cliente)
-    try {
-      const proc = await prisma.processo.findFirst({
-        where: { id: andamento.processo.id, tenantId },
-        select: {
-          numero: true,
-          advogadoResponsavel: {
+    if (hasChanges) {
+      try {
+        const proc = await prisma.processo.findFirst({
+          where: { id: andamento.processo.id, tenantId },
+          select: {
+            numero: true,
+            advogadoResponsavel: {
             select: { usuario: { select: { id: true } } },
           },
           cliente: { select: { usuarioId: true } },
@@ -521,17 +539,24 @@ export async function updateAndamento(
               descricao: andamento.descricao ?? null,
               tipo: andamento.tipo,
               dataMovimentacao: andamento.dataMovimentacao,
+              referenciaTipo: "processo",
+              referenciaId: andamento.processo.id,
+              diff: diff.items,
+              changes: diff.items.map((item) => item.field),
+              changesSummary:
+                diff.summary || "Informações do andamento foram atualizadas",
             },
             urgency: "MEDIUM",
             channels,
           } as any),
         ),
       );
-    } catch (e) {
-      console.warn(
-        "Falha ao emitir notificações de andamento atualizado para envolvidos",
-        e,
-      );
+      } catch (e) {
+        console.warn(
+          "Falha ao emitir notificações de andamento atualizado para envolvidos",
+          e,
+        );
+      }
     }
 
     revalidatePath("/processos");
