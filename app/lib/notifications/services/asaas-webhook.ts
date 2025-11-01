@@ -231,6 +231,25 @@ export class AsaasWebhookService {
           };
         }
 
+        // Verificar outros status de falha
+        if (
+          payment.status === "CHARGEBACK_DISPUTE_LOST" ||
+          payment.status === "REFUND_REQUESTED"
+        ) {
+          return {
+            type: "pagamento.failed",
+            urgency: "CRITICAL",
+            channels: ["REALTIME", "EMAIL"],
+            payload: {
+              ...basePayload,
+              motivo:
+                payment.status === "CHARGEBACK_DISPUTE_LOST"
+                  ? "Chargeback perdido"
+                  : "Estorno solicitado",
+            },
+          };
+        }
+
         return null; // Atualizações sem mudança de status não notificam
 
       case "PAYMENT_REFUNDED":

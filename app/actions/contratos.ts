@@ -388,15 +388,20 @@ export async function createContrato(data: ContratoCreateInput) {
       if (clienteUsuario) recipients.push(clienteUsuario.id);
 
       // Enviar notificação para cada destinatário
+      const basePayload = {
+        contratoId: contrato.id,
+        clienteId: contrato.clienteId,
+        clienteNome: contrato.cliente.nome,
+      };
+
       for (const recipientId of recipients) {
         const event = NotificationFactory.createEvent(
           "contrato.created",
           user.tenantId,
           recipientId,
           {
-            contratoId: contrato.id,
+            ...basePayload,
             titulo: contrato.titulo,
-            clienteNome: contrato.cliente.nome,
             valor: Number(contrato.valor),
             status: contrato.status,
           },
@@ -885,19 +890,44 @@ export async function updateContrato(
         if (clienteUsuario) recipients.push(clienteUsuario.id);
 
         // Enviar notificação
+        const basePayload = {
+          contratoId: contratoAtualizado.id,
+          clienteId: contratoAtualizado.clienteId,
+          clienteNome: contratoAtualizado.cliente.nome,
+        };
+
         for (const recipientId of recipients) {
+          let payload: Record<string, any> = basePayload;
+
+          if (eventType === "contrato.signed") {
+            payload = {
+              ...basePayload,
+              dataAssinatura: (
+                contratoAtualizado.dataAssinatura ?? new Date()
+              ).toISOString(),
+            };
+          } else if (eventType === "contrato.cancelled") {
+            payload = { ...basePayload };
+          } else if (eventType === "contrato.expired") {
+            payload = {
+              ...basePayload,
+              dataFim: contratoAtualizado.dataFim
+                ? new Date(contratoAtualizado.dataFim).toISOString()
+                : new Date().toISOString(),
+            };
+          } else {
+            payload = {
+              ...basePayload,
+              oldStatus: oldStatus,
+              newStatus: newStatus,
+            };
+          }
+
           const event = NotificationFactory.createEvent(
             eventType as any,
             user.tenantId,
             recipientId,
-            {
-              contratoId: contratoAtualizado.id,
-              titulo: contratoAtualizado.titulo,
-              clienteNome: contratoAtualizado.cliente.nome,
-              statusAnterior: oldStatus,
-              statusNovo: newStatus,
-              valor: Number(contratoAtualizado.valor),
-            },
+            payload,
           );
 
           await NotificationService.publishNotification(event);

@@ -658,17 +658,28 @@ export async function gerarBoletoAsaas(data: {
         }
 
         // Enviar notificação
+        const pagamentoId = asaasPayment.id;
+        const boletoId =
+          asaasPayment.invoiceNumber ||
+          asaasPayment.identificationField ||
+          asaasPayment.id;
+        const vencimentoIso = vencimento.toISOString();
+
         for (const recipientId of recipients) {
           const event = NotificationFactory.createEvent(
             "boleto.generated",
             parcelaCompleta.tenantId,
             recipientId,
             {
+              pagamentoId,
+              boletoId,
               parcelaId: parcelaCompleta.id,
               contratoId: parcelaCompleta.contratoId,
+              clienteId: parcelaCompleta.contrato.clienteId,
               valor: Number(parcelaCompleta.valor),
               metodo: "BOLETO",
               clienteNome: parcelaCompleta.contrato.cliente.nome,
+              vencimento: vencimentoIso,
               dataVencimento: parcelaCompleta.dataVencimento.toISOString(),
               linhaDigitavel,
             },

@@ -177,6 +177,13 @@ export class NotificationPolicy {
         "dataAssinatura",
       ],
       "contrato.expired": ["contratoId", "clienteId", "clienteNome"],
+      "contrato.expiring": [
+        "contratoId",
+        "clienteId",
+        "clienteNome",
+        "dataFim",
+        "diasRestantes",
+      ],
       "contrato.cancelled": ["contratoId", "clienteId", "clienteNome"],
 
       // PAGAMENTOS
@@ -268,6 +275,7 @@ export class NotificationPolicy {
       "pagamento.overdue": "CRITICAL",
       "pagamento.failed": "CRITICAL",
       "contrato.expired": "CRITICAL",
+      "contrato.expiring": "HIGH",
       "procuracao.expired": "CRITICAL",
       "sistema.critical_error": "CRITICAL",
       // ALTOS
@@ -392,6 +400,7 @@ export class NotificationPolicy {
       "contrato.signature_pending": ["contratoId", "clienteId", "clienteNome", "dataVencimento"],
       "contrato.signed": ["contratoId", "clienteId", "clienteNome", "dataAssinatura"],
       "contrato.expired": ["contratoId", "clienteId", "clienteNome"],
+      "contrato.expiring": ["contratoId", "clienteId", "clienteNome", "dataFim", "diasRestantes"],
       "contrato.cancelled": ["contratoId", "clienteId", "clienteNome"],
       // PAGAMENTOS
       "pagamento.created": ["pagamentoId", "valor", "metodo"],

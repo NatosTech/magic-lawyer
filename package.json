@@ -35,8 +35,10 @@
     "restart:dev": "npx ts-node --project scripts/tsconfig.json scripts/restart-dev.ts",
     "cleanup:asaas": "node scripts/cleanup-asaas.js",
     "test:notifications": "npx tsx scripts/test-notifications.ts",
-    "test:webhook": "npx tsx scripts/test-asaas-webhook.ts",
-    "test:deadline-scheduler": "curl -X GET \"http://localhost:9192/api/cron/check-deadlines\" -H \"Authorization: Bearer ${CRON_SECRET:-test-secret}\""
+    "smoke:notifications": "npx tsx scripts/smoke-test-notifications.ts",
+    "test:cron": "npm run test:notifications && npm run smoke:notifications && curl -s -X GET \"http://localhost:9192/api/cron/check-deadlines\" -H \"Authorization: Bearer ${CRON_SECRET:-test-secret}\" > /dev/null && curl -s -X GET \"http://localhost:9192/api/cron/check-contracts\" -H \"Authorization: Bearer ${CRON_SECRET:-test-secret}\" > /dev/null",
+    "test:all": "npm run test:notifications && npm run smoke:notifications && npx tsx scripts/test-asaas-webhook.ts && npm run test:cron",
+    "fix:tenant-status": "npx tsx scripts/fix-tenant-status-simple.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
