@@ -76,39 +76,88 @@ export async function getNotifications(
     };
   }
 
-  const notifications = await prisma.notificacaoUsuario.findMany({
-    where: {
-      tenantId,
-      usuarioId: userId,
-    },
-    orderBy: [{ createdAt: "desc" }],
-    take,
-    include: {
-      notificacao: true,
-    },
-  });
+  // Buscar notificações de AMBOS os sistemas (legado + novo)
+  const [legacyNotifications, newNotifications] = await Promise.all([
+    // Sistema legado
+    prisma.notificacaoUsuario.findMany({
+      where: {
+        tenantId,
+        usuarioId: userId,
+      },
+      orderBy: [{ createdAt: "desc" }],
+      take,
+      include: {
+        notificacao: true,
+      },
+    }),
+    // Sistema novo
+    prisma.notification.findMany({
+      where: {
+        tenantId,
+        userId,
+      },
+      orderBy: [{ createdAt: "desc" }],
+      take,
+      include: {
+        deliveries: {
+          select: {
+            channel: true,
+            status: true,
+          },
+        },
+      },
+    }),
+  ]);
 
-  const unreadCount = notifications.reduce((count, item) => {
+  // Converter notificações legadas
+  const legacyItems = legacyNotifications.map((item) => ({
+    id: item.id,
+    notificacaoId: item.notificacaoId,
+    titulo: item.notificacao.titulo,
+    mensagem: item.notificacao.mensagem,
+    tipo: item.notificacao.tipo,
+    prioridade: item.notificacao.prioridade,
+    status: item.status as NotificationStatus,
+    canal: item.canal,
+    createdAt: item.createdAt.toISOString(),
+    entregueEm: item.entregueEm?.toISOString() ?? null,
+    lidoEm: item.lidoEm?.toISOString() ?? null,
+    referenciaTipo: item.notificacao.referenciaTipo,
+    referenciaId: item.notificacao.referenciaId,
+    dados: item.notificacao.dados,
+    source: "legacy" as const,
+  }));
+
+  // Converter notificações novas
+  const newItems = newNotifications.map((item) => ({
+    id: item.id,
+    notificacaoId: item.id, // No novo sistema, o ID da notificação é o mesmo
+    titulo: (item.payload as any)?.titulo || item.type,
+    mensagem: (item.payload as any)?.mensagem || (item.payload as any)?.message || "Nova notificação",
+    tipo: item.type,
+    prioridade: item.urgency || "MEDIA",
+    status: item.readAt ? ("LIDA" as NotificationStatus) : ("NAO_LIDA" as NotificationStatus),
+    canal: item.deliveries[0]?.channel || "REALTIME",
+    createdAt: item.createdAt.toISOString(),
+    entregueEm: item.deliveries.find((d) => d.status === "DELIVERED")?.createdAt?.toISOString() ?? null,
+    lidoEm: item.readAt?.toISOString() ?? null,
+    referenciaTipo: (item.payload as any)?.referenciaTipo ?? null,
+    referenciaId: (item.payload as any)?.referenciaId ?? null,
+    dados: item.payload,
+    source: "new" as const,
+  }));
+
+  // Unificar e ordenar por data (mais recente primeiro)
+  const allNotifications = [...legacyItems, ...newItems]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, take);
+
+  const unreadCount = allNotifications.reduce((count, item) => {
     return item.status === "NAO_LIDA" ? count + 1 : count;
   }, 0);
 
   return {
-    notifications: notifications.map((item) => ({
-      id: item.id,
-      notificacaoId: item.notificacaoId,
-      titulo: item.notificacao.titulo,
-      mensagem: item.notificacao.mensagem,
-      tipo: item.notificacao.tipo,
-      prioridade: item.notificacao.prioridade,
-      status: item.status as NotificationStatus,
-      canal: item.canal,
-      createdAt: item.createdAt.toISOString(),
-      entregueEm: item.entregueEm?.toISOString() ?? null,
-      lidoEm: item.lidoEm?.toISOString() ?? null,
-      referenciaTipo: item.notificacao.referenciaTipo,
-      referenciaId: item.notificacao.referenciaId,
-      dados: item.notificacao.dados,
-    })),
+    notifications: allNotifications.map(({ source, ...item }) => item), // Remove campo source antes de retornar
     unreadCount,
   };
 }
@@ -132,7 +181,8 @@ export async function setNotificationStatus(
     throw new Error("Status inválido");
   }
 
-  const result = await prisma.notificacaoUsuario.updateMany({
+  // Tentar atualizar no sistema legado primeiro
+  const legacyResult = await prisma.notificacaoUsuario.updateMany({
     where: {
       id,
       tenantId,
@@ -151,8 +201,23 @@ export async function setNotificationStatus(
     },
   });
 
-  if (result.count === 0) {
-    throw new Error("Notificação não encontrada");
+  // Se não encontrou no legado, tentar no novo sistema
+  if (legacyResult.count === 0) {
+    const newResult = await prisma.notification.updateMany({
+      where: {
+        id,
+        tenantId,
+        userId,
+      },
+      data: {
+        readAt: status === "LIDA" ? new Date() : status === "NAO_LIDA" ? null : undefined,
+        updatedAt: new Date(),
+      },
+    });
+
+    if (newResult.count === 0) {
+      throw new Error("Notificação não encontrada");
+    }
   }
 }
 
@@ -168,20 +233,35 @@ export async function markAllNotificationsAsRead(): Promise<void> {
     return;
   }
 
-  await prisma.notificacaoUsuario.updateMany({
-    where: {
-      tenantId,
-      usuarioId: userId,
-      status: {
-        in: ["NAO_LIDA", "ARQUIVADA"],
+  // Marcar todas como lidas nos DOIS sistemas em paralelo
+  await Promise.all([
+    // Sistema legado
+    prisma.notificacaoUsuario.updateMany({
+      where: {
+        tenantId,
+        usuarioId: userId,
+        status: {
+          in: ["NAO_LIDA", "ARQUIVADA"],
+        },
       },
-    },
-    data: {
-      status: "LIDA",
-      lidoEm: new Date(),
-      updatedAt: new Date(),
-    },
-  });
+      data: {
+        status: "LIDA",
+        lidoEm: new Date(),
+        updatedAt: new Date(),
+      },
+    }),
+    // Sistema novo
+    prisma.notification.updateMany({
+      where: {
+        tenantId,
+        userId,
+        readAt: null,
+      },
+      data: {
+        readAt: new Date(),
+      },
+    }),
+  ]);
 }
 
 export async function clearAllNotifications(): Promise<void> {
@@ -192,12 +272,23 @@ export async function clearAllNotifications(): Promise<void> {
     return;
   }
 
-  await prisma.notificacaoUsuario.deleteMany({
-    where: {
-      tenantId,
-      usuarioId: userId,
-    },
-  });
+  // Limpar todas as notificações nos DOIS sistemas em paralelo
+  await Promise.all([
+    // Sistema legado
+    prisma.notificacaoUsuario.deleteMany({
+      where: {
+        tenantId,
+        usuarioId: userId,
+      },
+    }),
+    // Sistema novo
+    prisma.notification.deleteMany({
+      where: {
+        tenantId,
+        userId,
+      },
+    }),
+  ]);
 }
 
 // ============================================

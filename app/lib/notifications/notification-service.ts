@@ -4,7 +4,6 @@ import crypto from "crypto";
 
 import { EmailChannel } from "./channels/email-channel";
 import { getNotificationQueue } from "./notification-queue";
-import { createRedisConnection } from "./redis-config";
 import { NotificationFactory } from "./domain/notification-factory";
 import { NotificationPolicy } from "./domain/notification-policy";
 
@@ -53,7 +52,9 @@ export class NotificationService {
       );
 
       // Deduplicação simples: chave única por (tenantId, userId, type, payloadHash) com TTL de 5 minutos
-      const redis = createRedisConnection();
+      const { getRedisInstance } = await import("./redis-singleton");
+      const redis = getRedisInstance();
+      
       const payloadHash = crypto
         .createHash("sha256")
         .update(JSON.stringify(validatedEvent.payload))
@@ -69,7 +70,6 @@ export class NotificationService {
         "NX",
       );
 
-      await redis.disconnect();
       if (setResult !== "OK") {
         console.log(
           `[NotificationService] 🔁 Evento duplicado ignorado (${validatedEvent.type}) para usuário ${validatedEvent.userId}`,

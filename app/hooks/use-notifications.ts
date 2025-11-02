@@ -10,7 +10,7 @@ import {
   clearAllNotifications,
   type NotificationStatus,
   type NotificationsResponse,
-} from "@/app/actions/notifications-new";
+} from "@/app/actions/notifications";
 import { useRealtime } from "@/app/providers/realtime-provider";
 
 export type NotificationItem = {

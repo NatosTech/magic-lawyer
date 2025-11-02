@@ -49,10 +49,12 @@ export async function testRedisConnection(): Promise<boolean> {
 
 /**
  * Configuração BullMQ
+ * Usa singleton para reutilizar conexão Redis
  */
 export const bullMQConfig = {
   get connection() {
-    return createRedisConnection();
+    const { getRedisInstance } = require("./redis-singleton");
+    return getRedisInstance();
   },
   defaultJobOptions: {
     removeOnComplete: 100,

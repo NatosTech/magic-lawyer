@@ -338,15 +338,13 @@ export class DeadlineSchedulerService {
     notificationKey: string,
   ): Promise<void> {
     try {
-      const { createRedisConnection } = await import("../redis-config");
-      const redis = createRedisConnection();
+      const { getRedisInstance } = await import("../redis-singleton");
+      const redis = getRedisInstance();
 
       const cacheKey = `notif:deadline:${tenantId}:${userId}:${notificationKey}`;
 
       // Armazenar timestamp atual com TTL de 24 horas
       await redis.set(cacheKey, Date.now().toString(), "EX", 24 * 60 * 60);
-
-      await redis.disconnect();
     } catch (error) {
       // Se Redis falhar, logar mas não bloquear
       console.warn(
