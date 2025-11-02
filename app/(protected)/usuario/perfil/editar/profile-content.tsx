@@ -31,7 +31,10 @@ import {
   PlusIcon,
   Star,
   Zap,
+  Bell,
+  ExternalLink,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Select, SelectItem, Textarea } from "@heroui/react";
 
 import { RoleSpecificInfo } from "./role-specific-info";
@@ -86,6 +89,7 @@ export function ProfileContent() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("dados-pessoais");
   const [copied, setCopied] = useState(false);
+  const router = useRouter();
 
   // Buscar dados com SWR
   const { data: profileResult, mutate: mutateProfile } = useSWR(
@@ -969,6 +973,52 @@ export function ProfileContent() {
             >
               <div className="p-6">
                 <EnderecoManager />
+              </div>
+            </Tab>
+
+            <Tab
+              key="notificacoes"
+              title={
+                <div className="flex items-center space-x-2">
+                  <Bell className="w-4 h-4" />
+                  <span>Notificações</span>
+                </div>
+              }
+            >
+              <div className="p-6 space-y-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <Bell className="w-5 h-5 text-primary" />
+                    <h3 className="text-lg font-semibold">
+                      Preferências de Notificações
+                    </h3>
+                  </div>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    endContent={<ExternalLink className="w-4 h-4" />}
+                    onPress={() => router.push("/usuario/preferencias-notificacoes")}
+                  >
+                    Configurar
+                  </Button>
+                </div>
+
+                <div className="text-center py-8">
+                  <Bell className="mx-auto text-gray-400 mb-4" size={48} />
+                  <p className="text-gray-500 mb-4">
+                    Configure como receber notificações do sistema
+                  </p>
+                  <p className="text-sm text-gray-400 mb-6">
+                    Escolha quais eventos deseja receber e em quais canais (in-app, email, push)
+                  </p>
+                  <Button
+                    color="primary"
+                    startContent={<Bell className="w-4 h-4" />}
+                    onPress={() => router.push("/usuario/preferencias-notificacoes")}
+                  >
+                    Abrir Preferências
+                  </Button>
+                </div>
               </div>
             </Tab>
           </Tabs>
