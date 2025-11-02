@@ -89,6 +89,7 @@ import {
   type CreateConviteData,
 } from "@/app/actions/convites-equipe";
 import { getAdvogados } from "@/app/actions/advogados";
+import { useModulosTenant } from "@/app/hooks/use-equipe";
 
 // ===== COMPONENTES =====
 
@@ -193,14 +194,17 @@ function CargosTab() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(6);
 
-  const modulos = [
-    { key: "processos", label: "Processos" },
-    { key: "clientes", label: "Clientes" },
-    { key: "advogados", label: "Advogados" },
-    { key: "financeiro", label: "Financeiro" },
-    { key: "relatorios", label: "Relatórios" },
-    { key: "configuracoes", label: "Configurações" },
-  ];
+  // Buscar módulos do tenant via hook
+  const { modulos: modulosData, isLoading: modulosLoading } = useModulosTenant();
+
+  // Transformar módulos do tenant para o formato esperado
+  const modulos = useMemo(() => {
+    return modulosData.map((m) => ({
+      key: m.slug,
+      label: m.nome,
+      description: m.descricao,
+    }));
+  }, [modulosData]);
 
   const acoes = [
     { key: "visualizar", label: "Visualizar" },
@@ -342,7 +346,7 @@ function CargosTab() {
     currentPage * itemsPerPage,
   );
 
-  if (loading) {
+  if (loading || modulosLoading) {
     return (
       <div className="flex justify-center items-center h-32">
         <Spinner size="lg" />

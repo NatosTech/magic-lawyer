@@ -13,6 +13,7 @@ Guia de configuração inicial e integrações externas:
 ### ✨ [Features](./features/)
 Documentação detalhada de cada funcionalidade:
 - **Notifications** - Sistema completo de notificações push
+- **Tenant Dashboard Enhancements** - Melhorias e funcionalidades do dashboard do tenant
 
 ### 🏗️ [Arquitetura](./architecture/)
 Documentação técnica de arquitetura e estrutura:

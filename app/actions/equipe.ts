@@ -6,6 +6,7 @@ import { UserRole } from "@/app/generated/prisma";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { NotificationHelper } from "@/app/lib/notifications/notification-helper";
+import { getTenantAccessibleModules } from "@/app/lib/tenant-modules";
 
 // ===== TIPOS E INTERFACES =====
 
@@ -889,4 +890,65 @@ export async function getDashboardEquipe(): Promise<{
     vinculacoesAtivas,
     permissoesIndividuais,
   };
+}
+
+// ===== MÓDULOS DO TENANT =====
+
+export interface ModuloInfo {
+  slug: string;
+  nome: string;
+  descricao?: string;
+}
+
+/**
+ * Lista os módulos acessíveis para o tenant logado com detalhes completos
+ * Reutiliza a lógica resiliente de getTenantAccessibleModules para garantir
+ * fallbacks corretos e evitar duplicação de código
+ */
+export async function listModulosPorTenant(): Promise<ModuloInfo[]> {
+  const session = await getSession();
+
+  if (!session?.user?.tenantId) {
+    throw new Error("Usuário não autenticado");
+  }
+
+  const tenantId = session.user.tenantId;
+
+  // 1. Obter slugs de módulos acessíveis usando a lógica resiliente existente
+  const moduleSlugs = await getTenantAccessibleModules(tenantId);
+
+  if (moduleSlugs.length === 0) {
+    return [];
+  }
+
+  // 2. Buscar detalhes completos dos módulos a partir dos slugs
+  const modulos = await prisma.modulo.findMany({
+    where: {
+      slug: {
+        in: moduleSlugs,
+      },
+      ativo: true,
+    },
+    select: {
+      slug: true,
+      nome: true,
+      descricao: true,
+      ordem: true,
+    },
+    orderBy: { ordem: "asc" },
+  });
+
+  // 3. Ordenar manualmente de acordo com a ordem de moduleSlugs (fallback)
+  const moduleMap = new Map(modulos.map((m) => [m.slug, m]));
+
+  const orderedModulos = moduleSlugs
+    .map((slug) => moduleMap.get(slug))
+    .filter((m): m is NonNullable<typeof m> => m !== undefined);
+
+  // 4. Retornar no formato esperado
+  return orderedModulos.map((m) => ({
+    slug: m.slug,
+    nome: m.nome,
+    descricao: m.descricao || undefined,
+  }));
 }
