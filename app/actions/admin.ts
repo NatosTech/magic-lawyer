@@ -1625,17 +1625,14 @@ export async function updateTenantUser(
             }
           });
 
-          const actorName =
-            session.user.name ||
-            `${session.user.firstName || ""} ${session.user.lastName || ""}`.trim() ||
-            "Administrador";
+          const actorName = session.user.name || "Administrador";
 
-          for (const recipientId of recipients) {
+          for (const recipientId of Array.from(recipients)) {
             await NotificationHelper.notifyEquipeUserRemoved(tenantId, recipientId, {
               usuarioId: userId,
               nome:
-                user.name ||
-                `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+                (user as any).name ||
+                `${(user as any).firstName || ""} ${(user as any).lastName || ""}`.trim() ||
                 user.email ||
                 "Usuário",
               role: user.role,

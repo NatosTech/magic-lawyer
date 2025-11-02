@@ -306,6 +306,29 @@ export class NotificationHelper {
   }
 
   /**
+   * Notifica sobre remoção de usuário da equipe
+   */
+  static async notifyEquipeUserRemoved(
+    tenantId: string,
+    userId: string,
+    payload: {
+      usuarioId: string;
+      nome: string;
+      role: string;
+      motivo: string;
+      removidoPor: string;
+    },
+  ): Promise<void> {
+    await NotificationService.publishNotification({
+      type: "equipe.user_removed",
+      tenantId,
+      userId,
+      payload,
+      urgency: "MEDIUM",
+    });
+  }
+
+  /**
    * Notifica sobre criação de tarefa
    */
   static async notifyTarefaCreated(

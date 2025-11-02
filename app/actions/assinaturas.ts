@@ -212,11 +212,20 @@ export async function cancelarAssinatura(
       include: {
         peticao: {
           include: {
+            documento: {
+              select: {
+                id: true,
+                nome: true,
+                processoId: true,
+                clienteId: true,
+                uploadedById: true,
+                tenantId: true,
+              },
+            },
             processo: {
               select: {
                 id: true,
                 numero: true,
-                documentoId: true,
                 advogadoResponsavel: {
                   select: {
                     usuario: {
@@ -232,36 +241,24 @@ export async function cancelarAssinatura(
     });
 
     // Disparar notificação de documento rejeitado se houver documento vinculado
-    if (assinaturaAtualizada.peticao?.processo?.documentoId) {
+    if (assinaturaAtualizada.peticao?.documento) {
       try {
         const { DocumentNotifier } = await import(
           "@/app/lib/notifications/document-notifier"
         );
 
-        const documento = await prisma.documento.findUnique({
-          where: { id: assinaturaAtualizada.peticao.processo.documentoId },
-          select: {
-            id: true,
-            nome: true,
-            processoId: true,
-            clienteId: true,
-            uploadedById: true,
-            tenantId: true,
-          },
-        });
+        const documento = assinaturaAtualizada.peticao.documento;
 
-        if (documento) {
-          await DocumentNotifier.notifyRejected({
-            tenantId: documento.tenantId,
-            documentoId: documento.id,
-            nome: documento.nome,
-            processoIds: documento.processoId ? [documento.processoId] : undefined,
-            clienteId: documento.clienteId,
-            uploaderUserId: documento.uploadedById,
-            actorNome: "Usuário",
-            motivo: "Assinatura cancelada",
-          });
-        }
+        await DocumentNotifier.notifyRejected({
+          tenantId: documento.tenantId,
+          documentoId: documento.id,
+          nome: documento.nome,
+          processoIds: documento.processoId ? [documento.processoId] : undefined,
+          clienteId: documento.clienteId,
+          uploaderUserId: documento.uploadedById ?? undefined,
+          actorNome: "Usuário",
+          motivo: "Assinatura cancelada",
+        });
       } catch (error) {
         console.error(
           "[Assinaturas] Erro ao notificar rejeição de documento:",

@@ -71,7 +71,7 @@ export class DocumentSchedulerService {
                 ? [assinatura.documento.processoId]
                 : undefined,
               clienteId: assinatura.documento.clienteId,
-              uploaderUserId: assinatura.documento.uploadedById,
+              uploaderUserId: assinatura.documento.uploadedById ?? undefined,
               dataExpiracao: assinatura.dataExpiracao,
             });
 

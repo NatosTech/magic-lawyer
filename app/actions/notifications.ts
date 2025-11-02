@@ -103,6 +103,7 @@ export async function getNotifications(
           select: {
             channel: true,
             status: true,
+            createdAt: true,
           },
         },
       },
@@ -211,7 +212,6 @@ export async function setNotificationStatus(
       },
       data: {
         readAt: status === "LIDA" ? new Date() : status === "NAO_LIDA" ? null : undefined,
-        updatedAt: new Date(),
       },
     });
 

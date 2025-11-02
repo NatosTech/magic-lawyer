@@ -342,7 +342,7 @@ export const verificarStatusAssinatura = async (
               ? [documento.documento.processoId]
               : undefined,
             clienteId: documento.documento.clienteId,
-            uploaderUserId: documento.documento.uploadedById,
+            uploaderUserId: documento.documento.uploadedById ?? undefined,
             actorNome: signedAt ? "Cliente" : "Sistema",
             observacoes: downloadUrl ? "Documento assinado com sucesso" : undefined,
           });
@@ -372,7 +372,7 @@ export const verificarStatusAssinatura = async (
               ? [documento.documento.processoId]
               : undefined,
             clienteId: documento.documento.clienteId,
-            uploaderUserId: documento.documento.uploadedById,
+            uploaderUserId: documento.documento.uploadedById ?? undefined,
             actorNome: "Cliente",
             motivo: "Assinatura rejeitada pelo cliente",
           });
