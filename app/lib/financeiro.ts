@@ -1,6 +1,7 @@
 import prisma from "./prisma";
-import { sendEmail, emailTemplates } from "./email";
+import { emailTemplates } from "./email";
 
+import { emailService } from "@/app/lib/email-service";
 import logger from "@/lib/logger";
 
 // Interface para resumo financeiro do cliente
@@ -501,10 +502,11 @@ export const enviarLembretesVencimento = async () => {
             descricao: `Fatura ${fatura.numero || fatura.id} do contrato ${contrato?.titulo ?? ""}`,
           });
 
-          await sendEmail({
+          await emailService.sendEmailPerTenant(fatura.tenantId, {
             to: clienteEmail,
             subject: template.subject,
             html: template.html,
+            credentialType: "DEFAULT",
           });
 
           lembretesEnviados.push(fatura.id);

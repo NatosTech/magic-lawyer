@@ -1,7 +1,8 @@
 import prisma from "./prisma";
-import { sendEmail, emailTemplates } from "./email";
+import { emailTemplates } from "./email";
 import { sendDocumentForSigning, checkDocumentStatus } from "./clicksign";
 
+import { emailService } from "@/app/lib/email-service";
 import logger from "@/lib/logger";
 
 // Interface para criar assinatura de documento
@@ -173,10 +174,11 @@ export const enviarDocumentoParaAssinatura = async (
           descricao: documentoAssinatura.descricao ?? undefined,
         });
 
-        await sendEmail({
+        await emailService.sendEmailPerTenant(documentoAssinatura.tenantId, {
           to: documentoAssinatura.cliente.email,
           subject: template.subject,
           html: template.html,
+          credentialType: "DEFAULT",
         });
       } catch (error) {
         logger.error("Erro ao enviar email de assinatura:", error);
@@ -265,6 +267,8 @@ export const verificarStatusAssinatura = async (
 
     // Atualizar status no banco se mudou
     if (novoStatus !== documentoAssinatura.status) {
+      const oldStatus = documentoAssinatura.status;
+
       await prisma.documentoAssinatura.update({
         where: { id: documentoAssinaturaId },
         data: {
@@ -272,7 +276,110 @@ export const verificarStatusAssinatura = async (
           dataAssinatura: signedAt ? new Date(signedAt) : null,
           urlAssinado: downloadUrl,
         },
+        include: {
+          documento: {
+            select: {
+              id: true,
+              nome: true,
+              processoId: true,
+              clienteId: true,
+              uploadedById: true,
+              processo: {
+                select: {
+                  id: true,
+                  numero: true,
+                  advogadoResponsavel: {
+                    select: {
+                      usuario: {
+                        select: {
+                          id: true,
+                          firstName: true,
+                          lastName: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
+
+      // Disparar notificações baseado no novo status
+      const { DocumentNotifier } = await import(
+        "@/app/lib/notifications/document-notifier"
+      );
+
+      if (novoStatus === "ASSINADO" && oldStatus !== "ASSINADO") {
+        const documento = await prisma.documentoAssinatura.findUnique({
+          where: { id: documentoAssinaturaId },
+          include: {
+            documento: {
+              select: {
+                id: true,
+                nome: true,
+                processoId: true,
+                clienteId: true,
+                uploadedById: true,
+                processo: {
+                  select: {
+                    id: true,
+                    numero: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (documento?.documento) {
+          await DocumentNotifier.notifyApproved({
+            tenantId: documento.tenantId,
+            documentoId: documento.documento.id,
+            nome: documento.documento.nome,
+            processoIds: documento.documento.processoId
+              ? [documento.documento.processoId]
+              : undefined,
+            clienteId: documento.documento.clienteId,
+            uploaderUserId: documento.documento.uploadedById ?? undefined,
+            actorNome: signedAt ? "Cliente" : "Sistema",
+            observacoes: downloadUrl
+              ? "Documento assinado com sucesso"
+              : undefined,
+          });
+        }
+      } else if (novoStatus === "REJEITADO" && oldStatus !== "REJEITADO") {
+        const documento = await prisma.documentoAssinatura.findUnique({
+          where: { id: documentoAssinaturaId },
+          include: {
+            documento: {
+              select: {
+                id: true,
+                nome: true,
+                processoId: true,
+                clienteId: true,
+                uploadedById: true,
+              },
+            },
+          },
+        });
+
+        if (documento?.documento) {
+          await DocumentNotifier.notifyRejected({
+            tenantId: documento.tenantId,
+            documentoId: documento.documento.id,
+            nome: documento.documento.nome,
+            processoIds: documento.documento.processoId
+              ? [documento.documento.processoId]
+              : undefined,
+            clienteId: documento.documento.clienteId,
+            uploaderUserId: documento.documento.uploadedById ?? undefined,
+            actorNome: "Cliente",
+            motivo: "Assinatura rejeitada pelo cliente",
+          });
+        }
+      }
     }
 
     return {
@@ -485,10 +592,11 @@ export const reenviarLinkAssinatura = async (documentoAssinaturaId: string) => {
           descricao: documentoAssinatura.descricao ?? undefined,
         });
 
-        await sendEmail({
+        await emailService.sendEmailPerTenant(documentoAssinatura.tenantId, {
           to: documentoAssinatura.cliente.email,
           subject: `Reenvio: ${template.subject}`,
           html: template.html,
+          credentialType: "DEFAULT",
         });
       } catch (error) {
         logger.error("Erro ao reenviar email de assinatura:", error);

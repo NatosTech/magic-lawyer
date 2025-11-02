@@ -96,7 +96,7 @@ export const Navbar = ({
     ? "Portal do escritório"
     : "SaaS jurídico white label";
   const brandTitleClasses = clsx(
-    "text-sm font-semibold text-primary",
+    "text-xs sm:text-sm font-semibold text-primary",
     hasTenantBranding ? "tracking-tight" : "uppercase tracking-[0.3em]",
   );
   const userDisplayName =
@@ -214,8 +214,8 @@ export const Navbar = ({
     if (!showAuthenticatedSecondaryNav) return null;
 
     return (
-      <div className="mx-auto w-full max-w-6xl border-b border-divider bg-background/60 px-6 py-3 backdrop-blur-xl">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="mx-auto w-full max-w-full xl:max-w-6xl border-b border-divider bg-background/60 px-2 sm:px-4 md:px-6 py-1.5 sm:py-2 backdrop-blur-xl overflow-x-auto">
+        <div className="flex flex-nowrap items-center gap-2">
           {siteConfig.navItemsAuthenticated.map((item) => {
             const isActive = pathname.startsWith(item.href);
 
@@ -242,7 +242,7 @@ export const Navbar = ({
   return (
     <div className="sticky top-0 z-50 flex flex-col">
       <HeroUINavbar
-        className="border-b border-divider bg-background/95 backdrop-blur-xl py-2"
+        className="border-b border-divider bg-background/95 backdrop-blur-xl py-1 md:py-2"
         isBordered={false}
         maxWidth="full"
       >
@@ -261,12 +261,19 @@ export const Navbar = ({
           ) : null}
           <NavbarBrand className="min-w-0">
             <NextLink className="flex items-center gap-2" href="/">
-              <span className="flex flex-col leading-tight">
-                <span className={brandTitleClasses}>{tenantName}</span>
-                <span className="text-xs text-default-400">
+              <span className="flex min-w-0 flex-col leading-tight">
+                <span
+                  className={clsx(
+                    brandTitleClasses,
+                    "truncate max-w-[120px] sm:max-w-[180px] lg:max-w-none",
+                  )}
+                >
+                  {tenantName}
+                </span>
+                <span className="block text-xs text-default-400 truncate max-w-[160px] sm:max-w-[220px] lg:max-w-none">
                   {brandSubtitle}
                 </span>
-                <span className="text-[10px] uppercase tracking-wide text-default-600">
+                <span className="hidden md:block text-[10px] uppercase tracking-wide text-default-600">
                   versão {appVersion}
                 </span>
               </span>
@@ -276,9 +283,48 @@ export const Navbar = ({
 
         {/* Seção Central - Search Bar */}
         {session?.user && (
-          <NavbarContent className="flex-1 min-w-0 px-4" justify="center">
-            <CentralizedSearchBar className="w-full max-w-3xl" />
-          </NavbarContent>
+          <>
+            {/* Botão de lupa até xl (modo 50% usa botão) */}
+            <NavbarContent
+              className="flex-1 min-w-0 px-1 sm:px-2 xl:hidden"
+              justify="center"
+            >
+              <Button
+                isIconOnly
+                aria-label="Buscar"
+                className="h-8 w-8 min-w-8 border border-divider bg-content1 text-default-600 hover:text-primary"
+                radius="full"
+                size="sm"
+                variant="light"
+                onPress={() =>
+                  window.dispatchEvent(new CustomEvent("open-search"))
+                }
+              >
+                {/* lucide search svg inline to avoid extra import churn */}
+                <svg
+                  aria-hidden
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" x2="16.65" y1="21" y2="16.65" />
+                </svg>
+              </Button>
+            </NavbarContent>
+
+            {/* Barra de busca apenas em ≥xl (telas largas/PC) */}
+            <NavbarContent
+              className="hidden xl:flex flex-1 min-w-0 px-1 sm:px-3"
+              justify="center"
+            >
+              <CentralizedSearchBar className="w-full max-w-[380px] lg:max-w-[640px] xl:max-w-2xl" />
+            </NavbarContent>
+          </>
         )}
 
         {/* Seção Direita - Ações */}
@@ -289,13 +335,15 @@ export const Navbar = ({
               <NotificationCenter />
             </div>
           ) : null}
-          <ThemeSwitch />
+          <div className="hidden lg:block">
+            <ThemeSwitch />
+          </div>
           {session?.user ? (
             <div className="hidden sm:block">
               <Dropdown placement="bottom-end">
                 <DropdownTrigger>
                   <Button
-                    className="min-w-0 p-2 h-auto gap-2 border border-divider bg-content1 shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+                    className="min-w-0 p-1.5 sm:p-2 h-auto gap-2 border border-divider bg-content1 shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
                     variant="light"
                   >
                     <Badge
@@ -319,7 +367,7 @@ export const Navbar = ({
                         src={userAvatar}
                       />
                     </Badge>
-                    <div className="hidden md:block min-w-0 flex-1 text-left">
+                    <div className="hidden xl:block min-w-0 flex-1 text-left">
                       <p className="text-sm font-medium truncate">
                         {userDisplayName}
                       </p>

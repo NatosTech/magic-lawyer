@@ -206,10 +206,68 @@ export async function cancelarAssinatura(
       };
     }
 
-    await prisma.assinaturaPeticao.update({
+    const assinaturaAtualizada = await prisma.assinaturaPeticao.update({
       where: { id: assinaturaId },
       data: { status: "REJEITADO" },
+      include: {
+        peticao: {
+          include: {
+            documento: {
+              select: {
+                id: true,
+                nome: true,
+                processoId: true,
+                clienteId: true,
+                uploadedById: true,
+                tenantId: true,
+              },
+            },
+            processo: {
+              select: {
+                id: true,
+                numero: true,
+                advogadoResponsavel: {
+                  select: {
+                    usuario: {
+                      select: { id: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
+
+    // Disparar notificação de documento rejeitado se houver documento vinculado
+    if (assinaturaAtualizada.peticao?.documento) {
+      try {
+        const { DocumentNotifier } = await import(
+          "@/app/lib/notifications/document-notifier"
+        );
+
+        const documento = assinaturaAtualizada.peticao.documento;
+
+        await DocumentNotifier.notifyRejected({
+          tenantId: documento.tenantId,
+          documentoId: documento.id,
+          nome: documento.nome,
+          processoIds: documento.processoId
+            ? [documento.processoId]
+            : undefined,
+          clienteId: documento.clienteId,
+          uploaderUserId: documento.uploadedById ?? undefined,
+          actorNome: "Usuário",
+          motivo: "Assinatura cancelada",
+        });
+      } catch (error) {
+        console.error(
+          "[Assinaturas] Erro ao notificar rejeição de documento:",
+          error,
+        );
+      }
+    }
 
     revalidatePath("/peticoes");
 

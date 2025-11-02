@@ -1,12 +1,30 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea, Select, SelectItem, Chip, Spinner, DatePicker } from "@heroui/react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Input,
+  Textarea,
+  Select,
+  SelectItem,
+  Chip,
+  Spinner,
+  DatePicker,
+} from "@heroui/react";
 import { Calendar, MapPin, Users, FileText, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { parseAbsoluteToLocal } from "@internationalized/date";
 
-import { createEvento, updateEvento, type EventoFormData } from "@/app/actions/eventos";
+import {
+  createEvento,
+  updateEvento,
+  type EventoFormData,
+} from "@/app/actions/eventos";
 import { useEventoFormData } from "@/app/hooks/use-eventos";
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { Evento, EventoTipo, EventoStatus } from "@/app/generated/prisma";
@@ -64,7 +82,13 @@ const lembretes = [
   { key: 1440, label: "1 dia antes" },
 ];
 
-export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuccess }: EventoFormProps) {
+export default function EventoForm({
+  isOpen,
+  onClose,
+  evento,
+  initialDate,
+  onSuccess,
+}: EventoFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [novoParticipante, setNovoParticipante] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -90,7 +114,8 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
   });
   const [participantes, setParticipantes] = useState<string[]>([]);
 
-  const { formData: selectData, isLoading: isLoadingFormData } = useEventoFormData();
+  const { formData: selectData, isLoading: isLoadingFormData } =
+    useEventoFormData();
 
   // Estado derivado do evento - sem useEffect!
   const initialFormData = useMemo(() => {
@@ -99,8 +124,12 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
         titulo: evento.titulo || "",
         descricao: evento.descricao || "",
         tipo: evento.tipo || EventoTipo.REUNIAO,
-        dataInicio: evento.dataInicio ? parseAbsoluteToLocal(new Date(evento.dataInicio).toISOString()) : null,
-        dataFim: evento.dataFim ? parseAbsoluteToLocal(new Date(evento.dataFim).toISOString()) : null,
+        dataInicio: evento.dataInicio
+          ? parseAbsoluteToLocal(new Date(evento.dataInicio).toISOString())
+          : null,
+        dataFim: evento.dataFim
+          ? parseAbsoluteToLocal(new Date(evento.dataFim).toISOString())
+          : null,
         local: evento.local || "",
         participantes: evento.participantes || [],
         processoId: evento.processoId || null,
@@ -117,8 +146,14 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
     }
 
     // Se há initialDate, usar ela para inicializar as datas
-    const dataInicioDefault = initialDate ? parseAbsoluteToLocal(initialDate.toISOString()) : null;
-    const dataFimDefault = initialDate ? parseAbsoluteToLocal(new Date(initialDate.getTime() + 60 * 60 * 1000).toISOString()) : null;
+    const dataInicioDefault = initialDate
+      ? parseAbsoluteToLocal(initialDate.toISOString())
+      : null;
+    const dataFimDefault = initialDate
+      ? parseAbsoluteToLocal(
+          new Date(initialDate.getTime() + 60 * 60 * 1000).toISOString(),
+        )
+      : null;
 
     return {
       titulo: "",
@@ -232,8 +267,12 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
       const dataToSubmit = {
         ...formData,
         participantes,
-        dataInicio: formData.dataInicio ? formData.dataInicio.toDate().toISOString() : "",
-        dataFim: formData.dataFim ? formData.dataFim.toDate().toISOString() : "",
+        dataInicio: formData.dataInicio
+          ? formData.dataInicio.toDate().toISOString()
+          : "",
+        dataFim: formData.dataFim
+          ? formData.dataFim.toDate().toISOString()
+          : "",
       } as EventoFormData;
 
       let result;
@@ -245,7 +284,11 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
       }
 
       if (result.success) {
-        toast.success(evento ? "Evento atualizado com sucesso!" : "Evento criado com sucesso!");
+        toast.success(
+          evento
+            ? "Evento atualizado com sucesso!"
+            : "Evento criado com sucesso!",
+        );
         onSuccess?.();
         onClose();
       } else {
@@ -304,7 +347,9 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
               <p>
                 Campos obrigatórios: <span className="text-danger">*</span>
               </p>
-              <p className="text-xs">Título, Tipo, Data de Início e Data de Fim são obrigatórios.</p>
+              <p className="text-xs">
+                Título, Tipo, Data de Início e Data de Fim são obrigatórios.
+              </p>
             </div>
           </ModalHeader>
 
@@ -459,7 +504,9 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
                     color="secondary"
                     label="Cliente"
                     placeholder="Selecione um cliente"
-                    selectedKeys={formData.clienteId ? [formData.clienteId] : []}
+                    selectedKeys={
+                      formData.clienteId ? [formData.clienteId] : []
+                    }
                     onSelectionChange={(keys) => {
                       const selectedKey = Array.from(keys)[0] as string;
 
@@ -470,15 +517,23 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
                       });
                     }}
                   >
-                    {selectData?.clientes?.map((cliente) => <SelectItem key={cliente.id}>{cliente.nome}</SelectItem>) || []}
+                    {selectData?.clientes?.map((cliente) => (
+                      <SelectItem key={cliente.id}>{cliente.nome}</SelectItem>
+                    )) || []}
                   </Select>
 
                   <Select
                     color="warning"
                     isDisabled={!formData.clienteId}
                     label="Processo"
-                    placeholder={formData.clienteId ? "Selecione um processo" : "Primeiro selecione um cliente"}
-                    selectedKeys={formData.processoId ? [formData.processoId] : []}
+                    placeholder={
+                      formData.clienteId
+                        ? "Selecione um processo"
+                        : "Primeiro selecione um cliente"
+                    }
+                    selectedKeys={
+                      formData.processoId ? [formData.processoId] : []
+                    }
                     onSelectionChange={(keys) => {
                       const selectedKey = Array.from(keys)[0] as string;
 
@@ -486,7 +541,9 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
                     }}
                   >
                     {processosFiltrados.map((processo) => (
-                      <SelectItem key={processo.id}>{processo.numero}</SelectItem>
+                      <SelectItem key={processo.id}>
+                        {processo.numero}
+                      </SelectItem>
                     ))}
                   </Select>
 
@@ -494,7 +551,11 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
                     color="success"
                     label="Advogado Responsável"
                     placeholder="Selecione um advogado"
-                    selectedKeys={formData.advogadoResponsavelId ? [formData.advogadoResponsavelId] : []}
+                    selectedKeys={
+                      formData.advogadoResponsavelId
+                        ? [formData.advogadoResponsavelId]
+                        : []
+                    }
                     onSelectionChange={(keys) => {
                       const selectedKey = Array.from(keys)[0] as string;
 
@@ -505,14 +566,20 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
                     }}
                   >
                     {selectData?.advogados?.map((advogado) => (
-                      <SelectItem key={advogado.id}>{`${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() || advogado.usuario.email}</SelectItem>
+                      <SelectItem key={advogado.id}>
+                        {`${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() ||
+                          advogado.usuario.email}
+                      </SelectItem>
                     )) || []}
                   </Select>
                 </div>
 
                 {/* Participantes */}
                 <div>
-                  <label className="text-sm font-medium text-default-700 mb-2 block" htmlFor="participant-email">
+                  <label
+                    className="text-sm font-medium text-default-700 mb-2 block"
+                    htmlFor="participant-email"
+                  >
                     <Users className="w-4 h-4 inline mr-1" />
                     Participantes
                   </label>
@@ -528,14 +595,24 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
                       onChange={(e) => setNovoParticipante(e.target.value)}
                       onKeyPress={handleKeyPress}
                     />
-                    <Button isDisabled={!novoParticipante} size="sm" type="button" onPress={adicionarParticipante}>
+                    <Button
+                      isDisabled={!novoParticipante}
+                      size="sm"
+                      type="button"
+                      onPress={adicionarParticipante}
+                    >
                       Adicionar
                     </Button>
                   </div>
                   {participantes.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {participantes.map((email) => (
-                        <Chip key={email} color="primary" variant="flat" onClose={() => removerParticipante(email)}>
+                        <Chip
+                          key={email}
+                          color="primary"
+                          variant="flat"
+                          onClose={() => removerParticipante(email)}
+                        >
                           {email}
                         </Chip>
                       ))}
@@ -548,8 +625,15 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
                   color="warning"
                   label="Lembrete"
                   placeholder="Selecione quando receber o lembrete"
-                  selectedKeys={formData.lembreteMinutos !== undefined && formData.lembreteMinutos !== null ? [formData.lembreteMinutos.toString()] : []}
-                  startContent={<AlertCircle className="w-4 h-4 text-warning" />}
+                  selectedKeys={
+                    formData.lembreteMinutos !== undefined &&
+                    formData.lembreteMinutos !== null
+                      ? [formData.lembreteMinutos.toString()]
+                      : []
+                  }
+                  startContent={
+                    <AlertCircle className="w-4 h-4 text-warning" />
+                  }
                   onSelectionChange={(keys) => {
                     const selectedKey = Array.from(keys)[0] as string;
 
@@ -560,7 +644,9 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
                   }}
                 >
                   {lembretes.map((lembrete) => (
-                    <SelectItem key={lembrete.key.toString()}>{lembrete.label}</SelectItem>
+                    <SelectItem key={lembrete.key.toString()}>
+                      {lembrete.label}
+                    </SelectItem>
                   ))}
                 </Select>
 
@@ -586,10 +672,22 @@ export default function EventoForm({ isOpen, onClose, evento, initialDate, onSuc
           </ModalBody>
 
           <ModalFooter className="gap-3 px-6 py-4">
-            <Button isDisabled={isLoading} type="button" variant="light" onPress={onClose}>
+            <Button
+              isDisabled={isLoading}
+              type="button"
+              variant="light"
+              onPress={onClose}
+            >
               Cancelar
             </Button>
-            <Button color="primary" isDisabled={!formData.titulo || !formData.dataInicio || !formData.dataFim} isLoading={isLoading} type="submit">
+            <Button
+              color="primary"
+              isDisabled={
+                !formData.titulo || !formData.dataInicio || !formData.dataFim
+              }
+              isLoading={isLoading}
+              type="submit"
+            >
               {evento ? "Atualizar" : "Criar"} Evento
             </Button>
           </ModalFooter>

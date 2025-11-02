@@ -38,15 +38,6 @@ export async function getTenantAccessibleModules(
     },
   });
 
-  console.log("[tenant-modules] Buscando módulos para tenant:", {
-    tenantId,
-    hasSubscription: !!subscription,
-    planName: subscription?.plano?.nome,
-    hasPlanoVersao: !!subscription?.planoVersao,
-    planModules: subscription?.plano?.modulos?.length || 0,
-    versionModules: subscription?.planoVersao?.modulos?.length || 0,
-  });
-
   if (!subscription) {
     console.log("[tenant-modules] Sem assinatura, retornando módulos padrão");
 
@@ -82,13 +73,6 @@ export async function getTenantAccessibleModules(
     const result = slugs.length
       ? Array.from(new Set(slugs))
       : await getDefaultModules();
-
-    console.log("[tenant-modules] Retornando módulos da versão publicada:", {
-      tenantId,
-      planName: subscription.plano?.nome,
-      versionNumber: publishedVersion.numero,
-      modules: result,
-    });
 
     return result;
   } else {

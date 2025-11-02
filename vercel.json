@@ -4,6 +4,22 @@
     {
       "path": "/api/cron/cleanup-documents",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/check-deadlines",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/check-contracts",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/check-documents",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/check-event-reminders",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

@@ -562,30 +562,30 @@ export async function createEvento(formData: EventoFormData) {
         data: confirmacoesData,
       });
 
-      // Criar notificações para os participantes
-      const notificacoesData = formData.participantes.map((email) => ({
-        tenantId: tenant.id,
-        titulo: "Novo Evento - Confirmação Necessária",
-        mensagem: `Você foi convidado para o evento "${evento.titulo}" em ${new Date(evento.dataInicio).toLocaleDateString("pt-BR")} às ${new Date(evento.dataInicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Por favor, confirme sua participação.`,
-        tipo: "OUTRO" as any,
-        prioridade: "MEDIA" as any,
-        canais: ["IN_APP"] as any,
-        referenciaTipo: "EVENTO",
-        referenciaId: evento.id,
-        dados: {
-          eventoId: evento.id,
-          participanteEmail: email,
-          tipoConfirmacao: "INVITE",
-          eventoTitulo: evento.titulo,
-          eventoData: evento.dataInicio,
-          eventoLocal: evento.local,
-        },
-        createdById: session.user.id,
-      }));
+      // Criar notificações para os participantes usando sistema híbrido
+      const { publishNotification } = await import(
+        "@/app/actions/notifications-hybrid"
+      );
 
-      await prisma.notificacao.createMany({
-        data: notificacoesData,
-      });
+      for (const email of formData.participantes) {
+        await publishNotification({
+          type: "evento.created",
+          title: "Novo Evento - Confirmação Necessária",
+          message: `Você foi convidado para o evento "${evento.titulo}" em ${new Date(evento.dataInicio).toLocaleDateString("pt-BR")} às ${new Date(evento.dataInicio).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Por favor, confirme sua participação.`,
+          urgency: "MEDIUM",
+          channels: ["REALTIME"],
+          payload: {
+            eventoId: evento.id,
+            participanteEmail: email,
+            tipoConfirmacao: "INVITE",
+            eventoTitulo: evento.titulo,
+            eventoData: evento.dataInicio,
+            eventoLocal: evento.local,
+          },
+          referenciaTipo: "evento",
+          referenciaId: evento.id,
+        });
+      }
     }
 
     // Sincronizar com Google Calendar se estiver habilitado
@@ -827,35 +827,35 @@ export async function updateEvento(
         },
       });
 
-      // Criar notificações para todos os participantes sobre a mudança
+      // Criar notificações para todos os participantes sobre a mudança usando sistema híbrido
       const participantes =
         formData?.participantes || eventoAtual.participantes;
 
       if (participantes.length > 0) {
-        const notificacoesData = participantes.map((email) => ({
-          tenantId: tenant.id,
-          titulo: "Evento Alterado - Nova Confirmação Necessária",
-          mensagem: `O evento "${eventoAtual.titulo}" foi alterado. Por favor, confirme novamente sua participação.`,
-          tipo: "OUTRO" as any,
-          prioridade: "ALTA" as any,
-          canais: ["IN_APP"] as any,
-          referenciaTipo: "EVENTO",
-          referenciaId: evento.id,
-          dados: {
-            eventoId: evento.id,
-            participanteEmail: email,
-            tipoConfirmacao: "RE_CONFIRMACAO",
-            motivo: "Evento alterado",
-            eventoTitulo: eventoAtual.titulo,
-            eventoData: evento.dataInicio,
-            eventoLocal: evento.local,
-          },
-          createdById: session.user.id,
-        }));
+        const { publishNotification } = await import(
+          "@/app/actions/notifications-hybrid"
+        );
 
-        await prisma.notificacao.createMany({
-          data: notificacoesData,
-        });
+        for (const email of participantes) {
+          await publishNotification({
+            type: "evento.updated",
+            title: "Evento Alterado - Nova Confirmação Necessária",
+            message: `O evento "${eventoAtual.titulo}" foi alterado. Por favor, confirme novamente sua participação.`,
+            urgency: "HIGH",
+            channels: ["REALTIME"],
+            payload: {
+              eventoId: evento.id,
+              participanteEmail: email,
+              tipoConfirmacao: "RE_CONFIRMACAO",
+              motivo: "Evento alterado",
+              eventoTitulo: eventoAtual.titulo,
+              eventoData: evento.dataInicio,
+              eventoLocal: evento.local,
+            },
+            referenciaTipo: "evento",
+            referenciaId: evento.id,
+          });
+        }
       }
     }
 
@@ -1066,28 +1066,29 @@ export async function confirmarParticipacaoEvento(
     );
 
     if (outrosParticipantes.length > 0) {
-      const notificacoesData = outrosParticipantes.map((email) => ({
-        tenantId: tenant.id,
-        titulo: "Atualização de Confirmação",
-        mensagem: `${participanteEmail} ${statusLabel} o evento "${evento.titulo}".`,
-        tipo: "OUTRO" as any,
-        prioridade: "BAIXA" as any,
-        canais: ["IN_APP"] as any,
-        referenciaTipo: "EVENTO",
-        referenciaId: eventoId,
-        dados: {
-          eventoId,
-          participanteEmail,
-          status,
-          tipoConfirmacao: "RESPONSE",
-          destinatarioEmail: email,
-        },
-        createdById: session.user.id,
-      }));
+      // Criar notificações para outros participantes usando sistema híbrido
+      const { publishNotification } = await import(
+        "@/app/actions/notifications-hybrid"
+      );
 
-      await prisma.notificacao.createMany({
-        data: notificacoesData,
-      });
+      for (const email of outrosParticipantes) {
+        await publishNotification({
+          type: "evento.confirmation_updated",
+          title: "Atualização de Confirmação",
+          message: `${participanteEmail} ${statusLabel} o evento "${evento.titulo}".`,
+          urgency: "INFO",
+          channels: ["REALTIME"],
+          payload: {
+            eventoId,
+            participanteEmail,
+            status,
+            tipoConfirmacao: "RESPONSE",
+            destinatarioEmail: email,
+          },
+          referenciaTipo: "evento",
+          referenciaId: eventoId,
+        });
+      }
     }
 
     revalidatePath("/agenda");

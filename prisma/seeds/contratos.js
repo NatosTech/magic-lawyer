@@ -79,7 +79,8 @@ async function seedContratoRealSandra(prisma, Prisma, tenant) {
       dataInicio: new Date("2025-09-05T00:00:00-03:00"),
       dataAssinatura: new Date("2025-09-05T00:00:00-03:00"),
       resumo: "Prestação de serviços advocatícios abrangendo as ações de guarda, união estável e medidas protetivas que tramitam nas 1ª, 8ª Varas de Família e 5ª Vara de Violência Doméstica.",
-      observacoes: "Pagamento: entrada de R$ 3.000,00, consultoria/programa advocatício de R$ 5.000,00 e 17 parcelas de R$ 1.000,00 (vencimento dia 10) + 10% sobre o quinhão do contratante na partilha. Depósitos na conta Bradesco ag. 3231 cc 96452-2 ou PIX CPF 943.422.535-34. Abrange os processos 8154973-16.2024.8.05.0001, 8155658-23.2024.8.05.0001 e 8155723-18.2024.8.05.0001.",
+      observacoes:
+        "Pagamento: entrada de R$ 3.000,00, consultoria/programa advocatício de R$ 5.000,00 e 17 parcelas de R$ 1.000,00 (vencimento dia 10) + 10% sobre o quinhão do contratante na partilha. Depósitos na conta Bradesco ag. 3231 cc 96452-2 ou PIX CPF 943.422.535-34. Abrange os processos 8154973-16.2024.8.05.0001, 8155658-23.2024.8.05.0001 e 8155723-18.2024.8.05.0001.",
     },
   });
 

@@ -1,7 +1,8 @@
 import prisma from "./prisma";
-import { sendEmail, emailTemplates } from "./email";
+import { emailTemplates } from "./email";
 import { syncEventWithGoogle } from "./google-calendar";
 
+import { emailService } from "@/app/lib/email-service";
 import logger from "@/lib/logger";
 
 // Interface para criar evento
@@ -109,10 +110,11 @@ export const createEvento = async (data: CreateEventoData) => {
             descricao: evento.descricao || undefined,
           });
 
-          return sendEmail({
+          return emailService.sendEmailPerTenant(evento.tenantId, {
             to: email,
             subject: template.subject,
             html: template.html,
+            credentialType: "DEFAULT",
           });
         });
 
@@ -410,10 +412,11 @@ export const enviarLembretesEventos = async () => {
 
           // Enviar para todos os participantes
           const emailPromises = evento.participantes.map((email) => {
-            return sendEmail({
+            return emailService.sendEmailPerTenant(evento.tenantId, {
               to: email,
               subject: template.subject,
               html: template.html,
+              credentialType: "DEFAULT",
             });
           });
 

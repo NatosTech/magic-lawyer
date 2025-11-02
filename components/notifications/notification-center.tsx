@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Badge } from "@heroui/badge";
@@ -12,17 +12,25 @@ import {
   DrawerFooter,
   DrawerHeader,
 } from "@heroui/drawer";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@heroui/modal";
 import { ScrollShadow } from "@heroui/scroll-shadow";
 import { Spinner } from "@heroui/spinner";
 import { Tooltip } from "@heroui/tooltip";
 import { addToast } from "@heroui/toast";
 import { useDisclosure } from "@heroui/react";
 
+import { useRealtime } from "@/app/providers/realtime-provider";
 import {
   useNotifications,
   type NotificationStatus,
+  type NotificationItem,
 } from "@/app/hooks/use-notifications";
-import { useDevNotifications } from "@/app/hooks/use-dev-notifications";
 import { BellIcon } from "@/components/icons";
 
 const statusCopy: Record<NotificationStatus, string> = {
@@ -51,6 +59,9 @@ function formatDate(dateIso: string) {
 
 export const NotificationCenter = () => {
   const disclosure = useDisclosure();
+  const detailDisclosure = useDisclosure();
+  const [selectedNotification, setSelectedNotification] =
+    useState<NotificationItem | null>(null);
   const router = useRouter();
   const {
     notifications,
@@ -61,18 +72,45 @@ export const NotificationCenter = () => {
     markAllAsRead,
     clearAll,
   } = useNotifications();
+  const { subscribe } = useRealtime();
 
   // Hook para notificações de desenvolvimento (só em DEV)
-  const {
-    notifications: devNotifications,
-    unreadCount: devUnreadCount,
-    markAsRead: markDevAsRead,
-    dismissNotification: dismissDevNotification,
-  } = useDevNotifications();
+  const totalUnreadCount = unreadCount;
 
-  // Combinar notificações do sistema com notificações de desenvolvimento
-  const allNotifications = [...notifications, ...devNotifications];
-  const totalUnreadCount = unreadCount + devUnreadCount;
+  const resolveReferenceLink = (item: NotificationItem): string | null => {
+    if (!item.referenciaTipo || !item.referenciaId) {
+      return null;
+    }
+
+    const tipo = item.referenciaTipo.toLowerCase().trim();
+
+    switch (tipo) {
+      case "documento":
+        return "/documentos";
+      case "evento":
+        return "/agenda";
+      case "pagamento":
+        return "/financeiro/recibos";
+      case "cliente":
+        return "/clientes";
+      case "processo":
+      default:
+        return `/processos/${item.referenciaId}`;
+    }
+  };
+
+  const handleOpenDetails = (item: NotificationItem) => {
+    if (item.status === "NAO_LIDA") {
+      void handleStatusChange(item.id, "LIDA");
+    }
+    setSelectedNotification(item);
+    detailDisclosure.onOpen();
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedNotification(null);
+    detailDisclosure.onClose();
+  };
 
   const unreadBadge = useMemo(() => {
     if (totalUnreadCount <= 0) return null;
@@ -88,20 +126,41 @@ export const NotificationCenter = () => {
     );
   }, [totalUnreadCount]);
 
+  // Realtime: invalidar quando chegar notification.new para o usuário atual
+  useEffect(() => {
+    const unsubscribe = subscribe("notification.new", () => {
+      // força um refetch rápido do SWR das notificações
+      router.refresh();
+    });
+
+    return unsubscribe;
+  }, [subscribe, router]);
+
+  const detailPayload = useMemo(() => {
+    if (
+      !selectedNotification ||
+      !selectedNotification.dados ||
+      typeof selectedNotification.dados !== "object"
+    ) {
+      return null;
+    }
+
+    return selectedNotification.dados as Record<string, any>;
+  }, [selectedNotification]);
+
+  const detailDiffItems = useMemo(() => {
+    if (!detailPayload) {
+      return [] as Array<Record<string, any>>;
+    }
+
+    const diffCandidate = (detailPayload as any).diff;
+
+    return Array.isArray(diffCandidate) ? diffCandidate : [];
+  }, [detailPayload]);
+
   const handleStatusChange = async (id: string, status: NotificationStatus) => {
     try {
-      // Verificar se é uma notificação de desenvolvimento
-      const isDevNotification = devNotifications.some((n) => n.id === id);
-
-      if (isDevNotification) {
-        // Para notificações de desenvolvimento, apenas marcar como lida
-        if (status === "LIDA") {
-          markDevAsRead(id);
-        }
-      } else {
-        // Para notificações do sistema normal
-        await markAs(id, status);
-      }
+      await markAs(id, status);
     } catch (error) {
       const message =
         error instanceof Error
@@ -160,7 +219,7 @@ export const NotificationCenter = () => {
     }
   };
 
-  const hasNotifications = allNotifications.length > 0;
+  const hasNotifications = notifications.length > 0;
 
   return (
     <div className="relative">
@@ -231,72 +290,6 @@ export const NotificationCenter = () => {
                 {hasNotifications ? (
                   <ScrollShadow className="max-h-[60vh] px-6 pb-6">
                     <ul className="space-y-4">
-                      {/* Notificações de Desenvolvimento */}
-                      {devNotifications.map((item) => {
-                        const isUnread = !item.read;
-                        const isDevNotification = true;
-
-                        return (
-                          <li
-                            key={item.id}
-                            className="group rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-lg transition hover:border-primary/40 hover:bg-primary/10"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-semibold text-primary">
-                                    {item.title}
-                                  </span>
-                                  <Chip
-                                    className="text-[10px]"
-                                    color="primary"
-                                    size="sm"
-                                    variant="flat"
-                                  >
-                                    DEV
-                                  </Chip>
-                                  <Chip
-                                    className="text-[10px]"
-                                    color={isUnread ? "warning" : "success"}
-                                    size="sm"
-                                    variant="flat"
-                                  >
-                                    {isUnread ? "Não lida" : "Lida"}
-                                  </Chip>
-                                </div>
-                                <p className="text-sm text-default-400">
-                                  {item.message}
-                                </p>
-                              </div>
-                              <span className="shrink-0 text-xs text-default-300">
-                                {item.timestamp.toLocaleTimeString()}
-                              </span>
-                            </div>
-
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
-                              {isUnread ? (
-                                <Button
-                                  color="primary"
-                                  size="sm"
-                                  variant="flat"
-                                  onPress={() => markDevAsRead(item.id)}
-                                >
-                                  Marcar como lida
-                                </Button>
-                              ) : null}
-                              <Button
-                                size="sm"
-                                variant="light"
-                                onPress={() => dismissDevNotification(item.id)}
-                              >
-                                Dispensar
-                              </Button>
-                            </div>
-                          </li>
-                        );
-                      })}
-
-                      {/* Notificações do Sistema */}
                       {notifications.map((item) => {
                         const isUnread = item.status === "NAO_LIDA";
 
@@ -304,6 +297,15 @@ export const NotificationCenter = () => {
                           <li
                             key={item.id}
                             className="group rounded-2xl border border-white/10 bg-white/5 p-4 shadow-lg transition hover:border-primary/40 hover:bg-primary/5"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleOpenDetails(item)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                handleOpenDetails(item);
+                              }
+                            }}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex flex-col gap-1">
@@ -329,7 +331,10 @@ export const NotificationCenter = () => {
                               </span>
                             </div>
 
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <div
+                              className="mt-3 flex flex-wrap items-center gap-2"
+                              onClick={(event) => event.stopPropagation()}
+                            >
                               {isUnread ? (
                                 <Button
                                   color="primary"
@@ -361,20 +366,13 @@ export const NotificationCenter = () => {
                               >
                                 Arquivar
                               </Button>
-                              {item.referenciaId && item.referenciaTipo ? (
-                                <Button
-                                  size="sm"
-                                  variant="bordered"
-                                  onPress={() => {
-                                    router.push(
-                                      `/${item.referenciaTipo}/${item.referenciaId}`,
-                                    );
-                                    onClose();
-                                  }}
-                                >
-                                  Ver detalhes
-                                </Button>
-                              ) : null}
+                              <Button
+                                size="sm"
+                                variant="bordered"
+                                onPress={() => handleOpenDetails(item)}
+                              >
+                                Ver detalhes
+                              </Button>
                             </div>
                           </li>
                         );
@@ -387,7 +385,7 @@ export const NotificationCenter = () => {
               <DrawerFooter className="flex flex-col gap-2 border-t border-white/10 bg-background/60">
                 <div className="flex w-full items-center justify-between text-xs text-default-400">
                   <span>Sistema de notificações ativo</span>
-                  <span>{allNotifications.length} registro(s)</span>
+                  <span>{notifications.length} registro(s)</span>
                 </div>
                 <div className="flex w-full flex-wrap gap-3">
                   <Button
@@ -415,6 +413,134 @@ export const NotificationCenter = () => {
           )}
         </DrawerContent>
       </Drawer>
+      <Modal
+        classNames={{
+          base: "bg-background/95 backdrop-blur-lg border border-white/10",
+        }}
+        isOpen={detailDisclosure.isOpen && !!selectedNotification}
+        scrollBehavior="inside"
+        size="lg"
+        onClose={handleCloseDetails}
+      >
+        <ModalContent>
+          {() => {
+            const notification = selectedNotification;
+            const referenceHref = notification
+              ? resolveReferenceLink(notification)
+              : null;
+            const summary = detailPayload?.changesSummary as string | undefined;
+            const statusSummary =
+              (detailPayload?.statusSummary as string | undefined) ??
+              (detailPayload?.oldStatusLabel && detailPayload?.newStatusLabel
+                ? `Status alterado de ${detailPayload.oldStatusLabel} para ${detailPayload.newStatusLabel}`
+                : undefined);
+            const additionalSummary =
+              detailPayload?.additionalChangesSummary as string | undefined;
+
+            return (
+              <>
+                <ModalHeader className="flex flex-col gap-1">
+                  <span className="text-xs font-medium uppercase tracking-wide text-default-400">
+                    {notification ? formatDate(notification.criadoEm) : ""}
+                  </span>
+                  <span className="text-lg font-semibold text-white">
+                    {notification?.titulo ?? "Detalhes da notificação"}
+                  </span>
+                </ModalHeader>
+                <ModalBody className="space-y-4">
+                  {notification?.mensagem ? (
+                    <p className="text-sm text-default-300">
+                      {notification.mensagem}
+                    </p>
+                  ) : null}
+
+                  {statusSummary ? (
+                    <div className="rounded-lg border border-primary/40 bg-primary/10 p-3 text-sm text-primary-100">
+                      {statusSummary}
+                    </div>
+                  ) : null}
+
+                  {summary ? (
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-default-300">
+                      Campos atualizados: {summary}
+                    </div>
+                  ) : null}
+
+                  {!summary && additionalSummary ? (
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-default-300">
+                      Outras alterações: {additionalSummary}
+                    </div>
+                  ) : null}
+
+                  {detailDiffItems.length > 0 ? (
+                    <div className="overflow-hidden rounded-xl border border-white/10">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-white/5 text-xs uppercase tracking-wide text-default-500">
+                          <tr>
+                            <th className="px-4 py-2 font-semibold">Campo</th>
+                            <th className="px-4 py-2 font-semibold">Antes</th>
+                            <th className="px-4 py-2 font-semibold">Depois</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {detailDiffItems.map((change: any, index: number) => (
+                            <tr key={change.field ?? index}>
+                              <td className="px-4 py-2 text-sm font-medium text-white">
+                                {change.label ?? change.field ?? "-"}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-default-400">
+                                {change.before ?? "—"}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-default-200">
+                                {change.after ?? "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-default-400">
+                      Nenhum detalhamento de alteração disponível.
+                    </p>
+                  )}
+                </ModalBody>
+                <ModalFooter className="flex flex-wrap justify-end gap-2">
+                  <Button variant="light" onPress={handleCloseDetails}>
+                    Fechar
+                  </Button>
+                  {selectedNotification &&
+                  selectedNotification.status === "NAO_LIDA" ? (
+                    <Button
+                      variant="flat"
+                      onPress={() => {
+                        void handleStatusChange(
+                          selectedNotification.id,
+                          "LIDA",
+                        );
+                      }}
+                    >
+                      Marcar como lida
+                    </Button>
+                  ) : null}
+                  {referenceHref ? (
+                    <Button
+                      color="primary"
+                      onPress={() => {
+                        handleCloseDetails();
+                        disclosure.onClose();
+                        router.push(referenceHref);
+                      }}
+                    >
+                      Abrir registro
+                    </Button>
+                  ) : null}
+                </ModalFooter>
+              </>
+            );
+          }}
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

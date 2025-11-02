@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { UploadService } from "@/lib/upload-service";
+import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notification-service";
+import { DocumentNotifier } from "@/app/lib/notifications/document-notifier";
 
 const uploadService = UploadService.getInstance();
 
@@ -30,6 +32,12 @@ export async function uploadDocumentoPeticao(
         error: "Usuário não autenticado",
       };
     }
+
+    const rawUser = session.user as any;
+    const uploaderDisplayName =
+      `${rawUser.firstName ?? ""} ${rawUser.lastName ?? ""}`.trim() ||
+      rawUser.email ||
+      rawUser.id;
 
     const { id: userId, tenantId } = session.user;
 
@@ -118,6 +126,65 @@ export async function uploadDocumentoPeticao(
 
     revalidatePath("/peticoes");
     revalidatePath(`/processos/${peticao.processoId}`);
+
+    // Notificação: documento anexado ao processo da petição
+    try {
+      if (peticao.processoId) {
+        const processo = await prisma.processo.findFirst({
+          where: { id: peticao.processoId, tenantId },
+          select: {
+            id: true,
+            numero: true,
+            advogadoResponsavel: {
+              select: { usuario: { select: { id: true } } },
+            },
+          },
+        });
+
+        if (processo) {
+          const targetUserId =
+            (processo.advogadoResponsavel?.usuario as any)?.id || userId;
+
+          await HybridNotificationService.publishNotification({
+            type: "processo.document_uploaded",
+            tenantId,
+            userId: targetUserId,
+            payload: {
+              documentoId: documento.id,
+              processoId: processo.id,
+              numero: processo.numero,
+              documentName: originalName,
+              referenciaTipo: "documento",
+              referenciaId: documento.id,
+            },
+            urgency: "MEDIUM",
+            channels: ["REALTIME"],
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Falha ao emitir notificação de documento (petição)", e);
+    }
+
+    try {
+      await DocumentNotifier.notifyUploaded({
+        tenantId,
+        documentoId: documento.id,
+        nome: documento.nome,
+        tipo: documento.tipo,
+        tamanhoBytes: documento.tamanhoBytes,
+        uploaderUserId: userId,
+        uploaderNome: uploaderDisplayName,
+        processoIds: documento.processoId ? [documento.processoId] : undefined,
+        clienteId: undefined,
+        visivelParaCliente: false,
+      });
+    } catch (error) {
+      console.warn(
+        "Falha ao emitir notificações de documento.uploaded (petição)",
+        error,
+      );
+    }
 
     return {
       success: true,

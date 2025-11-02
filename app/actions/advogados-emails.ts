@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { emailService, AdvogadoEmailData } from "@/app/lib/email-service";
 import { getAdvogadoById } from "@/app/actions/advogados";
+import { getSession } from "@/app/lib/auth";
 
 interface ActionResponse<T = any> {
   success: boolean;
@@ -46,7 +47,16 @@ export async function enviarEmailBoasVindas(
       linkLogin: `${process.env.NEXTAUTH_URL || "http://localhost:9192"}/login`,
     };
 
-    const emailSent = await emailService.sendBoasVindasAdvogado(emailData);
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const emailSent = await emailService.sendBoasVindasAdvogado(
+      session.user.tenantId,
+      emailData,
+    );
 
     if (emailSent) {
       revalidatePath("/advogados");
@@ -89,17 +99,26 @@ export async function enviarNotificacaoEmail(
       `${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() ||
       advogado.usuario.email;
 
-    const emailSent = await emailService.sendNotificacaoAdvogado({
-      nome: nomeCompleto,
-      email: advogado.usuario.email,
-      tipo,
-      titulo,
-      mensagem,
-      linkAcao,
-      textoAcao,
-    });
+    const session = await getSession();
 
-    if (emailSent) {
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const emailResult = await emailService.sendNotificacaoAdvogado(
+      session.user.tenantId,
+      {
+        nome: nomeCompleto,
+        email: advogado.usuario.email,
+        tipo,
+        titulo,
+        mensagem,
+        linkAcao,
+        textoAcao,
+      },
+    );
+
+    if (emailResult.success) {
       revalidatePath("/advogados");
 
       return {
@@ -107,7 +126,10 @@ export async function enviarNotificacaoEmail(
         data: { message: "Notificação por email enviada com sucesso" },
       };
     } else {
-      return { success: false, error: "Erro ao enviar notificação por email" };
+      return {
+        success: false,
+        error: emailResult.error || "Erro ao enviar notificação por email",
+      };
     }
   } catch (error) {
     console.error("Erro ao enviar notificação por email:", error);
@@ -181,7 +203,13 @@ export async function testarConfiguracaoEmail(): Promise<
   }>
 > {
   try {
-    const conexaoOk = await emailService.testConnection();
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" } as any;
+    }
+
+    const conexaoOk = await emailService.testConnection(session.user.tenantId);
 
     return {
       success: true,

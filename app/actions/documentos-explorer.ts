@@ -9,9 +9,11 @@ import type {
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/app/lib/auth";
+import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notification-service";
 import prisma from "@/app/lib/prisma";
 import { UploadService, CloudinaryFolderNode } from "@/lib/upload-service";
 import logger from "@/lib/logger";
+import { DocumentNotifier } from "@/app/lib/notifications/document-notifier";
 
 export interface DocumentExplorerFile {
   id: string;
@@ -661,7 +663,14 @@ export async function uploadDocumentoExplorer(
       return { success: false, error: "Não autorizado" };
     }
 
-    const user = session.user as any as SessionUser;
+    const rawSessionUser = session.user as any;
+    const user = rawSessionUser as SessionUser;
+    const uploaderDisplayName =
+      `${rawSessionUser.firstName ?? ""} ${
+        rawSessionUser.lastName ?? ""
+      }`.trim() ||
+      rawSessionUser.email ||
+      rawSessionUser.id;
 
     if (!user.tenantId || !user.tenantSlug) {
       return { success: false, error: "Tenant não encontrado" };
@@ -808,12 +817,17 @@ export async function uploadDocumentoExplorer(
     const primaryProcessoId = processos[0]?.id ?? null;
     const primaryContratoId = contratos[0]?.id ?? null;
 
+    const isVisibleToClient =
+      typeof options.visivelParaCliente === "boolean"
+        ? options.visivelParaCliente
+        : true;
+
     const documento = await prisma.$transaction(async (tx) => {
       const createdDocumento = await tx.documento.create({
         data: {
           tenantId: user.tenantId,
           nome: file.name,
-          tipo: "PROCESSO",
+          tipo: "processo",
           descricao: options.description,
           url: uploadedUrl,
           tamanhoBytes: file.size,
@@ -822,10 +836,7 @@ export async function uploadDocumentoExplorer(
           clienteId: cliente.id,
           contratoId: primaryContratoId,
           uploadedById: user.id,
-          visivelParaCliente:
-            typeof options.visivelParaCliente === "boolean"
-              ? options.visivelParaCliente
-              : true,
+          visivelParaCliente: isVisibleToClient,
           visivelParaEquipe: true,
           metadados: {
             folderPath: uploadedFolderPath,
@@ -856,10 +867,7 @@ export async function uploadDocumentoExplorer(
             processoId: proc.id,
             documentoId: createdDocumento.id,
             createdById: user.id,
-            visivelParaCliente:
-              typeof options.visivelParaCliente === "boolean"
-                ? options.visivelParaCliente
-                : true,
+            visivelParaCliente: isVisibleToClient,
           })),
           skipDuplicates: true,
         });
@@ -900,6 +908,66 @@ export async function uploadDocumentoExplorer(
     });
 
     revalidatePath("/documentos");
+
+    // Notificações: documento anexado em processo(s)
+    try {
+      if (processos.length) {
+        const responsaveis = await prisma.processo.findMany({
+          where: {
+            id: { in: processos.map((p) => p.id) },
+            tenantId: user.tenantId,
+          },
+          select: {
+            id: true,
+            numero: true,
+            advogadoResponsavel: {
+              select: { usuario: { select: { id: true } } },
+            },
+          },
+        });
+
+        for (const proc of responsaveis) {
+          const targetUserId =
+            (proc.advogadoResponsavel?.usuario as any)?.id ||
+            (user.id as string);
+
+          await HybridNotificationService.publishNotification({
+            type: "processo.document_uploaded",
+            tenantId: user.tenantId,
+            userId: targetUserId,
+            payload: {
+              documentoId: documento.id,
+              processoId: proc.id,
+              numero: proc.numero,
+              documentName: file.name,
+              referenciaTipo: "documento",
+              referenciaId: documento.id,
+            },
+            urgency: "MEDIUM",
+            channels: ["REALTIME"],
+          });
+        }
+      }
+    } catch (e) {
+      logger.warn("Falha ao emitir notificação de documento anexado", e);
+    }
+
+    try {
+      await DocumentNotifier.notifyUploaded({
+        tenantId: user.tenantId,
+        documentoId: documento.id,
+        nome: documento.nome,
+        tipo: documento.tipo,
+        tamanhoBytes: documento.tamanhoBytes,
+        uploaderUserId: user.id,
+        uploaderNome: uploaderDisplayName,
+        processoIds: processos.map((proc) => proc.id),
+        clienteId: cliente.id,
+        visivelParaCliente: isVisibleToClient,
+      });
+    } catch (error) {
+      logger.warn("Falha ao emitir notificações de documento.uploaded", error);
+    }
 
     return {
       success: true,

@@ -39,7 +39,7 @@
 
 #### **🧪 Para testar webhook do Asaas:**
 ```bash
-npm run test:webhook
+npm run notifications:webhook
 ```
 - Lista webhooks existentes
 - Testa atualização de webhook

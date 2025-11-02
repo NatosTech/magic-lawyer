@@ -6,6 +6,7 @@ import { getSession } from "@/app/lib/auth";
 import prisma, { toNumber, convertAllDecimalFields } from "@/app/lib/prisma";
 import { TipoPessoa, Prisma } from "@/app/generated/prisma";
 import logger from "@/lib/logger";
+import { DocumentNotifier } from "@/app/lib/notifications/document-notifier";
 
 // ============================================
 // TYPES
@@ -1195,6 +1196,32 @@ export async function anexarDocumentoCliente(
         },
       },
     });
+
+    const uploaderDisplayName =
+      `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+      user.email ||
+      user.id;
+
+    try {
+      await DocumentNotifier.notifyUploaded({
+        tenantId: user.tenantId,
+        documentoId: documento.id,
+        nome: documento.nome,
+        tipo: documento.tipo,
+        tamanhoBytes: documento.tamanhoBytes,
+        uploaderUserId: user.id,
+        uploaderNome: uploaderDisplayName,
+        processoIds:
+          processoId && processoId.length > 0 ? [processoId] : undefined,
+        clienteId: cliente.id,
+        visivelParaCliente,
+      });
+    } catch (error) {
+      logger.warn(
+        "Falha ao emitir notificações de documento.uploaded (cliente)",
+        error,
+      );
+    }
 
     return {
       success: true,

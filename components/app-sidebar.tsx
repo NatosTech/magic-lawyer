@@ -23,7 +23,6 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 import { NotificationCenter } from "@/components/notifications/notification-center";
-import { SearchBar } from "@/components/searchbar";
 import { Logo } from "@/components/icons";
 
 const navIconStroke = 1.6;
@@ -1174,12 +1173,9 @@ export function AppSidebar({
                 Menu
               </DrawerHeader>
               <DrawerBody className="p-0">
-                {/* Mobile Search and Notifications */}
+                {/* Mobile Notifications (search movido para botão no header) */}
                 <div className="px-4 py-3 border-b border-default-200">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <SearchBar className="w-full" />
-                    </div>
+                  <div className="flex items-center justify-end">
                     <NotificationCenter />
                   </div>
                 </div>

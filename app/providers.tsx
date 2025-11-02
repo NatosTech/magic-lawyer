@@ -11,6 +11,13 @@ import { SessionProvider } from "next-auth/react";
 
 import { RealtimeProvider } from "./providers/realtime-provider";
 
+// Inicializar worker de notificações no servidor (import side-effect)
+if (typeof window === "undefined") {
+  import("@/app/lib/notifications/init-worker").catch((error) => {
+    console.error("[Providers] Erro ao inicializar worker:", error);
+  });
+}
+
 export interface ProvidersProps {
   children: React.ReactNode;
   themeProps?: ThemeProviderProps;

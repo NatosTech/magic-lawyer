@@ -7,6 +7,8 @@ import { Chip } from "@heroui/chip";
 import { Badge } from "@heroui/badge";
 import NextLink from "next/link";
 
+import { EmailCredentialsCard } from "./email-credentials-card";
+
 import { title, subtitle } from "@/components/primitives";
 import { getSession } from "@/app/lib/auth";
 import { TENANT_PERMISSIONS } from "@/types";
@@ -401,6 +403,9 @@ export default async function ConfiguracoesPage() {
           </CardBody>
         </Card>
       )}
+
+      {/* Credenciais SMTP */}
+      <EmailCredentialsCard />
 
       {/* Ações */}
       <Card className="border border-white/10 bg-white/5">

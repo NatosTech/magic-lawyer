@@ -10,9 +10,13 @@ export async function POST(request: Request) {
   try {
     // Verificar se o token interno está configurado corretamente
     const expectedToken = process.env.REALTIME_INTERNAL_TOKEN;
+
     if (!expectedToken || expectedToken.trim() === "") {
       return NextResponse.json(
-        { success: false, error: "Configuração ausente: REALTIME_INTERNAL_TOKEN não definido" },
+        {
+          success: false,
+          error: "Configuração ausente: REALTIME_INTERNAL_TOKEN não definido",
+        },
         { status: 500 },
       );
     }
@@ -58,18 +62,30 @@ export async function POST(request: Request) {
         revalidatePath("/admin/tenants/[tenantId]", "page");
         break;
 
+      case "notification.new":
+        // Invalidar cache de notificações quando Ably falhar
+        if (tenantId && userId) {
+          revalidateTag(`notifications:${tenantId}:${userId}`);
+        }
+        break;
+
       default:
         // Revalidar páginas principais
         revalidatePath("/");
     }
 
-    // TODO: Fase 2 - Publicar evento no Redis/WebSocket
-    // await redis.publish(`invalidation:${tenantId}`, JSON.stringify(payload));
+    // TODO: Fase 2 - Publicar evento no Redis Pub/Sub para polling HTTP
+    // await redis.publish(`notifications:${tenantId}:${userId}`, JSON.stringify(payload));
 
     return NextResponse.json({
       success: true,
       revalidated: {
-        tags: tenantId ? [`tenant:${tenantId}`] : [],
+        tags: tenantId
+          ? [
+              `tenant:${tenantId}`,
+              ...(userId ? [`notifications:${tenantId}:${userId}`] : []),
+            ]
+          : [],
         paths: type ? [type] : [],
       },
     });

@@ -1583,6 +1583,76 @@ export async function updateTenantUser(
         reason: payload.active ? "USER_REACTIVATED" : "USER_DEACTIVATED",
         actorId: session.user.id,
       });
+
+      // Disparar notificação de remoção/inativação se usuário foi desativado
+      if (!payload.active && user.active) {
+        try {
+          const { NotificationHelper } = await import(
+            "@/app/lib/notifications/notification-helper"
+          );
+
+          // Buscar admins e advogados responsáveis para notificar
+          const admins = await prisma.usuario.findMany({
+            where: {
+              tenantId,
+              role: "ADMIN",
+              active: true,
+            },
+            select: { id: true },
+          });
+
+          const advogados = await prisma.advogado.findMany({
+            where: {
+              tenantId,
+              usuarioId: userId,
+            },
+            include: {
+              usuario: {
+                select: { id: true },
+              },
+            },
+          });
+
+          const recipients = new Set<string>();
+
+          admins.forEach((admin) => {
+            if (admin.id && admin.id !== session.user.id) {
+              recipients.add(admin.id);
+            }
+          });
+          advogados.forEach((adv) => {
+            if (adv.usuario?.id && adv.usuario.id !== session.user.id) {
+              recipients.add(adv.usuario.id);
+            }
+          });
+
+          const actorName = session.user.name || "Administrador";
+
+          for (const recipientId of Array.from(recipients)) {
+            await NotificationHelper.notifyEquipeUserRemoved(
+              tenantId,
+              recipientId,
+              {
+                usuarioId: userId,
+                nome:
+                  (user as any).name ||
+                  `${(user as any).firstName || ""} ${(user as any).lastName || ""}`.trim() ||
+                  user.email ||
+                  "Usuário",
+                role: user.role,
+                motivo: "Usuário inativado pelo administrador",
+                removidoPor: actorName,
+              },
+            );
+          }
+        } catch (error) {
+          logger.error(
+            "Erro ao notificar remoção/inativação de usuário:",
+            error,
+          );
+          // Não falhar a operação se a notificação falhar
+        }
+      }
     }
 
     await prisma.superAdminAuditLog.create({

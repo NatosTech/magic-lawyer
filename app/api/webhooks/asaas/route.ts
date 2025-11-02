@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import prisma from "@/app/lib/prisma";
 import { processarPagamentoConfirmado } from "@/app/actions/processar-pagamento-confirmado";
+import { AsaasWebhookService } from "@/app/lib/notifications/services/asaas-webhook";
 
 export async function POST(request: NextRequest) {
   try {
@@ -74,6 +75,76 @@ export async function POST(request: NextRequest) {
         break;
       default:
         console.log(`Evento não tratado: ${webhookData.event}`);
+    }
+
+    // Processar notificações para eventos de pagamento
+    // Buscar tenantId a partir do payment (via externalReference ou subscription)
+    if (webhookData.payment) {
+      const payment = webhookData.payment;
+
+      // Tentar encontrar tenantId via parcela
+      // externalReference pode ser:
+      // - ID direto da parcela (formato UUID)
+      // - "parcela_{parcelaId}" (formato usado em cobranças)
+      if (
+        payment.externalReference &&
+        !payment.externalReference.startsWith("checkout_")
+      ) {
+        let parcelaId = payment.externalReference;
+
+        // Extrair ID se estiver no formato "parcela_{id}"
+        if (parcelaId.startsWith("parcela_")) {
+          parcelaId = parcelaId.replace("parcela_", "");
+        }
+
+        const parcela = await prisma.contratoParcela.findFirst({
+          where: {
+            id: parcelaId,
+          },
+          select: {
+            tenantId: true,
+          },
+        });
+
+        if (parcela) {
+          try {
+            await AsaasWebhookService.processWebhook(
+              webhookData,
+              parcela.tenantId,
+            );
+          } catch (error) {
+            console.error(
+              "[AsaasWebhook] Erro ao processar notificações:",
+              error,
+            );
+            // Não bloquear o fluxo principal se notificações falharem
+          }
+        } else {
+          // Tentar buscar via asaasPaymentId como fallback
+          const parcelaByPaymentId = await prisma.contratoParcela.findFirst({
+            where: {
+              asaasPaymentId: payment.id,
+            },
+            select: {
+              tenantId: true,
+            },
+          });
+
+          if (parcelaByPaymentId) {
+            try {
+              await AsaasWebhookService.processWebhook(
+                webhookData,
+                parcelaByPaymentId.tenantId,
+              );
+            } catch (error) {
+              console.error(
+                "[AsaasWebhook] Erro ao processar notificações (fallback):",
+                error,
+              );
+            }
+          }
+        }
+      }
     }
 
     return NextResponse.json({ success: true });

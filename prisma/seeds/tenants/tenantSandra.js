@@ -96,6 +96,48 @@ async function seedTenantSandra(prisma, Prisma) {
     },
   });
 
+  await prisma.tenantEmailCredential.upsert({
+    where: {
+      tenantId_type: {
+        tenantId: tenant.id,
+        type: "DEFAULT",
+      },
+    },
+    update: {
+      email: "magiclawyersaas@gmail.com",
+      appPassword: "dxijwnbycpucxevl",
+      fromName: "Sandra Advocacia",
+    },
+    create: {
+      tenantId: tenant.id,
+      type: "DEFAULT",
+      email: "magiclawyersaas@gmail.com",
+      appPassword: "dxijwnbycpucxevl",
+      fromName: "Sandra Advocacia",
+    },
+  });
+
+  await prisma.tenantEmailCredential.upsert({
+    where: {
+      tenantId_type: {
+        tenantId: tenant.id,
+        type: "ADMIN",
+      },
+    },
+    update: {
+      email: "robsonnonatoiii@gmail.com",
+      appPassword: "hcwwwqxqzrhdgeuj",
+      fromName: "Administração Sandra Advocacia",
+    },
+    create: {
+      tenantId: tenant.id,
+      type: "ADMIN",
+      email: "robsonnonatoiii@gmail.com",
+      appPassword: "hcwwwqxqzrhdgeuj",
+      fromName: "Administração Sandra Advocacia",
+    },
+  });
+
   const enderecos = [
     {
       apelido: "Matriz São Paulo",
@@ -403,7 +445,7 @@ async function seedTenantSandra(prisma, Prisma) {
     });
   }
 
-  const robsonUser = await ensureUsuario(prisma, tenant.id, "robsonnonato@magiclawyer.com", {
+  const robsonUser = await ensureUsuario(prisma, tenant.id, "magiclawyersaas@gmail.com", {
     firstName: "Robson José",
     lastName: "Nonato Filho",
     passwordHash: robsonPasswordHash,
@@ -420,7 +462,7 @@ async function seedTenantSandra(prisma, Prisma) {
       where: { id: clienteRobson.id },
       data: {
         nome: "Robson José Santos Nonato Filho",
-        email: "robsonnonato@magiclawyer.com",
+        email: "magiclawyersaas@gmail.com",
         telefone: "+55 71 9901-1037",
         celular: "+55 71 9901-1037",
         usuarioId: robsonUser.id,
@@ -435,7 +477,7 @@ async function seedTenantSandra(prisma, Prisma) {
         tipoPessoa: "FISICA",
         nome: "Robson José Santos Nonato Filho",
         documento: "083.620.235-03",
-        email: "robsonnonato@magiclawyer.com",
+        email: "magiclawyersaas@gmail.com",
         telefone: "+55 71 9901-1037",
         celular: "+55 71 9901-1037",
         usuarioId: robsonUser.id,
@@ -754,7 +796,7 @@ async function seedTenantSandra(prisma, Prisma) {
       tipoPolo: "AUTOR",
       nome: "Robson José Santos Nonato Filho",
       documento: "083.620.235-03",
-      email: "robsonnonato@magiclawyer.com",
+      email: "magiclawyersaas@gmail.com",
       telefone: "+55 71 9901-1037",
       clienteId: clienteRobson.id,
       advogadoId: advogadoSandra.id,
@@ -794,7 +836,7 @@ async function seedTenantSandra(prisma, Prisma) {
       tipoPolo: "REU",
       nome: "Robson José Santos Nonato Filho",
       documento: "083.620.235-03",
-      email: "robsonnonato@magiclawyer.com",
+      email: "magiclawyersaas@gmail.com",
       telefone: "+55 71 9901-1037",
       clienteId: clienteRobson.id,
       advogadoId: advogadoSandra.id,
@@ -827,7 +869,7 @@ async function seedTenantSandra(prisma, Prisma) {
       tipoPolo: "REU",
       nome: "Robson José Santos Nonato Filho",
       documento: "083.620.235-03",
-      email: "robsonnonato@magiclawyer.com",
+      email: "magiclawyersaas@gmail.com",
       telefone: "+55 71 9901-1037",
       clienteId: clienteRobson.id,
       advogadoId: advogadoSandra.id,
@@ -1565,7 +1607,7 @@ async function seedTenantSandra(prisma, Prisma) {
   console.log("⚖️ ADVOGADO: fernanda@sandraadv.br / Advogado@123");
   console.log("👤 CLIENTE: cliente@sandraadv.br / Cliente@123");
   console.log("👤 CLIENTE: ana@sandraadv.br / Cliente@123");
-  console.log("👤 CLIENTE: robsonnonato@magiclawyer.com / Robson123!");
+  console.log("👤 CLIENTE: magiclawyersaas@gmail.com / Robson123!");
   console.log("👤 CLIENTE: inova@sandraadv.br / Cliente@123");
   console.log("\n🔗 Acesso: http://localhost:9192/login");
   console.log("🏢 Slug do tenant: sandra");

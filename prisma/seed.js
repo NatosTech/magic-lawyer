@@ -73,9 +73,7 @@ async function main() {
   console.log("\n🔍 Detectando módulos automaticamente...");
   try {
     const result = await autoDetectModulesCore();
-    console.log(
-      `✅ Módulos detectados com sucesso! (${result.created} criados, ${result.updated} atualizados, ${result.removed} removidos)`,
-    );
+    console.log(`✅ Módulos detectados com sucesso! (${result.created} criados, ${result.updated} atualizados, ${result.removed} removidos)`);
   } catch (error) {
     console.warn("⚠️ Erro na detecção automática de módulos:", error.message);
   }
@@ -261,6 +259,16 @@ async function main() {
   } catch (error) {
     console.error("⚠️  Erro ao aplicar otimizações enterprise:", error.message);
     console.log("   As otimizações serão aplicadas na próxima execução do seed");
+  }
+
+  // Seed do sistema de notificações
+  console.log("\n🔔 Iniciando seed do sistema de notificações...");
+  try {
+    const { seedNotifications } = require("./seeds/notifications-seed");
+    await seedNotifications();
+  } catch (error) {
+    console.error("⚠️  Erro no seed de notificações:", error.message);
+    console.log("   O sistema de notificações será configurado na próxima execução");
   }
 
   console.log("\n🎉 Seed concluído com sucesso!");
