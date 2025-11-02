@@ -1,5 +1,4 @@
 import { getServerSession } from "next-auth/next";
-import { revalidatePath } from "next/cache";
 
 import { authOptions } from "@/auth";
 import prisma from "@/app/lib/prisma";
@@ -362,8 +361,6 @@ export async function updateTenantBasicData(
       data: { sessionVersion: { increment: 1 } },
     });
 
-    revalidatePath("/configuracoes");
-
     logger.info(`Tenant ${tenantId} atualizado por ${session.user.email}`);
 
     return { success: true };
@@ -422,8 +419,6 @@ export async function updateTenantBranding(
       where: { id: tenantId },
       data: { sessionVersion: { increment: 1 } },
     });
-
-    revalidatePath("/configuracoes");
 
     logger.info(`Branding do tenant ${tenantId} atualizado por ${session.user.email}`);
 
