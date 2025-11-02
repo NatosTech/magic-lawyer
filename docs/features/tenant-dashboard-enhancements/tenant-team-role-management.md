@@ -22,8 +22,8 @@ Planejamento detalhado da feature que espelha o controle de módulos, mas focada
 - [ ] Definir regras de negócio (ex.: nível hierárquico obrigatório? valores pré-definidos? cargo inativo bloqueia login?).
 
 ### 3. APIs e Backend
-- [ ] Inventariar endpoints existentes para módulos/cargos e decidir se serão reutilizados ou estendidos.
-- [ ] Criar/ajustar endpoint que lista apenas os módulos liberados para o tenant logado.
+- [x] Inventariar endpoints existentes para módulos/cargos e decidir se serão reutilizados ou estendidos.
+- [x] Criar/ajustar endpoint que lista apenas os módulos liberados para o tenant logado.
 - [ ] Disponibilizar endpoint para CRUD de cargos com validações de campos obrigatórios.
 - [ ] Implementar atualização de permissões (associação módulo ↔ cargo) respeitando escopo do tenant.
 - [ ] Em eventos de alteração (ex.: novo módulo liberado ao tenant), publicar mensagem realtime para o canal correspondente.
@@ -33,7 +33,7 @@ Planejamento detalhado da feature que espelha o controle de módulos, mas focada
 - [ ] Configurar rota `/equipe` apontando para o dashboard correto.
 - [ ] Estruturar layout similar ao controle de módulos, adaptando copy e `empty states`.
 - [ ] Construir formulário de cargo com campos: nome, nível hierárquico (dropdown/numérico), descrição (textarea) e toggle de status.
-- [ ] Implementar listagem de módulos do tenant com seleção (checkbox/switch), agrupamentos e busca conforme necessário.
+- [x] Implementar listagem de módulos do tenant com seleção (checkbox/switch), agrupamentos e busca conforme necessário.
 - [ ] Revisar a aba **Usuários** garantindo que o modal/fluxo de edição do usuário habilite alteração de dados, permissões e vínculo de cargo (atualmente quebrado).
 - [ ] Validar que todos os botões/ações exibidos na tela possuem implementação real; remover mocks/placeholders remanescentes.
 - [ ] Reutilizar componentes compartilhados (tables, forms) ou criar variantes específicas se o design pedir.
@@ -41,7 +41,7 @@ Planejamento detalhado da feature que espelha o controle de módulos, mas focada
 
 ### 5. Realtime e Sincronização
 - [ ] Assinar o canal realtime do tenant logo após montar a página, usando o prefixo configurado.
-- [ ] Atualizar imediatamente a lista de módulos exibidos quando o tenant ganhar/perder acesso.
+- [x] Atualizar imediatamente a lista de módulos exibidos quando o tenant ganhar/perder acesso.
 - [ ] Sincronizar alterações de cargos entre múltiplos usuários (ex.: criação/edição em outra aba).
 - [ ] Garantir reconexão e tratamento de queda de conexão.
 
