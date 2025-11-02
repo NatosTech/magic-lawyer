@@ -1,14 +1,15 @@
 "use server";
 
+import type {
+  NotificationChannel,
+  NotificationUrgency,
+} from "@/app/lib/notifications/notification-service";
+
 import { getServerSession } from "next-auth/next";
 
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
 import { NotificationPolicy } from "@/app/lib/notifications/domain/notification-policy";
-import type {
-  NotificationChannel,
-  NotificationUrgency,
-} from "@/app/lib/notifications/notification-service";
 
 export type NotificationStatus = "NAO_LIDA" | "LIDA" | "ARQUIVADA";
 
@@ -134,13 +135,21 @@ export async function getNotifications(
     id: item.id,
     notificacaoId: item.id, // No novo sistema, o ID da notificação é o mesmo
     titulo: (item.payload as any)?.titulo || item.type,
-    mensagem: (item.payload as any)?.mensagem || (item.payload as any)?.message || "Nova notificação",
+    mensagem:
+      (item.payload as any)?.mensagem ||
+      (item.payload as any)?.message ||
+      "Nova notificação",
     tipo: item.type,
     prioridade: item.urgency || "MEDIA",
-    status: item.readAt ? ("LIDA" as NotificationStatus) : ("NAO_LIDA" as NotificationStatus),
+    status: item.readAt
+      ? ("LIDA" as NotificationStatus)
+      : ("NAO_LIDA" as NotificationStatus),
     canal: item.deliveries[0]?.channel || "REALTIME",
     createdAt: item.createdAt.toISOString(),
-    entregueEm: item.deliveries.find((d) => d.status === "DELIVERED")?.createdAt?.toISOString() ?? null,
+    entregueEm:
+      item.deliveries
+        .find((d) => d.status === "DELIVERED")
+        ?.createdAt?.toISOString() ?? null,
     lidoEm: item.readAt?.toISOString() ?? null,
     referenciaTipo: (item.payload as any)?.referenciaTipo ?? null,
     referenciaId: (item.payload as any)?.referenciaId ?? null,
@@ -150,7 +159,10 @@ export async function getNotifications(
 
   // Unificar e ordenar por data (mais recente primeiro)
   const allNotifications = [...legacyItems, ...newItems]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
     .slice(0, take);
 
   const unreadCount = allNotifications.reduce((count, item) => {
@@ -211,7 +223,12 @@ export async function setNotificationStatus(
         userId,
       },
       data: {
-        readAt: status === "LIDA" ? new Date() : status === "NAO_LIDA" ? null : undefined,
+        readAt:
+          status === "LIDA"
+            ? new Date()
+            : status === "NAO_LIDA"
+              ? null
+              : undefined,
       },
     });
 
@@ -441,7 +458,10 @@ export async function getNotificationPreferences(): Promise<{
     });
 
     const preferencesPayload = preferences.map((p) => {
-      const parsedChannels = p.channels as NotificationChannel[] | null | undefined;
+      const parsedChannels = p.channels as
+        | NotificationChannel[]
+        | null
+        | undefined;
       const channels: NotificationChannel[] =
         parsedChannels && parsedChannels.length > 0
           ? parsedChannels
@@ -528,7 +548,8 @@ export async function updateNotificationPreference(data: {
       "INFO",
     ];
     const validUrgency =
-      data.urgency && validUrgencies.includes(data.urgency as NotificationUrgency)
+      data.urgency &&
+      validUrgencies.includes(data.urgency as NotificationUrgency)
         ? (data.urgency as NotificationUrgency)
         : "MEDIUM";
 

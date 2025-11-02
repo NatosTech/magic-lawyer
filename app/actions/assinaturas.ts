@@ -253,7 +253,9 @@ export async function cancelarAssinatura(
           tenantId: documento.tenantId,
           documentoId: documento.id,
           nome: documento.nome,
-          processoIds: documento.processoId ? [documento.processoId] : undefined,
+          processoIds: documento.processoId
+            ? [documento.processoId]
+            : undefined,
           clienteId: documento.clienteId,
           uploaderUserId: documento.uploadedById ?? undefined,
           actorNome: "Usuário",

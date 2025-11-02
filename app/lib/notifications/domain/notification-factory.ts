@@ -1,4 +1,5 @@
 import type { NotificationEvent } from "../notification-service";
+
 import { NotificationPolicy } from "./notification-policy";
 
 /**
@@ -83,7 +84,11 @@ export class NotificationFactory {
     const missingFields: string[] = [];
 
     for (const field of requiredFields) {
-      if (!(field in payload) || payload[field] === null || payload[field] === undefined) {
+      if (
+        !(field in payload) ||
+        payload[field] === null ||
+        payload[field] === undefined
+      ) {
         missingFields.push(field);
       }
     }
@@ -98,7 +103,9 @@ export class NotificationFactory {
   /**
    * Sanitiza payload removendo dados sensíveis
    */
-  private static sanitizePayload(payload: Record<string, any>): Record<string, any> {
+  private static sanitizePayload(
+    payload: Record<string, any>,
+  ): Record<string, any> {
     const sensitiveFields = [
       "cpf",
       "cnpj",
@@ -125,6 +132,7 @@ export class NotificationFactory {
 
     // Remover objetos aninhados grandes (substituir por IDs)
     const maxDepth = 3;
+
     return this.flattenPayload(sanitized, maxDepth);
   }
 
@@ -155,8 +163,16 @@ export class NotificationFactory {
       const flattened: Record<string, any> = {};
 
       for (const [key, value] of Object.entries(payload)) {
-        if (typeof value === "object" && value !== null && !(value instanceof Date)) {
-          flattened[key] = this.flattenPayload(value, maxDepth, currentDepth + 1);
+        if (
+          typeof value === "object" &&
+          value !== null &&
+          !(value instanceof Date)
+        ) {
+          flattened[key] = this.flattenPayload(
+            value,
+            maxDepth,
+            currentDepth + 1,
+          );
         } else {
           flattened[key] = value;
         }
@@ -191,7 +207,9 @@ export class NotificationFactory {
     const validUrgencies = ["CRITICAL", "HIGH", "MEDIUM", "INFO"];
 
     if (!validUrgencies.includes(event.urgency || "MEDIUM")) {
-      throw new Error(`[NotificationFactory] Urgência inválida: ${event.urgency}`);
+      throw new Error(
+        `[NotificationFactory] Urgência inválida: ${event.urgency}`,
+      );
     }
 
     const validChannels = ["REALTIME", "EMAIL", "PUSH"];
@@ -223,4 +241,3 @@ export class NotificationFactory {
     );
   }
 }
-

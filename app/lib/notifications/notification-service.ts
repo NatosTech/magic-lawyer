@@ -54,7 +54,7 @@ export class NotificationService {
 
       // Deduplicação simples: chave única por (tenantId, userId, type, payloadHash) com TTL de 5 minutos
       const redis = getRedisInstance();
-      
+
       const payloadHash = crypto
         .createHash("sha256")
         .update(JSON.stringify(validatedEvent.payload))
@@ -79,7 +79,9 @@ export class NotificationService {
       }
 
       // Determinar prioridade na fila baseada na urgência
-      const priority = NotificationPolicy.getQueuePriority(validatedEvent.urgency || "MEDIUM");
+      const priority = NotificationPolicy.getQueuePriority(
+        validatedEvent.urgency || "MEDIUM",
+      );
 
       const jobPayload: NotificationJobData = {
         type: validatedEvent.type,
@@ -179,6 +181,7 @@ export class NotificationService {
         // Se o evento especificou canais explicitamente (override), usa eles
         // Mas filtra para manter apenas canais habilitados nas preferências (exceto CRITICAL)
         const enabledChannels = preferences.channels;
+
         channelsToUse = event.channels.filter((channel) =>
           enabledChannels.includes(channel),
         );

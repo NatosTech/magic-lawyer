@@ -3,8 +3,9 @@
  * Executa diariamente via cron job
  */
 
-import prisma from "@/app/lib/prisma";
 import { DocumentNotifier } from "../document-notifier";
+
+import prisma from "@/app/lib/prisma";
 
 export class DocumentSchedulerService {
   /**
@@ -100,4 +101,3 @@ export class DocumentSchedulerService {
     }
   }
 }
-

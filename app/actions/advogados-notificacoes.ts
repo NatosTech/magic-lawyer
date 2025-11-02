@@ -47,9 +47,7 @@ interface ActionResponse<T = any> {
 // LEGACY COMPATIBILITY
 // =============================================
 
-export async function getEstatisticasNotificacoes(
-  advogadoId: string,
-): Promise<
+export async function getEstatisticasNotificacoes(advogadoId: string): Promise<
   ActionResponse<{
     total: number;
     naoLidas: number;

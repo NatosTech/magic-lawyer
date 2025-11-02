@@ -38,12 +38,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error
-          ? error.message
-          : "Erro interno do servidor",
+        error:
+          error instanceof Error ? error.message : "Erro interno do servidor",
       },
       { status: 500 },
     );
   }
 }
-

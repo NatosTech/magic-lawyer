@@ -1,4 +1,5 @@
 import type { Processo } from "@/app/generated/prisma";
+
 import {
   ProcessoFase,
   ProcessoGrau,
@@ -380,16 +381,15 @@ const descriptors: DiffDescriptor[] = [
       const normAfter = normalizeNumericValue(after);
 
       if (
-        (normBefore === null || normBefore === undefined || normBefore === "") &&
+        (normBefore === null ||
+          normBefore === undefined ||
+          normBefore === "") &&
         (normAfter === null || normAfter === undefined || normAfter === "")
       ) {
         return true;
       }
 
-      if (
-        typeof normBefore === "number" &&
-        typeof normAfter === "number"
-      ) {
+      if (typeof normBefore === "number" && typeof normAfter === "number") {
         return Math.abs(normBefore - normAfter) < 0.01;
       }
 

@@ -3,9 +3,10 @@
  * Executa diariamente via cron job
  */
 
-import prisma from "@/app/lib/prisma";
 import { NotificationService } from "../notification-service";
 import { NotificationFactory } from "../domain/notification-factory";
+
+import prisma from "@/app/lib/prisma";
 
 export class ContratoSchedulerService {
   /**
@@ -19,9 +20,7 @@ export class ContratoSchedulerService {
 
       const now = new Date();
       const hoje = new Date(now.setHours(0, 0, 0, 0));
-      const proximos7Dias = new Date(
-        hoje.getTime() + 7 * 24 * 60 * 60 * 1000,
-      );
+      const proximos7Dias = new Date(hoje.getTime() + 7 * 24 * 60 * 60 * 1000);
 
       // Buscar contratos que expirarão nos próximos 7 dias ou já expiraram
       const contratosExpiradosOuProximos = await prisma.contrato.findMany({
@@ -183,7 +182,10 @@ export class ContratoSchedulerService {
         `[ContratoScheduler] ✅ Verificação concluída: ${notificadosExpirados} expirados e ${notificadosProximos} próximos do vencimento notificados`,
       );
     } catch (error) {
-      console.error("[ContratoScheduler] ❌ Erro ao verificar contratos:", error);
+      console.error(
+        "[ContratoScheduler] ❌ Erro ao verificar contratos:",
+        error,
+      );
       throw error;
     }
   }

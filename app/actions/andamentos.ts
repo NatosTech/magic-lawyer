@@ -505,52 +505,53 @@ export async function updateAndamento(
           select: {
             numero: true,
             advogadoResponsavel: {
-            select: { usuario: { select: { id: true } } },
-          },
-          cliente: { select: { usuarioId: true } },
-        },
-      });
-
-      const targetUserIds: string[] = [];
-      const advogadoUserId = (proc?.advogadoResponsavel?.usuario as any)?.id;
-
-      if (advogadoUserId) targetUserIds.push(advogadoUserId);
-      if (proc?.cliente?.usuarioId) targetUserIds.push(proc.cliente.usuarioId);
-
-      const channels = input.notificarEmail
-        ? ["REALTIME", "EMAIL"]
-        : (["REALTIME"] as ("REALTIME" | "EMAIL")[]);
-
-      const { HybridNotificationService } = await import(
-        "@/app/lib/notifications/hybrid-notification-service"
-      );
-
-      await Promise.all(
-        targetUserIds.map((uid) =>
-          HybridNotificationService.publishNotification({
-            type: "andamento.updated",
-            tenantId,
-            userId: uid,
-            payload: {
-              andamentoId: andamento.id,
-              processoId: andamento.processo.id,
-              processoNumero: proc?.numero || andamento.processo.numero,
-              titulo: andamento.titulo,
-              descricao: andamento.descricao ?? null,
-              tipo: andamento.tipo,
-              dataMovimentacao: andamento.dataMovimentacao,
-              referenciaTipo: "processo",
-              referenciaId: andamento.processo.id,
-              diff: diff.items,
-              changes: diff.items.map((item) => item.field),
-              changesSummary:
-                diff.summary || "Informações do andamento foram atualizadas",
+              select: { usuario: { select: { id: true } } },
             },
-            urgency: "MEDIUM",
-            channels,
-          } as any),
-        ),
-      );
+            cliente: { select: { usuarioId: true } },
+          },
+        });
+
+        const targetUserIds: string[] = [];
+        const advogadoUserId = (proc?.advogadoResponsavel?.usuario as any)?.id;
+
+        if (advogadoUserId) targetUserIds.push(advogadoUserId);
+        if (proc?.cliente?.usuarioId)
+          targetUserIds.push(proc.cliente.usuarioId);
+
+        const channels = input.notificarEmail
+          ? ["REALTIME", "EMAIL"]
+          : (["REALTIME"] as ("REALTIME" | "EMAIL")[]);
+
+        const { HybridNotificationService } = await import(
+          "@/app/lib/notifications/hybrid-notification-service"
+        );
+
+        await Promise.all(
+          targetUserIds.map((uid) =>
+            HybridNotificationService.publishNotification({
+              type: "andamento.updated",
+              tenantId,
+              userId: uid,
+              payload: {
+                andamentoId: andamento.id,
+                processoId: andamento.processo.id,
+                processoNumero: proc?.numero || andamento.processo.numero,
+                titulo: andamento.titulo,
+                descricao: andamento.descricao ?? null,
+                tipo: andamento.tipo,
+                dataMovimentacao: andamento.dataMovimentacao,
+                referenciaTipo: "processo",
+                referenciaId: andamento.processo.id,
+                diff: diff.items,
+                changes: diff.items.map((item) => item.field),
+                changesSummary:
+                  diff.summary || "Informações do andamento foram atualizadas",
+              },
+              urgency: "MEDIUM",
+              channels,
+            } as any),
+          ),
+        );
       } catch (e) {
         console.warn(
           "Falha ao emitir notificações de andamento atualizado para envolvidos",

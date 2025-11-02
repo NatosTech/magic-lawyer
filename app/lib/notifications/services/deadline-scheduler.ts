@@ -3,10 +3,11 @@
  * Executa verificações periódicas de prazos próximos do vencimento
  */
 
-import prisma from "@/app/lib/prisma";
 import { NotificationService } from "../notification-service";
 import { NotificationFactory } from "../domain/notification-factory";
 import { getRedisInstance } from "../redis-singleton";
+
+import prisma from "@/app/lib/prisma";
 
 /**
  * Intervals em milissegundos para verificação de prazos
@@ -27,8 +28,12 @@ export class DeadlineSchedulerService {
     const now = new Date();
 
     // Calcular datas de alerta
-    const sevenDaysFromNow = new Date(now.getTime() + CHECK_INTERVALS.SEVEN_DAYS);
-    const threeDaysFromNow = new Date(now.getTime() + CHECK_INTERVALS.THREE_DAYS);
+    const sevenDaysFromNow = new Date(
+      now.getTime() + CHECK_INTERVALS.SEVEN_DAYS,
+    );
+    const threeDaysFromNow = new Date(
+      now.getTime() + CHECK_INTERVALS.THREE_DAYS,
+    );
     const oneDayFromNow = new Date(now.getTime() + CHECK_INTERVALS.ONE_DAY);
     const twoHoursFromNow = new Date(now.getTime() + CHECK_INTERVALS.TWO_HOURS);
 
@@ -242,7 +247,8 @@ export class DeadlineSchedulerService {
       }
 
       const diasAtraso = Math.floor(
-        (now.getTime() - prazo.dataVencimento.getTime()) / (24 * 60 * 60 * 1000),
+        (now.getTime() - prazo.dataVencimento.getTime()) /
+          (24 * 60 * 60 * 1000),
       );
 
       try {
@@ -354,4 +360,3 @@ export class DeadlineSchedulerService {
     }
   }
 }
-

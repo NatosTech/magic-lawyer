@@ -86,7 +86,10 @@ export async function POST(request: NextRequest) {
       // externalReference pode ser:
       // - ID direto da parcela (formato UUID)
       // - "parcela_{parcelaId}" (formato usado em cobranças)
-      if (payment.externalReference && !payment.externalReference.startsWith("checkout_")) {
+      if (
+        payment.externalReference &&
+        !payment.externalReference.startsWith("checkout_")
+      ) {
         let parcelaId = payment.externalReference;
 
         // Extrair ID se estiver no formato "parcela_{id}"
@@ -105,7 +108,10 @@ export async function POST(request: NextRequest) {
 
         if (parcela) {
           try {
-            await AsaasWebhookService.processWebhook(webhookData, parcela.tenantId);
+            await AsaasWebhookService.processWebhook(
+              webhookData,
+              parcela.tenantId,
+            );
           } catch (error) {
             console.error(
               "[AsaasWebhook] Erro ao processar notificações:",

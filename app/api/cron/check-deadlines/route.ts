@@ -20,7 +20,9 @@ export async function GET(request: NextRequest) {
 
     await DeadlineSchedulerService.checkExpiringDeadlines();
 
-    console.log("✅ [DeadlineScheduler] Verificação de prazos concluída com sucesso");
+    console.log(
+      "✅ [DeadlineScheduler] Verificação de prazos concluída com sucesso",
+    );
 
     return NextResponse.json({
       success: true,
@@ -28,15 +30,18 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("❌ [DeadlineScheduler] Erro na verificação de prazos:", error);
+    console.error(
+      "❌ [DeadlineScheduler] Erro na verificação de prazos:",
+      error,
+    );
 
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Erro interno do servidor",
+        error:
+          error instanceof Error ? error.message : "Erro interno do servidor",
       },
       { status: 500 },
     );
   }
 }
-

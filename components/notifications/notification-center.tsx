@@ -5,8 +5,20 @@ import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Badge } from "@heroui/badge";
 import { Chip } from "@heroui/chip";
-import { Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from "@heroui/drawer";
-import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/modal";
+import {
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+} from "@heroui/drawer";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@heroui/modal";
 import { ScrollShadow } from "@heroui/scroll-shadow";
 import { Spinner } from "@heroui/spinner";
 import { Tooltip } from "@heroui/tooltip";
@@ -14,7 +26,11 @@ import { addToast } from "@heroui/toast";
 import { useDisclosure } from "@heroui/react";
 
 import { useRealtime } from "@/app/providers/realtime-provider";
-import { useNotifications, type NotificationStatus, type NotificationItem } from "@/app/hooks/use-notifications";
+import {
+  useNotifications,
+  type NotificationStatus,
+  type NotificationItem,
+} from "@/app/hooks/use-notifications";
 import { BellIcon } from "@/components/icons";
 
 const statusCopy: Record<NotificationStatus, string> = {
@@ -23,7 +39,10 @@ const statusCopy: Record<NotificationStatus, string> = {
   ARQUIVADA: "Arquivada",
 };
 
-const statusColor: Record<NotificationStatus, "primary" | "success" | "default"> = {
+const statusColor: Record<
+  NotificationStatus,
+  "primary" | "success" | "default"
+> = {
   NAO_LIDA: "primary",
   LIDA: "success",
   ARQUIVADA: "default",
@@ -41,9 +60,18 @@ function formatDate(dateIso: string) {
 export const NotificationCenter = () => {
   const disclosure = useDisclosure();
   const detailDisclosure = useDisclosure();
-  const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
+  const [selectedNotification, setSelectedNotification] =
+    useState<NotificationItem | null>(null);
   const router = useRouter();
-  const { notifications, unreadCount, isLoading, isValidating, markAs, markAllAsRead, clearAll } = useNotifications();
+  const {
+    notifications,
+    unreadCount,
+    isLoading,
+    isValidating,
+    markAs,
+    markAllAsRead,
+    clearAll,
+  } = useNotifications();
   const { subscribe } = useRealtime();
 
   // Hook para notificações de desenvolvimento (só em DEV)
@@ -88,7 +116,11 @@ export const NotificationCenter = () => {
     if (totalUnreadCount <= 0) return null;
 
     return (
-      <Badge className="border-none bg-danger text-[10px] font-semibold text-white shadow-lg" content={totalUnreadCount > 99 ? "99+" : totalUnreadCount} placement="top-right">
+      <Badge
+        className="border-none bg-danger text-[10px] font-semibold text-white shadow-lg"
+        content={totalUnreadCount > 99 ? "99+" : totalUnreadCount}
+        placement="top-right"
+      >
         <span className="sr-only">Notificações não lidas</span>
       </Badge>
     );
@@ -105,7 +137,11 @@ export const NotificationCenter = () => {
   }, [subscribe, router]);
 
   const detailPayload = useMemo(() => {
-    if (!selectedNotification || !selectedNotification.dados || typeof selectedNotification.dados !== "object") {
+    if (
+      !selectedNotification ||
+      !selectedNotification.dados ||
+      typeof selectedNotification.dados !== "object"
+    ) {
       return null;
     }
 
@@ -126,7 +162,10 @@ export const NotificationCenter = () => {
     try {
       await markAs(id, status);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Falha ao atualizar notificação.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Falha ao atualizar notificação.";
 
       addToast({
         title: "Não foi possível atualizar",
@@ -145,7 +184,10 @@ export const NotificationCenter = () => {
         color: "success",
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Não foi possível limpar as notificações.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível limpar as notificações.";
 
       addToast({
         title: "Erro ao limpar",
@@ -164,7 +206,10 @@ export const NotificationCenter = () => {
         color: "success",
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Não foi possível marcar todas como lidas.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível marcar todas como lidas.";
 
       addToast({
         title: "Erro ao marcar",
@@ -209,11 +254,17 @@ export const NotificationCenter = () => {
             <>
               <DrawerHeader className="flex items-center justify-between gap-4">
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">Central</span>
-                  <h2 className="text-lg font-semibold text-white">Notificações</h2>
+                  <span className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
+                    Central
+                  </span>
+                  <h2 className="text-lg font-semibold text-white">
+                    Notificações
+                  </h2>
                 </div>
                 <Chip className="text-xs" color="primary" variant="flat">
-                  {isValidating ? "Atualizando" : `${totalUnreadCount} não lida(s)`}
+                  {isValidating
+                    ? "Atualizando"
+                    : `${totalUnreadCount} não lida(s)`}
                 </Chip>
               </DrawerHeader>
 
@@ -227,8 +278,12 @@ export const NotificationCenter = () => {
                 {!isLoading && !hasNotifications ? (
                   <div className="flex h-48 flex-col items-center justify-center gap-2 text-center text-default-400">
                     <BellIcon className="h-10 w-10 text-default-200" />
-                    <p className="text-sm font-medium text-white">Nenhuma notificação por aqui</p>
-                    <p className="text-xs text-default-400">Quando algo importante acontecer, você será avisado.</p>
+                    <p className="text-sm font-medium text-white">
+                      Nenhuma notificação por aqui
+                    </p>
+                    <p className="text-xs text-default-400">
+                      Quando algo importante acontecer, você será avisado.
+                    </p>
                   </div>
                 ) : null}
 
@@ -255,30 +310,67 @@ export const NotificationCenter = () => {
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex flex-col gap-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-semibold text-white">{item.titulo}</span>
-                                  <Chip className="text-[10px]" color={statusColor[item.status]} size="sm" variant="flat">
+                                  <span className="text-sm font-semibold text-white">
+                                    {item.titulo}
+                                  </span>
+                                  <Chip
+                                    className="text-[10px]"
+                                    color={statusColor[item.status]}
+                                    size="sm"
+                                    variant="flat"
+                                  >
                                     {statusCopy[item.status]}
                                   </Chip>
                                 </div>
-                                <p className="text-sm text-default-400">{item.mensagem}</p>
+                                <p className="text-sm text-default-400">
+                                  {item.mensagem}
+                                </p>
                               </div>
-                              <span className="shrink-0 text-xs text-default-300">{formatDate(item.criadoEm)}</span>
+                              <span className="shrink-0 text-xs text-default-300">
+                                {formatDate(item.criadoEm)}
+                              </span>
                             </div>
 
-                            <div className="mt-3 flex flex-wrap items-center gap-2" onClick={(event) => event.stopPropagation()}>
+                            <div
+                              className="mt-3 flex flex-wrap items-center gap-2"
+                              onClick={(event) => event.stopPropagation()}
+                            >
                               {isUnread ? (
-                                <Button color="primary" size="sm" variant="flat" onPress={() => handleStatusChange(item.id, "LIDA")}>
+                                <Button
+                                  color="primary"
+                                  size="sm"
+                                  variant="flat"
+                                  onPress={() =>
+                                    handleStatusChange(item.id, "LIDA")
+                                  }
+                                >
                                   Marcar como lida
                                 </Button>
                               ) : (
-                                <Button size="sm" variant="light" onPress={() => handleStatusChange(item.id, "NAO_LIDA")}>
+                                <Button
+                                  size="sm"
+                                  variant="light"
+                                  onPress={() =>
+                                    handleStatusChange(item.id, "NAO_LIDA")
+                                  }
+                                >
                                   Marcar como não lida
                                 </Button>
                               )}
-                              <Button size="sm" variant="light" onPress={() => handleStatusChange(item.id, "ARQUIVADA")}>
+                              <Button
+                                size="sm"
+                                variant="light"
+                                onPress={() =>
+                                  handleStatusChange(item.id, "ARQUIVADA")
+                                }
+                              >
                                 Arquivar
                               </Button>
-                              <Button size="sm" variant="bordered" onPress={() => handleOpenDetails(item)}>
+                              <Button
+                                size="sm"
+                                variant="bordered"
+                                onPress={() => handleOpenDetails(item)}
+                              >
                                 Ver detalhes
                               </Button>
                             </div>
@@ -296,10 +388,20 @@ export const NotificationCenter = () => {
                   <span>{notifications.length} registro(s)</span>
                 </div>
                 <div className="flex w-full flex-wrap gap-3">
-                  <Button className="flex-1" isDisabled={totalUnreadCount === 0} variant="bordered" onPress={handleMarkAllAsRead}>
+                  <Button
+                    className="flex-1"
+                    isDisabled={totalUnreadCount === 0}
+                    variant="bordered"
+                    onPress={handleMarkAllAsRead}
+                  >
                     Marcar todas como lidas
                   </Button>
-                  <Button className="flex-1" color="primary" variant="flat" onPress={handleClearAll}>
+                  <Button
+                    className="flex-1"
+                    color="primary"
+                    variant="flat"
+                    onPress={handleClearAll}
+                  >
                     Limpar notificações
                   </Button>
                   <Button className="flex-1" variant="light" onPress={onClose}>
@@ -323,27 +425,52 @@ export const NotificationCenter = () => {
         <ModalContent>
           {() => {
             const notification = selectedNotification;
-            const referenceHref = notification ? resolveReferenceLink(notification) : null;
+            const referenceHref = notification
+              ? resolveReferenceLink(notification)
+              : null;
             const summary = detailPayload?.changesSummary as string | undefined;
             const statusSummary =
               (detailPayload?.statusSummary as string | undefined) ??
-              (detailPayload?.oldStatusLabel && detailPayload?.newStatusLabel ? `Status alterado de ${detailPayload.oldStatusLabel} para ${detailPayload.newStatusLabel}` : undefined);
-            const additionalSummary = detailPayload?.additionalChangesSummary as string | undefined;
+              (detailPayload?.oldStatusLabel && detailPayload?.newStatusLabel
+                ? `Status alterado de ${detailPayload.oldStatusLabel} para ${detailPayload.newStatusLabel}`
+                : undefined);
+            const additionalSummary =
+              detailPayload?.additionalChangesSummary as string | undefined;
 
             return (
               <>
                 <ModalHeader className="flex flex-col gap-1">
-                  <span className="text-xs font-medium uppercase tracking-wide text-default-400">{notification ? formatDate(notification.criadoEm) : ""}</span>
-                  <span className="text-lg font-semibold text-white">{notification?.titulo ?? "Detalhes da notificação"}</span>
+                  <span className="text-xs font-medium uppercase tracking-wide text-default-400">
+                    {notification ? formatDate(notification.criadoEm) : ""}
+                  </span>
+                  <span className="text-lg font-semibold text-white">
+                    {notification?.titulo ?? "Detalhes da notificação"}
+                  </span>
                 </ModalHeader>
                 <ModalBody className="space-y-4">
-                  {notification?.mensagem ? <p className="text-sm text-default-300">{notification.mensagem}</p> : null}
+                  {notification?.mensagem ? (
+                    <p className="text-sm text-default-300">
+                      {notification.mensagem}
+                    </p>
+                  ) : null}
 
-                  {statusSummary ? <div className="rounded-lg border border-primary/40 bg-primary/10 p-3 text-sm text-primary-100">{statusSummary}</div> : null}
+                  {statusSummary ? (
+                    <div className="rounded-lg border border-primary/40 bg-primary/10 p-3 text-sm text-primary-100">
+                      {statusSummary}
+                    </div>
+                  ) : null}
 
-                  {summary ? <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-default-300">Campos atualizados: {summary}</div> : null}
+                  {summary ? (
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-default-300">
+                      Campos atualizados: {summary}
+                    </div>
+                  ) : null}
 
-                  {!summary && additionalSummary ? <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-default-300">Outras alterações: {additionalSummary}</div> : null}
+                  {!summary && additionalSummary ? (
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-default-300">
+                      Outras alterações: {additionalSummary}
+                    </div>
+                  ) : null}
 
                   {detailDiffItems.length > 0 ? (
                     <div className="overflow-hidden rounded-xl border border-white/10">
@@ -358,27 +485,39 @@ export const NotificationCenter = () => {
                         <tbody className="divide-y divide-white/5">
                           {detailDiffItems.map((change: any, index: number) => (
                             <tr key={change.field ?? index}>
-                              <td className="px-4 py-2 text-sm font-medium text-white">{change.label ?? change.field ?? "-"}</td>
-                              <td className="px-4 py-2 text-sm text-default-400">{change.before ?? "—"}</td>
-                              <td className="px-4 py-2 text-sm text-default-200">{change.after ?? "—"}</td>
+                              <td className="px-4 py-2 text-sm font-medium text-white">
+                                {change.label ?? change.field ?? "-"}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-default-400">
+                                {change.before ?? "—"}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-default-200">
+                                {change.after ?? "—"}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
                   ) : (
-                    <p className="text-sm text-default-400">Nenhum detalhamento de alteração disponível.</p>
+                    <p className="text-sm text-default-400">
+                      Nenhum detalhamento de alteração disponível.
+                    </p>
                   )}
                 </ModalBody>
                 <ModalFooter className="flex flex-wrap justify-end gap-2">
                   <Button variant="light" onPress={handleCloseDetails}>
                     Fechar
                   </Button>
-                  {selectedNotification && selectedNotification.status === "NAO_LIDA" ? (
+                  {selectedNotification &&
+                  selectedNotification.status === "NAO_LIDA" ? (
                     <Button
                       variant="flat"
                       onPress={() => {
-                        void handleStatusChange(selectedNotification.id, "LIDA");
+                        void handleStatusChange(
+                          selectedNotification.id,
+                          "LIDA",
+                        );
                       }}
                     >
                       Marcar como lida

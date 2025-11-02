@@ -795,8 +795,7 @@ export async function updateContrato(
 
     // Detectar mudança de status para notificações
     const statusChanged =
-      data.status !== undefined &&
-      data.status !== contratoExistente.status;
+      data.status !== undefined && data.status !== contratoExistente.status;
     const oldStatus = contratoExistente.status;
     const newStatus = data.status;
 

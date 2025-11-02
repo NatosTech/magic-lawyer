@@ -55,4 +55,3 @@ export async function closeRedisConnection(): Promise<void> {
     redisInstance = null;
   }
 }
-

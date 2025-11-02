@@ -231,7 +231,9 @@ export async function createConviteEquipe(
       where: {
         tenantId: session.user.tenantId,
         active: true,
-        role: { in: [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECRETARIA] },
+        role: {
+          in: [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECRETARIA],
+        },
         id: {
           not: session.user.id,
         },

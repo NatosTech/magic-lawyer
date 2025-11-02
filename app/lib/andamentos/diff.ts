@@ -150,7 +150,9 @@ function formatDate(value: unknown): string {
   }
 
   const date =
-    value instanceof Date ? value : new Date(typeof value === "string" ? value : Number(value));
+    value instanceof Date
+      ? value
+      : new Date(typeof value === "string" ? value : Number(value));
 
   if (Number.isNaN(date.getTime())) {
     return "—";

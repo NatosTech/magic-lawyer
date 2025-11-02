@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from "next/server";
+
 import { initNotificationWorker } from "@/app/lib/notifications/init-worker";
 
 /**
@@ -30,4 +31,3 @@ export async function GET() {
     );
   }
 }
-

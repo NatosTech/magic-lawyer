@@ -38,13 +38,13 @@ type UseNotificationsOptions = {
 
 /**
  * Hook para buscar notificações com fallback HTTP/polling
- * 
+ *
  * Quando o Ably (WebSocket) não está conectado, aumenta automaticamente
  * a frequência de polling de 60s para 30s para garantir entrega rápida.
  */
 export function useNotifications(options: UseNotificationsOptions = {}) {
   const { limit, refreshInterval = 60000, enablePolling = true } = options;
-  
+
   // Detectar conexão Ably para ajustar polling
   const { isConnected } = useRealtime();
   const [pollingInterval, setPollingInterval] = useState(refreshInterval);
@@ -53,6 +53,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
   useEffect(() => {
     if (!enablePolling) {
       setPollingInterval(0); // Desabilitar polling se explicitamente desabilitado
+
       return;
     }
 

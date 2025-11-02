@@ -22,11 +22,11 @@ export async function initNotificationWorker(): Promise<void> {
 
   try {
     const { getNotificationWorker } = await import("./notification-worker");
-    
+
     // Criar e iniciar worker (singleton)
     // O worker inicia automaticamente quando criado, mas garantimos que seja criado
     const worker = getNotificationWorker();
-    
+
     // Marcar como inicializado
     workerInitialized = true;
 
@@ -44,7 +44,10 @@ if (typeof window === "undefined") {
   // Usar process.nextTick para garantir que a aplicação esteja pronta
   process.nextTick(() => {
     initNotificationWorker().catch((error) => {
-      console.error("[NotificationWorker] Erro na inicialização automática:", error);
+      console.error(
+        "[NotificationWorker] Erro na inicialização automática:",
+        error,
+      );
     });
   });
 }

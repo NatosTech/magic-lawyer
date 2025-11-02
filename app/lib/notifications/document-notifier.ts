@@ -1,6 +1,6 @@
-import prisma from "@/app/lib/prisma";
-
 import { NotificationHelper } from "./notification-helper";
+
+import prisma from "@/app/lib/prisma";
 
 type NullableString = string | null | undefined;
 
@@ -173,9 +173,7 @@ export class DocumentNotifier {
   /**
    * Dispara notificações para eventos de upload de documento.
    */
-  static async notifyUploaded(
-    context: DocumentUploadContext,
-  ): Promise<void> {
+  static async notifyUploaded(context: DocumentUploadContext): Promise<void> {
     const recipients = await this.resolveRecipients({
       tenantId: context.tenantId,
       uploaderUserId: context.uploaderUserId,
@@ -214,9 +212,7 @@ export class DocumentNotifier {
     );
   }
 
-  static async notifyApproved(
-    context: DocumentStatusContext,
-  ): Promise<void> {
+  static async notifyApproved(context: DocumentStatusContext): Promise<void> {
     const recipients = await this.resolveRecipients({
       tenantId: context.tenantId,
       uploaderUserId: context.uploaderUserId,
@@ -254,9 +250,7 @@ export class DocumentNotifier {
     );
   }
 
-  static async notifyRejected(
-    context: DocumentStatusContext,
-  ): Promise<void> {
+  static async notifyRejected(context: DocumentStatusContext): Promise<void> {
     const recipients = await this.resolveRecipients({
       tenantId: context.tenantId,
       uploaderUserId: context.uploaderUserId,
@@ -294,9 +288,7 @@ export class DocumentNotifier {
     );
   }
 
-  static async notifyExpired(
-    context: DocumentStatusContext,
-  ): Promise<void> {
+  static async notifyExpired(context: DocumentStatusContext): Promise<void> {
     const recipients = await this.resolveRecipients({
       tenantId: context.tenantId,
       uploaderUserId: context.uploaderUserId,

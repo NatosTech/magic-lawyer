@@ -11,7 +11,10 @@ import { NotificationService } from "@/app/lib/notifications/notification-servic
 export async function GET(request: NextRequest) {
   // Apenas em desenvolvimento
   if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Not available in production" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Not available in production" },
+      { status: 403 },
+    );
   }
 
   const { searchParams } = new URL(request.url);
@@ -43,7 +46,9 @@ export async function GET(request: NextRequest) {
         processoId: "test-proc-123",
         processoNumero: "1234567-89.2024.8.05.0001",
         titulo: "Prazo de Teste",
-        dataVencimento: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        dataVencimento: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
       },
       "pagamento.paid": {
         pagamentoId: "test-pay-123",
@@ -65,7 +70,12 @@ export async function GET(request: NextRequest) {
     };
 
     // Criar evento via Factory
-    const event = NotificationFactory.createEvent(type, tenantId, userId, payload);
+    const event = NotificationFactory.createEvent(
+      type,
+      tenantId,
+      userId,
+      payload,
+    );
 
     // Publicar notificação
     await NotificationService.publishNotification(event);
@@ -92,4 +102,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

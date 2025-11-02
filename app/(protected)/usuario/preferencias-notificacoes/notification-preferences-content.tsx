@@ -1,5 +1,10 @@
 "use client";
 
+import type {
+  NotificationChannel,
+  NotificationUrgency,
+} from "@/app/lib/notifications/notification-service";
+
 import { useState } from "react";
 import useSWR from "swr";
 import {
@@ -12,9 +17,8 @@ import {
   Spinner,
   Select,
   SelectItem,
-  Divider,
 } from "@heroui/react";
-import { SearchIcon, Bell, Mail, Smartphone, Save, RefreshCw } from "lucide-react";
+import { SearchIcon, Bell, Mail, Smartphone, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@heroui/input";
 
@@ -22,7 +26,6 @@ import {
   getNotificationPreferences,
   updateNotificationPreference,
 } from "@/app/actions/notifications";
-import type { NotificationChannel, NotificationUrgency } from "@/app/lib/notifications/notification-service";
 
 // Agrupar eventos por categoria
 const EVENT_CATEGORIES: Record<
@@ -96,7 +99,10 @@ const EVENT_CATEGORIES: Record<
   },
 };
 
-const CHANNEL_LABELS: Record<NotificationChannel, { label: string; icon: any }> = {
+const CHANNEL_LABELS: Record<
+  NotificationChannel,
+  { label: string; icon: any }
+> = {
   REALTIME: { label: "In-app", icon: Bell },
   EMAIL: { label: "Email", icon: Mail },
   PUSH: { label: "Push", icon: Smartphone },
@@ -122,9 +128,7 @@ export function NotificationPreferencesContent() {
   );
 
   const preferences = data?.preferences || [];
-  const preferencesMap = new Map(
-    preferences.map((p) => [p.eventType, p]),
-  );
+  const preferencesMap = new Map(preferences.map((p) => [p.eventType, p]));
 
   const handleUpdatePreference = async (
     eventType: string,
@@ -154,7 +158,9 @@ export function NotificationPreferencesContent() {
     } finally {
       setLoadingEvents((prev) => {
         const next = new Set(prev);
+
         next.delete(eventType);
+
         return next;
       });
     }
@@ -164,6 +170,7 @@ export function NotificationPreferencesContent() {
     ([_, category]) => {
       if (!searchTerm) return true;
       const searchLower = searchTerm.toLowerCase();
+
       return (
         category.label.toLowerCase().includes(searchLower) ||
         category.events.some((event) =>
@@ -182,11 +189,11 @@ export function NotificationPreferencesContent() {
             {error instanceof Error ? error.message : "Erro desconhecido"}
           </p>
           <Button
-            color="primary"
-            variant="flat"
-            startContent={<RefreshCw size={16} />}
-            onPress={() => mutate()}
             className="mt-4"
+            color="primary"
+            startContent={<RefreshCw size={16} />}
+            variant="flat"
+            onPress={() => mutate()}
           >
             Tentar novamente
           </Button>
@@ -237,12 +244,12 @@ export function NotificationPreferencesContent() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <Switch
-                            isSelected={isEnabled}
                             isDisabled={isLoading}
+                            isSelected={isEnabled}
+                            size="sm"
                             onValueChange={(enabled) =>
                               handleUpdatePreference(eventType, { enabled })
                             }
-                            size="sm"
                           />
                           <span className="font-medium text-sm">
                             {eventType.replace(/\./g, " ").replace(/_/g, " ")}
@@ -259,25 +266,32 @@ export function NotificationPreferencesContent() {
                               <div className="flex gap-2 flex-wrap">
                                 {Object.entries(CHANNEL_LABELS).map(
                                   ([channelKey, { label, icon: Icon }]) => {
-                                    const channel = channelKey as NotificationChannel;
-                                    const isSelected = channels.includes(channel);
+                                    const channel =
+                                      channelKey as NotificationChannel;
+                                    const isSelected =
+                                      channels.includes(channel);
 
                                     return (
                                       <Chip
                                         key={channelKey}
-                                        size="sm"
-                                        variant={isSelected ? "solid" : "flat"}
-                                        color={isSelected ? "primary" : "default"}
-                                        startContent={<Icon size={14} />}
                                         className="cursor-pointer"
+                                        color={
+                                          isSelected ? "primary" : "default"
+                                        }
+                                        size="sm"
+                                        startContent={<Icon size={14} />}
+                                        variant={isSelected ? "solid" : "flat"}
                                         onClick={() => {
                                           const newChannels = isSelected
-                                            ? channels.filter((c) => c !== channel)
+                                            ? channels.filter(
+                                                (c) => c !== channel,
+                                              )
                                             : [...channels, channel];
 
                                           if (newChannels.length > 0) {
                                             handleUpdatePreference(eventType, {
-                                              channels: newChannels as NotificationChannel[],
+                                              channels:
+                                                newChannels as NotificationChannel[],
                                             });
                                           } else {
                                             toast.error(
@@ -300,15 +314,18 @@ export function NotificationPreferencesContent() {
                                 Urgência
                               </label>
                               <Select
-                                size="sm"
+                                className="max-w-xs"
                                 selectedKeys={[urgency]}
+                                size="sm"
                                 onSelectionChange={(keys) => {
-                                  const selected = Array.from(keys)[0] as NotificationUrgency;
+                                  const selected = Array.from(
+                                    keys,
+                                  )[0] as NotificationUrgency;
+
                                   handleUpdatePreference(eventType, {
                                     urgency: selected,
                                   });
                                 }}
-                                className="max-w-xs"
                               >
                                 {Object.entries(URGENCY_LABELS).map(
                                   ([key, label]) => (
@@ -321,9 +338,7 @@ export function NotificationPreferencesContent() {
                         )}
                       </div>
 
-                      {isLoading && (
-                        <Spinner size="sm" className="mt-1" />
-                      )}
+                      {isLoading && <Spinner className="mt-1" size="sm" />}
                     </div>
                   );
                 })}

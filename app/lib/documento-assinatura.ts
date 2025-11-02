@@ -268,7 +268,7 @@ export const verificarStatusAssinatura = async (
     // Atualizar status no banco se mudou
     if (novoStatus !== documentoAssinatura.status) {
       const oldStatus = documentoAssinatura.status;
-      
+
       await prisma.documentoAssinatura.update({
         where: { id: documentoAssinaturaId },
         data: {
@@ -344,7 +344,9 @@ export const verificarStatusAssinatura = async (
             clienteId: documento.documento.clienteId,
             uploaderUserId: documento.documento.uploadedById ?? undefined,
             actorNome: signedAt ? "Cliente" : "Sistema",
-            observacoes: downloadUrl ? "Documento assinado com sucesso" : undefined,
+            observacoes: downloadUrl
+              ? "Documento assinado com sucesso"
+              : undefined,
           });
         }
       } else if (novoStatus === "REJEITADO" && oldStatus !== "REJEITADO") {

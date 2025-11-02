@@ -21,7 +21,10 @@ export class NotificationQueue {
    * Adiciona job de notificação à fila
    * @param priority Prioridade opcional (se não fornecida, calcula baseado na urgência)
    */
-  async addNotificationJob(data: NotificationJobData, priority?: number): Promise<void> {
+  async addNotificationJob(
+    data: NotificationJobData,
+    priority?: number,
+  ): Promise<void> {
     try {
       const jobPriority = priority ?? this.getPriority(data.urgency);
 

@@ -11,6 +11,7 @@ export class NotificationPolicy {
   static getDefaultUrgency(eventType: string): NotificationUrgency {
     // Reutiliza o mapeamento centralizado
     const urgencyMap = this.getDefaultUrgencyMap();
+
     return urgencyMap[eventType] || "MEDIUM";
   }
 
@@ -50,7 +51,12 @@ export class NotificationPolicy {
       // PROCESSOS
       "processo.created": ["processoId", "numero", "clienteNome"],
       "processo.updated": ["processoId", "numero"],
-      "processo.status_changed": ["processoId", "numero", "oldStatus", "newStatus"],
+      "processo.status_changed": [
+        "processoId",
+        "numero",
+        "oldStatus",
+        "newStatus",
+      ],
       "processo.document_uploaded": [
         "processoId",
         "numero",
@@ -204,7 +210,11 @@ export class NotificationPolicy {
       "evento.created": ["eventoId", "titulo", "dataInicio"],
       "evento.updated": ["eventoId", "titulo"],
       "evento.cancelled": ["eventoId", "titulo"],
-      "evento.confirmation_updated": ["eventoId", "titulo", "confirmacaoStatus"],
+      "evento.confirmation_updated": [
+        "eventoId",
+        "titulo",
+        "confirmacaoStatus",
+      ],
       "evento.reminder_1h": ["eventoId", "titulo", "dataInicio"],
       "evento.reminder_1d": ["eventoId", "titulo", "dataInicio"],
       "evento.google_synced": ["eventoId", "titulo", "googleEventId"],
@@ -236,8 +246,18 @@ export class NotificationPolicy {
       // TAREFAS
       "tarefa.created": ["tarefaId", "titulo"],
       "tarefa.updated": ["tarefaId", "titulo"],
-      "tarefa.assigned": ["tarefaId", "titulo", "responsavelId", "responsavelNome"],
-      "tarefa.completed": ["tarefaId", "titulo", "responsavelId", "responsavelNome"],
+      "tarefa.assigned": [
+        "tarefaId",
+        "titulo",
+        "responsavelId",
+        "responsavelNome",
+      ],
+      "tarefa.completed": [
+        "tarefaId",
+        "titulo",
+        "responsavelId",
+        "responsavelNome",
+      ],
       "tarefa.moved": ["tarefaId", "titulo", "oldStatus", "newStatus"],
       "tarefa.cancelled": ["tarefaId", "titulo"],
 
@@ -256,11 +276,15 @@ export class NotificationPolicy {
    */
   static getValidEventTypes(): string[] {
     // Retorna todos os tipos que têm definição de campos obrigatórios ou urgência padrão
-    const typesFromRequiredFields = Object.keys(this.getRequiredFieldsMapping());
+    const typesFromRequiredFields = Object.keys(
+      this.getRequiredFieldsMapping(),
+    );
     const typesFromUrgency = Object.keys(this.getDefaultUrgencyMap());
-    
+
     // Unir ambos e remover duplicatas
-    return Array.from(new Set([...typesFromRequiredFields, ...typesFromUrgency]));
+    return Array.from(
+      new Set([...typesFromRequiredFields, ...typesFromUrgency]),
+    );
   }
 
   /**
@@ -363,44 +387,126 @@ export class NotificationPolicy {
       // PROCESSOS
       "processo.created": ["processoId", "numero", "clienteNome"],
       "processo.updated": ["processoId", "numero"],
-      "processo.status_changed": ["processoId", "numero", "oldStatus", "newStatus"],
-      "processo.document_uploaded": ["processoId", "numero", "documentoId", "documentoNome"],
+      "processo.status_changed": [
+        "processoId",
+        "numero",
+        "oldStatus",
+        "newStatus",
+      ],
+      "processo.document_uploaded": [
+        "processoId",
+        "numero",
+        "documentoId",
+        "documentoNome",
+      ],
       // PRAZOS
-      "prazo.created": ["prazoId", "processoId", "processoNumero", "titulo", "dataVencimento"],
+      "prazo.created": [
+        "prazoId",
+        "processoId",
+        "processoNumero",
+        "titulo",
+        "dataVencimento",
+      ],
       "prazo.updated": ["prazoId", "processoId", "processoNumero"],
-      "prazo.expiring_7d": ["prazoId", "processoId", "processoNumero", "dataVencimento"],
-      "prazo.expiring_3d": ["prazoId", "processoId", "processoNumero", "dataVencimento"],
-      "prazo.expiring_1d": ["prazoId", "processoId", "processoNumero", "dataVencimento"],
-      "prazo.expiring_2h": ["prazoId", "processoId", "processoNumero", "dataVencimento"],
-      "prazo.expired": ["prazoId", "processoId", "processoNumero", "dataVencimento"],
+      "prazo.expiring_7d": [
+        "prazoId",
+        "processoId",
+        "processoNumero",
+        "dataVencimento",
+      ],
+      "prazo.expiring_3d": [
+        "prazoId",
+        "processoId",
+        "processoNumero",
+        "dataVencimento",
+      ],
+      "prazo.expiring_1d": [
+        "prazoId",
+        "processoId",
+        "processoNumero",
+        "dataVencimento",
+      ],
+      "prazo.expiring_2h": [
+        "prazoId",
+        "processoId",
+        "processoNumero",
+        "dataVencimento",
+      ],
+      "prazo.expired": [
+        "prazoId",
+        "processoId",
+        "processoNumero",
+        "dataVencimento",
+      ],
       // ANDAMENTOS
-      "andamento.created": ["andamentoId", "processoId", "processoNumero", "titulo"],
-      "andamento.updated": ["andamentoId", "processoId", "processoNumero", "titulo"],
+      "andamento.created": [
+        "andamentoId",
+        "processoId",
+        "processoNumero",
+        "titulo",
+      ],
+      "andamento.updated": [
+        "andamentoId",
+        "processoId",
+        "processoNumero",
+        "titulo",
+      ],
       // CLIENTES
       "cliente.created": ["clienteId", "nome"],
       "cliente.updated": ["clienteId", "nome"],
-      "cliente.document_uploaded": ["clienteId", "nome", "documentoId", "documentoNome"],
+      "cliente.document_uploaded": [
+        "clienteId",
+        "nome",
+        "documentoId",
+        "documentoNome",
+      ],
       "cliente.contact_added": ["clienteId", "nome", "contatoTipo"],
       // ADVOGADOS
       "advogado.created": ["advogadoId", "nome"],
       "advogado.updated": ["advogadoId", "nome"],
       "advogado.avatar_updated": ["advogadoId", "nome"],
-      "advogado.permissions_changed": ["advogadoId", "nome", "oldPermissions", "newPermissions"],
+      "advogado.permissions_changed": [
+        "advogadoId",
+        "nome",
+        "oldPermissions",
+        "newPermissions",
+      ],
       // EQUIPE
       "equipe.cargo_created": ["cargoId", "cargoNome"],
       "equipe.cargo_updated": ["cargoId", "cargoNome"],
       "equipe.user_invited": ["userId", "email", "role"],
       "equipe.user_joined": ["userId", "nome", "role"],
-      "equipe.permissions_changed": ["userId", "nome", "oldPermissions", "newPermissions"],
+      "equipe.permissions_changed": [
+        "userId",
+        "nome",
+        "oldPermissions",
+        "newPermissions",
+      ],
       "equipe.user_removed": ["userId", "nome", "role"],
       // CONTRATOS
       "contrato.created": ["contratoId", "clienteId", "clienteNome"],
       "contrato.updated": ["contratoId", "clienteId"],
       "contrato.status_changed": ["contratoId", "oldStatus", "newStatus"],
-      "contrato.signature_pending": ["contratoId", "clienteId", "clienteNome", "dataVencimento"],
-      "contrato.signed": ["contratoId", "clienteId", "clienteNome", "dataAssinatura"],
+      "contrato.signature_pending": [
+        "contratoId",
+        "clienteId",
+        "clienteNome",
+        "dataVencimento",
+      ],
+      "contrato.signed": [
+        "contratoId",
+        "clienteId",
+        "clienteNome",
+        "dataAssinatura",
+      ],
       "contrato.expired": ["contratoId", "clienteId", "clienteNome"],
-      "contrato.expiring": ["contratoId", "clienteId", "clienteNome", "dataFim", "diasRestantes"],
+      "contrato.expiring": [
+        "contratoId",
+        "clienteId",
+        "clienteNome",
+        "dataFim",
+        "diasRestantes",
+      ],
       "contrato.cancelled": ["contratoId", "clienteId", "clienteNome"],
       // PAGAMENTOS
       "pagamento.created": ["pagamentoId", "valor", "metodo"],
@@ -418,7 +524,11 @@ export class NotificationPolicy {
       "evento.created": ["eventoId", "titulo", "dataInicio"],
       "evento.updated": ["eventoId", "titulo"],
       "evento.cancelled": ["eventoId", "titulo"],
-      "evento.confirmation_updated": ["eventoId", "titulo", "confirmacaoStatus"],
+      "evento.confirmation_updated": [
+        "eventoId",
+        "titulo",
+        "confirmacaoStatus",
+      ],
       "evento.reminder_1h": ["eventoId", "titulo", "dataInicio"],
       "evento.reminder_1d": ["eventoId", "titulo", "dataInicio"],
       "evento.google_synced": ["eventoId", "titulo", "googleEventId"],
@@ -445,8 +555,18 @@ export class NotificationPolicy {
       // TAREFAS
       "tarefa.created": ["tarefaId", "titulo"],
       "tarefa.updated": ["tarefaId", "titulo"],
-      "tarefa.assigned": ["tarefaId", "titulo", "responsavelId", "responsavelNome"],
-      "tarefa.completed": ["tarefaId", "titulo", "responsavelId", "responsavelNome"],
+      "tarefa.assigned": [
+        "tarefaId",
+        "titulo",
+        "responsavelId",
+        "responsavelNome",
+      ],
+      "tarefa.completed": [
+        "tarefaId",
+        "titulo",
+        "responsavelId",
+        "responsavelNome",
+      ],
       "tarefa.moved": ["tarefaId", "titulo", "oldStatus", "newStatus"],
       "tarefa.cancelled": ["tarefaId", "titulo"],
       // RELATÓRIOS
@@ -481,4 +601,3 @@ export class NotificationPolicy {
     return priorityMap[urgency];
   }
 }
-

@@ -1614,6 +1614,7 @@ export async function updateTenantUser(
           });
 
           const recipients = new Set<string>();
+
           admins.forEach((admin) => {
             if (admin.id && admin.id !== session.user.id) {
               recipients.add(admin.id);
@@ -1628,17 +1629,21 @@ export async function updateTenantUser(
           const actorName = session.user.name || "Administrador";
 
           for (const recipientId of Array.from(recipients)) {
-            await NotificationHelper.notifyEquipeUserRemoved(tenantId, recipientId, {
-              usuarioId: userId,
-              nome:
-                (user as any).name ||
-                `${(user as any).firstName || ""} ${(user as any).lastName || ""}`.trim() ||
-                user.email ||
-                "Usuário",
-              role: user.role,
-              motivo: "Usuário inativado pelo administrador",
-              removidoPor: actorName,
-            });
+            await NotificationHelper.notifyEquipeUserRemoved(
+              tenantId,
+              recipientId,
+              {
+                usuarioId: userId,
+                nome:
+                  (user as any).name ||
+                  `${(user as any).firstName || ""} ${(user as any).lastName || ""}`.trim() ||
+                  user.email ||
+                  "Usuário",
+                role: user.role,
+                motivo: "Usuário inativado pelo administrador",
+                removidoPor: actorName,
+              },
+            );
           }
         } catch (error) {
           logger.error(

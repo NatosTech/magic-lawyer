@@ -695,16 +695,18 @@ export async function adicionarPermissaoIndividual(
     actor.email ||
     actor.id;
 
-  const existingPermission = await prisma.usuarioPermissaoIndividual.findUnique({
-    where: {
-      tenantId_usuarioId_modulo_acao: {
-        tenantId: session.user.tenantId,
-        usuarioId: usuarioId,
-        modulo: modulo,
-        acao: acao,
+  const existingPermission = await prisma.usuarioPermissaoIndividual.findUnique(
+    {
+      where: {
+        tenantId_usuarioId_modulo_acao: {
+          tenantId: session.user.tenantId,
+          usuarioId: usuarioId,
+          modulo: modulo,
+          acao: acao,
+        },
       },
     },
-  });
+  );
 
   await prisma.usuarioPermissaoIndividual.upsert({
     where: {
@@ -779,9 +781,13 @@ export async function adicionarPermissaoIndividual(
     if (recipients.size && targetUser) {
       const permissaoLabel = `${modulo}.${acao}`;
       const oldPermissions = existingPermission
-        ? [`${permissaoLabel}: ${existingPermission.permitido ? "PERMITIDO" : "NEGADO"}`]
+        ? [
+            `${permissaoLabel}: ${existingPermission.permitido ? "PERMITIDO" : "NEGADO"}`,
+          ]
         : [];
-      const newPermissions = [`${permissaoLabel}: ${permitido ? "PERMITIDO" : "NEGADO"}`];
+      const newPermissions = [
+        `${permissaoLabel}: ${permitido ? "PERMITIDO" : "NEGADO"}`,
+      ];
 
       const targetUserName =
         `${targetUser.firstName ?? ""} ${targetUser.lastName ?? ""}`.trim() ||

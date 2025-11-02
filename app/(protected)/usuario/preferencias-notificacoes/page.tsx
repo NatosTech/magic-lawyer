@@ -1,7 +1,8 @@
 import { Metadata } from "next";
 
-import { title, subtitle } from "@/components/primitives";
 import { NotificationPreferencesContent } from "./notification-preferences-content";
+
+import { title, subtitle } from "@/components/primitives";
 
 export const metadata: Metadata = {
   title: "Preferências de Notificações",
@@ -29,4 +30,3 @@ export default function NotificationPreferencesPage() {
     </section>
   );
 }
-

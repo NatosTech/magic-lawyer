@@ -3,9 +3,10 @@
  * Processa webhooks do Asaas e dispara notificações correspondentes
  */
 
-import prisma from "@/app/lib/prisma";
 import { NotificationService } from "../notification-service";
 import { NotificationFactory } from "../domain/notification-factory";
+
+import prisma from "@/app/lib/prisma";
 
 /**
  * Tipos de eventos do webhook Asaas
@@ -107,6 +108,7 @@ export class AsaasWebhookService {
         console.warn(
           `[AsaasWebhook] Parcela não encontrada para pagamento ${payload.payment.id}`,
         );
+
         return;
       }
 
@@ -122,6 +124,7 @@ export class AsaasWebhookService {
         console.log(
           `[AsaasWebhook] Evento ${payload.event} não mapeado para notificação`,
         );
+
         return;
       }
 
@@ -200,7 +203,10 @@ export class AsaasWebhookService {
           channels: ["REALTIME", "EMAIL"],
           payload: {
             ...basePayload,
-            dataPagamento: payment.paymentDate || payment.clientPaymentDate || new Date().toISOString(),
+            dataPagamento:
+              payment.paymentDate ||
+              payment.clientPaymentDate ||
+              new Date().toISOString(),
             transactionId: payment.id,
           },
         };
@@ -381,8 +387,9 @@ export class AsaasWebhookService {
       },
     });
 
-    const advogadoUserId = (contrato?.processo?.advogadoResponsavel?.usuario as any)
-      ?.id;
+    const advogadoUserId = (
+      contrato?.processo?.advogadoResponsavel?.usuario as any
+    )?.id;
 
     if (advogadoUserId && !recipients.includes(advogadoUserId)) {
       recipients.push(advogadoUserId);

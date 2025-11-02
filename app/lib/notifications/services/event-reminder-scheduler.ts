@@ -3,9 +3,10 @@
  * Executa periodicamente via cron job
  */
 
-import prisma from "@/app/lib/prisma";
 import { NotificationService } from "../notification-service";
 import { NotificationFactory } from "../domain/notification-factory";
+
+import prisma from "@/app/lib/prisma";
 
 export class EventReminderSchedulerService {
   /**
@@ -272,4 +273,3 @@ export class EventReminderSchedulerService {
     return Array.from(new Set(recipients)); // Remover duplicatas
   }
 }
-
