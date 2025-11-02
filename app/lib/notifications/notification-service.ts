@@ -6,6 +6,7 @@ import { EmailChannel } from "./channels/email-channel";
 import { getNotificationQueue } from "./notification-queue";
 import { NotificationFactory } from "./domain/notification-factory";
 import { NotificationPolicy } from "./domain/notification-policy";
+import { getRedisInstance } from "./redis-singleton";
 
 import prisma from "@/app/lib/prisma";
 import { publishRealtimeEvent } from "@/app/lib/realtime/publisher";
@@ -52,7 +53,6 @@ export class NotificationService {
       );
 
       // Deduplicação simples: chave única por (tenantId, userId, type, payloadHash) com TTL de 5 minutos
-      const { getRedisInstance } = await import("./redis-singleton");
       const redis = getRedisInstance();
       
       const payloadHash = crypto

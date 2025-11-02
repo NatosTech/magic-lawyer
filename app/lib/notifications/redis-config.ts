@@ -1,5 +1,7 @@
 import Redis from "ioredis";
 
+import { getRedisInstance } from "./redis-singleton";
+
 /**
  * Configuração Redis para BullMQ
  * Suporta desenvolvimento local e produção Vercel
@@ -53,7 +55,6 @@ export async function testRedisConnection(): Promise<boolean> {
  */
 export const bullMQConfig = {
   get connection() {
-    const { getRedisInstance } = require("./redis-singleton");
     return getRedisInstance();
   },
   defaultJobOptions: {

@@ -6,6 +6,7 @@
 import prisma from "@/app/lib/prisma";
 import { NotificationService } from "../notification-service";
 import { NotificationFactory } from "../domain/notification-factory";
+import { getRedisInstance } from "../redis-singleton";
 
 /**
  * Intervals em milissegundos para verificação de prazos
@@ -338,7 +339,6 @@ export class DeadlineSchedulerService {
     notificationKey: string,
   ): Promise<void> {
     try {
-      const { getRedisInstance } = await import("../redis-singleton");
       const redis = getRedisInstance();
 
       const cacheKey = `notif:deadline:${tenantId}:${userId}:${notificationKey}`;
