@@ -1,1 +1,0 @@
-rediss://default:AV3IAAIncDIwYzFlZTQzNTIxZGY0YmJjOThjMGQ5YjQyOWE5Mjc2ZXAyMjQwMDg@suited-glider-24008.upstash.io:6379
