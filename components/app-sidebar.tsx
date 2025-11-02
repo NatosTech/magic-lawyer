@@ -19,6 +19,7 @@ import {
   DropdownMenu,
   DropdownItem,
 } from "@heroui/dropdown";
+import { Tooltip } from "@heroui/react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -596,6 +597,7 @@ const navIconMap: Record<string, JSX.Element> = {
 export type SidebarNavItem = {
   label: string;
   href: string;
+  description?: string;
   children?: SidebarNavItem[];
   isAccordion?: boolean;
   section?: string;
@@ -688,22 +690,28 @@ const AccordionNavItem = ({
 
               return (
                 <li key={child.href}>
-                  <NextLink
-                    className={
-                      isChildActive
-                        ? "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition bg-primary/25 text-primary"
-                        : "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition text-default-400 hover:bg-default-100 hover:text-default-900"
-                    }
-                    href={child.href}
-                    onClick={() => {
-                      if (!isDesktop && onCloseMobile) {
-                        onCloseMobile();
-                      }
-                    }}
+                  <Tooltip
+                    content={child.description || child.label}
+                    placement="right"
+                    delay={300}
                   >
-                    <span className="shrink-0 text-base">{childIcon}</span>
-                    <span className="truncate">{child.label}</span>
-                  </NextLink>
+                    <NextLink
+                      className={
+                        isChildActive
+                          ? "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition bg-primary/25 text-primary"
+                          : "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition text-default-400 hover:bg-default-100 hover:text-default-900"
+                      }
+                      href={child.href}
+                      onClick={() => {
+                        if (!isDesktop && onCloseMobile) {
+                          onCloseMobile();
+                        }
+                      }}
+                    >
+                      <span className="shrink-0 text-base">{childIcon}</span>
+                      <span className="truncate">{child.label}</span>
+                    </NextLink>
+                  </Tooltip>
                 </li>
               );
             })}

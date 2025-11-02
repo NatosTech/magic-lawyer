@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth/next";
+import { revalidatePath } from "next/cache";
 
 import { authOptions } from "@/auth";
 import prisma from "@/app/lib/prisma";
@@ -295,6 +296,144 @@ export async function getTenantConfigData(): Promise<{
     return {
       success: false,
       error: "Erro interno do servidor",
+    };
+  }
+}
+
+// ===== INTERFACES DE EDIÇÃO =====
+
+export interface UpdateTenantBasicDataInput {
+  name?: string;
+  email?: string;
+  telefone?: string;
+  razaoSocial?: string;
+  nomeFantasia?: string;
+  timezone?: string;
+}
+
+export interface UpdateTenantBrandingInput {
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  accentColor?: string | null;
+  logoUrl?: string | null;
+  faviconUrl?: string | null;
+}
+
+// ===== ACTIONS DE EDIÇÃO =====
+
+/**
+ * Atualiza dados básicos do tenant (nome, email, telefone, etc.)
+ */
+export async function updateTenantBasicData(
+  data: UpdateTenantBasicDataInput,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id || !session.user.tenantId) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const tenantId = session.user.tenantId;
+
+    // Validar permissões
+    const role = (session.user as any)?.role as string;
+    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+      return { success: false, error: "Apenas administradores podem editar essas configurações" };
+    }
+
+    const updateData: Record<string, unknown> = {};
+
+    if (data.name !== undefined) updateData.name = data.name.trim();
+    if (data.email !== undefined) updateData.email = data.email?.trim() || null;
+    if (data.telefone !== undefined) updateData.telefone = data.telefone?.trim() || null;
+    if (data.razaoSocial !== undefined) updateData.razaoSocial = data.razaoSocial?.trim() || null;
+    if (data.nomeFantasia !== undefined) updateData.nomeFantasia = data.nomeFantasia?.trim() || null;
+    if (data.timezone !== undefined) updateData.timezone = data.timezone;
+
+    await prisma.tenant.update({
+      where: { id: tenantId },
+      data: updateData,
+    });
+
+    // Incrementar sessionVersion para forçar refresh
+    await prisma.tenant.update({
+      where: { id: tenantId },
+      data: { sessionVersion: { increment: 1 } },
+    });
+
+    revalidatePath("/configuracoes");
+
+    logger.info(`Tenant ${tenantId} atualizado por ${session.user.email}`);
+
+    return { success: true };
+  } catch (error) {
+    logger.error("Erro ao atualizar dados básicos do tenant:", error);
+
+    return {
+      success: false,
+      error: "Erro interno ao salvar configurações",
+    };
+  }
+}
+
+/**
+ * Atualiza branding do tenant (cores, logo, favicon)
+ */
+export async function updateTenantBranding(
+  data: UpdateTenantBrandingInput,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id || !session.user.tenantId) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const tenantId = session.user.tenantId;
+
+    // Validar permissões
+    const role = (session.user as any)?.role as string;
+    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+      return { success: false, error: "Apenas administradores podem editar o branding" };
+    }
+
+    await prisma.tenantBranding.upsert({
+      where: { tenantId },
+      update: {
+        primaryColor: data.primaryColor ?? undefined,
+        secondaryColor: data.secondaryColor ?? undefined,
+        accentColor: data.accentColor ?? undefined,
+        logoUrl: data.logoUrl ?? undefined,
+        faviconUrl: data.faviconUrl ?? undefined,
+      },
+      create: {
+        tenantId,
+        primaryColor: data.primaryColor ?? "#2563eb",
+        secondaryColor: data.secondaryColor ?? "#1d4ed8",
+        accentColor: data.accentColor ?? "#3b82f6",
+        logoUrl: data.logoUrl ?? null,
+        faviconUrl: data.faviconUrl ?? null,
+      },
+    });
+
+    // Incrementar sessionVersion para forçar refresh
+    await prisma.tenant.update({
+      where: { id: tenantId },
+      data: { sessionVersion: { increment: 1 } },
+    });
+
+    revalidatePath("/configuracoes");
+
+    logger.info(`Branding do tenant ${tenantId} atualizado por ${session.user.email}`);
+
+    return { success: true };
+  } catch (error) {
+    logger.error("Erro ao atualizar branding do tenant:", error);
+
+    return {
+      success: false,
+      error: "Erro interno ao salvar branding",
     };
   }
 }

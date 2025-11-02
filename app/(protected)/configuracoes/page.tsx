@@ -8,6 +8,8 @@ import { Badge } from "@heroui/badge";
 import NextLink from "next/link";
 
 import { EmailCredentialsCard } from "./email-credentials-card";
+import { TenantSettingsForm } from "./tenant-settings-form";
+import { TenantBrandingForm } from "./tenant-branding-form";
 
 import { title, subtitle } from "@/components/primitives";
 import { getSession } from "@/app/lib/auth";
@@ -170,74 +172,28 @@ export default async function ConfiguracoesPage() {
         </Card>
       )}
 
-      {/* Informações do Escritório */}
+      {/* Informações do Escritório - Formulário Editável */}
+      <TenantSettingsForm
+        initialData={{
+          name: tenant.name,
+          email: tenant.email,
+          telefone: tenant.telefone,
+          razaoSocial: tenant.razaoSocial,
+          nomeFantasia: tenant.nomeFantasia,
+          timezone: tenant.timezone,
+        }}
+      />
+
+      {/* Métricas do Escritório */}
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">
-            Informações do Escritório
-          </h2>
+          <h2 className="text-lg font-semibold text-white">Métricas</h2>
           <p className="text-sm text-default-400">
-            Dados básicos e métricas do seu escritório.
+            Estatísticas gerais do seu escritório.
           </p>
         </CardHeader>
         <Divider className="border-white/10" />
-        <CardBody className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-default-400">Nome</p>
-              <p className="text-lg font-semibold text-white">{tenant.name}</p>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-default-400">Slug</p>
-              <p className="text-lg font-semibold text-white">{tenant.slug}</p>
-            </div>
-
-            {tenant.domain && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-default-400">Domínio</p>
-                <p className="text-lg font-semibold text-white">
-                  {tenant.domain}
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-default-400">Status</p>
-              <Badge
-                color={tenant.status === "ATIVO" ? "success" : "warning"}
-                variant="flat"
-              >
-                {tenant.status}
-              </Badge>
-            </div>
-          </div>
-
-          {tenant.razaoSocial && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-default-400">
-                Razão Social
-              </p>
-              <p className="text-white">{tenant.razaoSocial}</p>
-            </div>
-          )}
-
-          {tenant.nomeFantasia && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-default-400">
-                Nome Fantasia
-              </p>
-              <p className="text-white">{tenant.nomeFantasia}</p>
-            </div>
-          )}
-
-          {tenant.documento && (
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-default-400">Documento</p>
-              <p className="text-white">{tenant.documento}</p>
-            </div>
-          )}
-
+        <CardBody>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 rounded-lg bg-primary/10 border border-primary/20">
               <p className="text-2xl font-bold text-primary">
@@ -328,80 +284,17 @@ export default async function ConfiguracoesPage() {
         </CardBody>
       </Card>
 
-      {/* Branding */}
+      {/* Branding - Formulário Editável */}
       {branding && (
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">
-              Identidade Visual
-            </h2>
-            <p className="text-sm text-default-400">
-              Configurações de branding e personalização visual.
-            </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {branding.primaryColor && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-default-400">
-                    Cor Primária
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-8 h-8 rounded border"
-                      style={{ backgroundColor: branding.primaryColor }}
-                    />
-                    <span className="text-white">{branding.primaryColor}</span>
-                  </div>
-                </div>
-              )}
-
-              {branding.secondaryColor && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-default-400">
-                    Cor Secundária
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-8 h-8 rounded border"
-                      style={{ backgroundColor: branding.secondaryColor }}
-                    />
-                    <span className="text-white">
-                      {branding.secondaryColor}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {branding.accentColor && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-default-400">
-                    Cor de Destaque
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-8 h-8 rounded border"
-                      style={{ backgroundColor: branding.accentColor }}
-                    />
-                    <span className="text-white">{branding.accentColor}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {branding.logoUrl && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-default-400">Logo</p>
-                <img
-                  alt="Logo do escritório"
-                  className="h-16 object-contain"
-                  src={branding.logoUrl}
-                />
-              </div>
-            )}
-          </CardBody>
-        </Card>
+        <TenantBrandingForm
+          initialData={{
+            primaryColor: branding.primaryColor,
+            secondaryColor: branding.secondaryColor,
+            accentColor: branding.accentColor,
+            logoUrl: branding.logoUrl,
+            faviconUrl: branding.faviconUrl,
+          }}
+        />
       )}
 
       {/* Credenciais SMTP */}

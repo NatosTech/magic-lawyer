@@ -27,9 +27,11 @@ export function AppShell({ children }: AppShellProps) {
     return navigationItems.map((item) => ({
       label: item.label,
       href: item.href,
+      description: item.description,
       children: item.children?.map((child) => ({
         label: child.label,
         href: child.href,
+        description: child.description,
       })),
       isAccordion: item.isAccordion,
       section: item.section, // ✨ Adicionar seção
@@ -40,6 +42,7 @@ export function AppShell({ children }: AppShellProps) {
     return secondaryNavigationItems.map((item) => ({
       label: item.label,
       href: item.href,
+      description: item.description,
       section: item.section, // ✨ Adicionar seção
     }));
   }, [secondaryNavigationItems]);
