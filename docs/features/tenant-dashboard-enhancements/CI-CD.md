@@ -23,12 +23,21 @@ O workflow está configurado em `.github/workflows/test.yml` e executa:
 
 ### Variáveis de Ambiente no GitHub
 
-Configure as seguintes secrets no GitHub (Settings > Secrets):
+⚠️ **IMPORTANTE:** Configure os secrets **antes do primeiro run**. Veja o guia completo em `SETUP-CI.md`.
 
+**Secrets obrigatórios:**
+- `NEXTAUTH_SECRET` - Secret para NextAuth (gerar com `openssl rand -base64 32`)
+- `NEXTAUTH_URL` - URL base da aplicação
+
+**Secrets opcionais:**
 - `DATABASE_URL` - URL do banco de teste (opcional, usa service do workflow)
 - `REDIS_URL` - URL do Redis (opcional, usa service do workflow)
-- `NEXTAUTH_SECRET` - Secret para NextAuth
-- `NEXTAUTH_URL` - URL base da aplicação
+- `TEST_*_EMAIL` e `TEST_*_PASSWORD` - Credenciais para testes E2E
+- `CODECOV_TOKEN` - Token do Codecov (opcional)
+
+### Validação Automática
+
+O workflow inclui um job `validate-env` que valida automaticamente se os secrets estão configurados antes de rodar os testes.
 
 ### Ambiente de Testes
 

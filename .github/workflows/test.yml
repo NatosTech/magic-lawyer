@@ -6,10 +6,42 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Variáveis padrão (podem ser sobrescritas por secrets)
+env:
+  NODE_ENV: test
+  TEST_MODE: 'true'
+
 jobs:
+  validate-env:
+    name: Validar Configuração
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validar variáveis de ambiente
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/magiclawyer_test' }}
+          REDIS_URL: ${{ secrets.REDIS_URL || 'redis://localhost:6379' }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'test-secret-key-for-ci' }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'http://localhost:3000' }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+          TEST_ADVOGADO_EMAIL: ${{ secrets.TEST_ADVOGADO_EMAIL }}
+          TEST_ADVOGADO_PASSWORD: ${{ secrets.TEST_ADVOGADO_PASSWORD }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          CI: 'true'
+        run: |
+          node scripts/validate-ci-env.js || exit 0  # Não falhar o workflow, apenas avisar
+
   unit-tests:
     name: Testes Unitários
     runs-on: ubuntu-latest
+    needs: validate-env
 
     services:
       postgres:
@@ -23,6 +55,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --shm-size=256mb
         ports:
           - 5432:5432
 
@@ -33,6 +66,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --memory 512m
+          --maxmemory-policy allkeys-lru
         ports:
           - 6379:6379
 
@@ -40,8 +75,9 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/magiclawyer_test
       REDIS_URL: redis://localhost:6379
       NODE_ENV: test
-      NEXTAUTH_SECRET: test-secret-key-for-ci
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'test-secret-key-for-ci' }}
+      NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'http://localhost:3000' }}
+      TEST_MODE: 'true'
 
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +97,14 @@ jobs:
       - name: Run database migrations
         run: npx prisma migrate deploy
 
+      - name: Monitorar memória dos services
+        run: |
+          echo "📊 Status dos serviços:"
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          echo ""
+          echo "💾 Uso de memória:"
+          docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}"
+
       - name: Run unit tests
         run: npm test -- --coverage --ci
 
@@ -75,6 +119,7 @@ jobs:
   e2e-tests:
     name: Testes E2E
     runs-on: ubuntu-latest
+    needs: validate-env
 
     services:
       postgres:
@@ -88,6 +133,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --shm-size=256mb
         ports:
           - 5432:5432
 
@@ -98,6 +144,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --memory 512m
+          --maxmemory-policy allkeys-lru
         ports:
           - 6379:6379
 
@@ -105,8 +153,19 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/magiclawyer_test
       REDIS_URL: redis://localhost:6379
       NODE_ENV: test
-      NEXTAUTH_SECRET: test-secret-key-for-ci
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'test-secret-key-for-ci' }}
+      NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL || 'http://localhost:3000' }}
+      TEST_MODE: 'true'
+      TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+      TEST_ADVOGADO_EMAIL: ${{ secrets.TEST_ADVOGADO_EMAIL }}
+      TEST_ADVOGADO_PASSWORD: ${{ secrets.TEST_ADVOGADO_PASSWORD }}
+      TEST_SECRETARIA_EMAIL: ${{ secrets.TEST_SECRETARIA_EMAIL }}
+      TEST_SECRETARIA_PASSWORD: ${{ secrets.TEST_SECRETARIA_PASSWORD }}
+      TEST_FINANCEIRO_EMAIL: ${{ secrets.TEST_FINANCEIRO_EMAIL }}
+      TEST_FINANCEIRO_PASSWORD: ${{ secrets.TEST_FINANCEIRO_PASSWORD }}
+      TEST_CLIENTE_EMAIL: ${{ secrets.TEST_CLIENTE_EMAIL }}
+      TEST_CLIENTE_PASSWORD: ${{ secrets.TEST_CLIENTE_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -129,6 +188,14 @@ jobs:
       - name: Run database migrations
         run: npx prisma migrate deploy
 
+      - name: Monitorar memória dos services
+        run: |
+          echo "📊 Status dos serviços:"
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          echo ""
+          echo "💾 Uso de memória:"
+          docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}"
+
       - name: Build application
         run: npm run build
 
@@ -136,6 +203,12 @@ jobs:
         run: npm run test:e2e
         env:
           BASE_URL: http://localhost:3000
+
+      - name: Monitorar memória após testes
+        if: always()
+        run: |
+          echo "📊 Status final dos serviços:"
+          docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}"
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -148,6 +221,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    needs: validate-env
 
     steps:
       - uses: actions/checkout@v4
