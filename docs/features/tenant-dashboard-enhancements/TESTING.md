@@ -90,12 +90,23 @@ Edite `jest.config.js` para ajustar:
 - Mapeamento de módulos
 - Ambiente de teste
 
+## 🚀 CI/CD
+
+O projeto está configurado com GitHub Actions para executar testes automaticamente. Veja `CI-CD.md` para detalhes completos.
+
+**Workflow:** `.github/workflows/test.yml`
+
+Executa em cada push/PR:
+- ✅ Testes unitários com cobertura
+- ✅ Testes E2E com Playwright
+- ✅ Lint com ESLint
+
 ## 📝 Próximos Passos
 
-1. **Implementar helpers de autenticação** para testes E2E
-2. **Criar dados de seed** específicos para testes
+1. ✅ **Implementar helpers de autenticação** para testes E2E - CONCLUÍDO
+2. ✅ **Criar dados de seed** específicos para testes - CONCLUÍDO
 3. **Adicionar mais testes de integração** cobrindo fluxos completos
-4. **Configurar CI/CD** para executar testes automaticamente
+4. ✅ **Configurar CI/CD** para executar testes automaticamente - CONCLUÍDO
 
 ## 🐛 Troubleshooting
 

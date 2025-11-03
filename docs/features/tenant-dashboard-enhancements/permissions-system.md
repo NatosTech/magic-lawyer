@@ -404,8 +404,20 @@ test("usuário sem permissão não vê botão de criar", async () => {
   - [x] Criar página `/auditoria-permissoes` (apenas ADMIN)
   - [x] Implementar `getPermissoesNegadas()` e `getMetricasPermissoesNegadas()`
   - [x] Componentes de visualização com métricas, gráficos e tabela filtrada
-- [ ] Configurar CI/CD para executar testes automaticamente
-- [ ] Implementar helpers de autenticação para testes E2E
+- [x] Configurar CI/CD para executar testes automaticamente:
+  - [x] Workflow GitHub Actions (.github/workflows/test.yml)
+  - [x] Jobs para testes unitários, E2E e lint
+  - [x] Services PostgreSQL e Redis
+  - [x] Relatórios de cobertura e Playwright
+- [x] Implementar helpers de autenticação para testes E2E:
+  - [x] Helpers loginAsUser, loginAsAdmin, loginAsRole
+  - [x] API route /api/test/setup para criar dados de teste
+  - [x] Helpers de seed via API
+  - [x] Testes E2E atualizados para usar helpers
+- [x] Dashboard de auditoria - funcionalidades extras:
+  - [x] Export CSV do histórico de recusas
+  - [x] Filtros por módulo, ação e origem
+  - [x] Paginação funcional
 - [ ] Adicionar mais testes de integração cobrindo fluxos completos
 
 ## 📊 Auditoria e Logging
