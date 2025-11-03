@@ -6,10 +6,8 @@ Este documento mapeia os componentes que ainda usam o sistema antigo de permiss�
 
 **Resultado do mapeamento:**
 - ✅ Server actions: 100% migrado (38 ocorrências de `checkPermission`)
-- ⚠️ Hooks client-side: **PARCIALMENTE migrado**
-  - `use-user-permissions.ts` ainda usa `session.user.permissions` diretamente
-  - `permission-guard.tsx` depende do hook antigo
-  - `permission-guard.tsx` depende do hook migrado (validar fluxos críticos)
+- ✅ Hooks client-side: `use-user-permissions.ts` migrado para o novo sistema
+  - `permission-guard.tsx` utiliza o hook migrado (validar fluxos críticos)
   - `use-profile-navigation.ts` usa `useUserPermissions()` (principalmente para role)
 
 ## 🎯 Componentes para Migrar

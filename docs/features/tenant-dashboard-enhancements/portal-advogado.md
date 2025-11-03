@@ -31,10 +31,9 @@ Planejamento da nova área dedicada a informações úteis para advogados dentro
 - [ ] Criar endpoints para expor calendários, comunicados e links úteis ao frontend.
 - [ ] Configurar observabilidade para monitorar falhas de coleta (alertas quando fonte ficar indisponível).
 
-### 4. Frontend e UX
-- [ ] Adicionar item “Portal do Advogado” no sidebar com ícone condizente.
-- [ ] Definir layout com seções (Calendário de Recessos, Comunicados, Links Rápidos, Status dos Tribunais).
-- [ ] Implementar cards/listas com estados de carregamento e fallback quando não houver dados.
+- [x] Adicionar item “Portal do Advogado” no sidebar com ícone condizente.
+- [x] Definir layout com seções (Calendário de Recessos, Comunicados, Links Rápidos, Status dos Tribunais).
+- [x] Implementar cards/listas com estados de carregamento e fallback quando não houver dados.
 - [ ] Permitir filtros por tribunal, tipo de comunicado e período.
 - [ ] Avaliar integrações com calendário pessoal (export `.ics`) e notificações push.
 

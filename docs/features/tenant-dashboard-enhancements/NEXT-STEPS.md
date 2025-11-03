@@ -72,10 +72,11 @@ node scripts/map-permission-usage.js
 
 **Features disponíveis:**
 1. **Portal do Advogado** (`portal-advogado.md`)
-   - Calendário de recessos
-   - Plantões e pautas
-   - Links para tribunais
-   - Comunicados e editais
+   - ✅ Fase 1 (estrutura básica, links estáticos)
+   - Próximas fases:
+     - Fase 2: Dados do tenant/processo
+     - Fase 3: Links dinâmicos por UF
+     - Fases 4-5: Calendário e comunicados (input manual)
 
 2. **Configurações Avançadas** (expansão de `tenant-settings.md`)
    - Integrações com APIs externas
@@ -148,4 +149,3 @@ node scripts/map-permission-usage.js
 
 **Última atualização:** Após conclusão do sistema de permissões e remoção do CI/CD
 **Próxima revisão:** Conforme novas features forem implementadas
-
