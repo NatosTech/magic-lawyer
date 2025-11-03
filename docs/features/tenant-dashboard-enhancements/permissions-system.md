@@ -384,10 +384,11 @@ test("usuário sem permissão não vê botão de criar", async () => {
   - [x] Processos: `createProcesso`, `updateProcesso`
   - [x] Clientes: `createCliente`, `updateCliente`
   - [x] Financeiro: `createContrato`, `updateContrato`
-- [ ] Integrar `checkPermission` em Server Actions restantes:
-  - [ ] Processos: `deleteProcesso` (quando implementado)
-  - [ ] Clientes: `deleteCliente` (quando implementado)
-  - [ ] Financeiro: `deleteContrato`, `createParcelaContrato`, `updateParcelaContrato`, `deleteParcelaContrato`
+- [x] Integrar `checkPermission` em Server Actions restantes:
+  - [ ] Processos: `deleteProcesso` (quando implementado - atualmente usa soft delete via update)
+  - [x] Clientes: `deleteCliente` (integrado com `clientes.excluir`)
+  - [x] Financeiro - Parcelas: `createParcelaContrato`, `updateParcelaContrato`, `deleteParcelaContrato` (todas integradas)
+  - [ ] Financeiro: `deleteContrato` (quando implementado)
   - [ ] Outras operações sensíveis
 - [ ] Atualizar guards de rota para usar verificação consolidada (middleware já verifica módulos, mas ações específicas são validadas nas Server Actions)
 - [ ] Criar testes unitários para `checkPermission` e `checkPermissions`
