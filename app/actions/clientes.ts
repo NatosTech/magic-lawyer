@@ -7,6 +7,7 @@ import prisma, { toNumber, convertAllDecimalFields } from "@/app/lib/prisma";
 import { TipoPessoa, Prisma } from "@/app/generated/prisma";
 import logger from "@/lib/logger";
 import { DocumentNotifier } from "@/app/lib/notifications/document-notifier";
+import { checkPermission } from "@/app/actions/equipe";
 
 // ============================================
 // TYPES
@@ -501,13 +502,13 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    // Verificar se usuário tem permissão para criar clientes
-    if (
-      user.role !== "ADMIN" &&
-      user.role !== "ADVOGADO" &&
-      user.role !== "SUPER_ADMIN"
-    ) {
-      return { success: false, error: "Sem permissão para criar clientes" };
+    // Verificar permissão para criar clientes
+    const podeCriar = await checkPermission("clientes", "criar");
+    if (!podeCriar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para criar clientes",
+      };
     }
 
     const { advogadosIds, criarUsuario, ...clienteData } = data;
@@ -677,6 +678,15 @@ export async function updateCliente(
 
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Verificar permissão para editar clientes
+    const podeEditar = await checkPermission("clientes", "editar");
+    if (!podeEditar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para editar clientes",
+      };
     }
 
     // Verificar se cliente existe e pertence ao tenant

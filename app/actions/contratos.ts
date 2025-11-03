@@ -6,6 +6,7 @@ import { authOptions } from "@/auth";
 import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
 import { ContratoStatus } from "@/app/generated/prisma";
 import logger from "@/lib/logger";
+import { checkPermission } from "@/app/actions/equipe";
 
 // ============================================
 // TYPES
@@ -251,6 +252,15 @@ export async function createContrato(data: ContratoCreateInput) {
 
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Verificar permissão para criar contratos
+    const podeCriar = await checkPermission("financeiro", "criar");
+    if (!podeCriar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para criar contratos",
+      };
     }
 
     // Validar campos obrigatórios
@@ -731,6 +741,15 @@ export async function updateContrato(
 
     if (!user.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Verificar permissão para editar contratos
+    const podeEditar = await checkPermission("financeiro", "editar");
+    if (!podeEditar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para editar contratos",
+      };
     }
 
     // Verificar se o contrato existe e o usuário tem permissão

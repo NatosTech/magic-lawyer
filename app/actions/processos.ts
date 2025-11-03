@@ -14,6 +14,7 @@ import {
 import { ProcessoNotificationIntegration } from "@/app/lib/notifications/examples/processo-integration";
 import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notification-service";
 import { buildProcessoDiff } from "@/app/lib/processos/diff";
+import { checkPermission } from "@/app/actions/equipe";
 
 // ============================================
 // TYPES - Prisma Type Safety (Best Practice)
@@ -1766,6 +1767,15 @@ export async function createProcesso(data: ProcessoCreateInput) {
       return { success: false, error: "Tenant não encontrado" };
     }
 
+    // Verificar permissão para criar processos
+    const podeCriar = await checkPermission("processos", "criar");
+    if (!podeCriar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para criar processos",
+      };
+    }
+
     // Validar campos obrigatórios
     if (!data.numero || !data.clienteId) {
       return {
@@ -1962,6 +1972,20 @@ export async function updateProcesso(
 
     if (!session?.user) {
       return { success: false, error: "Não autorizado" };
+    }
+
+    const sessionUser = session.user as any;
+    if (!sessionUser.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Verificar permissão para editar processos
+    const podeEditar = await checkPermission("processos", "editar");
+    if (!podeEditar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para editar processos",
+      };
     }
 
     const { user, processo } = await ensureProcessMutationAccess(
