@@ -395,10 +395,18 @@ test("usuário sem permissão não vê botão de criar", async () => {
   - [x] Logging no logger estruturado com dados completos
   - [x] Registro no `EquipeHistorico` para auditoria detalhada
   - [x] Logging integrado em todas as camadas (override, cargo, role)
-- [ ] Atualizar guards de rota para usar verificação consolidada (middleware já verifica módulos, mas ações específicas são validadas nas Server Actions)
-- [ ] Criar testes unitários para `checkPermission` e `checkPermissions` (veja `test-plan-permissions.md`)
-- [ ] Criar testes de integração cobrindo override, cargo e role (veja `test-plan-permissions.md`)
-- [ ] Criar testes E2E simulando mudança de permissão e re-render (veja `test-plan-permissions.md`)
+- [x] Configurar stack de testes:
+  - [x] Instalar Jest, Testing Library e Playwright
+  - [x] Configurar Jest para Next.js
+  - [x] Criar testes unitários para `checkPermission` e `checkPermissions`
+  - [x] Criar templates de testes E2E (requerem ajustes para ambiente específico)
+- [x] Dashboard de auditoria:
+  - [x] Criar página `/auditoria-permissoes` (apenas ADMIN)
+  - [x] Implementar `getPermissoesNegadas()` e `getMetricasPermissoesNegadas()`
+  - [x] Componentes de visualização com métricas, gráficos e tabela filtrada
+- [ ] Configurar CI/CD para executar testes automaticamente
+- [ ] Implementar helpers de autenticação para testes E2E
+- [ ] Adicionar mais testes de integração cobrindo fluxos completos
 
 ## 📊 Auditoria e Logging
 
