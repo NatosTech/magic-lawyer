@@ -19,8 +19,13 @@ export function PermissionGuard({
   fallback,
   showMessage = true,
 }: PermissionGuardProps) {
-  const { permissions, userRole } = useUserPermissions();
+  const { permissions, userRole, isLoadingPermissions } = useUserPermissions();
   const hasPermission = permissions[permission];
+
+  // Se ainda estiver carregando, não renderizar nada (ou mostrar loading)
+  if (isLoadingPermissions) {
+    return fallback || null;
+  }
 
   if (hasPermission) {
     return <>{children}</>;
