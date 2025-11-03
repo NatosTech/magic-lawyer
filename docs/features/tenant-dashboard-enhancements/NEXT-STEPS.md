@@ -7,7 +7,6 @@ Este documento centraliza os próximos passos e prioridades após a conclusão d
 - [x] Sistema de permissões consolidado (override → cargo → role)
 - [x] Hooks e server actions para verificação de permissões
 - [x] Dashboard de auditoria de permissões
-- [x] Stack de testes completa (Jest + Playwright)
 - [x] Stack de testes configurada (Jest + Playwright)
 - [x] Export CSV no dashboard
 - [x] Logging e auditoria estruturados
