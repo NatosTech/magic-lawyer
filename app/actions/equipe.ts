@@ -1291,6 +1291,12 @@ export async function updateUsuarioEquipe(
     email?: string;
     phone?: string;
     active?: boolean;
+    cpf?: string | null;
+    rg?: string | null;
+    dataNascimento?: Date | null;
+    observacoes?: string | null;
+    role?: UserRole;
+    avatarUrl?: string | null;
   },
 ): Promise<UsuarioEquipeData> {
   const session = await getSession();
@@ -1351,6 +1357,49 @@ export async function updateUsuarioEquipe(
     updateData.active = data.active;
   }
 
+  // Validar CPF único se está sendo alterado
+  if (data.cpf !== undefined && data.cpf !== usuario.cpf) {
+    if (data.cpf) {
+      const existingUser = await prisma.usuario.findFirst({
+        where: {
+          cpf: data.cpf,
+          tenantId: session.user.tenantId,
+          id: { not: usuarioId },
+        },
+      });
+
+      if (existingUser) {
+        throw new Error("Este CPF já está em uso por outro usuário");
+      }
+    }
+    updateData.cpf = data.cpf;
+  }
+
+  if (data.rg !== undefined && data.rg !== usuario.rg) {
+    updateData.rg = data.rg;
+  }
+
+  if (data.dataNascimento !== undefined) {
+    updateData.dataNascimento = data.dataNascimento;
+  }
+
+  if (data.observacoes !== undefined && data.observacoes !== usuario.observacoes) {
+    updateData.observacoes = data.observacoes;
+  }
+
+  // Validar role - apenas ADMIN pode alterar role
+  if (data.role !== undefined && data.role !== usuario.role) {
+    // Não permitir alterar para SUPER_ADMIN ou alterar de SUPER_ADMIN
+    if (data.role === UserRole.SUPER_ADMIN || usuario.role === UserRole.SUPER_ADMIN) {
+      throw new Error("Não é possível alterar role para/de SUPER_ADMIN");
+    }
+    updateData.role = data.role;
+  }
+
+  if (data.avatarUrl !== undefined && data.avatarUrl !== usuario.avatarUrl) {
+    updateData.avatarUrl = data.avatarUrl;
+  }
+
   // Só atualizar se houver mudanças
   if (Object.keys(updateData).length > 0) {
     await prisma.usuario.update({
@@ -1370,6 +1419,12 @@ export async function updateUsuarioEquipe(
           email: usuario.email,
           phone: usuario.phone,
           active: usuario.active,
+          cpf: usuario.cpf,
+          rg: usuario.rg,
+          dataNascimento: usuario.dataNascimento,
+          observacoes: usuario.observacoes,
+          role: usuario.role,
+          avatarUrl: usuario.avatarUrl,
         },
         dadosNovos: updateData,
         motivo: "Dados do usuário atualizados pelo admin",

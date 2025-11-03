@@ -67,6 +67,11 @@ import {
   HelpCircle,
   ExternalLink,
   RefreshCw,
+  Calendar,
+  FileText,
+  CreditCard,
+  Image,
+  GraduationCap,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -972,6 +977,12 @@ function UsuariosTab() {
     email: "",
     phone: "",
     active: true,
+    cpf: "",
+    rg: "",
+    dataNascimento: "",
+    observacoes: "",
+    role: "SECRETARIA" as string,
+    avatarUrl: "",
   });
   const [isSaving, setIsSaving] = useState(false);
   const [permissionsForm, setPermissionsForm] = useState<Record<string, Record<string, boolean>>>({});
@@ -1024,12 +1035,21 @@ function UsuariosTab() {
 
   function handleEditUsuario(usuario: UsuarioEquipeData) {
     setSelectedUsuario(usuario);
+    const usuarioAny = usuario as any;
     setEditFormData({
       firstName: usuario.firstName || "",
       lastName: usuario.lastName || "",
       email: usuario.email || "",
-      phone: (usuario as any).phone || "",
+      phone: usuarioAny.phone || "",
       active: usuario.active,
+      cpf: usuarioAny.cpf || "",
+      rg: usuarioAny.rg || "",
+      dataNascimento: usuarioAny.dataNascimento 
+        ? new Date(usuarioAny.dataNascimento).toISOString().split("T")[0]
+        : "",
+      observacoes: usuarioAny.observacoes || "",
+      role: usuario.role || "SECRETARIA",
+      avatarUrl: usuarioAny.avatarUrl || "",
     });
     setIsEditModalOpen(true);
   }
@@ -1039,7 +1059,21 @@ function UsuariosTab() {
 
     setIsSaving(true);
     try {
-      await updateUsuarioEquipe(selectedUsuario.id, editFormData);
+      await updateUsuarioEquipe(selectedUsuario.id, {
+        firstName: editFormData.firstName || undefined,
+        lastName: editFormData.lastName || undefined,
+        email: editFormData.email,
+        phone: editFormData.phone || undefined,
+        active: editFormData.active,
+        cpf: editFormData.cpf || null,
+        rg: editFormData.rg || null,
+        dataNascimento: editFormData.dataNascimento 
+          ? new Date(editFormData.dataNascimento)
+          : null,
+        observacoes: editFormData.observacoes || null,
+        role: editFormData.role as any,
+        avatarUrl: editFormData.avatarUrl || null,
+      });
       toast.success("Usuário atualizado com sucesso");
       setIsEditModalOpen(false);
       await loadData();
@@ -1926,6 +1960,92 @@ function UsuariosTab() {
                   setEditFormData({ ...editFormData, phone: e.target.value })
                 }
               />
+              
+              <Divider />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="CPF"
+                  placeholder="000.000.000-00"
+                  value={editFormData.cpf}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, cpf: e.target.value })
+                  }
+                  startContent={<CreditCard className="w-4 h-4 text-default-400" />}
+                />
+                <Input
+                  label="RG"
+                  placeholder="0000000"
+                  value={editFormData.rg}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, rg: e.target.value })
+                  }
+                  startContent={<FileText className="w-4 h-4 text-default-400" />}
+                />
+              </div>
+              
+              <Input
+                label="Data de Nascimento"
+                type="date"
+                value={editFormData.dataNascimento}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, dataNascimento: e.target.value })
+                }
+                startContent={<Calendar className="w-4 h-4 text-default-400" />}
+              />
+              
+              <Select
+                label="Role (Função)"
+                selectedKeys={[editFormData.role]}
+                onSelectionChange={(keys) => {
+                  const role = Array.from(keys)[0] as string;
+                  setEditFormData({ ...editFormData, role: role || "SECRETARIA" });
+                }}
+                startContent={<User className="w-4 h-4 text-default-400" />}
+              >
+                <SelectItem key="ADMIN" value="ADMIN">
+                  {getRoleLabel("ADMIN")}
+                </SelectItem>
+                <SelectItem key="ADVOGADO" value="ADVOGADO">
+                  {getRoleLabel("ADVOGADO")}
+                </SelectItem>
+                <SelectItem key="SECRETARIA" value="SECRETARIA">
+                  {getRoleLabel("SECRETARIA")}
+                </SelectItem>
+                <SelectItem key="FINANCEIRO" value="FINANCEIRO">
+                  {getRoleLabel("FINANCEIRO")}
+                </SelectItem>
+                <SelectItem key="ESTAGIARIA" value="ESTAGIARIA">
+                  {getRoleLabel("ESTAGIARIA")}
+                </SelectItem>
+                <SelectItem key="CLIENTE" value="CLIENTE">
+                  {getRoleLabel("CLIENTE")}
+                </SelectItem>
+              </Select>
+              
+              <Input
+                label="URL do Avatar"
+                placeholder="https://exemplo.com/avatar.jpg"
+                value={editFormData.avatarUrl}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, avatarUrl: e.target.value })
+                }
+                startContent={<Image className="w-4 h-4 text-default-400" />}
+                description="URL da imagem do avatar do usuário"
+              />
+              
+              <Textarea
+                label="Observações"
+                placeholder="Observações sobre o usuário..."
+                value={editFormData.observacoes}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, observacoes: e.target.value })
+                }
+                minRows={3}
+              />
+              
+              <Divider />
+              
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium mb-1">Status</p>
