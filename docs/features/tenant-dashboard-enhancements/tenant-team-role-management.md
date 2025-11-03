@@ -34,15 +34,16 @@ Planejamento detalhado da feature que espelha o controle de módulos, mas focada
 - [ ] Estruturar layout similar ao controle de módulos, adaptando copy e `empty states`.
 - [ ] Construir formulário de cargo com campos: nome, nível hierárquico (dropdown/numérico), descrição (textarea) e toggle de status.
 - [x] Implementar listagem de módulos do tenant com seleção (checkbox/switch), agrupamentos e busca conforme necessário.
-- [ ] Revisar a aba **Usuários** garantindo que o modal/fluxo de edição do usuário habilite alteração de dados, permissões e vínculo de cargo (atualmente quebrado).
-- [ ] Validar que todos os botões/ações exibidos na tela possuem implementação real; remover mocks/placeholders remanescentes.
+- [x] Revisar a aba **Usuários** garantindo que o modal/fluxo de edição do usuário habilite alteração de dados, permissões e vínculo de cargo (atualmente quebrado).
+- [x] Validar que todos os botões/ações exibidos na tela possuem implementação real; remover mocks/placeholders remanescentes.
+- [x] Documentar no próprio modal de permissões a precedência (override → cargo → role) e o significado dos chips.
 - [ ] Reutilizar componentes compartilhados (tables, forms) ou criar variantes específicas se o design pedir.
 - [ ] Tratar estados de carregamento, erro, permissões insuficientes e feedback ao usuário.
 
 ### 5. Realtime e Sincronização
-- [ ] Assinar o canal realtime do tenant logo após montar a página, usando o prefixo configurado.
+- [x] Assinar o canal realtime do tenant logo após montar a página, usando o prefixo configurado.
 - [x] Atualizar imediatamente a lista de módulos exibidos quando o tenant ganhar/perder acesso.
-- [ ] Sincronizar alterações de cargos entre múltiplos usuários (ex.: criação/edição em outra aba).
+- [x] Sincronizar alterações de cargos entre múltiplos usuários (ex.: criação/edição em outra aba).
 - [ ] Garantir reconexão e tratamento de queda de conexão.
 
 ### 6. Experiência do Usuário
