@@ -8,7 +8,7 @@ Este documento centraliza os próximos passos e prioridades após a conclusão d
 - [x] Hooks e server actions para verificação de permissões
 - [x] Dashboard de auditoria de permissões
 - [x] Stack de testes completa (Jest + Playwright)
-- [x] CI/CD configurado com validação e monitoramento
+- [x] Stack de testes configurada (Jest + Playwright)
 - [x] Export CSV no dashboard
 - [x] Logging e auditoria estruturados
 
@@ -98,27 +98,17 @@ node scripts/map-permission-usage.js
 4. Testar e coletar feedback
 5. Iterar e expandir
 
-### 4. Manter CI/CD Saudável (Média Prioridade)
+### 4. Executar Testes Regularmente (Média Prioridade)
 
-**Ações imediatas:**
-- [ ] Monitorar primeiro run do workflow no GitHub Actions
-- [ ] Verificar se job `validate-env` está funcionando
-- [ ] Confirmar que secrets estão configurados
-- [ ] Validar monitoramento de memória
-- [ ] Ajustar thresholds se necessário
+**Importante:** O projeto não possui pipeline automática. Testes devem ser executados manualmente.
 
-**Checklist pós-primeiro-run:**
-- [ ] Todos os jobs passaram?
-- [ ] Secrets configurados corretamente?
-- [ ] Memória dos services dentro dos limites?
-- [ ] Testes executaram com sucesso?
-- [ ] Relatórios de cobertura gerados?
+**Ações recomendadas:**
+- [ ] Executar `npm test` antes de commits importantes
+- [ ] Rodar `npm run test:e2e` após mudanças significativas na UI
+- [ ] Verificar cobertura com `npm run test:coverage` periodicamente
+- [ ] Manter testes atualizados conforme código evolui
 
-**Ajustes comuns:**
-- Limites de memória dos services (se houver OOM)
-- Timeout dos jobs (se muito lentos)
-- Retry logic (se houver flakiness)
-- Caching (para acelerar builds)
+**Nota:** Se no futuro decidir habilitar CI/CD, consulte `CI-CD.md` e `SETUP-CI.md` como referência.
 
 ## 📊 Status Atual
 
@@ -132,10 +122,10 @@ node scripts/map-permission-usage.js
 - ⏳ Aguardando feedback em produção
 - 📝 Melhorias planejadas
 
-### CI/CD
-- ✅ Workflow configurado
-- ⏳ Aguardando primeiro run
-- 📝 Ajustes podem ser necessários
+### Execução de Testes
+- ✅ Stack configurada (Jest + Playwright)
+- ✅ Scripts npm disponíveis
+- 📝 Execução manual conforme necessário
 
 ### Próximas Features
 - 📋 Portal do Advogado - Planejado
@@ -143,9 +133,9 @@ node scripts/map-permission-usage.js
 
 ## 🎯 Recomendações de Ordem
 
-1. **Primeiro:** Migrar permissões antigas (garante consistência)
-2. **Segundo:** Monitorar CI/CD no primeiro run (garante infraestrutura)
-3. **Terceiro:** Escolher próxima feature e começar fatiamento
+1. ✅ **Primeiro:** Migrar permissões antigas - CONCLUÍDO
+2. **Segundo:** Escolher próxima feature e começar fatiamento
+3. **Terceiro:** Executar testes regularmente antes de commits importantes
 4. **Em paralelo:** Coletar feedback do dashboard em produção
 
 ## 📝 Notas
@@ -157,6 +147,6 @@ node scripts/map-permission-usage.js
 
 ---
 
-**Última atualização:** Após conclusão do sistema de permissões e CI/CD
-**Próxima revisão:** Após primeiro run do CI/CD e migração de permissões
+**Última atualização:** Após conclusão do sistema de permissões e remoção do CI/CD
+**Próxima revisão:** Conforme novas features forem implementadas
 

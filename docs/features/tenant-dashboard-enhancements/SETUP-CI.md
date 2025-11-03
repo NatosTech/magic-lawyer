@@ -1,6 +1,8 @@
-# Configuração de Secrets e Variáveis para CI/CD
+# Configuração de Secrets e Variáveis para CI/CD (Referência)
 
-Este guia explica como configurar os secrets e variáveis de ambiente necessários para o CI/CD funcionar corretamente.
+⚠️ **IMPORTANTE:** Este documento é apenas uma **referência** para o futuro. O projeto **não possui pipeline automática** ativa no momento. Todos os testes são executados manualmente usando scripts npm.
+
+Este guia fica disponível caso, no futuro, seja decidido habilitar um fluxo de CI/CD (por exemplo, via GitHub Actions).
 
 ## 🔐 Secrets Obrigatórios
 

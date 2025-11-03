@@ -1,49 +1,22 @@
-# Configuração CI/CD
+# Configuração CI/CD (Opcional)
 
-Este documento descreve a configuração de CI/CD para execução automática de testes.
+No momento **não estamos executando nenhuma pipeline automática**. Este documento ficou como referência caso, no futuro, seja desejado habilitar um fluxo de CI/CD (por exemplo, via GitHub Actions).
 
-## 📋 GitHub Actions
+## 📋 GitHub Actions (desabilitado)
 
-O workflow está configurado em `.github/workflows/test.yml` e executa:
+O repositório não possui workflow ativo. Caso queira ativar no futuro:
 
-1. **Testes Unitários**
-   - Rodam em cada push/PR
-   - Requerem PostgreSQL e Redis como services
-   - Geram relatório de cobertura
-
-2. **Testes E2E**
-   - Rodam em cada push/PR
-   - Requerem build completo da aplicação
-   - Geram relatórios do Playwright
-
-3. **Lint**
-   - Verifica código com ESLint
+1. Crie um arquivo em `.github/workflows/*.yml` com os jobs desejados (testes, lint, etc.).
+2. Configure secrets no repositório, se necessário.
+3. Ajuste o fluxo conforme a infraestrutura disponível.
 
 ## 🔧 Configuração
 
-### Variáveis de Ambiente no GitHub
+Caso decida configurar um pipeline, lembre-se de:
 
-⚠️ **IMPORTANTE:** Configure os secrets **antes do primeiro run**. Veja o guia completo em `SETUP-CI.md`.
-
-**Secrets obrigatórios:**
-- `NEXTAUTH_SECRET` - Secret para NextAuth (gerar com `openssl rand -base64 32`)
-- `NEXTAUTH_URL` - URL base da aplicação
-
-**Secrets opcionais:**
-- `DATABASE_URL` - URL do banco de teste (opcional, usa service do workflow)
-- `REDIS_URL` - URL do Redis (opcional, usa service do workflow)
-- `TEST_*_EMAIL` e `TEST_*_PASSWORD` - Credenciais para testes E2E
-- `CODECOV_TOKEN` - Token do Codecov (opcional)
-
-### Validação Automática
-
-O workflow inclui um job `validate-env` que valida automaticamente se os secrets estão configurados antes de rodar os testes.
-
-### Ambiente de Testes
-
-O workflow usa services Docker:
-- PostgreSQL 15 na porta 5432
-- Redis 7 na porta 6379
+- Definir variáveis/segredos no provedor (ex.: GitHub) **antes** de rodar o primeiro job.
+- Documentar quais serviços externos (PostgreSQL, Redis, etc.) precisam subir no CI.
+- Manter o mesmo conjunto de comandos usados localmente (`npm test`, `npm run test:e2e`, `npm run lint`).
 
 ## 🚀 Execução Local
 
@@ -62,7 +35,7 @@ npm run lint
 
 ## 📊 Cobertura de Código
 
-Os testes unitários geram relatório de cobertura que é enviado para Codecov (opcional).
+Os testes unitários podem gerar relatório de cobertura localmente:
 
 Para ver cobertura local:
 ```bash
@@ -71,21 +44,13 @@ npm run test:coverage
 
 ## 🔍 Troubleshooting
 
-### Testes falhando no CI
+### Testes falhando
 
-1. Verificar se todas as dependências estão instaladas
-2. Verificar se serviços (PostgreSQL, Redis) estão acessíveis
-3. Verificar logs do workflow no GitHub Actions
-
-### Testes E2E falhando
-
-1. Verificar se o build está funcionando (`npm run build`)
-2. Verificar se o servidor inicia corretamente
-3. Verificar screenshots/reports gerados pelo Playwright
+1. Verifique se todas as dependências estão instaladas
+2. Garanta que serviços externos (PostgreSQL, Redis) estejam acessíveis
+3. Execute os comandos de lint/testes manualmente para validar
 
 ## 📝 Notas
 
-- O workflow ignora testes E2E se o servidor não iniciar (fail-safe)
-- Testes podem ser executados em paralelo se necessário
-- Cobertura é opcional (continue-on-error: true)
-
+- Este guia é apenas uma referência; não há automação ativa neste projeto.
+- Sinta-se à vontade para adaptar o fluxo se, no futuro, decidir habilitar CI/CD.

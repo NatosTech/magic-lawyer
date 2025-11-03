@@ -90,23 +90,31 @@ Edite `jest.config.js` para ajustar:
 - Mapeamento de módulos
 - Ambiente de teste
 
-## 🚀 CI/CD
+## 🚀 Execução de Testes
 
-O projeto está configurado com GitHub Actions para executar testes automaticamente. Veja `CI-CD.md` para detalhes completos.
+**Importante:** O projeto executa testes **manualmente** usando os scripts npm. Não há automação via CI/CD ativa.
 
-**Workflow:** `.github/workflows/test.yml`
+**Scripts disponíveis:**
+- `npm test` - Executar testes unitários
+- `npm run test:watch` - Modo watch
+- `npm run test:coverage` - Com cobertura
+- `npm run test:e2e` - Testes E2E
+- `npm run test:e2e:ui` - Playwright UI mode
 
-Executa em cada push/PR:
-- ✅ Testes unitários com cobertura
-- ✅ Testes E2E com Playwright
-- ✅ Lint com ESLint
+**Quando executar:**
+- Antes de fazer commit
+- Após alterações significativas no código
+- Quando implementar novas features
+- Durante code review
+
+**Nota:** Consulte `CI-CD.md` apenas se, no futuro, quiser habilitar um pipeline automático (atualmente desabilitado).
 
 ## 📝 Próximos Passos
 
 1. ✅ **Implementar helpers de autenticação** para testes E2E - CONCLUÍDO
 2. ✅ **Criar dados de seed** específicos para testes - CONCLUÍDO
 3. **Adicionar mais testes de integração** cobrindo fluxos completos
-4. ✅ **Configurar CI/CD** para executar testes automaticamente - CONCLUÍDO
+4. **Executar testes regularmente** - Use os scripts npm antes de commits importantes
 
 ## 🐛 Troubleshooting
 
@@ -121,4 +129,3 @@ Executa em cada push/PR:
 **Mocks não funcionam**
 - Verifique se os mocks estão importados antes dos módulos testados
 - Use `jest.clearAllMocks()` no `beforeEach`
-
