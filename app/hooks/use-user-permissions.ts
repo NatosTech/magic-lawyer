@@ -235,17 +235,31 @@ export function useUserPermissions() {
         (PERMISSION_MAP.canManageUsers &&
           newPermissions[`${PERMISSION_MAP.canManageUsers.modulo}.${PERMISSION_MAP.canManageUsers.acao}`]) ??
         false,
-      // Permissões de juízes - podem não ter mapeamento direto
+      // Permissões de juízes - usando proxies
       canViewJudgesDatabase:
         (PERMISSION_MAP.canViewJudgesDatabase &&
           newPermissions[`${PERMISSION_MAP.canViewJudgesDatabase.modulo}.${PERMISSION_MAP.canViewJudgesDatabase.acao}`]) ??
         false,
-      // Se não há mapeamento, retornar false (depende de override/cargo)
-      canManageJudgesDatabase: false, // Depende de override/cargo se não mapeado
-      canCreateJudgeProfiles: false, // Depende de override/cargo se não mapeado
-      canEditJudgeProfiles: false, // Depende de override/cargo se não mapeado
-      canDeleteJudgeProfiles: false, // Depende de override/cargo se não mapeado
-      canViewPremiumJudges: false, // Controle de negócio
+      canManageJudgesDatabase:
+        (PERMISSION_MAP.canManageJudgesDatabase &&
+          newPermissions[`${PERMISSION_MAP.canManageJudgesDatabase.modulo}.${PERMISSION_MAP.canManageJudgesDatabase.acao}`]) ??
+        false,
+      canCreateJudgeProfiles:
+        (PERMISSION_MAP.canCreateJudgeProfiles &&
+          newPermissions[`${PERMISSION_MAP.canCreateJudgeProfiles.modulo}.${PERMISSION_MAP.canCreateJudgeProfiles.acao}`]) ??
+        false,
+      canEditJudgeProfiles:
+        (PERMISSION_MAP.canEditJudgeProfiles &&
+          newPermissions[`${PERMISSION_MAP.canEditJudgeProfiles.modulo}.${PERMISSION_MAP.canEditJudgeProfiles.acao}`]) ??
+        false,
+      canDeleteJudgeProfiles:
+        (PERMISSION_MAP.canDeleteJudgeProfiles &&
+          newPermissions[`${PERMISSION_MAP.canDeleteJudgeProfiles.modulo}.${PERMISSION_MAP.canDeleteJudgeProfiles.acao}`]) ??
+        false,
+      canViewPremiumJudges:
+        (PERMISSION_MAP.canViewPremiumJudges &&
+          newPermissions[`${PERMISSION_MAP.canViewPremiumJudges.modulo}.${PERMISSION_MAP.canViewPremiumJudges.acao}`]) ??
+        false,
     };
 
     return mappedPermissions;
