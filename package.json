@@ -40,7 +40,12 @@
     "notifications:webhook": "npx tsx scripts/test-asaas-webhook.ts",
     "notifications:crons": "curl -sSf -X GET \"http://localhost:9192/api/cron/check-deadlines\" -H \"Authorization: Bearer ${CRON_SECRET:-test-secret}\" > /dev/null && curl -sSf -X GET \"http://localhost:9192/api/cron/check-contracts\" -H \"Authorization: Bearer ${CRON_SECRET:-test-secret}\" > /dev/null",
     "notifications:all": "npm run notifications:test && npm run notifications:webhook && npm run notifications:smoke && npm run notifications:crons",
-    "notifications:repair": "npx tsx scripts/fix-tenant-status-simple.ts"
+    "notifications:repair": "npx tsx scripts/fix-tenant-status-simple.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -130,8 +135,13 @@
   "devDependencies": {
     "@eslint/compat": "1.2.5",
     "@next/eslint-plugin-next": "15.3.4",
+    "@playwright/test": "^1.56.1",
     "@react-types/shared": "3.30.0",
     "@tailwindcss/postcss": "4.1.11",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jest": "^30.0.0",
     "@types/jspdf": "^2.0.0",
     "@types/node": "20.5.7",
     "@types/react": "18.3.3",
@@ -152,6 +162,8 @@
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-unused-imports": "4.1.4",
     "globals": "16.0.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
     "postcss": "8.5.6",
     "prettier": "3.5.3",
     "prisma": "^6.18.0",
