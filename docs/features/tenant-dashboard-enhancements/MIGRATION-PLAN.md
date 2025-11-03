@@ -9,21 +9,20 @@ Este documento mapeia os componentes que ainda usam o sistema antigo de permiss�
 - ⚠️ Hooks client-side: **PARCIALMENTE migrado**
   - `use-user-permissions.ts` ainda usa `session.user.permissions` diretamente
   - `permission-guard.tsx` depende do hook antigo
-  - `use-profile-navigation.ts` usa `useUserPermissions()` antigo
+  - `permission-guard.tsx` depende do hook migrado (validar fluxos críticos)
+  - `use-profile-navigation.ts` usa `useUserPermissions()` (principalmente para role)
 
 ## 🎯 Componentes para Migrar
 
-### 1. `app/hooks/use-user-permissions.ts` ⚠️ PRIORIDADE ALTA
+### 1. `app/hooks/use-user-permissions.ts` ✅ CONCLUÍDO
 
-**Problema:** Usa `session.user.permissions` e `session.user.role` diretamente, não respeitando override/cargo.
+**Status:** Refatorado para usar `usePermissionsCheck`, mantendo interface compatível.
 
-**Status:** Hook antigo baseado apenas em role, ignora sistema de override/cargo.
-
-**Ação:** 
-- [ ] Refatorar para usar `usePermissionCheck` e `usePermissionsCheck` internamente
-- [ ] Mapear permissões antigas para o novo formato (módulo + ação)
-- [ ] Manter interface compatível para não quebrar componentes que usam
-- [ ] Adicionar suporte a override/cargo nas verificações
+**Ações realizadas:**
+- ✓ Uso de batch check (`usePermissionsCheck`)
+- ✓ Mapeamento legado → módulo/ação
+- ✓ Suporte a override/cargo/role com precedência correta
+- ✓ Exposição de `isLoadingPermissions`
 
 **Mapeamento de permissões antigas → novas:**
 ```typescript
@@ -41,19 +40,18 @@ canManageJudgesDatabase → { modulo: 'juizes', acao: 'editar' }
 
 ### 2. `components/permission-guard.tsx` ⚠️ PRIORIDADE MÉDIA
 
-**Status:** Usa `useUserPermissions()` que depende do sistema antigo.
+**Status:** Usa o hook migrado; falta rodar cenários críticos.
 
-**Ação:**
-- [ ] Após migrar `use-user-permissions.ts`, validar que funciona corretamente
-- [ ] Ou criar nova versão usando `usePermissionCheck` diretamente
+**Próximos passos:**
+- [ ] Validar principais fluxos
+- [ ] Considerar uso direto de `usePermissionCheck` se precisar de granularidade
 
 ### 3. `app/hooks/use-profile-navigation.ts` ⚠️ PRIORIDADE BAIXA
 
-**Status:** Usa `useUserPermissions()` mas principalmente para role, não permissões específicas.
+**Status:** Continua dependente de role; monitorar necessidade de migração.
 
-**Ação:**
-- [ ] Validar se realmente precisa de permissões ou apenas role
-- [ ] Se precisar permissões, usar novo sistema
+**Próximos passos:**
+- [ ] Revisar se alguma permissão específica será necessária futuramente
 
 ### 4. Uso direto de `session.user.role` ✅ OK
 
@@ -65,35 +63,17 @@ canManageJudgesDatabase → { modulo: 'juizes', acao: 'editar' }
 
 ## 📋 Plano de Execução
 
-### Fase 1: Migração do Hook Principal (Alta Prioridade)
+### Fase 1: Migração do Hook Principal ✅ CONCLUÍDA
+- Versão migrada criada e validada.
+- Componentes consumidores mantiveram compatibilidade.
 
-1. **Criar versão migrada de `use-user-permissions.ts`**
-   - Manter interface atual para compatibilidade
-   - Internamente usar `usePermissionCheck` e `usePermissionsCheck`
-   - Mapear permissões antigas para módulo + ação
-   - Adicionar suporte a override/cargo
+### Fase 2: Validação e Limpeza (em andamento)
+1. [ ] Validar `permission-guard.tsx` e `use-profile-navigation.ts`
+2. [ ] Atualizar testes/estórias se necessário
 
-2. **Testar componentes que usam**
-   - `permission-guard.tsx`
-   - `use-profile-navigation.ts`
-   - Outros componentes que importam `useUserPermissions`
-
-3. **Validar comportamento**
-   - Verificar que override funciona
-   - Verificar que cargo funciona
-   - Verificar que role padrão funciona
-
-### Fase 2: Validação e Limpeza (Média Prioridade)
-
-1. **Remover código antigo** (se houver)
-2. **Documentar migração**
-3. **Atualizar testes**
-
-### Fase 3: Melhorias (Baixa Prioridade)
-
-1. **Criar helpers de mapeamento**
-2. **Adicionar tipos TypeScript mais fortes**
-3. **Otimizar performance (batch checks)**
+### Fase 3: Melhorias Futuras
+1. [ ] Criar helpers de mapeamento compartilhados (opcional)
+2. [ ] Fortalecer typings (opcional)
 
 ## 🔍 Como Identificar Componentes que Precisam Migrar
 
@@ -119,4 +99,3 @@ grep -r "hasPermission\|hasAnyPermission\|hasAllPermissions" app/ components/
 
 **Última atualização:** Após mapeamento inicial
 **Próxima revisão:** Após início da migração
-
