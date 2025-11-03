@@ -72,15 +72,41 @@ Todos os documentos compartilham objetivos fundamentais:
 ## 📊 Progresso Geral
 
 ```
-Total de Documentos: 4
+Total de Documentos: 5
 Checklists por Documento:
 ├─ Config Sidebar: 33 itens
 ├─ Tenant Settings: 44 itens
-├─ Tenant Team Roles: 64 itens
-└─ Portal do Advogado: 55 itens
-
-Total de Itens de Checklist: ~196 itens
+├─ Tenant Team Roles: 64 itens (✅ Sistema de Permissões Implementado)
+├─ Portal do Advogado: 55 itens
+└─ Sistema de Permissões: ✅ Completo
 ```
+
+## ✅ Funcionalidades Implementadas
+
+### Sistema de Permissões e Auditoria
+- ✅ Sistema consolidado de permissões (override → cargo → role)
+- ✅ Hooks `usePermissionCheck` e `usePermissionsCheck`
+- ✅ Server actions `checkPermission` e `checkPermissions`
+- ✅ Dashboard de auditoria `/auditoria-permissoes`
+- ✅ Export CSV do histórico de recusas
+- ✅ Logging estruturado de tentativas negadas
+- ✅ Stack de testes completa (Jest + Playwright)
+- ✅ CI/CD configurado com validação automática
+
+### Melhorias no Dashboard do Tenant
+- ✅ Menu de Configurações com tooltips
+- ✅ Página de configurações funcional (`/configuracoes`)
+- ✅ Gestão de equipe e cargos (`/equipe`)
+- ✅ Modals de edição, visualização e permissões de usuários
+
+## 🚀 Próximos Passos
+
+Veja [`NEXT-STEPS.md`](./NEXT-STEPS.md) para prioridades e tarefas pendentes:
+
+1. **Migração de Permissões Antigas** - Substituir `session.user.permissions` pelos novos hooks
+2. **Dashboard em Produção** - Coletar feedback e melhorias
+3. **Priorizar Features** - Portal do Advogado ou Configurações Avançadas
+4. **Manter CI/CD** - Monitorar primeiro run e ajustar
 
 ## 🔗 Links Relacionados
 
@@ -88,6 +114,10 @@ Total de Itens de Checklist: ~196 itens
 - [Multitenancy e Realtime](../../architecture/MULTITENANCY_REALTIME_BLUEPRINT.md)
 - [Sistema de Notificações](../notifications/)
 - [Checklist do Projeto](../../checklists/)
+- [Sistema de Permissões](./permissions-system.md)
+- [Guia de Testes](./TESTING.md)
+- [Configuração CI/CD](./CI-CD.md)
+- [Setup de Secrets](./SETUP-CI.md)
 
 ---
 
