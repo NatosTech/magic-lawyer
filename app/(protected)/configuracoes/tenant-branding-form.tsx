@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Input } from "@heroui/input";
 import { Tooltip } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import { Edit2, Save, X, Palette, Upload, Image as ImageIcon } from "lucide-react";
+import { Edit2, Save, X, Palette, Image as ImageIcon } from "lucide-react";
 
 import {
   updateTenantBranding,
@@ -25,6 +26,7 @@ interface TenantBrandingFormProps {
 }
 
 export function TenantBrandingForm({ initialData }: TenantBrandingFormProps) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -79,8 +81,8 @@ export function TenantBrandingForm({ initialData }: TenantBrandingFormProps) {
           color: "success",
         });
         setIsEditing(false);
-        // Trigger page refresh
-        window.location.reload();
+        // Refresh page data
+        router.refresh();
       } else {
         throw new Error(result.error || "Erro ao salvar");
       }

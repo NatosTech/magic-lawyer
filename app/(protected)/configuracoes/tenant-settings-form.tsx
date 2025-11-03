@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Input } from "@heroui/input";
 import { Tooltip } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import { Edit2, Save, X, Info } from "lucide-react";
+import { Edit2, Save, X } from "lucide-react";
 
 import {
   updateTenantBasicData,
@@ -26,6 +27,7 @@ interface TenantSettingsFormProps {
 }
 
 export function TenantSettingsForm({ initialData }: TenantSettingsFormProps) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -83,8 +85,8 @@ export function TenantSettingsForm({ initialData }: TenantSettingsFormProps) {
           color: "success",
         });
         setIsEditing(false);
-        // Trigger page refresh
-        window.location.reload();
+        // Refresh page data
+        router.refresh();
       } else {
         throw new Error(result.error || "Erro ao salvar");
       }

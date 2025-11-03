@@ -373,29 +373,27 @@ export function ConfiguracoesTabs({
       </Tab>
 
       {/* Tab 3: Branding */}
-      {branding && (
-        <Tab
-          key="branding"
-          title={
-            <div className="flex items-center gap-2">
-              <Palette className="h-4 w-4" />
-              <span>Branding</span>
-            </div>
-          }
-        >
-          <div className="mt-6">
-            <TenantBrandingForm
-              initialData={{
-                primaryColor: branding.primaryColor,
-                secondaryColor: branding.secondaryColor,
-                accentColor: branding.accentColor,
-                logoUrl: branding.logoUrl,
-                faviconUrl: branding.faviconUrl,
-              }}
-            />
+      <Tab
+        key="branding"
+        title={
+          <div className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            <span>Branding</span>
           </div>
-        </Tab>
-      )}
+        }
+      >
+        <div className="mt-6">
+          <TenantBrandingForm
+            initialData={{
+              primaryColor: branding?.primaryColor || null,
+              secondaryColor: branding?.secondaryColor || null,
+              accentColor: branding?.accentColor || null,
+              logoUrl: branding?.logoUrl || null,
+              faviconUrl: branding?.faviconUrl || null,
+            }}
+          />
+        </div>
+      </Tab>
 
       {/* Tab 4: Email */}
       <Tab
