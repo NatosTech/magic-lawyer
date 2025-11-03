@@ -61,6 +61,7 @@ export function useProfileNavigation() {
   const {
     userRole,
     permissions,
+    isAdmin,
     isAdvogado,
     isSecretaria,
     isFinanceiro,
