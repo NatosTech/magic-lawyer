@@ -14,23 +14,31 @@ Este documento centraliza os próximos passos e prioridades após a conclusão d
 
 ## 📋 Próximas Tarefas Prioritárias
 
-### 1. Migração de Permissões Antigas (Alta Prioridade)
+### 1. Migração de Permissões Antigas ✅ CONCLUÍDO
 
-**Objetivo:** Garantir que todas as verificações de permissão usem o novo sistema consolidado.
+**Status:** ✅ **Todas as verificações já usam o novo sistema!**
 
-**Ações:**
-- [ ] Executar `node scripts/map-permission-usage.js` para mapear uso atual
-- [ ] Identificar arquivos que ainda usam `session.user.permissions`
-- [ ] Substituir por `usePermissionCheck` ou `checkPermission` conforme contexto
-- [ ] Testar cada substituição para garantir comportamento correto
-- [ ] Validar que overrides e cargos estão sendo respeitados
+**Resultado do mapeamento:**
+```
+✅ Uso novo de permissões: 50 ocorrências
+⚠️  Uso antigo de permissões: 0 ocorrências
 
-**Arquivos a verificar:**
-- Componentes que renderizam botões baseados em permissões
-- Guards de rota e middleware
-- Server actions que verificam permissões manualmente
+✨ Nenhum uso antigo encontrado! Tudo migrado para o novo sistema.
+```
 
-**Como usar o script:**
+**O que foi verificado:**
+- ✅ `checkPermission` usado em 37 ocorrências (server actions)
+- ✅ `checkPermissions` usado em 11 ocorrências (batch checks)
+- ✅ `usePermissionCheck` implementado (hook client-side)
+- ✅ `usePermissionsCheck` implementado (hook client-side)
+- ✅ Nenhum uso de `session.user.permissions` encontrado
+
+**Ações futuras (se necessário):**
+- [ ] Monitorar novos arquivos que possam usar permissões antigas
+- [ ] Executar script periodicamente durante code reviews
+- [ ] Adicionar lint rule para prevenir uso antigo
+
+**Como usar o script para monitoramento:**
 ```bash
 node scripts/map-permission-usage.js
 ```
