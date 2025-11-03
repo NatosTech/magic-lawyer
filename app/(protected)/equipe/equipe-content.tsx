@@ -1915,11 +1915,85 @@ function UsuariosTab() {
           <ModalBody>
             {selectedUsuario && (
               <div className="space-y-6">
-                <p className="text-sm text-default-500">
-                  Gerencie permissões individuais para este usuário. Permissões individuais
-                  sobrescrevem as permissões do cargo. O estado efetivo mostra se a permissão
-                  está ativa via override, cargo ou role padrão.
-                </p>
+                {/* Legenda */}
+                <Card className="bg-primary/5 border-primary/20">
+                  <CardBody className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <HelpCircle className="w-5 h-5 text-primary" />
+                        <h3 className="font-semibold text-primary">Como funciona</h3>
+                      </div>
+                      
+                      <p className="text-sm text-default-700">
+                        As permissões são verificadas nesta ordem de precedência:
+                      </p>
+                      
+                      <ol className="list-decimal list-inside space-y-2 text-sm text-default-600">
+                        <li>
+                          <strong className="text-primary">Override individual</strong> - Permissão personalizada criada manualmente
+                        </li>
+                        <li>
+                          <strong className="text-secondary">Cargo</strong> - Permissão herdada do cargo ativo do usuário
+                        </li>
+                        <li>
+                          <strong className="text-default-500">Role padrão</strong> - Permissão padrão baseada no tipo de usuário (Advogado, Secretária, etc.)
+                        </li>
+                      </ol>
+                      
+                      <div className="pt-2 border-t border-default-200">
+                        <p className="text-sm font-medium text-default-700 mb-2">
+                          Significado dos chips:
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <div className="flex items-center gap-2">
+                            <Chip size="sm" variant="flat" color="primary">
+                              Override
+                            </Chip>
+                            <span className="text-xs text-default-600">
+                              Permissão personalizada (sobrescreve cargo/role)
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Chip size="sm" variant="flat" color="secondary">
+                              Herdado do cargo
+                            </Chip>
+                            <span className="text-xs text-default-600">
+                              Vem do cargo ativo do usuário
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Chip size="sm" variant="flat" color="default">
+                              Padrão do role
+                            </Chip>
+                            <span className="text-xs text-default-600">
+                              Permissão padrão do tipo de usuário
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Chip size="sm" variant="flat" color="danger">
+                              Sem permissão
+                            </Chip>
+                            <span className="text-xs text-default-600">
+                              Negado em todas as camadas
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="pt-2 border-t border-default-200">
+                        <p className="text-sm font-medium text-default-700 mb-1">
+                          Como usar:
+                        </p>
+                        <ul className="list-disc list-inside space-y-1 text-xs text-default-600">
+                          <li>Ligue/desligue o switch para criar um <strong>override individual</strong></li>
+                          <li>O override <strong>substitui</strong> a permissão do cargo e role</li>
+                          <li>Para remover um override, desligue o switch e ele voltará ao estado do cargo/role</li>
+                          <li>O switch mostra o <strong>estado efetivo atual</strong> da permissão</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
                 <Divider />
                 {loadingPermissoes ? (
                   <div className="flex justify-center py-8">
