@@ -189,6 +189,7 @@ function DashboardEquipe() {
 function CargosTab() {
   const [cargos, setCargos] = useState<CargoData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCargo, setEditingCargo] = useState<CargoData | null>(null);
@@ -224,11 +225,17 @@ function CargosTab() {
   async function loadCargos() {
     try {
       setLoading(true);
+      setError(null);
       const data = await getCargos();
 
       setCargos(data);
     } catch (error) {
-      toast.error("Erro ao carregar cargos");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Erro ao carregar cargos. Tente novamente.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -576,8 +583,34 @@ function CargosTab() {
         </div>
       )}
 
+      {/* Estado de erro */}
+      {error && !loading && (
+        <Card className="border-danger/20 bg-danger/5">
+          <CardBody className="py-6">
+            <div className="flex items-start gap-3">
+              <XCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-danger mb-1">
+                  Erro ao carregar cargos
+                </h3>
+                <p className="text-sm text-default-600 mb-3">{error}</p>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="danger"
+                  startContent={<RefreshCw className="w-4 h-4" />}
+                  onPress={() => loadCargos()}
+                >
+                  Tentar novamente
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
       {/* Estado vazio */}
-      {filteredCargos.length === 0 && !loading && (
+      {filteredCargos.length === 0 && !loading && !error && (
         <Card>
           <CardBody className="text-center py-12">
             <Users className="w-12 h-12 text-default-300 mx-auto mb-4" />
@@ -900,6 +933,7 @@ function UsuariosTab() {
   const [usuarios, setUsuarios] = useState<UsuarioEquipeData[]>([]);
   const [advogados, setAdvogados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Buscar módulos do tenant via hook
   const { modulos: modulosData } = useModulosTenant();
@@ -963,6 +997,7 @@ function UsuariosTab() {
   async function loadData() {
     try {
       setLoading(true);
+      setError(null);
       const [usuariosData, advogadosData] = await Promise.all([
         getUsuariosEquipe(),
         getAdvogados(),
@@ -971,7 +1006,12 @@ function UsuariosTab() {
       setUsuarios(usuariosData);
       setAdvogados(advogadosData.data || []);
     } catch (error) {
-      toast.error("Erro ao carregar dados");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Erro ao carregar dados. Tente novamente.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -1658,8 +1698,34 @@ function UsuariosTab() {
         </div>
       )}
 
+      {/* Estado de erro */}
+      {error && !loading && (
+        <Card className="border-danger/20 bg-danger/5">
+          <CardBody className="py-6">
+            <div className="flex items-start gap-3">
+              <XCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-danger mb-1">
+                  Erro ao carregar usuários
+                </h3>
+                <p className="text-sm text-default-600 mb-3">{error}</p>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="danger"
+                  startContent={<RefreshCw className="w-4 h-4" />}
+                  onPress={() => loadData()}
+                >
+                  Tentar novamente
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
       {/* Estado vazio */}
-      {filteredUsuarios.length === 0 && !loading && (
+      {filteredUsuarios.length === 0 && !loading && !error && (
         <Card>
           <CardBody className="text-center py-12">
             <Users className="w-12 h-12 text-default-300 mx-auto mb-4" />
