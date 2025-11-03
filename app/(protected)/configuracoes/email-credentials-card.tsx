@@ -73,6 +73,7 @@ export function EmailCredentialsCard() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState<"DEFAULT" | "ADMIN" | null>(null);
+  const [hasExistingCredential, setHasExistingCredential] = useState(false);
 
   useEffect(() => {
     if (!data) return;
@@ -80,6 +81,7 @@ export function EmailCredentialsCard() {
 
     setFormEmail(existing?.email ?? "");
     setFormFromName(existing?.fromName ?? "");
+    setHasExistingCredential(!!existing);
   }, [data, formType]);
 
   const handleSave = async () => {
@@ -352,7 +354,11 @@ export function EmailCredentialsCard() {
                 ) : null
               }
               label="Senha de App"
-              placeholder="senha de app/provedor"
+              placeholder={
+                hasExistingCredential
+                  ? "•••••••••••• (senha já cadastrada)"
+                  : "senha de app/provedor"
+              }
               startContent={<KeyRound className="h-4 w-4 text-warning" />}
               type={isPasswordVisible ? "text" : "password"}
               value={formAppPassword}
