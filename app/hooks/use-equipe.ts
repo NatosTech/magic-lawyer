@@ -51,7 +51,7 @@ export function useCargos() {
     if (!tenantId) return;
 
     const unsubscribe = realtime.subscribe(
-      "equipe.cargo.updated",
+      "cargo-update",
       (event: RealtimeEvent) => {
         if (event.tenantId === tenantId) {
           mutate(); // Revalidar cache de cargos
@@ -110,7 +110,7 @@ export function useUsuariosEquipe() {
     if (!tenantId) return;
 
     const unsubscribe = realtime.subscribe(
-      "equipe.usuario.updated",
+      "usuario-update",
       (event: RealtimeEvent) => {
         if (event.tenantId === tenantId) {
           mutate(); // Revalidar cache de usuários

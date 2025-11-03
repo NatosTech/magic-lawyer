@@ -12,10 +12,17 @@ let redisInstance: Redis | null = null;
  */
 export function getRedisInstance(): Redis {
   if (!redisInstance) {
-    const redisUrl = process.env.REDIS_URL;
+    // Em desenvolvimento, usar Redis local padrão
+    const isDev = process.env.NODE_ENV !== "production";
+    const devRedisUrl = "redis://localhost:6379";
+    const redisUrl = isDev
+      ? process.env.REDIS_URL || devRedisUrl
+      : process.env.REDIS_URL;
 
     if (!redisUrl) {
-      throw new Error("REDIS_URL environment variable is required");
+      throw new Error(
+        "REDIS_URL environment variable is required in production"
+      );
     }
 
     // Configuração para Vercel Redis (Upstash)

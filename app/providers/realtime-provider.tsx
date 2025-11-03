@@ -110,6 +110,8 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       "plan-update",
       "user-status",
       "notification.new",
+      "cargo-update",
+      "usuario-update",
     ];
 
     eventTypes.forEach((eventType) => {
