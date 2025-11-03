@@ -300,7 +300,13 @@ export class NotificationHelper {
       type: "equipe.permissions_changed",
       tenantId,
       userId,
-      payload,
+      payload: {
+        userId: payload.usuarioId,
+        nome: payload.nome,
+        oldPermissions: payload.permissoesAntigas,
+        newPermissions: payload.permissoesNovas,
+        alteradoPor: payload.alteradoPor,
+      },
       urgency: "HIGH",
     });
   }

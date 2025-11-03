@@ -1033,6 +1033,16 @@ function UsuariosTab() {
   async function handleSavePermission(modulo: string, acao: string, permitido: boolean) {
     if (!selectedUsuario) return;
 
+    // Atualização otimista do estado local
+    setPermissionsForm((prev) => {
+      const updated = { ...prev };
+      if (!updated[modulo]) {
+        updated[modulo] = {};
+      }
+      updated[modulo] = { ...updated[modulo], [acao]: permitido };
+      return updated;
+    });
+
     setIsSavingPermission(true);
     try {
       await adicionarPermissaoIndividual(
@@ -1043,8 +1053,38 @@ function UsuariosTab() {
         `Permissão ${permitido ? "concedida" : "negada"} pelo admin`
       );
       toast.success("Permissão atualizada com sucesso");
+      
+      // Recarregar dados e atualizar usuário selecionado
       await loadData();
+      
+      // Atualizar permissões do usuário selecionado após reload
+      const updatedUsuarios = await getUsuariosEquipe();
+      const updatedUsuario = updatedUsuarios.find((u) => u.id === selectedUsuario.id);
+      if (updatedUsuario) {
+        const existingPerms: Record<string, Record<string, boolean>> = {};
+        updatedUsuario.permissoesIndividuais.forEach((perm) => {
+          if (!existingPerms[perm.modulo]) {
+            existingPerms[perm.modulo] = {};
+          }
+          existingPerms[perm.modulo][perm.acao] = perm.permitido;
+        });
+        setPermissionsForm(existingPerms);
+        setSelectedUsuario(updatedUsuario);
+      }
     } catch (error) {
+      // Reverter atualização otimista em caso de erro
+      setPermissionsForm((prev) => {
+        const updated = { ...prev };
+        if (updated[modulo] && updated[modulo][acao] !== undefined) {
+          const reverted = { ...updated[modulo] };
+          delete reverted[acao];
+          updated[modulo] = reverted;
+          if (Object.keys(updated[modulo]).length === 0) {
+            delete updated[modulo];
+          }
+        }
+        return updated;
+      });
       toast.error(
         error instanceof Error ? error.message : "Erro ao atualizar permissão"
       );
