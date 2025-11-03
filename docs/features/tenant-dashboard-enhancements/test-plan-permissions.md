@@ -421,5 +421,5 @@ npm run test:e2e
 4. **Implementar testes de integração** (fluxo completo)
 5. **Implementar testes E2E** (comportamento no browser)
 6. **Adicionar testes de logging/auditoria**
-7. **Configurar CI/CD** para rodar testes automaticamente
+7. **Executar testes manualmente** usando scripts npm (`npm test`, `npm run test:e2e`)
 

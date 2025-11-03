@@ -91,7 +91,7 @@ Checklists por Documento:
 - ✅ Export CSV do histórico de recusas
 - ✅ Logging estruturado de tentativas negadas
 - ✅ Stack de testes completa (Jest + Playwright)
-- ✅ CI/CD configurado com validação automática
+- ✅ Stack de testes configurada (execução manual)
 
 ### Melhorias no Dashboard do Tenant
 - ✅ Menu de Configurações com tooltips
@@ -106,7 +106,7 @@ Veja [`NEXT-STEPS.md`](./NEXT-STEPS.md) para prioridades e tarefas pendentes:
 1. **Migração de Permissões Antigas** - Substituir `session.user.permissions` pelos novos hooks
 2. **Dashboard em Produção** - Coletar feedback e melhorias
 3. **Priorizar Features** - Portal do Advogado ou Configurações Avançadas
-4. **Manter CI/CD** - Monitorar primeiro run e ajustar
+4. **Executar testes** - Usar scripts npm para validar código
 
 ## 🔗 Links Relacionados
 
