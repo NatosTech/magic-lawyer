@@ -1221,7 +1221,10 @@ function UsuariosTab() {
       ADMIN: "danger",
       ADVOGADO: "primary",
       SECRETARIA: "secondary",
-      CLIENTE: "default",
+      FINANCEIRO: "success",
+      CLIENTE: "warning",
+      SUPER_ADMIN: "warning",
+      ESTAGIARIA: "default",
     };
 
     return colors[role] ?? "default";
@@ -1232,20 +1235,26 @@ function UsuariosTab() {
       ADMIN: "Administrador",
       ADVOGADO: "Advogado",
       SECRETARIA: "Secretária",
+      FINANCEIRO: "Financeiro",
       CLIENTE: "Cliente",
+      SUPER_ADMIN: "Super Admin",
+      ESTAGIARIA: "Estagiária",
     };
 
     return labels[role as keyof typeof labels] || role;
   }
 
   function getRoleIcon(role: string) {
-    const icons = {
-      ADMIN: Crown,
-      ADVOGADO: Shield,
-      SECRETARIA: Users,
+    const icons: Record<string, any> = {
+      ADMIN: Shield,
+      ADVOGADO: User,
+      SECRETARIA: Settings,
+      FINANCEIRO: Award,
       CLIENTE: User,
+      SUPER_ADMIN: Crown,
+      ESTAGIARIA: GraduationCap,
     };
-    const IconComponent = icons[role as keyof typeof icons] || User;
+    const IconComponent = icons[role] || User;
 
     return <IconComponent className="w-3 h-3" />;
   }
