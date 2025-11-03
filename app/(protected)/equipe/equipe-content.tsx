@@ -1949,18 +1949,27 @@ function UsuariosTab() {
                           // Se tem override, usa o override; senão, mostra o estado efetivo
                           const switchValue = temOverride ? (overrideValue === true) : estaPermitido;
                           
-                          // Labels para origem
+                          // Labels para origem (incluindo estado negado)
                           const origemLabels = {
                             override: "Override",
                             cargo: "Herdado do cargo",
                             role: "Padrão do role",
+                            negado: "Sem permissão",
                           };
                           
                           const origemColors = {
                             override: "primary" as const,
                             cargo: "secondary" as const,
                             role: "default" as const,
+                            negado: "danger" as const,
                           };
+                          
+                          // Se a permissão está negada em todas as camadas (sem override, sem cargo, role padrão negado), destacar
+                          // Só mostra "Sem permissão" se não há override explícito E a origem é role (padrão negado)
+                          const mostrarNegado = !estaPermitido && !temOverride && origem === "role";
+                          const labelOrigem = mostrarNegado ? "negado" : origem;
+                          const chipColor = origemColors[labelOrigem as keyof typeof origemColors];
+                          const chipLabel = origemLabels[labelOrigem as keyof typeof origemLabels];
                           
                           return (
                             <div key={acao.key} className="flex items-center justify-between p-3 rounded-lg border border-default-200 bg-default-50">
@@ -1980,9 +1989,9 @@ function UsuariosTab() {
                                   <Chip
                                     size="sm"
                                     variant="flat"
-                                    color={origemColors[origem]}
+                                    color={chipColor}
                                   >
-                                    {origemLabels[origem]}
+                                    {chipLabel}
                                   </Chip>
                                 </div>
                               </div>
