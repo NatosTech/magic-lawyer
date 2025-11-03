@@ -80,6 +80,7 @@ import {
   updateUsuarioEquipe,
   adicionarPermissaoIndividual,
   vincularUsuarioAdvogado,
+  getPermissoesEfetivas,
   type CargoData,
   type UsuarioEquipeData,
 } from "@/app/actions/equipe";
@@ -940,6 +941,12 @@ function UsuariosTab() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [permissionsForm, setPermissionsForm] = useState<Record<string, Record<string, boolean>>>({});
+  const [permissoesEfetivas, setPermissoesEfetivas] = useState<Array<{
+    modulo: string;
+    acao: string;
+    permitido: boolean;
+    origem: "override" | "cargo" | "role";
+  }>>([]);
   const [linkForm, setLinkForm] = useState({
     advogadoId: "",
     tipo: "assistente",
@@ -947,6 +954,7 @@ function UsuariosTab() {
   });
   const [isSavingPermission, setIsSavingPermission] = useState(false);
   const [isSavingLink, setIsSavingLink] = useState(false);
+  const [loadingPermissoes, setLoadingPermissoes] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -1004,20 +1012,31 @@ function UsuariosTab() {
     }
   }
 
-  function handlePermissionsUsuario(usuario: UsuarioEquipeData) {
+  async function handlePermissionsUsuario(usuario: UsuarioEquipeData) {
     setSelectedUsuario(usuario);
-    
-    // Inicializar form com permissões existentes
-    const existingPerms: Record<string, Record<string, boolean>> = {};
-    usuario.permissoesIndividuais.forEach((perm) => {
-      if (!existingPerms[perm.modulo]) {
-        existingPerms[perm.modulo] = {};
-      }
-      existingPerms[perm.modulo][perm.acao] = perm.permitido;
-    });
-    setPermissionsForm(existingPerms);
-    
     setIsPermissionsModalOpen(true);
+    setLoadingPermissoes(true);
+    
+    try {
+      // Buscar permissões efetivas (override + cargo + role)
+      const efetivas = await getPermissoesEfetivas(usuario.id);
+      setPermissoesEfetivas(efetivas);
+      
+      // Inicializar form apenas com overrides individuais
+      const existingPerms: Record<string, Record<string, boolean>> = {};
+      usuario.permissoesIndividuais.forEach((perm) => {
+        if (!existingPerms[perm.modulo]) {
+          existingPerms[perm.modulo] = {};
+        }
+        existingPerms[perm.modulo][perm.acao] = perm.permitido;
+      });
+      setPermissionsForm(existingPerms);
+    } catch (error) {
+      toast.error("Erro ao carregar permissões efetivas");
+      console.error(error);
+    } finally {
+      setLoadingPermissoes(false);
+    }
   }
 
   function handleLinkUsuario(usuario: UsuarioEquipeData) {
@@ -1070,6 +1089,10 @@ function UsuariosTab() {
         });
         setPermissionsForm(existingPerms);
         setSelectedUsuario(updatedUsuario);
+        
+        // Recarregar permissões efetivas
+        const efetivas = await getPermissoesEfetivas(updatedUsuario.id);
+        setPermissoesEfetivas(efetivas);
       }
     } catch (error) {
       // Reverter atualização otimista em caso de erro
@@ -1894,40 +1917,83 @@ function UsuariosTab() {
               <div className="space-y-6">
                 <p className="text-sm text-default-500">
                   Gerencie permissões individuais para este usuário. Permissões individuais
-                  sobrescrevem as permissões do cargo.
+                  sobrescrevem as permissões do cargo. O estado efetivo mostra se a permissão
+                  está ativa via override, cargo ou role padrão.
                 </p>
                 <Divider />
-                {modulos.map((modulo) => (
-                  <div key={modulo.key} className="space-y-3">
-                    <h3 className="font-semibold text-default-700">{modulo.label}</h3>
-                    {modulo.description && (
-                      <p className="text-xs text-default-500">{modulo.description}</p>
-                    )}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {acoes.map((acao) => {
-                        const currentValue = permissionsForm[modulo.key]?.[acao.key] ?? null;
-                        const hasPermission = currentValue === true;
-                        
-                        return (
-                          <div key={acao.key} className="flex items-center gap-2">
-                            <Switch
-                              isSelected={hasPermission}
-                              onValueChange={(value) => {
-                                handleSavePermission(modulo.key, acao.key, value);
-                              }}
-                              isDisabled={isSavingPermission}
-                            >
-                              <div className="flex flex-col">
-                                <span className="text-sm">{acao.label}</span>
-                              </div>
-                            </Switch>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <Divider />
+                {loadingPermissoes ? (
+                  <div className="flex justify-center py-8">
+                    <Spinner size="lg" />
                   </div>
-                ))}
+                ) : (
+                  modulos.map((modulo) => (
+                    <div key={modulo.key} className="space-y-3">
+                      <h3 className="font-semibold text-default-700">{modulo.label}</h3>
+                      {modulo.description && (
+                        <p className="text-xs text-default-500">{modulo.description}</p>
+                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {acoes.map((acao) => {
+                          // Estado efetivo da permissão
+                          const permissaoEfetiva = permissoesEfetivas.find(
+                            (p) => p.modulo === modulo.key && p.acao === acao.key
+                          );
+                          const estaPermitido = permissaoEfetiva?.permitido ?? false;
+                          const origem = permissaoEfetiva?.origem ?? "role";
+                          
+                          // Override individual (se existe)
+                          const temOverride = permissionsForm[modulo.key]?.[acao.key] !== undefined;
+                          const overrideValue = permissionsForm[modulo.key]?.[acao.key] ?? null;
+                          
+                          // Determinar se o switch deve estar ligado
+                          // Se tem override, usa o override; senão, mostra o estado efetivo
+                          const switchValue = temOverride ? (overrideValue === true) : estaPermitido;
+                          
+                          // Labels para origem
+                          const origemLabels = {
+                            override: "Override",
+                            cargo: "Herdado do cargo",
+                            role: "Padrão do role",
+                          };
+                          
+                          const origemColors = {
+                            override: "primary" as const,
+                            cargo: "secondary" as const,
+                            role: "default" as const,
+                          };
+                          
+                          return (
+                            <div key={acao.key} className="flex items-center justify-between p-3 rounded-lg border border-default-200 bg-default-50">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Switch
+                                    isSelected={switchValue}
+                                    onValueChange={(value) => {
+                                      handleSavePermission(modulo.key, acao.key, value);
+                                    }}
+                                    isDisabled={isSavingPermission}
+                                  >
+                                    <span className="text-sm font-medium">{acao.label}</span>
+                                  </Switch>
+                                </div>
+                                <div className="ml-8">
+                                  <Chip
+                                    size="sm"
+                                    variant="flat"
+                                    color={origemColors[origem]}
+                                  >
+                                    {origemLabels[origem]}
+                                  </Chip>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <Divider />
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </ModalBody>

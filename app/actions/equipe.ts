@@ -873,6 +873,183 @@ export async function adicionarPermissaoIndividual(
   revalidatePath("/equipe");
 }
 
+/**
+ * Retorna o estado efetivo de todas as permissões para um usuário
+ * Inclui origem: "override", "cargo" ou "role"
+ */
+export async function getPermissoesEfetivas(
+  usuarioId: string,
+): Promise<
+  Array<{
+    modulo: string;
+    acao: string;
+    permitido: boolean;
+    origem: "override" | "cargo" | "role";
+  }>
+> {
+  const session = await getSession();
+
+  if (!session?.user?.tenantId) {
+    throw new Error("Usuário não autenticado");
+  }
+
+  if (session.user.role !== UserRole.ADMIN) {
+    throw new Error("Apenas administradores podem consultar permissões");
+  }
+
+  const usuario = await prisma.usuario.findFirst({
+    where: {
+      id: usuarioId,
+      tenantId: session.user.tenantId,
+    },
+    include: {
+      permissoesIndividuais: true,
+      cargos: {
+        where: { ativo: true },
+        include: {
+          cargo: {
+            include: {
+              permissoes: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!usuario) {
+    throw new Error("Usuário não encontrado");
+  }
+
+  // Buscar todos os módulos e ações disponíveis
+  const { modulos: modulosData } = await getTenantAccessibleModules(
+    session.user.tenantId,
+  );
+
+  const acoes = ["visualizar", "criar", "editar", "excluir", "exportar"];
+
+  const permissoesEfetivas: Array<{
+    modulo: string;
+    acao: string;
+    permitido: boolean;
+    origem: "override" | "cargo" | "role";
+  }> = [];
+
+  // Matriz de permissões padrão por role
+  const rolePermissions: Record<UserRole, Record<string, string[]>> = {
+    [UserRole.ADMIN]: {
+      processos: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      clientes: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      advogados: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
+    },
+    [UserRole.FINANCEIRO]: {
+      processos: ["visualizar"],
+      clientes: ["visualizar"],
+      advogados: ["visualizar"],
+      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      equipe: ["visualizar"],
+      relatorios: ["visualizar", "exportar"],
+    },
+    [UserRole.SUPER_ADMIN]: {
+      processos: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      clientes: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      advogados: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
+    },
+    [UserRole.ADVOGADO]: {
+      processos: ["criar", "editar", "visualizar", "exportar"],
+      clientes: ["criar", "editar", "visualizar", "exportar"],
+      advogados: ["visualizar"],
+      financeiro: ["visualizar"],
+      equipe: ["visualizar"],
+      relatorios: ["visualizar", "exportar"],
+    },
+    [UserRole.SECRETARIA]: {
+      processos: ["criar", "editar", "visualizar", "exportar"],
+      clientes: ["criar", "editar", "visualizar", "exportar"],
+      advogados: ["visualizar"],
+      financeiro: ["visualizar"],
+      equipe: ["visualizar"],
+      relatorios: ["visualizar", "exportar"],
+    },
+    [UserRole.CLIENTE]: {
+      processos: ["visualizar"],
+      clientes: ["visualizar"],
+      advogados: ["visualizar"],
+      financeiro: ["visualizar"],
+      equipe: [],
+      relatorios: ["visualizar"],
+    },
+  };
+
+  // Buscar módulos disponíveis do tenant
+  const modulos = await prisma.modulo.findMany({
+    where: {
+      slug: { in: modulosData },
+      ativo: true,
+    },
+    select: { slug: true },
+  });
+
+  const moduloSlugs = modulos.map((m) => m.slug);
+  const userRolePermissions = rolePermissions[usuario.role as UserRole] || {};
+
+  // Para cada módulo e ação, determinar a permissão efetiva
+  for (const modulo of moduloSlugs) {
+    for (const acao of acoes) {
+      // 1. Verificar override individual
+      const override = usuario.permissoesIndividuais.find(
+        (p) => p.modulo === modulo && p.acao === acao,
+      );
+
+      if (override) {
+        permissoesEfetivas.push({
+          modulo,
+          acao,
+          permitido: override.permitido,
+          origem: "override",
+        });
+        continue;
+      }
+
+      // 2. Verificar permissão do cargo
+      const usuarioCargoAtivo = usuario.cargos.find((uc) => uc.ativo);
+      if (usuarioCargoAtivo?.cargo) {
+        const permissaoCargo = usuarioCargoAtivo.cargo.permissoes.find(
+          (p) => p.modulo === modulo && p.acao === acao,
+        );
+
+        if (permissaoCargo) {
+          permissoesEfetivas.push({
+            modulo,
+            acao,
+            permitido: permissaoCargo.permitido,
+            origem: "cargo",
+          });
+          continue;
+        }
+      }
+
+      // 3. Verificar permissão padrão do role
+      const temPermissaoRole =
+        userRolePermissions[modulo]?.includes(acao) ?? false;
+      permissoesEfetivas.push({
+        modulo,
+        acao,
+        permitido: temPermissaoRole,
+        origem: "role",
+      });
+    }
+  }
+
+  return permissoesEfetivas;
+}
+
 // ===== DASHBOARD DE EQUIPE =====
 
 export async function getDashboardEquipe(): Promise<{
