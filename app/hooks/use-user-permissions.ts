@@ -1,5 +1,9 @@
+"use client";
+
 import { useSession } from "next-auth/react";
 import { useMemo } from "react";
+
+import { usePermissionsCheck } from "./use-permission-check";
 
 export type UserRole =
   | "SUPER_ADMIN"
@@ -31,14 +35,100 @@ export interface UserPermissions {
   canViewPremiumJudges: boolean;
 }
 
+/**
+ * Mapeamento de permissões antigas para novo formato (módulo + ação)
+ * 
+ * Nota: Alguns módulos podem não estar no rolePermissions padrão (ex: agenda, juizes, documentos).
+ * Nesses casos, a verificação retornará false se não houver override/cargo configurado.
+ */
+const PERMISSION_MAP: Record<
+  keyof UserPermissions,
+  { modulo: string; acao: string } | null
+> = {
+  // Mapeamentos diretos para módulos do sistema padrão
+  canViewAllProcesses: { modulo: "processos", acao: "visualizar" },
+  canViewAllClients: { modulo: "clientes", acao: "visualizar" },
+  canViewFinancialData: { modulo: "financeiro", acao: "visualizar" },
+  canManageTeam: { modulo: "equipe", acao: "visualizar" },
+  canViewReports: { modulo: "relatorios", acao: "visualizar" },
+  canManageContracts: { modulo: "financeiro", acao: "criar" }, // Criar/editar contratos
+  
+  // Agenda - usando processos como proxy (eventos estão relacionados a processos)
+  canViewAllEvents: { modulo: "processos", acao: "visualizar" },
+  canViewClientEvents: { modulo: "processos", acao: "visualizar" },
+  canCreateEvents: { modulo: "processos", acao: "criar" }, // Proxy: criar evento = criar processo
+  canEditAllEvents: { modulo: "processos", acao: "editar" }, // Proxy: editar evento = editar processo
+  
+  // Configurações - pode não estar no sistema padrão
+  canManageOfficeSettings: { modulo: "equipe", acao: "editar" }, // Usar equipe.editar como proxy
+  
+  // Documentos - pode não estar no sistema padrão
+  canViewAllDocuments: { modulo: "processos", acao: "visualizar" }, // Proxied para processos
+  
+  // Equipe/Usuários
+  canManageUsers: { modulo: "equipe", acao: "editar" },
+  
+  // Juízes - usando advogados como proxy (similar estrutura)
+  canViewJudgesDatabase: { modulo: "advogados", acao: "visualizar" },
+  canManageJudgesDatabase: { modulo: "advogados", acao: "editar" }, // Proxy para advogados.editar
+  canCreateJudgeProfiles: { modulo: "advogados", acao: "criar" }, // Proxy para advogados.criar
+  canEditJudgeProfiles: { modulo: "advogados", acao: "editar" },
+  canDeleteJudgeProfiles: { modulo: "advogados", acao: "excluir" }, // Proxy se houver excluir
+  canViewPremiumJudges: { modulo: "advogados", acao: "visualizar" }, // Controle de negócio, mas usar como proxy
+};
+
+/**
+ * Hook para verificar permissões do usuário
+ * 
+ * **Migrado para usar o novo sistema de permissões:**
+ * - Usa `usePermissionsCheck` internamente
+ * - Respeita override → cargo → role padrão
+ * - Mantém interface antiga para compatibilidade
+ * 
+ * SUPER_ADMIN e ADMIN têm acesso total (bypass do sistema de permissões)
+ */
 export function useUserPermissions() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role as UserRole | undefined;
-  const userPermissions = (session?.user as any)?.permissions as
-    | string[]
-    | undefined;
   const isSuperAdmin = userRole === "SUPER_ADMIN";
+  const isAdmin = userRole === "ADMIN";
 
+  // Preparar lista de permissões para verificar (apenas se não for SUPER_ADMIN/ADMIN)
+  const permissionChecks = useMemo(() => {
+    // SUPER_ADMIN e ADMIN têm acesso total, não precisam verificar
+    if (isSuperAdmin || isAdmin) {
+      return [];
+    }
+
+    // Criar lista de verificações para todos os módulos/ações
+    const checks: Array<{ modulo: string; acao: string }> = [];
+    const seen = new Set<string>();
+
+    Object.values(PERMISSION_MAP).forEach((mapping) => {
+      // Ignorar mapeamentos null (não têm correspondência no novo sistema)
+      if (!mapping) return;
+      
+      const { modulo, acao } = mapping;
+      const key = `${modulo}.${acao}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        checks.push({ modulo, acao });
+      }
+    });
+
+    return checks;
+  }, [isSuperAdmin, isAdmin]);
+
+  // Verificar permissões usando o novo sistema (apenas se não for SUPER_ADMIN/ADMIN)
+  const { permissions: newPermissions, isLoading } = usePermissionsCheck(
+    permissionChecks,
+    {
+      enabled: !isSuperAdmin && !isAdmin, // Desabilitar se for SUPER_ADMIN/ADMIN
+      enableEarlyAccess: true, // Retornar false até carregar
+    },
+  );
+
+  // Construir objeto de permissões compatível com interface antiga
   const permissions = useMemo<UserPermissions>(() => {
     // SUPER_ADMIN tem acesso total
     if (isSuperAdmin) {
@@ -66,7 +156,7 @@ export function useUserPermissions() {
     }
 
     // ADMIN (Escritório) - Acesso total ao escritório
-    if (userRole === "ADMIN") {
+    if (isAdmin) {
       return {
         canViewAllProcesses: true,
         canViewAllClients: true,
@@ -90,129 +180,76 @@ export function useUserPermissions() {
       };
     }
 
-    // ADVOGADO - Acesso aos seus clientes e processos
-    if (userRole === "ADVOGADO") {
-      return {
-        canViewAllProcesses: true, // Vê seus processos (filtrados no backend)
-        canViewAllClients: true, // Vê seus clientes (filtrados no backend)
-        canViewAllEvents: true, // Vê sua agenda (filtrados no backend)
-        canViewClientEvents: false, // Não é cliente
-        canViewFinancialData: true, // Vê suas comissões
-        canManageTeam: false,
-        canManageOfficeSettings: false,
-        canCreateEvents: true,
-        canEditAllEvents: true, // Pode editar os eventos da sua agenda
-        canViewReports: true, // Relatórios dos seus processos
-        canManageContracts: true, // Gerencia contratos dos seus clientes
-        canViewAllDocuments: true, // Vê documentos dos seus clientes (filtrados no backend)
-        canManageUsers: false,
-        canViewJudgesDatabase: true,
-        canManageJudgesDatabase: true,
-        canCreateJudgeProfiles: true,
-        canEditJudgeProfiles: true,
-        canDeleteJudgeProfiles: false,
-        canViewPremiumJudges: true,
-      };
-    }
-
-    // SECRETARIA - Acesso operacional
-    if (userRole === "SECRETARIA") {
-      return {
-        canViewAllProcesses: true, // Para organização
-        canViewAllClients: true, // Para atendimento
-        canViewAllEvents: true, // Para organização da agenda
-        canViewClientEvents: false, // Não é cliente
-        canViewFinancialData: false, // Não acessa dados financeiros
-        canManageTeam: false,
-        canManageOfficeSettings: false,
-        canCreateEvents: true, // Para organizar agenda
-        canEditAllEvents: true, // Para reagendar
-        canViewReports: false,
-        canManageContracts: false,
-        canViewAllDocuments: true, // Para organização
-        canManageUsers: false,
-        canViewJudgesDatabase: true,
-        canManageJudgesDatabase: false,
-        canCreateJudgeProfiles: false,
-        canEditJudgeProfiles: false,
-        canDeleteJudgeProfiles: false,
-        canViewPremiumJudges: false,
-      };
-    }
-
-    // FINANCEIRO - Acesso ao módulo financeiro
-    if (userRole === "FINANCEIRO") {
-      return {
-        canViewAllProcesses: false,
-        canViewAllClients: true, // Para faturas
-        canViewAllEvents: false,
-        canViewClientEvents: false, // Não é cliente
-        canViewFinancialData: true, // Acesso total ao financeiro
-        canManageTeam: false,
-        canManageOfficeSettings: false,
-        canCreateEvents: false,
-        canEditAllEvents: false,
-        canViewReports: true, // Relatórios financeiros
-        canManageContracts: true, // Para faturas
-        canViewAllDocuments: false,
-        canManageUsers: false,
-        canViewJudgesDatabase: true,
-        canManageJudgesDatabase: false,
-        canCreateJudgeProfiles: false,
-        canEditJudgeProfiles: false,
-        canDeleteJudgeProfiles: false,
-        canViewPremiumJudges: false,
-      };
-    }
-
-    // CLIENTE - Acesso limitado aos seus dados
-    if (userRole === "CLIENTE") {
-      return {
-        canViewAllProcesses: false, // Apenas o seu
-        canViewAllClients: false,
-        canViewAllEvents: false, // Não vê todos os eventos
-        canViewClientEvents: true, // Pode ver eventos dos seus processos
-        canViewFinancialData: true, // Apenas o que deve pagar
-        canManageTeam: false,
-        canManageOfficeSettings: false,
-        canCreateEvents: false, // Cliente não cria eventos
-        canEditAllEvents: false,
-        canViewReports: false,
-        canManageContracts: false,
-        canViewAllDocuments: true, // Apenas os seus
-        canManageUsers: false,
-        canViewJudgesDatabase: false, // ✨ Cliente NÃO vê juízes
-        canManageJudgesDatabase: false,
-        canCreateJudgeProfiles: false,
-        canEditJudgeProfiles: false,
-        canDeleteJudgeProfiles: false,
-        canViewPremiumJudges: false,
-      };
-    }
-
-    // Default - sem permissões
-    return {
-      canViewAllProcesses: false,
-      canViewAllClients: false,
-      canViewAllEvents: false,
-      canViewClientEvents: false,
-      canViewFinancialData: false,
-      canManageTeam: false,
-      canManageOfficeSettings: false,
-      canCreateEvents: false,
-      canEditAllEvents: false,
-      canViewReports: false,
-      canManageContracts: false,
-      canViewAllDocuments: false,
-      canManageUsers: false,
-      canViewJudgesDatabase: false,
-      canManageJudgesDatabase: false,
-      canCreateJudgeProfiles: false,
-      canEditJudgeProfiles: false,
-      canDeleteJudgeProfiles: false,
-      canViewPremiumJudges: false,
+    // Para outros roles, usar o novo sistema de permissões
+    // Mapear resultados do novo sistema para interface antiga
+    const mappedPermissions: UserPermissions = {
+      canViewAllProcesses:
+        (PERMISSION_MAP.canViewAllProcesses &&
+          newPermissions[`${PERMISSION_MAP.canViewAllProcesses.modulo}.${PERMISSION_MAP.canViewAllProcesses.acao}`]) ??
+        false,
+      canViewAllClients:
+        (PERMISSION_MAP.canViewAllClients &&
+          newPermissions[`${PERMISSION_MAP.canViewAllClients.modulo}.${PERMISSION_MAP.canViewAllClients.acao}`]) ??
+        false,
+      canViewAllEvents:
+        (PERMISSION_MAP.canViewAllEvents &&
+          newPermissions[`${PERMISSION_MAP.canViewAllEvents.modulo}.${PERMISSION_MAP.canViewAllEvents.acao}`]) ??
+        false,
+      canViewClientEvents:
+        (PERMISSION_MAP.canViewClientEvents &&
+          newPermissions[`${PERMISSION_MAP.canViewClientEvents.modulo}.${PERMISSION_MAP.canViewClientEvents.acao}`]) ??
+        false,
+      canViewFinancialData:
+        (PERMISSION_MAP.canViewFinancialData &&
+          newPermissions[`${PERMISSION_MAP.canViewFinancialData.modulo}.${PERMISSION_MAP.canViewFinancialData.acao}`]) ??
+        false,
+      canManageTeam:
+        (PERMISSION_MAP.canManageTeam &&
+          newPermissions[`${PERMISSION_MAP.canManageTeam.modulo}.${PERMISSION_MAP.canManageTeam.acao}`]) ??
+        false,
+      canManageOfficeSettings:
+        (PERMISSION_MAP.canManageOfficeSettings &&
+          newPermissions[`${PERMISSION_MAP.canManageOfficeSettings.modulo}.${PERMISSION_MAP.canManageOfficeSettings.acao}`]) ??
+        false,
+      canCreateEvents:
+        (PERMISSION_MAP.canCreateEvents &&
+          newPermissions[`${PERMISSION_MAP.canCreateEvents.modulo}.${PERMISSION_MAP.canCreateEvents.acao}`]) ??
+        false,
+      canEditAllEvents:
+        (PERMISSION_MAP.canEditAllEvents &&
+          newPermissions[`${PERMISSION_MAP.canEditAllEvents.modulo}.${PERMISSION_MAP.canEditAllEvents.acao}`]) ??
+        false,
+      canViewReports:
+        (PERMISSION_MAP.canViewReports &&
+          newPermissions[`${PERMISSION_MAP.canViewReports.modulo}.${PERMISSION_MAP.canViewReports.acao}`]) ??
+        false,
+      canManageContracts:
+        (PERMISSION_MAP.canManageContracts &&
+          newPermissions[`${PERMISSION_MAP.canManageContracts.modulo}.${PERMISSION_MAP.canManageContracts.acao}`]) ??
+        false,
+      canViewAllDocuments:
+        (PERMISSION_MAP.canViewAllDocuments &&
+          newPermissions[`${PERMISSION_MAP.canViewAllDocuments.modulo}.${PERMISSION_MAP.canViewAllDocuments.acao}`]) ??
+        false,
+      canManageUsers:
+        (PERMISSION_MAP.canManageUsers &&
+          newPermissions[`${PERMISSION_MAP.canManageUsers.modulo}.${PERMISSION_MAP.canManageUsers.acao}`]) ??
+        false,
+      // Permissões de juízes - podem não ter mapeamento direto
+      canViewJudgesDatabase:
+        (PERMISSION_MAP.canViewJudgesDatabase &&
+          newPermissions[`${PERMISSION_MAP.canViewJudgesDatabase.modulo}.${PERMISSION_MAP.canViewJudgesDatabase.acao}`]) ??
+        false,
+      // Se não há mapeamento, retornar false (depende de override/cargo)
+      canManageJudgesDatabase: false, // Depende de override/cargo se não mapeado
+      canCreateJudgeProfiles: false, // Depende de override/cargo se não mapeado
+      canEditJudgeProfiles: false, // Depende de override/cargo se não mapeado
+      canDeleteJudgeProfiles: false, // Depende de override/cargo se não mapeado
+      canViewPremiumJudges: false, // Controle de negócio
     };
-  }, [userRole, isSuperAdmin]);
+
+    return mappedPermissions;
+  }, [isSuperAdmin, isAdmin, newPermissions]);
 
   const hasPermission = (permission: keyof UserPermissions) => {
     return permissions[permission];
@@ -233,10 +270,12 @@ export function useUserPermissions() {
     hasAnyPermission,
     hasAllPermissions,
     isSuperAdmin,
-    isAdmin: userRole === "ADMIN",
+    isAdmin,
     isAdvogado: userRole === "ADVOGADO",
     isSecretaria: userRole === "SECRETARIA",
     isFinanceiro: userRole === "FINANCEIRO",
     isCliente: userRole === "CLIENTE",
+    // Expor estado de loading para componentes que precisam
+    isLoadingPermissions: isLoading,
   };
 }
