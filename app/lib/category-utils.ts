@@ -43,6 +43,7 @@ import {
   ArrowRightIcon,
   RefreshCwIcon,
   RouteIcon,
+  GavelIcon,
 } from "lucide-react";
 
 /**
@@ -92,6 +93,7 @@ export const ICON_MAP: Record<string, any> = {
   ArrowRight: ArrowRightIcon,
   RefreshCw: RefreshCwIcon,
   Route: RouteIcon,
+  Gavel: GavelIcon,
 };
 
 /**
