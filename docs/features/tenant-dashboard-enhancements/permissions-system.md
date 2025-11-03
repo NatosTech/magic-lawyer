@@ -380,8 +380,16 @@ test("usuário sem permissão não vê botão de criar", async () => {
 - [x] Criar server actions `checkPermission` e `checkPermissions`
 - [x] Implementar hooks `usePermissionCheck` e `usePermissionsCheck` com realtime
 - [x] Documentar sistema completo de permissões
-- [ ] Integrar `checkPermission` em todas as Server Actions críticas
-- [ ] Atualizar guards de rota para usar verificação consolidada
+- [x] Integrar `checkPermission` em Server Actions críticas:
+  - [x] Processos: `createProcesso`, `updateProcesso`
+  - [x] Clientes: `createCliente`, `updateCliente`
+  - [x] Financeiro: `createContrato`, `updateContrato`
+- [ ] Integrar `checkPermission` em Server Actions restantes:
+  - [ ] Processos: `deleteProcesso` (quando implementado)
+  - [ ] Clientes: `deleteCliente` (quando implementado)
+  - [ ] Financeiro: `deleteContrato`, `createParcelaContrato`, `updateParcelaContrato`, `deleteParcelaContrato`
+  - [ ] Outras operações sensíveis
+- [ ] Atualizar guards de rota para usar verificação consolidada (middleware já verifica módulos, mas ações específicas são validadas nas Server Actions)
 - [ ] Criar testes unitários para `checkPermission` e `checkPermissions`
 - [ ] Criar testes de integração cobrindo override, cargo e role
 - [ ] Criar testes E2E simulando mudança de permissão e re-render
