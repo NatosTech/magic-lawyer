@@ -326,6 +326,18 @@ export function useProfileNavigation() {
       });
     }
 
+    // Portal do Advogado - Acesso para ADMIN e ADVOGADO
+    if (isAdmin || isAdvogado) {
+      items.push({
+        label: "Portal do Advogado",
+        href: "/portal-advogado",
+        icon: "Gavel",
+        description: "Portais dos tribunais, recessos forenses e comunicados",
+        section: "Atividades Jurídicas",
+        requiredModules: [], // Não requer módulo específico
+      });
+    }
+
     if (
       permissions.canViewAllEvents ||
       permissions.canCreateEvents ||
