@@ -390,16 +390,40 @@ test("usuário sem permissão não vê botão de criar", async () => {
   - [x] Financeiro - Parcelas: `createParcelaContrato`, `updateParcelaContrato`, `deleteParcelaContrato` (todas integradas)
   - [ ] Financeiro: `deleteContrato` (quando implementado)
   - [ ] Outras operações sensíveis
+- [x] Implementar logging e auditoria para recusas de permissão:
+  - [x] Função `logPermissaoNegada()` registra tentativas negadas
+  - [x] Logging no logger estruturado com dados completos
+  - [x] Registro no `EquipeHistorico` para auditoria detalhada
+  - [x] Logging integrado em todas as camadas (override, cargo, role)
 - [ ] Atualizar guards de rota para usar verificação consolidada (middleware já verifica módulos, mas ações específicas são validadas nas Server Actions)
-- [ ] Criar testes unitários para `checkPermission` e `checkPermissions`
-- [ ] Criar testes de integração cobrindo override, cargo e role
-- [ ] Criar testes E2E simulando mudança de permissão e re-render
-- [ ] Adicionar métricas de auditoria de permissões
+- [ ] Criar testes unitários para `checkPermission` e `checkPermissions` (veja `test-plan-permissions.md`)
+- [ ] Criar testes de integração cobrindo override, cargo e role (veja `test-plan-permissions.md`)
+- [ ] Criar testes E2E simulando mudança de permissão e re-render (veja `test-plan-permissions.md`)
+
+## 📊 Auditoria e Logging
+
+Todas as tentativas de acesso negadas são registradas para auditoria:
+
+1. **Logger estruturado** (`logger.warn`):
+   - Dados completos: tenantId, usuarioId, modulo, acao, origem, cargoId
+   - Formato: `[PERMISSION_DENIED]` com metadata JSON
+
+2. **EquipeHistorico**:
+   - Ação: `permissao_negada`
+   - Dados novos incluem: modulo, acao, origem, role, cargoId
+   - Motivo: descrição da tentativa negada
+   - Permite rastreamento completo para compliance e auditoria
+
+3. **Origem da recusa**:
+   - `override`: Negado por permissão individual
+   - `cargo`: Negado por permissão do cargo
+   - `role`: Negado por permissão padrão do role
 
 ## 📚 Referências
 
-- `app/actions/equipe.ts` - Lógica de verificação de permissões
+- `app/actions/equipe.ts` - Lógica de verificação de permissões e logging
 - `app/hooks/use-permission-check.ts` - Hooks para verificação no frontend
 - `components/permission-guard.tsx` - Componente guard para ocultar/mostrar conteúdo
 - `docs/features/tenant-dashboard-enhancements/tenant-team-role-management.md` - Planejamento completo
+- `docs/features/tenant-dashboard-enhancements/test-plan-permissions.md` - Plano de testes detalhado
 
