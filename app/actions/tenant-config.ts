@@ -350,16 +350,19 @@ export async function updateTenantBasicData(
     if (data.nomeFantasia !== undefined) updateData.nomeFantasia = data.nomeFantasia?.trim() || null;
     if (data.timezone !== undefined) updateData.timezone = data.timezone;
 
-    await prisma.tenant.update({
-      where: { id: tenantId },
-      data: updateData,
-    });
+    // Só atualizar se houver mudanças
+    if (Object.keys(updateData).length > 0) {
+      await prisma.tenant.update({
+        where: { id: tenantId },
+        data: updateData,
+      });
 
-    // Incrementar sessionVersion para forçar refresh
-    await prisma.tenant.update({
-      where: { id: tenantId },
-      data: { sessionVersion: { increment: 1 } },
-    });
+      // Incrementar sessionVersion para forçar refresh
+      await prisma.tenant.update({
+        where: { id: tenantId },
+        data: { sessionVersion: { increment: 1 } },
+      });
+    }
 
     logger.info(`Tenant ${tenantId} atualizado por ${session.user.email}`);
 
@@ -395,30 +398,36 @@ export async function updateTenantBranding(
       return { success: false, error: "Apenas administradores podem editar o branding" };
     }
 
-    await prisma.tenantBranding.upsert({
-      where: { tenantId },
-      update: {
-        primaryColor: data.primaryColor ?? undefined,
-        secondaryColor: data.secondaryColor ?? undefined,
-        accentColor: data.accentColor ?? undefined,
-        logoUrl: data.logoUrl ?? undefined,
-        faviconUrl: data.faviconUrl ?? undefined,
-      },
-      create: {
-        tenantId,
-        primaryColor: data.primaryColor ?? "#2563eb",
-        secondaryColor: data.secondaryColor ?? "#1d4ed8",
-        accentColor: data.accentColor ?? "#3b82f6",
-        logoUrl: data.logoUrl ?? null,
-        faviconUrl: data.faviconUrl ?? null,
-      },
-    });
+    // Construir updateData apenas com campos definidos
+    const updateData: Record<string, unknown> = {};
 
-    // Incrementar sessionVersion para forçar refresh
-    await prisma.tenant.update({
-      where: { id: tenantId },
-      data: { sessionVersion: { increment: 1 } },
-    });
+    if (data.primaryColor !== undefined) updateData.primaryColor = data.primaryColor;
+    if (data.secondaryColor !== undefined) updateData.secondaryColor = data.secondaryColor;
+    if (data.accentColor !== undefined) updateData.accentColor = data.accentColor;
+    if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl;
+    if (data.faviconUrl !== undefined) updateData.faviconUrl = data.faviconUrl;
+
+    // Só atualizar se houver mudanças
+    if (Object.keys(updateData).length > 0) {
+      await prisma.tenantBranding.upsert({
+        where: { tenantId },
+        update: updateData,
+        create: {
+          tenantId,
+          primaryColor: data.primaryColor ?? "#2563eb",
+          secondaryColor: data.secondaryColor ?? "#1d4ed8",
+          accentColor: data.accentColor ?? "#3b82f6",
+          logoUrl: data.logoUrl ?? null,
+          faviconUrl: data.faviconUrl ?? null,
+        },
+      });
+
+      // Incrementar sessionVersion para forçar refresh
+      await prisma.tenant.update({
+        where: { id: tenantId },
+        data: { sessionVersion: { increment: 1 } },
+      });
+    }
 
     logger.info(`Branding do tenant ${tenantId} atualizado por ${session.user.email}`);
 
