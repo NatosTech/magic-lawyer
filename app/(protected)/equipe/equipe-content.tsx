@@ -78,6 +78,8 @@ import {
   updateCargo,
   deleteCargo,
   updateUsuarioEquipe,
+  adicionarPermissaoIndividual,
+  vincularUsuarioAdvogado,
   type CargoData,
   type UsuarioEquipeData,
 } from "@/app/actions/equipe";
@@ -897,6 +899,25 @@ function UsuariosTab() {
   const [usuarios, setUsuarios] = useState<UsuarioEquipeData[]>([]);
   const [advogados, setAdvogados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Buscar módulos do tenant via hook
+  const { modulos: modulosData } = useModulosTenant();
+  
+  // Transformar módulos para o formato esperado
+  const modulos = useMemo(() => {
+    return modulosData.map((m) => ({
+      key: m.slug,
+      label: m.nome,
+      description: m.descricao,
+    }));
+  }, [modulosData]);
+
+  const acoes = [
+    { key: "visualizar", label: "Visualizar" },
+    { key: "criar", label: "Criar" },
+    { key: "editar", label: "Editar" },
+    { key: "excluir", label: "Excluir" },
+  ];
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -907,6 +928,8 @@ function UsuariosTab() {
   const [itemsPerPage] = useState(10);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [selectedUsuario, setSelectedUsuario] = useState<UsuarioEquipeData | null>(null);
   const [editFormData, setEditFormData] = useState({
     firstName: "",
@@ -916,6 +939,14 @@ function UsuariosTab() {
     active: true,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [permissionsForm, setPermissionsForm] = useState<Record<string, Record<string, boolean>>>({});
+  const [linkForm, setLinkForm] = useState({
+    advogadoId: "",
+    tipo: "assistente",
+    observacoes: "",
+  });
+  const [isSavingPermission, setIsSavingPermission] = useState(false);
+  const [isSavingLink, setIsSavingLink] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -970,6 +1001,81 @@ function UsuariosTab() {
       );
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  function handlePermissionsUsuario(usuario: UsuarioEquipeData) {
+    setSelectedUsuario(usuario);
+    
+    // Inicializar form com permissões existentes
+    const existingPerms: Record<string, Record<string, boolean>> = {};
+    usuario.permissoesIndividuais.forEach((perm) => {
+      if (!existingPerms[perm.modulo]) {
+        existingPerms[perm.modulo] = {};
+      }
+      existingPerms[perm.modulo][perm.acao] = perm.permitido;
+    });
+    setPermissionsForm(existingPerms);
+    
+    setIsPermissionsModalOpen(true);
+  }
+
+  function handleLinkUsuario(usuario: UsuarioEquipeData) {
+    setSelectedUsuario(usuario);
+    setLinkForm({
+      advogadoId: "",
+      tipo: "assistente",
+      observacoes: "",
+    });
+    setIsLinkModalOpen(true);
+  }
+
+  async function handleSavePermission(modulo: string, acao: string, permitido: boolean) {
+    if (!selectedUsuario) return;
+
+    setIsSavingPermission(true);
+    try {
+      await adicionarPermissaoIndividual(
+        selectedUsuario.id,
+        modulo,
+        acao,
+        permitido,
+        `Permissão ${permitido ? "concedida" : "negada"} pelo admin`
+      );
+      toast.success("Permissão atualizada com sucesso");
+      await loadData();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao atualizar permissão"
+      );
+    } finally {
+      setIsSavingPermission(false);
+    }
+  }
+
+  async function handleSaveLink() {
+    if (!selectedUsuario || !linkForm.advogadoId) {
+      toast.error("Selecione um advogado");
+      return;
+    }
+
+    setIsSavingLink(true);
+    try {
+      await vincularUsuarioAdvogado(
+        selectedUsuario.id,
+        linkForm.advogadoId,
+        linkForm.tipo,
+        linkForm.observacoes || undefined
+      );
+      toast.success("Usuário vinculado com sucesso");
+      setIsLinkModalOpen(false);
+      await loadData();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao vincular usuário"
+      );
+    } finally {
+      setIsSavingLink(false);
     }
   }
 
@@ -1435,6 +1541,10 @@ function UsuariosTab() {
                             handleViewUsuario(usuario);
                           } else if (key === "edit") {
                             handleEditUsuario(usuario);
+                          } else if (key === "permissions") {
+                            handlePermissionsUsuario(usuario);
+                          } else if (key === "link") {
+                            handleLinkUsuario(usuario);
                           }
                         }}>
                           <DropdownItem
@@ -1718,6 +1828,155 @@ function UsuariosTab() {
               onPress={handleSaveUsuario}
             >
               Salvar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal de Permissões */}
+      <Modal
+        isOpen={isPermissionsModalOpen}
+        onClose={() => setIsPermissionsModalOpen(false)}
+        size="4xl"
+        scrollBehavior="inside"
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-semibold">
+                Gerenciar Permissões - {selectedUsuario?.firstName || selectedUsuario?.email}
+              </h2>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            {selectedUsuario && (
+              <div className="space-y-6">
+                <p className="text-sm text-default-500">
+                  Gerencie permissões individuais para este usuário. Permissões individuais
+                  sobrescrevem as permissões do cargo.
+                </p>
+                <Divider />
+                {modulos.map((modulo) => (
+                  <div key={modulo.key} className="space-y-3">
+                    <h3 className="font-semibold text-default-700">{modulo.label}</h3>
+                    {modulo.description && (
+                      <p className="text-xs text-default-500">{modulo.description}</p>
+                    )}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {acoes.map((acao) => {
+                        const currentValue = permissionsForm[modulo.key]?.[acao.key] ?? null;
+                        const hasPermission = currentValue === true;
+                        
+                        return (
+                          <div key={acao.key} className="flex items-center gap-2">
+                            <Switch
+                              isSelected={hasPermission}
+                              onValueChange={(value) => {
+                                handleSavePermission(modulo.key, acao.key, value);
+                              }}
+                              isDisabled={isSavingPermission}
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm">{acao.label}</span>
+                              </div>
+                            </Switch>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <Divider />
+                  </div>
+                ))}
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => setIsPermissionsModalOpen(false)}>
+              Fechar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal de Vincular */}
+      <Modal
+        isOpen={isLinkModalOpen}
+        onClose={() => setIsLinkModalOpen(false)}
+        size="2xl"
+        scrollBehavior="inside"
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <LinkIcon className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-semibold">
+                Vincular Usuário - {selectedUsuario?.firstName || selectedUsuario?.email}
+              </h2>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <Select
+                label="Advogado"
+                placeholder="Selecione um advogado"
+                selectedKeys={linkForm.advogadoId ? [linkForm.advogadoId] : []}
+                onSelectionChange={(keys) => {
+                  const selected = Array.from(keys)[0] as string;
+                  setLinkForm({ ...linkForm, advogadoId: selected });
+                }}
+              >
+                {advogados.map((adv) => (
+                  <SelectItem key={adv.id} value={adv.id}>
+                    {adv.nome} {adv.oabNumero && `- OAB ${adv.oabNumero}/${adv.oabUf}`}
+                  </SelectItem>
+                ))}
+              </Select>
+
+              <Select
+                label="Tipo de Vinculação"
+                selectedKeys={[linkForm.tipo]}
+                onSelectionChange={(keys) => {
+                  const selected = Array.from(keys)[0] as string;
+                  setLinkForm({ ...linkForm, tipo: selected });
+                }}
+              >
+                <SelectItem key="assistente" value="assistente">
+                  Assistente
+                </SelectItem>
+                <SelectItem key="responsavel" value="responsavel">
+                  Responsável
+                </SelectItem>
+                <SelectItem key="colaborador" value="colaborador">
+                  Colaborador
+                </SelectItem>
+              </Select>
+
+              <Textarea
+                label="Observações"
+                placeholder="Observações sobre esta vinculação..."
+                value={linkForm.observacoes}
+                onChange={(e) =>
+                  setLinkForm({ ...linkForm, observacoes: e.target.value })
+                }
+                minRows={3}
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="flat"
+              onPress={() => setIsLinkModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              color="primary"
+              isLoading={isSavingLink}
+              onPress={handleSaveLink}
+              isDisabled={!linkForm.advogadoId}
+            >
+              Vincular
             </Button>
           </ModalFooter>
         </ModalContent>
