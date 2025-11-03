@@ -8,7 +8,9 @@ export type RealtimeEventType =
   | "plan-update"
   | "user-status"
   | "system-changelog"
-  | "notification.new";
+  | "notification.new"
+  | "cargo-update"
+  | "usuario-update";
 
 export interface RealtimeEvent {
   type: RealtimeEventType;
@@ -52,9 +54,36 @@ export interface ChangelogEventPayload {
   visibility: "ALL" | "TENANT" | "ADMIN";
 }
 
+export interface CargoUpdateEventPayload {
+  cargoId: string;
+  action: "created" | "updated" | "deleted";
+  cargo?: {
+    id: string;
+    nome: string;
+    nivel: number;
+    ativo: boolean;
+  };
+  changedBy?: string;
+}
+
+export interface UsuarioUpdateEventPayload {
+  usuarioId: string;
+  action: "updated";
+  usuario?: {
+    id: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    active: boolean;
+  };
+  changedBy?: string;
+}
+
 export type RealtimeEventPayload =
   | TenantStatusEventPayload
   | TenantSoftUpdateEventPayload
   | PlanUpdateEventPayload
   | UserStatusEventPayload
-  | ChangelogEventPayload;
+  | ChangelogEventPayload
+  | CargoUpdateEventPayload
+  | UsuarioUpdateEventPayload;

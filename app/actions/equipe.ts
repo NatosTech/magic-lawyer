@@ -7,6 +7,7 @@ import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { NotificationHelper } from "@/app/lib/notifications/notification-helper";
 import { getTenantAccessibleModules } from "@/app/lib/tenant-modules";
+import { publishRealtimeEvent } from "@/app/lib/realtime/publisher";
 
 // ===== TIPOS E INTERFACES =====
 
@@ -145,6 +146,25 @@ export async function createCargo(data: {
 
   revalidatePath("/equipe");
 
+  // Publicar evento realtime
+  publishRealtimeEvent("cargo-update", {
+    tenantId: session.user.tenantId,
+    userId: session.user.id,
+    payload: {
+      cargoId: cargo.id,
+      action: "created",
+      cargo: {
+        id: cargo.id,
+        nome: cargo.nome,
+        nivel: cargo.nivel,
+        ativo: cargo.ativo,
+      },
+      changedBy: session.user.id!,
+    },
+  }).catch((error) => {
+    console.error("[realtime] Falha ao publicar evento cargo-update", error);
+  });
+
   return {
     id: cargo.id,
     nome: cargo.nome,
@@ -233,6 +253,25 @@ export async function updateCargo(
     throw new Error("Cargo não encontrado");
   }
 
+  // Publicar evento realtime
+  publishRealtimeEvent("cargo-update", {
+    tenantId: session.user.tenantId,
+    userId: session.user.id,
+    payload: {
+      cargoId: cargoAtualizado.id,
+      action: "updated",
+      cargo: {
+        id: cargoAtualizado.id,
+        nome: cargoAtualizado.nome,
+        nivel: cargoAtualizado.nivel,
+        ativo: cargoAtualizado.ativo,
+      },
+      changedBy: session.user.id!,
+    },
+  }).catch((error) => {
+    console.error("[realtime] Falha ao publicar evento cargo-update", error);
+  });
+
   return {
     id: cargoAtualizado.id,
     nome: cargoAtualizado.nome,
@@ -283,6 +322,19 @@ export async function deleteCargo(cargoId: string): Promise<void> {
   });
 
   revalidatePath("/equipe");
+
+  // Publicar evento realtime
+  publishRealtimeEvent("cargo-update", {
+    tenantId: session.user.tenantId,
+    userId: session.user.id,
+    payload: {
+      cargoId: cargoId,
+      action: "deleted",
+      changedBy: session.user.id!,
+    },
+  }).catch((error) => {
+    console.error("[realtime] Falha ao publicar evento cargo-update", error);
+  });
 }
 
 // ===== GESTÃO DE USUÁRIOS DA EQUIPE =====
@@ -1061,6 +1113,26 @@ export async function updateUsuarioEquipe(
   if (!updatedUser) {
     throw new Error("Erro ao recuperar usuário atualizado");
   }
+
+  // Publicar evento realtime
+  publishRealtimeEvent("usuario-update", {
+    tenantId: session.user.tenantId,
+    userId: session.user.id,
+    payload: {
+      usuarioId: updatedUser.id,
+      action: "updated",
+      usuario: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        active: updatedUser.active,
+      },
+      changedBy: session.user.id!,
+    },
+  }).catch((error) => {
+    console.error("[realtime] Falha ao publicar evento usuario-update", error);
+  });
 
   return updatedUser;
 }
