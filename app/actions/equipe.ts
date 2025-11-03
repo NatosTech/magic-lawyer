@@ -1313,3 +1313,191 @@ export async function updateUsuarioEquipe(
 
   return updatedUser;
 }
+
+// ===== VERIFICAÇÃO DE PERMISSÕES (OTIMIZADAS) =====
+
+/**
+ * Verifica uma permissão específica para o usuário atual ou um usuário específico.
+ * Usa a precedência: override individual → cargo → role padrão
+ * 
+ * @param modulo - Slug do módulo (ex: 'processos', 'clientes')
+ * @param acao - Ação desejada (ex: 'criar', 'editar', 'visualizar')
+ * @param usuarioId - ID do usuário a verificar (opcional, usa o usuário da sessão por padrão)
+ * @returns true se o usuário tem permissão, false caso contrário
+ */
+export async function checkPermission(
+  modulo: string,
+  acao: string,
+  usuarioId?: string,
+): Promise<boolean> {
+  return verificarPermissao(modulo, acao, usuarioId);
+}
+
+/**
+ * Verifica múltiplas permissões de uma vez, otimizado para evitar N round-trips.
+ * Retorna um mapa com as permissões verificadas: { "modulo.acao": boolean }
+ * 
+ * @param requests - Array de objetos com módulo e ação a verificar
+ * @param usuarioId - ID do usuário a verificar (opcional, usa o usuário da sessão por padrão)
+ * @returns Mapa de permissões no formato { "modulo.acao": boolean }
+ */
+export async function checkPermissions(
+  requests: Array<{ modulo: string; acao: string }>,
+  usuarioId?: string,
+): Promise<Record<string, boolean>> {
+  const session = await getSession();
+
+  if (!session?.user?.tenantId) {
+    // Retornar todas como false se não autenticado
+    return requests.reduce(
+      (acc, { modulo, acao }) => {
+        acc[`${modulo}.${acao}`] = false;
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    );
+  }
+
+  const targetUsuarioId = usuarioId || session.user.id!;
+
+  // Se for verificar permissões de outro usuário, só ADMIN pode
+  if (usuarioId && usuarioId !== session.user.id) {
+    if (session.user.role !== UserRole.ADMIN) {
+      throw new Error("Apenas administradores podem consultar permissões de outros usuários");
+    }
+  }
+
+  // Se for ADMIN, tem todas as permissões
+  if (session.user.role === UserRole.ADMIN) {
+    return requests.reduce(
+      (acc, { modulo, acao }) => {
+        acc[`${modulo}.${acao}`] = true;
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    );
+  }
+
+  // Buscar usuário com permissões individuais e cargo
+  const usuario = await prisma.usuario.findFirst({
+    where: {
+      id: targetUsuarioId,
+      tenantId: session.user.tenantId,
+    },
+    include: {
+      permissoesIndividuais: true,
+      cargos: {
+        where: { ativo: true },
+        include: {
+          cargo: {
+            include: {
+              permissoes: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!usuario) {
+    // Retornar todas como false se usuário não encontrado
+    return requests.reduce(
+      (acc, { modulo, acao }) => {
+        acc[`${modulo}.${acao}`] = false;
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    );
+  }
+
+  // Matriz de permissões padrão por role
+  const rolePermissions: Record<UserRole, Record<string, string[]>> = {
+    [UserRole.ADMIN]: {
+      processos: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      clientes: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      advogados: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
+    },
+    [UserRole.FINANCEIRO]: {
+      processos: ["visualizar"],
+      clientes: ["visualizar"],
+      advogados: ["visualizar"],
+      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      equipe: ["visualizar"],
+      relatorios: ["visualizar", "exportar"],
+    },
+    [UserRole.SUPER_ADMIN]: {
+      processos: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      clientes: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      advogados: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
+    },
+    [UserRole.ADVOGADO]: {
+      processos: ["criar", "editar", "visualizar", "exportar"],
+      clientes: ["criar", "editar", "visualizar", "exportar"],
+      advogados: ["visualizar"],
+      financeiro: ["visualizar"],
+      equipe: ["visualizar"],
+      relatorios: ["visualizar", "exportar"],
+    },
+    [UserRole.SECRETARIA]: {
+      processos: ["criar", "editar", "visualizar", "exportar"],
+      clientes: ["criar", "editar", "visualizar", "exportar"],
+      advogados: ["visualizar"],
+      financeiro: ["visualizar"],
+      equipe: ["visualizar"],
+      relatorios: ["visualizar", "exportar"],
+    },
+    [UserRole.CLIENTE]: {
+      processos: ["visualizar"],
+      clientes: ["visualizar"],
+      advogados: ["visualizar"],
+      financeiro: ["visualizar"],
+      equipe: [],
+      relatorios: ["visualizar"],
+    },
+  };
+
+  const userRolePermissions =
+    rolePermissions[usuario.role as UserRole] || {};
+
+  const results: Record<string, boolean> = {};
+
+  // Verificar cada permissão solicitada
+  for (const { modulo, acao } of requests) {
+    const key = `${modulo}.${acao}`;
+
+    // 1. Verificar override individual
+    const override = usuario.permissoesIndividuais.find(
+      (p) => p.modulo === modulo && p.acao === acao,
+    );
+
+    if (override) {
+      results[key] = override.permitido;
+      continue;
+    }
+
+    // 2. Verificar permissão do cargo
+    const usuarioCargoAtivo = usuario.cargos.find((uc) => uc.ativo);
+    if (usuarioCargoAtivo?.cargo) {
+      const permissaoCargo = usuarioCargoAtivo.cargo.permissoes.find(
+        (p) => p.modulo === modulo && p.acao === acao,
+      );
+
+      if (permissaoCargo) {
+        results[key] = permissaoCargo.permitido;
+        continue;
+      }
+    }
+
+    // 3. Verificar permissão padrão do role
+    results[key] =
+      userRolePermissions[modulo]?.includes(acao) ?? false;
+  }
+
+  return results;
+}
