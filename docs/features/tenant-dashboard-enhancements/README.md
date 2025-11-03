@@ -90,8 +90,7 @@ Checklists por Documento:
 - ✅ Dashboard de auditoria `/auditoria-permissoes`
 - ✅ Export CSV do histórico de recusas
 - ✅ Logging estruturado de tentativas negadas
-- ✅ Stack de testes completa (Jest + Playwright)
-- ✅ Stack de testes configurada (execução manual)
+- ✅ Stack de testes configurada (Jest + Playwright) - execução manual
 
 ### Melhorias no Dashboard do Tenant
 - ✅ Menu de Configurações com tooltips
