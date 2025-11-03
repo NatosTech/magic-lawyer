@@ -77,6 +77,7 @@ import {
   createCargo,
   updateCargo,
   deleteCargo,
+  updateUsuarioEquipe,
   type CargoData,
   type UsuarioEquipeData,
 } from "@/app/actions/equipe";
@@ -904,6 +905,16 @@ function UsuariosTab() {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedUsuario, setSelectedUsuario] = useState<UsuarioEquipeData | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    active: true,
+  });
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -923,6 +934,36 @@ function UsuariosTab() {
       toast.error("Erro ao carregar dados");
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handleEditUsuario(usuario: UsuarioEquipeData) {
+    setSelectedUsuario(usuario);
+    setEditFormData({
+      firstName: usuario.firstName || "",
+      lastName: usuario.lastName || "",
+      email: usuario.email || "",
+      phone: (usuario as any).phone || "",
+      active: usuario.active,
+    });
+    setIsEditModalOpen(true);
+  }
+
+  async function handleSaveUsuario() {
+    if (!selectedUsuario) return;
+
+    setIsSaving(true);
+    try {
+      await updateUsuarioEquipe(selectedUsuario.id, editFormData);
+      toast.success("Usuário atualizado com sucesso");
+      setIsEditModalOpen(false);
+      await loadData();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao atualizar usuário"
+      );
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -1383,7 +1424,11 @@ function UsuariosTab() {
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownTrigger>
-                        <DropdownMenu>
+                        <DropdownMenu onAction={(key) => {
+                          if (key === "edit") {
+                            handleEditUsuario(usuario);
+                          }
+                        }}>
                           <DropdownItem
                             key="view"
                             startContent={<Eye className="w-4 h-4" />}
@@ -1452,6 +1497,94 @@ function UsuariosTab() {
           </CardBody>
         </Card>
       )}
+
+      {/* Modal de Edição de Usuário */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        size="2xl"
+        scrollBehavior="inside"
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Edit className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-semibold">Editar Usuário</h2>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Nome"
+                  placeholder="Primeiro nome"
+                  value={editFormData.firstName}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, firstName: e.target.value })
+                  }
+                />
+                <Input
+                  label="Sobrenome"
+                  placeholder="Sobrenome"
+                  value={editFormData.lastName}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, lastName: e.target.value })
+                  }
+                />
+              </div>
+              <Input
+                isRequired
+                label="Email"
+                placeholder="email@exemplo.com"
+                type="email"
+                value={editFormData.email}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, email: e.target.value })
+                }
+              />
+              <Input
+                label="Telefone"
+                placeholder="(00) 00000-0000"
+                value={editFormData.phone}
+                onChange={(e) =>
+                  setEditFormData({ ...editFormData, phone: e.target.value })
+                }
+              />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium mb-1">Status</p>
+                  <p className="text-xs text-default-500">
+                    Usuários inativos não conseguem fazer login
+                  </p>
+                </div>
+                <Switch
+                  isSelected={editFormData.active}
+                  onValueChange={(value) =>
+                    setEditFormData({ ...editFormData, active: value })
+                  }
+                >
+                  {editFormData.active ? "Ativo" : "Inativo"}
+                </Switch>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="flat"
+              onPress={() => setIsEditModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              color="primary"
+              isLoading={isSaving}
+              onPress={handleSaveUsuario}
+            >
+              Salvar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

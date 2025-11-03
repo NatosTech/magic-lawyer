@@ -952,3 +952,115 @@ export async function listModulosPorTenant(): Promise<ModuloInfo[]> {
     descricao: m.descricao || undefined,
   }));
 }
+
+/**
+ * Atualiza dados de um usuário da equipe do tenant
+ */
+export async function updateUsuarioEquipe(
+  usuarioId: string,
+  data: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    active?: boolean;
+  },
+): Promise<UsuarioEquipeData> {
+  const session = await getSession();
+
+  if (!session?.user?.tenantId) {
+    throw new Error("Usuário não autenticado");
+  }
+
+  if (session.user.role !== UserRole.ADMIN) {
+    throw new Error("Apenas administradores podem editar usuários");
+  }
+
+  // Verificar se o usuário existe e pertence ao tenant
+  const usuario = await prisma.usuario.findFirst({
+    where: {
+      id: usuarioId,
+      tenantId: session.user.tenantId,
+    },
+  });
+
+  if (!usuario) {
+    throw new Error("Usuário não encontrado");
+  }
+
+  // Construir updateData apenas com campos definidos
+  const updateData: Record<string, unknown> = {};
+
+  if (data.firstName !== undefined && data.firstName !== usuario.firstName) {
+    updateData.firstName = data.firstName;
+  }
+
+  if (data.lastName !== undefined && data.lastName !== usuario.lastName) {
+    updateData.lastName = data.lastName;
+  }
+
+  // Validar email único se está sendo alterado
+  if (data.email !== undefined && data.email !== usuario.email) {
+    const existingUser = await prisma.usuario.findFirst({
+      where: {
+        email: data.email,
+        tenantId: session.user.tenantId,
+        id: { not: usuarioId },
+      },
+    });
+
+    if (existingUser) {
+      throw new Error("Este email já está em uso por outro usuário");
+    }
+
+    updateData.email = data.email;
+  }
+
+  if (data.phone !== undefined && data.phone !== usuario.phone) {
+    updateData.phone = data.phone;
+  }
+
+  if (data.active !== undefined && data.active !== usuario.active) {
+    updateData.active = data.active;
+  }
+
+  // Só atualizar se houver mudanças
+  if (Object.keys(updateData).length > 0) {
+    await prisma.usuario.update({
+      where: { id: usuarioId },
+      data: updateData,
+    });
+
+    // Registrar no histórico
+    await prisma.equipeHistorico.create({
+      data: {
+        tenantId: session.user.tenantId,
+        usuarioId: usuarioId,
+        acao: "dados_alterados",
+        dadosAntigos: {
+          firstName: usuario.firstName,
+          lastName: usuario.lastName,
+          email: usuario.email,
+          phone: usuario.phone,
+          active: usuario.active,
+        },
+        dadosNovos: updateData,
+        motivo: "Dados do usuário atualizados pelo admin",
+        realizadoPor: session.user.id!,
+      },
+    });
+  }
+
+  revalidatePath("/equipe");
+
+  // Retornar usuário atualizado
+  const usuarios = await getUsuariosEquipe();
+
+  const updatedUser = usuarios.find((u) => u.id === usuarioId);
+
+  if (!updatedUser) {
+    throw new Error("Erro ao recuperar usuário atualizado");
+  }
+
+  return updatedUser;
+}
