@@ -120,6 +120,7 @@ export async function MetricasPermissoes() {
         </CardBody>
       </Card>
     </div>
+    </>
   );
 }
 

@@ -33,6 +33,7 @@ const { seedBancos } = require("./seeds/bancos");
 const { seedDadosBancarios } = require("./seeds/dadosBancarios");
 const { seedAuditLogs } = require("./seeds/auditLogs");
 const { seedRecebimentos } = require("./seeds/seed-recebimentos");
+const { seedFuncionarios } = require("./seeds/funcionarios");
 
 const prisma = new PrismaClient();
 
@@ -91,6 +92,7 @@ async function main() {
     await seedTenantSandra(prisma, Prisma);
     await seedTenantLuana(prisma, Prisma);
     await seedSalbaAdvocacia(prisma);
+    await seedFuncionarios(prisma, Prisma);
   } catch (error) {
     console.warn("⚠️ Tenants já criados:", error.message);
   }

@@ -1,0 +1,113 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - button "Voltar" [ref=e4] [cursor=pointer]:
+        - img [ref=e5]
+        - text: Voltar
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - img [ref=e11]
+          - heading "Bem-vindo de volta" [level=1] [ref=e13]
+          - paragraph [ref=e14]: Entre na sua conta para acessar o escritório
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - generic [ref=e17]:
+              - generic [ref=e18]: 🔐
+              - heading "Acesso seguro" [level=2] [ref=e19]
+            - paragraph [ref=e20]: Suas credenciais são protegidas com criptografia de ponta
+            - generic [ref=e22]:
+              - generic [ref=e23]: 💡
+              - generic [ref=e24]:
+                - paragraph [ref=e25]: "Dica:"
+                - paragraph [ref=e26]: Se não souber o slug do escritório, deixe o campo vazio. O sistema tentará encontrar automaticamente.
+          - separator [ref=e27]
+          - generic [ref=e29]:
+            - generic [ref=e31]:
+              - generic [ref=e32]: E-mail*
+              - generic [ref=e33]:
+                - generic [ref=e34]: 📧
+                - textbox "E-mail*" [ref=e35]: admin@test.com
+            - generic [ref=e37]:
+              - generic [ref=e38]: Senha*
+              - generic [ref=e39]:
+                - generic [ref=e40]: 🔒
+                - textbox "Senha*" [ref=e41]: admin123
+            - generic [ref=e42]:
+              - generic [ref=e43]:
+                - generic [ref=e44]: Escritório (slug/domínio)
+                - generic [ref=e45]:
+                  - generic [ref=e46]: 🏢
+                  - textbox "Escritório (slug/domínio)" [ref=e47]:
+                    - /placeholder: meu-escritorio
+              - generic [ref=e49]: "Opcional. Se não souber, deixe vazio. Exemplo: meu-escritorio ou meuescritorio.com.br"
+            - button "Entrar no sistema" [ref=e50] [cursor=pointer]:
+              - generic [ref=e51]: 🚀
+              - text: Entrar no sistema
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Não tem uma conta ainda?
+          - generic [ref=e54]:
+            - button "Ver planos disponíveis" [ref=e55] [cursor=pointer]:
+              - generic [ref=e56]: 💎
+              - text: Ver planos disponíveis
+            - button "Saiba mais sobre a plataforma" [ref=e57] [cursor=pointer]:
+              - generic [ref=e58]: ℹ️
+              - text: Saiba mais sobre a plataforma
+        - generic [ref=e60]:
+          - generic [ref=e61]:
+            - generic [ref=e62]: ✨
+            - heading "Recursos em destaque" [level=3] [ref=e63]
+          - generic [ref=e64]:
+            - generic [ref=e65]:
+              - generic [ref=e66]: ⚡
+              - generic [ref=e67]: Automação
+            - generic [ref=e68]:
+              - generic [ref=e69]: 📊
+              - generic [ref=e70]: Relatórios
+            - generic [ref=e71]:
+              - generic [ref=e72]: 🔔
+              - generic [ref=e73]: Alertas
+            - generic [ref=e74]:
+              - generic [ref=e75]: 👥
+              - generic [ref=e76]: Equipe
+        - generic [ref=e78]:
+          - generic [ref=e79]: 🛡️
+          - generic [ref=e80]: Login 100% seguro
+    - generic [ref=e81]:
+      - generic [ref=e82] [cursor=pointer]:
+        - generic [ref=e83]:
+          - img [ref=e84]
+          - heading "Desenvolvimento" [level=3] [ref=e87]
+        - generic [ref=e88]:
+          - generic [ref=e90]: DEV
+          - button [ref=e91]:
+            - img [ref=e92]
+      - generic [ref=e95]:
+        - generic [ref=e97]: "ngrok: Inativo"
+        - generic [ref=e98]: •
+        - generic [ref=e99]: 4 tenants
+    - region "Notifications alt+T"
+    - region "1 notification.":
+      - alertdialog "❌ Email ou senha incorretos" [ref=e101] [cursor=pointer]:
+        - alert [ref=e102]:
+          - img "descriptionIcon" [ref=e103]
+          - generic [ref=e105]:
+            - generic [ref=e106]: ❌ Email ou senha incorretos
+            - generic [ref=e107]: "Verifique se digitou corretamente seu email e senha. Lembre-se: a senha é sensível a maiúsculas e minúsculas."
+        - button "closeButton" [ref=e108]:
+          - img [ref=e109]
+  - alert [ref=e111]
+  - generic [ref=e116] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e117]:
+      - img [ref=e118]
+    - generic [ref=e121]:
+      - button "Open issues overlay" [ref=e122]:
+        - generic [ref=e123]:
+          - generic [ref=e124]: "0"
+          - generic [ref=e125]: "1"
+        - generic [ref=e126]: Issue
+      - button "Collapse issues badge" [ref=e127]:
+        - img [ref=e128]
+```

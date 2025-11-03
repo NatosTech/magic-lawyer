@@ -84,6 +84,11 @@ node scripts/map-permission-usage.js
    - Backup e restore
    - Logs detalhados
 
+3. **Team Portal UI Refresh** (`TEAM-PORTAL-UI-REFRESH.md`)
+   - Uniformizar modais e seções de Equipe/Clientes/Advogados
+   - Reaproveitar componentes animados, cards e tooltips
+   - Garantir consistência visual e UX
+
 **Como priorizar:**
 - Avaliar valor de negócio de cada feature
 - Verificar dependências técnicas
@@ -111,6 +116,10 @@ node scripts/map-permission-usage.js
 **Nota:** Se no futuro decidir habilitar CI/CD, consulte `CI-CD.md` e `SETUP-CI.md` como referência.
 
 ## 📊 Status Atual
+
+### UI & Experiência
+- 🔄 Em andamento: **Team Portal UI Refresh** (`TEAM-PORTAL-UI-REFRESH.md`)
+- ✅ Portal do Advogado — Fase 1 concluída
 
 ### Sistema de Permissões
 - ✅ Infraestrutura completa

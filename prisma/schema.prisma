@@ -173,6 +173,10 @@ model Tenant {
   usuarioVinculacoes           UsuarioVinculacao[]
   equipeHistorico              EquipeHistorico[]
   equipeConvites               EquipeConvite[]
+  funcionarioPerfis            FuncionarioPerfil[]
+  funcionarioBeneficios        FuncionarioBeneficio[]
+  funcionarioDocumentos        FuncionarioDocumento[]
+  funcionarioDependentes       FuncionarioDependente[]
 
   // Sistema de Notificações
   notifications                Notification[]
@@ -390,6 +394,7 @@ model Usuario {
   vinculacoesComoServidor UsuarioVinculacao[]          @relation("UsuarioServidor")
   equipeHistorico         EquipeHistorico[]
   equipeConvites          EquipeConvite[]
+  funcionarioPerfil       FuncionarioPerfil?
 
   // Sistema de Notificações
   notifications           Notification[]
@@ -2359,6 +2364,62 @@ enum TipoEndereco {
   @@schema("magiclawyer")
 }
 
+enum FuncionarioStatus {
+  ATIVO
+  AFASTADO
+  FERIAS
+  DESLIGADO
+
+  @@schema("magiclawyer")
+}
+
+enum FuncionarioTipoContrato {
+  CLT
+  PJ
+  ESTAGIO
+  TRAINEE
+  TEMPORARIO
+
+  @@schema("magiclawyer")
+}
+
+enum FuncionarioBeneficioTipo {
+  VALE_REFEICAO
+  VALE_ALIMENTACAO
+  VALE_TRANSPORTE
+  PLANO_SAUDE
+  PLANO_ODONTOLOGICO
+  SEGURO_VIDA
+  AUXILIO_HOME_OFFICE
+  GYM_PASS
+  AUXILIO_EDUCACAO
+  OUTRO
+
+  @@schema("magiclawyer")
+}
+
+enum FuncionarioBeneficioStatus {
+  ATIVO
+  SUSPENSO
+  CANCELADO
+
+  @@schema("magiclawyer")
+}
+
+enum FuncionarioDocumentoTipo {
+  CONTRATO_TRABALHO
+  ADITIVO_CONTRATO
+  EXAME_ADMISSIONAL
+  EXAME_PERIODICO
+  HOLERITE
+  CARTEIRA_TRABALHO
+  DOCUMENTO_IDENTIFICACAO
+  COMPROVANTE_ENDERECO
+  OUTRO
+
+  @@schema("magiclawyer")
+}
+
 enum ProcessoStatus {
   RASCUNHO
   EM_ANDAMENTO
@@ -2988,6 +3049,7 @@ model Cargo {
   usuarios   UsuarioCargo[]
   permissoes CargoPermissao[]
   convites   EquipeConvite[]
+  funcionarios FuncionarioPerfil[] @relation("CargoPrincipal")
 
   @@index([tenantId])
   @@index([nome])
@@ -3074,6 +3136,110 @@ model UsuarioVinculacao {
   @@unique([tenantId, usuarioId, advogadoId])
   @@index([tenantId, usuarioId])
   @@index([tenantId, advogadoId])
+  @@schema("magiclawyer")
+}
+
+model FuncionarioPerfil {
+  id                   String                    @id @default(cuid())
+  tenantId             String
+  usuarioId            String                    @unique
+  cargoPrincipalId     String?
+  status               FuncionarioStatus         @default(ATIVO)
+  tipoContrato         FuncionarioTipoContrato?
+  dataAdmissao         DateTime?
+  dataDemissao         DateTime?
+  numeroCtps           String?
+  serieCtps            String?
+  orgaoExpedidorCtps   String?
+  pis                  String?
+  salarioBase          Decimal?                  @db.Decimal(14, 2)
+  cargaHorariaSemanal  Int?
+  possuiValeTransporte Boolean?                  @default(false)
+  possuiValeRefeicao   Boolean?                  @default(false)
+  possuiPlanoSaude     Boolean?                  @default(false)
+  possuiPlanoOdonto    Boolean?                  @default(false)
+  observacoes          String?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+
+  tenant         Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario        Usuario               @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cargoPrincipal Cargo?                @relation("CargoPrincipal", fields: [cargoPrincipalId], references: [id], onDelete: SetNull)
+  beneficios     FuncionarioBeneficio[]
+  documentos     FuncionarioDocumento[]
+  dependentes    FuncionarioDependente[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@schema("magiclawyer")
+}
+
+model FuncionarioBeneficio {
+  id                        String                     @id @default(cuid())
+  tenantId                  String
+  funcionarioId             String
+  tipo                      FuncionarioBeneficioTipo
+  status                    FuncionarioBeneficioStatus @default(ATIVO)
+  nome                      String?
+  valorBase                 Decimal?                   @db.Decimal(14, 2)
+  contribuicaoEmpresa       Decimal?                   @db.Decimal(14, 2)
+  contribuicaoFuncionario   Decimal?                   @db.Decimal(14, 2)
+  dataInicio                DateTime?
+  dataFim                   DateTime?
+  observacoes               String?
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  funcionario FuncionarioPerfil  @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([funcionarioId])
+  @@index([status])
+  @@schema("magiclawyer")
+}
+
+model FuncionarioDocumento {
+  id            String                  @id @default(cuid())
+  tenantId      String
+  funcionarioId String
+  tipo          FuncionarioDocumentoTipo
+  titulo        String
+  arquivoUrl    String?
+  emissao       DateTime?
+  validade      DateTime?
+  numero        String?
+  observacoes   String?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  funcionario FuncionarioPerfil @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([funcionarioId])
+  @@index([tipo])
+  @@schema("magiclawyer")
+}
+
+model FuncionarioDependente {
+  id             String   @id @default(cuid())
+  tenantId       String
+  funcionarioId  String
+  nome           String
+  parentesco     String
+  dataNascimento DateTime?
+  cpf            String?
+  dependePlanoSaude Boolean? @default(false)
+  observacoes    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  funcionario FuncionarioPerfil @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([funcionarioId])
   @@schema("magiclawyer")
 }
 

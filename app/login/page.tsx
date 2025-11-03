@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { getSession, signIn, useSession } from "next-auth/react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
@@ -23,8 +23,24 @@ function LoginPageInner() {
   const [password, setPassword] = useState("");
   const [tenant, setTenant] = useState("");
   const [loading, setLoading] = useState(false);
+  const [devQuickLogins, setDevQuickLogins] = useState<
+    Array<{
+      group: string;
+      description?: string;
+      options: Array<{
+        name: string;
+        roleLabel: string;
+        email: string;
+        password: string;
+        tenant?: string;
+        chipColor?: "primary" | "secondary" | "success" | "warning" | "danger" | "default";
+      }>;
+    }>
+  >([]);
   const callbackUrl = params.get("callbackUrl");
   const reason = params.get("reason"); // Motivo do redirecionamento
+  const isDevMode = process.env.NODE_ENV === "development";
+  const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
 
   const resolveRedirectTarget = useCallback(
     (role?: string | null) => {
@@ -76,6 +92,219 @@ function LoginPageInner() {
     [callbackUrl],
   );
 
+  const attemptLogin = useCallback(
+    async ({
+      email: rawEmail,
+      password: rawPassword,
+      tenantOverride,
+    }: {
+      email: string;
+      password: string;
+      tenantOverride?: string;
+    }) => {
+      const sanitizedEmail = rawEmail.trim();
+      const sanitizedPassword = rawPassword.trim();
+      const baseTenant =
+        tenantOverride !== undefined ? tenantOverride : tenant;
+      const sanitizedTenant = baseTenant ? baseTenant.trim() : "";
+
+      if (!sanitizedEmail || !sanitizedPassword) {
+        addToast({
+          title: "Campos obrigatórios",
+          description: "Preencha e-mail e senha para continuar.",
+          color: "warning",
+          timeout: 4000,
+        });
+
+        return false;
+      }
+
+      if (!emailRegex.test(sanitizedEmail)) {
+        addToast({
+          title: "E-mail inválido",
+          description: "Por favor, insira um e-mail válido.",
+          color: "warning",
+          timeout: 4000,
+        });
+
+        return false;
+      }
+
+      setLoading(true);
+
+      const loginPromise = (async () => {
+        const response = await signIn("credentials", {
+          email: sanitizedEmail,
+          password: sanitizedPassword,
+          tenant: sanitizedTenant || tenantFromDomain || undefined,
+          redirect: false,
+        });
+
+        if (!response) {
+          throw new Error(
+            "Não foi possível contatar o servidor de autenticação.",
+          );
+        }
+
+        if (!response.ok) {
+          if (response.error === "TENANT_SUSPENDED") {
+            throw new Error("TENANT_SUSPENDED");
+          }
+          if (response.error === "TENANT_CANCELLED") {
+            throw new Error("TENANT_CANCELLED");
+          }
+
+          if (response.error === "CredentialsSignin") {
+            const currentHost = window.location.hostname;
+
+            if (currentHost === "magiclawyer.vercel.app") {
+              const tenantMappings: Record<string, string[]> = {
+                sandra: ["sandra@adv.br", "ana@sandraadv.br"],
+                salba: ["luciano@salbaadvocacia.com.br"],
+              };
+
+              for (const [tenantSlug, emails] of Object.entries(
+                tenantMappings,
+              )) {
+                if (emails.includes(sanitizedEmail)) {
+                  const redirectUrl = `https://${tenantSlug}.magiclawyer.vercel.app/login`;
+
+                  addToast({
+                    title: "Redirecionamento automático",
+                    description:
+                      "Você será redirecionado para o domínio correto do seu escritório.",
+                    color: "primary",
+                    timeout: 3000,
+                  });
+
+                  setTimeout(() => {
+                    window.location.href = redirectUrl;
+                  }, 2000);
+
+                  return;
+                }
+              }
+            }
+
+            throw new Error(
+              "Email ou senha incorretos. Verifique suas credenciais e tente novamente.",
+            );
+          }
+
+          if (response.error?.startsWith("REDIRECT_TO_TENANT:")) {
+            const tenantSlug = response.error.replace(
+              "REDIRECT_TO_TENANT:",
+              "",
+            );
+            const redirectUrl = `https://${tenantSlug}.magiclawyer.vercel.app/login`;
+
+            addToast({
+              title: "Redirecionamento automático",
+              description:
+                "Você será redirecionado para o domínio correto do seu escritório.",
+              color: "primary",
+              timeout: 3000,
+            });
+
+            setTimeout(() => {
+              window.location.href = redirectUrl;
+            }, 2000);
+
+            return;
+          }
+
+          throw new Error(
+            response.error ??
+              "Credenciais inválidas. Verifique seus dados e tente novamente.",
+          );
+        }
+
+        return response;
+      })();
+
+      const loaderKey = addToast({
+        title: "Conectando ao escritório",
+        description: "Validando suas credenciais com segurança...",
+        color: "primary",
+        promise: loginPromise,
+        timeout: 0,
+        hideCloseButton: true,
+        shouldShowTimeoutProgress: false,
+      });
+
+      try {
+        await loginPromise;
+
+        if (loaderKey) {
+          closeToast(loaderKey);
+        }
+
+        addToast({
+          title: "Bem-vindo(a)!",
+          description: "Login efetuado com sucesso.",
+          color: "success",
+          timeout: 3500,
+        });
+
+        const freshSession = await getSession();
+        const role = (freshSession?.user as any)?.role as
+          | string
+          | undefined;
+        const target = resolveRedirectTarget(role);
+
+        router.replace(target);
+        return true;
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Ocorreu um erro inesperado durante o login.";
+
+        if (loaderKey) {
+          closeToast(loaderKey);
+        }
+
+        let title = "Erro ao entrar";
+        let description = message;
+        let color: "danger" | "warning" = "danger";
+
+        if (message === "TENANT_SUSPENDED") {
+          title = "🔒 Escritório Suspenso";
+          description =
+            "Sua conta foi temporariamente suspensa. Entre em contato com o suporte para mais informações.";
+          color = "warning";
+        } else if (message === "TENANT_CANCELLED") {
+          title = "❌ Escritório Cancelado";
+          description =
+            "Sua conta foi cancelada. Entre em contato com o suporte para reativar.";
+          color = "danger";
+        } else if (
+          message.includes("Email ou senha incorretos") ||
+          message.includes("credenciais inválidas")
+        ) {
+          title = "❌ Email ou senha incorretos";
+          description =
+            "Verifique se digitou corretamente seu email e senha. Lembre-se: a senha é sensível a maiúsculas e minúsculas.";
+          color = "warning";
+        } else if (message.includes("Não foi possível contatar")) {
+          title = "Erro de conexão";
+          description =
+            "Verifique sua conexão com a internet e tente novamente.";
+        }
+
+        addToast({
+          title,
+          description,
+          color,
+          timeout: 6000,
+        });
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [emailRegex, resolveRedirectTarget, router, tenant, tenantFromDomain],
+  );
   // Exibir mensagem de motivo do redirecionamento
   useEffect(() => {
     if (reason && status !== "authenticated") {
@@ -176,215 +405,149 @@ function LoginPageInner() {
     router.replace(target);
   }, [status, session, router, resolveRedirectTarget]);
 
+  useEffect(() => {
+    if (!isDevMode) {
+      setDevQuickLogins([]);
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const host = window.location.host;
+
+    if (host === "sandra.localhost:9192") {
+      setDevQuickLogins([
+        {
+          group: "Sandra Advocacia",
+          description: "Apenas para desenvolvimento local",
+          options: [
+            {
+              name: "Sandra (Admin)",
+              roleLabel: "ADMIN",
+              email: "sandra@adv.br",
+              password: "Sandra@123",
+              tenant: "sandra",
+              chipColor: "danger",
+            },
+            {
+              name: "Jaqueline (Secretaria)",
+              roleLabel: "SECRETARIA",
+              email: "jaqueline.souza@sandraadv.br",
+              password: "Funcionario@123",
+              tenant: "sandra",
+              chipColor: "secondary",
+            },
+            {
+              name: "Ricardo (Advogado)",
+              roleLabel: "ADVOGADO",
+              email: "ricardo@sandraadv.br",
+              password: "Advogado@123",
+              tenant: "sandra",
+              chipColor: "primary",
+            },
+            {
+              name: "Fernanda (Advogada)",
+              roleLabel: "ADVOGADA",
+              email: "fernanda@sandraadv.br",
+              password: "Advogado@123",
+              tenant: "sandra",
+              chipColor: "primary",
+            },
+            {
+              name: "Marcos (Cliente)",
+              roleLabel: "CLIENTE",
+              email: "cliente@sandraadv.br",
+              password: "Cliente@123",
+              tenant: "sandra",
+              chipColor: "success",
+            },
+            {
+              name: "Ana (Cliente)",
+              roleLabel: "CLIENTE",
+              email: "ana@sandraadv.br",
+              password: "Cliente@123",
+              tenant: "sandra",
+              chipColor: "success",
+            },
+            {
+              name: "Carlos (Cliente Inova)",
+              roleLabel: "CLIENTE",
+              email: "inova@sandraadv.br",
+              password: "Cliente@123",
+              tenant: "sandra",
+              chipColor: "success",
+            },
+          ],
+        },
+      ]);
+    } else if (host === "localhost:9192") {
+      setDevQuickLogins([
+        {
+          group: "Super Admins",
+          description: "Acesso administrativo global",
+          options: [
+            {
+              name: "Robson (Super Admin)",
+              roleLabel: "SUPER_ADMIN",
+              email: "robsonnonatoiii@gmail.com",
+              password: "Robson123!",
+              chipColor: "warning",
+            },
+            {
+              name: "Talisia (Super Admin)",
+              roleLabel: "SUPER_ADMIN",
+              email: "talisiavmatos@gmail.com",
+              password: "Talisia123!",
+              chipColor: "warning",
+            },
+          ],
+        },
+      ]);
+    } else {
+      setDevQuickLogins([]);
+    }
+  }, [isDevMode]);
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const sanitizedEmail = email.trim();
     const sanitizedTenant = tenant.trim();
 
-    if (!sanitizedEmail || !password.trim()) {
-      addToast({
-        title: "Campos obrigatórios",
-        description: "Preencha e-mail e senha para continuar.",
-        color: "warning",
-        timeout: 4000,
-      });
-
-      return;
-    }
-
-    // Validação básica de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(sanitizedEmail)) {
-      addToast({
-        title: "E-mail inválido",
-        description: "Por favor, insira um e-mail válido.",
-        color: "warning",
-        timeout: 4000,
-      });
-
-      return;
-    }
-
-    const attemptContext = {
+    await attemptLogin({
       email: sanitizedEmail,
-      tenant: sanitizedTenant || "(auto)",
-    };
-
-    setLoading(true);
-
-    const loginPromise = (async () => {
-      const response = await signIn("credentials", {
-        email: sanitizedEmail,
-        password,
-        // Se o usuário digitou um tenant, usar ele; senão usar o detectado pelo domínio
-        tenant: sanitizedTenant || tenantFromDomain || undefined,
-        redirect: false,
-      });
-
-      if (!response) {
-        throw new Error(
-          "Não foi possível contatar o servidor de autenticação.",
-        );
-      }
-
-      if (!response.ok) {
-        // Tratamento específico de erros
-        // Erros de status do tenant
-        if (response.error === "TENANT_SUSPENDED") {
-          throw new Error("TENANT_SUSPENDED");
-        }
-        if (response.error === "TENANT_CANCELLED") {
-          throw new Error("TENANT_CANCELLED");
-        }
-
-        if (response.error === "CredentialsSignin") {
-          // Verificar se deve redirecionar para tenant específico
-          const currentHost = window.location.hostname;
-
-          // Se está no domínio principal e usuário não foi encontrado, tentar redirecionar
-          if (currentHost === "magiclawyer.vercel.app") {
-            // Lista de tenants conhecidos e seus usuários
-            const tenantMappings: Record<string, string[]> = {
-              sandra: ["sandra@adv.br", "ana@sandraadv.br"],
-              salba: ["luciano@salbaadvocacia.com.br"],
-            };
-
-            // Encontrar tenant do usuário
-            for (const [tenantSlug, emails] of Object.entries(tenantMappings)) {
-              if (emails.includes(email)) {
-                const redirectUrl = `https://${tenantSlug}.magiclawyer.vercel.app/login`;
-
-                addToast({
-                  title: "Redirecionamento automático",
-                  description: `Você será redirecionado para o domínio correto do seu escritório.`,
-                  color: "primary",
-                  timeout: 3000,
-                });
-
-                // Redirecionar após um pequeno delay
-                setTimeout(() => {
-                  window.location.href = redirectUrl;
-                }, 2000);
-
-                return;
-              }
-            }
-          }
-
-          // Mensagem específica de erro de credenciais
-          throw new Error(
-            "Email ou senha incorretos. Verifique suas credenciais e tente novamente.",
-          );
-        }
-
-        // Verificar se é um erro de redirecionamento para tenant
-        if (response.error?.startsWith("REDIRECT_TO_TENANT:")) {
-          const tenantSlug = response.error.replace("REDIRECT_TO_TENANT:", "");
-          const redirectUrl = `https://${tenantSlug}.magiclawyer.vercel.app/login`;
-
-          addToast({
-            title: "Redirecionamento automático",
-            description: `Você será redirecionado para o domínio correto do seu escritório.`,
-            color: "primary",
-            timeout: 3000,
-          });
-
-          // Redirecionar após um pequeno delay
-          setTimeout(() => {
-            window.location.href = redirectUrl;
-          }, 2000);
-
-          return;
-        }
-
-        throw new Error(
-          response.error ??
-            "Credenciais inválidas. Verifique seus dados e tente novamente.",
-        );
-      }
-
-      return response;
-    })();
-
-    const loaderKey = addToast({
-      title: "Conectando ao escritório",
-      description: "Validando suas credenciais com segurança...",
-      color: "primary",
-      promise: loginPromise,
-      timeout: 0,
-      hideCloseButton: true,
-      shouldShowTimeoutProgress: false,
+      password,
+      tenantOverride: sanitizedTenant,
     });
-
-    try {
-      await loginPromise;
-
-      if (loaderKey) {
-        closeToast(loaderKey);
-      }
-
-      addToast({
-        title: "Bem-vindo(a)!",
-        description: "Login efetuado com sucesso.",
-        color: "success",
-        timeout: 3500,
-      });
-
-      const freshSession = await getSession();
-      const role = (freshSession?.user as any)?.role as string | undefined;
-      const target = resolveRedirectTarget(role);
-
-      router.replace(target);
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Ocorreu um erro inesperado durante o login.";
-
-      if (loaderKey) {
-        closeToast(loaderKey);
-      }
-
-      // Mensagens mais específicas baseadas no tipo de erro
-      let title = "Erro ao entrar";
-      let description = message;
-      let color: "danger" | "warning" = "danger";
-
-      if (message === "TENANT_SUSPENDED") {
-        title = "🔒 Escritório Suspenso";
-        description =
-          "Sua conta foi temporariamente suspensa. Entre em contato com o suporte para mais informações.";
-        color = "warning";
-      } else if (message === "TENANT_CANCELLED") {
-        title = "❌ Escritório Cancelado";
-        description =
-          "Sua conta foi cancelada. Entre em contato com o suporte para reativar.";
-        color = "danger";
-      } else if (
-        message.includes("Email ou senha incorretos") ||
-        message.includes("credenciais inválidas")
-      ) {
-        title = "❌ Email ou senha incorretos";
-        description =
-          "Verifique se digitou corretamente seu email e senha. Lembre-se: a senha é sensível a maiúsculas e minúsculas.";
-        color = "warning";
-      } else if (message.includes("Não foi possível contatar")) {
-        title = "Erro de conexão";
-        description = "Verifique sua conexão com a internet e tente novamente.";
-      }
-
-      addToast({
-        title,
-        description,
-        color,
-        timeout: 6000,
-      });
-    } finally {
-      setLoading(false);
-    }
   };
+
+  const handleDevQuickLogin = useCallback(
+    async (option: {
+      email: string;
+      password: string;
+      tenant?: string;
+    }) => {
+      if (loading) {
+        return;
+      }
+
+      setEmail(option.email);
+      setPassword(option.password);
+
+      if (option.tenant !== undefined) {
+        setTenant(option.tenant);
+      }
+
+      await attemptLogin({
+        email: option.email,
+        password: option.password,
+        tenantOverride: option.tenant,
+      });
+    },
+    [attemptLogin, loading],
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-4 py-12">
@@ -415,6 +578,76 @@ function LoginPageInner() {
       >
         Voltar
       </Button>
+
+      {isDevMode && devQuickLogins.length > 0 && (
+        <aside className="hidden lg:block fixed top-24 right-6 z-30 w-[320px] space-y-3">
+          <Card className="border border-primary/20 shadow-2xl backdrop-blur bg-white/95 dark:bg-content1/90">
+            <CardHeader className="flex items-center justify-between py-3">
+              <div>
+                <p className="text-sm font-semibold text-default-700 dark:text-default-200">
+                  Painel Dev
+                </p>
+                <p className="text-xs text-default-400">
+                  Logins rápidos para testes locais
+                </p>
+              </div>
+              <Chip color="primary" size="sm" variant="flat">
+                Dev only
+              </Chip>
+            </CardHeader>
+            <Divider />
+            <CardBody className="space-y-5">
+              {devQuickLogins.map((group, groupIndex) => (
+                <div key={group.group} className="space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-default-600 dark:text-default-300">
+                      {group.group}
+                    </p>
+                    {group.description ? (
+                      <p className="text-xs text-default-400">{group.description}</p>
+                    ) : null}
+                  </div>
+                  <div className="space-y-2">
+                    {group.options.map((option) => (
+                      <div
+                        key={option.email}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-default-200 bg-default-50 px-3 py-2 dark:border-default-100/20 dark:bg-default-50/10"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-default-600 dark:text-default-100 truncate">
+                            {option.name}
+                          </p>
+                          <Chip
+                            className="mt-1"
+                            color={option.chipColor ?? "default"}
+                            size="sm"
+                            variant="flat"
+                          >
+                            {option.roleLabel}
+                          </Chip>
+                        </div>
+                        <Button
+                          color="primary"
+                          isDisabled={loading}
+                          size="sm"
+                          variant="flat"
+                          onPress={() => handleDevQuickLogin(option)}
+                        >
+                          Logar
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  {groupIndex !== devQuickLogins.length - 1 && <Divider />}
+                </div>
+              ))}
+              <p className="text-[10px] text-default-400">
+                Disponível apenas em ambientes de desenvolvimento. Usa as credenciais padrão do seed.
+              </p>
+            </CardBody>
+          </Card>
+        </aside>
+      )}
 
       <div className="w-full max-w-md">
         {/* Header com logo */}

@@ -70,27 +70,28 @@ export async function getTenantAccessibleModules(
       .filter((item) => item.modulo?.slug && item.modulo?.ativo)
       .map((item) => item.modulo!.slug);
 
-    const result = slugs.length
-      ? Array.from(new Set(slugs))
-      : await getDefaultModules();
+    const resultSet = new Set(slugs.length ? slugs : await getDefaultModules());
+    // Garantir que o Portal do Advogado esteja disponível por padrão
+    resultSet.add("portal-advogado");
 
-    return result;
+    return Array.from(resultSet);
   } else {
     const fallbackSlugs =
       subscription.plano?.modulos
         .filter((item) => item.modulo?.slug && item.modulo?.ativo)
         .map((item) => item.modulo!.slug) ?? [];
 
-    const result = fallbackSlugs.length
-      ? Array.from(new Set(fallbackSlugs))
-      : await getDefaultModules();
+    const resultSet = new Set(
+      fallbackSlugs.length ? fallbackSlugs : await getDefaultModules(),
+    );
+    resultSet.add("portal-advogado");
 
     console.log("[tenant-modules] Retornando módulos do plano (fallback):", {
       tenantId,
       planName: subscription.plano?.nome,
-      modules: result,
+      modules: Array.from(resultSet),
     });
 
-    return result;
+    return Array.from(resultSet);
   }
 }

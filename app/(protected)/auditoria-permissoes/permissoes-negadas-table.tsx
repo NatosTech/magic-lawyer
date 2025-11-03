@@ -18,7 +18,15 @@ export function PermissoesNegadasTable() {
 
   const { data, isLoading, error } = useSWR(
     ["permissoes-negadas", filters],
-    () => getPermissoesNegadas(filters),
+    () =>
+      getPermissoesNegadas({
+        ...filters,
+        origem:
+          filters.origem && ["override", "cargo", "role"].includes(filters.origem)
+            ? (filters.origem as "override" | "cargo" | "role")
+            : undefined,
+        offset: filters.page * filters.limit,
+      }),
     {
       revalidateOnFocus: false,
     },
@@ -125,7 +133,7 @@ export function PermissoesNegadasTable() {
             variant="flat"
             color="primary"
             startContent={<Download className="w-4 h-4" />}
-            onPress={() => handleExportCSV(data.data)}
+            onPress={() => data.data && handleExportCSV(data.data)}
           >
             Exportar CSV
           </Button>

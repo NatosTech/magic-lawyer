@@ -131,7 +131,7 @@ export function EnderecoManager({ className, userId }: EnderecoManagerProps) {
   // Carregar endereços
   useEffect(() => {
     loadEnderecos();
-  }, []);
+  }, [targetUserId]); // Incluir targetUserId nas dependências para recarregar quando mudar
 
   const loadEnderecos = async () => {
     try {

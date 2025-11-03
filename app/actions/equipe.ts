@@ -40,6 +40,11 @@ export interface UsuarioEquipeData {
   active: boolean;
   avatarUrl?: string;
   isExterno?: boolean; // Para advogados
+  phone?: string;
+  cpf?: string;
+  rg?: string;
+  dataNascimento?: Date;
+  observacoes?: string;
   cargos: CargoData[];
   vinculacoes: UsuarioVinculacaoData[];
   permissoesIndividuais: UsuarioPermissaoIndividualData[];
@@ -396,6 +401,11 @@ export async function getUsuariosEquipe(): Promise<UsuarioEquipeData[]> {
     active: usuario.active,
     avatarUrl: usuario.avatarUrl || undefined,
     isExterno: usuario.advogado?.isExterno,
+    phone: usuario.phone || undefined,
+    cpf: usuario.cpf || undefined,
+    rg: usuario.rg || undefined,
+    dataNascimento: usuario.dataNascimento || undefined,
+    observacoes: usuario.observacoes || undefined,
     cargos: usuario.cargos.map((uc) => ({
       id: uc.cargo.id,
       nome: uc.cargo.nome,
@@ -505,6 +515,60 @@ export async function atribuirCargoUsuario(
       dadosAntigos: { cargoAnterior: "N/A" },
       dadosNovos: { cargoNovo: cargo.nome },
       motivo: `Cargo alterado para ${cargo.nome}`,
+      realizadoPor: session.user.id!,
+    },
+  });
+
+  revalidatePath("/equipe");
+}
+
+export async function removerCargoUsuario(
+  usuarioId: string,
+  cargoId: string,
+): Promise<void> {
+  const session = await getSession();
+
+  if (!session?.user?.tenantId) {
+    throw new Error("Usuário não autenticado");
+  }
+
+  if (session.user.role !== UserRole.ADMIN) {
+    throw new Error("Apenas administradores podem remover cargos");
+  }
+
+  // Desativar cargo do usuário
+  await prisma.usuarioCargo.updateMany({
+    where: {
+      usuarioId: usuarioId,
+      cargoId: cargoId,
+      tenantId: session.user.tenantId,
+      ativo: true,
+    },
+    data: {
+      ativo: false,
+      dataFim: new Date(),
+    },
+  });
+
+  // Registrar no histórico
+  const cargo = await prisma.cargo.findFirst({
+    where: {
+      id: cargoId,
+      tenantId: session.user.tenantId,
+    },
+    select: {
+      nome: true,
+    },
+  });
+
+  await prisma.equipeHistorico.create({
+    data: {
+      tenantId: session.user.tenantId,
+      usuarioId: usuarioId,
+      acao: "cargo_removido",
+      dadosAntigos: { cargoRemovido: cargo?.nome || "N/A" },
+      dadosNovos: { cargoRemovido: cargo?.nome || "N/A" },
+      motivo: `Cargo ${cargo?.nome || ""} removido`,
       realizadoPor: session.user.id!,
     },
   });
@@ -705,6 +769,7 @@ export async function verificarPermissao(
       financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
       equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
       relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      "portal-advogado": ["visualizar"],
     },
     [UserRole.FINANCEIRO]: {
       processos: ["visualizar"],
@@ -721,6 +786,7 @@ export async function verificarPermissao(
       financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
       equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
       relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      "portal-advogado": ["visualizar"],
     },
     [UserRole.ADVOGADO]: {
       processos: ["criar", "editar", "visualizar", "exportar"],
@@ -729,6 +795,7 @@ export async function verificarPermissao(
       financeiro: ["visualizar"],
       equipe: ["visualizar"],
       relatorios: ["visualizar", "exportar"],
+      "portal-advogado": ["visualizar"],
     },
     [UserRole.SECRETARIA]: {
       processos: ["criar", "editar", "visualizar", "exportar"],
@@ -1042,6 +1109,7 @@ export async function getPermissoesEfetivas(
       financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
       equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
       relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      "portal-advogado": ["visualizar"],
     },
     [UserRole.FINANCEIRO]: {
       processos: ["visualizar"],
@@ -1058,6 +1126,7 @@ export async function getPermissoesEfetivas(
       financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
       equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
       relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      "portal-advogado": ["visualizar"],
     },
     [UserRole.ADVOGADO]: {
       processos: ["criar", "editar", "visualizar", "exportar"],
@@ -1066,6 +1135,7 @@ export async function getPermissoesEfetivas(
       financeiro: ["visualizar"],
       equipe: ["visualizar"],
       relatorios: ["visualizar", "exportar"],
+      "portal-advogado": ["visualizar"],
     },
     [UserRole.SECRETARIA]: {
       processos: ["criar", "editar", "visualizar", "exportar"],
@@ -1248,6 +1318,17 @@ export async function listModulosPorTenant(): Promise<ModuloInfo[]> {
     return [];
   }
 
+  // Módulos extras que devem existir mesmo que ainda não estejam cadastrados no backend
+  const fallbackModules: Record<
+    string,
+    { nome: string; descricao?: string | null }
+  > = {
+    "portal-advogado": {
+      nome: "Portal do Advogado",
+      descricao: "Acesso a portais de tribunais, recessos e comunicados",
+    },
+  };
+
   // 2. Buscar detalhes completos dos módulos a partir dos slugs
   const modulos = await prisma.modulo.findMany({
     where: {
@@ -1267,6 +1348,18 @@ export async function listModulosPorTenant(): Promise<ModuloInfo[]> {
 
   // 3. Ordenar manualmente de acordo com a ordem de moduleSlugs (fallback)
   const moduleMap = new Map(modulos.map((m) => [m.slug, m]));
+
+  // Incluir módulos de fallback que ainda não existam na base
+  moduleSlugs.forEach((slug) => {
+    if (!moduleMap.has(slug) && fallbackModules[slug]) {
+      moduleMap.set(slug, {
+        slug,
+        nome: fallbackModules[slug].nome,
+        descricao: fallbackModules[slug].descricao ?? null,
+        ordem: 999,
+      });
+    }
+  });
 
   const orderedModulos = moduleSlugs
     .map((slug) => moduleMap.get(slug))
@@ -1572,6 +1665,7 @@ export async function checkPermissions(
       financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
       equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
       relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      "portal-advogado": ["visualizar"],
     },
     [UserRole.FINANCEIRO]: {
       processos: ["visualizar"],
@@ -1588,6 +1682,7 @@ export async function checkPermissions(
       financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
       equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
       relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
+      "portal-advogado": ["visualizar"],
     },
     [UserRole.ADVOGADO]: {
       processos: ["criar", "editar", "visualizar", "exportar"],
@@ -1596,6 +1691,7 @@ export async function checkPermissions(
       financeiro: ["visualizar"],
       equipe: ["visualizar"],
       relatorios: ["visualizar", "exportar"],
+      "portal-advogado": ["visualizar"],
     },
     [UserRole.SECRETARIA]: {
       processos: ["criar", "editar", "visualizar", "exportar"],
@@ -1653,4 +1749,178 @@ export async function checkPermissions(
   }
 
   return results;
+}
+
+// ===== HISTÓRICO DE EQUIPE =====
+
+export interface EquipeHistoricoData {
+  id: string;
+  usuarioId: string;
+  acao: string;
+  dadosAntigos: any;
+  dadosNovos: any;
+  motivo?: string | null;
+  realizadoPor: string;
+  createdAt: Date;
+  realizadoPorUsuario?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email: string;
+  };
+}
+
+export async function getEquipeHistorico(usuarioId: string): Promise<EquipeHistoricoData[]> {
+  const session = await getSession();
+
+  if (!session?.user?.tenantId) {
+    throw new Error("Usuário não autenticado");
+  }
+
+  const historico = await prisma.equipeHistorico.findMany({
+    where: {
+      tenantId: session.user.tenantId,
+      usuarioId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  // Buscar informações dos usuários que realizaram as ações
+  const realizadoPorIds = Array.from(new Set(historico.map((h) => h.realizadoPor)));
+  const usuariosRealizadores = await prisma.usuario.findMany({
+    where: {
+      id: { in: realizadoPorIds },
+      tenantId: session.user.tenantId,
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+    },
+  });
+
+  const usuariosMap = new Map<string, { id: string; firstName: string | null; lastName: string | null; email: string }>(
+    usuariosRealizadores.map((u) => [u.id, u]),
+  );
+
+  return historico.map((h) => {
+    const usuarioRealizador = usuariosMap.get(h.realizadoPor);
+    return {
+      id: h.id,
+      usuarioId: h.usuarioId,
+      acao: h.acao,
+      dadosAntigos: h.dadosAntigos,
+      dadosNovos: h.dadosNovos,
+      motivo: h.motivo || undefined,
+      realizadoPor: h.realizadoPor,
+      createdAt: h.createdAt,
+      realizadoPorUsuario: usuarioRealizador
+        ? {
+            id: usuarioRealizador.id,
+            firstName: usuarioRealizador.firstName || undefined,
+            lastName: usuarioRealizador.lastName || undefined,
+            email: usuarioRealizador.email,
+          }
+        : undefined,
+    };
+  });
+}
+
+// Upload de avatar para usuário da equipe
+export async function uploadAvatarUsuarioEquipe(
+  usuarioId: string,
+  formData: FormData,
+): Promise<{ success: boolean; avatarUrl?: string; error?: string }> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    if (session.user.role !== UserRole.ADMIN) {
+      return { success: false, error: "Apenas administradores podem alterar avatares" };
+    }
+
+    const usuario = await prisma.usuario.findFirst({
+      where: {
+        id: usuarioId,
+        tenantId: session.user.tenantId,
+      },
+    });
+
+    if (!usuario) {
+      return { success: false, error: "Usuário não encontrado" };
+    }
+
+    const file = formData.get("file") as File;
+    const url = formData.get("url") as string;
+
+    let avatarUrl: string;
+
+    if (url) {
+      try {
+        new URL(url);
+        if (!/\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(url)) {
+          return { success: false, error: "URL deve apontar para uma imagem válida" };
+        }
+        avatarUrl = url;
+      } catch {
+        return { success: false, error: "URL inválida" };
+      }
+    } else if (file) {
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+      if (!allowedTypes.includes(file.type)) {
+        return { success: false, error: "Tipo de arquivo não permitido. Use JPG, PNG ou WebP." };
+      }
+
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        return { success: false, error: "Arquivo muito grande. Máximo 5MB." };
+      }
+
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      const { UploadService } = await import("@/lib/upload-service");
+      const uploadService = UploadService.getInstance();
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: session.user.tenantId },
+        select: { slug: true },
+      });
+
+      const userName = `${usuario.firstName || ""} ${usuario.lastName || ""}`.trim() || usuario.email;
+      const result = await uploadService.uploadAvatar(
+        buffer,
+        usuario.id,
+        file.name,
+        tenant?.slug ?? undefined,
+        userName,
+      );
+
+      if (!result.success || !result.url) {
+        return { success: false, error: result.error || "Erro no upload" };
+      }
+
+      avatarUrl = result.url;
+    } else {
+      return { success: false, error: "Nenhum arquivo ou URL fornecido" };
+    }
+
+    await prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { avatarUrl },
+    });
+
+    revalidatePath("/equipe");
+
+    return { success: true, avatarUrl };
+  } catch (error) {
+    logger.error("Erro no upload do avatar:", error);
+    return { success: false, error: "Erro ao fazer upload do avatar" };
+  }
 }
