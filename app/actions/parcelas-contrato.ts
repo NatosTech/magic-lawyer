@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
+import { checkPermission } from "@/app/actions/equipe";
 
 async function getTenantId(): Promise<string> {
   const session = await getSession();
@@ -219,6 +220,15 @@ export async function createParcelaContrato(data: {
     const tenantId = await getTenantId();
     const userId = await getUserId();
 
+    // Verificar permissão para criar parcelas
+    const podeCriar = await checkPermission("financeiro", "criar");
+    if (!podeCriar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para criar parcelas",
+      };
+    }
+
     // Verificar se o contrato existe e pertence ao tenant
     const contrato = await prisma.contrato.findFirst({
       where: {
@@ -323,6 +333,15 @@ export async function updateParcelaContrato(
   try {
     const tenantId = await getTenantId();
 
+    // Verificar permissão para editar parcelas
+    const podeEditar = await checkPermission("financeiro", "editar");
+    if (!podeEditar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para editar parcelas",
+      };
+    }
+
     // Verificar se a parcela existe e pertence ao tenant
     const parcelaExistente = await prisma.contratoParcela.findFirst({
       where: {
@@ -401,6 +420,15 @@ export async function updateParcelaContrato(
 export async function deleteParcelaContrato(id: string) {
   try {
     const tenantId = await getTenantId();
+
+    // Verificar permissão para excluir parcelas
+    const podeExcluir = await checkPermission("financeiro", "excluir");
+    if (!podeExcluir) {
+      return {
+        success: false,
+        error: "Você não tem permissão para excluir parcelas",
+      };
+    }
 
     // Verificar se a parcela existe e pertence ao tenant
     const parcela = await prisma.contratoParcela.findFirst({

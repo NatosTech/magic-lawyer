@@ -766,9 +766,13 @@ export async function deleteCliente(clienteId: string): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    // Apenas ADMIN pode deletar
-    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-      return { success: false, error: "Sem permissão para deletar clientes" };
+    // Verificar permissão para excluir clientes
+    const podeExcluir = await checkPermission("clientes", "excluir");
+    if (!podeExcluir) {
+      return {
+        success: false,
+        error: "Você não tem permissão para excluir clientes",
+      };
     }
 
     // Verificar se cliente existe
