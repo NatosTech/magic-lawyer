@@ -14,6 +14,9 @@ import { getSession } from '@/app/lib/auth';
 jest.mock('@/app/lib/prisma', () => ({
   __esModule: true,
   default: {
+    usuario: {
+      findFirst: jest.fn(),
+    },
     usuarioPermissaoIndividual: {
       findFirst: jest.fn(),
     },
@@ -30,6 +33,13 @@ jest.mock('@/app/lib/auth', () => ({
   getSession: jest.fn(),
 }));
 
+// Mock módulos de notificação que dependem de BullMQ
+jest.mock('@/app/lib/notifications/notification-helper', () => ({
+  NotificationHelper: {
+    notifyEquipePermissionsChanged: jest.fn(),
+  },
+}));
+
 describe('checkPermissions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -44,8 +54,13 @@ describe('checkPermissions', () => {
       },
     });
 
-    (prisma.usuarioPermissaoIndividual.findFirst as jest.Mock).mockResolvedValue(null);
-    (prisma.usuarioCargo.findFirst as jest.Mock).mockResolvedValue(null);
+    (prisma.usuario.findFirst as jest.Mock).mockResolvedValue({
+      id: 'user-id',
+      tenantId: 'tenant-id',
+      role: 'ADVOGADO',
+      permissoesIndividuais: [],
+      cargos: [],
+    });
 
     const result = await checkPermissions([
       { modulo: 'processos', acao: 'criar' },
@@ -99,6 +114,39 @@ describe('checkPermissions', () => {
     });
   });
 
+  it('deve retornar todas como true para ADMIN', async () => {
+    (getSession as jest.Mock).mockResolvedValue({
+      user: {
+        id: 'admin-id',
+        tenantId: 'tenant-id',
+        role: 'ADMIN',
+      },
+    });
+
+    (prisma.usuario.findFirst as jest.Mock).mockResolvedValue({
+      id: 'admin-id',
+      tenantId: 'tenant-id',
+      role: 'ADMIN',
+      permissoesIndividuais: [],
+      cargos: [],
+    });
+
+    const result = await checkPermissions([
+      { modulo: 'processos', acao: 'criar' },
+      { modulo: 'clientes', acao: 'excluir' },
+      { modulo: 'financeiro', acao: 'excluir' },
+    ]);
+
+    expect(result).toEqual({
+      'processos.criar': true,
+      'clientes.excluir': true,
+      'financeiro.excluir': true,
+    });
+
+    // ADMIN não precisa verificar override/cargo
+    expect(prisma.usuarioPermissaoIndividual.findFirst).not.toHaveBeenCalled();
+  });
+
   it('deve retornar false quando CLIENTE tenta ações não permitidas', async () => {
     (getSession as jest.Mock).mockResolvedValue({
       user: {
@@ -108,8 +156,13 @@ describe('checkPermissions', () => {
       },
     });
 
-    (prisma.usuarioPermissaoIndividual.findFirst as jest.Mock).mockResolvedValue(null);
-    (prisma.usuarioCargo.findFirst as jest.Mock).mockResolvedValue(null);
+    (prisma.usuario.findFirst as jest.Mock).mockResolvedValue({
+      id: 'client-id',
+      tenantId: 'tenant-id',
+      role: 'CLIENTE',
+      permissoesIndividuais: [],
+      cargos: [],
+    });
 
     const result = await checkPermissions([
       { modulo: 'processos', acao: 'criar' }, // CLIENTE não tem

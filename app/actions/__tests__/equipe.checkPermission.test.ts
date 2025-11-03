@@ -45,6 +45,13 @@ jest.mock('@/lib/logger', () => ({
   },
 }));
 
+// Mock módulos de notificação que dependem de BullMQ
+jest.mock('@/app/lib/notifications/notification-helper', () => ({
+  NotificationHelper: {
+    notifyEquipePermissionsChanged: jest.fn(),
+  },
+}));
+
 describe('checkPermission', () => {
   beforeEach(() => {
     jest.clearAllMocks();
