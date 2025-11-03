@@ -906,6 +906,7 @@ function UsuariosTab() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedUsuario, setSelectedUsuario] = useState<UsuarioEquipeData | null>(null);
   const [editFormData, setEditFormData] = useState({
     firstName: "",
@@ -935,6 +936,11 @@ function UsuariosTab() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleViewUsuario(usuario: UsuarioEquipeData) {
+    setSelectedUsuario(usuario);
+    setIsViewModalOpen(true);
   }
 
   function handleEditUsuario(usuario: UsuarioEquipeData) {
@@ -1425,7 +1431,9 @@ function UsuariosTab() {
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu onAction={(key) => {
-                          if (key === "edit") {
+                          if (key === "view") {
+                            handleViewUsuario(usuario);
+                          } else if (key === "edit") {
                             handleEditUsuario(usuario);
                           }
                         }}>
@@ -1497,6 +1505,135 @@ function UsuariosTab() {
           </CardBody>
         </Card>
       )}
+
+      {/* Modal de Visualização de Usuário */}
+      <Modal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        size="2xl"
+        scrollBehavior="inside"
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-semibold">Detalhes do Usuário</h2>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            {selectedUsuario && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 pb-4 border-b border-default-200">
+                  <Avatar
+                    name={selectedUsuario.firstName || selectedUsuario.email}
+                    size="lg"
+                    src={selectedUsuario.avatarUrl || undefined}
+                  />
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      {selectedUsuario.firstName && selectedUsuario.lastName
+                        ? `${selectedUsuario.firstName} ${selectedUsuario.lastName}`
+                        : selectedUsuario.email}
+                    </h3>
+                    <p className="text-sm text-default-500">{selectedUsuario.email}</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-default-500 mb-1">Role</p>
+                    <Chip
+                      color={getRoleColor(selectedUsuario.role)}
+                      size="sm"
+                      startContent={getRoleIcon(selectedUsuario.role)}
+                      variant="flat"
+                    >
+                      {getRoleLabel(selectedUsuario.role)}
+                    </Chip>
+                  </div>
+                  
+                  <div>
+                    <p className="text-xs text-default-500 mb-1">Status</p>
+                    <Chip
+                      color={selectedUsuario.active ? "success" : "default"}
+                      size="sm"
+                      startContent={
+                        selectedUsuario.active ? (
+                          <CheckCircle className="w-3 h-3" />
+                        ) : (
+                          <X className="w-3 h-3" />
+                        )
+                      }
+                      variant="flat"
+                    >
+                      {selectedUsuario.active ? "Ativo" : "Inativo"}
+                    </Chip>
+                  </div>
+                </div>
+
+                {selectedUsuario.cargos.length > 0 && (
+                  <div>
+                    <p className="text-xs text-default-500 mb-2">Cargos</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedUsuario.cargos.map((cargo) => (
+                        <Chip
+                          key={cargo.id}
+                          color="primary"
+                          size="sm"
+                          variant="flat"
+                        >
+                          {cargo.nome}
+                        </Chip>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedUsuario.vinculacoes.length > 0 && (
+                  <div>
+                    <p className="text-xs text-default-500 mb-2">Vinculações</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedUsuario.vinculacoes.map((vinculacao) => (
+                        <Tooltip
+                          key={vinculacao.id}
+                          content={vinculacao.observacoes || "Sem observações"}
+                        >
+                          <Chip color="secondary" size="sm" variant="flat">
+                            {vinculacao.tipo} → {vinculacao.advogadoNome}
+                          </Chip>
+                        </Tooltip>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedUsuario.permissoesIndividuais.length > 0 && (
+                  <div>
+                    <p className="text-xs text-default-500 mb-2">Permissões Individuais</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedUsuario.permissoesIndividuais.map((perm) => (
+                        <Chip
+                          key={perm.id}
+                          color={perm.permitido ? "success" : "danger"}
+                          size="sm"
+                          variant="flat"
+                        >
+                          {perm.modulo}/{perm.acao}
+                        </Chip>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => setIsViewModalOpen(false)}>
+              Fechar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Modal de Edição de Usuário */}
       <Modal
