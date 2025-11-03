@@ -8,6 +8,7 @@ import prisma from "@/app/lib/prisma";
 import { NotificationHelper } from "@/app/lib/notifications/notification-helper";
 import { getTenantAccessibleModules } from "@/app/lib/tenant-modules";
 import { publishRealtimeEvent } from "@/app/lib/realtime/publisher";
+import logger from "@/lib/logger";
 
 // ===== TIPOS E INTERFACES =====
 
@@ -633,7 +634,23 @@ export async function verificarPermissao(
   );
 
   if (permissaoIndividual) {
-    return permissaoIndividual.permitido;
+    const permitido = permissaoIndividual.permitido;
+    
+    // Logar recusa se override negar
+    if (!permitido) {
+      logPermissaoNegada({
+        tenantId: session.user.tenantId,
+        usuarioId: targetUsuarioId,
+        modulo,
+        acao,
+        role: session.user.role!,
+        origem: "override",
+      }).catch((error) => {
+        console.error("[permissions] Erro ao logar recusa:", error);
+      });
+    }
+    
+    return permitido;
   }
 
   // Verificar permissões do cargo
@@ -658,7 +675,24 @@ export async function verificarPermissao(
     );
 
     if (permissaoCargo) {
-      return permissaoCargo.permitido;
+      const permitido = permissaoCargo.permitido;
+      
+      // Logar recusa se cargo negar
+      if (!permitido) {
+        logPermissaoNegada({
+          tenantId: session.user.tenantId,
+          usuarioId: targetUsuarioId,
+          modulo,
+          acao,
+          role: session.user.role!,
+          origem: "cargo",
+          cargoId: usuarioCargo.cargo.id,
+        }).catch((error) => {
+          console.error("[permissions] Erro ao logar recusa:", error);
+        });
+      }
+      
+      return permitido;
     }
   }
 
@@ -720,7 +754,71 @@ export async function verificarPermissao(
     return true;
   }
 
+  // Logar recusa de permissão (assíncrono, não bloqueia resposta)
+  logPermissaoNegada({
+    tenantId: session.user.tenantId,
+    usuarioId: targetUsuarioId,
+    modulo,
+    acao,
+    role: session.user.role!,
+    origem: "role",
+  }).catch((error) => {
+    console.error("[permissions] Erro ao logar recusa:", error);
+  });
+
   return false;
+}
+
+/**
+ * Loga uma tentativa negada de acesso para auditoria
+ */
+async function logPermissaoNegada(data: {
+  tenantId: string;
+  usuarioId: string;
+  modulo: string;
+  acao: string;
+  role: string;
+  origem: "override" | "cargo" | "role";
+  cargoId?: string;
+}) {
+  try {
+    // Logger para console/logs estruturados
+    logger.warn("[PERMISSION_DENIED]", {
+      tenantId: data.tenantId,
+      usuarioId: data.usuarioId,
+      modulo: data.modulo,
+      acao: data.acao,
+      role: data.role,
+      origem: data.origem,
+      cargoId: data.cargoId,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Registrar no EquipeHistorico para auditoria detalhada
+    await prisma.equipeHistorico.create({
+      data: {
+        tenantId: data.tenantId,
+        usuarioId: data.usuarioId,
+        acao: "permissao_negada",
+        dadosAntigos: null,
+        dadosNovos: {
+          modulo: data.modulo,
+          acao: data.acao,
+          origem: data.origem,
+          role: data.role,
+          cargoId: data.cargoId,
+        },
+        motivo: `Tentativa de acesso negada: ${data.modulo}.${data.acao} (origem: ${data.origem})`,
+        realizadoPor: data.usuarioId, // O próprio usuário tentou acessar
+      },
+    }).catch((error) => {
+      // Não bloquear se houver erro ao salvar histórico
+      console.error("[permissions] Erro ao salvar histórico:", error);
+    });
+  } catch (error) {
+    // Silenciosamente falhar - não deve interromper o fluxo
+    console.error("[permissions] Erro geral ao logar recusa:", error);
+  }
 }
 
 export async function adicionarPermissaoIndividual(
