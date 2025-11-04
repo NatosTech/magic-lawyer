@@ -76,7 +76,10 @@ async function getUserId(): Promise<string> {
 
 export async function listPeticoes(filters?: PeticaoFilters) {
   try {
+    const session = await getSession();
     const tenantId = await getTenantId();
+    const user = session?.user as any;
+    const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 
     const where: Prisma.PeticaoWhereInput = {
       tenantId,
@@ -101,6 +104,22 @@ export async function listPeticoes(filters?: PeticaoFilters) {
           },
         }),
     };
+
+    // Aplicar escopo de acesso para staff vinculados
+    if (!isAdmin && user?.role !== "CLIENTE" && session && !filters?.processoId) {
+      const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+
+      // Se não há vínculos, acesso total (sem filtros)
+      if (accessibleAdvogados.length > 0) {
+        // Filtrar petições de processos dos advogados acessíveis
+        where.processo = {
+          advogadoResponsavelId: {
+            in: accessibleAdvogados,
+          },
+        };
+      }
+    }
 
     const peticoes = await prisma.peticao.findMany({
       where,
@@ -607,13 +626,13 @@ export async function getDashboardPeticoes() {
 
     // Total de petições
     const total = await prisma.peticao.count({
-      where: { tenantId },
+      where: wherePeticoes,
     });
 
     // Por status
     const porStatus = await prisma.peticao.groupBy({
       by: ["status"],
-      where: { tenantId },
+      where: wherePeticoes,
       _count: true,
     });
 
@@ -624,7 +643,7 @@ export async function getDashboardPeticoes() {
 
     const recentes = await prisma.peticao.count({
       where: {
-        tenantId,
+        ...wherePeticoes,
         createdAt: {
           gte: trintaDiasAtras,
         },
@@ -634,7 +653,7 @@ export async function getDashboardPeticoes() {
     // Petições protocoladas (últimos 30 dias)
     const protocoladasRecentes = await prisma.peticao.count({
       where: {
-        tenantId,
+        ...wherePeticoes,
         status: PeticaoStatus.PROTOCOLADA,
         protocoladoEm: {
           gte: trintaDiasAtras,
@@ -645,7 +664,7 @@ export async function getDashboardPeticoes() {
     // Petições em análise
     const emAnalise = await prisma.peticao.count({
       where: {
-        tenantId,
+        ...wherePeticoes,
         status: PeticaoStatus.EM_ANALISE,
       },
     });
@@ -653,7 +672,7 @@ export async function getDashboardPeticoes() {
     // Petições rascunho
     const rascunhos = await prisma.peticao.count({
       where: {
-        tenantId,
+        ...wherePeticoes,
         status: PeticaoStatus.RASCUNHO,
       },
     });
@@ -661,7 +680,7 @@ export async function getDashboardPeticoes() {
     // Top 5 processos com mais petições
     const processosMaisPeticoes = await prisma.peticao.groupBy({
       by: ["processoId"],
-      where: { tenantId },
+      where: wherePeticoes,
       _count: true,
       orderBy: {
         _count: {

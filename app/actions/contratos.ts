@@ -7,6 +7,10 @@ import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
 import { ContratoStatus } from "@/app/generated/prisma";
 import logger from "@/lib/logger";
 import { checkPermission } from "@/app/actions/equipe";
+import {
+  getAccessibleAdvogadoIds,
+  getAdvogadoIdFromSession,
+} from "@/app/lib/advogado-access";
 
 // ============================================
 // TYPES
@@ -34,21 +38,6 @@ export interface ContratoCreateInput {
 
 async function getSession() {
   return await getServerSession(authOptions);
-}
-
-async function getAdvogadoIdFromSession(session: any) {
-  const user = session?.user;
-
-  if (!user?.id) return null;
-
-  const advogado = await prisma.advogado.findFirst({
-    where: {
-      usuarioId: user.id,
-      tenantId: user.tenantId,
-    },
-  });
-
-  return advogado?.id || null;
 }
 
 // ============================================
@@ -489,17 +478,23 @@ export async function getAllContratos(): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    // Se for ADVOGADO, buscar apenas contratos onde ele é responsável
+    // Controlar acesso por role
     let whereClause: any = {
       tenantId: user.tenantId,
       deletedAt: null,
     };
 
-    if (user.role === "ADVOGADO") {
-      const advogadoId = await getAdvogadoIdFromSession(session);
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
 
-      if (advogadoId) {
-        whereClause.advogadoResponsavelId = advogadoId;
+    if (!isAdmin && user.role !== "CLIENTE") {
+      // Staff vinculado ou ADVOGADO - usar advogados acessíveis
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+
+      // Se não há vínculos, acesso total (sem filtros)
+      if (accessibleAdvogados.length > 0) {
+        whereClause.advogadoResponsavelId = {
+          in: accessibleAdvogados,
+        };
       }
     }
 
@@ -1008,17 +1003,23 @@ export async function getContratosComParcelas(): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    // Se for ADVOGADO, buscar apenas contratos onde ele é responsável
+    // Controlar acesso por role
     let whereClause: any = {
       tenantId: user.tenantId,
       deletedAt: null,
     };
 
-    if (user.role === "ADVOGADO") {
-      const advogadoId = await getAdvogadoIdFromSession(session);
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
 
-      if (advogadoId) {
-        whereClause.advogadoResponsavelId = advogadoId;
+    if (!isAdmin && user.role !== "CLIENTE") {
+      // Staff vinculado ou ADVOGADO - usar advogados acessíveis
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+
+      // Se não há vínculos, acesso total (sem filtros)
+      if (accessibleAdvogados.length > 0) {
+        whereClause.advogadoResponsavelId = {
+          in: accessibleAdvogados,
+        };
       }
     }
 

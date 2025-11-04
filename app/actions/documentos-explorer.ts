@@ -373,6 +373,8 @@ export async function getDocumentExplorerData(): Promise<{
       deletedAt: null,
     };
 
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+
     if (user.role === "CLIENTE") {
       const clienteId = await getClienteIdFromSession(session);
 
@@ -381,21 +383,24 @@ export async function getDocumentExplorerData(): Promise<{
       }
 
       whereCliente = { ...whereCliente, id: clienteId };
-    } else if (user.role === "ADVOGADO") {
-      const advogadoId = await getAdvogadoIdFromSession(session);
+    } else if (!isAdmin) {
+      // Staff vinculado ou ADVOGADO - usar advogados acessíveis
+      const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+              const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
 
-      if (!advogadoId) {
-        return { success: false, error: "Advogado não encontrado" };
-      }
-
-      whereCliente = {
-        ...whereCliente,
-        advogadoClientes: {
-          some: {
-            advogadoId,
-          },
-        },
-      };
+              // Se não há vínculos, acesso total (sem filtros)
+              if (accessibleAdvogados.length > 0) {
+                whereCliente = {
+                  ...whereCliente,
+                  advogadoClientes: {
+                    some: {
+                      advogadoId: {
+                        in: accessibleAdvogados,
+                      },
+                    },
+                  },
+                };
+              }
     }
 
     const [clientes, causasCatalogo, regimesCatalogo] = await Promise.all([

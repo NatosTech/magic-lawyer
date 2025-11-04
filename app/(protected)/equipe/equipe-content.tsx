@@ -73,6 +73,7 @@ import {
   Image,
   GraduationCap,
   Phone,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -169,55 +170,91 @@ function DashboardEquipe() {
   }
 
   return (
-    <motion.div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" initial="hidden" animate="visible" variants={containerVariants}>
-      {[
-        {
-          label: "Total de Usuários",
-          value: dashboardData.totalUsuarios,
-          icon: Users,
-          accent: "from-sky-500/90 via-sky-500/70 to-sky-500/50",
-        },
-        {
-          label: "Cargos Ativos",
-          value: dashboardData.totalCargos,
-          icon: Shield,
-          accent: "from-emerald-500/90 via-emerald-500/70 to-emerald-500/50",
-        },
-        {
-          label: "Convites Pendentes",
-          value: dashboardData.convitesPendentes,
-          icon: Mail,
-          accent: "from-amber-500/90 via-amber-500/70 to-amber-500/50",
-        },
-        {
-          label: "Vinculações Ativas",
-          value: dashboardData.vinculacoesAtivas,
-          icon: LinkIcon,
-          accent: "from-violet-500/90 via-violet-500/70 to-violet-500/50",
-        },
-      ].map((stat) => {
-        const Icon = stat.icon;
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      {/* Card Total de Usuários */}
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.1 }}>
+        <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-blue-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <Users className="text-white" size={24} />
+              </div>
+              <Badge color="success" content="+" variant="shadow">
+                <TrendingUp className="text-blue-600 dark:text-blue-400" size={20} />
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Total de Usuários</p>
+              <p className="text-4xl font-bold text-blue-800 dark:text-blue-200">{dashboardData.totalUsuarios}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400">Equipe do escritório</p>
+            </div>
+          </CardBody>
+        </Card>
+      </motion.div>
 
-        return (
-          <motion.div key={stat.label} variants={cardVariants}>
-            <Card className="border-none bg-white/10 backdrop-blur-xl shadow-xl ring-1 ring-white/10">
-              <CardBody className="relative overflow-hidden rounded-3xl px-6 py-6 text-white transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl">
-                <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${stat.accent} opacity-80`} />
-                <div className="relative flex items-center justify-between">
-                  <div className="space-y-1.5">
-                    <p className="text-xs uppercase tracking-wider text-white/80">{stat.label}</p>
-                    <p className="text-3xl font-semibold">{stat.value}</p>
-                  </div>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-                    <Icon className="h-6 w-6 text-white" />
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </motion.div>
-        );
-      })}
-    </motion.div>
+      {/* Card Cargos Ativos */}
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.2 }}>
+        <Card className="bg-gradient-to-br from-green-50 via-emerald-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-green-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <Shield className="text-white" size={24} />
+              </div>
+              <Badge color="success" content="✓" variant="shadow">
+                <Activity className="text-green-600 dark:text-green-400" size={20} />
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">Cargos Ativos</p>
+              <p className="text-4xl font-bold text-green-800 dark:text-green-200">{dashboardData.totalCargos}</p>
+              <p className="text-xs text-green-600 dark:text-green-400">Cargos configurados</p>
+            </div>
+          </CardBody>
+        </Card>
+      </motion.div>
+
+      {/* Card Convites Pendentes */}
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.3 }}>
+        <Card className="bg-gradient-to-br from-amber-50 via-yellow-100 to-orange-200 dark:from-amber-900/30 dark:via-yellow-800/20 dark:to-orange-900/30 border-amber-300 dark:border-amber-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-amber-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <Mail className="text-white" size={24} />
+              </div>
+              <Badge color="warning" content="!" variant="shadow">
+                <Clock className="text-amber-600 dark:text-amber-400" size={20} />
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">Convites Pendentes</p>
+              <p className="text-4xl font-bold text-amber-800 dark:text-amber-200">{dashboardData.convitesPendentes}</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400">Aguardando resposta</p>
+            </div>
+          </CardBody>
+        </Card>
+      </motion.div>
+
+      {/* Card Vinculações Ativas */}
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.4 }}>
+        <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-purple-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <LinkIcon className="text-white" size={24} />
+              </div>
+              <Badge color="secondary" content="🔗" variant="shadow">
+                <LinkIcon className="text-purple-600 dark:text-purple-400" size={20} />
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Vinculações Ativas</p>
+              <p className="text-4xl font-bold text-purple-800 dark:text-purple-200">{dashboardData.vinculacoesAtivas}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400">Usuários vinculados</p>
+            </div>
+          </CardBody>
+        </Card>
+      </motion.div>
+    </div>
   );
 }
 
@@ -469,62 +506,84 @@ function CargosTab() {
       </motion.div>
 
       {/* Grid de cargos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
         {paginatedCargos.map((cargo) => (
-          <motion.div key={cargo.id} animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.3 }}>
-            <Card className="h-full">
-              <CardHeader className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-lg font-semibold">{cargo.nome}</h3>
-                    <Tooltip content={`Nível ${cargo.nivel} - ${getNivelLabel(cargo.nivel)}`}>
-                      <Chip color={getNivelColor(cargo.nivel)} size="sm" startContent={<Crown className="w-3 h-3" />} variant="flat">
-                        {getNivelLabel(cargo.nivel)}
-                      </Chip>
-                    </Tooltip>
+          <motion.div key={cargo.id} animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.3 }} className="flex">
+            <Card className="h-full w-full hover:shadow-lg transition-shadow flex flex-col">
+              <CardHeader className="flex flex-col items-start gap-3 pb-2 cursor-pointer flex-shrink-0" onClick={() => handleEditCargo(cargo)}>
+                <div className="flex w-full items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="p-2 rounded-lg bg-default-100 dark:bg-default-50 flex-shrink-0">
+                      <Shield className="w-5 h-5 text-default-600 dark:text-default-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2 truncate">{cargo.nome}</h3>
+                      <Tooltip content={`Nível ${cargo.nivel} - ${getNivelLabel(cargo.nivel)}`}>
+                        <Chip color={getNivelColor(cargo.nivel)} size="sm" startContent={<Crown className="w-3 h-3" />} variant="flat">
+                          {getNivelLabel(cargo.nivel)}
+                        </Chip>
+                      </Tooltip>
+                    </div>
                   </div>
-                  {cargo.descricao && <p className="text-sm text-default-500 line-clamp-2">{cargo.descricao}</p>}
-                </div>
-                <Dropdown>
-                  <DropdownTrigger>
-                    <Button isIconOnly size="sm" variant="light">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu>
-                    <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />} onPress={() => handleEditCargo(cargo)}>
-                      Editar
-                    </DropdownItem>
-                    <DropdownItem
-                      key="delete"
-                      className="text-danger"
-                      color="danger"
-                      isDisabled={actionLoading === cargo.id}
-                      startContent={actionLoading === cargo.id ? <Spinner size="sm" /> : <Trash2 className="w-4 h-4" />}
-                      onPress={() => handleDeleteCargo(cargo.id)}
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      onAction={(key) => {
+                        if (key === "edit") {
+                          handleEditCargo(cargo);
+                        } else if (key === "delete") {
+                          handleDeleteCargo(cargo.id);
+                        }
+                      }}
                     >
-                      {actionLoading === cargo.id ? "Excluindo..." : "Excluir"}
-                    </DropdownItem>
-                  </DropdownMenu>
-                </Dropdown>
+                      <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />}>
+                        Editar
+                      </DropdownItem>
+                      <DropdownItem
+                        key="delete"
+                        className="text-danger"
+                        color="danger"
+                        isDisabled={actionLoading === cargo.id}
+                        startContent={actionLoading === cargo.id ? <Spinner size="sm" /> : <Trash2 className="w-4 h-4" />}
+                      >
+                        {actionLoading === cargo.id ? "Excluindo..." : "Excluir"}
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
+                </div>
+                {cargo.descricao && <p className="text-sm text-default-500 line-clamp-2 mt-2">{cargo.descricao}</p>}
               </CardHeader>
-              <CardBody className="pt-0">
-                <div className="space-y-3">
+              <Divider />
+              <CardBody className="pt-4 flex-1 flex flex-col">
+                <div className="space-y-3 flex-1">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-default-400" />
-                      <span className="text-sm text-default-500">{cargo.usuariosCount} usuário(s)</span>
+                      <span className="text-sm text-default-600">{cargo.usuariosCount} usuário(s)</span>
                     </div>
                     <Badge color="primary" content={cargo.permissoes.length}>
-                      <Chip size="sm" startContent={<Shield className="w-3 h-3" />} variant="flat">
+                      <Chip size="sm" startContent={<Shield className="w-3 h-3" />} variant="flat" color="primary">
                         Permissões
                       </Chip>
                     </Badge>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Switch isDisabled isSelected={cargo.ativo} size="sm" />
-                    <span className="text-sm text-default-500">{cargo.ativo ? "Ativo" : "Inativo"}</span>
+                  <div className="flex items-center justify-between pt-2 border-t border-default-200 dark:border-default-100">
+                    <div className="flex items-center gap-2">
+                      <Switch isDisabled isSelected={cargo.ativo} size="sm" color={cargo.ativo ? "success" : "default"} />
+                      <span className="text-sm text-default-600">{cargo.ativo ? "Ativo" : "Inativo"}</span>
+                    </div>
                   </div>
                 </div>
               </CardBody>
@@ -863,21 +922,14 @@ function CargoModal({
                   <span className="text-sm font-medium text-default-700">Status do Cargo</span>
                   <span className="text-xs text-default-500">Cargos inativos não podem ser atribuídos a novos usuários</span>
                 </div>
-                <Switch
-                  isSelected={formData.ativo}
-                  onValueChange={(checked) => setFormData({ ...formData, ativo: checked })}
-                  color="primary"
-                >
+                <Switch isSelected={formData.ativo} onValueChange={(checked) => setFormData({ ...formData, ativo: checked })} color="primary">
                   <span className="text-sm font-medium">{formData.ativo ? "Ativo" : "Inativo"}</span>
                 </Switch>
               </div>
             </ModalSectionCard>
 
             {/* Permissões */}
-            <ModalSectionCard
-              title="Permissões do Sistema"
-              description="Configure as ações que este cargo pode executar em cada módulo"
-            >
+            <ModalSectionCard title="Permissões do Sistema" description="Configure as ações que este cargo pode executar em cada módulo">
               <div className="space-y-4">
                 {/* Toolbar de Permissões */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border border-default-200 bg-gradient-to-r from-primary-50 to-primary-100/50 dark:from-primary-900/20 dark:to-primary-800/10">
@@ -899,20 +951,11 @@ function CargoModal({
                       variant="flat"
                       startContent={<CheckCircle className="w-4 h-4" />}
                       onPress={() => toggleTodasPermissoes(true)}
-                      isDisabled={
-                        modulos.length === 0 || modulos.every((modulo) => acoes.every((acao) => formData.permissoes.includes(`${modulo.key}-${acao.key}`)))
-                      }
+                      isDisabled={modulos.length === 0 || modulos.every((modulo) => acoes.every((acao) => formData.permissoes.includes(`${modulo.key}-${acao.key}`)))}
                     >
                       Selecionar tudo
                     </Button>
-                    <Button
-                      size="sm"
-                      color="danger"
-                      variant="flat"
-                      startContent={<X className="w-4 h-4" />}
-                      onPress={() => toggleTodasPermissoes(false)}
-                      isDisabled={formData.permissoes.length === 0}
-                    >
+                    <Button size="sm" color="danger" variant="flat" startContent={<X className="w-4 h-4" />} onPress={() => toggleTodasPermissoes(false)} isDisabled={formData.permissoes.length === 0}>
                       Limpar tudo
                     </Button>
                   </div>
@@ -939,19 +982,10 @@ function CargoModal({
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
-                              <Chip
-                                size="sm"
-                                variant="flat"
-                                color={permissoesModulo.length === acoes.length ? "success" : permissoesModulo.length > 0 ? "warning" : "default"}
-                              >
+                              <Chip size="sm" variant="flat" color={permissoesModulo.length === acoes.length ? "success" : permissoesModulo.length > 0 ? "warning" : "default"}>
                                 {permissoesModulo.length}/{acoes.length}
                               </Chip>
-                              <Button
-                                size="sm"
-                                variant="flat"
-                                color={todasSelecionadas ? "danger" : "primary"}
-                                onPress={() => toggleModuloCompleto(modulo.key, !todasSelecionadas)}
-                              >
+                              <Button size="sm" variant="flat" color={todasSelecionadas ? "danger" : "primary"} onPress={() => toggleModuloCompleto(modulo.key, !todasSelecionadas)}>
                                 {todasSelecionadas ? (
                                   <>
                                     <X className="w-3 h-3 mr-1" />
@@ -976,23 +1010,14 @@ function CargoModal({
                                 <div
                                   key={acao.key}
                                   className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                                    selecionada
-                                      ? "border-primary-300 bg-primary-50 dark:border-primary-600 dark:bg-primary-900/20"
-                                      : "border-default-200 bg-default-50 dark:bg-default-100/50"
+                                    selecionada ? "border-primary-300 bg-primary-50 dark:border-primary-600 dark:bg-primary-900/20" : "border-default-200 bg-default-50 dark:bg-default-100/50"
                                   }`}
                                 >
                                   <div className="flex items-center gap-2">
                                     {selecionada && <CheckCircle className="w-4 h-4 text-primary" />}
-                                    <span className={`text-sm font-medium ${selecionada ? "text-primary-700 dark:text-primary-300" : "text-default-600"}`}>
-                                      {acao.label}
-                                    </span>
+                                    <span className={`text-sm font-medium ${selecionada ? "text-primary-700 dark:text-primary-300" : "text-default-600"}`}>{acao.label}</span>
                                   </div>
-                                  <Switch
-                                    size="sm"
-                                    isSelected={selecionada}
-                                    onValueChange={(value) => togglePermissao(modulo.key, acao.key, value)}
-                                    color="primary"
-                                  />
+                                  <Switch size="sm" isSelected={selecionada} onValueChange={(value) => togglePermissao(modulo.key, acao.key, value)} color="primary" />
                                 </div>
                               );
                             })}
@@ -1209,7 +1234,7 @@ function UsuariosTab() {
     }>
   >([]);
   const [linkForm, setLinkForm] = useState({
-    advogadoId: "",
+    advogadoIds: [] as string[],
     tipo: "assistente",
     observacoes: "",
   });
@@ -1221,6 +1246,28 @@ function UsuariosTab() {
     loadData();
   }, []);
 
+  const advogadosOptions = useMemo(() => {
+    return advogados.map((adv) => {
+      const firstName = adv.usuario?.firstName ?? "";
+      const lastName = adv.usuario?.lastName ?? "";
+      const fullName = firstName || lastName ? `${firstName} ${lastName}`.trim() : (adv.usuario?.email ?? "Advogado(a) sem nome");
+      const oabLabel = adv.oabNumero && adv.oabUf ? ` - OAB ${adv.oabNumero}/${adv.oabUf}` : "";
+
+      return {
+        id: adv.id as string,
+        fullName,
+        oabLabel,
+        textValue: `${fullName}${oabLabel}`,
+      };
+    });
+  }, [advogados]);
+
+  const advogadoKeySet = useMemo(() => new Set(advogadosOptions.map((item) => item.id)), [advogadosOptions]);
+
+  const validatedAdvogadoKeys = useMemo(() => {
+    return linkForm.advogadoIds.filter((id) => advogadoKeySet.has(id));
+  }, [linkForm.advogadoIds, advogadoKeySet]);
+
   async function loadData() {
     try {
       setLoading(true);
@@ -1228,7 +1275,14 @@ function UsuariosTab() {
       const [usuariosData, advogadosData] = await Promise.all([getUsuariosEquipe(), getAdvogados()]);
 
       setUsuarios(usuariosData);
-      setAdvogados(advogadosData.data || []);
+      if (advogadosData && advogadosData.success) {
+        setAdvogados("advogados" in advogadosData && Array.isArray(advogadosData.advogados) ? advogadosData.advogados : []);
+      } else {
+        setAdvogados([]);
+        if (advogadosData && "error" in advogadosData && advogadosData.error) {
+          toast.warning(advogadosData.error);
+        }
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erro ao carregar dados. Tente novamente.";
       setError(errorMessage);
@@ -1333,7 +1387,7 @@ function UsuariosTab() {
   function handleLinkUsuario(usuario: UsuarioEquipeData) {
     setSelectedUsuario(usuario);
     setLinkForm({
-      advogadoId: "",
+      advogadoIds: [],
       tipo: "assistente",
       observacoes: "",
     });
@@ -1400,15 +1454,16 @@ function UsuariosTab() {
   }
 
   async function handleSaveLink() {
-    if (!selectedUsuario || !linkForm.advogadoId) {
-      toast.error("Selecione um advogado");
+    if (!selectedUsuario || linkForm.advogadoIds.length === 0) {
+      toast.error("Selecione pelo menos um advogado");
       return;
     }
 
     setIsSavingLink(true);
     try {
-      await vincularUsuarioAdvogado(selectedUsuario.id, linkForm.advogadoId, linkForm.tipo, linkForm.observacoes || undefined);
-      toast.success("Usuário vinculado com sucesso");
+      // Vincular a múltiplos advogados
+      await Promise.all(linkForm.advogadoIds.map((advogadoId) => vincularUsuarioAdvogado(selectedUsuario.id, advogadoId, linkForm.tipo, linkForm.observacoes || undefined)));
+      toast.success(`Usuário vinculado a ${linkForm.advogadoIds.length} advogado(s) com sucesso`);
       setIsLinkModalOpen(false);
       await loadData();
     } catch (error) {
@@ -1607,79 +1662,133 @@ function UsuariosTab() {
   return (
     <div className="space-y-6">
       {/* Toolbar com Estatísticas */}
-      <motion.div variants={containerVariants} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <motion.div variants={cardVariants}>
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border-blue-300 dark:border-blue-600">
-            <CardBody className="p-4 text-center">
-              <div className="p-2 bg-blue-500 rounded-full w-fit mx-auto mb-2">
-                <Users className="h-5 w-5 text-white" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 2xl:grid-cols-6 gap-4 sm:gap-6 auto-rows-fr">
+        {/* Card Total de Usuários */}
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.1 }} className="flex">
+          <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-blue-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Users className="text-white" size={24} />
+                </div>
+                <Badge color="success" content="+" variant="shadow">
+                  <TrendingUp className="text-blue-600 dark:text-blue-400" size={20} />
+                </Badge>
               </div>
-              <h4 className="text-2xl font-bold text-blue-800 dark:text-blue-200">{usuarioStats.total}</h4>
-              <p className="text-sm text-blue-600 dark:text-blue-400">Total de Usuários</p>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Total de Usuários</p>
+                <p className="text-4xl font-bold text-blue-800 dark:text-blue-200">{usuarioStats.total}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">Equipe do escritório</p>
+              </div>
             </CardBody>
           </Card>
         </motion.div>
 
-        <motion.div variants={cardVariants}>
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 border-green-300 dark:border-green-600">
-            <CardBody className="p-4 text-center">
-              <div className="p-2 bg-green-500 rounded-full w-fit mx-auto mb-2">
-                <CheckCircle className="h-5 w-5 text-white" />
+        {/* Card Ativos */}
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex">
+          <Card className="bg-gradient-to-br from-green-50 via-emerald-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-green-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <CheckCircle className="text-white" size={24} />
+                </div>
+                <Badge color="success" content="✓" variant="shadow">
+                  <Activity className="text-green-600 dark:text-green-400" size={20} />
+                </Badge>
               </div>
-              <h4 className="text-2xl font-bold text-green-800 dark:text-green-200">{usuarioStats.ativos}</h4>
-              <p className="text-sm text-green-600 dark:text-green-400">Ativos</p>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">Ativos</p>
+                <p className="text-4xl font-bold text-green-800 dark:text-green-200">{usuarioStats.ativos}</p>
+                <p className="text-xs text-green-600 dark:text-green-400">Em atividade</p>
+              </div>
             </CardBody>
           </Card>
         </motion.div>
 
-        <motion.div variants={cardVariants}>
-          <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/20 border-red-300 dark:border-red-600">
-            <CardBody className="p-4 text-center">
-              <div className="p-2 bg-red-500 rounded-full w-fit mx-auto mb-2">
-                <X className="h-5 w-5 text-white" />
+        {/* Card Inativos */}
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.3 }} className="flex">
+          <Card className="bg-gradient-to-br from-rose-50 via-pink-100 to-red-200 dark:from-rose-900/30 dark:via-pink-800/20 dark:to-red-900/30 border-rose-300 dark:border-rose-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-rose-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <X className="text-white" size={24} />
+                </div>
+                <Badge color="danger" content="!" variant="shadow">
+                  <XCircle className="text-rose-600 dark:text-rose-400" size={20} />
+                </Badge>
               </div>
-              <h4 className="text-2xl font-bold text-red-800 dark:text-red-200">{usuarioStats.inativos}</h4>
-              <p className="text-sm text-red-600 dark:text-red-400">Inativos</p>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-rose-700 dark:text-rose-300 uppercase tracking-wide">Inativos</p>
+                <p className="text-4xl font-bold text-rose-800 dark:text-rose-200">{usuarioStats.inativos}</p>
+                <p className="text-xs text-rose-600 dark:text-rose-400">Desativados</p>
+              </div>
             </CardBody>
           </Card>
         </motion.div>
 
-        <motion.div variants={cardVariants}>
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 border-purple-300 dark:border-purple-600">
-            <CardBody className="p-4 text-center">
-              <div className="p-2 bg-purple-500 rounded-full w-fit mx-auto mb-2">
-                <Award className="h-5 w-5 text-white" />
+        {/* Card Com Cargo */}
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.4 }} className="flex">
+          <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Award className="text-white" size={24} />
+                </div>
+                <Badge color="secondary" content="🏆" variant="shadow">
+                  <Award className="text-purple-600 dark:text-purple-400" size={20} />
+                </Badge>
               </div>
-              <h4 className="text-2xl font-bold text-purple-800 dark:text-purple-200">{usuarioStats.comCargo}</h4>
-              <p className="text-sm text-purple-600 dark:text-purple-400">Com Cargo</p>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Com Cargo</p>
+                <p className="text-4xl font-bold text-purple-800 dark:text-purple-200">{usuarioStats.comCargo}</p>
+                <p className="text-xs text-purple-600 dark:text-purple-400">Com função atribuída</p>
+              </div>
             </CardBody>
           </Card>
         </motion.div>
 
-        <motion.div variants={cardVariants}>
-          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/20 border-orange-300 dark:border-orange-600">
-            <CardBody className="p-4 text-center">
-              <div className="p-2 bg-orange-500 rounded-full w-fit mx-auto mb-2">
-                <LinkIcon className="h-5 w-5 text-white" />
+        {/* Card Vinculados */}
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.5 }} className="flex">
+          <Card className="bg-gradient-to-br from-orange-50 via-amber-100 to-yellow-200 dark:from-orange-900/30 dark:via-amber-800/20 dark:to-yellow-900/30 border-orange-300 dark:border-orange-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-orange-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <LinkIcon className="text-white" size={24} />
+                </div>
+                <Badge color="warning" content="🔗" variant="shadow">
+                  <LinkIcon className="text-orange-600 dark:text-orange-400" size={20} />
+                </Badge>
               </div>
-              <h4 className="text-2xl font-bold text-orange-800 dark:text-orange-200">{usuarioStats.comVinculacao}</h4>
-              <p className="text-sm text-orange-600 dark:text-orange-400">Vinculados</p>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide">Vinculados</p>
+                <p className="text-4xl font-bold text-orange-800 dark:text-orange-200">{usuarioStats.comVinculacao}</p>
+                <p className="text-xs text-orange-600 dark:text-orange-400">A advogados</p>
+              </div>
             </CardBody>
           </Card>
         </motion.div>
 
-        <motion.div variants={cardVariants}>
-          <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/20 border-indigo-300 dark:border-indigo-600">
-            <CardBody className="p-4 text-center">
-              <div className="p-2 bg-indigo-500 rounded-full w-fit mx-auto mb-2">
-                <Crown className="h-5 w-5 text-white" />
+        {/* Card Administradores */}
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.6 }} className="flex">
+          <Card className="bg-gradient-to-br from-indigo-50 via-blue-100 to-indigo-200 dark:from-indigo-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-indigo-300 dark:border-indigo-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-indigo-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Crown className="text-white" size={24} />
+                </div>
+                <Badge color="secondary" content="👑" variant="shadow">
+                  <Crown className="text-indigo-600 dark:text-indigo-400" size={20} />
+                </Badge>
               </div>
-              <h4 className="text-2xl font-bold text-indigo-800 dark:text-indigo-200">{usuarioStats.porRole.ADMIN || 0}</h4>
-              <p className="text-sm text-indigo-600 dark:text-indigo-400">Administradores</p>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">Administradores</p>
+                <p className="text-4xl font-bold text-indigo-800 dark:text-indigo-200">{usuarioStats.porRole.ADMIN || 0}</p>
+                <p className="text-xs text-indigo-600 dark:text-indigo-400">Com acesso total</p>
+              </div>
             </CardBody>
           </Card>
         </motion.div>
-      </motion.div>
+      </div>
 
       {/* Header com busca e filtros */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -2025,10 +2134,7 @@ function UsuariosTab() {
           <ModalHeaderGradient icon={UserPlus} title="Novo Funcionário" description="Cadastre colaboradores internos com dados trabalhistas completos" />
           <ModalBody className="px-0">
             <div className="space-y-6 px-6 pb-6">
-              <ModalSectionCard
-                title="Resumo do fluxo"
-                description="O modal de criação reutiliza as abas existentes (Perfil, Contatos, Cargo/Role) e adiciona etapas específicas para funcionários."
-              >
+              <ModalSectionCard title="Resumo do fluxo" description="O modal de criação reutiliza as abas existentes (Perfil, Contatos, Cargo/Role) e adiciona etapas específicas para funcionários.">
                 <ul className="list-disc pl-5 space-y-2 text-sm text-default-600">
                   <li>Perfil: dados pessoais, CPF, geração de senha temporária, cargo principal.</li>
                   <li>Dados trabalhistas: contrato, CTPS, PIS, jornada, flags de benefícios padrão.</li>
@@ -2042,14 +2148,13 @@ function UsuariosTab() {
               <ModalSectionCard title="Próximos passos" description="Implemente as etapas conforme o roteiro documentado.">
                 <div className="space-y-3 text-sm text-default-600">
                   <p>
-                    • Conferir o documento <code>docs/features/tenant-dashboard-enhancements/team-employee-profiles.md</code> para o passo a passo completo.<br />
-                    • Criar a action `createFuncionarioUsuario` (ou nome similar) reaproveitando padrões de `createCliente` / `createAdvogado`.<br />
-                    • Implementar realtime (<code>equipe.usuario.created</code>) e auditoria para cada operação.<br />
-                    • Atualizar a dashboard de estatísticas após salvar um novo registro.
+                    • Conferir o documento <code>docs/features/tenant-dashboard-enhancements/team-employee-profiles.md</code> para o passo a passo completo.
+                    <br />
+                    • Criar a action `createFuncionarioUsuario` (ou nome similar) reaproveitando padrões de `createCliente` / `createAdvogado`.
+                    <br />• Implementar realtime (<code>equipe.usuario.created</code>) e auditoria para cada operação.
+                    <br />• Atualizar a dashboard de estatísticas após salvar um novo registro.
                   </p>
-                  <p className="text-xs text-default-500">
-                    Este modal é temporário – substitua-o pelo formulário definitivo assim que o backend estiver pronto.
-                  </p>
+                  <p className="text-xs text-default-500">Este modal é temporário – substitua-o pelo formulário definitivo assim que o backend estiver pronto.</p>
                 </div>
               </ModalSectionCard>
             </div>
@@ -2088,10 +2193,10 @@ function UsuariosTab() {
                   <Tab
                     key="resumo"
                     title={
-            <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
                         <div className="p-1 rounded-md bg-blue-100 dark:bg-blue-900">
                           <User className="text-blue-600 dark:text-blue-300 w-4 h-4" />
-            </div>
+                        </div>
                         <span>Resumo</span>
                       </div>
                     }
@@ -2101,61 +2206,61 @@ function UsuariosTab() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
                             <Mail className="h-4 w-4 text-primary" />
-                  <div>
+                            <div>
                               <p className="text-xs text-default-500">Email</p>
                               <p className="text-sm font-medium">{selectedUsuario.email}</p>
-                  </div>
-                </div>
+                            </div>
+                          </div>
                           <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
-                    <Chip color={getRoleColor(selectedUsuario.role)} size="sm" startContent={getRoleIcon(selectedUsuario.role)} variant="flat">
-                      {getRoleLabel(selectedUsuario.role)}
-                    </Chip>
-                    <Chip
-                      color={selectedUsuario.active ? "success" : "default"}
-                      size="sm"
-                      startContent={selectedUsuario.active ? <CheckCircle className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                      variant="flat"
-                    >
-                      {selectedUsuario.active ? "Ativo" : "Inativo"}
-                    </Chip>
-                  </div>
-                </div>
+                            <Chip color={getRoleColor(selectedUsuario.role)} size="sm" startContent={getRoleIcon(selectedUsuario.role)} variant="flat">
+                              {getRoleLabel(selectedUsuario.role)}
+                            </Chip>
+                            <Chip
+                              color={selectedUsuario.active ? "success" : "default"}
+                              size="sm"
+                              startContent={selectedUsuario.active ? <CheckCircle className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                              variant="flat"
+                            >
+                              {selectedUsuario.active ? "Ativo" : "Inativo"}
+                            </Chip>
+                          </div>
+                        </div>
                       </ModalSectionCard>
 
-                {selectedUsuario.cargos.length > 0 && (
+                      {selectedUsuario.cargos.length > 0 && (
                         <ModalSectionCard title="Cargos" description="Funções do usuário no escritório">
-                    <div className="flex flex-wrap gap-2">
-                      {selectedUsuario.cargos.map((cargo) => (
+                          <div className="flex flex-wrap gap-2">
+                            {selectedUsuario.cargos.map((cargo) => (
                               <Chip key={cargo.id} color="primary" size="sm" variant="flat" startContent={<Award className="w-3 h-3" />}>
-                          {cargo.nome}
-                        </Chip>
-                      ))}
-                    </div>
+                                {cargo.nome}
+                              </Chip>
+                            ))}
+                          </div>
                         </ModalSectionCard>
-                )}
+                      )}
 
-                {selectedUsuario.vinculacoes.length > 0 && (
+                      {selectedUsuario.vinculacoes.length > 0 && (
                         <ModalSectionCard title="Vinculações" description="Relacionamentos com advogados">
-                    <div className="flex flex-wrap gap-2">
-                      {selectedUsuario.vinculacoes.map((vinculacao) => (
-                        <Tooltip key={vinculacao.id} content={vinculacao.observacoes || "Sem observações"}>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedUsuario.vinculacoes.map((vinculacao) => (
+                              <Tooltip key={vinculacao.id} content={vinculacao.observacoes || "Sem observações"}>
                                 <Chip color="secondary" size="sm" variant="flat" startContent={<LinkIcon className="w-3 h-3" />}>
-                            {vinculacao.tipo} → {vinculacao.advogadoNome}
-                          </Chip>
-                        </Tooltip>
-                      ))}
-                    </div>
+                                  {vinculacao.tipo} → {vinculacao.advogadoNome}
+                                </Chip>
+                              </Tooltip>
+                            ))}
+                          </div>
                         </ModalSectionCard>
-                )}
+                      )}
 
-                {selectedUsuario.permissoesIndividuais.length > 0 && (
+                      {selectedUsuario.permissoesIndividuais.length > 0 && (
                         <ModalSectionCard title="Permissões Individuais" description="Override de permissões personalizadas">
-                    <div className="flex flex-wrap gap-2">
-                      {selectedUsuario.permissoesIndividuais.map((perm) => (
-                        <Chip key={perm.id} color={perm.permitido ? "success" : "danger"} size="sm" variant="flat">
-                          {perm.modulo}/{perm.acao}
-                        </Chip>
-                      ))}
+                          <div className="flex flex-wrap gap-2">
+                            {selectedUsuario.permissoesIndividuais.map((perm) => (
+                              <Chip key={perm.id} color={perm.permitido ? "success" : "danger"} size="sm" variant="flat">
+                                {perm.modulo}/{perm.acao}
+                              </Chip>
+                            ))}
                           </div>
                         </ModalSectionCard>
                       )}
@@ -2182,29 +2287,29 @@ function UsuariosTab() {
                               <div>
                                 <p className="text-xs text-default-500">Telefone</p>
                                 <p className="text-sm font-medium">{selectedUsuario.phone}</p>
-                    </div>
-                  </div>
-                )}
+                              </div>
+                            </div>
+                          )}
                           {selectedUsuario.observacoes && (
                             <div className="col-span-2">
                               <p className="text-xs text-default-500 mb-2">Observações</p>
                               <p className="text-sm text-default-700">{selectedUsuario.observacoes}</p>
-              </div>
-            )}
+                            </div>
+                          )}
                         </div>
                       </ModalSectionCard>
                     </div>
                   </Tab>
                 </Tabs>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={() => setIsViewModalOpen(false)}>
-              Fechar
-            </Button>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="flat" onPress={() => setIsViewModalOpen(false)}>
+                  Fechar
+                </Button>
                 <Button color="primary" onPress={() => handleEditUsuario(selectedUsuario)}>
                   Editar Usuário
                 </Button>
-          </ModalFooter>
+              </ModalFooter>
             </>
           )}
         </ModalContent>
@@ -2264,12 +2369,12 @@ function UsuariosTab() {
                             src={editFormData.avatarUrl || undefined}
                           />
                           <div className="flex flex-col gap-3 w-full max-w-md">
-                      <Input
-                        label="URL do Avatar"
-                        placeholder="https://exemplo.com/avatar.jpg"
-                        value={editFormData.avatarUrl}
-                        onChange={(e) => setEditFormData({ ...editFormData, avatarUrl: e.target.value })}
-                        startContent={<Image className="w-4 h-4 text-default-400" />}
+                            <Input
+                              label="URL do Avatar"
+                              placeholder="https://exemplo.com/avatar.jpg"
+                              value={editFormData.avatarUrl}
+                              onChange={(e) => setEditFormData({ ...editFormData, avatarUrl: e.target.value })}
+                              startContent={<Image className="w-4 h-4 text-default-400" />}
                               description="Cole a URL da imagem ou faça upload de arquivo"
                             />
                             <div className="flex flex-col gap-3 w-full max-w-md">
@@ -2704,24 +2809,38 @@ function UsuariosTab() {
           />
           <ModalBody>
             <div className="space-y-6">
-              <ModalSectionCard title="Seleção do Advogado" description="Escolha o advogado ao qual este usuário será vinculado">
+              <ModalSectionCard title="Seleção do(s) Advogado(s)" description="Escolha um ou mais advogados aos quais este usuário será vinculado">
                 <Select
-                  label="Advogado"
-                  placeholder="Selecione um advogado"
-                  selectedKeys={linkForm.advogadoId ? [linkForm.advogadoId] : []}
+                  label="Advogados"
+                  placeholder="Selecione um ou mais advogados"
+                  selectedKeys={new Set(validatedAdvogadoKeys)}
                   onSelectionChange={(keys) => {
-                    const selected = Array.from(keys)[0] as string;
-                    setLinkForm({ ...linkForm, advogadoId: selected });
+                    setLinkForm({ ...linkForm, advogadoIds: Array.from(keys) as string[] });
                   }}
+                  selectionMode="multiple"
                   startContent={<User className="w-4 h-4 text-default-400" />}
-                  description="O advogado selecionado será responsável por este usuário"
+                  description="Você pode selecionar múltiplos advogados. O usuário terá acesso aos dados de todos os advogados selecionados."
                 >
-                  {advogados.map((adv) => (
-                    <SelectItem key={adv.id}>
-                      {adv.nome} {adv.oabNumero && `- OAB ${adv.oabNumero}/${adv.oabUf}`}
+                  {advogadosOptions.map((adv) => (
+                    <SelectItem key={adv.id} textValue={adv.textValue}>
+                      {adv.fullName}
+                      {adv.oabLabel}
                     </SelectItem>
                   ))}
                 </Select>
+                {validatedAdvogadoKeys.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {validatedAdvogadoKeys.map((advId) => {
+                      const adv = advogadosOptions.find((a) => a.id === advId);
+                      return adv ? (
+                        <Chip key={advId} size="sm" variant="flat" color="primary">
+                          {adv.fullName}
+                          {adv.oabLabel}
+                        </Chip>
+                      ) : null;
+                    })}
+                  </div>
+                )}
               </ModalSectionCard>
 
               <ModalSectionCard title="Tipo de Vinculação" description="Defina o tipo de relacionamento entre o usuário e o advogado">
@@ -2757,8 +2876,8 @@ function UsuariosTab() {
             <Button variant="flat" onPress={() => setIsLinkModalOpen(false)}>
               Cancelar
             </Button>
-            <Button color="primary" isLoading={isSavingLink} onPress={handleSaveLink} isDisabled={!linkForm.advogadoId}>
-              Vincular
+            <Button color="primary" isLoading={isSavingLink} onPress={handleSaveLink} isDisabled={linkForm.advogadoIds.length === 0}>
+              Vincular {linkForm.advogadoIds.length > 0 ? `(${linkForm.advogadoIds.length})` : ""}
             </Button>
           </ModalFooter>
         </ModalContent>

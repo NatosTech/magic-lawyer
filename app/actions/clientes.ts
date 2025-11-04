@@ -8,6 +8,10 @@ import { TipoPessoa, Prisma } from "@/app/generated/prisma";
 import logger from "@/lib/logger";
 import { DocumentNotifier } from "@/app/lib/notifications/document-notifier";
 import { checkPermission } from "@/app/actions/equipe";
+import {
+  getAccessibleAdvogadoIds,
+  getAdvogadoIdFromSession,
+} from "@/app/lib/advogado-access";
 
 // ============================================
 // TYPES
@@ -77,23 +81,6 @@ export interface ClienteComProcessos extends Cliente {
 // HELPER FUNCTIONS
 // ============================================
 
-async function getAdvogadoIdFromSession(session: {
-  user: any;
-}): Promise<string | null> {
-  if (!session?.user?.id || !session?.user?.tenantId) return null;
-
-  // Buscar advogado vinculado ao usuário
-  const advogado = await prisma.advogado.findFirst({
-    where: {
-      usuarioId: session.user.id,
-      tenantId: session.user.tenantId,
-    },
-    select: { id: true },
-  });
-
-  return advogado?.id || null;
-}
-
 async function getClienteIdFromSession(session: {
   user: any;
 }): Promise<string | null> {
@@ -137,24 +124,27 @@ export async function getClientesAdvogado(): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    // Buscar ID do advogado
-    const advogadoId = await getAdvogadoIdFromSession(session);
+    const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
 
-    if (!advogadoId) {
-      return { success: false, error: "Advogado não encontrado" };
+    // Se não há vínculos, acesso total (sem filtros)
+    const whereCliente: any = {
+      tenantId: user.tenantId,
+      deletedAt: null,
+    };
+
+    if (accessibleAdvogados.length > 0) {
+      whereCliente.advogadoClientes = {
+        some: {
+          advogadoId: {
+            in: accessibleAdvogados,
+          },
+        },
+      };
     }
 
     // Buscar clientes vinculados ao advogado através da tabela AdvogadoCliente
     const clientesRaw = await prisma.cliente.findMany({
-      where: {
-        tenantId: user.tenantId,
-        deletedAt: null,
-        advogadoClientes: {
-          some: {
-            advogadoId: advogadoId,
-          },
-        },
-      },
+      where: whereCliente,
       include: {
         _count: {
           select: {
@@ -278,17 +268,18 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
     };
 
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-      const advogadoId = await getAdvogadoIdFromSession(session);
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
 
-      if (!advogadoId) {
-        return { success: false, error: "Acesso negado" };
+      // Se não há vínculos, acesso total (sem filtros)
+      if (accessibleAdvogados.length > 0) {
+        whereClause.advogadoClientes = {
+          some: {
+            advogadoId: {
+              in: accessibleAdvogados,
+            },
+          },
+        };
       }
-
-      whereClause.advogadoClientes = {
-        some: {
-          advogadoId: advogadoId,
-        },
-      };
     }
 
     const clienteRaw = await prisma.cliente.findFirst({
@@ -841,19 +832,21 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
       deletedAt: null,
     };
 
-    // Se não for ADMIN, filtrar apenas clientes do advogado
-    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-      const advogadoId = await getAdvogadoIdFromSession(session);
+    // Se não for ADMIN, filtrar apenas clientes dos advogados acessíveis
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+    if (!isAdmin && user.role !== "CLIENTE") {
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
 
-      if (!advogadoId) {
-        return { success: false, error: "Acesso negado" };
+      // Se não há vínculos, acesso total (sem filtros)
+      if (accessibleAdvogados.length > 0) {
+        whereClause.advogadoClientes = {
+          some: {
+            advogadoId: {
+              in: accessibleAdvogados,
+            },
+          },
+        };
       }
-
-      whereClause.advogadoClientes = {
-        some: {
-          advogadoId: advogadoId,
-        },
-      };
     }
 
     // Aplicar filtros

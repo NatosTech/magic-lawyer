@@ -99,15 +99,17 @@ async function getSession() {
     role: user.role as UserRole,
     advogadoId: user.advogadoId,
     clienteId,
+    session, // Incluir session para usar em buildWhereClause
   };
 }
 
-function buildWhereClause(
+async function buildWhereClause(
   tenantId: string,
   role: UserRole,
   advogadoId?: string,
   clienteId?: string,
   filtros?: FiltrosDashboard,
+  session?: any,
 ) {
   const where: any = {
     tenantId,
@@ -135,21 +137,34 @@ function buildWhereClause(
     where.clienteId = filtros.clienteId;
   }
 
-  // Controle de acesso por role
-  if (role === UserRole.ADVOGADO && advogadoId) {
-    where.advogadoResponsavelId = advogadoId;
-  }
+  const isAdmin = role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN;
 
   // Controle de acesso para CLIENTE - só vê seus próprios contratos
   if (role === UserRole.CLIENTE && clienteId) {
     where.clienteId = clienteId;
+  } else if (!isAdmin && session) {
+    // Staff vinculado ou ADVOGADO - usar advogados acessíveis
+    const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+    const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+
+    // Se não há vínculos, acesso total (sem filtros)
+    if (accessibleAdvogados.length > 0) {
+      if (!filtros?.advogadoId) {
+        // Aplicar filtro apenas se não foi especificado no filtro
+        where.advogadoResponsavelId = {
+          in: accessibleAdvogados,
+        };
+      } else if (!accessibleAdvogados.includes(filtros.advogadoId)) {
+        // Se o advogado filtrado não está acessível, retornar vazio
+        return {
+          ...where,
+          advogadoResponsavelId: {
+            in: [],
+          },
+        };
+      }
+    }
   }
-
-  // Controle de acesso para SECRETARIA - pode ver todos os contratos, mas com restrições
-  // (implementado nas queries específicas de honorários)
-
-  // Controle de acesso para FINANCEIRO - pode ver todos os dados financeiros
-  // (implementado nas queries específicas de honorários)
 
   return where;
 }
@@ -162,14 +177,15 @@ export async function getMetricasFinanceiras(
   filtros?: FiltrosDashboard,
 ): Promise<MetricasFinanceiras> {
   try {
-    const { tenantId, role, advogadoId, clienteId } = await getSession();
+    const { tenantId, role, advogadoId, clienteId, session } = await getSession();
 
-    const whereContratos = buildWhereClause(
+    const whereContratos = await buildWhereClause(
       tenantId,
       role,
       advogadoId,
       clienteId,
       filtros,
+      session,
     );
 
     // Buscar parcelas com filtros
@@ -258,14 +274,15 @@ export async function getGraficoParcelas(
   filtros?: FiltrosDashboard,
 ): Promise<GraficoParcelas[]> {
   try {
-    const { tenantId, role, advogadoId, clienteId } = await getSession();
+    const { tenantId, role, advogadoId, clienteId, session } = await getSession();
 
-    const whereContratos = buildWhereClause(
+    const whereContratos = await buildWhereClause(
       tenantId,
       role,
       advogadoId,
       clienteId,
       filtros,
+      session,
     );
 
     // Buscar parcelas agrupadas por mês
@@ -345,14 +362,15 @@ export async function getHonorariosPorAdvogado(
   filtros?: FiltrosDashboard,
 ): Promise<HonorariosPorAdvogado[]> {
   try {
-    const { tenantId, role, advogadoId, clienteId } = await getSession();
+    const { tenantId, role, advogadoId, clienteId, session } = await getSession();
 
-    const whereContratos = buildWhereClause(
+    const whereContratos = await buildWhereClause(
       tenantId,
       role,
       advogadoId,
       clienteId,
       filtros,
+      session,
     );
 
     // Buscar honorários com controle de privacidade por role

@@ -49,6 +49,7 @@ import {
   Crown,
   Info,
   Smartphone,
+  Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -361,129 +362,164 @@ export function ClientesContent() {
 
       {/* Dashboard Cards */}
       {isLoading ? (
-        <MotionCardGrid columns={4}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-32 rounded-xl" />
           ))}
-        </MotionCardGrid>
+        </div>
       ) : (
-        <MotionCardGrid columns={4}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Card Total de Clientes */}
-          <Card className="border-none bg-white/10 backdrop-blur-xl shadow-xl ring-1 ring-white/10">
-            <CardBody className="relative overflow-hidden rounded-3xl px-6 py-6 text-white transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl">
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-sky-500/90 via-sky-500/70 to-sky-500/50 opacity-80" />
-              <div className="relative flex items-center justify-between">
-                <div className="space-y-1.5">
-                  <p className="text-xs uppercase tracking-wider text-white/80">Total de Clientes</p>
-                  <p className="text-3xl font-semibold">{metrics.total}</p>
+          <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.1 }}>
+            <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-blue-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Users className="text-white" size={24} />
+                  </div>
+                  <Badge color="success" content="+" variant="shadow">
+                    <TrendingUp className="text-blue-600 dark:text-blue-400" size={20} />
+                  </Badge>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-                  <Users className="h-6 w-6 text-white" />
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Total de Clientes</p>
+                  <p className="text-4xl font-bold text-blue-800 dark:text-blue-200">{metrics.total}</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">Carteira de clientes</p>
                 </div>
-              </div>
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          </motion.div>
 
           {/* Card Clientes com Acesso */}
-          <Card className="border-none bg-white/10 backdrop-blur-xl shadow-xl ring-1 ring-white/10">
-            <CardBody className="relative overflow-hidden rounded-3xl px-6 py-6 text-white transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl">
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-emerald-500/90 via-emerald-500/70 to-emerald-500/50 opacity-80" />
-              <div className="relative flex items-center justify-between">
-                <div className="space-y-1.5">
-                  <p className="text-xs uppercase tracking-wider text-white/80">Com Acesso</p>
-                  <p className="text-3xl font-semibold">{metrics.comAcesso}</p>
+          <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.2 }}>
+            <Card className="bg-gradient-to-br from-green-50 via-emerald-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-green-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Key className="text-white" size={24} />
+                  </div>
+                  <Badge color="success" content="✓" variant="shadow">
+                    <Activity className="text-green-600 dark:text-green-400" size={20} />
+                  </Badge>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-                  <Key className="h-6 w-6 text-white" />
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">Com Acesso</p>
+                  <p className="text-4xl font-bold text-green-800 dark:text-green-200">{metrics.comAcesso}</p>
+                  <p className="text-xs text-green-600 dark:text-green-400">Com login ativo</p>
                 </div>
-              </div>
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          </motion.div>
 
           {/* Card Pessoa Física */}
-          <Card className="border-none bg-white/10 backdrop-blur-xl shadow-xl ring-1 ring-white/10">
-            <CardBody className="relative overflow-hidden rounded-3xl px-6 py-6 text-white transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl">
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-violet-500/90 via-violet-500/70 to-violet-500/50 opacity-80" />
-              <div className="relative flex items-center justify-between">
-                <div className="space-y-1.5">
-                  <p className="text-xs uppercase tracking-wider text-white/80">Pessoa Física</p>
-                  <p className="text-3xl font-semibold">{metrics.fisica}</p>
+          <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.3 }}>
+            <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-purple-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <User className="text-white" size={24} />
+                  </div>
+                  <Badge color="secondary" content="👤" variant="shadow">
+                    <User className="text-purple-600 dark:text-purple-400" size={20} />
+                  </Badge>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-                  <User className="h-6 w-6 text-white" />
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Pessoa Física</p>
+                  <p className="text-4xl font-bold text-purple-800 dark:text-purple-200">{metrics.fisica}</p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400">Clientes PF</p>
                 </div>
-              </div>
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          </motion.div>
 
           {/* Card Pessoa Jurídica */}
-          <Card className="border-none bg-white/10 backdrop-blur-xl shadow-xl ring-1 ring-white/10">
-            <CardBody className="relative overflow-hidden rounded-3xl px-6 py-6 text-white transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl">
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-amber-500/90 via-amber-500/70 to-amber-500/50 opacity-80" />
-              <div className="relative flex items-center justify-between">
-                <div className="space-y-1.5">
-                  <p className="text-xs uppercase tracking-wider text-white/80">Pessoa Jurídica</p>
-                  <p className="text-3xl font-semibold">{metrics.juridica}</p>
+          <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.4 }}>
+            <Card className="bg-gradient-to-br from-amber-50 via-yellow-100 to-orange-200 dark:from-amber-900/30 dark:via-yellow-800/20 dark:to-orange-900/30 border-amber-300 dark:border-amber-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-amber-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <Building2 className="text-white" size={24} />
+                  </div>
+                  <Badge color="warning" content="🏢" variant="shadow">
+                    <Building2 className="text-amber-600 dark:text-amber-400" size={20} />
+                  </Badge>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-                  <Building2 className="h-6 w-6 text-white" />
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">Pessoa Jurídica</p>
+                  <p className="text-4xl font-bold text-amber-800 dark:text-amber-200">{metrics.juridica}</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400">Clientes PJ</p>
                 </div>
-              </div>
-            </CardBody>
-          </Card>
-        </MotionCardGrid>
+              </CardBody>
+            </Card>
+          </motion.div>
+        </div>
       )}
 
       {/* Cards de Estatísticas Adicionais */}
-      <MotionCardGrid columns={3}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Card de Processos Ativos */}
-        <Card className="border-none bg-white/90 shadow-lg backdrop-blur dark:bg-content2/80">
-          <CardBody className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-cyan-500 rounded-xl">
-                <FileText className="text-white" size={24} />
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.5 }}>
+          <Card className="bg-gradient-to-br from-cyan-50 via-blue-100 to-cyan-200 dark:from-cyan-900/30 dark:via-blue-800/20 dark:to-cyan-900/30 border-cyan-300 dark:border-cyan-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-cyan-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <FileText className="text-white" size={24} />
+                </div>
+                <Badge color="primary" content={metrics.comProcessos} variant="shadow">
+                  <FileText className="text-cyan-600 dark:text-cyan-400" size={20} />
+                </Badge>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-cyan-700 dark:text-cyan-300">Com Processos</p>
-                <p className="text-2xl font-bold text-cyan-800 dark:text-cyan-200">{metrics.comProcessos}</p>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wide">Com Processos</p>
+                <p className="text-4xl font-bold text-cyan-800 dark:text-cyan-200">{metrics.comProcessos}</p>
                 <p className="text-xs text-cyan-600 dark:text-cyan-400">Clientes ativos</p>
               </div>
-            </div>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        </motion.div>
 
         {/* Card de Taxa de Conversão */}
-        <Card className="bg-gradient-to-br from-pink-50 to-rose-100 dark:from-pink-900/20 dark:to-rose-800/20 border-pink-200 dark:border-pink-700 shadow-lg hover:shadow-xl transition-all duration-300">
-          <CardBody className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-pink-500 rounded-xl">
-                <BarChart3 className="text-white" size={24} />
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.6 }}>
+          <Card className="bg-gradient-to-br from-pink-50 via-rose-100 to-pink-200 dark:from-pink-900/30 dark:via-rose-800/20 dark:to-pink-900/30 border-pink-300 dark:border-pink-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-pink-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <BarChart3 className="text-white" size={24} />
+                </div>
+                <Badge color="secondary" content="%" variant="shadow">
+                  <TrendingUp className="text-pink-600 dark:text-pink-400" size={20} />
+                </Badge>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-pink-700 dark:text-pink-300">Taxa de Conversão</p>
-                <p className="text-2xl font-bold text-pink-800 dark:text-pink-200">{metrics.total > 0 ? Math.round((metrics.comAcesso / metrics.total) * 100) : 0}%</p>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-pink-700 dark:text-pink-300 uppercase tracking-wide">Taxa de Conversão</p>
+                <p className="text-4xl font-bold text-pink-800 dark:text-pink-200">{metrics.total > 0 ? Math.round((metrics.comAcesso / metrics.total) * 100) : 0}%</p>
                 <p className="text-xs text-pink-600 dark:text-pink-400">Com acesso ao sistema</p>
               </div>
-            </div>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        </motion.div>
 
         {/* Card de Produtividade */}
-        <Card className="bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-indigo-900/20 dark:to-purple-800/20 border-indigo-200 dark:border-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300">
-          <CardBody className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-indigo-500 rounded-xl">
-                <Zap className="text-white" size={24} />
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.7 }}>
+          <Card className="bg-gradient-to-br from-indigo-50 via-purple-100 to-indigo-200 dark:from-indigo-900/30 dark:via-purple-800/20 dark:to-indigo-900/30 border-indigo-300 dark:border-indigo-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-indigo-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Zap className="text-white" size={24} />
+                </div>
+                <Badge color="secondary" content="⚡" variant="shadow">
+                  <Zap className="text-indigo-600 dark:text-indigo-400" size={20} />
+                </Badge>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">Engajamento</p>
-                <p className="text-2xl font-bold text-indigo-800 dark:text-indigo-200">{metrics.comProcessos > 0 ? Math.round((metrics.comProcessos / metrics.total) * 100) : 0}%</p>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">Engajamento</p>
+                <p className="text-4xl font-bold text-indigo-800 dark:text-indigo-200">{metrics.comProcessos > 0 ? Math.round((metrics.comProcessos / metrics.total) * 100) : 0}%</p>
                 <p className="text-xs text-indigo-600 dark:text-indigo-400">Com processos ativos</p>
               </div>
-            </div>
-          </CardBody>
-        </Card>
-      </MotionCardGrid>
+            </CardBody>
+          </Card>
+        </motion.div>
+      </div>
 
       {/* Filtros Avançados Melhorados */}
       <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>

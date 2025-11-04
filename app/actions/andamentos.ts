@@ -85,14 +85,33 @@ export async function listAndamentos(
   filters: AndamentoFilters,
 ): Promise<ActionResponse<any[]>> {
   try {
+    const session = await getSession();
     const tenantId = await getTenantId();
     const userId = await getUserId();
+    const user = session?.user as any;
+    const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 
     const where: any = {
       tenantId,
       ...(filters.processoId && { processoId: filters.processoId }),
       ...(filters.tipo && { tipo: filters.tipo }),
     };
+
+    // Aplicar escopo de acesso para staff vinculados
+    if (!isAdmin && user?.role !== "CLIENTE" && session && !filters.processoId) {
+      const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+
+      // Se não há vínculos, acesso total (sem filtros)
+      if (accessibleAdvogados.length > 0) {
+        // Filtrar andamentos de processos dos advogados acessíveis
+        where.processo = {
+          advogadoResponsavelId: {
+            in: accessibleAdvogados,
+          },
+        };
+      }
+    }
 
     // Filtro de data
     if (filters.dataInicio || filters.dataFim) {

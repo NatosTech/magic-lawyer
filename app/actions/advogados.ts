@@ -289,10 +289,27 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
       return { success: false, error: "Usuário não autenticado" };
     }
 
+    const user = session.user as any;
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+
+    // Construir where clause
+    const whereClause: any = {
+      tenantId: session.user.tenantId,
+    };
+
+    // Aplicar escopo de acesso para staff vinculados
+    if (!isAdmin) {
+      const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+
+      // Se não há vínculos, acesso total (sem filtros)
+      if (accessibleAdvogados.length > 0) {
+        whereClause.id = { in: accessibleAdvogados };
+      }
+    }
+
     const advogados = await prisma.advogado.findMany({
-      where: {
-        tenantId: session.user.tenantId,
-      },
+      where: whereClause,
       select: {
         id: true,
         usuarioId: true,

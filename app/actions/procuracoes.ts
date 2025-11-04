@@ -8,6 +8,10 @@ import {
   ProcuracaoEmitidaPor,
   ProcuracaoStatus,
 } from "@/app/generated/prisma";
+import {
+  getAccessibleAdvogadoIds,
+  getAdvogadoIdFromSession,
+} from "@/app/lib/advogado-access";
 
 // ============================================
 // TYPES
@@ -103,24 +107,6 @@ export type ProcuracaoListItem = Prisma.ProcuracaoGetPayload<{
   include: typeof procuracaoListInclude;
 }>;
 
-async function getAdvogadoIdFromSession(session: {
-  user: any;
-}): Promise<string | null> {
-  if (!session?.user?.id || !session?.user?.tenantId) return null;
-
-  const advogado = await prisma.advogado.findFirst({
-    where: {
-      usuarioId: session.user.id,
-      tenantId: session.user.tenantId,
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  return advogado?.id || null;
-}
-
 async function getClienteIdFromSession(session: {
   user: any;
 }): Promise<string | null> {
@@ -170,77 +156,60 @@ export async function getAllProcuracoes(): Promise<{
 
     // CLIENTE: Apenas suas procurações
     const clienteId = await getClienteIdFromSession(session);
+    const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
 
     if (clienteId) {
       whereClause.clienteId = clienteId;
-    }
-    // ADVOGADO: Procurações onde ele está habilitado OU dos clientes que ele criou
-    else if (user.role === "ADVOGADO") {
-      const advogadoId = await getAdvogadoIdFromSession(session);
-
-      if (!advogadoId) {
-        return { success: false, error: "Advogado não encontrado" };
-      }
-
-      // 1. Buscar IDs dos clientes que o advogado criou
-      const clientesCriados = await prisma.cliente.findMany({
-        where: {
-          tenantId: user.tenantId,
-          deletedAt: null,
-          usuario: {
-            createdById: user.id,
-          },
-        },
-        select: {
-          id: true,
-        },
-      });
-
-      // 2. Buscar procurações onde o advogado está habilitado
-      const procuracoesComAcesso = await prisma.procuracao.findMany({
-        where: {
-          tenantId: user.tenantId,
+    // Funcionário sem vínculos: acesso total (não aplicar filtros)
+    } else if (!isAdmin && accessibleAdvogados.length > 0) {
+      const orConditions: Prisma.ProcuracaoWhereInput[] = [
+        {
           outorgados: {
             some: {
-              advogadoId: advogadoId,
+              advogadoId: {
+                in: accessibleAdvogados,
+              },
             },
           },
         },
-        select: {
-          id: true,
-        },
-      });
-
-      const clientesIds = clientesCriados.map((c) => c.id);
-      const procuracoesIds = procuracoesComAcesso.map((p) => p.id);
-
-      // Se não tem acesso a nenhuma procuração, retornar vazio
-      if (clientesIds.length === 0 && procuracoesIds.length === 0) {
-        return { success: true, procuracoes: [] };
-      }
-
-      // Construir where clause: procurações dos clientes criados OU procurações com acesso
-      const whereConditions = [];
-
-      if (clientesIds.length > 0) {
-        whereConditions.push({
-          clienteId: {
-            in: clientesIds,
+        {
+          cliente: {
+            advogadoClientes: {
+              some: {
+                advogadoId: {
+                  in: accessibleAdvogados,
+                },
+              },
+            },
           },
-        });
-      }
+        },
+        {
+          processos: {
+            some: {
+              processo: {
+                advogadoResponsavelId: {
+                  in: accessibleAdvogados,
+                },
+              },
+            },
+          },
+        },
+      ];
 
-      if (procuracoesIds.length > 0) {
-        whereConditions.push({
-          id: {
-            in: procuracoesIds,
+      if (user.role === "ADVOGADO") {
+        orConditions.push({
+          cliente: {
+            usuario: {
+              createdById: user.id,
+            },
           },
         });
       }
 
       whereClause = {
         ...whereClause,
-        OR: whereConditions,
+        OR: orConditions,
       };
     }
     // ADMIN ou SUPER_ADMIN: Todas do tenant
@@ -296,36 +265,55 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
 
     // Verificar acesso baseado no role
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-      const advogadoId = await getAdvogadoIdFromSession(session);
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
 
-      if (!advogadoId) {
-        return { success: false, error: "Acesso negado" };
+      // Se não há vínculos, acesso total (sem filtros)
+      if (accessibleAdvogados.length > 0) {
+        const orConditions: Prisma.ProcuracaoWhereInput[] = [
+        {
+          cliente: {
+            advogadoClientes: {
+              some: {
+                advogadoId: {
+                  in: accessibleAdvogados,
+                },
+              },
+            },
+          },
+        },
+        {
+          outorgados: {
+            some: {
+              advogadoId: {
+                in: accessibleAdvogados,
+              },
+            },
+          },
+        },
+        {
+          processos: {
+            some: {
+              processo: {
+                advogadoResponsavelId: {
+                  in: accessibleAdvogados,
+                },
+              },
+            },
+          },
+        },
+      ];
+
+      if (user.role === "ADVOGADO") {
+        orConditions.push({
+          cliente: {
+            usuario: {
+              createdById: user.id,
+            },
+          },
+        });
       }
 
-      // Verificar se advogado tem acesso à procuração:
-      // 1. Cliente criado pelo advogado OU
-      // 2. Advogado habilitado na procuração
-      const whereConditions = [];
-
-      // 1. Cliente criado pelo advogado
-      whereConditions.push({
-        cliente: {
-          usuario: {
-            createdById: user.id,
-          },
-        },
-      });
-
-      // 2. Advogado habilitado na procuração
-      whereConditions.push({
-        outorgados: {
-          some: {
-            advogadoId: advogadoId,
-          },
-        },
-      });
-
-      whereClause.OR = whereConditions;
+      whereClause.OR = orConditions;
     }
 
     const procuracao = await prisma.procuracao.findFirst({

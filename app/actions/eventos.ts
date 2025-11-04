@@ -181,23 +181,18 @@ export async function getEventos(filters?: {
       }
     }
 
-    // Se o usuário for um advogado, filtrar apenas eventos onde ele é responsável
-    if (userRole === "ADVOGADO") {
-      // Buscar o advogado pelo usuarioId
-      const advogado = await prisma.advogado.findFirst({
-        where: { usuarioId: session.user.id },
-        select: { id: true },
-      });
+    // Se o usuário for um advogado ou staff vinculado, filtrar apenas eventos dos advogados acessíveis
+    const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
+    if (!isAdmin && userRole !== "CLIENTE") {
+      const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+              const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
 
-      if (advogado) {
-        where.advogadoResponsavelId = advogado.id;
-      } else {
-        // Advogado sem registro na tabela Advogado - não tem eventos
-        return {
-          success: true,
-          data: [],
-        };
-      }
+              // Se não há vínculos, acesso total (sem filtros)
+              if (accessibleAdvogados.length > 0) {
+                where.advogadoResponsavelId = {
+                  in: accessibleAdvogados,
+                };
+              }
     }
 
     if (filters?.dataInicio || filters?.dataFim) {

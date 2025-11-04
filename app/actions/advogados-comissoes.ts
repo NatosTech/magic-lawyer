@@ -72,11 +72,34 @@ export async function getAdvogadosComissoes(
       return { success: false, error: "Usuário não autenticado" };
     }
 
+    const user = session.user as any;
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+
     // Construir filtros
     const whereClause: any = {
       tenantId: session.user.tenantId,
       isExterno: false, // Apenas advogados internos
     };
+
+    // Aplicar escopo de acesso para staff vinculados
+    if (!isAdmin) {
+      const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+      const accessibleAdvogados = await getAccessibleAdvogadoIds({ user });
+
+      // Se não há vínculos, acesso total (sem filtros)
+      if (accessibleAdvogados.length > 0) {
+        // Se não especificou filtro de advogado, usar apenas os acessíveis
+        if (!filters?.advogadoId) {
+          whereClause.id = { in: accessibleAdvogados };
+        } else if (!accessibleAdvogados.includes(filters.advogadoId)) {
+          // Se o advogado filtrado não está acessível, retornar vazio
+          return {
+            success: true,
+            data: [],
+          };
+        }
+      }
+    }
 
     if (filters?.advogadoId) {
       whereClause.id = filters.advogadoId;

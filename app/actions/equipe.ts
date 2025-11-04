@@ -231,15 +231,26 @@ export async function updateCargo(
     },
   });
 
-  await prisma.cargoPermissao.createMany({
-    data: data.permissoes.map((permissao) => ({
-      tenantId: session.user.tenantId!,
-      cargoId: cargoId,
-      modulo: permissao.modulo,
-      acao: permissao.acao,
-      permitido: permissao.permitido,
-    })),
-  });
+  const uniquePermissoes = new Map<string, { modulo: string; acao: string; permitido: boolean }>();
+
+  for (const permissao of data.permissoes) {
+    const key = `${permissao.modulo}:${permissao.acao}`;
+    uniquePermissoes.set(key, permissao);
+  }
+
+  const permissoesParaCriar = Array.from(uniquePermissoes.values());
+
+  if (permissoesParaCriar.length > 0) {
+    await prisma.cargoPermissao.createMany({
+      data: permissoesParaCriar.map((permissao) => ({
+        tenantId: session.user.tenantId!,
+        cargoId: cargoId,
+        modulo: permissao.modulo,
+        acao: permissao.acao,
+        permitido: permissao.permitido,
+      })),
+    });
+  }
 
   revalidatePath("/equipe");
 

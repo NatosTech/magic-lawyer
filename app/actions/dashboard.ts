@@ -915,24 +915,56 @@ async function buildAdvogadoDashboard(
   tenantId: string,
   userId: string,
   now: Date,
+  session?: any,
 ): Promise<DashboardData> {
-  const advogado = await prisma.advogado.findUnique({
-    where: { usuarioId: userId },
-    select: { id: true },
-  });
+  // Verificar se é staff vinculado ou advogado
+  const isAdmin = (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "SUPER_ADMIN";
+  let accessibleAdvogados: string[] = [];
 
-  if (!advogado) {
-    return {
-      role: UserRole.ADVOGADO,
-      stats: [],
-      insights: [],
-      highlights: [],
-      pending: [],
-      trends: [],
-      alerts: [],
-      activity: [],
-    };
+  if (!isAdmin && session) {
+    const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+    accessibleAdvogados = await getAccessibleAdvogadoIds(session);
   }
+
+  // Se for staff vinculado, usar os advogados acessíveis
+  // Se for advogado direto, buscar o próprio advogado
+  let advogadoIds: string[] = [];
+
+  if (!isAdmin && accessibleAdvogados.length > 0) {
+    advogadoIds = accessibleAdvogados;
+  } else {
+    const advogado = await prisma.advogado.findUnique({
+      where: { usuarioId: userId },
+      select: { id: true },
+    });
+
+      if (!advogado) {
+        return {
+          role: UserRole.ADVOGADO,
+          stats: [],
+          insights: [],
+          highlights: [],
+          pending: [],
+          trends: [],
+          alerts: [],
+          activity: [],
+        };
+      }
+      advogadoIds = [advogado.id];
+    }
+
+    if (advogadoIds.length === 0) {
+      return {
+        role: UserRole.ADVOGADO,
+        stats: [],
+        insights: [],
+        highlights: [],
+        pending: [],
+        trends: [],
+        alerts: [],
+        activity: [],
+      };
+    }
 
   const weekStart = startOfWeek(now);
   const weekEnd = endOfWeek(weekStart);
@@ -956,7 +988,7 @@ async function buildAdvogadoDashboard(
       where: {
         tenantId,
         deletedAt: null,
-        advogadoResponsavelId: advogado.id,
+        advogadoResponsavelId: { in: advogadoIds },
         status: { in: [ProcessoStatus.EM_ANDAMENTO, ProcessoStatus.SUSPENSO] },
       },
     }),
@@ -964,16 +996,16 @@ async function buildAdvogadoDashboard(
       where: {
         tenantId,
         deletedAt: null,
-        advogadoResponsavelId: advogado.id,
+        advogadoResponsavelId: { in: advogadoIds },
       },
     }),
     prisma.advogadoCliente.count({
-      where: { tenantId, advogadoId: advogado.id },
+      where: { tenantId, advogadoId: { in: advogadoIds } },
     }),
     prisma.evento.count({
       where: {
         tenantId,
-        advogadoResponsavelId: advogado.id,
+        advogadoResponsavelId: { in: advogadoIds },
         dataInicio: {
           gte: weekStart,
           lt: weekEnd,
@@ -993,7 +1025,7 @@ async function buildAdvogadoDashboard(
     prisma.documentoAssinatura.count({
       where: {
         tenantId,
-        advogadoResponsavelId: advogado.id,
+        advogadoResponsavelId: { in: advogadoIds },
         status: DocumentoAssinaturaStatus.PENDENTE,
       },
     }),
@@ -1011,7 +1043,7 @@ async function buildAdvogadoDashboard(
     prisma.evento.findFirst({
       where: {
         tenantId,
-        advogadoResponsavelId: advogado.id,
+        advogadoResponsavelId: { in: advogadoIds },
         dataInicio: { gte: now },
         status: { in: [EventoStatus.AGENDADO, EventoStatus.CONFIRMADO] },
       },
@@ -1021,7 +1053,7 @@ async function buildAdvogadoDashboard(
     prisma.evento.findMany({
       where: {
         tenantId,
-        advogadoResponsavelId: advogado.id,
+        advogadoResponsavelId: { in: advogadoIds },
         dataInicio: { gte: now, lt: weekEnd },
         status: { in: [EventoStatus.AGENDADO, EventoStatus.CONFIRMADO] },
       },
@@ -1172,7 +1204,7 @@ async function buildAdvogadoDashboard(
         where: {
           tenantId,
           deletedAt: null,
-          advogadoResponsavelId: advogado.id,
+          advogadoResponsavelId: { in: advogadoIds },
           createdAt: {
             gte: start,
             lt: end,
@@ -1189,7 +1221,7 @@ async function buildAdvogadoDashboard(
       prisma.documentoAssinatura.count({
         where: {
           tenantId,
-          advogadoResponsavelId: advogado.id,
+          advogadoResponsavelId: { in: advogadoIds },
           createdAt: {
             gte: start,
             lt: end,
@@ -1694,8 +1726,178 @@ async function buildFinanceiroDashboard(
 
 async function buildSecretariaDashboard(
   tenantId: string,
+  userId: string,
   now: Date,
+  session?: any,
 ): Promise<DashboardData> {
+  // Verificar se é staff vinculado e aplicar escopo
+  const isAdmin = (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "SUPER_ADMIN";
+  let accessibleAdvogados: string[] = [];
+
+  if (!isAdmin && session) {
+    const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+    accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+  }
+
+  // Se não há vínculos, acesso total (sem filtros)
+  // accessibleUsuarios só deve ser preenchido quando houver vínculos
+  // Caso contrário, whereTarefasBase não aplicará filtros (acesso total)
+  let accessibleUsuarios: string[] = [];
+
+  if (!isAdmin && session?.user?.tenantId && accessibleAdvogados.length > 0) {
+    // Aplicar filtro apenas se houver vínculos
+    const whereAdvogado: any = {
+      tenantId,
+      id: {
+        in: accessibleAdvogados,
+      },
+    };
+
+    const advUsuarios = await prisma.advogado.findMany({
+      where: whereAdvogado,
+      select: {
+        usuarioId: true,
+      },
+    });
+
+    accessibleUsuarios = advUsuarios
+      .map((adv) => adv.usuarioId)
+      .filter((id): id is string => Boolean(id));
+
+    if (session.user?.id) {
+      accessibleUsuarios.push(session.user.id);
+    }
+  }
+
+  const whereClientes: Prisma.ClienteWhereInput = {
+    tenantId,
+    deletedAt: null,
+    ...(isAdmin || accessibleAdvogados.length === 0
+      ? {}
+      : {
+          advogadoClientes: {
+            some: {
+              advogadoId: {
+                in: accessibleAdvogados,
+              },
+            },
+          },
+        }),
+  };
+
+  const whereEventos: Prisma.EventoWhereInput = {
+    tenantId,
+    ...(isAdmin || accessibleAdvogados.length === 0
+      ? {}
+      : {
+          advogadoResponsavelId: {
+            in: accessibleAdvogados,
+          },
+        }),
+  };
+
+  let whereProcessos: Prisma.ProcessoWhereInput = {
+    tenantId,
+    deletedAt: null,
+  };
+
+  // Se não há vínculos, acesso total (sem filtros)
+  if (!isAdmin && accessibleAdvogados.length > 0) {
+    whereProcessos = {
+      ...whereProcessos,
+      OR: [
+        {
+          advogadoResponsavelId: {
+            in: accessibleAdvogados,
+          },
+        },
+        {
+          procuracoesVinculadas: {
+            some: {
+              procuracao: {
+                outorgados: {
+                  some: {
+                    advogadoId: {
+                      in: accessibleAdvogados,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        {
+          partes: {
+            some: {
+              advogadoId: {
+                in: accessibleAdvogados,
+              },
+            },
+          },
+        },
+        {
+          cliente: {
+            advogadoClientes: {
+              some: {
+                advogadoId: {
+                  in: accessibleAdvogados,
+                },
+              },
+            },
+          },
+        },
+      ],
+    };
+  }
+
+  const whereDocumentosAssinatura: Prisma.DocumentoAssinaturaWhereInput = {
+    tenantId,
+    status: DocumentoAssinaturaStatus.PENDENTE,
+    ...(isAdmin
+      ? {}
+      : {
+          OR: [
+            {
+              processo: {
+                tenantId,
+                deletedAt: null,
+                ...(whereProcessos.OR ? { OR: whereProcessos.OR } : {}),
+              },
+            },
+            {
+              cliente: {
+                tenantId,
+                deletedAt: null,
+                ...(accessibleAdvogados.length > 0
+                  ? {
+                      advogadoClientes: {
+                        some: {
+                          advogadoId: {
+                            in: accessibleAdvogados,
+                          },
+                        },
+                      },
+                    }
+                  : {}),
+              },
+            },
+          ],
+        }),
+  };
+
+  const whereTarefasBase: Prisma.TarefaWhereInput = {
+    tenantId,
+    deletedAt: null,
+    // Se não há vínculos, acesso total (sem filtros)
+    ...(isAdmin || accessibleUsuarios.length === 0
+      ? {}
+      : {
+          responsavelId: {
+            in: accessibleUsuarios,
+          },
+        }),
+  };
+
   const hojeInicio = startOfDay(now);
   const hojeFim = endOfDay(now);
   const tresDias = addDays(now, 3);
@@ -1713,29 +1915,27 @@ async function buildSecretariaDashboard(
   ] = await Promise.all([
     prisma.evento.count({
       where: {
-        tenantId,
+        ...whereEventos,
         dataInicio: { gte: hojeInicio, lte: hojeFim },
         status: { in: [EventoStatus.AGENDADO, EventoStatus.CONFIRMADO] },
       },
     }),
     prisma.evento.count({
       where: {
-        tenantId,
+        ...whereEventos,
         dataInicio: { gte: hojeInicio, lte: addDays(hojeFim, 7) },
         status: { in: [EventoStatus.AGENDADO, EventoStatus.CONFIRMADO] },
       },
     }),
     prisma.tarefa.count({
       where: {
-        tenantId,
-        deletedAt: null,
+        ...whereTarefasBase,
         status: { in: [TarefaStatus.PENDENTE, TarefaStatus.EM_ANDAMENTO] },
       },
     }),
     prisma.documentoAssinatura.count({
       where: {
-        tenantId,
-        status: DocumentoAssinaturaStatus.PENDENTE,
+        ...whereDocumentosAssinatura,
       },
     }),
     prisma.processoPrazo.count({
@@ -1746,18 +1946,26 @@ async function buildSecretariaDashboard(
           gte: now,
           lte: tresDias,
         },
+        ...(isAdmin
+          ? {}
+          : {
+              processo: {
+                tenantId,
+                deletedAt: null,
+                ...(whereProcessos.OR ? { OR: whereProcessos.OR } : {}),
+              },
+            }),
       },
     }),
     prisma.cliente.count({
       where: {
-        tenantId,
-        deletedAt: null,
+        ...whereClientes,
         createdAt: { gte: addDays(now, -7) },
       },
     }),
     prisma.evento.findMany({
       where: {
-        tenantId,
+        ...whereEventos,
         dataInicio: { gte: now, lte: addDays(now, 5) },
         status: { in: [EventoStatus.AGENDADO, EventoStatus.CONFIRMADO] },
       },
@@ -1772,8 +1980,7 @@ async function buildSecretariaDashboard(
     }),
     prisma.documentoAssinatura.findMany({
       where: {
-        tenantId,
-        status: DocumentoAssinaturaStatus.PENDENTE,
+        ...whereDocumentosAssinatura,
       },
       orderBy: { createdAt: "asc" },
       take: 5,
@@ -1787,7 +1994,7 @@ async function buildSecretariaDashboard(
     }),
     prisma.tarefa.findMany({
       where: {
-        tenantId,
+        ...whereTarefasBase,
         status: { in: [TarefaStatus.PENDENTE, TarefaStatus.EM_ANDAMENTO] },
       },
       orderBy: { createdAt: "desc" },
@@ -1872,7 +2079,7 @@ async function buildSecretariaDashboard(
     async (start, end) =>
       prisma.evento.count({
         where: {
-          tenantId,
+          ...whereEventos,
           createdAt: {
             gte: start,
             lt: end,
@@ -1888,8 +2095,7 @@ async function buildSecretariaDashboard(
     async (start, end) =>
       prisma.cliente.count({
         where: {
-          tenantId,
-          deletedAt: null,
+          ...whereClientes,
           createdAt: {
             gte: start,
             lt: end,
@@ -2367,7 +2573,7 @@ export async function getDashboardData(): Promise<DashboardResponse> {
         if (!tenantId) {
           throw new Error("Tenant não definido para a secretaria");
         }
-        data = await buildSecretariaDashboard(tenantId, now);
+        data = await buildSecretariaDashboard(tenantId, session.user.id, now, session);
         break;
       case UserRole.CLIENTE:
         if (!tenantId) {

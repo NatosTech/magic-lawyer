@@ -15,6 +15,10 @@ import { ProcessoNotificationIntegration } from "@/app/lib/notifications/example
 import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notification-service";
 import { buildProcessoDiff } from "@/app/lib/processos/diff";
 import { checkPermission } from "@/app/actions/equipe";
+import {
+  getAccessibleAdvogadoIds,
+  getAdvogadoIdFromSession,
+} from "@/app/lib/advogado-access";
 
 // ============================================
 // TYPES - Prisma Type Safety (Best Practice)
@@ -408,22 +412,6 @@ export interface ProcessoDetalhado extends Processo {
 // HELPER FUNCTIONS
 // ============================================
 
-async function getAdvogadoIdFromSession(session: {
-  user: any;
-}): Promise<string | null> {
-  if (!session?.user?.id || !session?.user?.tenantId) return null;
-
-  const advogado = await prisma.advogado.findFirst({
-    where: {
-      usuarioId: session.user.id,
-      tenantId: session.user.tenantId,
-    },
-    select: { id: true },
-  });
-
-  return advogado?.id || null;
-}
-
 async function getClienteIdFromSession(session: {
   user: any;
 }): Promise<string | null> {
@@ -741,88 +729,73 @@ export async function getAllProcessos(): Promise<{
 
     // CLIENTE: Apenas seus processos
     const clienteId = await getClienteIdFromSession(session);
+    const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
 
     if (clienteId) {
       whereClause.clienteId = clienteId;
     }
-    // ADVOGADO: Processos onde ele está habilitado na procuração OU dos clientes que ele criou
-    else if (user.role === "ADVOGADO") {
-      const advogadoId = await getAdvogadoIdFromSession(session);
-
-      if (!advogadoId) {
-        return { success: false, error: "Advogado não encontrado" };
-      }
-
-      // 1. Buscar IDs dos clientes que o advogado criou (relacionamento direto)
-      const clientesCriados = await prisma.cliente.findMany({
-        where: {
-          tenantId: user.tenantId,
-          deletedAt: null,
-          // Cliente criado pelo advogado (através do usuário criado)
-          usuario: {
-            createdById: user.id,
+    // ADMIN / SUPER_ADMIN: já acessam toda base
+    // Funcionário sem vínculos: acesso total (não aplicar filtros)
+    else if (!isAdmin && accessibleAdvogados.length > 0) {
+      const orConditions: Prisma.ProcessoWhereInput[] = [
+        {
+          advogadoResponsavelId: {
+            in: accessibleAdvogados,
           },
         },
-        select: {
-          id: true,
-        },
-      });
-
-      // 2. Buscar processos onde o advogado está habilitado na procuração
-      const processosComProcuracao = await prisma.processo.findMany({
-        where: {
-          tenantId: user.tenantId,
-          deletedAt: null,
+        {
           procuracoesVinculadas: {
             some: {
               procuracao: {
                 outorgados: {
                   some: {
-                    advogadoId,
+                    advogadoId: {
+                      in: accessibleAdvogados,
+                    },
                   },
                 },
               },
             },
           },
         },
-        select: {
-          id: true,
-        },
-      });
-
-      const clientesIds = clientesCriados.map((c) => c.id);
-      const processosIds = processosComProcuracao.map((p) => p.id);
-
-      // Se não tem acesso a nenhum processo, retornar vazio
-      if (clientesIds.length === 0 && processosIds.length === 0) {
-        return { success: true, processos: [] };
-      }
-
-      // Construir where clause: processos dos clientes criados OU processos com procuração
-      const whereConditions = [];
-
-      if (clientesIds.length > 0) {
-        whereConditions.push({
-          clienteId: {
-            in: clientesIds,
+        {
+          partes: {
+            some: {
+              advogadoId: {
+                in: accessibleAdvogados,
+              },
+            },
           },
-        });
-      }
+        },
+        {
+          cliente: {
+            advogadoClientes: {
+              some: {
+                advogadoId: {
+                  in: accessibleAdvogados,
+                },
+              },
+            },
+          },
+        },
+      ];
 
-      if (processosIds.length > 0) {
-        whereConditions.push({
-          id: {
-            in: processosIds,
+      if (user.role === "ADVOGADO") {
+        orConditions.push({
+          cliente: {
+            usuario: {
+              createdById: user.id,
+            },
           },
         });
       }
 
       whereClause = {
         ...whereClause,
-        OR: whereConditions,
+        OR: orConditions,
       };
     }
-    // ADMIN ou SUPER_ADMIN: Todos do tenant (whereClause já tem apenas tenantId)
 
     const processos = await prisma.processo.findMany({
       where: whereClause,

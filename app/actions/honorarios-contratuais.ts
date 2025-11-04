@@ -40,21 +40,7 @@ export async function listHonorariosContratuais(filters?: {
     const session = await getSession();
     const userRole = session?.user?.role;
 
-    // Verificar se usuário é advogado
-    let advogadoId: string | null = null;
-
-    if (userRole === "ADVOGADO") {
-      const advogado = await prisma.advogado.findFirst({
-        where: {
-          usuarioId: userId,
-          tenantId,
-        },
-        select: { id: true },
-      });
-
-      advogadoId = advogado?.id || null;
-    }
-
+    const isAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
     const where: any = {
       tenantId,
     };
@@ -67,17 +53,28 @@ export async function listHonorariosContratuais(filters?: {
       where.tipo = filters.tipo;
     }
 
-    // FILTRO DE PRIVACIDADE:
-    // Advogados só veem:
+    // FILTRO DE PRIVACIDADE E ACESSO:
+    // Staff vinculado ou ADVOGADO só veem:
     // 1. Honorários PÚBLICOS de qualquer contrato
-    // 2. Honorários PRIVADOS onde ele é o advogado vinculado
+    // 2. Honorários PRIVADOS onde ele é o advogado vinculado (ou vinculado ao advogado)
     // 3. Honorários sem advogado específico (gerais do contrato)
-    if (userRole === "ADVOGADO" && advogadoId) {
-      where.OR = [
-        { visibilidade: "PUBLICO" },
-        { advogadoId: advogadoId },
-        { advogadoId: null },
-      ];
+    if (!isAdmin && userRole !== "CLIENTE" && session) {
+      const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+
+      // Se não há vínculos, acesso total (sem filtros adicionais)
+      // Se há vínculos, aplicar filtro de privacidade
+      if (accessibleAdvogados.length > 0) {
+        where.OR = [
+          { visibilidade: "PUBLICO" },
+          {
+            advogadoId: {
+              in: accessibleAdvogados,
+            },
+          },
+          { advogadoId: null },
+        ];
+      }
     }
 
     const honorarios = await prisma.contratoHonorario.findMany({
