@@ -19,9 +19,6 @@ import {
   Select,
   SelectItem,
   Tooltip,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
 } from "@heroui/react";
 import {
   SearchIcon,
@@ -238,7 +235,9 @@ export function NotificationPreferencesContent() {
     } finally {
       setLoadingEvents((prev) => {
         const next = new Set(prev);
+
         next.delete(eventType);
+
         return next;
       });
     }
@@ -268,8 +267,8 @@ export function NotificationPreferencesContent() {
   if (error) {
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, scale: 0.95 }}
       >
         <Card className="border border-danger/20 bg-danger/5">
           <CardBody>
@@ -301,8 +300,8 @@ export function NotificationPreferencesContent() {
     <div className="space-y-6">
       {/* Resumo com Animação */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: -20 }}
       >
         <Card className="bg-gradient-to-br from-primary/10 via-secondary/10 to-warning/10 border border-primary/20">
           <CardBody>
@@ -313,10 +312,10 @@ export function NotificationPreferencesContent() {
                   Total de eventos
                 </p>
                 <motion.p
-                  initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.1 }}
                   className="text-3xl font-bold text-default-900"
+                  initial={{ scale: 0 }}
+                  transition={{ delay: 0.1 }}
                 >
                   {totalEvents}
                 </motion.p>
@@ -327,10 +326,10 @@ export function NotificationPreferencesContent() {
                   Habilitados
                 </p>
                 <motion.p
-                  initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.2 }}
                   className="text-3xl font-bold text-success"
+                  initial={{ scale: 0 }}
+                  transition={{ delay: 0.2 }}
                 >
                   {preferences.filter((p) => p.enabled).length}
                 </motion.p>
@@ -341,10 +340,10 @@ export function NotificationPreferencesContent() {
                   Desabilitados
                 </p>
                 <motion.p
-                  initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.3 }}
                   className="text-3xl font-bold text-danger"
+                  initial={{ scale: 0 }}
+                  transition={{ delay: 0.3 }}
                 >
                   {preferences.filter((p) => !p.enabled).length}
                 </motion.p>
@@ -355,10 +354,10 @@ export function NotificationPreferencesContent() {
                   Customizados
                 </p>
                 <motion.p
-                  initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.4 }}
                   className="text-3xl font-bold text-primary"
+                  initial={{ scale: 0 }}
+                  transition={{ delay: 0.4 }}
                 >
                   {preferences.length}
                 </motion.p>
@@ -370,25 +369,27 @@ export function NotificationPreferencesContent() {
 
       {/* Busca e Filtros Melhorados */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 20 }}
         transition={{ delay: 0.1 }}
       >
         <Card>
           <CardBody className="gap-4">
             <Input
-              placeholder="Buscar por categoria ou evento..."
-              startContent={<SearchIcon className="text-default-400" size={20} />}
               endContent={
                 searchTerm ? (
                   <button
+                    className="cursor-pointer hover:opacity-70"
                     type="button"
                     onClick={() => setSearchTerm("")}
-                    className="cursor-pointer hover:opacity-70"
                   >
                     <XCircle className="w-4 h-4 text-default-400" />
                   </button>
                 ) : null
+              }
+              placeholder="Buscar por categoria ou evento..."
+              startContent={
+                <SearchIcon className="text-default-400" size={20} />
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -398,10 +399,10 @@ export function NotificationPreferencesContent() {
             <div className="flex items-center gap-2 flex-wrap">
               <Filter className="w-4 h-4 text-default-500" />
               <Chip
+                className="cursor-pointer"
+                color={selectedCategory === "all" ? "primary" : "default"}
                 size="sm"
                 variant={selectedCategory === "all" ? "solid" : "flat"}
-                color={selectedCategory === "all" ? "primary" : "default"}
-                className="cursor-pointer"
                 onClick={() => setSelectedCategory("all")}
               >
                 Todas
@@ -409,20 +410,22 @@ export function NotificationPreferencesContent() {
               {Object.entries(EVENT_CATEGORIES).map(([key, category]) => (
                 <Chip
                   key={key}
-                  size="sm"
-                  variant={
-                    selectedCategory === category.label.toLowerCase()
-                      ? "solid"
-                      : "flat"
-                  }
+                  className="cursor-pointer"
                   color={
                     selectedCategory === category.label.toLowerCase()
                       ? (category.color as any)
                       : "default"
                   }
-                  className="cursor-pointer"
+                  size="sm"
                   startContent={<category.icon className="w-3 h-3" />}
-                  onClick={() => setSelectedCategory(category.label.toLowerCase())}
+                  variant={
+                    selectedCategory === category.label.toLowerCase()
+                      ? "solid"
+                      : "flat"
+                  }
+                  onClick={() =>
+                    setSelectedCategory(category.label.toLowerCase())
+                  }
                 >
                   {category.label}
                 </Chip>
@@ -430,8 +433,8 @@ export function NotificationPreferencesContent() {
               {(searchTerm || selectedCategory !== "all") && (
                 <Button
                   size="sm"
-                  variant="light"
                   startContent={<RotateCcw className="w-3 h-3" />}
+                  variant="light"
                   onPress={() => {
                     setSearchTerm("");
                     setSelectedCategory("all");
@@ -447,8 +450,8 @@ export function NotificationPreferencesContent() {
 
       {/* Legendas e Ajuda */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 20 }}
         transition={{ delay: 0.2 }}
       >
         <Card className="bg-default-50 border border-default-200">
@@ -493,20 +496,20 @@ export function NotificationPreferencesContent() {
         {isLoading ? (
           <motion.div
             key="loading"
-            initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
             className="flex justify-center py-12"
+            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
           >
             <Spinner size="lg" />
           </motion.div>
         ) : (
           <motion.div
             key="categories"
-            variants={containerVariants}
-            initial="hidden"
             animate="visible"
             className="space-y-6"
+            initial="hidden"
+            variants={containerVariants}
           >
             {filteredCategories.length === 0 ? (
               <Card className="border border-default-200">
@@ -517,8 +520,8 @@ export function NotificationPreferencesContent() {
                   </p>
                   <Button
                     className="mt-4"
-                    variant="flat"
                     startContent={<RotateCcw className="w-4 h-4" />}
+                    variant="flat"
                     onPress={() => {
                       setSearchTerm("");
                       setSelectedCategory("all");
@@ -550,9 +553,9 @@ export function NotificationPreferencesContent() {
                           </h2>
                         </div>
                         <Chip
+                          color={category.color as any}
                           size="sm"
                           variant="flat"
-                          color={category.color as any}
                         >
                           {category.events.length} eventos
                         </Chip>
@@ -570,22 +573,22 @@ export function NotificationPreferencesContent() {
                           return (
                             <motion.div
                               key={eventType}
-                              initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: index * 0.02 }}
                               className={`flex items-start justify-between gap-4 p-4 rounded-lg border transition-all ${
                                 isEnabled
                                   ? "border-default-200 bg-default-50/50"
                                   : "border-default-100 bg-default-50/20 opacity-60"
                               }`}
+                              initial={{ opacity: 0, x: -20 }}
+                              transition={{ delay: index * 0.02 }}
                             >
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-3">
                                   <Switch
+                                    color={category.color as any}
                                     isDisabled={isLoadingEvent}
                                     isSelected={isEnabled}
                                     size="sm"
-                                    color={category.color as any}
                                     onValueChange={(enabled) =>
                                       handleUpdatePreference(eventType, {
                                         enabled,
@@ -603,24 +606,29 @@ export function NotificationPreferencesContent() {
                                 <AnimatePresence>
                                   {isEnabled && (
                                     <motion.div
-                                      initial={{ opacity: 0, height: 0 }}
                                       animate={{ opacity: 1, height: "auto" }}
-                                      exit={{ opacity: 0, height: 0 }}
                                       className="space-y-3 ml-8 mt-3"
+                                      exit={{ opacity: 0, height: 0 }}
+                                      initial={{ opacity: 0, height: 0 }}
                                     >
                                       {/* Canais */}
                                       <div>
                                         <label className="text-xs font-semibold text-default-600 dark:text-default-400 mb-2 flex items-center gap-1">
                                           Canais
-                                          <Tooltip
-                                            content="Clique nos canais para ativar/desativar. Deve haver pelo menos um selecionado."
-                                          >
+                                          <Tooltip content="Clique nos canais para ativar/desativar. Deve haver pelo menos um selecionado.">
                                             <HelpCircle className="w-3 h-3" />
                                           </Tooltip>
                                         </label>
                                         <div className="flex gap-2 flex-wrap">
                                           {Object.entries(CHANNEL_LABELS).map(
-                                            ([channelKey, { label, icon: Icon, description }]) => {
+                                            ([
+                                              channelKey,
+                                              {
+                                                label,
+                                                icon: Icon,
+                                                description,
+                                              },
+                                            ]) => {
                                               const channel =
                                                 channelKey as NotificationChannel;
                                               const isSelected =
@@ -643,16 +651,29 @@ export function NotificationPreferencesContent() {
                                                           : "default"
                                                       }
                                                       size="sm"
-                                                      startContent={<Icon size={14} />}
-                                                      variant={isSelected ? "solid" : "flat"}
+                                                      startContent={
+                                                        <Icon size={14} />
+                                                      }
+                                                      variant={
+                                                        isSelected
+                                                          ? "solid"
+                                                          : "flat"
+                                                      }
                                                       onClick={() => {
-                                                        const newChannels = isSelected
-                                                          ? channels.filter(
-                                                              (c) => c !== channel,
-                                                            )
-                                                          : [...channels, channel];
+                                                        const newChannels =
+                                                          isSelected
+                                                            ? channels.filter(
+                                                                (c) =>
+                                                                  c !== channel,
+                                                              )
+                                                            : [
+                                                                ...channels,
+                                                                channel,
+                                                              ];
 
-                                                        if (newChannels.length > 0) {
+                                                        if (
+                                                          newChannels.length > 0
+                                                        ) {
                                                           handleUpdatePreference(
                                                             eventType,
                                                             {
@@ -714,9 +735,9 @@ export function NotificationPreferencesContent() {
                               <AnimatePresence>
                                 {isLoadingEvent && (
                                   <motion.div
-                                    initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
+                                    initial={{ opacity: 0 }}
                                   >
                                     <Spinner className="mt-1" size="sm" />
                                   </motion.div>

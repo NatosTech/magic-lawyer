@@ -245,6 +245,7 @@ export async function createContrato(data: ContratoCreateInput) {
 
     // Verificar permissão para criar contratos
     const podeCriar = await checkPermission("financeiro", "criar");
+
     if (!podeCriar) {
       return {
         success: false,
@@ -740,6 +741,7 @@ export async function updateContrato(
 
     // Verificar permissão para editar contratos
     const podeEditar = await checkPermission("financeiro", "editar");
+
     if (!podeEditar) {
       return {
         success: false,

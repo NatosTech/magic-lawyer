@@ -1,7 +1,9 @@
-import { getSession } from "@/app/lib/auth";
 import { redirect } from "next/navigation";
-import { UserRole } from "@/app/generated/prisma";
+
 import { PortalAdvogadoContent } from "./portal-advogado-content";
+
+import { getSession } from "@/app/lib/auth";
+import { UserRole } from "@/app/generated/prisma";
 
 export default async function PortalAdvogadoPage() {
   const session = await getSession();
@@ -35,4 +37,3 @@ export default async function PortalAdvogadoPage() {
     </div>
   );
 }
-

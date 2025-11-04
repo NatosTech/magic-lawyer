@@ -3,6 +3,7 @@ import { useSession } from "next-auth/react";
 
 import { useUserPermissions } from "./use-user-permissions";
 import { useTenantModules } from "./use-tenant-modules";
+import { useModuleRouteMap } from "./use-module-route-map";
 
 export interface NavigationItem {
   label: string;
@@ -71,6 +72,7 @@ export function useProfileNavigation() {
   // Buscar módulos via hook realtime (atualiza automaticamente)
   const { modules: realtimeModules, isLoading: isLoadingModules } =
     useTenantModules();
+  const { moduleRouteMap } = useModuleRouteMap();
 
   // Debug removido
 
@@ -89,8 +91,45 @@ export function useProfileNavigation() {
     return sessionModules || [];
   }, [realtimeModules, sessionModules]);
 
+  const inferModulesForHref = useCallback(
+    (href: string, explicit?: string[]) => {
+      if (explicit && explicit.length > 0) {
+        return explicit;
+      }
+
+      if (!moduleRouteMap || Object.keys(moduleRouteMap).length === 0) {
+        return [];
+      }
+
+      const normalizedHref = href.replace(/\/$/, "") || "/";
+      const matchedModules: string[] = [];
+
+      for (const [moduleSlug, routes] of Object.entries(moduleRouteMap)) {
+        const matches = routes.some((route) => {
+          const normalizedRoute = route.replace(/\/$/, "") || "/";
+
+          if (normalizedRoute === "/") {
+            return normalizedHref.startsWith("/");
+          }
+
+          return (
+            normalizedHref === normalizedRoute ||
+            normalizedHref.startsWith(`${normalizedRoute}/`)
+          );
+        });
+
+        if (matches) {
+          matchedModules.push(moduleSlug);
+        }
+      }
+
+      return matchedModules;
+    },
+    [moduleRouteMap],
+  );
+
   const hasModuleAccess = useCallback(
-    (_href: string, required?: string[]) => {
+    (href: string, required?: string[]) => {
       if (!grantedModules || !Array.isArray(grantedModules)) {
         return false;
       }
@@ -99,13 +138,15 @@ export function useProfileNavigation() {
         return true;
       }
 
-      if (!required || required.length === 0) {
+      const modulesToCheck = inferModulesForHref(href, required);
+
+      if (!modulesToCheck || modulesToCheck.length === 0) {
         return true;
       }
 
-      return required.some((module) => grantedModules.includes(module));
+      return modulesToCheck.some((module) => grantedModules.includes(module));
     },
-    [grantedModules],
+    [grantedModules, inferModulesForHref],
   );
 
   const navigationItems = useMemo(() => {
@@ -268,21 +309,18 @@ export function useProfileNavigation() {
           description: "Gestão de contratos e modelos",
           isAccordion: true,
           section: "Atividades Jurídicas",
-          requiredModules: ["contratos"],
           children: [
             {
               label: "Contratos",
               href: "/contratos",
               icon: "FileSignature",
               description: "Gestão de contratos ativos",
-              requiredModules: ["contratos"],
             },
             {
               label: "Modelos",
               href: "/contratos/modelos",
               icon: "FileTemplate",
               description: "Modelos de contratos reutilizáveis",
-              requiredModules: ["contratos"],
             },
           ],
         });
@@ -335,15 +373,14 @@ export function useProfileNavigation() {
         icon: "Gavel",
         description: "Portais dos tribunais, recessos forenses e comunicados",
         section: "Atividades Jurídicas",
-        requiredModules: [], // Não requer módulo específico
       });
     }
 
-    if (
-      permissions.canViewAllEvents ||
-      permissions.canCreateEvents ||
-      permissions.canViewClientEvents
-    ) {
+    const canViewAgenda =
+      (!isCliente && permissions.canViewAllEvents) ||
+      (isCliente && permissions.canViewClientEvents);
+
+    if (canViewAgenda) {
       items.push({
         label: "Agenda",
         href: "/agenda",
@@ -362,7 +399,6 @@ export function useProfileNavigation() {
         description: "Gestão de tarefas e atividades",
         section: "Operacional",
         isAccordion: true,
-        requiredModules: ["tarefas"],
         children: [
           {
             label: "Kanban",
@@ -379,6 +415,7 @@ export function useProfileNavigation() {
             requiredModules: ["tarefas"],
           },
         ],
+        requiredModules: ["tarefas"],
       });
     }
 
@@ -422,7 +459,6 @@ export function useProfileNavigation() {
             : "Gestão financeira",
         isAccordion: true,
         section: "Operacional",
-        requiredModules: ["financeiro"],
         children: [
           {
             label: "Dashboard",
@@ -460,6 +496,7 @@ export function useProfileNavigation() {
             requiredModules: ["financeiro"],
           },
         ],
+        requiredModules: ["financeiro"],
       });
     }
 
@@ -480,7 +517,6 @@ export function useProfileNavigation() {
         description: "Configurações gerais do escritório",
         section: "Administração",
         isAccordion: true,
-        requiredModules: ["configuracoes"],
         children: [
           {
             label: "Configurações do escritório",
@@ -539,6 +575,7 @@ export function useProfileNavigation() {
             requiredModules: ["dados-bancarios"],
           },
         ],
+        requiredModules: ["configuracoes"],
       });
     }
 

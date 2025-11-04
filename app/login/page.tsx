@@ -33,10 +33,18 @@ function LoginPageInner() {
         email: string;
         password: string;
         tenant?: string;
-        chipColor?: "primary" | "secondary" | "success" | "warning" | "danger" | "default";
+        chipColor?:
+          | "primary"
+          | "secondary"
+          | "success"
+          | "warning"
+          | "danger"
+          | "default";
       }>;
     }>
   >([]);
+  const [devPanelOpen, setDevPanelOpen] = useState(false);
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
   const callbackUrl = params.get("callbackUrl");
   const reason = params.get("reason"); // Motivo do redirecionamento
   const isDevMode = process.env.NODE_ENV === "development";
@@ -104,8 +112,7 @@ function LoginPageInner() {
     }) => {
       const sanitizedEmail = rawEmail.trim();
       const sanitizedPassword = rawPassword.trim();
-      const baseTenant =
-        tenantOverride !== undefined ? tenantOverride : tenant;
+      const baseTenant = tenantOverride !== undefined ? tenantOverride : tenant;
       const sanitizedTenant = baseTenant ? baseTenant.trim() : "";
 
       if (!sanitizedEmail || !sanitizedPassword) {
@@ -247,12 +254,11 @@ function LoginPageInner() {
         });
 
         const freshSession = await getSession();
-        const role = (freshSession?.user as any)?.role as
-          | string
-          | undefined;
+        const role = (freshSession?.user as any)?.role as string | undefined;
         const target = resolveRedirectTarget(role);
 
         router.replace(target);
+
         return true;
       } catch (error) {
         const message =
@@ -298,6 +304,7 @@ function LoginPageInner() {
           color,
           timeout: 6000,
         });
+
         return false;
       } finally {
         setLoading(false);
@@ -305,6 +312,7 @@ function LoginPageInner() {
     },
     [emailRegex, resolveRedirectTarget, router, tenant, tenantFromDomain],
   );
+
   // Exibir mensagem de motivo do redirecionamento
   useEffect(() => {
     if (reason && status !== "authenticated") {
@@ -407,7 +415,39 @@ function LoginPageInner() {
 
   useEffect(() => {
     if (!isDevMode) {
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleResize = () => {
+      setIsLargeScreen(window.innerWidth >= 1024);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isDevMode]);
+
+  useEffect(() => {
+    if (!isDevMode || !isLargeScreen || devQuickLogins.length === 0) {
+      return;
+    }
+
+    if (!devPanelOpen) {
+      setDevPanelOpen(true);
+    }
+  }, [devPanelOpen, devQuickLogins.length, isDevMode, isLargeScreen]);
+
+  useEffect(() => {
+    if (!isDevMode) {
       setDevQuickLogins([]);
+
       return;
     }
 
@@ -479,6 +519,14 @@ function LoginPageInner() {
               tenant: "sandra",
               chipColor: "success",
             },
+            {
+              name: "Robson Nonato (Cliente)",
+              roleLabel: "CLIENTE",
+              email: "magiclawyersaas@gmail.com",
+              password: "Robson123!",
+              tenant: "sandra",
+              chipColor: "success",
+            },
           ],
         },
       ]);
@@ -524,11 +572,7 @@ function LoginPageInner() {
   };
 
   const handleDevQuickLogin = useCallback(
-    async (option: {
-      email: string;
-      password: string;
-      tenant?: string;
-    }) => {
+    async (option: { email: string; password: string; tenant?: string }) => {
       if (loading) {
         return;
       }
@@ -580,73 +624,124 @@ function LoginPageInner() {
       </Button>
 
       {isDevMode && devQuickLogins.length > 0 && (
-        <aside className="hidden lg:block fixed top-24 right-6 z-30 w-[320px] space-y-3">
-          <Card className="border border-primary/20 shadow-2xl backdrop-blur bg-white/95 dark:bg-content1/90">
-            <CardHeader className="flex items-center justify-between py-3">
-              <div>
-                <p className="text-sm font-semibold text-default-700 dark:text-default-200">
-                  Painel Dev
-                </p>
-                <p className="text-xs text-default-400">
-                  Logins rápidos para testes locais
-                </p>
-              </div>
-              <Chip color="primary" size="sm" variant="flat">
-                Dev only
-              </Chip>
-            </CardHeader>
-            <Divider />
-            <CardBody className="space-y-5">
-              {devQuickLogins.map((group, groupIndex) => (
-                <div key={group.group} className="space-y-3">
-                  <div>
-                    <p className="text-sm font-semibold text-default-600 dark:text-default-300">
-                      {group.group}
-                    </p>
-                    {group.description ? (
-                      <p className="text-xs text-default-400">{group.description}</p>
-                    ) : null}
-                  </div>
-                  <div className="space-y-2">
-                    {group.options.map((option) => (
-                      <div
-                        key={option.email}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-default-200 bg-default-50 px-3 py-2 dark:border-default-100/20 dark:bg-default-50/10"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-default-600 dark:text-default-100 truncate">
-                            {option.name}
-                          </p>
-                          <Chip
-                            className="mt-1"
-                            color={option.chipColor ?? "default"}
+        <>
+          {!isLargeScreen && devPanelOpen && (
+            <div
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity"
+              onClick={() => setDevPanelOpen(false)}
+            />
+          )}
+
+          <Button
+            className={`fixed z-40 shadow-lg ${isLargeScreen ? "top-20 right-6" : "bottom-20 right-6"}`}
+            color="primary"
+            size="sm"
+            variant="flat"
+            onPress={() => setDevPanelOpen((prev) => !prev)}
+          >
+            {devPanelOpen ? "Esconder logins" : "Logins rápidos"}
+          </Button>
+
+          <aside
+            className={`fixed z-50 transition-all duration-300 ${
+              isLargeScreen
+                ? "top-24 right-6 w-[320px]"
+                : "top-24 left-1/2 w-[min(420px,calc(100vw-2.5rem))] -translate-x-1/2"
+            } ${devPanelOpen ? "opacity-100 pointer-events-auto translate-y-0" : isLargeScreen ? "opacity-0 pointer-events-none translate-x-6" : "opacity-0 pointer-events-none -translate-y-4"}`}
+          >
+            <Card className="border border-primary/20 shadow-2xl backdrop-blur bg-white/95 dark:bg-content1/90 h-full max-h-[75vh] flex flex-col">
+              <CardHeader className="flex items-center justify-between gap-2 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-default-700 dark:text-default-200">
+                    Painel Dev
+                  </p>
+                  <p className="text-xs text-default-400">
+                    Logins rápidos para testes locais
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Chip color="primary" size="sm" variant="flat">
+                    Dev only
+                  </Chip>
+                  <Button
+                    isIconOnly
+                    aria-label="Fechar painel de logins"
+                    size="sm"
+                    variant="light"
+                    onPress={() => setDevPanelOpen(false)}
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        d="M18 6L6 18M6 6l12 12"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </Button>
+                </div>
+              </CardHeader>
+              <Divider />
+              <CardBody className="space-y-5 overflow-y-auto pr-1">
+                {devQuickLogins.map((group, groupIndex) => (
+                  <div key={group.group} className="space-y-3">
+                    <div>
+                      <p className="text-sm font-semibold text-default-600 dark:text-default-300">
+                        {group.group}
+                      </p>
+                      {group.description ? (
+                        <p className="text-xs text-default-400">
+                          {group.description}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="space-y-2">
+                      {group.options.map((option) => (
+                        <div
+                          key={option.email}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-default-200 bg-default-50 px-3 py-2 dark:border-default-100/20 dark:bg-default-50/10"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-default-600 dark:text-default-100 truncate">
+                              {option.name}
+                            </p>
+                            <Chip
+                              className="mt-1"
+                              color={option.chipColor ?? "default"}
+                              size="sm"
+                              variant="flat"
+                            >
+                              {option.roleLabel}
+                            </Chip>
+                          </div>
+                          <Button
+                            color="primary"
+                            isDisabled={loading}
                             size="sm"
                             variant="flat"
+                            onPress={() => handleDevQuickLogin(option)}
                           >
-                            {option.roleLabel}
-                          </Chip>
+                            Logar
+                          </Button>
                         </div>
-                        <Button
-                          color="primary"
-                          isDisabled={loading}
-                          size="sm"
-                          variant="flat"
-                          onPress={() => handleDevQuickLogin(option)}
-                        >
-                          Logar
-                        </Button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    {groupIndex !== devQuickLogins.length - 1 && <Divider />}
                   </div>
-                  {groupIndex !== devQuickLogins.length - 1 && <Divider />}
-                </div>
-              ))}
-              <p className="text-[10px] text-default-400">
-                Disponível apenas em ambientes de desenvolvimento. Usa as credenciais padrão do seed.
-              </p>
-            </CardBody>
-          </Card>
-        </aside>
+                ))}
+                <p className="text-[10px] text-default-400">
+                  Disponível apenas em ambientes de desenvolvimento. Usa as
+                  credenciais padrão do seed.
+                </p>
+              </CardBody>
+            </Card>
+          </aside>
+        </>
       )}
 
       <div className="w-full max-w-md">

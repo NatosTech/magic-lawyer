@@ -495,6 +495,7 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
 
     // Verificar permissão para criar clientes
     const podeCriar = await checkPermission("clientes", "criar");
+
     if (!podeCriar) {
       return {
         success: false,
@@ -673,6 +674,7 @@ export async function updateCliente(
 
     // Verificar permissão para editar clientes
     const podeEditar = await checkPermission("clientes", "editar");
+
     if (!podeEditar) {
       return {
         success: false,
@@ -759,6 +761,7 @@ export async function deleteCliente(clienteId: string): Promise<{
 
     // Verificar permissão para excluir clientes
     const podeExcluir = await checkPermission("clientes", "excluir");
+
     if (!podeExcluir) {
       return {
         success: false,
@@ -834,6 +837,7 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
 
     // Se não for ADMIN, filtrar apenas clientes dos advogados acessíveis
     const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+
     if (!isAdmin && user.role !== "CLIENTE") {
       const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
 

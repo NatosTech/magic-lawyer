@@ -71,6 +71,7 @@ export async function getTenantAccessibleModules(
       .map((item) => item.modulo!.slug);
 
     const resultSet = new Set(slugs.length ? slugs : await getDefaultModules());
+
     // Garantir que o Portal do Advogado esteja disponível por padrão
     resultSet.add("portal-advogado");
 
@@ -84,6 +85,7 @@ export async function getTenantAccessibleModules(
     const resultSet = new Set(
       fallbackSlugs.length ? fallbackSlugs : await getDefaultModules(),
     );
+
     resultSet.add("portal-advogado");
 
     console.log("[tenant-modules] Retornando módulos do plano (fallback):", {

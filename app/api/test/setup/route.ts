@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import prisma from "@/app/lib/prisma";
 import bcrypt from "bcryptjs";
+
+import prisma from "@/app/lib/prisma";
 
 /**
  * API route para setup de dados de teste
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
             status: "ATIVO",
           },
         });
+
         return NextResponse.json({ success: true, tenant });
       }
 
@@ -45,6 +47,7 @@ export async function POST(request: Request) {
             active: true,
           },
         });
+
         return NextResponse.json({ success: true, user });
       }
 
@@ -67,6 +70,7 @@ export async function POST(request: Request) {
               : undefined,
           },
         });
+
         return NextResponse.json({ success: true, cargo });
       }
 
@@ -76,6 +80,7 @@ export async function POST(request: Request) {
             where: { id: data.tenantId },
           });
         }
+
         return NextResponse.json({ success: true });
       }
 
@@ -87,6 +92,7 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     console.error("Erro no setup de testes:", error);
+
     return NextResponse.json(
       {
         error:
@@ -96,4 +102,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

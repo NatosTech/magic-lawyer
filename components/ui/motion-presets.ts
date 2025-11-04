@@ -80,4 +80,3 @@ export const sectionMotionProps = {
   animate: "visible",
   variants: containerVariants,
 };
-

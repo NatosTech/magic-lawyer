@@ -385,22 +385,24 @@ export async function getDocumentExplorerData(): Promise<{
       whereCliente = { ...whereCliente, id: clienteId };
     } else if (!isAdmin) {
       // Staff vinculado ou ADVOGADO - usar advogados acessíveis
-      const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
-              const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+      const { getAccessibleAdvogadoIds } = await import(
+        "@/app/lib/advogado-access"
+      );
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
 
-              // Se não há vínculos, acesso total (sem filtros)
-              if (accessibleAdvogados.length > 0) {
-                whereCliente = {
-                  ...whereCliente,
-                  advogadoClientes: {
-                    some: {
-                      advogadoId: {
-                        in: accessibleAdvogados,
-                      },
-                    },
-                  },
-                };
-              }
+      // Se não há vínculos, acesso total (sem filtros)
+      if (accessibleAdvogados.length > 0) {
+        whereCliente = {
+          ...whereCliente,
+          advogadoClientes: {
+            some: {
+              advogadoId: {
+                in: accessibleAdvogados,
+              },
+            },
+          },
+        };
+      }
     }
 
     const [clientes, causasCatalogo, regimesCatalogo] = await Promise.all([

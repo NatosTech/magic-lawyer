@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import AndamentosContent from "./andamentos-content";
+
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";
 import { UserRole } from "@/app/generated/prisma";
@@ -44,4 +45,3 @@ export default async function AndamentosPage() {
     redirect("/dashboard");
   }
 }
-

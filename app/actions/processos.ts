@@ -1742,6 +1742,7 @@ export async function createProcesso(data: ProcessoCreateInput) {
 
     // Verificar permissão para criar processos
     const podeCriar = await checkPermission("processos", "criar");
+
     if (!podeCriar) {
       return {
         success: false,
@@ -1948,12 +1949,14 @@ export async function updateProcesso(
     }
 
     const sessionUser = session.user as any;
+
     if (!sessionUser.tenantId) {
       return { success: false, error: "Tenant não encontrado" };
     }
 
     // Verificar permissão para editar processos
     const podeEditar = await checkPermission("processos", "editar");
+
     if (!podeEditar) {
       return {
         success: false,

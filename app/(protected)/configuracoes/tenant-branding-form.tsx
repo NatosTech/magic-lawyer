@@ -143,8 +143,8 @@ export function TenantBrandingForm({ initialData }: TenantBrandingFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
             <Input
-              isDisabled={!isEditing}
               description="Cor primária da interface"
+              isDisabled={!isEditing}
               label="Cor Primária"
               startContent={<Palette className="h-4 w-4 text-primary" />}
               value={formData.primaryColor}
@@ -167,8 +167,8 @@ export function TenantBrandingForm({ initialData }: TenantBrandingFormProps) {
 
           <div className="space-y-2">
             <Input
-              isDisabled={!isEditing}
               description="Cor secundária da interface"
+              isDisabled={!isEditing}
               label="Cor Secundária"
               startContent={<Palette className="h-4 w-4 text-secondary" />}
               value={formData.secondaryColor}
@@ -191,8 +191,8 @@ export function TenantBrandingForm({ initialData }: TenantBrandingFormProps) {
 
           <div className="space-y-2">
             <Input
-              isDisabled={!isEditing}
               description="Cor de destaque para elementos especiais"
+              isDisabled={!isEditing}
               label="Cor de Destaque"
               startContent={<Palette className="h-4 w-4 text-accent" />}
               value={formData.accentColor}
@@ -217,8 +217,8 @@ export function TenantBrandingForm({ initialData }: TenantBrandingFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Input
-              isDisabled={!isEditing}
               description="URL da logo do escritório"
+              isDisabled={!isEditing}
               label="URL da Logo"
               placeholder="https://exemplo.com/logo.png"
               startContent={<ImageIcon className="h-4 w-4 text-primary" />}
@@ -240,8 +240,8 @@ export function TenantBrandingForm({ initialData }: TenantBrandingFormProps) {
 
           <div className="space-y-2">
             <Input
-              isDisabled={!isEditing}
               description="URL do favicon do escritório"
+              isDisabled={!isEditing}
               label="URL do Favicon"
               placeholder="https://exemplo.com/favicon.ico"
               startContent={<ImageIcon className="h-4 w-4 text-secondary" />}
@@ -267,8 +267,8 @@ export function TenantBrandingForm({ initialData }: TenantBrandingFormProps) {
             <Button
               color="danger"
               radius="full"
-              variant="flat"
               startContent={<X className="h-4 w-4" />}
+              variant="flat"
               onPress={handleCancel}
             >
               Cancelar
@@ -288,4 +288,3 @@ export function TenantBrandingForm({ initialData }: TenantBrandingFormProps) {
     </Card>
   );
 }
-

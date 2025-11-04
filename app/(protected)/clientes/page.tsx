@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { ClientesContent } from "./clientes-content";
+
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";
 import { UserRole } from "@/app/generated/prisma";

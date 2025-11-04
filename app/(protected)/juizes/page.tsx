@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { JuizesContent } from "./juizes-content";
+
 import { ProfileDashboard } from "@/components/profile-dashboard";
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";

@@ -995,9 +995,11 @@ export function ProfileContent() {
                   </div>
                   <Button
                     color="primary"
-                    size="sm"
                     endContent={<ExternalLink className="w-4 h-4" />}
-                    onPress={() => router.push("/usuario/preferencias-notificacoes")}
+                    size="sm"
+                    onPress={() =>
+                      router.push("/usuario/preferencias-notificacoes")
+                    }
                   >
                     Configurar
                   </Button>
@@ -1009,12 +1011,15 @@ export function ProfileContent() {
                     Configure como receber notificações do sistema
                   </p>
                   <p className="text-sm text-gray-400 mb-6">
-                    Escolha quais eventos deseja receber e em quais canais (in-app, email, push)
+                    Escolha quais eventos deseja receber e em quais canais
+                    (in-app, email, push)
                   </p>
                   <Button
                     color="primary"
                     startContent={<Bell className="w-4 h-4" />}
-                    onPress={() => router.push("/usuario/preferencias-notificacoes")}
+                    onPress={() =>
+                      router.push("/usuario/preferencias-notificacoes")
+                    }
                   >
                     Abrir Preferências
                   </Button>

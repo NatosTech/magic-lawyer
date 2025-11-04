@@ -232,10 +232,14 @@ export async function updateCargo(
     },
   });
 
-  const uniquePermissoes = new Map<string, { modulo: string; acao: string; permitido: boolean }>();
+  const uniquePermissoes = new Map<
+    string,
+    { modulo: string; acao: string; permitido: boolean }
+  >();
 
   for (const permissao of data.permissoes) {
     const key = `${permissao.modulo}:${permissao.acao}`;
+
     uniquePermissoes.set(key, permissao);
   }
 
@@ -732,7 +736,7 @@ export async function verificarPermissao(
 
   if (permissaoIndividual) {
     const permitido = permissaoIndividual.permitido;
-    
+
     // Logar recusa se override negar
     if (!permitido) {
       logPermissaoNegada({
@@ -746,7 +750,7 @@ export async function verificarPermissao(
         console.error("[permissions] Erro ao logar recusa:", error);
       });
     }
-    
+
     return permitido;
   }
 
@@ -773,7 +777,7 @@ export async function verificarPermissao(
 
     if (permissaoCargo) {
       const permitido = permissaoCargo.permitido;
-      
+
       // Logar recusa se cargo negar
       if (!permitido) {
         logPermissaoNegada({
@@ -788,7 +792,7 @@ export async function verificarPermissao(
           console.error("[permissions] Erro ao logar recusa:", error);
         });
       }
-      
+
       return permitido;
     }
   }
@@ -840,26 +844,28 @@ async function logPermissaoNegada(data: {
     });
 
     // Registrar no EquipeHistorico para auditoria detalhada
-    await prisma.equipeHistorico.create({
-      data: {
-        tenantId: data.tenantId,
-        usuarioId: data.usuarioId,
-        acao: "permissao_negada",
-        dadosAntigos: null,
-        dadosNovos: {
-          modulo: data.modulo,
-          acao: data.acao,
-          origem: data.origem,
-          role: data.role,
-          cargoId: data.cargoId,
+    await prisma.equipeHistorico
+      .create({
+        data: {
+          tenantId: data.tenantId,
+          usuarioId: data.usuarioId,
+          acao: "permissao_negada",
+          dadosAntigos: null,
+          dadosNovos: {
+            modulo: data.modulo,
+            acao: data.acao,
+            origem: data.origem,
+            role: data.role,
+            cargoId: data.cargoId,
+          },
+          motivo: `Tentativa de acesso negada: ${data.modulo}.${data.acao} (origem: ${data.origem})`,
+          realizadoPor: data.usuarioId, // O próprio usuário tentou acessar
         },
-        motivo: `Tentativa de acesso negada: ${data.modulo}.${data.acao} (origem: ${data.origem})`,
-        realizadoPor: data.usuarioId, // O próprio usuário tentou acessar
-      },
-    }).catch((error) => {
-      // Não bloquear se houver erro ao salvar histórico
-      console.error("[permissions] Erro ao salvar histórico:", error);
-    });
+      })
+      .catch((error) => {
+        // Não bloquear se houver erro ao salvar histórico
+        console.error("[permissions] Erro ao salvar histórico:", error);
+      });
   } catch (error) {
     // Silenciosamente falhar - não deve interromper o fluxo
     console.error("[permissions] Erro geral ao logar recusa:", error);
@@ -1020,9 +1026,7 @@ export async function adicionarPermissaoIndividual(
  * Retorna o estado efetivo de todas as permissões para um usuário
  * Inclui origem: "override", "cargo" ou "role"
  */
-export async function getPermissoesEfetivas(
-  usuarioId: string,
-): Promise<
+export async function getPermissoesEfetivas(usuarioId: string): Promise<
   Array<{
     modulo: string;
     acao: string;
@@ -1065,9 +1069,7 @@ export async function getPermissoesEfetivas(
   }
 
   // Buscar todos os módulos e ações disponíveis
-  const tenantModules = await getTenantAccessibleModules(
-    session.user.tenantId,
-  );
+  const tenantModules = await getTenantAccessibleModules(session.user.tenantId);
 
   const acoes = ["visualizar", "criar", "editar", "excluir", "exportar"];
 
@@ -1109,6 +1111,7 @@ export async function getPermissoesEfetivas(
 
       // 2. Verificar permissão do cargo
       const usuarioCargoAtivo = usuario.cargos.find((uc) => uc.ativo);
+
       if (usuarioCargoAtivo?.cargo) {
         const permissaoCargo = usuarioCargoAtivo.cargo.permissoes.find(
           (p) => p.modulo === modulo && p.acao === acao,
@@ -1400,14 +1403,20 @@ export async function updateUsuarioEquipe(
     updateData.dataNascimento = data.dataNascimento;
   }
 
-  if (data.observacoes !== undefined && data.observacoes !== usuario.observacoes) {
+  if (
+    data.observacoes !== undefined &&
+    data.observacoes !== usuario.observacoes
+  ) {
     updateData.observacoes = data.observacoes;
   }
 
   // Validar role - apenas ADMIN pode alterar role
   if (data.role !== undefined && data.role !== usuario.role) {
     // Não permitir alterar para SUPER_ADMIN ou alterar de SUPER_ADMIN
-    if (data.role === UserRole.SUPER_ADMIN || usuario.role === UserRole.SUPER_ADMIN) {
+    if (
+      data.role === UserRole.SUPER_ADMIN ||
+      usuario.role === UserRole.SUPER_ADMIN
+    ) {
       throw new Error("Não é possível alterar role para/de SUPER_ADMIN");
     }
     updateData.role = data.role;
@@ -1489,7 +1498,7 @@ export async function updateUsuarioEquipe(
 /**
  * Verifica uma permissão específica para o usuário atual ou um usuário específico.
  * Usa a precedência: override individual → cargo → role padrão
- * 
+ *
  * @param modulo - Slug do módulo (ex: 'processos', 'clientes')
  * @param acao - Ação desejada (ex: 'criar', 'editar', 'visualizar')
  * @param usuarioId - ID do usuário a verificar (opcional, usa o usuário da sessão por padrão)
@@ -1506,7 +1515,7 @@ export async function checkPermission(
 /**
  * Verifica múltiplas permissões de uma vez, otimizado para evitar N round-trips.
  * Retorna um mapa com as permissões verificadas: { "modulo.acao": boolean }
- * 
+ *
  * @param requests - Array de objetos com módulo e ação a verificar
  * @param usuarioId - ID do usuário a verificar (opcional, usa o usuário da sessão por padrão)
  * @returns Mapa de permissões no formato { "modulo.acao": boolean }
@@ -1522,6 +1531,7 @@ export async function checkPermissions(
     return requests.reduce(
       (acc, { modulo, acao }) => {
         acc[`${modulo}.${acao}`] = false;
+
         return acc;
       },
       {} as Record<string, boolean>,
@@ -1533,7 +1543,9 @@ export async function checkPermissions(
   // Se for verificar permissões de outro usuário, só ADMIN pode
   if (usuarioId && usuarioId !== session.user.id) {
     if (session.user.role !== UserRole.ADMIN) {
-      throw new Error("Apenas administradores podem consultar permissões de outros usuários");
+      throw new Error(
+        "Apenas administradores podem consultar permissões de outros usuários",
+      );
     }
   }
 
@@ -1545,6 +1557,7 @@ export async function checkPermissions(
     return requests.reduce(
       (acc, { modulo, acao }) => {
         acc[`${modulo}.${acao}`] = true;
+
         return acc;
       },
       {} as Record<string, boolean>,
@@ -1577,6 +1590,7 @@ export async function checkPermissions(
     return requests.reduce(
       (acc, { modulo, acao }) => {
         acc[`${modulo}.${acao}`] = false;
+
         return acc;
       },
       {} as Record<string, boolean>,
@@ -1601,6 +1615,7 @@ export async function checkPermissions(
 
     // 2. Verificar permissão do cargo
     const usuarioCargoAtivo = usuario.cargos.find((uc) => uc.ativo);
+
     if (usuarioCargoAtivo?.cargo) {
       const permissaoCargo = usuarioCargoAtivo.cargo.permissoes.find(
         (p) => p.modulo === modulo && p.acao === acao,
@@ -1642,7 +1657,9 @@ export interface EquipeHistoricoData {
   };
 }
 
-export async function getEquipeHistorico(usuarioId: string): Promise<EquipeHistoricoData[]> {
+export async function getEquipeHistorico(
+  usuarioId: string,
+): Promise<EquipeHistoricoData[]> {
   const session = await getSession();
 
   if (!session?.user?.tenantId) {
@@ -1660,7 +1677,9 @@ export async function getEquipeHistorico(usuarioId: string): Promise<EquipeHisto
   });
 
   // Buscar informações dos usuários que realizaram as ações
-  const realizadoPorIds = Array.from(new Set(historico.map((h) => h.realizadoPor)));
+  const realizadoPorIds = Array.from(
+    new Set(historico.map((h) => h.realizadoPor)),
+  );
   const usuariosRealizadores = await prisma.usuario.findMany({
     where: {
       id: { in: realizadoPorIds },
@@ -1674,12 +1693,19 @@ export async function getEquipeHistorico(usuarioId: string): Promise<EquipeHisto
     },
   });
 
-  const usuariosMap = new Map<string, { id: string; firstName: string | null; lastName: string | null; email: string }>(
-    usuariosRealizadores.map((u) => [u.id, u]),
-  );
+  const usuariosMap = new Map<
+    string,
+    {
+      id: string;
+      firstName: string | null;
+      lastName: string | null;
+      email: string;
+    }
+  >(usuariosRealizadores.map((u) => [u.id, u]));
 
   return historico.map((h) => {
     const usuarioRealizador = usuariosMap.get(h.realizadoPor);
+
     return {
       id: h.id,
       usuarioId: h.usuarioId,
@@ -1714,7 +1740,10 @@ export async function uploadAvatarUsuarioEquipe(
     }
 
     if (session.user.role !== UserRole.ADMIN) {
-      return { success: false, error: "Apenas administradores podem alterar avatares" };
+      return {
+        success: false,
+        error: "Apenas administradores podem alterar avatares",
+      };
     }
 
     const usuario = await prisma.usuario.findFirst({
@@ -1737,20 +1766,32 @@ export async function uploadAvatarUsuarioEquipe(
       try {
         new URL(url);
         if (!/\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(url)) {
-          return { success: false, error: "URL deve apontar para uma imagem válida" };
+          return {
+            success: false,
+            error: "URL deve apontar para uma imagem válida",
+          };
         }
         avatarUrl = url;
       } catch {
         return { success: false, error: "URL inválida" };
       }
     } else if (file) {
-      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp",
+      ];
 
       if (!allowedTypes.includes(file.type)) {
-        return { success: false, error: "Tipo de arquivo não permitido. Use JPG, PNG ou WebP." };
+        return {
+          success: false,
+          error: "Tipo de arquivo não permitido. Use JPG, PNG ou WebP.",
+        };
       }
 
       const maxSize = 5 * 1024 * 1024; // 5MB
+
       if (file.size > maxSize) {
         return { success: false, error: "Arquivo muito grande. Máximo 5MB." };
       }
@@ -1765,7 +1806,9 @@ export async function uploadAvatarUsuarioEquipe(
         select: { slug: true },
       });
 
-      const userName = `${usuario.firstName || ""} ${usuario.lastName || ""}`.trim() || usuario.email;
+      const userName =
+        `${usuario.firstName || ""} ${usuario.lastName || ""}`.trim() ||
+        usuario.email;
       const result = await uploadService.uploadAvatar(
         buffer,
         usuario.id,
@@ -1793,6 +1836,7 @@ export async function uploadAvatarUsuarioEquipe(
     return { success: true, avatarUrl };
   } catch (error) {
     logger.error("Erro no upload do avatar:", error);
+
     return { success: false, error: "Erro ao fazer upload do avatar" };
   }
 }

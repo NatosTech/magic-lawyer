@@ -144,7 +144,9 @@ async function buildWhereClause(
     where.clienteId = clienteId;
   } else if (!isAdmin && session) {
     // Staff vinculado ou ADVOGADO - usar advogados acessíveis
-    const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+    const { getAccessibleAdvogadoIds } = await import(
+      "@/app/lib/advogado-access"
+    );
     const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
 
     // Se não há vínculos, acesso total (sem filtros)
@@ -177,7 +179,8 @@ export async function getMetricasFinanceiras(
   filtros?: FiltrosDashboard,
 ): Promise<MetricasFinanceiras> {
   try {
-    const { tenantId, role, advogadoId, clienteId, session } = await getSession();
+    const { tenantId, role, advogadoId, clienteId, session } =
+      await getSession();
 
     const whereContratos = await buildWhereClause(
       tenantId,
@@ -274,7 +277,8 @@ export async function getGraficoParcelas(
   filtros?: FiltrosDashboard,
 ): Promise<GraficoParcelas[]> {
   try {
-    const { tenantId, role, advogadoId, clienteId, session } = await getSession();
+    const { tenantId, role, advogadoId, clienteId, session } =
+      await getSession();
 
     const whereContratos = await buildWhereClause(
       tenantId,
@@ -362,7 +366,8 @@ export async function getHonorariosPorAdvogado(
   filtros?: FiltrosDashboard,
 ): Promise<HonorariosPorAdvogado[]> {
   try {
-    const { tenantId, role, advogadoId, clienteId, session } = await getSession();
+    const { tenantId, role, advogadoId, clienteId, session } =
+      await getSession();
 
     const whereContratos = await buildWhereClause(
       tenantId,

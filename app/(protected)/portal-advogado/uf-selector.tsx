@@ -4,12 +4,8 @@ import { useState, useEffect } from "react";
 import { Select, SelectItem } from "@heroui/react";
 import useSWR from "swr";
 import { MapPin } from "lucide-react";
-import {
-  getTenantUF,
-  getUFsDisponiveis,
-  type getTenantUF as GetTenantUFFn,
-  type getUFsDisponiveis as GetUFsDisponiveisFn,
-} from "@/app/actions/portal-advogado";
+
+import { getTenantUF, getUFsDisponiveis } from "@/app/actions/portal-advogado";
 
 interface UFSelectorProps {
   value?: string;
@@ -95,22 +91,23 @@ export function UFSelector({
 
   return (
     <Select
-      label={label}
-      placeholder="Selecione uma UF"
-      selectedKeys={selectedUF ? [selectedUF] : []}
-      onSelectionChange={(keys) => {
-        const uf = Array.from(keys)[0] as string;
-        if (uf) {
-          handleChange(uf);
-        }
-      }}
-      startContent={<MapPin className="w-4 h-4" />}
-      isDisabled={isLoading || !ufsDisponiveis || ufsDisponiveis.length === 0}
       description={
         tenantUF && selectedUF === tenantUF
           ? "UF principal do escritório"
           : undefined
       }
+      isDisabled={isLoading || !ufsDisponiveis || ufsDisponiveis.length === 0}
+      label={label}
+      placeholder="Selecione uma UF"
+      selectedKeys={selectedUF ? [selectedUF] : []}
+      startContent={<MapPin className="w-4 h-4" />}
+      onSelectionChange={(keys) => {
+        const uf = Array.from(keys)[0] as string;
+
+        if (uf) {
+          handleChange(uf);
+        }
+      }}
     >
       {(ufsDisponiveis || []).map((uf) => (
         <SelectItem key={uf} value={uf}>
@@ -120,4 +117,3 @@ export function UFSelector({
     </Select>
   );
 }
-

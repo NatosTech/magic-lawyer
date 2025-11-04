@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { DocumentosContent } from "./documentos-content";
+
 import { getDocumentExplorerData } from "@/app/actions/documentos-explorer";
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";
@@ -30,12 +31,15 @@ export default async function DocumentosPage() {
   // Admin sempre tem acesso
   if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) {
     const explorerResult = await getDocumentExplorerData();
+
     return (
       <DocumentosContent
         initialData={
           explorerResult.success ? (explorerResult.data ?? null) : null
         }
-        initialError={!explorerResult.success ? explorerResult.error : undefined}
+        initialError={
+          !explorerResult.success ? explorerResult.error : undefined
+        }
       />
     );
   }
@@ -50,12 +54,15 @@ export default async function DocumentosPage() {
     }
 
     const explorerResult = await getDocumentExplorerData();
+
     return (
       <DocumentosContent
         initialData={
           explorerResult.success ? (explorerResult.data ?? null) : null
         }
-        initialError={!explorerResult.success ? explorerResult.error : undefined}
+        initialError={
+          !explorerResult.success ? explorerResult.error : undefined
+        }
       />
     );
   } catch (error) {

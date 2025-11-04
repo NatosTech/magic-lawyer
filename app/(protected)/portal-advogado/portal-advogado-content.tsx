@@ -1,14 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardBody, CardHeader, Button, Chip, Spinner } from "@heroui/react";
-import { Building2, Calendar, FileText, Link as LinkIcon, Info, ExternalLink } from "lucide-react";
-import useSWR from "swr";
-import { UFSelector } from "./uf-selector";
 import {
-  getTribunaisPorUF,
-  type getTribunaisPorUF as GetTribunaisPorUFFn,
-} from "@/app/actions/portal-advogado";
+  Card,
+  CardBody,
+  CardHeader,
+  Button,
+  Chip,
+  Spinner,
+} from "@heroui/react";
+import {
+  Building2,
+  Calendar,
+  FileText,
+  Link as LinkIcon,
+  Info,
+  ExternalLink,
+} from "lucide-react";
+import useSWR from "swr";
+
+import { UFSelector } from "./uf-selector";
+
+import { getTribunaisPorUF } from "@/app/actions/portal-advogado";
 
 export function PortalAdvogadoContent() {
   const [ufSelecionada, setUfSelecionada] = useState<string | undefined>();
@@ -30,9 +43,9 @@ export function PortalAdvogadoContent() {
       <Card>
         <CardBody>
           <UFSelector
+            label="Filtrar por UF"
             value={ufSelecionada}
             onChange={(uf) => setUfSelecionada(uf)}
-            label="Filtrar por UF"
           />
         </CardBody>
       </Card>
@@ -75,7 +88,7 @@ export function PortalAdvogadoContent() {
                         </Chip>
                       )}
                       {tribunal.tipo && (
-                        <Chip size="sm" variant="flat" color="secondary">
+                        <Chip color="secondary" size="sm" variant="flat">
                           {tribunal.tipo}
                         </Chip>
                       )}
@@ -89,17 +102,17 @@ export function PortalAdvogadoContent() {
                   {tribunal.siteUrl ? (
                     <Button
                       as="a"
+                      endContent={<ExternalLink className="w-4 h-4" />}
                       href={tribunal.siteUrl}
-                      target="_blank"
                       rel="noopener noreferrer"
                       size="sm"
+                      target="_blank"
                       variant="flat"
-                      endContent={<ExternalLink className="w-4 h-4" />}
                     >
                       Acessar
                     </Button>
                   ) : (
-                    <Chip size="sm" variant="flat" color="default">
+                    <Chip color="default" size="sm" variant="flat">
                       Sem portal
                     </Chip>
                   )}
@@ -164,28 +177,28 @@ export function PortalAdvogadoContent() {
         <CardBody>
           <div className="space-y-3">
             <a
-              href="https://www.cnj.jus.br/"
-              target="_blank"
-              rel="noopener noreferrer"
               className="flex items-center gap-3 p-3 rounded-lg border border-default-200 hover:bg-default-50 transition-colors"
+              href="https://www.cnj.jus.br/"
+              rel="noopener noreferrer"
+              target="_blank"
             >
               <span className="text-primary font-medium">
                 Conselho Nacional de Justiça (CNJ)
               </span>
             </a>
             <a
-              href="https://www.oab.org.br/"
-              target="_blank"
-              rel="noopener noreferrer"
               className="flex items-center gap-3 p-3 rounded-lg border border-default-200 hover:bg-default-50 transition-colors"
+              href="https://www.oab.org.br/"
+              rel="noopener noreferrer"
+              target="_blank"
             >
               <span className="text-primary font-medium">OAB Nacional</span>
             </a>
             <a
-              href="https://pje.jf.jus.br/"
-              target="_blank"
-              rel="noopener noreferrer"
               className="flex items-center gap-3 p-3 rounded-lg border border-default-200 hover:bg-default-50 transition-colors"
+              href="https://pje.jf.jus.br/"
+              rel="noopener noreferrer"
+              target="_blank"
             >
               <span className="text-primary font-medium">PJe</span>
             </a>
@@ -195,4 +208,3 @@ export function PortalAdvogadoContent() {
     </div>
   );
 }
-

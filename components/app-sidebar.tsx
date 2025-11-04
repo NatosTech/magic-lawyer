@@ -578,10 +578,10 @@ const navIconMap: Record<string, JSX.Element> = {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2}
-        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
     </svg>
   ),
@@ -708,8 +708,8 @@ const AccordionNavItem = ({
                 <li key={child.href}>
                   <Tooltip
                     content={child.description || child.label}
-                    placement="right"
                     delay={300}
+                    placement="right"
                   >
                     <NextLink
                       className={

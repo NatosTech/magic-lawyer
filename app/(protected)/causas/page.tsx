@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { CausasContent } from "./causas-content";
+
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";
 import { UserRole } from "@/app/generated/prisma";
@@ -40,7 +41,10 @@ export default async function CausasPage() {
   // Para outros roles, verificar permissão processos.visualizar OU equipe.editar
   // (causas requerem canViewAllProcesses ou canManageOfficeSettings)
   try {
-    const hasProcessosPermission = await checkPermission("processos", "visualizar");
+    const hasProcessosPermission = await checkPermission(
+      "processos",
+      "visualizar",
+    );
     const hasEquipePermission = await checkPermission("equipe", "editar");
 
     if (!hasProcessosPermission && !hasEquipePermission) {

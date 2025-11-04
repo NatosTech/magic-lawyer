@@ -8,14 +8,18 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/dropdown";
 import { Select, SelectItem } from "@heroui/select";
 import { Divider } from "@heroui/divider";
 import { Avatar } from "@heroui/avatar";
 import { Textarea } from "@heroui/input";
 import { Checkbox } from "@heroui/checkbox";
 import { Badge } from "@heroui/badge";
-import { Progress } from "@heroui/progress";
 import { Tooltip } from "@heroui/tooltip";
 import { Skeleton } from "@heroui/skeleton";
 import {
@@ -44,27 +48,38 @@ import {
   BarChart3,
   Zap,
   Target,
-  Award,
   Calendar,
-  Crown,
   Info,
   Smartphone,
   Activity,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import {
+  Modal as HeroUIModal,
+  ModalContent,
+  ModalBody,
+  ModalFooter,
+  Tabs,
+  Tab,
+} from "@heroui/react";
 
-import { title } from "@/components/primitives";
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { useClientesAdvogado, useAllClientes } from "@/app/hooks/use-clientes";
-import { MotionCardGrid } from "@/components/ui/motion-card-grid";
-import { containerVariants, fadeInUp, cardMotionProps } from "@/components/ui/motion-presets";
+import { fadeInUp } from "@/components/ui/motion-presets";
 import { ModalHeaderGradient } from "@/components/ui/modal-header-gradient";
 import { ModalSectionCard } from "@/components/ui/modal-section-card";
-import { createCliente, updateCliente, deleteCliente, resetarSenhaCliente, type Cliente, type ClienteCreateInput, type ClienteUpdateInput } from "@/app/actions/clientes";
+import {
+  createCliente,
+  updateCliente,
+  deleteCliente,
+  resetarSenhaCliente,
+  type Cliente,
+  type ClienteCreateInput,
+  type ClienteUpdateInput,
+} from "@/app/actions/clientes";
 import { TipoPessoa } from "@/app/generated/prisma";
 import { Modal } from "@/components/ui/modal";
-import { Modal as HeroUIModal, ModalContent, ModalHeader, ModalBody, ModalFooter, Tabs, Tab } from "@heroui/react";
 import { CpfInput } from "@/components/cpf-input";
 import { CnpjInput } from "@/components/cnpj-input";
 
@@ -84,13 +99,23 @@ export function ClientesContent() {
     senha: string;
   } | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [clienteParaResetarSenha, setClienteParaResetarSenha] = useState<Cliente | null>(null);
+  const [clienteParaResetarSenha, setClienteParaResetarSenha] =
+    useState<Cliente | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [clienteParaVisualizar, setClienteParaVisualizar] = useState<Cliente | null>(null);
+  const [clienteParaVisualizar, setClienteParaVisualizar] =
+    useState<Cliente | null>(null);
 
   // Buscar clientes (advogado ou admin)
-  const { clientes: clientesAdvogado, isLoading: isLoadingAdvogado, mutate: mutateAdvogado } = useClientesAdvogado();
-  const { clientes: clientesAdmin, isLoading: isLoadingAdmin, mutate: mutateAdmin } = useAllClientes();
+  const {
+    clientes: clientesAdvogado,
+    isLoading: isLoadingAdvogado,
+    mutate: mutateAdvogado,
+  } = useClientesAdvogado();
+  const {
+    clientes: clientesAdmin,
+    isLoading: isLoadingAdmin,
+    mutate: mutateAdmin,
+  } = useAllClientes();
 
   const clientes = isAdmin ? clientesAdmin : clientesAdvogado;
   const isLoading = isAdmin ? isLoadingAdmin : isLoadingAdvogado;
@@ -110,7 +135,8 @@ export function ClientesContent() {
     responsavelTelefone: "",
   };
 
-  const [formState, setFormState] = useState<ClienteCreateInput>(initialFormState);
+  const [formState, setFormState] =
+    useState<ClienteCreateInput>(initialFormState);
 
   // Filtrar clientes
   const clientesFiltrados =
@@ -121,7 +147,9 @@ export function ClientesContent() {
         cliente.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         cliente.documento?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchTipoPessoa = selectedTipoPessoa === "all" || cliente.tipoPessoa === selectedTipoPessoa;
+      const matchTipoPessoa =
+        selectedTipoPessoa === "all" ||
+        cliente.tipoPessoa === selectedTipoPessoa;
 
       return matchSearch && matchTipoPessoa;
     }) || [];
@@ -139,9 +167,15 @@ export function ClientesContent() {
 
     const total = clientes.length;
     const comAcesso = clientes.filter((c) => c.usuarioId).length;
-    const fisica = clientes.filter((c) => c.tipoPessoa === TipoPessoa.FISICA).length;
-    const juridica = clientes.filter((c) => c.tipoPessoa === TipoPessoa.JURIDICA).length;
-    const comProcessos = clientes.filter((c) => (c._count?.processos || 0) > 0).length;
+    const fisica = clientes.filter(
+      (c) => c.tipoPessoa === TipoPessoa.FISICA,
+    ).length;
+    const juridica = clientes.filter(
+      (c) => c.tipoPessoa === TipoPessoa.JURIDICA,
+    ).length;
+    const comProcessos = clientes.filter(
+      (c) => (c._count?.processos || 0) > 0,
+    ).length;
 
     return { total, comAcesso, fisica, juridica, comProcessos };
   }, [clientes]);
@@ -332,13 +366,19 @@ export function ClientesContent() {
   return (
     <div className="container mx-auto p-6 space-y-8">
       {/* Header Hero */}
-      <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
+      <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
         <Card className="relative overflow-hidden border-none bg-gradient-to-br from-blue-900 via-blue-900/90 to-indigo-800 text-white shadow-2xl">
           <CardBody className="space-y-8">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div className="space-y-3 max-w-2xl">
-                <h1 className="text-3xl font-semibold tracking-tight">Base de Clientes</h1>
-                <p className="text-white/80">Gerencie sua carteira de clientes, acompanhe processos e mantenha relacionamentos organizados. Acesso completo às informações em tempo real.</p>
+                <h1 className="text-3xl font-semibold tracking-tight">
+                  Base de Clientes
+                </h1>
+                <p className="text-white/80">
+                  Gerencie sua carteira de clientes, acompanhe processos e
+                  mantenha relacionamentos organizados. Acesso completo às
+                  informações em tempo real.
+                </p>
                 {permissions.canViewAllClients && (
                   <div className="flex flex-wrap gap-3">
                     <Button
@@ -370,7 +410,11 @@ export function ClientesContent() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Card Total de Clientes */}
-          <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.1 }}>
+          <motion.div
+            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
             <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
               <CardBody className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -378,20 +422,33 @@ export function ClientesContent() {
                     <Users className="text-white" size={24} />
                   </div>
                   <Badge color="success" content="+" variant="shadow">
-                    <TrendingUp className="text-blue-600 dark:text-blue-400" size={20} />
+                    <TrendingUp
+                      className="text-blue-600 dark:text-blue-400"
+                      size={20}
+                    />
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Total de Clientes</p>
-                  <p className="text-4xl font-bold text-blue-800 dark:text-blue-200">{metrics.total}</p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400">Carteira de clientes</p>
+                  <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                    Total de Clientes
+                  </p>
+                  <p className="text-4xl font-bold text-blue-800 dark:text-blue-200">
+                    {metrics.total}
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    Carteira de clientes
+                  </p>
                 </div>
               </CardBody>
             </Card>
           </motion.div>
 
           {/* Card Clientes com Acesso */}
-          <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.2 }}>
+          <motion.div
+            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             <Card className="bg-gradient-to-br from-green-50 via-emerald-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
               <CardBody className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -399,20 +456,33 @@ export function ClientesContent() {
                     <Key className="text-white" size={24} />
                   </div>
                   <Badge color="success" content="✓" variant="shadow">
-                    <Activity className="text-green-600 dark:text-green-400" size={20} />
+                    <Activity
+                      className="text-green-600 dark:text-green-400"
+                      size={20}
+                    />
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">Com Acesso</p>
-                  <p className="text-4xl font-bold text-green-800 dark:text-green-200">{metrics.comAcesso}</p>
-                  <p className="text-xs text-green-600 dark:text-green-400">Com login ativo</p>
+                  <p className="text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">
+                    Com Acesso
+                  </p>
+                  <p className="text-4xl font-bold text-green-800 dark:text-green-200">
+                    {metrics.comAcesso}
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    Com login ativo
+                  </p>
                 </div>
               </CardBody>
             </Card>
           </motion.div>
 
           {/* Card Pessoa Física */}
-          <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.3 }}>
+          <motion.div
+            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
             <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
               <CardBody className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -420,20 +490,33 @@ export function ClientesContent() {
                     <User className="text-white" size={24} />
                   </div>
                   <Badge color="secondary" content="👤" variant="shadow">
-                    <User className="text-purple-600 dark:text-purple-400" size={20} />
+                    <User
+                      className="text-purple-600 dark:text-purple-400"
+                      size={20}
+                    />
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Pessoa Física</p>
-                  <p className="text-4xl font-bold text-purple-800 dark:text-purple-200">{metrics.fisica}</p>
-                  <p className="text-xs text-purple-600 dark:text-purple-400">Clientes PF</p>
+                  <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">
+                    Pessoa Física
+                  </p>
+                  <p className="text-4xl font-bold text-purple-800 dark:text-purple-200">
+                    {metrics.fisica}
+                  </p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400">
+                    Clientes PF
+                  </p>
                 </div>
               </CardBody>
             </Card>
           </motion.div>
 
           {/* Card Pessoa Jurídica */}
-          <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.4 }}>
+          <motion.div
+            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
             <Card className="bg-gradient-to-br from-amber-50 via-yellow-100 to-orange-200 dark:from-amber-900/30 dark:via-yellow-800/20 dark:to-orange-900/30 border-amber-300 dark:border-amber-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
               <CardBody className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -441,13 +524,22 @@ export function ClientesContent() {
                     <Building2 className="text-white" size={24} />
                   </div>
                   <Badge color="warning" content="🏢" variant="shadow">
-                    <Building2 className="text-amber-600 dark:text-amber-400" size={20} />
+                    <Building2
+                      className="text-amber-600 dark:text-amber-400"
+                      size={20}
+                    />
                   </Badge>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">Pessoa Jurídica</p>
-                  <p className="text-4xl font-bold text-amber-800 dark:text-amber-200">{metrics.juridica}</p>
-                  <p className="text-xs text-amber-600 dark:text-amber-400">Clientes PJ</p>
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">
+                    Pessoa Jurídica
+                  </p>
+                  <p className="text-4xl font-bold text-amber-800 dark:text-amber-200">
+                    {metrics.juridica}
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Clientes PJ
+                  </p>
                 </div>
               </CardBody>
             </Card>
@@ -458,28 +550,49 @@ export function ClientesContent() {
       {/* Cards de Estatísticas Adicionais */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Card de Processos Ativos */}
-        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.5 }}>
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+        >
           <Card className="bg-gradient-to-br from-cyan-50 via-blue-100 to-cyan-200 dark:from-cyan-900/30 dark:via-blue-800/20 dark:to-cyan-900/30 border-cyan-300 dark:border-cyan-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-cyan-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                   <FileText className="text-white" size={24} />
                 </div>
-                <Badge color="primary" content={metrics.comProcessos} variant="shadow">
-                  <FileText className="text-cyan-600 dark:text-cyan-400" size={20} />
+                <Badge
+                  color="primary"
+                  content={metrics.comProcessos}
+                  variant="shadow"
+                >
+                  <FileText
+                    className="text-cyan-600 dark:text-cyan-400"
+                    size={20}
+                  />
                 </Badge>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wide">Com Processos</p>
-                <p className="text-4xl font-bold text-cyan-800 dark:text-cyan-200">{metrics.comProcessos}</p>
-                <p className="text-xs text-cyan-600 dark:text-cyan-400">Clientes ativos</p>
+                <p className="text-sm font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wide">
+                  Com Processos
+                </p>
+                <p className="text-4xl font-bold text-cyan-800 dark:text-cyan-200">
+                  {metrics.comProcessos}
+                </p>
+                <p className="text-xs text-cyan-600 dark:text-cyan-400">
+                  Clientes ativos
+                </p>
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card de Taxa de Conversão */}
-        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.6 }}>
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+        >
           <Card className="bg-gradient-to-br from-pink-50 via-rose-100 to-pink-200 dark:from-pink-900/30 dark:via-rose-800/20 dark:to-pink-900/30 border-pink-300 dark:border-pink-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -487,20 +600,36 @@ export function ClientesContent() {
                   <BarChart3 className="text-white" size={24} />
                 </div>
                 <Badge color="secondary" content="%" variant="shadow">
-                  <TrendingUp className="text-pink-600 dark:text-pink-400" size={20} />
+                  <TrendingUp
+                    className="text-pink-600 dark:text-pink-400"
+                    size={20}
+                  />
                 </Badge>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-pink-700 dark:text-pink-300 uppercase tracking-wide">Taxa de Conversão</p>
-                <p className="text-4xl font-bold text-pink-800 dark:text-pink-200">{metrics.total > 0 ? Math.round((metrics.comAcesso / metrics.total) * 100) : 0}%</p>
-                <p className="text-xs text-pink-600 dark:text-pink-400">Com acesso ao sistema</p>
+                <p className="text-sm font-semibold text-pink-700 dark:text-pink-300 uppercase tracking-wide">
+                  Taxa de Conversão
+                </p>
+                <p className="text-4xl font-bold text-pink-800 dark:text-pink-200">
+                  {metrics.total > 0
+                    ? Math.round((metrics.comAcesso / metrics.total) * 100)
+                    : 0}
+                  %
+                </p>
+                <p className="text-xs text-pink-600 dark:text-pink-400">
+                  Com acesso ao sistema
+                </p>
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card de Produtividade */}
-        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.7 }}>
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+        >
           <Card className="bg-gradient-to-br from-indigo-50 via-purple-100 to-indigo-200 dark:from-indigo-900/30 dark:via-purple-800/20 dark:to-indigo-900/30 border-indigo-300 dark:border-indigo-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -508,13 +637,25 @@ export function ClientesContent() {
                   <Zap className="text-white" size={24} />
                 </div>
                 <Badge color="secondary" content="⚡" variant="shadow">
-                  <Zap className="text-indigo-600 dark:text-indigo-400" size={20} />
+                  <Zap
+                    className="text-indigo-600 dark:text-indigo-400"
+                    size={20}
+                  />
                 </Badge>
               </div>
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">Engajamento</p>
-                <p className="text-4xl font-bold text-indigo-800 dark:text-indigo-200">{metrics.comProcessos > 0 ? Math.round((metrics.comProcessos / metrics.total) * 100) : 0}%</p>
-                <p className="text-xs text-indigo-600 dark:text-indigo-400">Com processos ativos</p>
+                <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">
+                  Engajamento
+                </p>
+                <p className="text-4xl font-bold text-indigo-800 dark:text-indigo-200">
+                  {metrics.comProcessos > 0
+                    ? Math.round((metrics.comProcessos / metrics.total) * 100)
+                    : 0}
+                  %
+                </p>
+                <p className="text-xs text-indigo-600 dark:text-indigo-400">
+                  Com processos ativos
+                </p>
               </div>
             </CardBody>
           </Card>
@@ -522,7 +663,11 @@ export function ClientesContent() {
       </div>
 
       {/* Filtros Avançados Melhorados */}
-      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.3 }}
+      >
         <Card className="shadow-lg border-2 border-slate-200 dark:border-slate-700">
           <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between w-full">
@@ -531,14 +676,41 @@ export function ClientesContent() {
                   <Filter className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Filtros Inteligentes</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Encontre exatamente o cliente que precisa</p>
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
+                    Filtros Inteligentes
+                  </h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Encontre exatamente o cliente que precisa
+                  </p>
                 </div>
                 {hasActiveFilters && (
-                  <motion.div animate={{ scale: 1 }} initial={{ scale: 0 }} transition={{ type: "spring", stiffness: 500, damping: 30 }}>
-                    <Badge color="primary" content={[searchTerm, selectedTipoPessoa !== "all"].filter(Boolean).length} size="lg" variant="shadow">
-                      <Chip className="font-semibold" color="primary" size="lg" variant="flat">
-                        {[searchTerm, selectedTipoPessoa !== "all"].filter(Boolean).length} filtro(s) ativo(s)
+                  <motion.div
+                    animate={{ scale: 1 }}
+                    initial={{ scale: 0 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  >
+                    <Badge
+                      color="primary"
+                      content={
+                        [searchTerm, selectedTipoPessoa !== "all"].filter(
+                          Boolean,
+                        ).length
+                      }
+                      size="lg"
+                      variant="shadow"
+                    >
+                      <Chip
+                        className="font-semibold"
+                        color="primary"
+                        size="lg"
+                        variant="flat"
+                      >
+                        {
+                          [searchTerm, selectedTipoPessoa !== "all"].filter(
+                            Boolean,
+                          ).length
+                        }{" "}
+                        filtro(s) ativo(s)
                       </Chip>
                     </Badge>
                   </motion.div>
@@ -558,12 +730,21 @@ export function ClientesContent() {
                     Limpar
                   </Button>
                 </Tooltip>
-                <Tooltip color="primary" content={showFilters ? "Ocultar filtros" : "Mostrar filtros"}>
+                <Tooltip
+                  color="primary"
+                  content={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+                >
                   <Button
                     className="hover:scale-105 transition-transform"
                     color="primary"
                     size="sm"
-                    startContent={showFilters ? <XCircle className="w-4 h-4" /> : <Filter className="w-4 h-4" />}
+                    startContent={
+                      showFilters ? (
+                        <XCircle className="w-4 h-4" />
+                      ) : (
+                        <Filter className="w-4 h-4" />
+                      )
+                    }
                     variant="light"
                     onPress={() => setShowFilters(!showFilters)}
                   >
@@ -576,40 +757,67 @@ export function ClientesContent() {
 
           <AnimatePresence>
             {showFilters && (
-              <motion.div animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} initial={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
+              <motion.div
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                initial={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
                 <CardBody className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Filtro por Busca */}
-                    <motion.div animate={{ opacity: 1, x: 0 }} className="space-y-3" initial={{ opacity: 0, x: -20 }} transition={{ delay: 0.1 }}>
-                      <label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300" htmlFor="filtro-busca">
+                    <motion.div
+                      animate={{ opacity: 1, x: 0 }}
+                      className="space-y-3"
+                      initial={{ opacity: 0, x: -20 }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <label
+                        className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                        htmlFor="filtro-busca"
+                      >
                         <Search className="w-4 h-4 text-blue-500" />
                         Busca Inteligente
                       </label>
                       <Input
                         classNames={{
                           input: "text-slate-700 dark:text-slate-300",
-                          inputWrapper: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500",
+                          inputWrapper:
+                            "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500",
                         }}
                         id="filtro-busca"
                         placeholder="Nome, email, documento..."
                         size="md"
-                        startContent={<Search className="w-4 h-4 text-default-400" />}
+                        startContent={
+                          <Search className="w-4 h-4 text-default-400" />
+                        }
                         value={searchTerm}
                         variant="bordered"
                         onValueChange={setSearchTerm}
                       />
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Busca em nomes, emails e documentos</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Busca em nomes, emails e documentos
+                      </p>
                     </motion.div>
 
                     {/* Filtro por Tipo */}
-                    <motion.div animate={{ opacity: 1, x: 0 }} className="space-y-3" initial={{ opacity: 0, x: -20 }} transition={{ delay: 0.2 }}>
-                      <label className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300" htmlFor="filtro-tipo">
+                    <motion.div
+                      animate={{ opacity: 1, x: 0 }}
+                      className="space-y-3"
+                      initial={{ opacity: 0, x: -20 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <label
+                        className="text-sm font-semibold flex items-center gap-2 text-slate-700 dark:text-slate-300"
+                        htmlFor="filtro-tipo"
+                      >
                         <Users className="w-4 h-4 text-green-500" />
                         Tipo de Pessoa
                       </label>
                       <Select
                         classNames={{
-                          trigger: "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-green-400 dark:hover:border-green-500",
+                          trigger:
+                            "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 hover:border-green-400 dark:hover:border-green-500",
                         }}
                         id="filtro-tipo"
                         placeholder="Selecione o tipo"
@@ -621,15 +829,23 @@ export function ClientesContent() {
                         {tipoPessoaOptions.map((option) => (
                           <SelectItem key={option.key} textValue={option.label}>
                             <div className="flex items-center gap-2">
-                              {option.key === "all" && <Users className="w-4 h-4" />}
-                              {option.key === TipoPessoa.FISICA && <User className="w-4 h-4" />}
-                              {option.key === TipoPessoa.JURIDICA && <Building2 className="w-4 h-4" />}
+                              {option.key === "all" && (
+                                <Users className="w-4 h-4" />
+                              )}
+                              {option.key === TipoPessoa.FISICA && (
+                                <User className="w-4 h-4" />
+                              )}
+                              {option.key === TipoPessoa.JURIDICA && (
+                                <Building2 className="w-4 h-4" />
+                              )}
                               <span>{option.label}</span>
                             </div>
                           </SelectItem>
                         ))}
                       </Select>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Filtre por tipo de pessoa</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Filtre por tipo de pessoa
+                      </p>
                     </motion.div>
                   </div>
 
@@ -653,7 +869,12 @@ export function ClientesContent() {
                         )}
                         {selectedTipoPessoa !== "all" && (
                           <Chip color="success" size="sm" variant="flat">
-                            Tipo: {tipoPessoaOptions.find((opt) => opt.key === selectedTipoPessoa)?.label}
+                            Tipo:{" "}
+                            {
+                              tipoPessoaOptions.find(
+                                (opt) => opt.key === selectedTipoPessoa,
+                              )?.label
+                            }
                           </Chip>
                         )}
                       </div>
@@ -667,7 +888,11 @@ export function ClientesContent() {
       </motion.div>
 
       {/* Lista de Clientes Melhorada */}
-      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.4, delay: 0.1 }}>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 20 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
         <Card className="shadow-xl border-2 border-slate-200 dark:border-slate-700">
           <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between w-full">
@@ -676,13 +901,25 @@ export function ClientesContent() {
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Carteira de Clientes</h2>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">{clientesFiltrados.length} cliente(s) encontrado(s)</p>
+                  <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+                    Carteira de Clientes
+                  </h2>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {clientesFiltrados.length} cliente(s) encontrado(s)
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Badge color="primary" content={clientesFiltrados.length} size="lg" variant="shadow">
-                  <Target className="text-indigo-600 dark:text-indigo-400" size={20} />
+                <Badge
+                  color="primary"
+                  content={clientesFiltrados.length}
+                  size="lg"
+                  variant="shadow"
+                >
+                  <Target
+                    className="text-indigo-600 dark:text-indigo-400"
+                    size={20}
+                  />
                 </Badge>
               </div>
             </div>
@@ -695,12 +932,23 @@ export function ClientesContent() {
                 ))}
               </div>
             ) : clientesFiltrados.length === 0 ? (
-              <motion.div animate={{ opacity: 1, scale: 1 }} className="text-center py-16" initial={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.3 }}>
+              <motion.div
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-16"
+                initial={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.3 }}
+              >
                 <div className="p-6 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
                   <Users className="text-slate-400" size={48} />
                 </div>
-                <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">Nenhum cliente encontrado</h3>
-                <p className="text-slate-500 dark:text-slate-400 mb-6">{hasActiveFilters ? "Tente ajustar os filtros para encontrar clientes" : "Comece adicionando seu primeiro cliente"}</p>
+                <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  Nenhum cliente encontrado
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-6">
+                  {hasActiveFilters
+                    ? "Tente ajustar os filtros para encontrar clientes"
+                    : "Comece adicionando seu primeiro cliente"}
+                </p>
                 {!hasActiveFilters && permissions.canViewAllClients && (
                   <Button
                     className="bg-gradient-to-r from-blue-600 to-indigo-600"
@@ -744,17 +992,36 @@ export function ClientesContent() {
                               <Avatar
                                 showFallback
                                 className="bg-blue-500 text-white shadow-lg"
-                                icon={cliente.tipoPessoa === TipoPessoa.JURIDICA ? <Building2 className="text-white" /> : <User className="text-white" />}
+                                icon={
+                                  cliente.tipoPessoa === TipoPessoa.JURIDICA ? (
+                                    <Building2 className="text-white" />
+                                  ) : (
+                                    <User className="text-white" />
+                                  )
+                                }
                                 name={getInitials(cliente.nome)}
                                 size="lg"
                               />
                             </motion.div>
                             <div className="flex flex-col flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{cliente.nome}</h3>
+                                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                  {cliente.nome}
+                                </h3>
                                 {cliente.usuarioId && (
-                                  <Badge color="success" content="✓" size="sm" variant="shadow">
-                                    <Chip className="font-semibold" color="success" size="sm" startContent={<Key className="h-3 w-3" />} variant="flat">
+                                  <Badge
+                                    color="success"
+                                    content="✓"
+                                    size="sm"
+                                    variant="shadow"
+                                  >
+                                    <Chip
+                                      className="font-semibold"
+                                      color="success"
+                                      size="sm"
+                                      startContent={<Key className="h-3 w-3" />}
+                                      variant="flat"
+                                    >
                                       Acesso
                                     </Chip>
                                   </Badge>
@@ -762,26 +1029,53 @@ export function ClientesContent() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <Chip
-                                  color={cliente.tipoPessoa === TipoPessoa.FISICA ? "secondary" : "warning"}
+                                  color={
+                                    cliente.tipoPessoa === TipoPessoa.FISICA
+                                      ? "secondary"
+                                      : "warning"
+                                  }
                                   size="sm"
-                                  startContent={cliente.tipoPessoa === TipoPessoa.FISICA ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
+                                  startContent={
+                                    cliente.tipoPessoa === TipoPessoa.FISICA ? (
+                                      <User className="h-3 w-3" />
+                                    ) : (
+                                      <Building2 className="h-3 w-3" />
+                                    )
+                                  }
                                   variant="flat"
                                 >
-                                  {cliente.tipoPessoa === TipoPessoa.FISICA ? "Pessoa Física" : "Pessoa Jurídica"}
+                                  {cliente.tipoPessoa === TipoPessoa.FISICA
+                                    ? "Pessoa Física"
+                                    : "Pessoa Jurídica"}
                                 </Chip>
                               </div>
                             </div>
                             <Dropdown>
                               <DropdownTrigger>
-                                <Button isIconOnly className="hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-110 transition-all" size="sm" variant="light" onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  isIconOnly
+                                  className="hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-110 transition-all"
+                                  size="sm"
+                                  variant="light"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownTrigger>
                               <DropdownMenu aria-label="Ações do cliente">
-                                <DropdownItem key="view" as={Link} href={`/clientes/${cliente.id}`} startContent={<Eye className="h-4 w-4" />}>
+                                <DropdownItem
+                                  key="view"
+                                  as={Link}
+                                  href={`/clientes/${cliente.id}`}
+                                  startContent={<Eye className="h-4 w-4" />}
+                                >
                                   Ver Detalhes
                                 </DropdownItem>
-                                <DropdownItem key="edit" startContent={<Edit className="h-4 w-4" />} onPress={() => handleEditCliente(cliente)}>
+                                <DropdownItem
+                                  key="edit"
+                                  startContent={<Edit className="h-4 w-4" />}
+                                  onPress={() => handleEditCliente(cliente)}
+                                >
                                   Editar
                                 </DropdownItem>
                                 {cliente.usuarioId ? (
@@ -789,13 +1083,25 @@ export function ClientesContent() {
                                     key="reset-password"
                                     className="text-warning"
                                     color="warning"
-                                    startContent={<KeyRound className="h-4 w-4" />}
-                                    onPress={() => handleOpenResetModal(cliente)}
+                                    startContent={
+                                      <KeyRound className="h-4 w-4" />
+                                    }
+                                    onPress={() =>
+                                      handleOpenResetModal(cliente)
+                                    }
                                   >
                                     Resetar Senha
                                   </DropdownItem>
                                 ) : null}
-                                <DropdownItem key="delete" className="text-danger" color="danger" startContent={<Trash2 className="h-4 w-4" />} onPress={() => handleDeleteCliente(cliente.id)}>
+                                <DropdownItem
+                                  key="delete"
+                                  className="text-danger"
+                                  color="danger"
+                                  startContent={<Trash2 className="h-4 w-4" />}
+                                  onPress={() =>
+                                    handleDeleteCliente(cliente.id)
+                                  }
+                                >
                                   Excluir
                                 </DropdownItem>
                               </DropdownMenu>
@@ -808,19 +1114,25 @@ export function ClientesContent() {
                             {cliente.documento && (
                               <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                                 <FileText className="h-4 w-4 text-blue-500" />
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{cliente.documento}</span>
+                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                  {cliente.documento}
+                                </span>
                               </div>
                             )}
                             {cliente.email && (
                               <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                                 <Mail className="h-4 w-4 text-green-500" />
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{cliente.email}</span>
+                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                  {cliente.email}
+                                </span>
                               </div>
                             )}
                             {cliente.telefone && (
                               <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                                 <Phone className="h-4 w-4 text-purple-500" />
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{cliente.telefone}</span>
+                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                  {cliente.telefone}
+                                </span>
                               </div>
                             )}
                           </div>
@@ -831,8 +1143,18 @@ export function ClientesContent() {
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
                               <div className="flex gap-2">
-                                <Badge color="primary" content={cliente._count?.processos || 0} size="sm" variant="shadow">
-                                  <Chip className="font-semibold" color="primary" size="md" variant="flat">
+                                <Badge
+                                  color="primary"
+                                  content={cliente._count?.processos || 0}
+                                  size="sm"
+                                  variant="shadow"
+                                >
+                                  <Chip
+                                    className="font-semibold"
+                                    color="primary"
+                                    size="md"
+                                    variant="flat"
+                                  >
                                     {cliente._count?.processos || 0} processo(s)
                                   </Chip>
                                 </Badge>
@@ -876,17 +1198,28 @@ export function ClientesContent() {
       </motion.div>
 
       {/* Modal Criar Cliente */}
-      <HeroUIModal isOpen={isCreateModalOpen} size="5xl" scrollBehavior="inside" onOpenChange={setIsCreateModalOpen}>
+      <HeroUIModal
+        isOpen={isCreateModalOpen}
+        scrollBehavior="inside"
+        size="5xl"
+        onOpenChange={setIsCreateModalOpen}
+      >
         <ModalContent>
-          <ModalHeaderGradient icon={Building2} title="Novo Cliente" description="Complete as informações para cadastrar um novo cliente" />
+          <ModalHeaderGradient
+            description="Complete as informações para cadastrar um novo cliente"
+            icon={Building2}
+            title="Novo Cliente"
+          />
           <ModalBody className="px-0">
             <Tabs
               aria-label="Formulário do cliente"
               classNames={{
-                tabList: "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
+                tabList:
+                  "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
                 cursor: "w-full bg-primary",
                 tab: "max-w-fit px-0 h-12",
-                tabContent: "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
+                tabContent:
+                  "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
                 panel: "px-6 pb-6 pt-4",
               }}
               color="primary"
@@ -904,7 +1237,10 @@ export function ClientesContent() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard title="Identificação" description="Informações básicas do cliente">
+                  <ModalSectionCard
+                    description="Informações básicas do cliente"
+                    title="Identificação"
+                  >
                     <div className="space-y-4">
                       <Select
                         label="Tipo de Pessoa"
@@ -917,23 +1253,54 @@ export function ClientesContent() {
                           })
                         }
                       >
-                        <SelectItem key={TipoPessoa.FISICA}>Pessoa Física</SelectItem>
-                        <SelectItem key={TipoPessoa.JURIDICA}>Pessoa Jurídica</SelectItem>
+                        <SelectItem key={TipoPessoa.FISICA}>
+                          Pessoa Física
+                        </SelectItem>
+                        <SelectItem key={TipoPessoa.JURIDICA}>
+                          Pessoa Jurídica
+                        </SelectItem>
                       </Select>
 
                       <Input
                         isRequired
-                        label={formState.tipoPessoa === TipoPessoa.FISICA ? "Nome Completo" : "Razão Social"}
-                        placeholder={formState.tipoPessoa === TipoPessoa.FISICA ? "Nome completo" : "Razão Social"}
-                        startContent={formState.tipoPessoa === TipoPessoa.FISICA ? <User className="h-4 w-4 text-default-400" /> : <Building2 className="h-4 w-4 text-default-400" />}
+                        label={
+                          formState.tipoPessoa === TipoPessoa.FISICA
+                            ? "Nome Completo"
+                            : "Razão Social"
+                        }
+                        placeholder={
+                          formState.tipoPessoa === TipoPessoa.FISICA
+                            ? "Nome completo"
+                            : "Razão Social"
+                        }
+                        startContent={
+                          formState.tipoPessoa === TipoPessoa.FISICA ? (
+                            <User className="h-4 w-4 text-default-400" />
+                          ) : (
+                            <Building2 className="h-4 w-4 text-default-400" />
+                          )
+                        }
                         value={formState.nome}
-                        onValueChange={(value) => setFormState({ ...formState, nome: value })}
+                        onValueChange={(value) =>
+                          setFormState({ ...formState, nome: value })
+                        }
                       />
 
                       {formState.tipoPessoa === TipoPessoa.FISICA ? (
-                        <CpfInput value={formState.documento} onChange={(value) => setFormState({ ...formState, documento: value })} />
+                        <CpfInput
+                          value={formState.documento}
+                          onChange={(value) =>
+                            setFormState({ ...formState, documento: value })
+                          }
+                        />
                       ) : (
-                        <CnpjInput value={formState.documento} onChange={(value) => setFormState({ ...formState, documento: value })} onCnpjFound={handleCnpjFound} />
+                        <CnpjInput
+                          value={formState.documento}
+                          onChange={(value) =>
+                            setFormState({ ...formState, documento: value })
+                          }
+                          onCnpjFound={handleCnpjFound}
+                        />
                       )}
                     </div>
                   </ModalSectionCard>
@@ -952,63 +1319,106 @@ export function ClientesContent() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard title="Informações de Contato" description="Telefones e email do cliente">
+                  <ModalSectionCard
+                    description="Telefones e email do cliente"
+                    title="Informações de Contato"
+                  >
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <Input
-                          description={criarUsuario ? "Obrigatório para criar usuário" : undefined}
+                          description={
+                            criarUsuario
+                              ? "Obrigatório para criar usuário"
+                              : undefined
+                          }
                           isRequired={criarUsuario}
                           label="Email"
                           placeholder="email@exemplo.com"
-                          startContent={<Mail className="h-4 w-4 text-default-400" />}
+                          startContent={
+                            <Mail className="h-4 w-4 text-default-400" />
+                          }
                           type="email"
                           value={formState.email}
-                          onValueChange={(value) => setFormState({ ...formState, email: value })}
+                          onValueChange={(value) =>
+                            setFormState({ ...formState, email: value })
+                          }
                         />
                         <Input
                           label="Telefone"
                           placeholder="(00) 0000-0000"
-                          startContent={<Phone className="h-4 w-4 text-default-400" />}
+                          startContent={
+                            <Phone className="h-4 w-4 text-default-400" />
+                          }
                           value={formState.telefone}
-                          onValueChange={(value) => setFormState({ ...formState, telefone: value })}
+                          onValueChange={(value) =>
+                            setFormState({ ...formState, telefone: value })
+                          }
                         />
                       </div>
 
                       <Input
                         label="Celular/WhatsApp"
                         placeholder="(00) 00000-0000"
-                        startContent={<Phone className="h-4 w-4 text-default-400" />}
+                        startContent={
+                          <Phone className="h-4 w-4 text-default-400" />
+                        }
                         value={formState.celular}
-                        onValueChange={(value) => setFormState({ ...formState, celular: value })}
+                        onValueChange={(value) =>
+                          setFormState({ ...formState, celular: value })
+                        }
                       />
                     </div>
                   </ModalSectionCard>
 
                   {formState.tipoPessoa === TipoPessoa.JURIDICA && (
-                    <ModalSectionCard title="Responsável pela Empresa" description="Dados do responsável legal">
+                    <ModalSectionCard
+                      description="Dados do responsável legal"
+                      title="Responsável pela Empresa"
+                    >
                       <div className="space-y-4">
                         <Input
                           label="Nome do Responsável"
                           placeholder="Nome completo"
-                          startContent={<User className="h-4 w-4 text-default-400" />}
+                          startContent={
+                            <User className="h-4 w-4 text-default-400" />
+                          }
                           value={formState.responsavelNome}
-                          onValueChange={(value) => setFormState({ ...formState, responsavelNome: value })}
+                          onValueChange={(value) =>
+                            setFormState({
+                              ...formState,
+                              responsavelNome: value,
+                            })
+                          }
                         />
                         <div className="grid grid-cols-2 gap-4">
                           <Input
                             label="Email do Responsável"
                             placeholder="email@exemplo.com"
-                            startContent={<Mail className="h-4 w-4 text-default-400" />}
+                            startContent={
+                              <Mail className="h-4 w-4 text-default-400" />
+                            }
                             type="email"
                             value={formState.responsavelEmail}
-                            onValueChange={(value) => setFormState({ ...formState, responsavelEmail: value })}
+                            onValueChange={(value) =>
+                              setFormState({
+                                ...formState,
+                                responsavelEmail: value,
+                              })
+                            }
                           />
                           <Input
                             label="Telefone do Responsável"
                             placeholder="(00) 00000-0000"
-                            startContent={<Phone className="h-4 w-4 text-default-400" />}
+                            startContent={
+                              <Phone className="h-4 w-4 text-default-400" />
+                            }
                             value={formState.responsavelTelefone}
-                            onValueChange={(value) => setFormState({ ...formState, responsavelTelefone: value })}
+                            onValueChange={(value) =>
+                              setFormState({
+                                ...formState,
+                                responsavelTelefone: value,
+                              })
+                            }
                           />
                         </div>
                       </div>
@@ -1029,13 +1439,23 @@ export function ClientesContent() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard title="Usuário de Acesso" description="Configure se o cliente terá acesso ao sistema">
+                  <ModalSectionCard
+                    description="Configure se o cliente terá acesso ao sistema"
+                    title="Usuário de Acesso"
+                  >
                     <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
-                      <Checkbox isSelected={criarUsuario} onValueChange={setCriarUsuario}>
+                      <Checkbox
+                        isSelected={criarUsuario}
+                        onValueChange={setCriarUsuario}
+                      >
                         <div>
-                          <p className="font-semibold text-sm">Criar usuário de acesso ao sistema</p>
+                          <p className="font-semibold text-sm">
+                            Criar usuário de acesso ao sistema
+                          </p>
                           <p className="text-xs text-default-500 mt-1">
-                            {criarUsuario ? "Um usuário será criado automaticamente com email e senha aleatória" : "O cliente não terá acesso ao sistema"}
+                            {criarUsuario
+                              ? "Um usuário será criado automaticamente com email e senha aleatória"
+                              : "O cliente não terá acesso ao sistema"}
                           </p>
                         </div>
                       </Checkbox>
@@ -1056,13 +1476,18 @@ export function ClientesContent() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard title="Informações Adicionais" description="Anotações e observações sobre o cliente">
+                  <ModalSectionCard
+                    description="Anotações e observações sobre o cliente"
+                    title="Informações Adicionais"
+                  >
                     <Textarea
                       label="Observações"
                       minRows={4}
                       placeholder="Informações adicionais sobre o cliente..."
                       value={formState.observacoes}
-                      onValueChange={(value) => setFormState({ ...formState, observacoes: value })}
+                      onValueChange={(value) =>
+                        setFormState({ ...formState, observacoes: value })
+                      }
                     />
                   </ModalSectionCard>
                 </div>
@@ -1073,7 +1498,11 @@ export function ClientesContent() {
             <Button variant="light" onPress={() => setIsCreateModalOpen(false)}>
               Cancelar
             </Button>
-            <Button color="primary" isLoading={isSaving} onPress={handleCreateCliente}>
+            <Button
+              color="primary"
+              isLoading={isSaving}
+              onPress={handleCreateCliente}
+            >
               Criar Cliente
             </Button>
           </ModalFooter>
@@ -1081,17 +1510,28 @@ export function ClientesContent() {
       </HeroUIModal>
 
       {/* Modal Editar Cliente */}
-      <HeroUIModal isOpen={isEditModalOpen} size="5xl" scrollBehavior="inside" onOpenChange={setIsEditModalOpen}>
+      <HeroUIModal
+        isOpen={isEditModalOpen}
+        scrollBehavior="inside"
+        size="5xl"
+        onOpenChange={setIsEditModalOpen}
+      >
         <ModalContent>
-          <ModalHeaderGradient icon={Edit} title="Editar Cliente" description="Atualize as informações do cliente" />
+          <ModalHeaderGradient
+            description="Atualize as informações do cliente"
+            icon={Edit}
+            title="Editar Cliente"
+          />
           <ModalBody className="px-0">
             <Tabs
               aria-label="Formulário de edição do cliente"
               classNames={{
-                tabList: "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
+                tabList:
+                  "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
                 cursor: "w-full bg-primary",
                 tab: "max-w-fit px-0 h-12",
-                tabContent: "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
+                tabContent:
+                  "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
                 panel: "px-6 pb-6 pt-4",
               }}
               color="primary"
@@ -1109,7 +1549,10 @@ export function ClientesContent() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard title="Identificação" description="Informações básicas do cliente">
+                  <ModalSectionCard
+                    description="Informações básicas do cliente"
+                    title="Identificação"
+                  >
                     <div className="space-y-4">
                       <Select
                         label="Tipo de Pessoa"
@@ -1122,23 +1565,54 @@ export function ClientesContent() {
                           })
                         }
                       >
-                        <SelectItem key={TipoPessoa.FISICA}>Pessoa Física</SelectItem>
-                        <SelectItem key={TipoPessoa.JURIDICA}>Pessoa Jurídica</SelectItem>
+                        <SelectItem key={TipoPessoa.FISICA}>
+                          Pessoa Física
+                        </SelectItem>
+                        <SelectItem key={TipoPessoa.JURIDICA}>
+                          Pessoa Jurídica
+                        </SelectItem>
                       </Select>
 
                       <Input
                         isRequired
-                        label={formState.tipoPessoa === TipoPessoa.FISICA ? "Nome Completo" : "Razão Social"}
-                        placeholder={formState.tipoPessoa === TipoPessoa.FISICA ? "Nome completo" : "Razão Social"}
-                        startContent={formState.tipoPessoa === TipoPessoa.FISICA ? <User className="h-4 w-4 text-default-400" /> : <Building2 className="h-4 w-4 text-default-400" />}
+                        label={
+                          formState.tipoPessoa === TipoPessoa.FISICA
+                            ? "Nome Completo"
+                            : "Razão Social"
+                        }
+                        placeholder={
+                          formState.tipoPessoa === TipoPessoa.FISICA
+                            ? "Nome completo"
+                            : "Razão Social"
+                        }
+                        startContent={
+                          formState.tipoPessoa === TipoPessoa.FISICA ? (
+                            <User className="h-4 w-4 text-default-400" />
+                          ) : (
+                            <Building2 className="h-4 w-4 text-default-400" />
+                          )
+                        }
                         value={formState.nome}
-                        onValueChange={(value) => setFormState({ ...formState, nome: value })}
+                        onValueChange={(value) =>
+                          setFormState({ ...formState, nome: value })
+                        }
                       />
 
                       {formState.tipoPessoa === TipoPessoa.FISICA ? (
-                        <CpfInput value={formState.documento} onChange={(value) => setFormState({ ...formState, documento: value })} />
+                        <CpfInput
+                          value={formState.documento}
+                          onChange={(value) =>
+                            setFormState({ ...formState, documento: value })
+                          }
+                        />
                       ) : (
-                        <CnpjInput value={formState.documento} onChange={(value) => setFormState({ ...formState, documento: value })} onCnpjFound={handleCnpjFound} />
+                        <CnpjInput
+                          value={formState.documento}
+                          onChange={(value) =>
+                            setFormState({ ...formState, documento: value })
+                          }
+                          onCnpjFound={handleCnpjFound}
+                        />
                       )}
                     </div>
                   </ModalSectionCard>
@@ -1157,61 +1631,100 @@ export function ClientesContent() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard title="Informações de Contato" description="Telefones e email do cliente">
+                  <ModalSectionCard
+                    description="Telefones e email do cliente"
+                    title="Informações de Contato"
+                  >
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <Input
                           label="Email"
                           placeholder="email@exemplo.com"
-                          startContent={<Mail className="h-4 w-4 text-default-400" />}
+                          startContent={
+                            <Mail className="h-4 w-4 text-default-400" />
+                          }
                           type="email"
                           value={formState.email}
-                          onValueChange={(value) => setFormState({ ...formState, email: value })}
+                          onValueChange={(value) =>
+                            setFormState({ ...formState, email: value })
+                          }
                         />
                         <Input
                           label="Telefone"
                           placeholder="(00) 0000-0000"
-                          startContent={<Phone className="h-4 w-4 text-default-400" />}
+                          startContent={
+                            <Phone className="h-4 w-4 text-default-400" />
+                          }
                           value={formState.telefone}
-                          onValueChange={(value) => setFormState({ ...formState, telefone: value })}
+                          onValueChange={(value) =>
+                            setFormState({ ...formState, telefone: value })
+                          }
                         />
                       </div>
 
                       <Input
                         label="Celular/WhatsApp"
                         placeholder="(00) 00000-0000"
-                        startContent={<Phone className="h-4 w-4 text-default-400" />}
+                        startContent={
+                          <Phone className="h-4 w-4 text-default-400" />
+                        }
                         value={formState.celular}
-                        onValueChange={(value) => setFormState({ ...formState, celular: value })}
+                        onValueChange={(value) =>
+                          setFormState({ ...formState, celular: value })
+                        }
                       />
                     </div>
                   </ModalSectionCard>
 
                   {formState.tipoPessoa === TipoPessoa.JURIDICA && (
-                    <ModalSectionCard title="Responsável pela Empresa" description="Dados do responsável legal">
+                    <ModalSectionCard
+                      description="Dados do responsável legal"
+                      title="Responsável pela Empresa"
+                    >
                       <div className="space-y-4">
                         <Input
                           label="Nome do Responsável"
                           placeholder="Nome completo"
-                          startContent={<User className="h-4 w-4 text-default-400" />}
+                          startContent={
+                            <User className="h-4 w-4 text-default-400" />
+                          }
                           value={formState.responsavelNome}
-                          onValueChange={(value) => setFormState({ ...formState, responsavelNome: value })}
+                          onValueChange={(value) =>
+                            setFormState({
+                              ...formState,
+                              responsavelNome: value,
+                            })
+                          }
                         />
                         <div className="grid grid-cols-2 gap-4">
                           <Input
                             label="Email do Responsável"
                             placeholder="email@exemplo.com"
-                            startContent={<Mail className="h-4 w-4 text-default-400" />}
+                            startContent={
+                              <Mail className="h-4 w-4 text-default-400" />
+                            }
                             type="email"
                             value={formState.responsavelEmail}
-                            onValueChange={(value) => setFormState({ ...formState, responsavelEmail: value })}
+                            onValueChange={(value) =>
+                              setFormState({
+                                ...formState,
+                                responsavelEmail: value,
+                              })
+                            }
                           />
                           <Input
                             label="Telefone do Responsável"
                             placeholder="(00) 00000-0000"
-                            startContent={<Phone className="h-4 w-4 text-default-400" />}
+                            startContent={
+                              <Phone className="h-4 w-4 text-default-400" />
+                            }
                             value={formState.responsavelTelefone}
-                            onValueChange={(value) => setFormState({ ...formState, responsavelTelefone: value })}
+                            onValueChange={(value) =>
+                              setFormState({
+                                ...formState,
+                                responsavelTelefone: value,
+                              })
+                            }
                           />
                         </div>
                       </div>
@@ -1232,13 +1745,18 @@ export function ClientesContent() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard title="Informações Adicionais" description="Anotações e observações sobre o cliente">
+                  <ModalSectionCard
+                    description="Anotações e observações sobre o cliente"
+                    title="Informações Adicionais"
+                  >
                     <Textarea
                       label="Observações"
                       minRows={4}
                       placeholder="Informações adicionais sobre o cliente..."
                       value={formState.observacoes}
-                      onValueChange={(value) => setFormState({ ...formState, observacoes: value })}
+                      onValueChange={(value) =>
+                        setFormState({ ...formState, observacoes: value })
+                      }
                     />
                   </ModalSectionCard>
                 </div>
@@ -1249,7 +1767,11 @@ export function ClientesContent() {
             <Button variant="light" onPress={() => setIsEditModalOpen(false)}>
               Cancelar
             </Button>
-            <Button color="primary" isLoading={isSaving} onPress={handleUpdateCliente}>
+            <Button
+              color="primary"
+              isLoading={isSaving}
+              onPress={handleUpdateCliente}
+            >
               Salvar Alterações
             </Button>
           </ModalFooter>
@@ -1260,14 +1782,24 @@ export function ClientesContent() {
       <Modal
         footer={
           <div className="flex justify-end">
-            <Button color="primary" startContent={<CheckCircle className="h-4 w-4" />} onPress={() => setCredenciaisModal(null)}>
+            <Button
+              color="primary"
+              startContent={<CheckCircle className="h-4 w-4" />}
+              onPress={() => setCredenciaisModal(null)}
+            >
               Entendi
             </Button>
           </div>
         }
         isOpen={!!credenciaisModal}
         size="lg"
-        title={credenciaisModal ? (credenciaisModal.senha.length > 0 ? "🔑 Credenciais de Acesso" : "✅ Cliente criado com sucesso!") : ""}
+        title={
+          credenciaisModal
+            ? credenciaisModal.senha.length > 0
+              ? "🔑 Credenciais de Acesso"
+              : "✅ Cliente criado com sucesso!"
+            : ""
+        }
         onOpenChange={() => setCredenciaisModal(null)}
       >
         {credenciaisModal && (
@@ -1276,8 +1808,13 @@ export function ClientesContent() {
               <div className="flex items-start gap-3">
                 <Key className="h-5 w-5 text-success mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-success">Usuário de acesso criado</p>
-                  <p className="text-xs text-default-600 mt-1">As credenciais abaixo foram geradas automaticamente. Anote ou envie para o cliente.</p>
+                  <p className="text-sm font-semibold text-success">
+                    Usuário de acesso criado
+                  </p>
+                  <p className="text-xs text-default-600 mt-1">
+                    As credenciais abaixo foram geradas automaticamente. Anote
+                    ou envie para o cliente.
+                  </p>
                 </div>
               </div>
             </div>
@@ -1309,7 +1846,9 @@ export function ClientesContent() {
                 </div>
 
                 <div>
-                  <p className="text-xs text-default-400 mb-1">Senha (temporária)</p>
+                  <p className="text-xs text-default-400 mb-1">
+                    Senha (temporária)
+                  </p>
                   <div className="flex items-center gap-2">
                     <Input
                       readOnly
@@ -1335,7 +1874,10 @@ export function ClientesContent() {
             </Card>
 
             <div className="rounded-lg bg-warning/10 border border-warning/20 p-3">
-              <p className="text-xs text-warning-600">⚠️ Esta senha será exibida apenas uma vez. Certifique-se de anotar ou enviar para o cliente.</p>
+              <p className="text-xs text-warning-600">
+                ⚠️ Esta senha será exibida apenas uma vez. Certifique-se de
+                anotar ou enviar para o cliente.
+              </p>
             </div>
           </div>
         )}
@@ -1345,10 +1887,22 @@ export function ClientesContent() {
       <Modal
         footer={
           <div className="flex gap-2">
-            <Button variant="light" onPress={() => setClienteParaResetarSenha(null)}>
+            <Button
+              variant="light"
+              onPress={() => setClienteParaResetarSenha(null)}
+            >
               Cancelar
             </Button>
-            <Button color="warning" isLoading={isResettingPassword} startContent={!isResettingPassword ? <RefreshCw className="h-4 w-4" /> : undefined} onPress={handleConfirmResetarSenha}>
+            <Button
+              color="warning"
+              isLoading={isResettingPassword}
+              startContent={
+                !isResettingPassword ? (
+                  <RefreshCw className="h-4 w-4" />
+                ) : undefined
+              }
+              onPress={handleConfirmResetarSenha}
+            >
               Resetar Senha
             </Button>
           </div>
@@ -1365,7 +1919,9 @@ export function ClientesContent() {
                 <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-warning">Atenção</p>
-                  <p className="text-xs text-default-600 mt-1">Esta ação irá gerar uma nova senha aleatória para o cliente.</p>
+                  <p className="text-xs text-default-600 mt-1">
+                    Esta ação irá gerar uma nova senha aleatória para o cliente.
+                  </p>
                 </div>
               </div>
             </div>
@@ -1373,35 +1929,62 @@ export function ClientesContent() {
             <Card className="border border-default-200 bg-default-50">
               <CardBody className="gap-2">
                 <div className="flex items-center gap-2">
-                  {clienteParaResetarSenha.tipoPessoa === TipoPessoa.JURIDICA ? <Building2 className="h-5 w-5 text-default-400" /> : <User className="h-5 w-5 text-default-400" />}
+                  {clienteParaResetarSenha.tipoPessoa ===
+                  TipoPessoa.JURIDICA ? (
+                    <Building2 className="h-5 w-5 text-default-400" />
+                  ) : (
+                    <User className="h-5 w-5 text-default-400" />
+                  )}
                   <div>
-                    <p className="text-sm font-semibold">{clienteParaResetarSenha.nome}</p>
-                    <p className="text-xs text-default-400">{clienteParaResetarSenha.email}</p>
+                    <p className="text-sm font-semibold">
+                      {clienteParaResetarSenha.nome}
+                    </p>
+                    <p className="text-xs text-default-400">
+                      {clienteParaResetarSenha.email}
+                    </p>
                   </div>
                 </div>
               </CardBody>
             </Card>
 
             <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
-              <p className="text-xs text-primary-600">💡 Uma nova senha será gerada e exibida na próxima tela. Certifique-se de anotar e enviar para o cliente.</p>
+              <p className="text-xs text-primary-600">
+                💡 Uma nova senha será gerada e exibida na próxima tela.
+                Certifique-se de anotar e enviar para o cliente.
+              </p>
             </div>
           </div>
         )}
       </Modal>
 
       {/* Modal de Visualização do Cliente */}
-      <HeroUIModal isOpen={isViewModalOpen} size="5xl" scrollBehavior="inside" onOpenChange={setIsViewModalOpen}>
+      <HeroUIModal
+        isOpen={isViewModalOpen}
+        scrollBehavior="inside"
+        size="5xl"
+        onOpenChange={setIsViewModalOpen}
+      >
         {clienteParaVisualizar && (
           <ModalContent>
-            <ModalHeaderGradient icon={clienteParaVisualizar.tipoPessoa === TipoPessoa.JURIDICA ? Building2 : User} title={clienteParaVisualizar.nome} description="Detalhes completos do cliente" />
+            <ModalHeaderGradient
+              description="Detalhes completos do cliente"
+              icon={
+                clienteParaVisualizar.tipoPessoa === TipoPessoa.JURIDICA
+                  ? Building2
+                  : User
+              }
+              title={clienteParaVisualizar.nome}
+            />
             <ModalBody className="px-0">
               <Tabs
                 aria-label="Detalhes do cliente"
                 classNames={{
-                  tabList: "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
+                  tabList:
+                    "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
                   cursor: "w-full bg-primary",
                   tab: "max-w-fit px-0 h-12",
-                  tabContent: "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
+                  tabContent:
+                    "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
                   panel: "px-6 pb-6 pt-4",
                 }}
                 color="primary"
@@ -1419,26 +2002,53 @@ export function ClientesContent() {
                   }
                 >
                   <div className="space-y-6">
-                    <ModalSectionCard title="Informações Básicas" description="Dados de identificação do cliente">
+                    <ModalSectionCard
+                      description="Dados de identificação do cliente"
+                      title="Informações Básicas"
+                    >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
                           <FileText className="h-4 w-4 text-primary" />
                           <div>
-                            <p className="text-xs text-default-500">Documento</p>
-                            <p className="text-sm font-medium">{clienteParaVisualizar.documento || "N/A"}</p>
+                            <p className="text-xs text-default-500">
+                              Documento
+                            </p>
+                            <p className="text-sm font-medium">
+                              {clienteParaVisualizar.documento || "N/A"}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
                           <Chip
-                            color={clienteParaVisualizar.tipoPessoa === TipoPessoa.FISICA ? "secondary" : "warning"}
+                            color={
+                              clienteParaVisualizar.tipoPessoa ===
+                              TipoPessoa.FISICA
+                                ? "secondary"
+                                : "warning"
+                            }
                             size="sm"
-                            startContent={clienteParaVisualizar.tipoPessoa === TipoPessoa.FISICA ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
+                            startContent={
+                              clienteParaVisualizar.tipoPessoa ===
+                              TipoPessoa.FISICA ? (
+                                <User className="h-3 w-3" />
+                              ) : (
+                                <Building2 className="h-3 w-3" />
+                              )
+                            }
                             variant="flat"
                           >
-                            {clienteParaVisualizar.tipoPessoa === TipoPessoa.FISICA ? "Pessoa Física" : "Pessoa Jurídica"}
+                            {clienteParaVisualizar.tipoPessoa ===
+                            TipoPessoa.FISICA
+                              ? "Pessoa Física"
+                              : "Pessoa Jurídica"}
                           </Chip>
                           {clienteParaVisualizar.usuarioId && (
-                            <Chip color="success" size="sm" startContent={<Key className="h-3 w-3" />} variant="flat">
+                            <Chip
+                              color="success"
+                              size="sm"
+                              startContent={<Key className="h-3 w-3" />}
+                              variant="flat"
+                            >
                               Tem Acesso
                             </Chip>
                           )}
@@ -1446,14 +2056,21 @@ export function ClientesContent() {
                       </div>
                     </ModalSectionCard>
 
-                    <ModalSectionCard title="Estatísticas" description="Métricas do cliente">
+                    <ModalSectionCard
+                      description="Métricas do cliente"
+                      title="Estatísticas"
+                    >
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
                           <div className="flex items-center gap-2">
                             <FileText className="h-5 w-5 text-blue-500" />
                             <div>
-                              <p className="text-xs text-blue-600 dark:text-blue-400">Processos</p>
-                              <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{clienteParaVisualizar._count?.processos || 0}</p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400">
+                                Processos
+                              </p>
+                              <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                                {clienteParaVisualizar._count?.processos || 0}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -1461,8 +2078,14 @@ export function ClientesContent() {
                           <div className="flex items-center gap-2">
                             <Calendar className="h-5 w-5 text-green-500" />
                             <div>
-                              <p className="text-xs text-green-600 dark:text-green-400">Cadastrado em</p>
-                              <p className="text-sm font-bold text-green-700 dark:text-green-300">{new Date(clienteParaVisualizar.createdAt).toLocaleDateString("pt-BR")}</p>
+                              <p className="text-xs text-green-600 dark:text-green-400">
+                                Cadastrado em
+                              </p>
+                              <p className="text-sm font-bold text-green-700 dark:text-green-300">
+                                {new Date(
+                                  clienteParaVisualizar.createdAt,
+                                ).toLocaleDateString("pt-BR")}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -1483,14 +2106,19 @@ export function ClientesContent() {
                   }
                 >
                   <div className="space-y-6">
-                    <ModalSectionCard title="Informações de Contato" description="Telefones e email do cliente">
+                    <ModalSectionCard
+                      description="Telefones e email do cliente"
+                      title="Informações de Contato"
+                    >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {clienteParaVisualizar.email && (
                           <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
                             <Mail className="h-4 w-4 text-success" />
                             <div>
                               <p className="text-xs text-default-500">Email</p>
-                              <p className="text-sm font-medium">{clienteParaVisualizar.email}</p>
+                              <p className="text-sm font-medium">
+                                {clienteParaVisualizar.email}
+                              </p>
                             </div>
                           </div>
                         )}
@@ -1498,8 +2126,12 @@ export function ClientesContent() {
                           <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
                             <Phone className="h-4 w-4 text-primary" />
                             <div>
-                              <p className="text-xs text-default-500">Telefone</p>
-                              <p className="text-sm font-medium">{clienteParaVisualizar.telefone}</p>
+                              <p className="text-xs text-default-500">
+                                Telefone
+                              </p>
+                              <p className="text-sm font-medium">
+                                {clienteParaVisualizar.telefone}
+                              </p>
                             </div>
                           </div>
                         )}
@@ -1507,8 +2139,12 @@ export function ClientesContent() {
                           <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
                             <Smartphone className="h-4 w-4 text-warning" />
                             <div>
-                              <p className="text-xs text-default-500">Celular</p>
-                              <p className="text-sm font-medium">{clienteParaVisualizar.celular}</p>
+                              <p className="text-xs text-default-500">
+                                Celular
+                              </p>
+                              <p className="text-sm font-medium">
+                                {clienteParaVisualizar.celular}
+                              </p>
                             </div>
                           </div>
                         )}
@@ -1516,15 +2152,24 @@ export function ClientesContent() {
                     </ModalSectionCard>
 
                     {clienteParaVisualizar.tipoPessoa === TipoPessoa.JURIDICA &&
-                      (clienteParaVisualizar.responsavelNome || clienteParaVisualizar.responsavelEmail || clienteParaVisualizar.responsavelTelefone) && (
-                        <ModalSectionCard title="Responsável pela Empresa" description="Dados do responsável legal">
+                      (clienteParaVisualizar.responsavelNome ||
+                        clienteParaVisualizar.responsavelEmail ||
+                        clienteParaVisualizar.responsavelTelefone) && (
+                        <ModalSectionCard
+                          description="Dados do responsável legal"
+                          title="Responsável pela Empresa"
+                        >
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {clienteParaVisualizar.responsavelNome && (
                               <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
                                 <User className="h-4 w-4 text-primary" />
                                 <div>
-                                  <p className="text-xs text-default-500">Nome</p>
-                                  <p className="text-sm font-medium">{clienteParaVisualizar.responsavelNome}</p>
+                                  <p className="text-xs text-default-500">
+                                    Nome
+                                  </p>
+                                  <p className="text-sm font-medium">
+                                    {clienteParaVisualizar.responsavelNome}
+                                  </p>
                                 </div>
                               </div>
                             )}
@@ -1532,8 +2177,12 @@ export function ClientesContent() {
                               <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
                                 <Mail className="h-4 w-4 text-success" />
                                 <div>
-                                  <p className="text-xs text-default-500">Email</p>
-                                  <p className="text-sm font-medium">{clienteParaVisualizar.responsavelEmail}</p>
+                                  <p className="text-xs text-default-500">
+                                    Email
+                                  </p>
+                                  <p className="text-sm font-medium">
+                                    {clienteParaVisualizar.responsavelEmail}
+                                  </p>
                                 </div>
                               </div>
                             )}
@@ -1541,8 +2190,12 @@ export function ClientesContent() {
                               <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
                                 <Phone className="h-4 w-4 text-primary" />
                                 <div>
-                                  <p className="text-xs text-default-500">Telefone</p>
-                                  <p className="text-sm font-medium">{clienteParaVisualizar.responsavelTelefone}</p>
+                                  <p className="text-xs text-default-500">
+                                    Telefone
+                                  </p>
+                                  <p className="text-sm font-medium">
+                                    {clienteParaVisualizar.responsavelTelefone}
+                                  </p>
                                 </div>
                               </div>
                             )}
@@ -1564,12 +2217,17 @@ export function ClientesContent() {
                   }
                 >
                   <div className="space-y-6">
-                    <ModalSectionCard title="Processos do Cliente" description={`Total: ${clienteParaVisualizar._count?.processos || 0} processos`}>
+                    <ModalSectionCard
+                      description={`Total: ${clienteParaVisualizar._count?.processos || 0} processos`}
+                      title="Processos do Cliente"
+                    >
                       <div className="flex items-center justify-center py-8">
                         <div className="text-center">
                           <FileText className="w-12 h-12 text-default-300 mx-auto mb-4" />
                           <p className="text-default-500">
-                            {clienteParaVisualizar._count?.processos === 0 ? "Este cliente ainda não possui processos vinculados" : "Lista de processos será implementada em breve"}
+                            {clienteParaVisualizar._count?.processos === 0
+                              ? "Este cliente ainda não possui processos vinculados"
+                              : "Lista de processos será implementada em breve"}
                           </p>
                         </div>
                       </div>
@@ -1582,7 +2240,10 @@ export function ClientesContent() {
               <Button variant="flat" onPress={() => setIsViewModalOpen(false)}>
                 Fechar
               </Button>
-              <Button color="primary" onPress={() => handleEditCliente(clienteParaVisualizar)}>
+              <Button
+                color="primary"
+                onPress={() => handleEditCliente(clienteParaVisualizar)}
+              >
                 Editar Cliente
               </Button>
             </ModalFooter>

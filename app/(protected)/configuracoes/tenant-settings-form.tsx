@@ -147,9 +147,9 @@ export function TenantSettingsForm({ initialData }: TenantSettingsFormProps) {
       <CardBody className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            isDisabled={!isEditing}
             isRequired
             description="Nome do escritório ou empresa"
+            isDisabled={!isEditing}
             label="Nome"
             value={formData.name}
             onValueChange={(value) =>
@@ -158,8 +158,8 @@ export function TenantSettingsForm({ initialData }: TenantSettingsFormProps) {
           />
 
           <Input
-            isDisabled={!isEditing}
             description="Email de contato principal"
+            isDisabled={!isEditing}
             label="Email"
             type="email"
             value={formData.email}
@@ -169,8 +169,8 @@ export function TenantSettingsForm({ initialData }: TenantSettingsFormProps) {
           />
 
           <Input
-            isDisabled={!isEditing}
             description="Telefone de contato"
+            isDisabled={!isEditing}
             label="Telefone"
             value={formData.telefone}
             onValueChange={(value) =>
@@ -179,8 +179,8 @@ export function TenantSettingsForm({ initialData }: TenantSettingsFormProps) {
           />
 
           <Input
-            isDisabled={!isEditing}
             description="Razão social (CNPJ)"
+            isDisabled={!isEditing}
             label="Razão Social"
             value={formData.razaoSocial}
             onValueChange={(value) =>
@@ -189,8 +189,8 @@ export function TenantSettingsForm({ initialData }: TenantSettingsFormProps) {
           />
 
           <Input
-            isDisabled={!isEditing}
             description="Nome fantasia (marca)"
+            isDisabled={!isEditing}
             label="Nome Fantasia"
             value={formData.nomeFantasia}
             onValueChange={(value) =>
@@ -199,8 +199,8 @@ export function TenantSettingsForm({ initialData }: TenantSettingsFormProps) {
           />
 
           <Input
-            isDisabled={!isEditing}
             description="Timezone para eventos e agendamentos"
+            isDisabled={!isEditing}
             label="Timezone"
             value={formData.timezone}
             onValueChange={(value) =>
@@ -214,8 +214,8 @@ export function TenantSettingsForm({ initialData }: TenantSettingsFormProps) {
             <Button
               color="danger"
               radius="full"
-              variant="flat"
               startContent={<X className="h-4 w-4" />}
+              variant="flat"
               onPress={handleCancel}
             >
               Cancelar
@@ -235,4 +235,3 @@ export function TenantSettingsForm({ initialData }: TenantSettingsFormProps) {
     </Card>
   );
 }
-

@@ -222,6 +222,7 @@ export async function createParcelaContrato(data: {
 
     // Verificar permissão para criar parcelas
     const podeCriar = await checkPermission("financeiro", "criar");
+
     if (!podeCriar) {
       return {
         success: false,
@@ -335,6 +336,7 @@ export async function updateParcelaContrato(
 
     // Verificar permissão para editar parcelas
     const podeEditar = await checkPermission("financeiro", "editar");
+
     if (!podeEditar) {
       return {
         success: false,
@@ -423,6 +425,7 @@ export async function deleteParcelaContrato(id: string) {
 
     // Verificar permissão para excluir parcelas
     const podeExcluir = await checkPermission("financeiro", "excluir");
+
     if (!podeExcluir) {
       return {
         success: false,

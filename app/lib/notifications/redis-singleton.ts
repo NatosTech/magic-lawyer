@@ -21,7 +21,7 @@ export function getRedisInstance(): Redis {
 
     if (!redisUrl) {
       throw new Error(
-        "REDIS_URL environment variable is required in production"
+        "REDIS_URL environment variable is required in production",
       );
     }
 

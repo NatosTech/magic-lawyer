@@ -335,7 +335,10 @@ export const Navbar = ({
               <NotificationCenter />
             </div>
           ) : null}
-          <div className="hidden lg:block">
+          <div className="hidden md:block">
+            <ThemeSwitch />
+          </div>
+          <div className="flex md:hidden">
             <ThemeSwitch />
           </div>
           {session?.user ? (

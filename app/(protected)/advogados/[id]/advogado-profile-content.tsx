@@ -72,6 +72,16 @@ export default function AdvogadoProfileContent({
   const advogado = data?.data;
   const loading = isLoading || !advogado;
 
+  const tabsClassNames = {
+    tabList:
+      "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
+    cursor: "w-full bg-primary",
+    tab: "max-w-fit px-0 h-12",
+    tabContent:
+      "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
+    panel: "px-6 pb-6 pt-4",
+  };
+
   const getNomeCompleto = (advogado: any) => {
     return (
       `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() ||
@@ -350,15 +360,12 @@ export default function AdvogadoProfileContent({
         <Card className="shadow-lg border border-slate-200 dark:border-slate-700">
           <CardBody className="p-0">
             <Tabs
+              aria-label="Seções do advogado"
               className="w-full"
-              classNames={{
-                tabList:
-                  "gap-6 w-full relative rounded-none p-0 border-b border-divider",
-                cursor: "w-full bg-primary",
-                tab: "max-w-fit px-6 h-12",
-                tabContent: "group-data-[selected=true]:text-primary",
-              }}
+              classNames={tabsClassNames}
+              color="primary"
               selectedKey={activeTab}
+              variant="underlined"
               onSelectionChange={(key) => setActiveTab(key as string)}
             >
               <Tab key="overview" title="Visão Geral">

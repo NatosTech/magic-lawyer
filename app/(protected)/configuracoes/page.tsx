@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { ConfiguracoesTabs } from "./configuracoes-tabs";
+
 import { title, subtitle } from "@/components/primitives";
 import { getSession } from "@/app/lib/auth";
 import { TENANT_PERMISSIONS } from "@/types";
@@ -54,11 +55,11 @@ export default async function ConfiguracoesPage() {
       </header>
 
       <ConfiguracoesTabs
-        tenant={tenant}
         branding={branding}
-        subscription={subscription}
-        modules={modules}
         metrics={metrics}
+        modules={modules}
+        subscription={subscription}
+        tenant={tenant}
       />
     </section>
   );

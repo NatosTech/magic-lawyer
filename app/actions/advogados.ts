@@ -299,7 +299,9 @@ export async function getAdvogados(): Promise<ActionResponse<AdvogadoData[]>> {
 
     // Aplicar escopo de acesso para staff vinculados
     if (!isAdmin) {
-      const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+      const { getAccessibleAdvogadoIds } = await import(
+        "@/app/lib/advogado-access"
+      );
       const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
 
       // Se não há vínculos, acesso total (sem filtros)

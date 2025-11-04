@@ -1,11 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardBody, CardHeader, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Select, SelectItem, Input, Button, Spinner } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+  Chip,
+  Select,
+  SelectItem,
+  Input,
+  Button,
+  Spinner,
+} from "@heroui/react";
 import { Search, Download } from "lucide-react";
 import useSWR from "swr";
 
-import { getPermissoesNegadas, type PermissaoNegadaData } from "@/app/actions/auditoria-permissoes";
+import {
+  getPermissoesNegadas,
+  type PermissaoNegadaData,
+} from "@/app/actions/auditoria-permissoes";
 
 export function PermissoesNegadasTable() {
   const [filters, setFilters] = useState({
@@ -22,7 +41,8 @@ export function PermissoesNegadasTable() {
       getPermissoesNegadas({
         ...filters,
         origem:
-          filters.origem && ["override", "cargo", "role"].includes(filters.origem)
+          filters.origem &&
+          ["override", "cargo", "role"].includes(filters.origem)
             ? (filters.origem as "override" | "cargo" | "role")
             : undefined,
         offset: filters.page * filters.limit,
@@ -45,7 +65,9 @@ export function PermissoesNegadasTable() {
     }
   };
 
-  const getOrigemColor = (origem: string): "default" | "primary" | "secondary" | "danger" => {
+  const getOrigemColor = (
+    origem: string,
+  ): "default" | "primary" | "secondary" | "danger" => {
     switch (origem) {
       case "override":
         return "primary";
@@ -74,7 +96,8 @@ export function PermissoesNegadasTable() {
     // Criar linhas CSV
     const rows = records.map((item) => [
       new Date(item.createdAt).toISOString(),
-      `${item.usuario.firstName || ""} ${item.usuario.lastName || ""}`.trim() || item.usuario.email,
+      `${item.usuario.firstName || ""} ${item.usuario.lastName || ""}`.trim() ||
+        item.usuario.email,
       item.usuario.email,
       item.modulo,
       item.acao,
@@ -90,10 +113,16 @@ export function PermissoesNegadasTable() {
         row
           .map((cell) => {
             const value = String(cell);
+
             // Escapar vírgulas e aspas
-            if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+            if (
+              value.includes(",") ||
+              value.includes('"') ||
+              value.includes("\n")
+            ) {
               return `"${value.replace(/"/g, '""')}"`;
             }
+
             return value;
           })
           .join(","),
@@ -104,8 +133,12 @@ export function PermissoesNegadasTable() {
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
+
     link.setAttribute("href", url);
-    link.setAttribute("download", `permissoes-negadas-${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute(
+      "download",
+      `permissoes-negadas-${new Date().toISOString().split("T")[0]}.csv`,
+    );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -130,9 +163,9 @@ export function PermissoesNegadasTable() {
         <h2 className="text-xl font-semibold">Histórico de Recusas</h2>
         {data?.data && data.data.length > 0 && (
           <Button
-            variant="flat"
             color="primary"
             startContent={<Download className="w-4 h-4" />}
+            variant="flat"
             onPress={() => data.data && handleExportCSV(data.data)}
           >
             Exportar CSV
@@ -144,11 +177,11 @@ export function PermissoesNegadasTable() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Input
             placeholder="Filtrar por módulo..."
+            startContent={<Search className="w-4 h-4" />}
             value={filters.modulo}
             onChange={(e) =>
               setFilters({ ...filters, modulo: e.target.value, page: 0 })
             }
-            startContent={<Search className="w-4 h-4" />}
           />
           <Input
             placeholder="Filtrar por ação..."
@@ -162,6 +195,7 @@ export function PermissoesNegadasTable() {
             selectedKeys={filters.origem ? [filters.origem] : []}
             onSelectionChange={(keys) => {
               const selected = Array.from(keys)[0] as string;
+
               setFilters({
                 ...filters,
                 origem: selected || "",
@@ -182,7 +216,13 @@ export function PermissoesNegadasTable() {
           <Button
             variant="flat"
             onPress={() =>
-              setFilters({ modulo: "", acao: "", origem: "", page: 0, limit: 20 })
+              setFilters({
+                modulo: "",
+                acao: "",
+                origem: "",
+                page: 0,
+                limit: 20,
+              })
             }
           >
             Limpar Filtros
@@ -228,9 +268,9 @@ export function PermissoesNegadasTable() {
                     </TableCell>
                     <TableCell>
                       <Chip
+                        color={getOrigemColor(item.origem)}
                         size="sm"
                         variant="flat"
-                        color={getOrigemColor(item.origem)}
                       >
                         {getOrigemLabel(item.origem)}
                       </Chip>
@@ -253,21 +293,25 @@ export function PermissoesNegadasTable() {
                 </p>
                 <div className="flex gap-2">
                   <Button
+                    isDisabled={filters.page === 0}
                     size="sm"
                     variant="flat"
-                    isDisabled={filters.page === 0}
-                    onPress={() => setFilters({ ...filters, page: filters.page - 1 })}
+                    onPress={() =>
+                      setFilters({ ...filters, page: filters.page - 1 })
+                    }
                   >
                     Anterior
                   </Button>
                   <Button
-                    size="sm"
-                    variant="flat"
                     isDisabled={
                       !data.total ||
                       (filters.page + 1) * filters.limit >= data.total
                     }
-                    onPress={() => setFilters({ ...filters, page: filters.page + 1 })}
+                    size="sm"
+                    variant="flat"
+                    onPress={() =>
+                      setFilters({ ...filters, page: filters.page + 1 })
+                    }
                   >
                     Próxima
                   </Button>
@@ -280,4 +324,3 @@ export function PermissoesNegadasTable() {
     </Card>
   );
 }
-

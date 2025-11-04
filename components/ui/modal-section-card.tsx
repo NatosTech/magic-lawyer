@@ -3,6 +3,7 @@
 import { ReactNode } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/react";
 import { motion } from "framer-motion";
+
 import { cardMotionProps } from "./motion-presets";
 
 interface ModalSectionCardProps {
@@ -42,4 +43,3 @@ export function ModalSectionCard({
     </motion.div>
   );
 }
-

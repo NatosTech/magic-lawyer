@@ -246,18 +246,12 @@ export function useSessionGuard(
     const unsubscribeUser = realtime.subscribe(
       "user-status",
       (event: RealtimeEvent) => {
-        console.log(
-          "[useSessionGuard] 📨 Evento user-status recebido:",
-          event,
-        );
+        console.log("[useSessionGuard] 📨 Evento user-status recebido:", event);
 
         const payload = event.payload as any;
         const targetUserId = payload.userId || event.userId;
 
-        if (
-          targetUserId === session.user.id &&
-          payload.active === false
-        ) {
+        if (targetUserId === session.user.id && payload.active === false) {
           forceLogout("USER_DEACTIVATED");
         }
       },

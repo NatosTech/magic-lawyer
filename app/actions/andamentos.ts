@@ -98,8 +98,15 @@ export async function listAndamentos(
     };
 
     // Aplicar escopo de acesso para staff vinculados
-    if (!isAdmin && user?.role !== "CLIENTE" && session && !filters.processoId) {
-      const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+    if (
+      !isAdmin &&
+      user?.role !== "CLIENTE" &&
+      session &&
+      !filters.processoId
+    ) {
+      const { getAccessibleAdvogadoIds } = await import(
+        "@/app/lib/advogado-access"
+      );
       const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
 
       // Se não há vínculos, acesso total (sem filtros)

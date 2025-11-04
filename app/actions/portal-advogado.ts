@@ -72,6 +72,7 @@ export async function getProcessosUFs(): Promise<string[]> {
 
   // Extrair UFs únicas e válidas
   const ufs = new Set<string>();
+
   processos.forEach((processo) => {
     if (processo.tribunal?.uf) {
       ufs.add(processo.tribunal.uf);
@@ -138,6 +139,7 @@ export async function getUFsDisponiveis(): Promise<string[]> {
 
   // Combinar e remover duplicatas
   const ufs = new Set<string>();
+
   if (tenantUF) {
     ufs.add(tenantUF);
   }
@@ -145,4 +147,3 @@ export async function getUFsDisponiveis(): Promise<string[]> {
 
   return Array.from(ufs).sort();
 }
-

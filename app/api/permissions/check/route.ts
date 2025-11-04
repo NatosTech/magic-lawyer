@@ -17,6 +17,7 @@ export async function POST(request: Request) {
       }
 
       const permissions = await checkPermissions(requests, usuarioId);
+
       return NextResponse.json({ permissions });
     }
 
@@ -33,13 +34,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ hasPermission });
   } catch (error) {
     console.error("Erro ao verificar permissão:", error);
+
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Erro ao verificar permissão",
+          error instanceof Error
+            ? error.message
+            : "Erro ao verificar permissão",
       },
       { status: 500 },
     );
   }
 }
-

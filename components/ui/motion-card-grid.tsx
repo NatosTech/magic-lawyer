@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { motion } from "framer-motion";
+
 import { containerVariants, cardVariants } from "./motion-presets";
 
 interface MotionCardGridProps {
@@ -24,9 +25,9 @@ export function MotionCardGrid({
 
   return (
     <motion.div
+      animate="visible"
       className={`grid ${gridCols[columns]} ${className}`}
       initial="hidden"
-      animate="visible"
       variants={containerVariants}
     >
       {Array.isArray(children)
@@ -39,4 +40,3 @@ export function MotionCardGrid({
     </motion.div>
   );
 }
-

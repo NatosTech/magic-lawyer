@@ -918,11 +918,16 @@ async function buildAdvogadoDashboard(
   session?: any,
 ): Promise<DashboardData> {
   // Verificar se é staff vinculado ou advogado
-  const isAdmin = (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "SUPER_ADMIN";
+  const isAdmin =
+    (session?.user as any)?.role === "ADMIN" ||
+    (session?.user as any)?.role === "SUPER_ADMIN";
   let accessibleAdvogados: string[] = [];
 
   if (!isAdmin && session) {
-    const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+    const { getAccessibleAdvogadoIds } = await import(
+      "@/app/lib/advogado-access"
+    );
+
     accessibleAdvogados = await getAccessibleAdvogadoIds(session);
   }
 
@@ -938,22 +943,7 @@ async function buildAdvogadoDashboard(
       select: { id: true },
     });
 
-      if (!advogado) {
-        return {
-          role: UserRole.ADVOGADO,
-          stats: [],
-          insights: [],
-          highlights: [],
-          pending: [],
-          trends: [],
-          alerts: [],
-          activity: [],
-        };
-      }
-      advogadoIds = [advogado.id];
-    }
-
-    if (advogadoIds.length === 0) {
+    if (!advogado) {
       return {
         role: UserRole.ADVOGADO,
         stats: [],
@@ -965,6 +955,21 @@ async function buildAdvogadoDashboard(
         activity: [],
       };
     }
+    advogadoIds = [advogado.id];
+  }
+
+  if (advogadoIds.length === 0) {
+    return {
+      role: UserRole.ADVOGADO,
+      stats: [],
+      insights: [],
+      highlights: [],
+      pending: [],
+      trends: [],
+      alerts: [],
+      activity: [],
+    };
+  }
 
   const weekStart = startOfWeek(now);
   const weekEnd = endOfWeek(weekStart);
@@ -1731,11 +1736,16 @@ async function buildSecretariaDashboard(
   session?: any,
 ): Promise<DashboardData> {
   // Verificar se é staff vinculado e aplicar escopo
-  const isAdmin = (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "SUPER_ADMIN";
+  const isAdmin =
+    (session?.user as any)?.role === "ADMIN" ||
+    (session?.user as any)?.role === "SUPER_ADMIN";
   let accessibleAdvogados: string[] = [];
 
   if (!isAdmin && session) {
-    const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+    const { getAccessibleAdvogadoIds } = await import(
+      "@/app/lib/advogado-access"
+    );
+
     accessibleAdvogados = await getAccessibleAdvogadoIds(session);
   }
 
@@ -2573,7 +2583,12 @@ export async function getDashboardData(): Promise<DashboardResponse> {
         if (!tenantId) {
           throw new Error("Tenant não definido para a secretaria");
         }
-        data = await buildSecretariaDashboard(tenantId, session.user.id, now, session);
+        data = await buildSecretariaDashboard(
+          tenantId,
+          session.user.id,
+          now,
+          session,
+        );
         break;
       case UserRole.CLIENTE:
         if (!tenantId) {

@@ -337,17 +337,24 @@ export async function updateTenantBasicData(
 
     // Validar permissões
     const role = (session.user as any)?.role as string;
+
     if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
-      return { success: false, error: "Apenas administradores podem editar essas configurações" };
+      return {
+        success: false,
+        error: "Apenas administradores podem editar essas configurações",
+      };
     }
 
     const updateData: Record<string, unknown> = {};
 
     if (data.name !== undefined) updateData.name = data.name.trim();
     if (data.email !== undefined) updateData.email = data.email?.trim() || null;
-    if (data.telefone !== undefined) updateData.telefone = data.telefone?.trim() || null;
-    if (data.razaoSocial !== undefined) updateData.razaoSocial = data.razaoSocial?.trim() || null;
-    if (data.nomeFantasia !== undefined) updateData.nomeFantasia = data.nomeFantasia?.trim() || null;
+    if (data.telefone !== undefined)
+      updateData.telefone = data.telefone?.trim() || null;
+    if (data.razaoSocial !== undefined)
+      updateData.razaoSocial = data.razaoSocial?.trim() || null;
+    if (data.nomeFantasia !== undefined)
+      updateData.nomeFantasia = data.nomeFantasia?.trim() || null;
     if (data.timezone !== undefined) updateData.timezone = data.timezone;
 
     // Só atualizar se houver mudanças
@@ -394,16 +401,23 @@ export async function updateTenantBranding(
 
     // Validar permissões
     const role = (session.user as any)?.role as string;
+
     if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
-      return { success: false, error: "Apenas administradores podem editar o branding" };
+      return {
+        success: false,
+        error: "Apenas administradores podem editar o branding",
+      };
     }
 
     // Construir updateData apenas com campos definidos
     const updateData: Record<string, unknown> = {};
 
-    if (data.primaryColor !== undefined) updateData.primaryColor = data.primaryColor;
-    if (data.secondaryColor !== undefined) updateData.secondaryColor = data.secondaryColor;
-    if (data.accentColor !== undefined) updateData.accentColor = data.accentColor;
+    if (data.primaryColor !== undefined)
+      updateData.primaryColor = data.primaryColor;
+    if (data.secondaryColor !== undefined)
+      updateData.secondaryColor = data.secondaryColor;
+    if (data.accentColor !== undefined)
+      updateData.accentColor = data.accentColor;
     if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl;
     if (data.faviconUrl !== undefined) updateData.faviconUrl = data.faviconUrl;
 
@@ -429,7 +443,9 @@ export async function updateTenantBranding(
       });
     }
 
-    logger.info(`Branding do tenant ${tenantId} atualizado por ${session.user.email}`);
+    logger.info(
+      `Branding do tenant ${tenantId} atualizado por ${session.user.email}`,
+    );
 
     return { success: true };
   } catch (error) {

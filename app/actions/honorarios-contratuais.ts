@@ -59,7 +59,9 @@ export async function listHonorariosContratuais(filters?: {
     // 2. Honorários PRIVADOS onde ele é o advogado vinculado (ou vinculado ao advogado)
     // 3. Honorários sem advogado específico (gerais do contrato)
     if (!isAdmin && userRole !== "CLIENTE" && session) {
-      const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+      const { getAccessibleAdvogadoIds } = await import(
+        "@/app/lib/advogado-access"
+      );
       const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
 
       // Se não há vínculos, acesso total (sem filtros adicionais)

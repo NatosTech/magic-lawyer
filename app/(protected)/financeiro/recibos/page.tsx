@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import RecibosContent from "./recibos-content";
+
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";
 import { UserRole } from "@/app/generated/prisma";
@@ -34,8 +35,10 @@ export default async function RecibosPage() {
 
     return <RecibosContent />;
   } catch (error) {
-    console.error("Erro ao verificar permissões para /financeiro/recibos:", error);
+    console.error(
+      "Erro ao verificar permissões para /financeiro/recibos:",
+      error,
+    );
     redirect("/dashboard");
   }
 }
-

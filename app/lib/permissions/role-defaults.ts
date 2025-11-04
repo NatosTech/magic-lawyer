@@ -101,4 +101,3 @@ export function resolveRolePermission(
 
   return false;
 }
-

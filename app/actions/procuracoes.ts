@@ -161,7 +161,7 @@ export async function getAllProcuracoes(): Promise<{
 
     if (clienteId) {
       whereClause.clienteId = clienteId;
-    // Funcionário sem vínculos: acesso total (não aplicar filtros)
+      // Funcionário sem vínculos: acesso total (não aplicar filtros)
     } else if (!isAdmin && accessibleAdvogados.length > 0) {
       const orConditions: Prisma.ProcuracaoWhereInput[] = [
         {
@@ -270,9 +270,19 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
       // Se não há vínculos, acesso total (sem filtros)
       if (accessibleAdvogados.length > 0) {
         const orConditions: Prisma.ProcuracaoWhereInput[] = [
-        {
-          cliente: {
-            advogadoClientes: {
+          {
+            cliente: {
+              advogadoClientes: {
+                some: {
+                  advogadoId: {
+                    in: accessibleAdvogados,
+                  },
+                },
+              },
+            },
+          },
+          {
+            outorgados: {
               some: {
                 advogadoId: {
                   in: accessibleAdvogados,
@@ -280,40 +290,30 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
               },
             },
           },
-        },
-        {
-          outorgados: {
-            some: {
-              advogadoId: {
-                in: accessibleAdvogados,
-              },
-            },
-          },
-        },
-        {
-          processos: {
-            some: {
-              processo: {
-                advogadoResponsavelId: {
-                  in: accessibleAdvogados,
+          {
+            processos: {
+              some: {
+                processo: {
+                  advogadoResponsavelId: {
+                    in: accessibleAdvogados,
+                  },
                 },
               },
             },
           },
-        },
-      ];
+        ];
 
-      if (user.role === "ADVOGADO") {
-        orConditions.push({
-          cliente: {
-            usuario: {
-              createdById: user.id,
+        if (user.role === "ADVOGADO") {
+          orConditions.push({
+            cliente: {
+              usuario: {
+                createdById: user.id,
+              },
             },
-          },
-        });
-      }
+          });
+        }
 
-      whereClause.OR = orConditions;
+        whereClause.OR = orConditions;
       }
     }
 
@@ -414,9 +414,7 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
 /**
  * Busca procurações de um cliente
  */
-export async function getProcuracoesCliente(
-  clienteId: string,
-): Promise<{
+export async function getProcuracoesCliente(clienteId: string): Promise<{
   success: boolean;
   procuracoes?: any[];
   error?: string;

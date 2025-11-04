@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import DashboardFinanceiroContent from "./dashboard-financeiro-content";
+
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";
 import { UserRole } from "@/app/generated/prisma";
@@ -34,8 +35,10 @@ export default async function DashboardFinanceiroPage() {
 
     return <DashboardFinanceiroContent />;
   } catch (error) {
-    console.error("Erro ao verificar permissões para /dashboard/financeiro:", error);
+    console.error(
+      "Erro ao verificar permissões para /dashboard/financeiro:",
+      error,
+    );
     redirect("/dashboard");
   }
 }
-

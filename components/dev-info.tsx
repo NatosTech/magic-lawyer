@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -32,8 +32,11 @@ interface DevInfo {
 }
 
 export function DevInfo() {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
 
   // SWR para buscar dados com Server Action
   const {
@@ -50,94 +53,224 @@ export function DevInfo() {
     },
   );
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const updateScreenSize = () => {
+      setIsLargeScreen(window.innerWidth >= 1024);
+    };
+
+    updateScreenSize();
+    window.addEventListener("resize", updateScreenSize);
+
+    return () => {
+      window.removeEventListener("resize", updateScreenSize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasAutoOpened && isVisible && isLargeScreen) {
+      setIsPanelOpen(true);
+      setHasAutoOpened(true);
+    }
+  }, [hasAutoOpened, isLargeScreen, isVisible]);
+
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copiado!`);
   };
 
-  if (!isVisible || !devInfo || isLoading) return null;
+  if (!isVisible || !devInfo || isLoading || error) return null;
+
+  const buttonPosition = isLargeScreen
+    ? "bottom-6 right-6"
+    : "bottom-6 right-6";
 
   return (
-    <Card className="fixed bottom-4 right-4 z-50 w-80 bg-black/90 backdrop-blur-md border-white/10">
-      <CardHeader
-        className="flex flex-row items-center justify-between space-y-0 pb-2 cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-2">
-          <Server className="h-4 w-4 text-green-400" />
-          <h3 className="text-sm font-medium text-white">Desenvolvimento</h3>
-        </div>
-        <div className="flex items-center gap-2">
-          <Chip color="success" size="sm" variant="flat">
-            DEV
-          </Chip>
-          <Button isIconOnly className="text-white" size="sm" variant="light">
-            {isExpanded ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronUp className="h-3 w-3" />
-            )}
-          </Button>
-        </div>
-      </CardHeader>
-      {isExpanded && (
-        <CardBody className="space-y-3">
-          {/* ngrok URL */}
-          {devInfo.ngrok && (
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Globe className="h-3 w-3 text-blue-400" />
-                <span className="text-xs text-default-400">ngrok</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <code className="text-xs bg-white/10 px-2 py-1 rounded text-green-400 flex-1 truncate">
-                  {devInfo.ngrok}
-                </code>
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="light"
-                  onClick={() => copyToClipboard(devInfo.ngrok, "URL ngrok")}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          )}
+    <>
+      {!isLargeScreen && isPanelOpen && (
+        <div
+          className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-sm transition-opacity"
+          onClick={() => setIsPanelOpen(false)}
+        />
+      )}
 
-          {/* Dashboard ngrok */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <ExternalLink className="h-3 w-3 text-purple-400" />
-              <span className="text-xs text-default-400">Dashboard</span>
+      <Button
+        className={`fixed z-[60] shadow-lg ${buttonPosition}`}
+        color="default"
+        size="sm"
+        startContent={<Server className="h-4 w-4" />}
+        variant="flat"
+        onPress={() => setIsPanelOpen((prev) => !prev)}
+      >
+        {isPanelOpen ? "Fechar painel dev" : "Painel dev"}
+      </Button>
+
+      <aside
+        className={`fixed z-[60] transition-all duration-300 ${
+          isLargeScreen
+            ? "top-24 right-6 w-[320px]"
+            : "top-24 left-1/2 w-[min(420px,calc(100vw-2.5rem))] -translate-x-1/2"
+        } ${
+          isPanelOpen
+            ? "opacity-100 pointer-events-auto translate-y-0"
+            : isLargeScreen
+              ? "opacity-0 pointer-events-none translate-x-6"
+              : "opacity-0 pointer-events-none -translate-y-4"
+        }`}
+      >
+        <Card className="border border-primary/20 shadow-2xl backdrop-blur bg-black/90 text-white h-full max-h-[75vh] flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 py-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <Server className="h-4 w-4 text-green-400" />
+              <div className="min-w-0">
+                <h3 className="text-sm font-medium text-white">
+                  Desenvolvimento
+                </h3>
+                {!isExpanded && (
+                  <p className="text-xs text-white/60">
+                    ngrok: {devInfo.ngrok ? "Ativo" : "Inativo"} •{" "}
+                    {devInfo.tenants.length} tenants
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              <code className="text-xs bg-white/10 px-2 py-1 rounded text-purple-400 flex-1">
-                http://localhost:4040
-              </code>
+              <Chip color="success" size="sm" variant="flat">
+                DEV
+              </Chip>
               <Button
                 isIconOnly
+                aria-label="Alternar detalhes"
                 size="sm"
                 variant="light"
-                onClick={() => window.open("http://localhost:4040", "_blank")}
+                onPress={() => setIsExpanded((prev) => !prev)}
               >
-                <ExternalLink className="h-3 w-3" />
+                {isExpanded ? (
+                  <ChevronDown className="h-3 w-3" />
+                ) : (
+                  <ChevronUp className="h-3 w-3" />
+                )}
+              </Button>
+              <Button
+                isIconOnly
+                aria-label="Fechar painel de desenvolvimento"
+                size="sm"
+                variant="light"
+                onPress={() => setIsPanelOpen(false)}
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M18 6L6 18M6 6l12 12"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </Button>
             </div>
-          </div>
+          </CardHeader>
+          {isExpanded && (
+            <CardBody className="space-y-4 overflow-y-auto pr-1 text-white">
+              {/* ngrok URL */}
+              {devInfo.ngrok && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-3 w-3 text-blue-400" />
+                    <span className="text-xs text-white/70">ngrok</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <code className="text-xs bg-white/10 px-2 py-1 rounded text-green-400 flex-1 truncate">
+                      {devInfo.ngrok}
+                    </code>
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      onClick={() =>
+                        copyToClipboard(devInfo.ngrok, "URL ngrok")
+                      }
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
 
-          {/* Tenants */}
-          {devInfo.tenants.length > 0 && (
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Users className="h-3 w-3 text-orange-400" />
-                <span className="text-xs text-default-400">Tenants Ativos</span>
-              </div>
+              {/* Dashboard ngrok */}
               <div className="space-y-1">
-                {devInfo.tenants.map((tenant) => (
-                  <div key={tenant.slug} className="flex items-center gap-2">
-                    <code className="text-xs bg-white/10 px-2 py-1 rounded text-orange-400 flex-1">
-                      {tenant.slug}.localhost:9192
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="h-3 w-3 text-purple-400" />
+                  <span className="text-xs text-white/70">Dashboard</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="text-xs bg-white/10 px-2 py-1 rounded text-purple-300 flex-1 truncate">
+                    http://localhost:4040
+                  </code>
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    onClick={() =>
+                      window.open("http://localhost:4040", "_blank")
+                    }
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Tenants */}
+              {devInfo.tenants.length > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-3 w-3 text-orange-400" />
+                    <span className="text-xs text-white/70">
+                      Tenants ativos
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {devInfo.tenants.map((tenant) => (
+                      <div
+                        key={tenant.slug}
+                        className="flex items-center gap-2"
+                      >
+                        <code className="text-xs bg-white/10 px-2 py-1 rounded text-orange-300 flex-1 truncate">
+                          {tenant.slug}.localhost:9192
+                        </code>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onClick={() =>
+                            copyToClipboard(
+                              `${tenant.slug}.localhost:9192`,
+                              "URL tenant",
+                            )
+                          }
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Webhook URL */}
+              {devInfo.ngrok && (
+                <div className="space-y-1">
+                  <span className="text-xs text-white/70">Webhook</span>
+                  <div className="flex items-center gap-2">
+                    <code className="text-xs bg-white/10 px-2 py-1 rounded text-red-300 flex-1 truncate">
+                      {devInfo.ngrok}/api/webhooks/asaas
                     </code>
                     <Button
                       isIconOnly
@@ -145,59 +278,30 @@ export function DevInfo() {
                       variant="light"
                       onClick={() =>
                         copyToClipboard(
-                          `${tenant.slug}.localhost:9192`,
-                          "URL tenant",
+                          `${devInfo.ngrok}/api/webhooks/asaas`,
+                          "Webhook URL",
                         )
                       }
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
                   </div>
-                ))}
+                </div>
+              )}
+            </CardBody>
+          )}
+          {!isExpanded && (
+            <div className="px-4 pb-3 text-xs text-white/60">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <span>ngrok: {devInfo.ngrok ? "Ativo" : "Inativo"}</span>
+                <span className="text-white/40">•</span>
+                <span>{devInfo.tenants.length} tenants</span>
               </div>
             </div>
           )}
-
-          {/* Webhook URL */}
-          {devInfo.ngrok && (
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-default-400">Webhook</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <code className="text-xs bg-white/10 px-2 py-1 rounded text-red-400 flex-1 truncate">
-                  {devInfo.ngrok}/api/webhooks/asaas
-                </code>
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="light"
-                  onClick={() =>
-                    copyToClipboard(
-                      `${devInfo.ngrok}/api/webhooks/asaas`,
-                      "Webhook URL",
-                    )
-                  }
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardBody>
-      )}
-
-      {/* Indicador de status quando recolhido */}
-      {!isExpanded && (
-        <div className="px-4 pb-2">
-          <div className="flex items-center gap-2 text-xs text-green-400">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span>ngrok: {devInfo.ngrok ? "Ativo" : "Inativo"}</span>
-            <span className="text-white/50">•</span>
-            <span>{devInfo.tenants.length} tenants</span>
-          </div>
-        </div>
-      )}
-    </Card>
+        </Card>
+      </aside>
+    </>
   );
 }

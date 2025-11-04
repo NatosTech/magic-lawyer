@@ -7,7 +7,9 @@ interface SessionLike {
   };
 }
 
-export async function getAdvogadoIdFromSession(session: SessionLike): Promise<string | null> {
+export async function getAdvogadoIdFromSession(
+  session: SessionLike,
+): Promise<string | null> {
   if (!session?.user?.id || !session.user.tenantId) {
     return null;
   }
@@ -23,7 +25,9 @@ export async function getAdvogadoIdFromSession(session: SessionLike): Promise<st
   return advogado?.id ?? null;
 }
 
-export async function getLinkedAdvogadoIds(session: SessionLike): Promise<string[]> {
+export async function getLinkedAdvogadoIds(
+  session: SessionLike,
+): Promise<string[]> {
   if (!session?.user?.id || !session.user.tenantId) {
     return [];
   }
@@ -42,15 +46,19 @@ export async function getLinkedAdvogadoIds(session: SessionLike): Promise<string
   return vinculos.map((v) => v.advogadoId);
 }
 
-export async function getAccessibleAdvogadoIds(session: SessionLike): Promise<string[]> {
+export async function getAccessibleAdvogadoIds(
+  session: SessionLike,
+): Promise<string[]> {
   const ids = new Set<string>();
 
   const self = await getAdvogadoIdFromSession(session);
+
   if (self) {
     ids.add(self);
   }
 
   const linked = await getLinkedAdvogadoIds(session);
+
   for (const advogadoId of linked) {
     if (advogadoId) {
       ids.add(advogadoId);

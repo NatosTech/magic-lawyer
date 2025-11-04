@@ -37,7 +37,7 @@ export interface UserPermissions {
 
 /**
  * Mapeamento de permissões antigas para novo formato (módulo + ação)
- * 
+ *
  * Nota: Alguns módulos podem não estar no rolePermissions padrão (ex: agenda, juizes, documentos).
  * Nesses casos, a verificação retornará false se não houver override/cargo configurado.
  */
@@ -52,22 +52,22 @@ const PERMISSION_MAP: Record<
   canManageTeam: { modulo: "equipe", acao: "visualizar" },
   canViewReports: { modulo: "relatorios", acao: "visualizar" },
   canManageContracts: { modulo: "financeiro", acao: "criar" }, // Criar/editar contratos
-  
+
   // Agenda - usar módulo agenda específico
   canViewAllEvents: { modulo: "agenda", acao: "visualizar" },
   canViewClientEvents: { modulo: "agenda", acao: "visualizar" },
   canCreateEvents: { modulo: "agenda", acao: "criar" },
   canEditAllEvents: { modulo: "agenda", acao: "editar" },
-  
+
   // Configurações - pode não estar no sistema padrão
   canManageOfficeSettings: { modulo: "equipe", acao: "editar" }, // Usar equipe.editar como proxy
-  
+
   // Documentos - pode não estar no sistema padrão
   canViewAllDocuments: { modulo: "processos", acao: "visualizar" }, // Proxied para processos
-  
+
   // Equipe/Usuários
   canManageUsers: { modulo: "equipe", acao: "editar" },
-  
+
   // Juízes - usando advogados como proxy (similar estrutura)
   canViewJudgesDatabase: { modulo: "advogados", acao: "visualizar" },
   canManageJudgesDatabase: { modulo: "advogados", acao: "editar" }, // Proxy para advogados.editar
@@ -79,12 +79,12 @@ const PERMISSION_MAP: Record<
 
 /**
  * Hook para verificar permissões do usuário
- * 
+ *
  * **Migrado para usar o novo sistema de permissões:**
  * - Usa `usePermissionsCheck` internamente
  * - Respeita override → cargo → role padrão
  * - Mantém interface antiga para compatibilidade
- * 
+ *
  * SUPER_ADMIN e ADMIN têm acesso total (bypass do sistema de permissões)
  */
 export function useUserPermissions() {
@@ -107,9 +107,10 @@ export function useUserPermissions() {
     Object.values(PERMISSION_MAP).forEach((mapping) => {
       // Ignorar mapeamentos null (não têm correspondência no novo sistema)
       if (!mapping) return;
-      
+
       const { modulo, acao } = mapping;
       const key = `${modulo}.${acao}`;
+
       if (!seen.has(key)) {
         seen.add(key);
         checks.push({ modulo, acao });
@@ -185,80 +186,118 @@ export function useUserPermissions() {
     const mappedPermissions: UserPermissions = {
       canViewAllProcesses:
         (PERMISSION_MAP.canViewAllProcesses &&
-          newPermissions[`${PERMISSION_MAP.canViewAllProcesses.modulo}.${PERMISSION_MAP.canViewAllProcesses.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canViewAllProcesses.modulo}.${PERMISSION_MAP.canViewAllProcesses.acao}`
+          ]) ??
         false,
       canViewAllClients:
         (PERMISSION_MAP.canViewAllClients &&
-          newPermissions[`${PERMISSION_MAP.canViewAllClients.modulo}.${PERMISSION_MAP.canViewAllClients.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canViewAllClients.modulo}.${PERMISSION_MAP.canViewAllClients.acao}`
+          ]) ??
         false,
       canViewAllEvents:
         (PERMISSION_MAP.canViewAllEvents &&
-          newPermissions[`${PERMISSION_MAP.canViewAllEvents.modulo}.${PERMISSION_MAP.canViewAllEvents.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canViewAllEvents.modulo}.${PERMISSION_MAP.canViewAllEvents.acao}`
+          ]) ??
         false,
       canViewClientEvents:
         (PERMISSION_MAP.canViewClientEvents &&
-          newPermissions[`${PERMISSION_MAP.canViewClientEvents.modulo}.${PERMISSION_MAP.canViewClientEvents.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canViewClientEvents.modulo}.${PERMISSION_MAP.canViewClientEvents.acao}`
+          ]) ??
         false,
       canViewFinancialData:
         (PERMISSION_MAP.canViewFinancialData &&
-          newPermissions[`${PERMISSION_MAP.canViewFinancialData.modulo}.${PERMISSION_MAP.canViewFinancialData.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canViewFinancialData.modulo}.${PERMISSION_MAP.canViewFinancialData.acao}`
+          ]) ??
         false,
       canManageTeam:
         (PERMISSION_MAP.canManageTeam &&
-          newPermissions[`${PERMISSION_MAP.canManageTeam.modulo}.${PERMISSION_MAP.canManageTeam.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canManageTeam.modulo}.${PERMISSION_MAP.canManageTeam.acao}`
+          ]) ??
         false,
       canManageOfficeSettings:
         (PERMISSION_MAP.canManageOfficeSettings &&
-          newPermissions[`${PERMISSION_MAP.canManageOfficeSettings.modulo}.${PERMISSION_MAP.canManageOfficeSettings.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canManageOfficeSettings.modulo}.${PERMISSION_MAP.canManageOfficeSettings.acao}`
+          ]) ??
         false,
       canCreateEvents:
         (PERMISSION_MAP.canCreateEvents &&
-          newPermissions[`${PERMISSION_MAP.canCreateEvents.modulo}.${PERMISSION_MAP.canCreateEvents.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canCreateEvents.modulo}.${PERMISSION_MAP.canCreateEvents.acao}`
+          ]) ??
         false,
       canEditAllEvents:
         (PERMISSION_MAP.canEditAllEvents &&
-          newPermissions[`${PERMISSION_MAP.canEditAllEvents.modulo}.${PERMISSION_MAP.canEditAllEvents.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canEditAllEvents.modulo}.${PERMISSION_MAP.canEditAllEvents.acao}`
+          ]) ??
         false,
       canViewReports:
         (PERMISSION_MAP.canViewReports &&
-          newPermissions[`${PERMISSION_MAP.canViewReports.modulo}.${PERMISSION_MAP.canViewReports.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canViewReports.modulo}.${PERMISSION_MAP.canViewReports.acao}`
+          ]) ??
         false,
       canManageContracts:
         (PERMISSION_MAP.canManageContracts &&
-          newPermissions[`${PERMISSION_MAP.canManageContracts.modulo}.${PERMISSION_MAP.canManageContracts.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canManageContracts.modulo}.${PERMISSION_MAP.canManageContracts.acao}`
+          ]) ??
         false,
       canViewAllDocuments:
         (PERMISSION_MAP.canViewAllDocuments &&
-          newPermissions[`${PERMISSION_MAP.canViewAllDocuments.modulo}.${PERMISSION_MAP.canViewAllDocuments.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canViewAllDocuments.modulo}.${PERMISSION_MAP.canViewAllDocuments.acao}`
+          ]) ??
         false,
       canManageUsers:
         (PERMISSION_MAP.canManageUsers &&
-          newPermissions[`${PERMISSION_MAP.canManageUsers.modulo}.${PERMISSION_MAP.canManageUsers.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canManageUsers.modulo}.${PERMISSION_MAP.canManageUsers.acao}`
+          ]) ??
         false,
       // Permissões de juízes - usando proxies
       canViewJudgesDatabase:
         (PERMISSION_MAP.canViewJudgesDatabase &&
-          newPermissions[`${PERMISSION_MAP.canViewJudgesDatabase.modulo}.${PERMISSION_MAP.canViewJudgesDatabase.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canViewJudgesDatabase.modulo}.${PERMISSION_MAP.canViewJudgesDatabase.acao}`
+          ]) ??
         false,
       canManageJudgesDatabase:
         (PERMISSION_MAP.canManageJudgesDatabase &&
-          newPermissions[`${PERMISSION_MAP.canManageJudgesDatabase.modulo}.${PERMISSION_MAP.canManageJudgesDatabase.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canManageJudgesDatabase.modulo}.${PERMISSION_MAP.canManageJudgesDatabase.acao}`
+          ]) ??
         false,
       canCreateJudgeProfiles:
         (PERMISSION_MAP.canCreateJudgeProfiles &&
-          newPermissions[`${PERMISSION_MAP.canCreateJudgeProfiles.modulo}.${PERMISSION_MAP.canCreateJudgeProfiles.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canCreateJudgeProfiles.modulo}.${PERMISSION_MAP.canCreateJudgeProfiles.acao}`
+          ]) ??
         false,
       canEditJudgeProfiles:
         (PERMISSION_MAP.canEditJudgeProfiles &&
-          newPermissions[`${PERMISSION_MAP.canEditJudgeProfiles.modulo}.${PERMISSION_MAP.canEditJudgeProfiles.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canEditJudgeProfiles.modulo}.${PERMISSION_MAP.canEditJudgeProfiles.acao}`
+          ]) ??
         false,
       canDeleteJudgeProfiles:
         (PERMISSION_MAP.canDeleteJudgeProfiles &&
-          newPermissions[`${PERMISSION_MAP.canDeleteJudgeProfiles.modulo}.${PERMISSION_MAP.canDeleteJudgeProfiles.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canDeleteJudgeProfiles.modulo}.${PERMISSION_MAP.canDeleteJudgeProfiles.acao}`
+          ]) ??
         false,
       canViewPremiumJudges:
         (PERMISSION_MAP.canViewPremiumJudges &&
-          newPermissions[`${PERMISSION_MAP.canViewPremiumJudges.modulo}.${PERMISSION_MAP.canViewPremiumJudges.acao}`]) ??
+          newPermissions[
+            `${PERMISSION_MAP.canViewPremiumJudges.modulo}.${PERMISSION_MAP.canViewPremiumJudges.acao}`
+          ]) ??
         false,
     };
 

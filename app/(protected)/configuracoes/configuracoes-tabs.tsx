@@ -7,13 +7,7 @@ import { Chip } from "@heroui/chip";
 import { Badge } from "@heroui/badge";
 import { Button } from "@heroui/button";
 import NextLink from "next/link";
-import {
-  Building2,
-  Palette,
-  Mail,
-  BarChart3,
-  Package,
-} from "lucide-react";
+import { Building2, Palette, Mail, BarChart3 } from "lucide-react";
 
 import { EmailCredentialsCard } from "./email-credentials-card";
 import { TenantSettingsForm } from "./tenant-settings-form";
@@ -101,8 +95,8 @@ export function ConfiguracoesTabs({
     <Tabs
       aria-label="Configurações"
       className="w-full"
-      variant="underlined"
       color="primary"
+      variant="underlined"
     >
       {/* Tab 1: Visão Geral */}
       <Tab
@@ -277,8 +271,9 @@ export function ConfiguracoesTabs({
                 Módulos do Sistema
               </h2>
               <p className="text-sm text-default-400">
-                Módulos disponíveis no seu plano atual ({modules.accessible.length}{" "}
-                de {modules.allAvailable.length} ativos).
+                Módulos disponíveis no seu plano atual (
+                {modules.accessible.length} de {modules.allAvailable.length}{" "}
+                ativos).
               </p>
             </CardHeader>
             <Divider className="border-white/10" />
@@ -412,4 +407,3 @@ export function ConfiguracoesTabs({
     </Tabs>
   );
 }
-

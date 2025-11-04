@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
 import TarefasContent from "./tarefas-content";
+
 import { getSession } from "@/app/lib/auth";
-import { UserRole } from "@/app/generated/prisma";
 
 export default async function TarefasPage() {
   const session = await getSession();

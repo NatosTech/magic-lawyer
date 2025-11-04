@@ -10,7 +10,7 @@ import { useRealtime } from "@/app/providers/realtime-provider";
  * Hook para verificar permissão específica (módulo + ação)
  * Considera override individual → cargo → role padrão
  * Assina eventos realtime (usuario-update, cargo-update) para revalidação automática
- * 
+ *
  * @param modulo - Slug do módulo (ex: 'processos', 'clientes')
  * @param acao - Ação desejada (ex: 'criar', 'editar', 'visualizar')
  * @param options - Opções para o hook
@@ -32,6 +32,7 @@ export function usePermissionCheck(
   const tenantId = (session?.user as any)?.tenantId;
   const key = useMemo(() => {
     if (!modulo || !acao || !tenantId) return null;
+
     return [
       "permission-check",
       tenantId,
@@ -66,6 +67,7 @@ export function usePermissionCheck(
         return await response.json();
       } catch (error) {
         console.error("Erro ao verificar permissão:", error);
+
         return { hasPermission: false };
       }
     },
@@ -97,9 +99,7 @@ export function usePermissionCheck(
   }, [realtime, key, mutate]);
 
   const hasPermission =
-    enableEarlyAccess && isLoading
-      ? false
-      : data?.hasPermission ?? false;
+    enableEarlyAccess && isLoading ? false : (data?.hasPermission ?? false);
 
   return {
     hasPermission,
@@ -114,7 +114,7 @@ export function usePermissionCheck(
  * Hook para verificar múltiplas permissões de uma vez
  * Usa API otimizada checkPermissions para evitar N round-trips
  * Assina eventos realtime para revalidação automática
- * 
+ *
  * @param checks - Array de objetos com módulo e ação a verificar
  * @param options - Opções para o hook
  */
@@ -133,14 +133,16 @@ export function usePermissionsCheck(
   const enableEarlyAccess = options?.enableEarlyAccess ?? false;
 
   const tenantId = (session?.user as any)?.tenantId;
-  
+
   // Criar chave estável para cache
   const key = useMemo(() => {
     if (!tenantId || checks.length === 0) return null;
     const sortedChecks = [...checks].sort((a, b) => {
       if (a.modulo !== b.modulo) return a.modulo.localeCompare(b.modulo);
+
       return a.acao.localeCompare(b.acao);
     });
+
     return [
       "permissions-check",
       tenantId,
@@ -177,14 +179,17 @@ export function usePermissionsCheck(
         }
 
         const result = await response.json();
+
         return { permissions: result.permissions || {} };
       } catch (error) {
         console.error("Erro ao verificar permissões:", error);
         // Retornar todas como false em caso de erro
         const permissions: Record<string, boolean> = {};
+
         checks.forEach(({ modulo, acao }) => {
           permissions[`${modulo}.${acao}`] = false;
         });
+
         return { permissions };
       }
     },
@@ -219,6 +224,7 @@ export function usePermissionsCheck(
     if (enableEarlyAccess && isLoading) return false;
 
     const values = Object.values(permissions);
+
     if (values.length === 0) return false;
 
     if (options?.requiredAll) {
@@ -231,7 +237,13 @@ export function usePermissionsCheck(
 
     // Por padrão, retorna true se todas forem true
     return values.every(Boolean);
-  }, [permissions, isLoading, enableEarlyAccess, options?.requiredAll, options?.requiredAny]);
+  }, [
+    permissions,
+    isLoading,
+    enableEarlyAccess,
+    options?.requiredAll,
+    options?.requiredAny,
+  ]);
 
   const hasPermissionFor = (modulo: string, acao: string): boolean => {
     return permissions[`${modulo}.${acao}`] ?? false;

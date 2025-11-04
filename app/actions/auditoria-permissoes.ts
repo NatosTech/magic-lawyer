@@ -102,7 +102,7 @@ export async function getPermissoesNegadas(filters?: {
     // Transformar e filtrar por módulo/ação/origem no código
     let data: PermissaoNegadaData[] = historico.map((h) => {
       const dadosNovos = h.dadosNovos as any;
-      
+
       return {
         id: h.id,
         createdAt: h.createdAt,
@@ -145,6 +145,7 @@ export async function getPermissoesNegadas(filters?: {
     };
   } catch (error) {
     console.error("Erro ao buscar permissões negadas:", error);
+
     return {
       success: false,
       error:
@@ -185,6 +186,7 @@ export async function getMetricasPermissoesNegadas(): Promise<{
     }
 
     const vinteQuatroHorasAtras = new Date();
+
     vinteQuatroHorasAtras.setHours(vinteQuatroHorasAtras.getHours() - 24);
 
     const [totalNegadas, ultimas24h, historico] = await Promise.all([
@@ -229,17 +231,20 @@ export async function getMetricasPermissoesNegadas(): Promise<{
 
     historico.forEach((h) => {
       const dados = h.dadosNovos as any;
-      
+
       // Por módulo
       const modulo = dados?.modulo || "desconhecido";
+
       porModulo[modulo] = (porModulo[modulo] || 0) + 1;
 
       // Por ação
       const acao = dados?.acao || "desconhecido";
+
       porAcao[acao] = (porAcao[acao] || 0) + 1;
 
       // Por origem
       const origem = dados?.origem || "role";
+
       porOrigem[origem] = (porOrigem[origem] || 0) + 1;
 
       // Por usuário
@@ -247,7 +252,7 @@ export async function getMetricasPermissoesNegadas(): Promise<{
       const nomeUsuario =
         `${h.usuario.firstName || ""} ${h.usuario.lastName || ""}`.trim() ||
         "Sem nome";
-      
+
       if (!porUsuarioMap[usuarioId]) {
         porUsuarioMap[usuarioId] = { nome: nomeUsuario, total: 0 };
       }
@@ -271,11 +276,10 @@ export async function getMetricasPermissoesNegadas(): Promise<{
     };
   } catch (error) {
     console.error("Erro ao buscar métricas:", error);
+
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Erro ao buscar métricas",
+      error: error instanceof Error ? error.message : "Erro ao buscar métricas",
     };
   }
 }
-
