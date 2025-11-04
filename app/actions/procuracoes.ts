@@ -314,6 +314,7 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
       }
 
       whereClause.OR = orConditions;
+      }
     }
 
     const procuracao = await prisma.procuracao.findFirst({
@@ -413,7 +414,9 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
 /**
  * Busca procurações de um cliente
  */
-export async function getProcuracoesCliente(clienteId: string): Promise<{
+export async function getProcuracoesCliente(
+  clienteId: string,
+): Promise<{
   success: boolean;
   procuracoes?: any[];
   error?: string;

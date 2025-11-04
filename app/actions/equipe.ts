@@ -6,6 +6,7 @@ import { UserRole } from "@/app/generated/prisma";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { NotificationHelper } from "@/app/lib/notifications/notification-helper";
+import { resolveRolePermission } from "@/app/lib/permissions/role-defaults";
 import { getTenantAccessibleModules } from "@/app/lib/tenant-modules";
 import { publishRealtimeEvent } from "@/app/lib/realtime/publisher";
 import logger from "@/lib/logger";
@@ -531,6 +532,24 @@ export async function atribuirCargoUsuario(
   });
 
   revalidatePath("/equipe");
+
+  // Notificar clientes para revalidarem permissões em tempo real
+  publishRealtimeEvent("usuario-update", {
+    tenantId: session.user.tenantId,
+    userId: session.user.id,
+    payload: {
+      usuarioId,
+      action: "permissions-updated",
+      changedBy: session.user.id!,
+      permission: {
+        modulo,
+        acao,
+        permitido,
+      },
+    },
+  }).catch((error) => {
+    console.error("[realtime] Falha ao publicar evento usuario-update", error);
+  });
 }
 
 export async function removerCargoUsuario(
@@ -691,8 +710,11 @@ export async function verificarPermissao(
 
   const targetUsuarioId = usuarioId || session.user.id;
 
-  // Admin tem todas as permissões
-  if (session.user.role === UserRole.ADMIN) {
+  // Admin e SuperAdmin têm todas as permissões
+  if (
+    session.user.role === UserRole.ADMIN ||
+    session.user.role === UserRole.SUPER_ADMIN
+  ) {
     return true;
   }
 
@@ -771,64 +793,9 @@ export async function verificarPermissao(
     }
   }
 
-  // Permissões padrão baseadas no role
-  const rolePermissions: Record<UserRole, Record<string, string[]>> = {
-    [UserRole.ADMIN]: {
-      processos: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      clientes: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      advogados: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      "portal-advogado": ["visualizar"],
-    },
-    [UserRole.FINANCEIRO]: {
-      processos: ["visualizar"],
-      clientes: ["visualizar"],
-      advogados: ["visualizar"],
-      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      equipe: ["visualizar"],
-      relatorios: ["visualizar", "exportar"],
-    },
-    [UserRole.SUPER_ADMIN]: {
-      processos: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      clientes: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      advogados: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      "portal-advogado": ["visualizar"],
-    },
-    [UserRole.ADVOGADO]: {
-      processos: ["criar", "editar", "visualizar", "exportar"],
-      clientes: ["criar", "editar", "visualizar", "exportar"],
-      advogados: ["visualizar"],
-      financeiro: ["visualizar"],
-      equipe: ["visualizar"],
-      relatorios: ["visualizar", "exportar"],
-      "portal-advogado": ["visualizar"],
-    },
-    [UserRole.SECRETARIA]: {
-      processos: ["criar", "editar", "visualizar", "exportar"],
-      clientes: ["criar", "editar", "visualizar", "exportar"],
-      advogados: ["visualizar"],
-      financeiro: ["visualizar"],
-      equipe: ["visualizar"],
-      relatorios: ["visualizar", "exportar"],
-    },
-    [UserRole.CLIENTE]: {
-      processos: ["visualizar"],
-      clientes: ["visualizar"],
-      advogados: ["visualizar"],
-      financeiro: ["visualizar"],
-      equipe: [],
-      relatorios: ["visualizar"],
-    },
-  };
+  const userRole = session.user.role! as UserRole;
 
-  const userRolePermissions = rolePermissions[session.user.role! as UserRole];
-
-  if (userRolePermissions[modulo]?.includes(acao)) {
+  if (resolveRolePermission(userRole, modulo, acao)) {
     return true;
   }
 
@@ -1098,7 +1065,7 @@ export async function getPermissoesEfetivas(
   }
 
   // Buscar todos os módulos e ações disponíveis
-  const { modulos: modulosData } = await getTenantAccessibleModules(
+  const tenantModules = await getTenantAccessibleModules(
     session.user.tenantId,
   );
 
@@ -1111,72 +1078,16 @@ export async function getPermissoesEfetivas(
     origem: "override" | "cargo" | "role";
   }> = [];
 
-  // Matriz de permissões padrão por role
-  const rolePermissions: Record<UserRole, Record<string, string[]>> = {
-    [UserRole.ADMIN]: {
-      processos: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      clientes: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      advogados: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      "portal-advogado": ["visualizar"],
-    },
-    [UserRole.FINANCEIRO]: {
-      processos: ["visualizar"],
-      clientes: ["visualizar"],
-      advogados: ["visualizar"],
-      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      equipe: ["visualizar"],
-      relatorios: ["visualizar", "exportar"],
-    },
-    [UserRole.SUPER_ADMIN]: {
-      processos: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      clientes: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      advogados: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      "portal-advogado": ["visualizar"],
-    },
-    [UserRole.ADVOGADO]: {
-      processos: ["criar", "editar", "visualizar", "exportar"],
-      clientes: ["criar", "editar", "visualizar", "exportar"],
-      advogados: ["visualizar"],
-      financeiro: ["visualizar"],
-      equipe: ["visualizar"],
-      relatorios: ["visualizar", "exportar"],
-      "portal-advogado": ["visualizar"],
-    },
-    [UserRole.SECRETARIA]: {
-      processos: ["criar", "editar", "visualizar", "exportar"],
-      clientes: ["criar", "editar", "visualizar", "exportar"],
-      advogados: ["visualizar"],
-      financeiro: ["visualizar"],
-      equipe: ["visualizar"],
-      relatorios: ["visualizar", "exportar"],
-    },
-    [UserRole.CLIENTE]: {
-      processos: ["visualizar"],
-      clientes: ["visualizar"],
-      advogados: ["visualizar"],
-      financeiro: ["visualizar"],
-      equipe: [],
-      relatorios: ["visualizar"],
-    },
-  };
-
   // Buscar módulos disponíveis do tenant
   const modulos = await prisma.modulo.findMany({
     where: {
-      slug: { in: modulosData },
+      slug: { in: tenantModules },
       ativo: true,
     },
     select: { slug: true },
   });
 
   const moduloSlugs = modulos.map((m) => m.slug);
-  const userRolePermissions = rolePermissions[usuario.role as UserRole] || {};
 
   // Para cada módulo e ação, determinar a permissão efetiva
   for (const modulo of moduloSlugs) {
@@ -1215,12 +1126,14 @@ export async function getPermissoesEfetivas(
       }
 
       // 3. Verificar permissão padrão do role
-      const temPermissaoRole =
-        userRolePermissions[modulo]?.includes(acao) ?? false;
       permissoesEfetivas.push({
         modulo,
         acao,
-        permitido: temPermissaoRole,
+        permitido: resolveRolePermission(
+          usuario.role as UserRole,
+          modulo,
+          acao,
+        ),
         origem: "role",
       });
     }
@@ -1625,7 +1538,10 @@ export async function checkPermissions(
   }
 
   // Se for ADMIN, tem todas as permissões
-  if (session.user.role === UserRole.ADMIN) {
+  if (
+    session.user.role === UserRole.ADMIN ||
+    session.user.role === UserRole.SUPER_ADMIN
+  ) {
     return requests.reduce(
       (acc, { modulo, acao }) => {
         acc[`${modulo}.${acao}`] = true;
@@ -1667,64 +1583,6 @@ export async function checkPermissions(
     );
   }
 
-  // Matriz de permissões padrão por role
-  const rolePermissions: Record<UserRole, Record<string, string[]>> = {
-    [UserRole.ADMIN]: {
-      processos: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      clientes: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      advogados: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      "portal-advogado": ["visualizar"],
-    },
-    [UserRole.FINANCEIRO]: {
-      processos: ["visualizar"],
-      clientes: ["visualizar"],
-      advogados: ["visualizar"],
-      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      equipe: ["visualizar"],
-      relatorios: ["visualizar", "exportar"],
-    },
-    [UserRole.SUPER_ADMIN]: {
-      processos: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      clientes: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      advogados: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      financeiro: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      equipe: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      relatorios: ["criar", "editar", "excluir", "visualizar", "exportar"],
-      "portal-advogado": ["visualizar"],
-    },
-    [UserRole.ADVOGADO]: {
-      processos: ["criar", "editar", "visualizar", "exportar"],
-      clientes: ["criar", "editar", "visualizar", "exportar"],
-      advogados: ["visualizar"],
-      financeiro: ["visualizar"],
-      equipe: ["visualizar"],
-      relatorios: ["visualizar", "exportar"],
-      "portal-advogado": ["visualizar"],
-    },
-    [UserRole.SECRETARIA]: {
-      processos: ["criar", "editar", "visualizar", "exportar"],
-      clientes: ["criar", "editar", "visualizar", "exportar"],
-      advogados: ["visualizar"],
-      financeiro: ["visualizar"],
-      equipe: ["visualizar"],
-      relatorios: ["visualizar", "exportar"],
-    },
-    [UserRole.CLIENTE]: {
-      processos: ["visualizar"],
-      clientes: ["visualizar"],
-      advogados: ["visualizar"],
-      financeiro: ["visualizar"],
-      equipe: [],
-      relatorios: ["visualizar"],
-    },
-  };
-
-  const userRolePermissions =
-    rolePermissions[usuario.role as UserRole] || {};
-
   const results: Record<string, boolean> = {};
 
   // Verificar cada permissão solicitada
@@ -1755,8 +1613,11 @@ export async function checkPermissions(
     }
 
     // 3. Verificar permissão padrão do role
-    results[key] =
-      userRolePermissions[modulo]?.includes(acao) ?? false;
+    results[key] = resolveRolePermission(
+      usuario.role as UserRole,
+      modulo,
+      acao,
+    );
   }
 
   return results;

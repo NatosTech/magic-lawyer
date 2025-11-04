@@ -41,6 +41,7 @@
     "notifications:crons": "curl -sSf -X GET \"http://localhost:9192/api/cron/check-deadlines\" -H \"Authorization: Bearer ${CRON_SECRET:-test-secret}\" > /dev/null && curl -sSf -X GET \"http://localhost:9192/api/cron/check-contracts\" -H \"Authorization: Bearer ${CRON_SECRET:-test-secret}\" > /dev/null",
     "notifications:all": "npm run notifications:test && npm run notifications:webhook && npm run notifications:smoke && npm run notifications:crons",
     "notifications:repair": "npx tsx scripts/fix-tenant-status-simple.ts",
+    "modules:detect": "npx tsx scripts/auto-detect-modules.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

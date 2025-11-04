@@ -1,8 +1,11 @@
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { DocumentosContent } from "./documentos-content";
-
 import { getDocumentExplorerData } from "@/app/actions/documentos-explorer";
+import { getSession } from "@/app/lib/auth";
+import { checkPermission } from "@/app/actions/equipe";
+import { UserRole } from "@/app/generated/prisma";
 
 export const metadata: Metadata = {
   title: "Documentos",
@@ -11,14 +14,52 @@ export const metadata: Metadata = {
 };
 
 export default async function DocumentosPage() {
-  const explorerResult = await getDocumentExplorerData();
+  const session = await getSession();
 
-  return (
-    <DocumentosContent
-      initialData={
-        explorerResult.success ? (explorerResult.data ?? null) : null
-      }
-      initialError={!explorerResult.success ? explorerResult.error : undefined}
-    />
-  );
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const user = session.user as any;
+
+  // SuperAdmin vai para dashboard admin
+  if (user.role === "SUPER_ADMIN") {
+    redirect("/admin/dashboard");
+  }
+
+  // Admin sempre tem acesso
+  if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) {
+    const explorerResult = await getDocumentExplorerData();
+    return (
+      <DocumentosContent
+        initialData={
+          explorerResult.success ? (explorerResult.data ?? null) : null
+        }
+        initialError={!explorerResult.success ? explorerResult.error : undefined}
+      />
+    );
+  }
+
+  // Para outros roles, verificar permissão processos.visualizar
+  // (documentos usa processos como proxy)
+  try {
+    const hasPermission = await checkPermission("processos", "visualizar");
+
+    if (!hasPermission) {
+      redirect("/dashboard");
+    }
+
+    const explorerResult = await getDocumentExplorerData();
+    return (
+      <DocumentosContent
+        initialData={
+          explorerResult.success ? (explorerResult.data ?? null) : null
+        }
+        initialError={!explorerResult.success ? explorerResult.error : undefined}
+      />
+    );
+  } catch (error) {
+    console.error("Erro ao verificar permissões para /documentos:", error);
+    redirect("/dashboard");
+  }
 }

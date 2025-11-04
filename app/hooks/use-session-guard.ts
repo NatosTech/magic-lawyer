@@ -220,8 +220,8 @@ export function useSessionGuard(
       "[useSessionGuard] 📡 Registrando listener WebSocket para tenant-status",
     );
 
-    // Subscribe em eventos tenant-status (hard logout)
-    const unsubscribe = realtime.subscribe(
+    // Subscribe em eventos tenant-status (hard logout para todos do tenant)
+    const unsubscribeTenant = realtime.subscribe(
       "tenant-status",
       (event: RealtimeEvent) => {
         console.log(
@@ -242,10 +242,32 @@ export function useSessionGuard(
       },
     );
 
+    // Subscribe em eventos user-status (logout individual)
+    const unsubscribeUser = realtime.subscribe(
+      "user-status",
+      (event: RealtimeEvent) => {
+        console.log(
+          "[useSessionGuard] 📨 Evento user-status recebido:",
+          event,
+        );
+
+        const payload = event.payload as any;
+        const targetUserId = payload.userId || event.userId;
+
+        if (
+          targetUserId === session.user.id &&
+          payload.active === false
+        ) {
+          forceLogout("USER_DEACTIVATED");
+        }
+      },
+    );
+
     // Cleanup
     return () => {
       console.log("[useSessionGuard] 📡 Removendo listener WebSocket");
-      unsubscribe();
+      unsubscribeTenant();
+      unsubscribeUser();
     };
   }, [sessionStatus, session, isPublicRoute, realtime, forceLogout, isRevoked]);
 

@@ -1,5 +1,29 @@
-import TarefasContent from "./tarefas-content";
+import { redirect } from "next/navigation";
 
-export default function TarefasPage() {
+import TarefasContent from "./tarefas-content";
+import { getSession } from "@/app/lib/auth";
+import { UserRole } from "@/app/generated/prisma";
+
+export default async function TarefasPage() {
+  const session = await getSession();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const user = session.user as any;
+
+  // SuperAdmin vai para dashboard admin
+  if (user.role === "SUPER_ADMIN") {
+    redirect("/admin/dashboard");
+  }
+
+  // Cliente não tem acesso a tarefas
+  if (user.role === "CLIENTE") {
+    redirect("/dashboard");
+  }
+
+  // Admin e outros roles têm acesso
+  // (tarefas não requerem permissão específica, apenas não ser cliente)
   return <TarefasContent />;
 }

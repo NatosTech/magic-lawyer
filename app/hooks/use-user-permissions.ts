@@ -53,11 +53,11 @@ const PERMISSION_MAP: Record<
   canViewReports: { modulo: "relatorios", acao: "visualizar" },
   canManageContracts: { modulo: "financeiro", acao: "criar" }, // Criar/editar contratos
   
-  // Agenda - usando processos como proxy (eventos estão relacionados a processos)
-  canViewAllEvents: { modulo: "processos", acao: "visualizar" },
-  canViewClientEvents: { modulo: "processos", acao: "visualizar" },
-  canCreateEvents: { modulo: "processos", acao: "criar" }, // Proxy: criar evento = criar processo
-  canEditAllEvents: { modulo: "processos", acao: "editar" }, // Proxy: editar evento = editar processo
+  // Agenda - usar módulo agenda específico
+  canViewAllEvents: { modulo: "agenda", acao: "visualizar" },
+  canViewClientEvents: { modulo: "agenda", acao: "visualizar" },
+  canCreateEvents: { modulo: "agenda", acao: "criar" },
+  canEditAllEvents: { modulo: "agenda", acao: "editar" },
   
   // Configurações - pode não estar no sistema padrão
   canManageOfficeSettings: { modulo: "equipe", acao: "editar" }, // Usar equipe.editar como proxy

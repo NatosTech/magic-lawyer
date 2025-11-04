@@ -115,6 +115,12 @@ node scripts/map-permission-usage.js
 
 **Nota:** Se no futuro decidir habilitar CI/CD, consulte `CI-CD.md` e `SETUP-CI.md` como referência.
 
+### 5. Sincronizar Novos Módulos (Alta Prioridade)
+
+- ✅ Script CLI `npm run modules:detect` executa a varredura automática (`autoDetectModulesCore`) e limpa caches (`module-map` + `module-map-edge`).
+- ✅ Endpoint interno `/api/internal/module-detect` protegido por token para uso em automações/cron.
+- [ ] Configurar worker/cron (p. ex. Vercel, GitHub Actions, servidor interno) chamando o script ou endpoint para manter o catálogo sempre alinhado com novas rotas.
+
 ## 📊 Status Atual
 
 ### UI & Experiência

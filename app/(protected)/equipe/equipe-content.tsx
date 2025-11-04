@@ -76,6 +76,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import { UserRole } from "@/app/generated/prisma";
 
 import {
   getCargos,
@@ -1169,6 +1171,10 @@ function UsuarioHistoricoTab({ usuarioId }: { usuarioId: string }) {
 }
 
 function UsuariosTab() {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role as UserRole | undefined;
+  const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.SUPER_ADMIN;
+
   const [usuarios, setUsuarios] = useState<UsuarioEquipeData[]>([]);
   const [advogados, setAdvogados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1358,6 +1364,12 @@ function UsuariosTab() {
   }
 
   async function handlePermissionsUsuario(usuario: UsuarioEquipeData) {
+    // Verificar se o usuário é admin antes de abrir o modal
+    if (!isAdmin) {
+      toast.error("Apenas administradores podem gerenciar permissões de usuários");
+      return;
+    }
+
     setSelectedUsuario(usuario);
     setIsPermissionsModalOpen(true);
     setLoadingPermissoes(true);
@@ -1377,8 +1389,11 @@ function UsuariosTab() {
       });
       setPermissionsForm(existingPerms);
     } catch (error) {
-      toast.error("Erro ao carregar permissões efetivas");
+      const errorMessage = error instanceof Error ? error.message : "Erro ao carregar permissões efetivas";
+      toast.error(errorMessage);
       console.error(error);
+      // Fechar o modal em caso de erro
+      setIsPermissionsModalOpen(false);
     } finally {
       setLoadingPermissoes(false);
     }
@@ -2071,12 +2086,16 @@ function UsuariosTab() {
                           <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />}>
                             Editar
                           </DropdownItem>
-                          <DropdownItem key="permissions" startContent={<Shield className="w-4 h-4" />}>
-                            Permissões
-                          </DropdownItem>
-                          <DropdownItem key="link" startContent={<LinkIcon className="w-4 h-4" />}>
-                            Vincular
-                          </DropdownItem>
+                          {isAdmin ? (
+                            <DropdownItem key="permissions" startContent={<Shield className="w-4 h-4" />}>
+                              Permissões
+                            </DropdownItem>
+                          ) : null}
+                          {isAdmin ? (
+                            <DropdownItem key="link" startContent={<LinkIcon className="w-4 h-4" />}>
+                              Vincular
+                            </DropdownItem>
+                          ) : null}
                         </DropdownMenu>
                       </Dropdown>
                     </TableCell>
@@ -3070,67 +3089,91 @@ function ConvitesTab() {
   return (
     <motion.div className="space-y-6" initial="hidden" animate="visible" variants={containerVariants}>
       {/* Cards de Resumo */}
-      <MotionCardGrid columns={4}>
-        <Card className="border-none bg-white/10 backdrop-blur-xl shadow-xl ring-1 ring-white/10">
-          <CardBody className="relative overflow-hidden rounded-3xl px-6 py-6 text-white transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl">
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-amber-500/90 via-amber-500/70 to-amber-500/50 opacity-80" />
-            <div className="relative flex items-center justify-between">
-              <div className="space-y-1.5">
-                <p className="text-xs uppercase tracking-wider text-white/80">Pendentes</p>
-                <p className="text-3xl font-semibold">{convitesStats.pendentes}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 auto-rows-fr">
+        {/* Card Pendentes */}
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.1 }} className="flex">
+          <Card className="bg-gradient-to-br from-amber-50 via-yellow-100 to-orange-200 dark:from-amber-900/30 dark:via-yellow-800/20 dark:to-orange-900/30 border-amber-300 dark:border-amber-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-amber-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Clock className="text-white" size={24} />
+                </div>
+                <Badge color="warning" content="!" variant="shadow">
+                  <Clock className="text-amber-600 dark:text-amber-400" size={20} />
+                </Badge>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-                <Clock className="h-6 w-6 text-white" />
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">Pendentes</p>
+                <p className="text-4xl font-bold text-amber-800 dark:text-amber-200">{convitesStats.pendentes}</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400">Aguardando resposta</p>
               </div>
-            </div>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        </motion.div>
 
-        <Card className="border-none bg-white/10 backdrop-blur-xl shadow-xl ring-1 ring-white/10">
-          <CardBody className="relative overflow-hidden rounded-3xl px-6 py-6 text-white transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl">
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-emerald-500/90 via-emerald-500/70 to-emerald-500/50 opacity-80" />
-            <div className="relative flex items-center justify-between">
-              <div className="space-y-1.5">
-                <p className="text-xs uppercase tracking-wider text-white/80">Aceitos</p>
-                <p className="text-3xl font-semibold">{convitesStats.aceitos}</p>
+        {/* Card Aceitos */}
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex">
+          <Card className="bg-gradient-to-br from-green-50 via-emerald-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-green-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <CheckCircle className="text-white" size={24} />
+                </div>
+                <Badge color="success" content="✓" variant="shadow">
+                  <CheckCircle className="text-green-600 dark:text-green-400" size={20} />
+                </Badge>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-                <CheckCircle className="h-6 w-6 text-white" />
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">Aceitos</p>
+                <p className="text-4xl font-bold text-green-800 dark:text-green-200">{convitesStats.aceitos}</p>
+                <p className="text-xs text-green-600 dark:text-green-400">Convites aceitos</p>
               </div>
-            </div>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        </motion.div>
 
-        <Card className="border-none bg-white/10 backdrop-blur-xl shadow-xl ring-1 ring-white/10">
-          <CardBody className="relative overflow-hidden rounded-3xl px-6 py-6 text-white transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl">
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-500/90 via-red-500/70 to-red-500/50 opacity-80" />
-            <div className="relative flex items-center justify-between">
-              <div className="space-y-1.5">
-                <p className="text-xs uppercase tracking-wider text-white/80">Expirados</p>
-                <p className="text-3xl font-semibold">{convitesStats.expirados}</p>
+        {/* Card Expirados */}
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.3 }} className="flex">
+          <Card className="bg-gradient-to-br from-rose-50 via-pink-100 to-red-200 dark:from-rose-900/30 dark:via-pink-800/20 dark:to-red-900/30 border-rose-300 dark:border-rose-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-rose-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <XCircle className="text-white" size={24} />
+                </div>
+                <Badge color="danger" content="!" variant="shadow">
+                  <XCircle className="text-rose-600 dark:text-rose-400" size={20} />
+                </Badge>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-                <XCircle className="h-6 w-6 text-white" />
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-rose-700 dark:text-rose-300 uppercase tracking-wide">Expirados</p>
+                <p className="text-4xl font-bold text-rose-800 dark:text-rose-200">{convitesStats.expirados}</p>
+                <p className="text-xs text-rose-600 dark:text-rose-400">Convites vencidos</p>
               </div>
-            </div>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        </motion.div>
 
-        <Card className="border-none bg-white/10 backdrop-blur-xl shadow-xl ring-1 ring-white/10">
-          <CardBody className="relative overflow-hidden rounded-3xl px-6 py-6 text-white transition-transform duration-200 hover:-translate-y-1 hover:shadow-2xl">
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-violet-500/90 via-violet-500/70 to-violet-500/50 opacity-80" />
-            <div className="relative flex items-center justify-between">
-              <div className="space-y-1.5">
-                <p className="text-xs uppercase tracking-wider text-white/80">Total</p>
-                <p className="text-3xl font-semibold">{convitesStats.total}</p>
+        {/* Card Total */}
+        <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.4 }} className="flex">
+          <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
+            <CardBody className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-purple-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Mail className="text-white" size={24} />
+                </div>
+                <Badge color="secondary" content="📧" variant="shadow">
+                  <Mail className="text-purple-600 dark:text-purple-400" size={20} />
+                </Badge>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-                <Mail className="h-6 w-6 text-white" />
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Total</p>
+                <p className="text-4xl font-bold text-purple-800 dark:text-purple-200">{convitesStats.total}</p>
+                <p className="text-xs text-purple-600 dark:text-purple-400">Total de convites</p>
               </div>
-            </div>
-          </CardBody>
-        </Card>
-      </MotionCardGrid>
+            </CardBody>
+          </Card>
+        </motion.div>
+      </div>
 
       <motion.div variants={cardVariants}>
         <Card className="border-none bg-white/90 shadow-lg backdrop-blur dark:bg-content1/80">

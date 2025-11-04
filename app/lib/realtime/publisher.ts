@@ -93,12 +93,21 @@ async function fallbackToHttp(event: RealtimeEvent): Promise<void> {
   try {
     const base = process.env.NEXTAUTH_URL || "http://localhost:9192";
     const url = new URL("/api/internal/realtime/invalidate", base).toString();
+    const internalToken = process.env.REALTIME_INTERNAL_TOKEN;
+
+    if (!internalToken) {
+      console.warn(
+        "[realtime] Fallback HTTP ignorado: REALTIME_INTERNAL_TOKEN não configurado",
+      );
+
+      return;
+    }
 
     await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-internal-token": process.env.REALTIME_INTERNAL_TOKEN || "",
+        "x-internal-token": internalToken,
       },
       body: JSON.stringify(event),
     });

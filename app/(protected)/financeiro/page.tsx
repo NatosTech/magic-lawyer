@@ -1,20 +1,56 @@
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
 import NextLink from "next/link";
 
 import { title, subtitle } from "@/components/primitives";
-import { PermissionGuard } from "@/components/permission-guard";
+import { getSession } from "@/app/lib/auth";
+import { checkPermission } from "@/app/actions/equipe";
+import { UserRole } from "@/app/generated/prisma";
 
 export const metadata: Metadata = {
   title: "Financeiro",
   description: "Análises de faturamento, custos e assinaturas por tenant.",
 };
 
-export default function FinanceiroPage() {
+export default async function FinanceiroPage() {
+  const session = await getSession();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const user = session.user as any;
+
+  // SuperAdmin vai para dashboard admin
+  if (user.role === "SUPER_ADMIN") {
+    redirect("/admin/dashboard");
+  }
+
+  // Admin sempre tem acesso
+  if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) {
+    return <FinanceiroContent />;
+  }
+
+  // Para outros roles, verificar permissão financeiro.visualizar
+  try {
+    const hasPermission = await checkPermission("financeiro", "visualizar");
+
+    if (!hasPermission) {
+      redirect("/dashboard");
+    }
+
+    return <FinanceiroContent />;
+  } catch (error) {
+    console.error("Erro ao verificar permissões para /financeiro:", error);
+    redirect("/dashboard");
+  }
+}
+
+function FinanceiroContent() {
   return (
-    <PermissionGuard permission="canViewFinancialData">
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 py-12">
         <header className="space-y-4">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
@@ -81,6 +117,5 @@ export default function FinanceiroPage() {
           </CardBody>
         </Card>
       </section>
-    </PermissionGuard>
   );
 }
