@@ -3667,7 +3667,11 @@ function UsuariosTab() {
 
                       <div className="pt-2 border-t border-default-200">
                         <p className="text-xs text-default-600 mb-2">
-                          Overrides pessoais sempre têm prioridade sobre as configurações do cargo e sobre a permissão padrão do role. Se você desligar o override, o sistema volta a usar o que está definido no cargo; se o cargo também não tiver nada, usamos o fallback do role.
+                          Overrides pessoais sempre têm prioridade sobre as
+                          configurações do cargo e sobre a permissão padrão do
+                          role. Se você desligar o override, o sistema volta a
+                          usar o que está definido no cargo; se o cargo também
+                          não tiver nada, usamos o fallback do role.
                         </p>
 
                         <p className="text-sm font-medium text-default-700 mb-2">
@@ -4197,10 +4201,7 @@ function ConvitesTab() {
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
                 <div className="p-2 sm:p-2.5 md:p-3 bg-amber-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <Clock
-                    className="text-white"
-                    className="w-[18px] h-[18px] sm:w-5 sm:h-5 md:w-6 md:h-6"
-                  />
+                  <Clock className="text-white w-[18px] h-[18px] sm:w-5 sm:h-5 md:w-6 md:h-6" />
                 </div>
                 <div className="hidden sm:flex items-center justify-center p-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30">
                   <Clock className="text-amber-600 dark:text-amber-400 w-3 h-3 sm:w-4 sm:h-4" />
@@ -4232,10 +4233,7 @@ function ConvitesTab() {
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
                 <div className="p-2 sm:p-2.5 md:p-3 bg-green-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <CheckCircle
-                    className="text-white"
-                    className="w-[18px] h-[18px] sm:w-5 sm:h-5 md:w-6 md:h-6"
-                  />
+                  <CheckCircle className="text-white w-[18px] h-[18px] sm:w-5 sm:h-5 md:w-6 md:h-6" />
                 </div>
                 <div className="hidden sm:flex items-center justify-center p-1.5 rounded-full bg-green-100 dark:bg-green-900/30">
                   <CheckCircle className="text-green-600 dark:text-green-400 w-3 h-3 sm:w-4 sm:h-4" />
@@ -4267,10 +4265,7 @@ function ConvitesTab() {
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
                 <div className="p-2 sm:p-2.5 md:p-3 bg-rose-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <XCircle
-                    className="text-white"
-                    className="w-[18px] h-[18px] sm:w-5 sm:h-5 md:w-6 md:h-6"
-                  />
+                  <XCircle className="text-white w-[18px] h-[18px] sm:w-5 sm:h-5 md:w-6 md:h-6" />
                 </div>
                 <div className="hidden sm:flex items-center justify-center p-1.5 rounded-full bg-rose-100 dark:bg-rose-900/30">
                   <XCircle className="text-rose-600 dark:text-rose-400 w-3 h-3 sm:w-4 sm:h-4" />
@@ -4302,10 +4297,7 @@ function ConvitesTab() {
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
                 <div className="p-2 sm:p-2.5 md:p-3 bg-purple-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <Mail
-                    className="text-white"
-                    className="w-[18px] h-[18px] sm:w-5 sm:h-5 md:w-6 md:h-6"
-                  />
+                  <Mail className="text-white w-[18px] h-[18px] sm:w-5 sm:h-5 md:w-6 md:h-6" />
                 </div>
                 <div className="hidden sm:flex items-center justify-center p-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30">
                   <Mail className="text-purple-600 dark:text-purple-400 w-3 h-3 sm:w-4 sm:h-4" />
