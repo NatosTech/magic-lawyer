@@ -9,8 +9,9 @@ import { getTenantUF, getUFsDisponiveis } from "@/app/actions/portal-advogado";
 
 interface UFSelectorProps {
   value?: string;
-  onChange?: (uf: string) => void;
+  onChange?: (uf: string | undefined) => void;
   label?: string;
+  ufs?: string[];
 }
 
 // Mapeamento de siglas UF para nomes completos
@@ -48,6 +49,7 @@ export function UFSelector({
   value,
   onChange,
   label = "Selecione a UF",
+  ufs,
 }: UFSelectorProps) {
   const [selectedUF, setSelectedUF] = useState<string | undefined>(value);
 
@@ -63,9 +65,19 @@ export function UFSelector({
   const { data: ufsDisponiveis, isLoading: isLoadingUFs } = useSWR<
     string[],
     Error
-  >("portal-advogado-ufs", async () => {
-    return await getUFsDisponiveis();
-  });
+  >(
+    "portal-advogado-ufs",
+    async () => {
+      if (ufs && ufs.length > 0) {
+        return ufs;
+      }
+
+      return await getUFsDisponiveis();
+    },
+    {
+      revalidateOnFocus: false,
+    },
+  );
 
   // Inicializar com UF do tenant quando carregar
   useEffect(() => {
@@ -82,24 +94,40 @@ export function UFSelector({
     }
   }, [value]);
 
-  const handleChange = (uf: string) => {
+  // Garantir que o valor atual exista nas UFs disponíveis
+  useEffect(() => {
+    if (!ufsDisponiveis || ufsDisponiveis.length === 0) {
+      return;
+    }
+
+    if (selectedUF && !ufsDisponiveis.includes(selectedUF)) {
+      handleChange(undefined);
+    }
+  }, [ufsDisponiveis, selectedUF, onChange]);
+
+  const handleChange = (uf: string | undefined) => {
     setSelectedUF(uf);
     onChange?.(uf);
   };
 
   const isLoading = isLoadingTenantUF || isLoadingUFs;
+  const availableUFs = ufsDisponiveis || [];
+  const isSelectedUFValid =
+    selectedUF !== undefined && availableUFs.includes(selectedUF);
 
   return (
     <Select
       description={
-        tenantUF && selectedUF === tenantUF
+        tenantUF && isSelectedUFValid && selectedUF === tenantUF
           ? "UF principal do escritório"
           : undefined
       }
-      isDisabled={isLoading || !ufsDisponiveis || ufsDisponiveis.length === 0}
+      isDisabled={isLoading || availableUFs.length === 0}
       label={label}
       placeholder="Selecione uma UF"
-      selectedKeys={selectedUF ? [selectedUF] : []}
+      selectedKeys={
+        isSelectedUFValid && selectedUF ? [selectedUF] : []
+      }
       startContent={<MapPin className="w-4 h-4" />}
       onSelectionChange={(keys) => {
         const uf = Array.from(keys)[0] as string;
@@ -109,11 +137,15 @@ export function UFSelector({
         }
       }}
     >
-      {(ufsDisponiveis || []).map((uf) => (
-        <SelectItem key={uf} value={uf}>
-          {uf} - {UF_LABELS[uf] || uf}
+      {availableUFs.map((uf) => {
+        const labelText = `${uf} - ${UF_LABELS[uf] || uf}`;
+
+        return (
+          <SelectItem key={uf} textValue={labelText} value={uf}>
+            {labelText}
         </SelectItem>
-      ))}
+        );
+      })}
     </Select>
   );
 }

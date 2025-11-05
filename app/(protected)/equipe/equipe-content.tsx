@@ -96,14 +96,7 @@ import {
   type UsuarioEquipeData,
   type EquipeHistoricoData,
 } from "@/app/actions/equipe";
-import {
-  getConvitesEquipe,
-  createConviteEquipe,
-  resendConviteEquipe,
-  cancelConviteEquipe,
-  type ConviteEquipeData,
-  type CreateConviteData,
-} from "@/app/actions/convites-equipe";
+import { getConvitesEquipe, createConviteEquipe, resendConviteEquipe, cancelConviteEquipe, type ConviteEquipeData, type CreateConviteData } from "@/app/actions/convites-equipe";
 import { getAdvogados } from "@/app/actions/advogados";
 import { EnderecoManager } from "@/components/endereco-manager";
 import { useModulosTenant, useCargos } from "@/app/hooks/use-equipe";
@@ -178,11 +171,7 @@ function DashboardEquipe() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
       {/* Card Total de Usuários */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.1 }}>
         <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
           <CardBody className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -194,26 +183,16 @@ function DashboardEquipe() {
               </div>
             </div>
             <div className="space-y-2">
-              <p className="text-xs sm:text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
-                Total de Usuários
-              </p>
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-blue-800 dark:text-blue-200">
-                {dashboardData.totalUsuarios}
-              </p>
-              <p className="text-xs text-blue-600 dark:text-blue-400">
-                Equipe do escritório
-              </p>
+              <p className="text-xs sm:text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Total de Usuários</p>
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-blue-800 dark:text-blue-200">{dashboardData.totalUsuarios}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400">Equipe do escritório</p>
             </div>
           </CardBody>
         </Card>
       </motion.div>
 
       {/* Card Cargos Ativos */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.2 }}>
         <Card className="bg-gradient-to-br from-green-50 via-emerald-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
           <CardBody className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -225,26 +204,16 @@ function DashboardEquipe() {
               </div>
             </div>
             <div className="space-y-2">
-              <p className="text-xs sm:text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">
-                Cargos Ativos
-              </p>
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-800 dark:text-green-200">
-                {dashboardData.totalCargos}
-              </p>
-              <p className="text-xs text-green-600 dark:text-green-400">
-                Cargos configurados
-              </p>
+              <p className="text-xs sm:text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">Cargos Ativos</p>
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-800 dark:text-green-200">{dashboardData.totalCargos}</p>
+              <p className="text-xs text-green-600 dark:text-green-400">Cargos configurados</p>
             </div>
           </CardBody>
         </Card>
       </motion.div>
 
       {/* Card Convites Pendentes */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-      >
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.3 }}>
         <Card className="bg-gradient-to-br from-amber-50 via-yellow-100 to-orange-200 dark:from-amber-900/30 dark:via-yellow-800/20 dark:to-orange-900/30 border-amber-300 dark:border-amber-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
           <CardBody className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -256,26 +225,16 @@ function DashboardEquipe() {
               </div>
             </div>
             <div className="space-y-2">
-              <p className="text-xs sm:text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">
-                Convites Pendentes
-              </p>
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-amber-800 dark:text-amber-200">
-                {dashboardData.convitesPendentes}
-              </p>
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                Aguardando resposta
-              </p>
+              <p className="text-xs sm:text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">Convites Pendentes</p>
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-amber-800 dark:text-amber-200">{dashboardData.convitesPendentes}</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400">Aguardando resposta</p>
             </div>
           </CardBody>
         </Card>
       </motion.div>
 
       {/* Card Vinculações Ativas */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-      >
+      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.4 }}>
         <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
           <CardBody className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -287,15 +246,9 @@ function DashboardEquipe() {
               </div>
             </div>
             <div className="space-y-2">
-              <p className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">
-                Vinculações Ativas
-              </p>
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-purple-800 dark:text-purple-200">
-                {dashboardData.vinculacoesAtivas}
-              </p>
-              <p className="text-xs text-purple-600 dark:text-purple-400">
-                Usuários vinculados
-              </p>
+              <p className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Vinculações Ativas</p>
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-purple-800 dark:text-purple-200">{dashboardData.vinculacoesAtivas}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400">Usuários vinculados</p>
             </div>
           </CardBody>
         </Card>
@@ -318,8 +271,7 @@ function CargosTab() {
   const [itemsPerPage] = useState(6);
 
   // Buscar módulos do tenant via hook
-  const { modulos: modulosData, isLoading: modulosLoading } =
-    useModulosTenant();
+  const { modulos: modulosData, isLoading: modulosLoading } = useModulosTenant();
 
   // Transformar módulos do tenant para o formato esperado
   const modulos = useMemo(() => {
@@ -349,10 +301,7 @@ function CargosTab() {
 
       setCargos(data);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Erro ao carregar cargos. Tente novamente.";
+      const errorMessage = error instanceof Error ? error.message : "Erro ao carregar cargos. Tente novamente.";
 
       setError(errorMessage);
       toast.error(errorMessage);
@@ -366,11 +315,7 @@ function CargosTab() {
     const cargo = cargos.find((c) => c.id === cargoId);
     const cargoNome = cargo?.nome || "este cargo";
 
-    if (
-      !confirm(
-        `Tem certeza que deseja excluir o cargo "${cargoNome}"?\n\nEsta ação não pode ser desfeita e pode afetar usuários vinculados a este cargo.`,
-      )
-    ) {
+    if (!confirm(`Tem certeza que deseja excluir o cargo "${cargoNome}"?\n\nEsta ação não pode ser desfeita e pode afetar usuários vinculados a este cargo.`)) {
       return;
     }
 
@@ -380,9 +325,7 @@ function CargosTab() {
       toast.success(`Cargo "${cargoNome}" excluído com sucesso!`);
       loadCargos();
     } catch (error) {
-      toast.error(
-        "Erro ao excluir cargo. Verifique se não há usuários vinculados a este cargo.",
-      );
+      toast.error("Erro ao excluir cargo. Verifique se não há usuários vinculados a este cargo.");
     } finally {
       setActionLoading(null);
     }
@@ -421,9 +364,7 @@ function CargosTab() {
     try {
       const csvContent = [
         // Cabeçalho
-        ["Nome", "Descrição", "Nível", "Status", "Usuários", "Permissões"].join(
-          ",",
-        ),
+        ["Nome", "Descrição", "Nível", "Status", "Usuários", "Permissões"].join(","),
         // Dados
         ...filteredCargos.map((cargo) =>
           [
@@ -433,7 +374,7 @@ function CargosTab() {
             `"${cargo.ativo ? "Ativo" : "Inativo"}"`,
             `"${cargo.usuariosCount}"`,
             `"${cargo.permissoes.length}"`,
-          ].join(","),
+          ].join(",")
         ),
       ].join("\n");
 
@@ -442,10 +383,7 @@ function CargosTab() {
       const url = URL.createObjectURL(blob);
 
       link.setAttribute("href", url);
-      link.setAttribute(
-        "download",
-        `equipe-cargos-${new Date().toISOString().split("T")[0]}.csv`,
-      );
+      link.setAttribute("download", `equipe-cargos-${new Date().toISOString().split("T")[0]}.csv`);
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
@@ -460,11 +398,8 @@ function CargosTab() {
   // Filtros
   const filteredCargos = useMemo(() => {
     return cargos.filter((cargo) => {
-      const matchesSearch =
-        cargo.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cargo.descricao?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesNivel =
-        selectedNivel === "all" || cargo.nivel.toString() === selectedNivel;
+      const matchesSearch = cargo.nome.toLowerCase().includes(searchTerm.toLowerCase()) || cargo.descricao?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesNivel = selectedNivel === "all" || cargo.nivel.toString() === selectedNivel;
 
       return matchesSearch && matchesNivel;
     });
@@ -472,10 +407,7 @@ function CargosTab() {
 
   // Paginação
   const totalPages = Math.ceil(filteredCargos.length / itemsPerPage);
-  const paginatedCargos = filteredCargos.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const paginatedCargos = filteredCargos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   if (loading || modulosLoading) {
     return (
@@ -486,12 +418,7 @@ function CargosTab() {
   }
 
   return (
-    <motion.div
-      animate="visible"
-      className="space-y-6"
-      initial="hidden"
-      variants={containerVariants}
-    >
+    <motion.div animate="visible" className="space-y-6" initial="hidden" variants={containerVariants}>
       {/* Header com busca e filtros */}
       <motion.div variants={cardVariants}>
         <Card className="border-none bg-white/90 shadow-lg backdrop-blur dark:bg-content2/80">
@@ -502,42 +429,25 @@ function CargosTab() {
                   <Input
                     endContent={
                       searchTerm && (
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          onPress={() => setSearchTerm("")}
-                        >
+                        <Button isIconOnly size="sm" variant="light" onPress={() => setSearchTerm("")}>
                           <X className="w-4 h-4" />
                         </Button>
                       )
                     }
                     placeholder="Buscar cargos..."
-                    startContent={
-                      <Search className="w-4 h-4 text-default-400" />
-                    }
+                    startContent={<Search className="w-4 h-4 text-default-400" />}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
 
-                <Button
-                  startContent={<Filter className="w-4 h-4" />}
-                  variant="light"
-                  onPress={() => setShowFilters(!showFilters)}
-                >
+                <Button startContent={<Filter className="w-4 h-4" />} variant="light" onPress={() => setShowFilters(!showFilters)}>
                   Filtros
                 </Button>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button
-                  className="w-full sm:w-auto"
-                  size="sm"
-                  startContent={<Download className="w-4 h-4" />}
-                  variant="light"
-                  onPress={() => handleExportCargos()}
-                >
+                <Button className="w-full sm:w-auto" size="sm" startContent={<Download className="w-4 h-4" />} variant="light" onPress={() => handleExportCargos()}>
                   Exportar
                 </Button>
                 <Button
@@ -559,20 +469,13 @@ function CargosTab() {
             {/* Filtros expandidos */}
             <AnimatePresence>
               {showFilters && (
-                <motion.div
-                  animate={{ opacity: 1, height: "auto" }}
-                  className="overflow-hidden"
-                  exit={{ opacity: 0, height: 0 }}
-                  initial={{ opacity: 0, height: 0 }}
-                >
+                <motion.div animate={{ opacity: 1, height: "auto" }} className="overflow-hidden" exit={{ opacity: 0, height: 0 }} initial={{ opacity: 0, height: 0 }}>
                   <div className="flex flex-wrap gap-2 sm:gap-3 md:gap-4 rounded-2xl border border-dashed border-default-200 bg-white/70 p-3 sm:p-4 dark:border-default-100/40 dark:bg-content1/60">
                     <Select
                       className="min-w-[140px] sm:min-w-40 flex-1 sm:flex-none"
                       label="Nível do cargo"
                       placeholder="Todos os níveis"
-                      selectedKeys={
-                        selectedNivel === "all" ? [] : [selectedNivel]
-                      }
+                      selectedKeys={selectedNivel === "all" ? [] : [selectedNivel]}
                       onSelectionChange={(keys) => {
                         const selected = Array.from(keys)[0] as string;
 
@@ -608,36 +511,18 @@ function CargosTab() {
       {/* Grid de cargos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 auto-rows-fr">
         {paginatedCargos.map((cargo) => (
-          <motion.div
-            key={cargo.id}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex"
-            initial={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div key={cargo.id} animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.3 }}>
             <Card className="h-full w-full hover:shadow-lg transition-shadow flex flex-col">
-              <CardHeader
-                className="flex flex-col items-start gap-3 pb-2 cursor-pointer flex-shrink-0"
-                onClick={() => handleEditCargo(cargo)}
-              >
+              <CardHeader className="flex flex-col items-start gap-3 pb-2 cursor-pointer flex-shrink-0" onClick={() => handleEditCargo(cargo)}>
                 <div className="flex w-full items-start justify-between gap-3">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     <div className="p-2 rounded-lg bg-default-100 dark:bg-default-50 flex-shrink-0">
                       <Shield className="w-5 h-5 text-default-600 dark:text-default-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 dark:text-slate-100 mb-2 line-clamp-2 break-words">
-                        {cargo.nome}
-                      </h3>
-                      <Tooltip
-                        content={`Nível ${cargo.nivel} - ${getNivelLabel(cargo.nivel)}`}
-                      >
-                        <Chip
-                          color={getNivelColor(cargo.nivel)}
-                          size="sm"
-                          startContent={<Crown className="w-3 h-3" />}
-                          variant="flat"
-                        >
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 dark:text-slate-100 mb-2 line-clamp-2 break-words">{cargo.nome}</h3>
+                      <Tooltip content={`Nível ${cargo.nivel} - ${getNivelLabel(cargo.nivel)}`}>
+                        <Chip color={getNivelColor(cargo.nivel)} size="sm" startContent={<Crown className="w-3 h-3" />} variant="flat">
                           {getNivelLabel(cargo.nivel)}
                         </Chip>
                       </Tooltip>
@@ -665,10 +550,7 @@ function CargosTab() {
                         }
                       }}
                     >
-                      <DropdownItem
-                        key="edit"
-                        startContent={<Edit className="w-4 h-4" />}
-                      >
+                      <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />}>
                         Editar
                       </DropdownItem>
                       <DropdownItem
@@ -676,26 +558,14 @@ function CargosTab() {
                         className="text-danger"
                         color="danger"
                         isDisabled={actionLoading === cargo.id}
-                        startContent={
-                          actionLoading === cargo.id ? (
-                            <Spinner size="sm" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )
-                        }
+                        startContent={actionLoading === cargo.id ? <Spinner size="sm" /> : <Trash2 className="w-4 h-4" />}
                       >
-                        {actionLoading === cargo.id
-                          ? "Excluindo..."
-                          : "Excluir"}
+                        {actionLoading === cargo.id ? "Excluindo..." : "Excluir"}
                       </DropdownItem>
                     </DropdownMenu>
                   </Dropdown>
                 </div>
-                {cargo.descricao && (
-                  <p className="text-sm text-default-500 line-clamp-2 mt-2">
-                    {cargo.descricao}
-                  </p>
-                )}
+                {cargo.descricao && <p className="text-sm text-default-500 line-clamp-2 mt-2">{cargo.descricao}</p>}
               </CardHeader>
               <Divider />
               <CardBody className="pt-4 flex-1 flex flex-col">
@@ -703,17 +573,10 @@ function CargosTab() {
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-default-400" />
-                      <span className="text-sm text-default-600">
-                        {cargo.usuariosCount} usuário(s)
-                      </span>
+                      <span className="text-sm text-default-600">{cargo.usuariosCount} usuário(s)</span>
                     </div>
                     <Badge color="primary" content={cargo.permissoes.length}>
-                      <Chip
-                        color="primary"
-                        size="sm"
-                        startContent={<Shield className="w-3 h-3" />}
-                        variant="flat"
-                      >
+                      <Chip color="primary" size="sm" startContent={<Shield className="w-3 h-3" />} variant="flat">
                         Permissões
                       </Chip>
                     </Badge>
@@ -721,15 +584,8 @@ function CargosTab() {
 
                   <div className="flex items-center justify-between pt-2 border-t border-default-200 dark:border-default-100">
                     <div className="flex items-center gap-2">
-                      <Switch
-                        isDisabled
-                        color={cargo.ativo ? "success" : "default"}
-                        isSelected={cargo.ativo}
-                        size="sm"
-                      />
-                      <span className="text-sm text-default-600">
-                        {cargo.ativo ? "Ativo" : "Inativo"}
-                      </span>
+                      <Switch isDisabled color={cargo.ativo ? "success" : "default"} isSelected={cargo.ativo} size="sm" />
+                      <span className="text-sm text-default-600">{cargo.ativo ? "Ativo" : "Inativo"}</span>
                     </div>
                   </div>
                 </div>
@@ -742,13 +598,7 @@ function CargosTab() {
       {/* Paginação */}
       {totalPages > 1 && (
         <div className="flex justify-center">
-          <Pagination
-            showControls
-            showShadow
-            page={currentPage}
-            total={totalPages}
-            onChange={setCurrentPage}
-          />
+          <Pagination showControls showShadow page={currentPage} total={totalPages} onChange={setCurrentPage} />
         </div>
       )}
 
@@ -761,15 +611,8 @@ function CargosTab() {
                 <XCircle className="h-4 w-4" />
                 <span>Erro ao carregar cargos</span>
               </div>
-              <p className="text-sm text-danger-600/80 dark:text-danger-200/80">
-                {error}
-              </p>
-              <Button
-                size="sm"
-                startContent={<RefreshCw className="w-4 h-4" />}
-                variant="bordered"
-                onPress={() => loadCargos()}
-              >
+              <p className="text-sm text-danger-600/80 dark:text-danger-200/80">{error}</p>
+              <Button size="sm" startContent={<RefreshCw className="w-4 h-4" />} variant="bordered" onPress={() => loadCargos()}>
                 Tentar novamente
               </Button>
             </CardBody>
@@ -785,9 +628,7 @@ function CargosTab() {
               <Users className="mx-auto h-10 w-10 text-default-400" />
               <h3 className="text-lg font-semibold">Nenhum cargo encontrado</h3>
               <p className="text-sm text-default-500">
-                {searchTerm || selectedNivel !== "all"
-                  ? "Ajuste os filtros de busca para visualizar outros cargos."
-                  : "Crie o primeiro cargo para organizar a sua equipe."}
+                {searchTerm || selectedNivel !== "all" ? "Ajuste os filtros de busca para visualizar outros cargos." : "Crie o primeiro cargo para organizar a sua equipe."}
               </p>
               <Button
                 color="primary"
@@ -873,8 +714,7 @@ function CargoModal({
 
     setFormData((prev) => {
       const permissoes = new Set(prev.permissoes);
-      const shouldEnable =
-        typeof value === "boolean" ? value : !permissoes.has(permissao);
+      const shouldEnable = typeof value === "boolean" ? value : !permissoes.has(permissao);
 
       if (shouldEnable) {
         permissoes.add(permissao);
@@ -912,9 +752,7 @@ function CargoModal({
 
   function toggleTodasPermissoes(selecionar: boolean) {
     if (selecionar) {
-      const todas = modulos.flatMap((modulo) =>
-        acoes.map((acao) => `${modulo.key}-${acao.key}`),
-      );
+      const todas = modulos.flatMap((modulo) => acoes.map((acao) => `${modulo.key}-${acao.key}`));
 
       setFormData((prev) => ({
         ...prev,
@@ -1000,47 +838,26 @@ function CargoModal({
     <Modal isOpen={isOpen} scrollBehavior="inside" size="5xl" onClose={onClose}>
       <ModalContent>
         <ModalHeaderGradient
-          description={
-            cargo
-              ? "Atualize as informações e permissões do cargo"
-              : "Crie um novo cargo e configure suas permissões no sistema"
-          }
+          description={cargo ? "Atualize as informações e permissões do cargo" : "Crie um novo cargo e configure suas permissões no sistema"}
           icon={Shield}
           title={cargo ? "Editar Cargo" : "Novo Cargo"}
         />
         <ModalBody className="px-0">
           <div className="space-y-6 px-6 pb-6">
             {/* Card de Ajuda */}
-            <ModalSectionCard
-              description="Guia rápido para configurar as permissões"
-              title="Como configurar o cargo"
-            >
+            <ModalSectionCard description="Guia rápido para configurar as permissões" title="Como configurar o cargo">
               <ul className="list-disc list-inside space-y-2 text-sm text-default-600">
+                <li>Selecione as ações que este cargo pode executar em cada módulo do sistema.</li>
                 <li>
-                  Selecione as ações que este cargo pode executar em cada módulo
-                  do sistema.
+                  Use <strong className="text-primary">Selecionar tudo</strong> para liberar todas as permissões ou <strong className="text-primary">Limpar tudo</strong> para recomeçar.
                 </li>
-                <li>
-                  Use <strong className="text-primary">Selecionar tudo</strong>{" "}
-                  para liberar todas as permissões ou{" "}
-                  <strong className="text-primary">Limpar tudo</strong> para
-                  recomeçar.
-                </li>
-                <li>
-                  Cada módulo mostra quantas ações estão liberadas (ex.: 3/4).
-                </li>
-                <li>
-                  Você pode voltar e ajustar as permissões a qualquer momento
-                  após a criação.
-                </li>
+                <li>Cada módulo mostra quantas ações estão liberadas (ex.: 3/4).</li>
+                <li>Você pode voltar e ajustar as permissões a qualquer momento após a criação.</li>
               </ul>
             </ModalSectionCard>
 
             {/* Dados Básicos */}
-            <ModalSectionCard
-              description="Informações principais do cargo"
-              title="Dados Básicos"
-            >
+            <ModalSectionCard description="Informações principais do cargo" title="Dados Básicos">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   isRequired
@@ -1048,9 +865,7 @@ function CargoModal({
                   placeholder="Ex: Advogado Sênior"
                   startContent={<Shield className="w-4 h-4 text-default-400" />}
                   value={formData.nome}
-                  onChange={(e) =>
-                    setFormData({ ...formData, nome: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                 />
 
                 <Select
@@ -1103,39 +918,22 @@ function CargoModal({
                 minRows={3}
                 placeholder="Descreva as responsabilidades e funções deste cargo..."
                 value={formData.descricao}
-                onChange={(e) =>
-                  setFormData({ ...formData, descricao: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
               />
 
               <div className="flex items-center justify-between p-4 rounded-lg border border-default-200 bg-default-50">
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-default-700">
-                    Status do Cargo
-                  </span>
-                  <span className="text-xs text-default-500">
-                    Cargos inativos não podem ser atribuídos a novos usuários
-                  </span>
+                  <span className="text-sm font-medium text-default-700">Status do Cargo</span>
+                  <span className="text-xs text-default-500">Cargos inativos não podem ser atribuídos a novos usuários</span>
                 </div>
-                <Switch
-                  color="primary"
-                  isSelected={formData.ativo}
-                  onValueChange={(checked) =>
-                    setFormData({ ...formData, ativo: checked })
-                  }
-                >
-                  <span className="text-sm font-medium">
-                    {formData.ativo ? "Ativo" : "Inativo"}
-                  </span>
+                <Switch color="primary" isSelected={formData.ativo} onValueChange={(checked) => setFormData({ ...formData, ativo: checked })}>
+                  <span className="text-sm font-medium">{formData.ativo ? "Ativo" : "Inativo"}</span>
                 </Switch>
               </div>
             </ModalSectionCard>
 
             {/* Permissões */}
-            <ModalSectionCard
-              description="Configure as ações que este cargo pode executar em cada módulo"
-              title="Permissões do Sistema"
-            >
+            <ModalSectionCard description="Configure as ações que este cargo pode executar em cada módulo" title="Permissões do Sistema">
               <div className="space-y-4">
                 {/* Toolbar de Permissões */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border border-default-200 bg-default-50 dark:bg-default-50/5">
@@ -1145,28 +943,15 @@ function CargoModal({
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-default-700 dark:text-default-200">
-                        {formData.permissoes.length === 1
-                          ? "1 permissão selecionada"
-                          : `${formData.permissoes.length} permissões selecionadas`}
+                        {formData.permissoes.length === 1 ? "1 permissão selecionada" : `${formData.permissoes.length} permissões selecionadas`}
                       </p>
-                      <p className="text-xs text-default-500 dark:text-default-400">
-                        De {modulos.length * acoes.length} disponíveis
-                      </p>
+                      <p className="text-xs text-default-500 dark:text-default-400">De {modulos.length * acoes.length} disponíveis</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       color="primary"
-                      isDisabled={
-                        modulos.length === 0 ||
-                        modulos.every((modulo) =>
-                          acoes.every((acao) =>
-                            formData.permissoes.includes(
-                              `${modulo.key}-${acao.key}`,
-                            ),
-                          ),
-                        )
-                      }
+                      isDisabled={modulos.length === 0 || modulos.every((modulo) => acoes.every((acao) => formData.permissoes.includes(`${modulo.key}-${acao.key}`)))}
                       size="sm"
                       startContent={<CheckCircle className="w-4 h-4" />}
                       variant="flat"
@@ -1174,14 +959,7 @@ function CargoModal({
                     >
                       Selecionar tudo
                     </Button>
-                    <Button
-                      color="danger"
-                      isDisabled={formData.permissoes.length === 0}
-                      size="sm"
-                      startContent={<X className="w-4 h-4" />}
-                      variant="flat"
-                      onPress={() => toggleTodasPermissoes(false)}
-                    >
+                    <Button color="danger" isDisabled={formData.permissoes.length === 0} size="sm" startContent={<X className="w-4 h-4" />} variant="flat" onPress={() => toggleTodasPermissoes(false)}>
                       Limpar tudo
                     </Button>
                   </div>
@@ -1190,18 +968,11 @@ function CargoModal({
                 {/* Lista de Módulos */}
                 <div className="space-y-4">
                   {modulos.map((modulo) => {
-                    const permissoesModulo = acoes.filter((acao) =>
-                      hasPermissao(modulo.key, acao.key),
-                    );
-                    const todasSelecionadas = acoes.every((acao) =>
-                      hasPermissao(modulo.key, acao.key),
-                    );
+                    const permissoesModulo = acoes.filter((acao) => hasPermissao(modulo.key, acao.key));
+                    const todasSelecionadas = acoes.every((acao) => hasPermissao(modulo.key, acao.key));
 
                     return (
-                      <Card
-                        key={modulo.key}
-                        className="border border-default-200 shadow-sm"
-                      >
+                      <Card key={modulo.key} className="border border-default-200 shadow-sm">
                         <CardBody className="p-5 space-y-4">
                           {/* Header do Módulo */}
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-default-200">
@@ -1210,39 +981,15 @@ function CargoModal({
                                 <Shield className="w-4 h-4 text-primary" />
                               </div>
                               <div>
-                                <h5 className="font-semibold text-default-700 dark:text-default-200">
-                                  {modulo.label}
-                                </h5>
-                                <p className="text-xs text-default-500">
-                                  Módulo do sistema
-                                </p>
+                                <h5 className="font-semibold text-default-700 dark:text-default-200">{modulo.label}</h5>
+                                <p className="text-xs text-default-500">Módulo do sistema</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
-                              <Chip
-                                color={
-                                  permissoesModulo.length === acoes.length
-                                    ? "success"
-                                    : permissoesModulo.length > 0
-                                      ? "warning"
-                                      : "default"
-                                }
-                                size="sm"
-                                variant="flat"
-                              >
+                              <Chip color={permissoesModulo.length === acoes.length ? "success" : permissoesModulo.length > 0 ? "warning" : "default"} size="sm" variant="flat">
                                 {permissoesModulo.length}/{acoes.length}
                               </Chip>
-                              <Button
-                                color={todasSelecionadas ? "danger" : "primary"}
-                                size="sm"
-                                variant="flat"
-                                onPress={() =>
-                                  toggleModuloCompleto(
-                                    modulo.key,
-                                    !todasSelecionadas,
-                                  )
-                                }
-                              >
+                              <Button color={todasSelecionadas ? "danger" : "primary"} size="sm" variant="flat" onPress={() => toggleModuloCompleto(modulo.key, !todasSelecionadas)}>
                                 {todasSelecionadas ? (
                                   <>
                                     <X className="w-3 h-3 mr-1" />
@@ -1261,42 +1008,20 @@ function CargoModal({
                           {/* Lista de Ações */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {acoes.map((acao) => {
-                              const selecionada = hasPermissao(
-                                modulo.key,
-                                acao.key,
-                              );
+                              const selecionada = hasPermissao(modulo.key, acao.key);
 
                               return (
                                 <div
                                   key={acao.key}
                                   className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                                    selecionada
-                                      ? "border-primary-300 bg-primary-50 dark:border-primary-600 dark:bg-primary-900/20"
-                                      : "border-default-200 bg-default-50 dark:bg-default-100/50"
+                                    selecionada ? "border-primary-300 bg-primary-50 dark:border-primary-600 dark:bg-primary-900/20" : "border-default-200 bg-default-50 dark:bg-default-100/50"
                                   }`}
                                 >
                                   <div className="flex items-center gap-2">
-                                    {selecionada && (
-                                      <CheckCircle className="w-4 h-4 text-primary" />
-                                    )}
-                                    <span
-                                      className={`text-sm font-medium ${selecionada ? "text-primary-700 dark:text-primary-300" : "text-default-600"}`}
-                                    >
-                                      {acao.label}
-                                    </span>
+                                    {selecionada && <CheckCircle className="w-4 h-4 text-primary" />}
+                                    <span className={`text-sm font-medium ${selecionada ? "text-primary-700 dark:text-primary-300" : "text-default-600"}`}>{acao.label}</span>
                                   </div>
-                                  <Switch
-                                    color="primary"
-                                    isSelected={selecionada}
-                                    size="sm"
-                                    onValueChange={(value) =>
-                                      togglePermissao(
-                                        modulo.key,
-                                        acao.key,
-                                        value,
-                                      )
-                                    }
-                                  />
+                                  <Switch color="primary" isSelected={selecionada} size="sm" onValueChange={(value) => togglePermissao(modulo.key, acao.key, value)} />
                                 </div>
                               );
                             })}
@@ -1314,12 +1039,7 @@ function CargoModal({
           <Button variant="flat" onPress={onClose}>
             Cancelar
           </Button>
-          <Button
-            color="primary"
-            isDisabled={!formData.nome.trim()}
-            isLoading={loading}
-            onPress={handleSubmit}
-          >
+          <Button color="primary" isDisabled={!formData.nome.trim()} isLoading={loading} onPress={handleSubmit}>
             {cargo ? "Atualizar Cargo" : "Criar Cargo"}
           </Button>
         </ModalFooter>
@@ -1335,14 +1055,10 @@ function UsuarioHistoricoTab({ usuarioId }: { usuarioId: string }) {
     error,
     isLoading,
     mutate,
-  } = useSWR(
-    `equipe-historico-${usuarioId}`,
-    () => getEquipeHistorico(usuarioId),
-    {
-      refreshInterval: 30000,
-      revalidateOnFocus: true,
-    },
-  );
+  } = useSWR(`equipe-historico-${usuarioId}`, () => getEquipeHistorico(usuarioId), {
+    refreshInterval: 30000,
+    revalidateOnFocus: true,
+  });
 
   const getAcaoColor = (acao: string): ChipProps["color"] => {
     switch (acao) {
@@ -1395,19 +1111,9 @@ function UsuarioHistoricoTab({ usuarioId }: { usuarioId: string }) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <XCircle className="w-12 h-12 text-danger mb-4" />
-        <h4 className="text-lg font-semibold mb-2">
-          Erro ao carregar histórico
-        </h4>
-        <p className="text-sm text-default-500 mb-4">
-          {error instanceof Error ? error.message : "Erro desconhecido"}
-        </p>
-        <Button
-          color="primary"
-          size="sm"
-          startContent={<RefreshCw className="w-4 h-4" />}
-          variant="flat"
-          onPress={() => mutate()}
-        >
+        <h4 className="text-lg font-semibold mb-2">Erro ao carregar histórico</h4>
+        <p className="text-sm text-default-500 mb-4">{error instanceof Error ? error.message : "Erro desconhecido"}</p>
+        <Button color="primary" size="sm" startContent={<RefreshCw className="w-4 h-4" />} variant="flat" onPress={() => mutate()}>
           Tentar novamente
         </Button>
       </div>
@@ -1418,12 +1124,8 @@ function UsuarioHistoricoTab({ usuarioId }: { usuarioId: string }) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <HistoryIcon className="w-12 h-12 text-default-300 mb-4" />
-        <h4 className="text-lg font-semibold mb-2">
-          Nenhum histórico encontrado
-        </h4>
-        <p className="text-sm text-default-500">
-          Este usuário ainda não possui alterações registradas
-        </p>
+        <h4 className="text-lg font-semibold mb-2">Nenhum histórico encontrado</h4>
+        <p className="text-sm text-default-500">Este usuário ainda não possui alterações registradas</p>
       </div>
     );
   }
@@ -1431,15 +1133,8 @@ function UsuarioHistoricoTab({ usuarioId }: { usuarioId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-default-500">
-          Total de {historico.length} registro(s)
-        </p>
-        <Button
-          size="sm"
-          startContent={<RefreshCw className="w-4 h-4" />}
-          variant="light"
-          onPress={() => mutate()}
-        >
+        <p className="text-sm text-default-500">Total de {historico.length} registro(s)</p>
+        <Button size="sm" startContent={<RefreshCw className="w-4 h-4" />} variant="light" onPress={() => mutate()}>
           Atualizar
         </Button>
       </div>
@@ -1450,18 +1145,12 @@ function UsuarioHistoricoTab({ usuarioId }: { usuarioId: string }) {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <Chip
-                      color={getAcaoColor(item.acao)}
-                      size="sm"
-                      variant="flat"
-                    >
+                    <Chip color={getAcaoColor(item.acao)} size="sm" variant="flat">
                       {getAcaoText(item.acao)}
                     </Chip>
                     {item.realizadoPorUsuario && (
                       <span className="text-xs text-default-500">
-                        por {item.realizadoPorUsuario.firstName}{" "}
-                        {item.realizadoPorUsuario.lastName ||
-                          item.realizadoPorUsuario.email}
+                        por {item.realizadoPorUsuario.firstName} {item.realizadoPorUsuario.lastName || item.realizadoPorUsuario.email}
                       </span>
                     )}
                   </div>
@@ -1487,8 +1176,7 @@ function UsuarioHistoricoTab({ usuarioId }: { usuarioId: string }) {
 function UsuariosTab() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role as UserRole | undefined;
-  const isAdmin =
-    userRole === UserRole.ADMIN || userRole === UserRole.SUPER_ADMIN;
+  const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.SUPER_ADMIN;
 
   const [usuarios, setUsuarios] = useState<UsuarioEquipeData[]>([]);
   const [advogados, setAdvogados] = useState<any[]>([]);
@@ -1529,8 +1217,7 @@ function UsuariosTab() {
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedUsuario, setSelectedUsuario] =
-    useState<UsuarioEquipeData | null>(null);
+  const [selectedUsuario, setSelectedUsuario] = useState<UsuarioEquipeData | null>(null);
   const [editFormData, setEditFormData] = useState({
     firstName: "",
     lastName: "",
@@ -1546,9 +1233,7 @@ function UsuariosTab() {
     cargoId: "" as string | undefined,
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [permissionsForm, setPermissionsForm] = useState<
-    Record<string, Record<string, boolean>>
-  >({});
+  const [permissionsForm, setPermissionsForm] = useState<Record<string, Record<string, boolean>>>({});
   const [permissoesEfetivas, setPermissoesEfetivas] = useState<
     Array<{
       modulo: string;
@@ -1574,14 +1259,8 @@ function UsuariosTab() {
     return advogados.map((adv) => {
       const firstName = adv.usuario?.firstName ?? "";
       const lastName = adv.usuario?.lastName ?? "";
-      const fullName =
-        firstName || lastName
-          ? `${firstName} ${lastName}`.trim()
-          : (adv.usuario?.email ?? "Advogado(a) sem nome");
-      const oabLabel =
-        adv.oabNumero && adv.oabUf
-          ? ` - OAB ${adv.oabNumero}/${adv.oabUf}`
-          : "";
+      const fullName = firstName || lastName ? `${firstName} ${lastName}`.trim() : (adv.usuario?.email ?? "Advogado(a) sem nome");
+      const oabLabel = adv.oabNumero && adv.oabUf ? ` - OAB ${adv.oabNumero}/${adv.oabUf}` : "";
 
       return {
         id: adv.id as string,
@@ -1592,10 +1271,7 @@ function UsuariosTab() {
     });
   }, [advogados]);
 
-  const advogadoKeySet = useMemo(
-    () => new Set(advogadosOptions.map((item) => item.id)),
-    [advogadosOptions],
-  );
+  const advogadoKeySet = useMemo(() => new Set(advogadosOptions.map((item) => item.id)), [advogadosOptions]);
 
   const validatedAdvogadoKeys = useMemo(() => {
     return linkForm.advogadoIds.filter((id) => advogadoKeySet.has(id));
@@ -1605,18 +1281,11 @@ function UsuariosTab() {
     try {
       setLoading(true);
       setError(null);
-      const [usuariosData, advogadosData] = await Promise.all([
-        getUsuariosEquipe(),
-        getAdvogados(),
-      ]);
+      const [usuariosData, advogadosData] = await Promise.all([getUsuariosEquipe(), getAdvogados()]);
 
       setUsuarios(usuariosData);
       if (advogadosData && advogadosData.success) {
-        setAdvogados(
-          "advogados" in advogadosData && Array.isArray(advogadosData.advogados)
-            ? advogadosData.advogados
-            : [],
-        );
+        setAdvogados("advogados" in advogadosData && Array.isArray(advogadosData.advogados) ? advogadosData.advogados : []);
       } else {
         setAdvogados([]);
         if (advogadosData && "error" in advogadosData && advogadosData.error) {
@@ -1624,10 +1293,7 @@ function UsuariosTab() {
         }
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Erro ao carregar dados. Tente novamente.";
+      const errorMessage = error instanceof Error ? error.message : "Erro ao carregar dados. Tente novamente.";
 
       setError(errorMessage);
       toast.error(errorMessage);
@@ -1651,9 +1317,7 @@ function UsuariosTab() {
       active: usuario.active,
       cpf: usuario.cpf || "",
       rg: usuario.rg || "",
-      dataNascimento: usuario.dataNascimento
-        ? new Date(usuario.dataNascimento).toISOString().split("T")[0]
-        : "",
+      dataNascimento: usuario.dataNascimento ? new Date(usuario.dataNascimento).toISOString().split("T")[0] : "",
       observacoes: usuario.observacoes || "",
       role: usuario.role || "SECRETARIA",
       avatarUrl: usuario.avatarUrl || "",
@@ -1676,9 +1340,7 @@ function UsuariosTab() {
         active: editFormData.active,
         cpf: editFormData.cpf || null,
         rg: editFormData.rg || null,
-        dataNascimento: editFormData.dataNascimento
-          ? new Date(editFormData.dataNascimento)
-          : null,
+        dataNascimento: editFormData.dataNascimento ? new Date(editFormData.dataNascimento) : null,
         observacoes: editFormData.observacoes || null,
         role: editFormData.role as any,
         avatarUrl: editFormData.avatarUrl || null,
@@ -1702,9 +1364,7 @@ function UsuariosTab() {
       setIsEditModalOpen(false);
       await loadData();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Erro ao atualizar usuário",
-      );
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar usuário");
     } finally {
       setIsSaving(false);
     }
@@ -1713,9 +1373,7 @@ function UsuariosTab() {
   async function handlePermissionsUsuario(usuario: UsuarioEquipeData) {
     // Verificar se o usuário é admin antes de abrir o modal
     if (!isAdmin) {
-      toast.error(
-        "Apenas administradores podem gerenciar permissões de usuários",
-      );
+      toast.error("Apenas administradores podem gerenciar permissões de usuários");
 
       return;
     }
@@ -1741,10 +1399,7 @@ function UsuariosTab() {
       });
       setPermissionsForm(existingPerms);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Erro ao carregar permissões efetivas";
+      const errorMessage = error instanceof Error ? error.message : "Erro ao carregar permissões efetivas";
 
       toast.error(errorMessage);
       console.error(error);
@@ -1765,11 +1420,7 @@ function UsuariosTab() {
     setIsLinkModalOpen(true);
   }
 
-  async function handleSavePermission(
-    modulo: string,
-    acao: string,
-    permitido: boolean,
-  ) {
+  async function handleSavePermission(modulo: string, acao: string, permitido: boolean) {
     if (!selectedUsuario) return;
 
     // Atualização otimista do estado local
@@ -1786,13 +1437,7 @@ function UsuariosTab() {
 
     setIsSavingPermission(true);
     try {
-      await adicionarPermissaoIndividual(
-        selectedUsuario.id,
-        modulo,
-        acao,
-        permitido,
-        `Permissão ${permitido ? "concedida" : "negada"} pelo admin`,
-      );
+      await adicionarPermissaoIndividual(selectedUsuario.id, modulo, acao, permitido, `Permissão ${permitido ? "concedida" : "negada"} pelo admin`);
       toast.success("Permissão atualizada com sucesso");
 
       // Recarregar dados e atualizar usuário selecionado
@@ -1800,9 +1445,7 @@ function UsuariosTab() {
 
       // Atualizar permissões do usuário selecionado após reload
       const updatedUsuarios = await getUsuariosEquipe();
-      const updatedUsuario = updatedUsuarios.find(
-        (u) => u.id === selectedUsuario.id,
-      );
+      const updatedUsuario = updatedUsuarios.find((u) => u.id === selectedUsuario.id);
 
       if (updatedUsuario) {
         const existingPerms: Record<string, Record<string, boolean>> = {};
@@ -1838,9 +1481,7 @@ function UsuariosTab() {
 
         return updated;
       });
-      toast.error(
-        error instanceof Error ? error.message : "Erro ao atualizar permissão",
-      );
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar permissão");
     } finally {
       setIsSavingPermission(false);
     }
@@ -1856,25 +1497,12 @@ function UsuariosTab() {
     setIsSavingLink(true);
     try {
       // Vincular a múltiplos advogados
-      await Promise.all(
-        linkForm.advogadoIds.map((advogadoId) =>
-          vincularUsuarioAdvogado(
-            selectedUsuario.id,
-            advogadoId,
-            linkForm.tipo,
-            linkForm.observacoes || undefined,
-          ),
-        ),
-      );
-      toast.success(
-        `Usuário vinculado a ${linkForm.advogadoIds.length} advogado(s) com sucesso`,
-      );
+      await Promise.all(linkForm.advogadoIds.map((advogadoId) => vincularUsuarioAdvogado(selectedUsuario.id, advogadoId, linkForm.tipo, linkForm.observacoes || undefined)));
+      toast.success(`Usuário vinculado a ${linkForm.advogadoIds.length} advogado(s) com sucesso`);
       setIsLinkModalOpen(false);
       await loadData();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Erro ao vincular usuário",
-      );
+      toast.error(error instanceof Error ? error.message : "Erro ao vincular usuário");
     } finally {
       setIsSavingLink(false);
     }
@@ -1940,9 +1568,7 @@ function UsuariosTab() {
     const cargoPrincipal = getCargoPrincipal(usuario);
 
     if (cargoPrincipal) {
-      const outrosCargos = usuario.cargos.filter(
-        (c) => c.ativo && c.id !== cargoPrincipal.id,
-      ).length;
+      const outrosCargos = usuario.cargos.filter((c) => c.ativo && c.id !== cargoPrincipal.id).length;
       const sufixo = outrosCargos > 0 ? ` +${outrosCargos}` : "";
 
       return `${cargoPrincipal.nome}${sufixo}`;
@@ -1987,15 +1613,7 @@ function UsuariosTab() {
     try {
       const csvContent = [
         // Cabeçalho
-        [
-          "Nome",
-          "Email",
-          "Role",
-          "Tipo",
-          "Status",
-          "Cargos",
-          "Vinculações",
-        ].join(","),
+        ["Nome", "Email", "Role", "Tipo", "Status", "Cargos", "Vinculações"].join(","),
         // Dados
         ...filteredUsuarios.map((usuario) =>
           [
@@ -2006,7 +1624,7 @@ function UsuariosTab() {
             `"${usuario.active ? "Ativo" : "Inativo"}"`,
             `"${usuario.cargos.map((c) => c.nome).join("; ")}"`,
             `"${usuario.vinculacoes.map((v) => `${v.tipo} → ${v.advogadoNome}`).join("; ")}"`,
-          ].join(","),
+          ].join(",")
         ),
       ].join("\n");
 
@@ -2015,10 +1633,7 @@ function UsuariosTab() {
       const url = URL.createObjectURL(blob);
 
       link.setAttribute("href", url);
-      link.setAttribute(
-        "download",
-        `equipe-usuarios-${new Date().toISOString().split("T")[0]}.csv`,
-      );
+      link.setAttribute("download", `equipe-usuarios-${new Date().toISOString().split("T")[0]}.csv`);
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
@@ -2038,53 +1653,25 @@ function UsuariosTab() {
         usuario.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         usuario.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesRole =
-        selectedRole === "all" || usuario.role === selectedRole;
-      const matchesStatus =
-        selectedStatus === "all" ||
-        (selectedStatus === "active" && usuario.active) ||
-        (selectedStatus === "inactive" && !usuario.active);
+      const matchesRole = selectedRole === "all" || usuario.role === selectedRole;
+      const matchesStatus = selectedStatus === "all" || (selectedStatus === "active" && usuario.active) || (selectedStatus === "inactive" && !usuario.active);
 
       const matchesTipo =
         selectedTipo === "all" ||
-        (selectedTipo === "interno" &&
-          usuario.role === "ADVOGADO" &&
-          !usuario.isExterno) ||
-        (selectedTipo === "externo" &&
-          usuario.role === "ADVOGADO" &&
-          usuario.isExterno) ||
+        (selectedTipo === "interno" && usuario.role === "ADVOGADO" && !usuario.isExterno) ||
+        (selectedTipo === "externo" && usuario.role === "ADVOGADO" && usuario.isExterno) ||
         (selectedTipo === "nao-advogado" && usuario.role !== "ADVOGADO");
 
       const matchesVinculacao =
-        selectedVinculacao === "all" ||
-        (selectedVinculacao === "com-vinculacao" &&
-          usuario.vinculacoes.length > 0) ||
-        (selectedVinculacao === "sem-vinculacao" &&
-          usuario.vinculacoes.length === 0);
+        selectedVinculacao === "all" || (selectedVinculacao === "com-vinculacao" && usuario.vinculacoes.length > 0) || (selectedVinculacao === "sem-vinculacao" && usuario.vinculacoes.length === 0);
 
-      return (
-        matchesSearch &&
-        matchesRole &&
-        matchesStatus &&
-        matchesTipo &&
-        matchesVinculacao
-      );
+      return matchesSearch && matchesRole && matchesStatus && matchesTipo && matchesVinculacao;
     });
-  }, [
-    usuarios,
-    searchTerm,
-    selectedRole,
-    selectedStatus,
-    selectedTipo,
-    selectedVinculacao,
-  ]);
+  }, [usuarios, searchTerm, selectedRole, selectedStatus, selectedTipo, selectedVinculacao]);
 
   // Paginação
   const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage);
-  const paginatedUsuarios = filteredUsuarios.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const paginatedUsuarios = filteredUsuarios.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // Estatísticas dos usuários
   const usuarioStats = useMemo(() => {
@@ -2097,9 +1684,7 @@ function UsuariosTab() {
       porRole[u.role] = (porRole[u.role] || 0) + 1;
     });
     const comCargo = usuarios.filter((u) => u.cargos.length > 0).length;
-    const comVinculacao = usuarios.filter(
-      (u) => u.vinculacoes.length > 0,
-    ).length;
+    const comVinculacao = usuarios.filter((u) => u.vinculacoes.length > 0).length;
 
     return {
       total,
@@ -2124,12 +1709,7 @@ function UsuariosTab() {
       {/* Toolbar com Estatísticas */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 2xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4 lg:gap-6 auto-rows-fr">
         {/* Card Total de Usuários */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="flex"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.1 }}>
           <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
@@ -2141,27 +1721,16 @@ function UsuariosTab() {
                 </div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <p className="text-xs sm:text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide line-clamp-1">
-                  Total de Usuários
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-blue-800 dark:text-blue-200">
-                  {usuarioStats.total}
-                </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400 line-clamp-1">
-                  Equipe do escritório
-                </p>
+                <p className="text-xs sm:text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide line-clamp-1">Total de Usuários</p>
+                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-blue-800 dark:text-blue-200">{usuarioStats.total}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 line-clamp-1">Equipe do escritório</p>
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card Ativos */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="flex"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.2 }}>
           <Card className="bg-gradient-to-br from-green-50 via-emerald-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
@@ -2173,27 +1742,16 @@ function UsuariosTab() {
                 </div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <p className="text-xs sm:text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide line-clamp-1">
-                  Ativos
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-800 dark:text-green-200">
-                  {usuarioStats.ativos}
-                </p>
-                <p className="text-xs text-green-600 dark:text-green-400 line-clamp-1">
-                  Em atividade
-                </p>
+                <p className="text-xs sm:text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide line-clamp-1">Ativos</p>
+                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-800 dark:text-green-200">{usuarioStats.ativos}</p>
+                <p className="text-xs text-green-600 dark:text-green-400 line-clamp-1">Em atividade</p>
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card Inativos */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="flex"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.3 }}>
           <Card className="bg-gradient-to-br from-rose-50 via-pink-100 to-red-200 dark:from-rose-900/30 dark:via-pink-800/20 dark:to-red-900/30 border-rose-300 dark:border-rose-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
@@ -2205,27 +1763,16 @@ function UsuariosTab() {
                 </div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <p className="text-xs sm:text-sm font-semibold text-rose-700 dark:text-rose-300 uppercase tracking-wide line-clamp-1">
-                  Inativos
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-rose-800 dark:text-rose-200">
-                  {usuarioStats.inativos}
-                </p>
-                <p className="text-xs text-rose-600 dark:text-rose-400 line-clamp-1">
-                  Desativados
-                </p>
+                <p className="text-xs sm:text-sm font-semibold text-rose-700 dark:text-rose-300 uppercase tracking-wide line-clamp-1">Inativos</p>
+                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-rose-800 dark:text-rose-200">{usuarioStats.inativos}</p>
+                <p className="text-xs text-rose-600 dark:text-rose-400 line-clamp-1">Desativados</p>
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card Com Cargo */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="flex"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.4 }}>
           <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
@@ -2237,27 +1784,16 @@ function UsuariosTab() {
                 </div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <p className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide line-clamp-1">
-                  Com Cargo
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-purple-800 dark:text-purple-200">
-                  {usuarioStats.comCargo}
-                </p>
-                <p className="text-xs text-purple-600 dark:text-purple-400 line-clamp-1">
-                  Com função atribuída
-                </p>
+                <p className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide line-clamp-1">Com Cargo</p>
+                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-purple-800 dark:text-purple-200">{usuarioStats.comCargo}</p>
+                <p className="text-xs text-purple-600 dark:text-purple-400 line-clamp-1">Com função atribuída</p>
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card Vinculados */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="flex"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.5 }}>
           <Card className="bg-gradient-to-br from-orange-50 via-amber-100 to-yellow-200 dark:from-orange-900/30 dark:via-amber-800/20 dark:to-yellow-900/30 border-orange-300 dark:border-orange-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
@@ -2269,27 +1805,16 @@ function UsuariosTab() {
                 </div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <p className="text-xs sm:text-sm font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide line-clamp-1">
-                  Vinculados
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-orange-800 dark:text-orange-200">
-                  {usuarioStats.comVinculacao}
-                </p>
-                <p className="text-xs text-orange-600 dark:text-orange-400 line-clamp-1">
-                  A advogados
-                </p>
+                <p className="text-xs sm:text-sm font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide line-clamp-1">Vinculados</p>
+                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-orange-800 dark:text-orange-200">{usuarioStats.comVinculacao}</p>
+                <p className="text-xs text-orange-600 dark:text-orange-400 line-clamp-1">A advogados</p>
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card Administradores */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="flex"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.6 }}>
           <Card className="bg-gradient-to-br from-indigo-50 via-blue-100 to-indigo-200 dark:from-indigo-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-indigo-300 dark:border-indigo-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
@@ -2301,15 +1826,9 @@ function UsuariosTab() {
                 </div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <p className="text-xs sm:text-sm font-semibold text-indigo-700 dark:text-indigo-300 uppercase tracking-wide line-clamp-1">
-                  Administradores
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-indigo-800 dark:text-indigo-200">
-                  {usuarioStats.porRole.ADMIN || 0}
-                </p>
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 line-clamp-1">
-                  Com acesso total
-                </p>
+                <p className="text-xs sm:text-sm font-semibold text-indigo-700 dark:text-indigo-300 uppercase tracking-wide line-clamp-1">Administradores</p>
+                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-indigo-800 dark:text-indigo-200">{usuarioStats.porRole.ADMIN || 0}</p>
+                <p className="text-xs text-indigo-600 dark:text-indigo-400 line-clamp-1">Com acesso total</p>
               </div>
             </CardBody>
           </Card>
@@ -2323,12 +1842,7 @@ function UsuariosTab() {
             <Input
               endContent={
                 searchTerm && (
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    variant="light"
-                    onPress={() => setSearchTerm("")}
-                  >
+                  <Button isIconOnly size="sm" variant="light" onPress={() => setSearchTerm("")}>
                     <X className="w-4 h-4" />
                   </Button>
                 )
@@ -2340,33 +1854,17 @@ function UsuariosTab() {
             />
           </div>
 
-          <Button
-            startContent={<Filter className="w-4 h-4" />}
-            variant="light"
-            onPress={() => setShowFilters(!showFilters)}
-          >
+          <Button startContent={<Filter className="w-4 h-4" />} variant="light" onPress={() => setShowFilters(!showFilters)}>
             Filtros
           </Button>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button
-            className="w-full sm:w-auto"
-            color="primary"
-            size="sm"
-            startContent={<UserPlus className="w-4 h-4" />}
-            onPress={handleOpenCreateUsuario}
-          >
+          <Button className="w-full sm:w-auto" color="primary" size="sm" startContent={<UserPlus className="w-4 h-4" />} onPress={handleOpenCreateUsuario}>
             <span className="hidden sm:inline">Novo Funcionário</span>
             <span className="sm:hidden">Novo</span>
           </Button>
-          <Button
-            className="w-full sm:w-auto"
-            size="sm"
-            startContent={<Download className="w-4 h-4" />}
-            variant="light"
-            onPress={() => handleExportUsuarios()}
-          >
+          <Button className="w-full sm:w-auto" size="sm" startContent={<Download className="w-4 h-4" />} variant="light" onPress={() => handleExportUsuarios()}>
             Exportar
           </Button>
         </div>
@@ -2375,12 +1873,7 @@ function UsuariosTab() {
       {/* Filtros expandidos */}
       <AnimatePresence>
         {showFilters && (
-          <motion.div
-            animate={{ opacity: 1, height: "auto" }}
-            className="overflow-hidden"
-            exit={{ opacity: 0, height: 0 }}
-            initial={{ opacity: 0, height: 0 }}
-          >
+          <motion.div animate={{ opacity: 1, height: "auto" }} className="overflow-hidden" exit={{ opacity: 0, height: 0 }} initial={{ opacity: 0, height: 0 }}>
             <Card>
               <CardBody>
                 <div className="flex flex-wrap gap-2 sm:gap-3 md:gap-4">
@@ -2406,9 +1899,7 @@ function UsuariosTab() {
                     className="min-w-[140px] sm:min-w-40 flex-1 sm:flex-none"
                     label="Status"
                     placeholder="Todos os status"
-                    selectedKeys={
-                      selectedStatus === "all" ? [] : [selectedStatus]
-                    }
+                    selectedKeys={selectedStatus === "all" ? [] : [selectedStatus]}
                     onSelectionChange={(keys) => {
                       const selected = Array.from(keys)[0] as string;
 
@@ -2441,9 +1932,7 @@ function UsuariosTab() {
                     className="min-w-[140px] sm:min-w-40 flex-1 sm:flex-none"
                     label="Vinculação"
                     placeholder="Todas as vinculações"
-                    selectedKeys={
-                      selectedVinculacao === "all" ? [] : [selectedVinculacao]
-                    }
+                    selectedKeys={selectedVinculacao === "all" ? [] : [selectedVinculacao]}
                     onSelectionChange={(keys) => {
                       const selected = Array.from(keys)[0] as string;
 
@@ -2537,19 +2026,10 @@ function UsuariosTab() {
                   <TableRow key={usuario.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar
-                          name={usuario.firstName || usuario.email}
-                          size="sm"
-                        />
+                        <Avatar name={usuario.firstName || usuario.email} size="sm" />
                         <div>
-                          <p className="font-medium">
-                            {usuario.firstName && usuario.lastName
-                              ? `${usuario.firstName} ${usuario.lastName}`
-                              : usuario.email}
-                          </p>
-                          <p className="text-sm text-default-500">
-                            {usuario.email}
-                          </p>
+                          <p className="font-medium">{usuario.firstName && usuario.lastName ? `${usuario.firstName} ${usuario.lastName}` : usuario.email}</p>
+                          <p className="text-sm text-default-500">{usuario.email}</p>
                         </div>
                       </div>
                     </TableCell>
@@ -2562,30 +2042,17 @@ function UsuariosTab() {
                               ? `Cargos: ${usuario.cargos
                                   .filter((c) => c.ativo)
                                   .map((c) => c.nome)
-                                  .join(
-                                    ", ",
-                                  )} | Role: ${getRoleLabel(usuario.role)}`
+                                  .join(", ")} | Role: ${getRoleLabel(usuario.role)}`
                               : `Role: ${getRoleLabel(usuario.role)} (sem cargo)`
                           }
                         >
-                          <Chip
-                            className="w-fit"
-                            color={getDisplayColor(usuario)}
-                            size="sm"
-                            startContent={getDisplayIcon(usuario)}
-                            variant="flat"
-                          >
+                          <Chip className="w-fit" color={getDisplayColor(usuario)} size="sm" startContent={getDisplayIcon(usuario)} variant="flat">
                             {getDisplayLabel(usuario)}
                           </Chip>
                         </Tooltip>
                         {/* Role como informação secundária */}
                         {getCargoPrincipal(usuario) && (
-                          <Chip
-                            className="w-fit text-xs opacity-70"
-                            color="default"
-                            size="sm"
-                            variant="flat"
-                          >
+                          <Chip className="w-fit text-xs opacity-70" color="default" size="sm" variant="flat">
                             {getRoleLabel(usuario.role)}
                           </Chip>
                         )}
@@ -2596,13 +2063,7 @@ function UsuariosTab() {
                         <Chip
                           color={usuario.isExterno ? "warning" : "success"}
                           size="sm"
-                          startContent={
-                            usuario.isExterno ? (
-                              <ExternalLink className="w-3 h-3" />
-                            ) : (
-                              <Building2 className="w-3 h-3" />
-                            )
-                          }
+                          startContent={usuario.isExterno ? <ExternalLink className="w-3 h-3" /> : <Building2 className="w-3 h-3" />}
                           variant="flat"
                         >
                           {usuario.isExterno ? "Externo" : "Interno"}
@@ -2614,56 +2075,27 @@ function UsuariosTab() {
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {usuario.cargos.map((cargo) => (
-                          <Chip
-                            key={cargo.id}
-                            color="primary"
-                            size="sm"
-                            variant="flat"
-                          >
+                          <Chip key={cargo.id} color="primary" size="sm" variant="flat">
                             {cargo.nome}
                           </Chip>
                         ))}
-                        {usuario.cargos.length === 0 && (
-                          <span className="text-sm text-default-400">
-                            Sem cargos
-                          </span>
-                        )}
+                        {usuario.cargos.length === 0 && <span className="text-sm text-default-400">Sem cargos</span>}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {usuario.vinculacoes.map((vinculacao) => (
-                          <Tooltip
-                            key={vinculacao.id}
-                            content={
-                              vinculacao.observacoes || "Sem observações"
-                            }
-                          >
+                          <Tooltip key={vinculacao.id} content={vinculacao.observacoes || "Sem observações"}>
                             <Chip color="secondary" size="sm" variant="flat">
                               {vinculacao.tipo} → {vinculacao.advogadoNome}
                             </Chip>
                           </Tooltip>
                         ))}
-                        {usuario.vinculacoes.length === 0 && (
-                          <span className="text-sm text-default-400">
-                            Sem vinculações
-                          </span>
-                        )}
+                        {usuario.vinculacoes.length === 0 && <span className="text-sm text-default-400">Sem vinculações</span>}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        color={usuario.active ? "success" : "default"}
-                        size="sm"
-                        startContent={
-                          usuario.active ? (
-                            <CheckCircle className="w-3 h-3" />
-                          ) : (
-                            <X className="w-3 h-3" />
-                          )
-                        }
-                        variant="flat"
-                      >
+                      <Chip color={usuario.active ? "success" : "default"} size="sm" startContent={usuario.active ? <CheckCircle className="w-3 h-3" /> : <X className="w-3 h-3" />} variant="flat">
                         {usuario.active ? "Ativo" : "Inativo"}
                       </Chip>
                     </TableCell>
@@ -2687,31 +2119,19 @@ function UsuariosTab() {
                             }
                           }}
                         >
-                          <DropdownItem
-                            key="view"
-                            startContent={<Eye className="w-4 h-4" />}
-                          >
+                          <DropdownItem key="view" startContent={<Eye className="w-4 h-4" />}>
                             Visualizar
                           </DropdownItem>
-                          <DropdownItem
-                            key="edit"
-                            startContent={<Edit className="w-4 h-4" />}
-                          >
+                          <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />}>
                             Editar
                           </DropdownItem>
                           {isAdmin ? (
-                            <DropdownItem
-                              key="permissions"
-                              startContent={<Shield className="w-4 h-4" />}
-                            >
+                            <DropdownItem key="permissions" startContent={<Shield className="w-4 h-4" />}>
                               Permissões
                             </DropdownItem>
                           ) : null}
                           {isAdmin ? (
-                            <DropdownItem
-                              key="link"
-                              startContent={<LinkIcon className="w-4 h-4" />}
-                            >
+                            <DropdownItem key="link" startContent={<LinkIcon className="w-4 h-4" />}>
                               Vincular
                             </DropdownItem>
                           ) : null}
@@ -2729,13 +2149,7 @@ function UsuariosTab() {
       {/* Paginação */}
       {totalPages > 1 && (
         <div className="flex justify-center">
-          <Pagination
-            showControls
-            showShadow
-            page={currentPage}
-            total={totalPages}
-            onChange={setCurrentPage}
-          />
+          <Pagination showControls showShadow page={currentPage} total={totalPages} onChange={setCurrentPage} />
         </div>
       )}
 
@@ -2746,17 +2160,9 @@ function UsuariosTab() {
             <div className="flex items-start gap-3">
               <XCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-danger mb-1">
-                  Erro ao carregar usuários
-                </h3>
+                <h3 className="text-sm font-semibold text-danger mb-1">Erro ao carregar usuários</h3>
                 <p className="text-sm text-default-600 mb-3">{error}</p>
-                <Button
-                  color="danger"
-                  size="sm"
-                  startContent={<RefreshCw className="w-4 h-4" />}
-                  variant="flat"
-                  onPress={() => loadData()}
-                >
+                <Button color="danger" size="sm" startContent={<RefreshCw className="w-4 h-4" />} variant="flat" onPress={() => loadData()}>
                   Tentar novamente
                 </Button>
               </div>
@@ -2770,15 +2176,9 @@ function UsuariosTab() {
         <Card>
           <CardBody className="text-center py-12">
             <Users className="w-12 h-12 text-default-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              Nenhum usuário encontrado
-            </h3>
+            <h3 className="text-lg font-semibold mb-2">Nenhum usuário encontrado</h3>
             <p className="text-default-500">
-              {searchTerm ||
-              selectedRole !== "all" ||
-              selectedStatus !== "all" ||
-              selectedTipo !== "all" ||
-              selectedVinculacao !== "all"
+              {searchTerm || selectedRole !== "all" || selectedStatus !== "all" || selectedTipo !== "all" || selectedVinculacao !== "all"
                 ? "Tente ajustar os filtros de busca"
                 : "Nenhum usuário cadastrado na equipe"}
             </p>
@@ -2787,77 +2187,32 @@ function UsuariosTab() {
       )}
 
       {/* Modal de Criação de Funcionário */}
-      <Modal
-        isOpen={isCreateModalOpen}
-        scrollBehavior="inside"
-        size="5xl"
-        onClose={() => setIsCreateModalOpen(false)}
-      >
+      <Modal isOpen={isCreateModalOpen} scrollBehavior="inside" size="5xl" onClose={() => setIsCreateModalOpen(false)}>
         <ModalContent>
-          <ModalHeaderGradient
-            description="Cadastre colaboradores internos com dados trabalhistas completos"
-            icon={UserPlus}
-            title="Novo Funcionário"
-          />
+          <ModalHeaderGradient description="Cadastre colaboradores internos com dados trabalhistas completos" icon={UserPlus} title="Novo Funcionário" />
           <ModalBody className="px-0">
             <div className="space-y-6 px-6 pb-6">
-              <ModalSectionCard
-                description="O modal de criação reutiliza as abas existentes (Perfil, Contatos, Cargo/Role) e adiciona etapas específicas para funcionários."
-                title="Resumo do fluxo"
-              >
+              <ModalSectionCard description="O modal de criação reutiliza as abas existentes (Perfil, Contatos, Cargo/Role) e adiciona etapas específicas para funcionários." title="Resumo do fluxo">
                 <ul className="list-disc pl-5 space-y-2 text-sm text-default-600">
-                  <li>
-                    Perfil: dados pessoais, CPF, geração de senha temporária,
-                    cargo principal.
-                  </li>
-                  <li>
-                    Dados trabalhistas: contrato, CTPS, PIS, jornada, flags de
-                    benefícios padrão.
-                  </li>
-                  <li>
-                    Benefícios: uso de `FuncionarioBeneficio` para registrar
-                    VA/VR/plano de saúde, com valores e vigência.
-                  </li>
-                  <li>
-                    Documentos: upload para Cloudinary (`FuncionarioDocumento`),
-                    com tipo, emissão e validade.
-                  </li>
-                  <li>
-                    Endereços e Contas: reaproveitar `EnderecoManager` e dados
-                    bancários existentes.
-                  </li>
-                  <li>
-                    Histórico: registrar alterações em `EquipeHistorico` (ex.:
-                    contrato alterado, benefício incluído).
-                  </li>
+                  <li>Perfil: dados pessoais, CPF, geração de senha temporária, cargo principal.</li>
+                  <li>Dados trabalhistas: contrato, CTPS, PIS, jornada, flags de benefícios padrão.</li>
+                  <li>Benefícios: uso de `FuncionarioBeneficio` para registrar VA/VR/plano de saúde, com valores e vigência.</li>
+                  <li>Documentos: upload para Cloudinary (`FuncionarioDocumento`), com tipo, emissão e validade.</li>
+                  <li>Endereços e Contas: reaproveitar `EnderecoManager` e dados bancários existentes.</li>
+                  <li>Histórico: registrar alterações em `EquipeHistorico` (ex.: contrato alterado, benefício incluído).</li>
                 </ul>
               </ModalSectionCard>
 
-              <ModalSectionCard
-                description="Implemente as etapas conforme o roteiro documentado."
-                title="Próximos passos"
-              >
+              <ModalSectionCard description="Implemente as etapas conforme o roteiro documentado." title="Próximos passos">
                 <div className="space-y-3 text-sm text-default-600">
                   <p>
-                    • Conferir o documento{" "}
-                    <code>
-                      docs/features/tenant-dashboard-enhancements/team-employee-profiles.md
-                    </code>{" "}
-                    para o passo a passo completo.
+                    • Conferir o documento <code>docs/features/tenant-dashboard-enhancements/team-employee-profiles.md</code> para o passo a passo completo.
                     <br />
-                    • Criar a action `createFuncionarioUsuario` (ou nome
-                    similar) reaproveitando padrões de `createCliente` /
-                    `createAdvogado`.
-                    <br />• Implementar realtime (
-                    <code>equipe.usuario.created</code>) e auditoria para cada
-                    operação.
-                    <br />• Atualizar a dashboard de estatísticas após salvar um
-                    novo registro.
+                    • Criar a action `createFuncionarioUsuario` (ou nome similar) reaproveitando padrões de `createCliente` / `createAdvogado`.
+                    <br />• Implementar realtime (<code>equipe.usuario.created</code>) e auditoria para cada operação.
+                    <br />• Atualizar a dashboard de estatísticas após salvar um novo registro.
                   </p>
-                  <p className="text-xs text-default-500">
-                    Este modal é temporário – substitua-o pelo formulário
-                    definitivo assim que o backend estiver pronto.
-                  </p>
+                  <p className="text-xs text-default-500">Este modal é temporário – substitua-o pelo formulário definitivo assim que o backend estiver pronto.</p>
                 </div>
               </ModalSectionCard>
             </div>
@@ -2871,34 +2226,23 @@ function UsuariosTab() {
       </Modal>
 
       {/* Modal de Visualização de Usuário */}
-      <Modal
-        isOpen={isViewModalOpen}
-        scrollBehavior="inside"
-        size="5xl"
-        onClose={() => setIsViewModalOpen(false)}
-      >
+      <Modal isOpen={isViewModalOpen} scrollBehavior="inside" size="5xl" onClose={() => setIsViewModalOpen(false)}>
         <ModalContent>
           {selectedUsuario && (
             <>
               <ModalHeaderGradient
                 description="Detalhes completos do usuário"
                 icon={User}
-                title={
-                  selectedUsuario.firstName && selectedUsuario.lastName
-                    ? `${selectedUsuario.firstName} ${selectedUsuario.lastName}`
-                    : selectedUsuario.email
-                }
+                title={selectedUsuario.firstName && selectedUsuario.lastName ? `${selectedUsuario.firstName} ${selectedUsuario.lastName}` : selectedUsuario.email}
               />
               <ModalBody className="px-0">
                 <Tabs
                   aria-label="Detalhes do usuário"
                   classNames={{
-                    tabList:
-                      "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
+                    tabList: "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
                     cursor: "w-full bg-primary",
                     tab: "max-w-fit px-0 h-12",
-                    tabContent:
-                      "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
+                    tabContent: "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
                     panel: "px-6 pb-6 pt-4",
                   }}
                   color="primary"
@@ -2916,41 +2260,23 @@ function UsuariosTab() {
                     }
                   >
                     <div className="space-y-6">
-                      <ModalSectionCard
-                        description="Dados de identificação do usuário"
-                        title="Informações Básicas"
-                      >
+                      <ModalSectionCard description="Dados de identificação do usuário" title="Informações Básicas">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
                             <Mail className="h-4 w-4 text-primary" />
                             <div>
                               <p className="text-xs text-default-500">Email</p>
-                              <p className="text-sm font-medium">
-                                {selectedUsuario.email}
-                              </p>
+                              <p className="text-sm font-medium">{selectedUsuario.email}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
-                            <Chip
-                              color={getRoleColor(selectedUsuario.role)}
-                              size="sm"
-                              startContent={getRoleIcon(selectedUsuario.role)}
-                              variant="flat"
-                            >
+                            <Chip color={getRoleColor(selectedUsuario.role)} size="sm" startContent={getRoleIcon(selectedUsuario.role)} variant="flat">
                               {getRoleLabel(selectedUsuario.role)}
                             </Chip>
                             <Chip
-                              color={
-                                selectedUsuario.active ? "success" : "default"
-                              }
+                              color={selectedUsuario.active ? "success" : "default"}
                               size="sm"
-                              startContent={
-                                selectedUsuario.active ? (
-                                  <CheckCircle className="w-3 h-3" />
-                                ) : (
-                                  <X className="w-3 h-3" />
-                                )
-                              }
+                              startContent={selectedUsuario.active ? <CheckCircle className="w-3 h-3" /> : <X className="w-3 h-3" />}
                               variant="flat"
                             >
                               {selectedUsuario.active ? "Ativo" : "Inativo"}
@@ -2960,19 +2286,10 @@ function UsuariosTab() {
                       </ModalSectionCard>
 
                       {selectedUsuario.cargos.length > 0 && (
-                        <ModalSectionCard
-                          description="Funções do usuário no escritório"
-                          title="Cargos"
-                        >
+                        <ModalSectionCard description="Funções do usuário no escritório" title="Cargos">
                           <div className="flex flex-wrap gap-2">
                             {selectedUsuario.cargos.map((cargo) => (
-                              <Chip
-                                key={cargo.id}
-                                color="primary"
-                                size="sm"
-                                startContent={<Award className="w-3 h-3" />}
-                                variant="flat"
-                              >
+                              <Chip key={cargo.id} color="primary" size="sm" startContent={<Award className="w-3 h-3" />} variant="flat">
                                 {cargo.nome}
                               </Chip>
                             ))}
@@ -2981,26 +2298,11 @@ function UsuariosTab() {
                       )}
 
                       {selectedUsuario.vinculacoes.length > 0 && (
-                        <ModalSectionCard
-                          description="Relacionamentos com advogados"
-                          title="Vinculações"
-                        >
+                        <ModalSectionCard description="Relacionamentos com advogados" title="Vinculações">
                           <div className="flex flex-wrap gap-2">
                             {selectedUsuario.vinculacoes.map((vinculacao) => (
-                              <Tooltip
-                                key={vinculacao.id}
-                                content={
-                                  vinculacao.observacoes || "Sem observações"
-                                }
-                              >
-                                <Chip
-                                  color="secondary"
-                                  size="sm"
-                                  startContent={
-                                    <LinkIcon className="w-3 h-3" />
-                                  }
-                                  variant="flat"
-                                >
+                              <Tooltip key={vinculacao.id} content={vinculacao.observacoes || "Sem observações"}>
+                                <Chip color="secondary" size="sm" startContent={<LinkIcon className="w-3 h-3" />} variant="flat">
                                   {vinculacao.tipo} → {vinculacao.advogadoNome}
                                 </Chip>
                               </Tooltip>
@@ -3010,23 +2312,13 @@ function UsuariosTab() {
                       )}
 
                       {selectedUsuario.permissoesIndividuais.length > 0 && (
-                        <ModalSectionCard
-                          description="Override de permissões personalizadas"
-                          title="Permissões Individuais"
-                        >
+                        <ModalSectionCard description="Override de permissões personalizadas" title="Permissões Individuais">
                           <div className="flex flex-wrap gap-2">
-                            {selectedUsuario.permissoesIndividuais.map(
-                              (perm) => (
-                                <Chip
-                                  key={perm.id}
-                                  color={perm.permitido ? "success" : "danger"}
-                                  size="sm"
-                                  variant="flat"
-                                >
-                                  {perm.modulo}/{perm.acao}
-                                </Chip>
-                              ),
-                            )}
+                            {selectedUsuario.permissoesIndividuais.map((perm) => (
+                              <Chip key={perm.id} color={perm.permitido ? "success" : "danger"} size="sm" variant="flat">
+                                {perm.modulo}/{perm.acao}
+                              </Chip>
+                            ))}
                           </div>
                         </ModalSectionCard>
                       )}
@@ -3045,32 +2337,21 @@ function UsuariosTab() {
                     }
                   >
                     <div className="space-y-6">
-                      <ModalSectionCard
-                        description="Telefone e observações"
-                        title="Informações de Contato"
-                      >
+                      <ModalSectionCard description="Telefone e observações" title="Informações de Contato">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {selectedUsuario.phone && (
                             <div className="flex items-center gap-3 p-3 bg-default-50 rounded-lg">
                               <Phone className="h-4 w-4 text-primary" />
                               <div>
-                                <p className="text-xs text-default-500">
-                                  Telefone
-                                </p>
-                                <p className="text-sm font-medium">
-                                  {selectedUsuario.phone}
-                                </p>
+                                <p className="text-xs text-default-500">Telefone</p>
+                                <p className="text-sm font-medium">{selectedUsuario.phone}</p>
                               </div>
                             </div>
                           )}
                           {selectedUsuario.observacoes && (
                             <div className="col-span-2">
-                              <p className="text-xs text-default-500 mb-2">
-                                Observações
-                              </p>
-                              <p className="text-sm text-default-700">
-                                {selectedUsuario.observacoes}
-                              </p>
+                              <p className="text-xs text-default-500 mb-2">Observações</p>
+                              <p className="text-sm text-default-700">{selectedUsuario.observacoes}</p>
                             </div>
                           )}
                         </div>
@@ -3080,16 +2361,10 @@ function UsuariosTab() {
                 </Tabs>
               </ModalBody>
               <ModalFooter>
-                <Button
-                  variant="flat"
-                  onPress={() => setIsViewModalOpen(false)}
-                >
+                <Button variant="flat" onPress={() => setIsViewModalOpen(false)}>
                   Fechar
                 </Button>
-                <Button
-                  color="primary"
-                  onPress={() => handleEditUsuario(selectedUsuario)}
-                >
+                <Button color="primary" onPress={() => handleEditUsuario(selectedUsuario)}>
                   Editar Usuário
                 </Button>
               </ModalFooter>
@@ -3099,28 +2374,17 @@ function UsuariosTab() {
       </Modal>
 
       {/* Modal de Edição de Usuário */}
-      <Modal
-        isOpen={isEditModalOpen}
-        scrollBehavior="inside"
-        size="5xl"
-        onClose={() => setIsEditModalOpen(false)}
-      >
+      <Modal isOpen={isEditModalOpen} scrollBehavior="inside" size="5xl" onClose={() => setIsEditModalOpen(false)}>
         <ModalContent>
-          <ModalHeaderGradient
-            description="Atualize as informações do usuário"
-            icon={Edit}
-            title="Editar Usuário"
-          />
+          <ModalHeaderGradient description="Atualize as informações do usuário" icon={Edit} title="Editar Usuário" />
           <ModalBody className="px-0">
             <Tabs
               aria-label="Formulário de edição do usuário"
               classNames={{
-                tabList:
-                  "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
+                tabList: "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
                 cursor: "w-full bg-primary",
                 tab: "max-w-fit px-0 h-12",
-                tabContent:
-                  "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
+                tabContent: "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
                 panel: "px-6 pb-6 pt-4",
               }}
               color="primary"
@@ -3138,10 +2402,7 @@ function UsuariosTab() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard
-                    description="Informações básicas do usuário"
-                    title="Dados Pessoais"
-                  >
+                  <ModalSectionCard description="Informações básicas do usuário" title="Dados Pessoais">
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input
@@ -3180,21 +2441,13 @@ function UsuariosTab() {
                           })
                         }
                       />
-                      <ModalSectionCard
-                        description="Foto de perfil do usuário"
-                        title="Avatar"
-                      >
+                      <ModalSectionCard description="Foto de perfil do usuário" title="Avatar">
                         <div className="flex flex-col items-center gap-4">
                           <Avatar
                             isBordered
                             className="w-24 h-24"
                             color="primary"
-                            name={
-                              selectedUsuario
-                                ? `${selectedUsuario.firstName || ""} ${selectedUsuario.lastName || ""}`.trim() ||
-                                  selectedUsuario.email
-                                : ""
-                            }
+                            name={selectedUsuario ? `${selectedUsuario.firstName || ""} ${selectedUsuario.lastName || ""}`.trim() || selectedUsuario.email : ""}
                             size="lg"
                             src={editFormData.avatarUrl || undefined}
                           />
@@ -3203,9 +2456,7 @@ function UsuariosTab() {
                               description="Cole a URL da imagem ou faça upload de arquivo"
                               label="URL do Avatar"
                               placeholder="https://exemplo.com/avatar.jpg"
-                              startContent={
-                                <Image className="w-4 h-4 text-default-400" />
-                              }
+                              startContent={<Image className="w-4 h-4 text-default-400" />}
                               value={editFormData.avatarUrl}
                               onChange={(e) =>
                                 setEditFormData({
@@ -3232,15 +2483,8 @@ function UsuariosTab() {
                                     // Criar FormData com URL
                                     const formData = new FormData();
 
-                                    formData.append(
-                                      "url",
-                                      editFormData.avatarUrl,
-                                    );
-                                    const result =
-                                      await uploadAvatarUsuarioEquipe(
-                                        selectedUsuario.id,
-                                        formData,
-                                      );
+                                    formData.append("url", editFormData.avatarUrl);
+                                    const result = await uploadAvatarUsuarioEquipe(selectedUsuario.id, formData);
 
                                     if (result.success && result.avatarUrl) {
                                       setEditFormData({
@@ -3250,23 +2494,14 @@ function UsuariosTab() {
                                       await loadData();
                                       toast.success("Avatar atualizado!");
                                     } else {
-                                      toast.error(
-                                        result.error ||
-                                          "Erro ao atualizar avatar",
-                                      );
+                                      toast.error(result.error || "Erro ao atualizar avatar");
                                     }
                                   }}
                                 >
                                   Salvar URL
                                 </Button>
                                 <label htmlFor="avatar-file-upload">
-                                  <Button
-                                    as="span"
-                                    color="secondary"
-                                    size="sm"
-                                    startContent={<Image className="w-4 h-4" />}
-                                    variant="bordered"
-                                  >
+                                  <Button as="span" color="secondary" size="sm" startContent={<Image className="w-4 h-4" />} variant="bordered">
                                     Upload Arquivo
                                   </Button>
                                   <input
@@ -3283,30 +2518,22 @@ function UsuariosTab() {
 
                                       reader.onloadend = async () => {
                                         try {
-                                          const base64 =
-                                            reader.result as string;
-                                          const response = await fetch(
-                                            "/api/equipe/upload-avatar",
-                                            {
-                                              method: "POST",
-                                              headers: {
-                                                "Content-Type":
-                                                  "application/json",
-                                              },
-                                              body: JSON.stringify({
-                                                usuarioId: selectedUsuario.id,
-                                                file: base64.split(",")[1], // Remover data:image/...;base64,
-                                                fileName: file.name,
-                                                mimeType: file.type,
-                                              }),
+                                          const base64 = reader.result as string;
+                                          const response = await fetch("/api/equipe/upload-avatar", {
+                                            method: "POST",
+                                            headers: {
+                                              "Content-Type": "application/json",
                                             },
-                                          );
+                                            body: JSON.stringify({
+                                              usuarioId: selectedUsuario.id,
+                                              file: base64.split(",")[1], // Remover data:image/...;base64,
+                                              fileName: file.name,
+                                              mimeType: file.type,
+                                            }),
+                                          });
                                           const result = await response.json();
 
-                                          if (
-                                            result.success &&
-                                            result.avatarUrl
-                                          ) {
+                                          if (result.success && result.avatarUrl) {
                                             setEditFormData({
                                               ...editFormData,
                                               avatarUrl: result.avatarUrl,
@@ -3314,15 +2541,10 @@ function UsuariosTab() {
                                             await loadData();
                                             toast.success("Avatar atualizado!");
                                           } else {
-                                            toast.error(
-                                              result.error ||
-                                                "Erro ao atualizar avatar",
-                                            );
+                                            toast.error(result.error || "Erro ao atualizar avatar");
                                           }
                                         } catch (error) {
-                                          toast.error(
-                                            "Erro ao fazer upload do avatar",
-                                          );
+                                          toast.error("Erro ao fazer upload do avatar");
                                         }
                                       };
                                       reader.readAsDataURL(file);
@@ -3338,18 +2560,13 @@ function UsuariosTab() {
                     </div>
                   </ModalSectionCard>
 
-                  <ModalSectionCard
-                    description="CPF, RG e data de nascimento"
-                    title="Documentos"
-                  >
+                  <ModalSectionCard description="CPF, RG e data de nascimento" title="Documentos">
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input
                           label="CPF"
                           placeholder="000.000.000-00"
-                          startContent={
-                            <CreditCard className="w-4 h-4 text-default-400" />
-                          }
+                          startContent={<CreditCard className="w-4 h-4 text-default-400" />}
                           value={editFormData.cpf}
                           onChange={(e) =>
                             setEditFormData({
@@ -3361,9 +2578,7 @@ function UsuariosTab() {
                         <Input
                           label="RG"
                           placeholder="0000000"
-                          startContent={
-                            <FileText className="w-4 h-4 text-default-400" />
-                          }
+                          startContent={<FileText className="w-4 h-4 text-default-400" />}
                           value={editFormData.rg}
                           onChange={(e) =>
                             setEditFormData({
@@ -3375,9 +2590,7 @@ function UsuariosTab() {
                       </div>
                       <Input
                         label="Data de Nascimento"
-                        startContent={
-                          <Calendar className="w-4 h-4 text-default-400" />
-                        }
+                        startContent={<Calendar className="w-4 h-4 text-default-400" />}
                         type="date"
                         value={editFormData.dataNascimento}
                         onChange={(e) =>
@@ -3404,10 +2617,7 @@ function UsuariosTab() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard
-                    description="Telefone e observações"
-                    title="Informações de Contato"
-                  >
+                  <ModalSectionCard description="Telefone e observações" title="Informações de Contato">
                     <div className="space-y-4">
                       <Input
                         label="Telefone"
@@ -3449,22 +2659,15 @@ function UsuariosTab() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard
-                    description="Configure o cargo e nível base do usuário"
-                    title="Função no Escritório"
-                  >
+                  <ModalSectionCard description="Configure o cargo e nível base do usuário" title="Função no Escritório">
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Select
                           description="Função específica do usuário no escritório"
                           label="Cargo (Função Principal)"
                           placeholder="Selecione um cargo"
-                          selectedKeys={
-                            editFormData.cargoId ? [editFormData.cargoId] : []
-                          }
-                          startContent={
-                            <Award className="w-4 h-4 text-default-400" />
-                          }
+                          selectedKeys={editFormData.cargoId ? [editFormData.cargoId] : []}
+                          startContent={<Award className="w-4 h-4 text-default-400" />}
                           onSelectionChange={(keys) => {
                             const cargoId = Array.from(keys)[0] as string;
 
@@ -3477,9 +2680,7 @@ function UsuariosTab() {
                           {cargos
                             .filter((c) => c.ativo)
                             .map((cargo) => (
-                              <SelectItem key={cargo.id}>
-                                {cargo.nome}
-                              </SelectItem>
+                              <SelectItem key={cargo.id}>{cargo.nome}</SelectItem>
                             ))}
                         </Select>
 
@@ -3487,9 +2688,7 @@ function UsuariosTab() {
                           description="Nível base do sistema para permissões padrão"
                           label="Role (Nível Base)"
                           selectedKeys={[editFormData.role]}
-                          startContent={
-                            <User className="w-4 h-4 text-default-400" />
-                          }
+                          startContent={<User className="w-4 h-4 text-default-400" />}
                           onSelectionChange={(keys) => {
                             const role = Array.from(keys)[0] as string;
 
@@ -3499,46 +2698,24 @@ function UsuariosTab() {
                             });
                           }}
                         >
-                          <SelectItem key="ADMIN">
-                            {getRoleLabel("ADMIN")}
-                          </SelectItem>
-                          <SelectItem key="ADVOGADO">
-                            {getRoleLabel("ADVOGADO")}
-                          </SelectItem>
-                          <SelectItem key="SECRETARIA">
-                            {getRoleLabel("SECRETARIA")}
-                          </SelectItem>
-                          <SelectItem key="FINANCEIRO">
-                            {getRoleLabel("FINANCEIRO")}
-                          </SelectItem>
-                          <SelectItem key="ESTAGIARIA">
-                            {getRoleLabel("ESTAGIARIA")}
-                          </SelectItem>
-                          <SelectItem key="CLIENTE">
-                            {getRoleLabel("CLIENTE")}
-                          </SelectItem>
+                          <SelectItem key="ADMIN">{getRoleLabel("ADMIN")}</SelectItem>
+                          <SelectItem key="ADVOGADO">{getRoleLabel("ADVOGADO")}</SelectItem>
+                          <SelectItem key="SECRETARIA">{getRoleLabel("SECRETARIA")}</SelectItem>
+                          <SelectItem key="FINANCEIRO">{getRoleLabel("FINANCEIRO")}</SelectItem>
+                          <SelectItem key="ESTAGIARIA">{getRoleLabel("ESTAGIARIA")}</SelectItem>
+                          <SelectItem key="CLIENTE">{getRoleLabel("CLIENTE")}</SelectItem>
                         </Select>
                       </div>
                     </div>
                   </ModalSectionCard>
 
-                  <ModalSectionCard
-                    description="Controle de acesso ao sistema"
-                    title="Status do Usuário"
-                  >
+                  <ModalSectionCard description="Controle de acesso ao sistema" title="Status do Usuário">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium mb-1">Status</p>
-                        <p className="text-xs text-default-500">
-                          Usuários inativos não conseguem fazer login
-                        </p>
+                        <p className="text-xs text-default-500">Usuários inativos não conseguem fazer login</p>
                       </div>
-                      <Switch
-                        isSelected={editFormData.active}
-                        onValueChange={(value) =>
-                          setEditFormData({ ...editFormData, active: value })
-                        }
-                      >
+                      <Switch isSelected={editFormData.active} onValueChange={(value) => setEditFormData({ ...editFormData, active: value })}>
                         {editFormData.active ? "Ativo" : "Inativo"}
                       </Switch>
                     </div>
@@ -3558,15 +2735,9 @@ function UsuariosTab() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard
-                    description="Adicione e gerencie os endereços do usuário"
-                    title="Gerenciar Endereços"
-                  >
+                  <ModalSectionCard description="Adicione e gerencie os endereços do usuário" title="Gerenciar Endereços">
                     {selectedUsuario && (
-                      <div
-                        key={selectedUsuario.id}
-                        className="endereco-manager-wrapper"
-                      >
+                      <div key={selectedUsuario.id} className="endereco-manager-wrapper">
                         <EnderecoManager userId={selectedUsuario.id} />
                       </div>
                     )}
@@ -3586,13 +2757,8 @@ function UsuariosTab() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard
-                    description="Registro de todas as alterações do usuário"
-                    title="Histórico de Alterações"
-                  >
-                    {selectedUsuario && (
-                      <UsuarioHistoricoTab usuarioId={selectedUsuario.id} />
-                    )}
+                  <ModalSectionCard description="Registro de todas as alterações do usuário" title="Histórico de Alterações">
+                    {selectedUsuario && <UsuarioHistoricoTab usuarioId={selectedUsuario.id} />}
                   </ModalSectionCard>
                 </div>
               </Tab>
@@ -3602,11 +2768,7 @@ function UsuariosTab() {
             <Button variant="flat" onPress={() => setIsEditModalOpen(false)}>
               Cancelar
             </Button>
-            <Button
-              color="primary"
-              isLoading={isSaving}
-              onPress={handleSaveUsuario}
-            >
+            <Button color="primary" isLoading={isSaving} onPress={handleSaveUsuario}>
               Salvar
             </Button>
           </ModalFooter>
@@ -3614,18 +2776,9 @@ function UsuariosTab() {
       </Modal>
 
       {/* Modal de Permissões */}
-      <Modal
-        isOpen={isPermissionsModalOpen}
-        scrollBehavior="inside"
-        size="5xl"
-        onClose={() => setIsPermissionsModalOpen(false)}
-      >
+      <Modal isOpen={isPermissionsModalOpen} scrollBehavior="inside" size="5xl" onClose={() => setIsPermissionsModalOpen(false)}>
         <ModalContent>
-          <ModalHeaderGradient
-            description="Configure permissões individuais do usuário"
-            icon={Shield}
-            title={`Gerenciar Permissões - ${selectedUsuario?.firstName || selectedUsuario?.email || ""}`}
-          />
+          <ModalHeaderGradient description="Configure permissões individuais do usuário" icon={Shield} title={`Gerenciar Permissões - ${selectedUsuario?.firstName || selectedUsuario?.email || ""}`} />
           <ModalBody>
             {selectedUsuario && (
               <div className="space-y-6">
@@ -3635,104 +2788,70 @@ function UsuariosTab() {
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 mb-2">
                         <HelpCircle className="w-5 h-5 text-primary" />
-                        <h3 className="font-semibold text-primary">
-                          Como funciona
-                        </h3>
+                        <h3 className="font-semibold text-primary">Como funciona</h3>
                       </div>
 
-                      <p className="text-sm text-default-700">
-                        As permissões são verificadas nesta ordem de
-                        precedência:
-                      </p>
+                      <p className="text-sm text-default-700">As permissões são verificadas nesta ordem de precedência:</p>
 
                       <ol className="list-decimal list-inside space-y-2 text-sm text-default-600">
                         <li>
-                          <strong className="text-primary">
-                            Override individual
-                          </strong>{" "}
-                          - Permissão personalizada criada manualmente
+                          <strong className="text-primary">Override individual</strong> - Permissão personalizada criada manualmente
                         </li>
                         <li>
-                          <strong className="text-secondary">Cargo</strong> -
-                          Permissão herdada do cargo ativo do usuário
+                          <strong className="text-secondary">Cargo</strong> - Permissão herdada do cargo ativo do usuário
                         </li>
                         <li>
-                          <strong className="text-default-500">
-                            Role padrão
-                          </strong>{" "}
-                          - Permissão padrão baseada no tipo de usuário
-                          (Advogado, Secretária, etc.)
+                          <strong className="text-default-500">Role padrão</strong> - Permissão padrão baseada no tipo de usuário (Advogado, Secretária, etc.)
                         </li>
                       </ol>
 
                       <div className="pt-2 border-t border-default-200">
                         <p className="text-xs text-default-600 mb-2">
-                          Overrides pessoais sempre têm prioridade sobre as
-                          configurações do cargo e sobre a permissão padrão do
-                          role. Se você desligar o override, o sistema volta a
-                          usar o que está definido no cargo; se o cargo também
-                          não tiver nada, usamos o fallback do role.
+                          Overrides pessoais sempre têm prioridade sobre as configurações do cargo e sobre a permissão padrão do role. Se você desligar o override, o sistema volta a usar o que está
+                          definido no cargo; se o cargo também não tiver nada, usamos o fallback do role.
                         </p>
 
-                        <p className="text-sm font-medium text-default-700 mb-2">
-                          Significado dos chips:
-                        </p>
+                        <p className="text-sm font-medium text-default-700 mb-2">Significado dos chips:</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           <div className="flex items-center gap-2">
                             <Chip color="primary" size="sm" variant="flat">
                               Override
                             </Chip>
-                            <span className="text-xs text-default-600">
-                              Permissão personalizada (sobrescreve cargo/role)
-                            </span>
+                            <span className="text-xs text-default-600">Permissão personalizada (sobrescreve cargo/role)</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Chip color="secondary" size="sm" variant="flat">
                               Herdado do cargo
                             </Chip>
-                            <span className="text-xs text-default-600">
-                              Vem do cargo ativo do usuário
-                            </span>
+                            <span className="text-xs text-default-600">Vem do cargo ativo do usuário</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Chip color="default" size="sm" variant="flat">
                               Padrão do role
                             </Chip>
-                            <span className="text-xs text-default-600">
-                              Permissão padrão do tipo de usuário
-                            </span>
+                            <span className="text-xs text-default-600">Permissão padrão do tipo de usuário</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Chip color="danger" size="sm" variant="flat">
                               Sem permissão
                             </Chip>
-                            <span className="text-xs text-default-600">
-                              Negado em todas as camadas
-                            </span>
+                            <span className="text-xs text-default-600">Negado em todas as camadas</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="pt-2 border-t border-default-200">
-                        <p className="text-sm font-medium text-default-700 mb-1">
-                          Como usar:
-                        </p>
+                        <p className="text-sm font-medium text-default-700 mb-1">Como usar:</p>
                         <ul className="list-disc list-inside space-y-1 text-xs text-default-600">
                           <li>
-                            Ligue/desligue o switch para criar um{" "}
-                            <strong>override individual</strong>
+                            Ligue/desligue o switch para criar um <strong>override individual</strong>
                           </li>
                           <li>
-                            O override <strong>substitui</strong> a permissão do
-                            cargo e role
+                            O override <strong>substitui</strong> a permissão do cargo e role
                           </li>
+                          <li>Para remover um override, desligue o switch e ele voltará ao estado do cargo/role</li>
                           <li>
-                            Para remover um override, desligue o switch e ele
-                            voltará ao estado do cargo/role
-                          </li>
-                          <li>
-                            O switch mostra o{" "}
-                            <strong>estado efetivo atual</strong> da permissão
+                            O switch mostra o <strong>estado efetivo atual</strong> da permissão
                           </li>
                         </ul>
                       </div>
@@ -3747,37 +2866,22 @@ function UsuariosTab() {
                 ) : (
                   modulos.map((modulo) => (
                     <div key={modulo.key} className="space-y-3">
-                      <h3 className="font-semibold text-default-700">
-                        {modulo.label}
-                      </h3>
-                      {modulo.description && (
-                        <p className="text-xs text-default-500">
-                          {modulo.description}
-                        </p>
-                      )}
+                      <h3 className="font-semibold text-default-700">{modulo.label}</h3>
+                      {modulo.description && <p className="text-xs text-default-500">{modulo.description}</p>}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {acoes.map((acao) => {
                           // Estado efetivo da permissão
-                          const permissaoEfetiva = permissoesEfetivas.find(
-                            (p) =>
-                              p.modulo === modulo.key && p.acao === acao.key,
-                          );
-                          const estaPermitido =
-                            permissaoEfetiva?.permitido ?? false;
+                          const permissaoEfetiva = permissoesEfetivas.find((p) => p.modulo === modulo.key && p.acao === acao.key);
+                          const estaPermitido = permissaoEfetiva?.permitido ?? false;
                           const origem = permissaoEfetiva?.origem ?? "role";
 
                           // Override individual (se existe)
-                          const temOverride =
-                            permissionsForm[modulo.key]?.[acao.key] !==
-                            undefined;
-                          const overrideValue =
-                            permissionsForm[modulo.key]?.[acao.key] ?? null;
+                          const temOverride = permissionsForm[modulo.key]?.[acao.key] !== undefined;
+                          const overrideValue = permissionsForm[modulo.key]?.[acao.key] ?? null;
 
                           // Determinar se o switch deve estar ligado
                           // Se tem override, usa o override; senão, mostra o estado efetivo
-                          const switchValue = temOverride
-                            ? overrideValue === true
-                            : estaPermitido;
+                          const switchValue = temOverride ? overrideValue === true : estaPermitido;
 
                           // Labels para origem (incluindo estado negado)
                           const origemLabels = {
@@ -3796,47 +2900,27 @@ function UsuariosTab() {
 
                           // Se a permissão está negada em todas as camadas (sem override, sem cargo, role padrão negado), destacar
                           // Só mostra "Sem permissão" se não há override explícito E a origem é role (padrão negado)
-                          const mostrarNegado =
-                            !estaPermitido && !temOverride && origem === "role";
+                          const mostrarNegado = !estaPermitido && !temOverride && origem === "role";
                           const labelOrigem = mostrarNegado ? "negado" : origem;
-                          const chipColor =
-                            origemColors[
-                              labelOrigem as keyof typeof origemColors
-                            ];
-                          const chipLabel =
-                            origemLabels[
-                              labelOrigem as keyof typeof origemLabels
-                            ];
+                          const chipColor = origemColors[labelOrigem as keyof typeof origemColors];
+                          const chipLabel = origemLabels[labelOrigem as keyof typeof origemLabels];
 
                           return (
-                            <div
-                              key={acao.key}
-                              className="flex items-center justify-between p-3 rounded-lg border border-default-200 bg-default-50"
-                            >
+                            <div key={acao.key} className="flex items-center justify-between p-3 rounded-lg border border-default-200 bg-default-50">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
                                   <Switch
                                     isDisabled={isSavingPermission}
                                     isSelected={switchValue}
                                     onValueChange={(value) => {
-                                      handleSavePermission(
-                                        modulo.key,
-                                        acao.key,
-                                        value,
-                                      );
+                                      handleSavePermission(modulo.key, acao.key, value);
                                     }}
                                   >
-                                    <span className="text-sm font-medium">
-                                      {acao.label}
-                                    </span>
+                                    <span className="text-sm font-medium">{acao.label}</span>
                                   </Switch>
                                 </div>
                                 <div className="ml-8">
-                                  <Chip
-                                    color={chipColor}
-                                    size="sm"
-                                    variant="flat"
-                                  >
+                                  <Chip color={chipColor} size="sm" variant="flat">
                                     {chipLabel}
                                   </Chip>
                                 </div>
@@ -3853,10 +2937,7 @@ function UsuariosTab() {
             )}
           </ModalBody>
           <ModalFooter>
-            <Button
-              variant="flat"
-              onPress={() => setIsPermissionsModalOpen(false)}
-            >
+            <Button variant="flat" onPress={() => setIsPermissionsModalOpen(false)}>
               Fechar
             </Button>
           </ModalFooter>
@@ -3864,12 +2945,7 @@ function UsuariosTab() {
       </Modal>
 
       {/* Modal de Vincular */}
-      <Modal
-        isOpen={isLinkModalOpen}
-        scrollBehavior="inside"
-        size="3xl"
-        onClose={() => setIsLinkModalOpen(false)}
-      >
+      <Modal isOpen={isLinkModalOpen} scrollBehavior="inside" size="3xl" onClose={() => setIsLinkModalOpen(false)}>
         <ModalContent>
           <ModalHeaderGradient
             description="Vincule este usuário a um advogado do escritório"
@@ -3878,10 +2954,7 @@ function UsuariosTab() {
           />
           <ModalBody>
             <div className="space-y-6">
-              <ModalSectionCard
-                description="Escolha um ou mais advogados aos quais este usuário será vinculado"
-                title="Seleção do(s) Advogado(s)"
-              >
+              <ModalSectionCard description="Escolha um ou mais advogados aos quais este usuário será vinculado" title="Seleção do(s) Advogado(s)">
                 <Select
                   description="Você pode selecionar múltiplos advogados. O usuário terá acesso aos dados de todos os advogados selecionados."
                   label="Advogados"
@@ -3909,12 +2982,7 @@ function UsuariosTab() {
                       const adv = advogadosOptions.find((a) => a.id === advId);
 
                       return adv ? (
-                        <Chip
-                          key={advId}
-                          color="primary"
-                          size="sm"
-                          variant="flat"
-                        >
+                        <Chip key={advId} color="primary" size="sm" variant="flat">
                           {adv.fullName}
                           {adv.oabLabel}
                         </Chip>
@@ -3924,18 +2992,13 @@ function UsuariosTab() {
                 )}
               </ModalSectionCard>
 
-              <ModalSectionCard
-                description="Defina o tipo de relacionamento entre o usuário e o advogado"
-                title="Tipo de Vinculação"
-              >
+              <ModalSectionCard description="Defina o tipo de relacionamento entre o usuário e o advogado" title="Tipo de Vinculação">
                 <Select
                   description="Assistente: auxilia o advogado | Responsável: gerencia o usuário | Colaborador: trabalha em conjunto"
                   label="Tipo de Vinculação"
                   placeholder="Selecione o tipo"
                   selectedKeys={[linkForm.tipo]}
-                  startContent={
-                    <LinkIcon className="w-4 h-4 text-default-400" />
-                  }
+                  startContent={<LinkIcon className="w-4 h-4 text-default-400" />}
                   onSelectionChange={(keys) => {
                     const selected = Array.from(keys)[0] as string;
 
@@ -3948,18 +3011,13 @@ function UsuariosTab() {
                 </Select>
               </ModalSectionCard>
 
-              <ModalSectionCard
-                description="Informações adicionais sobre esta vinculação"
-                title="Observações"
-              >
+              <ModalSectionCard description="Informações adicionais sobre esta vinculação" title="Observações">
                 <Textarea
                   label="Observações (opcional)"
                   minRows={3}
                   placeholder="Observações sobre esta vinculação..."
                   value={linkForm.observacoes}
-                  onChange={(e) =>
-                    setLinkForm({ ...linkForm, observacoes: e.target.value })
-                  }
+                  onChange={(e) => setLinkForm({ ...linkForm, observacoes: e.target.value })}
                 />
               </ModalSectionCard>
             </div>
@@ -3968,16 +3026,8 @@ function UsuariosTab() {
             <Button variant="flat" onPress={() => setIsLinkModalOpen(false)}>
               Cancelar
             </Button>
-            <Button
-              color="primary"
-              isDisabled={linkForm.advogadoIds.length === 0}
-              isLoading={isSavingLink}
-              onPress={handleSaveLink}
-            >
-              Vincular{" "}
-              {linkForm.advogadoIds.length > 0
-                ? `(${linkForm.advogadoIds.length})`
-                : ""}
+            <Button color="primary" isDisabled={linkForm.advogadoIds.length === 0} isLoading={isSavingLink} onPress={handleSaveLink}>
+              Vincular {linkForm.advogadoIds.length > 0 ? `(${linkForm.advogadoIds.length})` : ""}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -4007,10 +3057,7 @@ function ConvitesTab() {
   async function loadData() {
     try {
       setLoading(true);
-      const [convitesData, cargosData] = await Promise.all([
-        getConvitesEquipe(),
-        getCargos(),
-      ]);
+      const [convitesData, cargosData] = await Promise.all([getConvitesEquipe(), getCargos()]);
 
       setConvites(convitesData);
       setCargos(cargosData);
@@ -4093,11 +3140,7 @@ function ConvitesTab() {
     const convite = convites.find((c) => c.id === conviteId);
     const email = convite?.email || "este convite";
 
-    if (
-      !confirm(
-        `Tem certeza que deseja cancelar o convite para "${email}"?\n\nEsta ação não pode ser desfeita.`,
-      )
-    ) {
+    if (!confirm(`Tem certeza que deseja cancelar o convite para "${email}"?\n\nEsta ação não pode ser desfeita.`)) {
       return;
     }
 
@@ -4182,21 +3225,11 @@ function ConvitesTab() {
   }
 
   return (
-    <motion.div
-      animate="visible"
-      className="space-y-6"
-      initial="hidden"
-      variants={containerVariants}
-    >
+    <motion.div animate="visible" className="space-y-6" initial="hidden" variants={containerVariants}>
       {/* Cards de Resumo */}
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 lg:gap-6 auto-rows-fr">
         {/* Card Pendentes */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="flex"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.1 }}>
           <Card className="bg-gradient-to-br from-amber-50 via-yellow-100 to-orange-200 dark:from-amber-900/30 dark:via-yellow-800/20 dark:to-orange-900/30 border-amber-300 dark:border-amber-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
@@ -4208,27 +3241,16 @@ function ConvitesTab() {
                 </div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <p className="text-xs sm:text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide line-clamp-1">
-                  Pendentes
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-amber-800 dark:text-amber-200">
-                  {convitesStats.pendentes}
-                </p>
-                <p className="text-xs text-amber-600 dark:text-amber-400 line-clamp-1">
-                  Aguardando resposta
-                </p>
+                <p className="text-xs sm:text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide line-clamp-1">Pendentes</p>
+                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-amber-800 dark:text-amber-200">{convitesStats.pendentes}</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 line-clamp-1">Aguardando resposta</p>
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card Aceitos */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="flex"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.2 }}>
           <Card className="bg-gradient-to-br from-green-50 via-emerald-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
@@ -4240,27 +3262,16 @@ function ConvitesTab() {
                 </div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <p className="text-xs sm:text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide line-clamp-1">
-                  Aceitos
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-800 dark:text-green-200">
-                  {convitesStats.aceitos}
-                </p>
-                <p className="text-xs text-green-600 dark:text-green-400 line-clamp-1">
-                  Convites aceitos
-                </p>
+                <p className="text-xs sm:text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide line-clamp-1">Aceitos</p>
+                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-800 dark:text-green-200">{convitesStats.aceitos}</p>
+                <p className="text-xs text-green-600 dark:text-green-400 line-clamp-1">Convites aceitos</p>
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card Expirados */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="flex"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.3 }}>
           <Card className="bg-gradient-to-br from-rose-50 via-pink-100 to-red-200 dark:from-rose-900/30 dark:via-pink-800/20 dark:to-red-900/30 border-rose-300 dark:border-rose-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
@@ -4272,27 +3283,16 @@ function ConvitesTab() {
                 </div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <p className="text-xs sm:text-sm font-semibold text-rose-700 dark:text-rose-300 uppercase tracking-wide line-clamp-1">
-                  Expirados
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-rose-800 dark:text-rose-200">
-                  {convitesStats.expirados}
-                </p>
-                <p className="text-xs text-rose-600 dark:text-rose-400 line-clamp-1">
-                  Convites vencidos
-                </p>
+                <p className="text-xs sm:text-sm font-semibold text-rose-700 dark:text-rose-300 uppercase tracking-wide line-clamp-1">Expirados</p>
+                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-rose-800 dark:text-rose-200">{convitesStats.expirados}</p>
+                <p className="text-xs text-rose-600 dark:text-rose-400 line-clamp-1">Convites vencidos</p>
               </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Card Total */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className="flex"
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
+        <motion.div animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.4 }}>
           <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
             <CardBody className="p-3 sm:p-4 md:p-6">
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
@@ -4304,15 +3304,9 @@ function ConvitesTab() {
                 </div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <p className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide line-clamp-1">
-                  Total
-                </p>
-                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-purple-800 dark:text-purple-200">
-                  {convitesStats.total}
-                </p>
-                <p className="text-xs text-purple-600 dark:text-purple-400 line-clamp-1">
-                  Total de convites
-                </p>
+                <p className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide line-clamp-1">Total</p>
+                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-purple-800 dark:text-purple-200">{convitesStats.total}</p>
+                <p className="text-xs text-purple-600 dark:text-purple-400 line-clamp-1">Total de convites</p>
               </div>
             </CardBody>
           </Card>
@@ -4324,20 +3318,10 @@ function ConvitesTab() {
           <CardBody>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-between">
               <div className="min-w-0 flex-1">
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold">
-                  Convites de Equipe
-                </h2>
-                <p className="text-xs sm:text-sm text-default-500">
-                  Gerencie os convites enviados para novos membros
-                </p>
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold">Convites de Equipe</h2>
+                <p className="text-xs sm:text-sm text-default-500">Gerencie os convites enviados para novos membros</p>
               </div>
-              <Button
-                className="w-full sm:w-auto"
-                color="primary"
-                size="sm"
-                startContent={<Plus className="w-4 h-4" />}
-                onPress={() => setIsModalOpen(true)}
-              >
+              <Button className="w-full sm:w-auto" color="primary" size="sm" startContent={<Plus className="w-4 h-4" />} onPress={() => setIsModalOpen(true)}>
                 <span className="hidden sm:inline">Enviar Convite</span>
                 <span className="sm:hidden">Novo</span>
               </Button>
@@ -4351,17 +3335,9 @@ function ConvitesTab() {
           <Card className="border-none bg-dotted-pattern bg-white/90 py-12 text-center shadow-lg dark:bg-content2/80">
             <CardBody className="space-y-3">
               <Mail className="mx-auto h-10 w-10 text-default-400" />
-              <h3 className="text-lg font-semibold">
-                Nenhum convite encontrado
-              </h3>
-              <p className="text-sm text-default-500">
-                Envie um convite para adicionar novos membros à equipe
-              </p>
-              <Button
-                color="primary"
-                startContent={<Plus className="w-4 h-4" />}
-                onPress={() => setIsModalOpen(true)}
-              >
+              <h3 className="text-lg font-semibold">Nenhum convite encontrado</h3>
+              <p className="text-sm text-default-500">Envie um convite para adicionar novos membros à equipe</p>
+              <Button color="primary" startContent={<Plus className="w-4 h-4" />} onPress={() => setIsModalOpen(true)}>
                 Enviar Primeiro Convite
               </Button>
             </CardBody>
@@ -4373,36 +3349,21 @@ function ConvitesTab() {
             <CardBody>
               <div className="space-y-4">
                 {convites.map((convite) => (
-                  <div
-                    key={convite.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-default-200 hover:bg-default-50 transition-colors"
-                  >
+                  <div key={convite.id} className="flex items-center justify-between p-4 rounded-lg border border-default-200 hover:bg-default-50 transition-colors">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
-                        <h3 className="font-semibold">
-                          {convite.nome || convite.email}
-                        </h3>
-                        <Chip
-                          color={getStatusColor(convite.status)}
-                          size="sm"
-                          startContent={getStatusIcon(convite.status)}
-                          variant="flat"
-                        >
+                        <h3 className="font-semibold">{convite.nome || convite.email}</h3>
+                        <Chip color={getStatusColor(convite.status)} size="sm" startContent={getStatusIcon(convite.status)} variant="flat">
                           {convite.status}
                         </Chip>
                       </div>
-                      <p className="text-sm text-default-500">
-                        {convite.email}
-                      </p>
+                      <p className="text-sm text-default-500">{convite.email}</p>
                       {convite.cargo && (
                         <p className="text-xs text-default-400 mt-1">
-                          Cargo: {convite.cargo.nome} | Role:{" "}
-                          {getRoleLabel(convite.role)}
+                          Cargo: {convite.cargo.nome} | Role: {getRoleLabel(convite.role)}
                         </p>
                       )}
-                      <p className="text-xs text-default-400 mt-1">
-                        Enviado em: {formatDate(convite.createdAt)}
-                      </p>
+                      <p className="text-xs text-default-400 mt-1">Enviado em: {formatDate(convite.createdAt)}</p>
                     </div>
                     <div className="flex gap-2">
                       {convite.status === "pendente" && (
@@ -4439,28 +3400,17 @@ function ConvitesTab() {
       )}
 
       {/* Modal de Novo Convite */}
-      <Modal
-        isOpen={isModalOpen}
-        scrollBehavior="inside"
-        size="5xl"
-        onClose={() => setIsModalOpen(false)}
-      >
+      <Modal isOpen={isModalOpen} scrollBehavior="inside" size="5xl" onClose={() => setIsModalOpen(false)}>
         <ModalContent>
-          <ModalHeaderGradient
-            description="Convide um novo membro para a equipe"
-            icon={Mail}
-            title="Enviar Convite"
-          />
+          <ModalHeaderGradient description="Convide um novo membro para a equipe" icon={Mail} title="Enviar Convite" />
           <ModalBody className="px-0">
             <Tabs
               aria-label="Formulário de convite"
               classNames={{
-                tabList:
-                  "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
+                tabList: "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
                 cursor: "w-full bg-primary",
                 tab: "max-w-fit px-0 h-12",
-                tabContent:
-                  "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
+                tabContent: "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
                 panel: "px-6 pb-6 pt-4",
               }}
               color="primary"
@@ -4478,30 +3428,11 @@ function ConvitesTab() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard
-                    description="Dados do novo membro"
-                    title="Informações do Convite"
-                  >
+                  <ModalSectionCard description="Dados do novo membro" title="Informações do Convite">
                     <div className="space-y-4">
-                      <Input
-                        isRequired
-                        label="Email"
-                        placeholder="email@exemplo.com"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                      />
+                      <Input isRequired label="Email" placeholder="email@exemplo.com" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
 
-                      <Input
-                        label="Nome (opcional)"
-                        placeholder="Nome completo"
-                        value={formData.nome}
-                        onChange={(e) =>
-                          setFormData({ ...formData, nome: e.target.value })
-                        }
-                      />
+                      <Input label="Nome (opcional)" placeholder="Nome completo" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} />
                     </div>
                   </ModalSectionCard>
                 </div>
@@ -4519,17 +3450,12 @@ function ConvitesTab() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard
-                    description="Configure cargo e role do novo membro"
-                    title="Função no Escritório"
-                  >
+                  <ModalSectionCard description="Configure cargo e role do novo membro" title="Função no Escritório">
                     <div className="space-y-4">
                       <Select
                         label="Cargo (opcional)"
                         placeholder="Selecione um cargo"
-                        selectedKeys={
-                          formData.cargoId ? [formData.cargoId] : []
-                        }
+                        selectedKeys={formData.cargoId ? [formData.cargoId] : []}
                         onSelectionChange={(keys) => {
                           const selectedKey = Array.from(keys)[0] as string;
 
@@ -4579,10 +3505,7 @@ function ConvitesTab() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard
-                    description="Mensagem adicional para o convite"
-                    title="Mensagem Personalizada"
-                  >
+                  <ModalSectionCard description="Mensagem adicional para o convite" title="Mensagem Personalizada">
                     <Textarea
                       label="Observações (opcional)"
                       minRows={4}
@@ -4604,12 +3527,7 @@ function ConvitesTab() {
             <Button variant="light" onPress={() => setIsModalOpen(false)}>
               Cancelar
             </Button>
-            <Button
-              color="primary"
-              isDisabled={!formData.email.trim()}
-              isLoading={loading}
-              onPress={handleCreateConvite}
-            >
+            <Button color="primary" isDisabled={!formData.email.trim()} isLoading={loading} onPress={handleCreateConvite}>
               Enviar Convite
             </Button>
           </ModalFooter>
@@ -4634,14 +3552,7 @@ export default function EquipeContent() {
         // Cabeçalho
         ["Tipo", "Nome", "Email", "Role", "Status", "Detalhes"].join(","),
         // Dados (será preenchido pelas tabs específicas)
-        [
-          "Equipe",
-          "Magic Lawyer",
-          "Exportação completa",
-          "Sistema",
-          "Ativo",
-          `Exportado em ${timestamp}`,
-        ].join(","),
+        ["Equipe", "Magic Lawyer", "Exportação completa", "Sistema", "Ativo", `Exportado em ${timestamp}`].join(","),
       ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -4668,32 +3579,16 @@ export default function EquipeContent() {
           <CardBody className="space-y-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-3 max-w-2xl">
-                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground dark:text-foreground">
-                  Equipe & Permissões
-                </h1>
+                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground dark:text-foreground">Equipe & Permissões</h1>
                 <p className="text-sm sm:text-base text-default-600 dark:text-default-400 max-w-xl">
-                  Controle cargos, perfis de acesso e convites da sua equipe em
-                  tempo real. Use os cargos como identidade principal e mantenha
-                  a segurança alinhada ao dia a dia do escritório.
+                  Controle cargos, perfis de acesso e convites da sua equipe em tempo real. Use os cargos como identidade principal e mantenha a segurança alinhada ao dia a dia do escritório.
                 </p>
                 <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-                  <Button
-                    className="w-full sm:w-auto"
-                    color="secondary"
-                    size="sm"
-                    startContent={<Users className="w-4 h-4" />}
-                    onPress={() => setSelectedTab("usuarios")}
-                  >
+                  <Button className="w-full sm:w-auto" color="secondary" size="sm" startContent={<Users className="w-4 h-4" />} onPress={() => setSelectedTab("usuarios")}>
                     <span className="hidden sm:inline">Gerenciar Usuários</span>
                     <span className="sm:hidden">Usuários</span>
                   </Button>
-                  <Button
-                    className="w-full sm:w-auto"
-                    size="sm"
-                    startContent={<Crown className="w-4 h-4" />}
-                    variant="bordered"
-                    onPress={() => setSelectedTab("cargos")}
-                  >
+                  <Button className="w-full sm:w-auto" size="sm" startContent={<Crown className="w-4 h-4" />} variant="bordered" onPress={() => setSelectedTab("cargos")}>
                     <span className="hidden sm:inline">Configurar Cargos</span>
                     <span className="sm:hidden">Cargos</span>
                   </Button>
@@ -4737,41 +3632,26 @@ export default function EquipeContent() {
                   <Input
                     endContent={
                       searchTerm && (
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          onPress={() => setSearchTerm("")}
-                        >
+                        <Button isIconOnly size="sm" variant="light" onPress={() => setSearchTerm("")}>
                           <X className="w-4 h-4" />
                         </Button>
                       )
                     }
                     label="Buscar na equipe"
                     placeholder="Pesquise por nome, e-mail ou cargo..."
-                    startContent={
-                      <Search className="w-4 h-4 text-default-400" />
-                    }
+                    startContent={<Search className="w-4 h-4 text-default-400" />}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
 
-                <Button
-                  startContent={<Filter className="w-4 h-4" />}
-                  variant="flat"
-                  onPress={() => setShowFilters(!showFilters)}
-                >
+                <Button startContent={<Filter className="w-4 h-4" />} variant="flat" onPress={() => setShowFilters(!showFilters)}>
                   Filtros
                 </Button>
               </div>
 
               <div className="flex gap-2">
-                <Button
-                  startContent={<Download className="w-4 h-4" />}
-                  variant="flat"
-                  onPress={() => handleExportAll()}
-                >
+                <Button startContent={<Download className="w-4 h-4" />} variant="flat" onPress={() => handleExportAll()}>
                   Exportar visão
                 </Button>
               </div>
@@ -4779,20 +3659,13 @@ export default function EquipeContent() {
 
             <AnimatePresence>
               {showFilters && (
-                <motion.div
-                  animate={{ opacity: 1, height: "auto" }}
-                  className="overflow-hidden"
-                  exit={{ opacity: 0, height: 0 }}
-                  initial={{ opacity: 0, height: 0 }}
-                >
+                <motion.div animate={{ opacity: 1, height: "auto" }} className="overflow-hidden" exit={{ opacity: 0, height: 0 }} initial={{ opacity: 0, height: 0 }}>
                   <div className="flex flex-wrap gap-4 pt-2">
                     <Select
                       className="min-w-[140px] sm:min-w-40 flex-1 sm:flex-none"
                       label="Seção"
                       placeholder="Todas as seções"
-                      selectedKeys={
-                        selectedSection === "all" ? [] : [selectedSection]
-                      }
+                      selectedKeys={selectedSection === "all" ? [] : [selectedSection]}
                       onSelectionChange={(keys) => {
                         const selected = Array.from(keys)[0] as string;
 
@@ -4829,12 +3702,10 @@ export default function EquipeContent() {
             <Tabs
               aria-label="Gestão de Equipe"
               classNames={{
-                tabList:
-                  "gap-6 w-full relative rounded-none px-4 pt-4 pb-0 border-b border-divider",
+                tabList: "gap-6 w-full relative rounded-none px-4 pt-4 pb-0 border-b border-divider",
                 cursor: "w-full bg-primary",
                 tab: "max-w-fit px-0 h-12",
-                tabContent:
-                  "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
+                tabContent: "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
                 panel: "px-0",
               }}
               color="primary"

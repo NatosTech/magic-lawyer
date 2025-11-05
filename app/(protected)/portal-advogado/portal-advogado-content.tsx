@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Card,
   CardBody,
@@ -21,12 +21,20 @@ import useSWR from "swr";
 
 import { UFSelector } from "./uf-selector";
 
-import { getTribunaisPorUF } from "@/app/actions/portal-advogado";
+import {
+  getTribunaisPorUF,
+  getUFsDisponiveis,
+} from "@/app/actions/portal-advogado";
 
 export function PortalAdvogadoContent() {
   const [ufSelecionada, setUfSelecionada] = useState<string | undefined>();
 
   // Buscar tribunais da UF selecionada
+  const { data: ufs } = useSWR<string[]>(
+    "portal-advogado-ufs",
+    getUFsDisponiveis,
+  );
+
   const { data: tribunais, isLoading: isLoadingTribunais } = useSWR<
     Awaited<ReturnType<typeof getTribunaisPorUF>>,
     Error
@@ -37,6 +45,8 @@ export function PortalAdvogadoContent() {
     },
   );
 
+  const ufOptions = useMemo(() => ufs ?? [], [ufs]);
+
   return (
     <div className="space-y-6">
       {/* Seletor de UF */}
@@ -44,6 +54,7 @@ export function PortalAdvogadoContent() {
         <CardBody>
           <UFSelector
             label="Filtrar por UF"
+            ufs={ufOptions}
             value={ufSelecionada}
             onChange={(uf) => setUfSelecionada(uf)}
           />
@@ -87,9 +98,9 @@ export function PortalAdvogadoContent() {
                           {tribunal.sigla}
                         </Chip>
                       )}
-                      {tribunal.tipo && (
+                      {tribunal.esfera && (
                         <Chip color="secondary" size="sm" variant="flat">
-                          {tribunal.tipo}
+                          {tribunal.esfera}
                         </Chip>
                       )}
                     </div>

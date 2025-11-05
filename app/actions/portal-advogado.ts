@@ -91,8 +91,8 @@ export async function getTribunaisPorUF(uf: string): Promise<
     nome: string;
     sigla: string | null;
     uf: string | null;
-    tipo: string | null;
     siteUrl: string | null;
+    esfera: string | null;
   }>
 > {
   const session = await getSession();
@@ -111,8 +111,8 @@ export async function getTribunaisPorUF(uf: string): Promise<
       nome: true,
       sigla: true,
       uf: true,
-      tipo: true,
       siteUrl: true,
+      esfera: true,
     },
     orderBy: {
       nome: "asc",
