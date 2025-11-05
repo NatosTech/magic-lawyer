@@ -69,34 +69,34 @@ model CategoriaTarefa {
 }
 
 model Tenant {
-  id                    String                 @id @default(cuid())
+  id                    String                  @id @default(cuid())
   name                  String
-  slug                  String                 @unique
-  domain                String?                @unique
-  timezone              String                 @default("America/Sao_Paulo")
-  status                TenantStatus           @default(ACTIVE)
+  slug                  String                  @unique
+  domain                String?                 @unique
+  timezone              String                  @default("America/Sao_Paulo")
+  status                TenantStatus            @default(ACTIVE)
   statusReason          String?
   statusChangedAt       DateTime?
-  sessionVersion        Int                    @default(1)
-  planRevision          Int                    @default(1)
-  tenantSoftVersion     Int                    @default(1)
-  tipoPessoa            TipoPessoa             @default(JURIDICA)
-  documento             String?                @unique
+  sessionVersion        Int                     @default(1)
+  planRevision          Int                     @default(1)
+  tenantSoftVersion     Int                     @default(1)
+  tipoPessoa            TipoPessoa              @default(JURIDICA)
+  documento             String?                 @unique
   razaoSocial           String?
   nomeFantasia          String?
   inscricaoEstadual     String?
   inscricaoMunicipal    String?
   email                 String?
   telefone              String?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
   superAdminId          String?
   acessosJuiz           AcessoJuiz[]
   advogados             Advogado[]
   advogadoClientes      AdvogadoCliente[]
   analisesJuiz          AnaliseJuiz[]
   areasProcesso         AreaProcesso[]
-  assinaturasPacoteJuiz AssinaturaPacoteJuiz[] @relation("TenantAssinaturaPacote")
+  assinaturasPacoteJuiz AssinaturaPacoteJuiz[]  @relation("TenantAssinaturaPacote")
   auditLogs             AuditLog[]
   categoriasTarefa      CategoriaTarefa[]
   clientes              Cliente[]
@@ -136,10 +136,10 @@ model Tenant {
   documentosProcuracao  DocumentoProcuracao[]
   tarefas               Tarefa[]
   emailCredentials      TenantEmailCredential[]
-  superAdmin            SuperAdmin?            @relation("SuperAdminTenant", fields: [superAdminId], references: [id])
+  superAdmin            SuperAdmin?             @relation("SuperAdminTenant", fields: [superAdminId], references: [id])
   branding              TenantBranding?
   enderecos             Endereco[]
-  enderecosLegacy       TenantEndereco[]       @relation("TenantEnderecoLegacy")
+  enderecosLegacy       TenantEndereco[]        @relation("TenantEnderecoLegacy")
   subscription          TenantSubscription?
   tiposContrato         TipoContrato[]
   tribunais             Tribunal[]
@@ -148,7 +148,7 @@ model Tenant {
   documentoVersoes      DocumentoVersao[]
   contratoHonorarios    ContratoHonorario[]
   contratoParcelas      ContratoParcela[]
-  tickets               Ticket[]               @relation("TenantTickets")
+  tickets               Ticket[]                @relation("TenantTickets")
   ProcessoCausa         ProcessoCausa[]
   boards                Board[]
   boardColumns          BoardColumn[]
@@ -179,9 +179,11 @@ model Tenant {
   funcionarioDependentes       FuncionarioDependente[]
 
   // Sistema de Notificações
-  notifications                Notification[]
-  notificationPreferences      NotificationPreference[]
-  notificationTemplates        NotificationTemplate[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  notificationTemplates   NotificationTemplate[]
+  digitalCertificates     DigitalCertificate[]
+  digitalCertificateLogs  DigitalCertificateLog[]  @relation("DigitalCertificateLogs")
 
   @@index([status])
   @@index([superAdminId])
@@ -301,15 +303,15 @@ enum TenantEmailCredentialType {
 }
 
 model TenantEmailCredential {
-  id          String                     @id @default(cuid())
+  id          String                    @id @default(cuid())
   tenantId    String
-  type        TenantEmailCredentialType  @default(DEFAULT)
+  type        TenantEmailCredentialType @default(DEFAULT)
   email       String
   appPassword String
   fromName    String?
-  createdAt   DateTime                   @default(now())
-  updatedAt   DateTime                   @updatedAt
-  tenant      Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  tenant      Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, type])
   @@schema("magiclawyer")
@@ -397,8 +399,10 @@ model Usuario {
   funcionarioPerfil       FuncionarioPerfil?
 
   // Sistema de Notificações
-  notifications           Notification[]
-  notificationPreferences NotificationPreference[]
+  notifications                  Notification[]
+  notificationPreferences        NotificationPreference[]
+  digitalCertificatesResponsavel DigitalCertificate[]     @relation("DigitalCertificateResponsavel")
+  digitalCertificateLogs         DigitalCertificateLog[]  @relation("DigitalCertificateLogActor")
 
   @@unique([email, tenantId])
   @@unique([tenantId, cpf])
@@ -3045,10 +3049,10 @@ model Cargo {
   updatedAt DateTime @updatedAt
 
   // Relacionamentos
-  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  usuarios   UsuarioCargo[]
-  permissoes CargoPermissao[]
-  convites   EquipeConvite[]
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuarios     UsuarioCargo[]
+  permissoes   CargoPermissao[]
+  convites     EquipeConvite[]
   funcionarios FuncionarioPerfil[] @relation("CargoPrincipal")
 
   @@index([tenantId])
@@ -3140,11 +3144,11 @@ model UsuarioVinculacao {
 }
 
 model FuncionarioPerfil {
-  id                   String                    @id @default(cuid())
+  id                   String                   @id @default(cuid())
   tenantId             String
-  usuarioId            String                    @unique
+  usuarioId            String                   @unique
   cargoPrincipalId     String?
-  status               FuncionarioStatus         @default(ATIVO)
+  status               FuncionarioStatus        @default(ATIVO)
   tipoContrato         FuncionarioTipoContrato?
   dataAdmissao         DateTime?
   dataDemissao         DateTime?
@@ -3152,19 +3156,19 @@ model FuncionarioPerfil {
   serieCtps            String?
   orgaoExpedidorCtps   String?
   pis                  String?
-  salarioBase          Decimal?                  @db.Decimal(14, 2)
+  salarioBase          Decimal?                 @db.Decimal(14, 2)
   cargaHorariaSemanal  Int?
-  possuiValeTransporte Boolean?                  @default(false)
-  possuiValeRefeicao   Boolean?                  @default(false)
-  possuiPlanoSaude     Boolean?                  @default(false)
-  possuiPlanoOdonto    Boolean?                  @default(false)
+  possuiValeTransporte Boolean?                 @default(false)
+  possuiValeRefeicao   Boolean?                 @default(false)
+  possuiPlanoSaude     Boolean?                 @default(false)
+  possuiPlanoOdonto    Boolean?                 @default(false)
   observacoes          String?
-  createdAt            DateTime                  @default(now())
-  updatedAt            DateTime                  @updatedAt
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
 
-  tenant         Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  usuario        Usuario               @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  cargoPrincipal Cargo?                @relation("CargoPrincipal", fields: [cargoPrincipalId], references: [id], onDelete: SetNull)
+  tenant         Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usuario        Usuario                 @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cargoPrincipal Cargo?                  @relation("CargoPrincipal", fields: [cargoPrincipalId], references: [id], onDelete: SetNull)
   beneficios     FuncionarioBeneficio[]
   documentos     FuncionarioDocumento[]
   dependentes    FuncionarioDependente[]
@@ -3175,23 +3179,23 @@ model FuncionarioPerfil {
 }
 
 model FuncionarioBeneficio {
-  id                        String                     @id @default(cuid())
-  tenantId                  String
-  funcionarioId             String
-  tipo                      FuncionarioBeneficioTipo
-  status                    FuncionarioBeneficioStatus @default(ATIVO)
-  nome                      String?
-  valorBase                 Decimal?                   @db.Decimal(14, 2)
-  contribuicaoEmpresa       Decimal?                   @db.Decimal(14, 2)
-  contribuicaoFuncionario   Decimal?                   @db.Decimal(14, 2)
-  dataInicio                DateTime?
-  dataFim                   DateTime?
-  observacoes               String?
-  createdAt                 DateTime                   @default(now())
-  updatedAt                 DateTime                   @updatedAt
+  id                      String                     @id @default(cuid())
+  tenantId                String
+  funcionarioId           String
+  tipo                    FuncionarioBeneficioTipo
+  status                  FuncionarioBeneficioStatus @default(ATIVO)
+  nome                    String?
+  valorBase               Decimal?                   @db.Decimal(14, 2)
+  contribuicaoEmpresa     Decimal?                   @db.Decimal(14, 2)
+  contribuicaoFuncionario Decimal?                   @db.Decimal(14, 2)
+  dataInicio              DateTime?
+  dataFim                 DateTime?
+  observacoes             String?
+  createdAt               DateTime                   @default(now())
+  updatedAt               DateTime                   @updatedAt
 
-  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  funcionario FuncionarioPerfil  @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  funcionario FuncionarioPerfil @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([funcionarioId])
@@ -3200,7 +3204,7 @@ model FuncionarioBeneficio {
 }
 
 model FuncionarioDocumento {
-  id            String                  @id @default(cuid())
+  id            String                   @id @default(cuid())
   tenantId      String
   funcionarioId String
   tipo          FuncionarioDocumentoTipo
@@ -3210,8 +3214,8 @@ model FuncionarioDocumento {
   validade      DateTime?
   numero        String?
   observacoes   String?
-  createdAt     DateTime                @default(now())
-  updatedAt     DateTime                @updatedAt
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
 
   tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   funcionario FuncionarioPerfil @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
@@ -3223,17 +3227,17 @@ model FuncionarioDocumento {
 }
 
 model FuncionarioDependente {
-  id             String   @id @default(cuid())
-  tenantId       String
-  funcionarioId  String
-  nome           String
-  parentesco     String
-  dataNascimento DateTime?
-  cpf            String?
-  dependePlanoSaude Boolean? @default(false)
-  observacoes    String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  tenantId          String
+  funcionarioId     String
+  nome              String
+  parentesco        String
+  dataNascimento    DateTime?
+  cpf               String?
+  dependePlanoSaude Boolean?  @default(false)
+  observacoes       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   funcionario FuncionarioPerfil @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
@@ -3294,6 +3298,50 @@ model EquipeConvite {
 
 // ===== SISTEMA DE NOTIFICAÇÕES PUSH =====
 
+model DigitalCertificate {
+  id                   String                 @id @default(cuid())
+  tenantId             String
+  responsavelUsuarioId String?
+  label                String?
+  tipo                 DigitalCertificateType @default(PJE)
+  encryptedData        Bytes
+  encryptedPassword    Bytes
+  iv                   Bytes
+  passwordIv           Bytes
+  isActive             Boolean                @default(false)
+  validUntil           DateTime?
+  lastValidatedAt      DateTime?
+  lastUsedAt           DateTime?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  tenant             Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  responsavelUsuario Usuario?                @relation("DigitalCertificateResponsavel", fields: [responsavelUsuarioId], references: [id], onDelete: SetNull)
+  logs               DigitalCertificateLog[]
+
+  @@index([tenantId, tipo])
+  @@index([isActive])
+  @@schema("magiclawyer")
+}
+
+model DigitalCertificateLog {
+  id                   String                      @id @default(cuid())
+  digitalCertificateId String
+  tenantId             String
+  action               DigitalCertificateLogAction
+  message              String?
+  createdAt            DateTime                    @default(now())
+  actorId              String?
+
+  digitalCertificate DigitalCertificate @relation(fields: [digitalCertificateId], references: [id], onDelete: Cascade)
+  tenant             Tenant             @relation("DigitalCertificateLogs", fields: [tenantId], references: [id], onDelete: Cascade)
+  actor              Usuario?           @relation("DigitalCertificateLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([digitalCertificateId])
+  @@index([tenantId, action])
+  @@schema("magiclawyer")
+}
+
 enum NotificationUrgency {
   CRITICAL
   HIGH
@@ -3312,22 +3360,22 @@ enum NotificationChannel {
 }
 
 model Notification {
-  id          String             @id @default(cuid())
-  tenantId    String
-  userId      String
-  type        String             // 'processo.created', 'prazo.expiring_7d', etc.
-  title       String
-  message     String
-  payload     Json?              // Dados específicos do evento
-  urgency     NotificationUrgency @default(MEDIUM)
-  channels    NotificationChannel[]
-  readAt      DateTime?
-  createdAt   DateTime           @default(now())
-  expiresAt   DateTime?
+  id        String                @id @default(cuid())
+  tenantId  String
+  userId    String
+  type      String // 'processo.created', 'prazo.expiring_7d', etc.
+  title     String
+  message   String
+  payload   Json? // Dados específicos do evento
+  urgency   NotificationUrgency   @default(MEDIUM)
+  channels  NotificationChannel[]
+  readAt    DateTime?
+  createdAt DateTime              @default(now())
+  expiresAt DateTime?
 
   // Relacionamentos
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   Usuario @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant     Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       Usuario                @relation(fields: [userId], references: [id], onDelete: Cascade)
   deliveries NotificationDelivery[]
 
   @@index([tenantId, userId])
@@ -3339,17 +3387,17 @@ model Notification {
 }
 
 model NotificationDelivery {
-  id                 String                     @id @default(cuid())
-  notificationId     String
-  channel            NotificationChannel
-  provider           String
-  providerMessageId  String?
-  status             NotificationDeliveryStatus @default(PENDING)
-  errorCode          String?
-  errorMessage       String?
-  metadata           Json?
-  createdAt          DateTime                   @default(now())
-  updatedAt          DateTime                   @updatedAt
+  id                String                     @id @default(cuid())
+  notificationId    String
+  channel           NotificationChannel
+  provider          String
+  providerMessageId String?
+  status            NotificationDeliveryStatus @default(PENDING)
+  errorCode         String?
+  errorMessage      String?
+  metadata          Json?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
 
   notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 
@@ -3359,15 +3407,15 @@ model NotificationDelivery {
 }
 
 model NotificationPreference {
-  id        String             @id @default(cuid())
+  id        String                @id @default(cuid())
   tenantId  String
   userId    String
-  eventType String             // 'processo.created', 'prazo.expiring_7d'
-  enabled   Boolean            @default(true)
+  eventType String // 'processo.created', 'prazo.expiring_7d'
+  enabled   Boolean               @default(true)
   channels  NotificationChannel[] @default([REALTIME])
-  urgency   NotificationUrgency @default(MEDIUM)
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  urgency   NotificationUrgency   @default(MEDIUM)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
 
   // Relacionamentos
   tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -3382,10 +3430,10 @@ model NotificationPreference {
 model NotificationTemplate {
   id        String   @id @default(cuid())
   tenantId  String
-  eventType String   // 'processo.created', 'prazo.expiring_7d'
+  eventType String // 'processo.created', 'prazo.expiring_7d'
   title     String
   message   String
-  variables Json?    // Variáveis disponíveis para substituição
+  variables Json? // Variáveis disponíveis para substituição
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3405,5 +3453,26 @@ enum NotificationDeliveryStatus {
   DELIVERED
   READ
   FAILED
+
+  @@schema("magiclawyer")
+}
+
+enum DigitalCertificateType {
+  PJE
+  ESAJ
+  OUTRO
+
+  @@schema("magiclawyer")
+}
+
+enum DigitalCertificateLogAction {
+  CREATED
+  UPDATED
+  VALIDATED
+  DISABLED
+  ENABLED
+  DELETED
+  TESTED
+
   @@schema("magiclawyer")
 }

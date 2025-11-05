@@ -37,7 +37,8 @@ export default async function ConfiguracoesPage() {
     redirect("/dashboard");
   }
 
-  const { tenant, branding, subscription, modules, metrics } = tenantData.data;
+  const { tenant, branding, subscription, modules, metrics } =
+    tenantData.data;
 
   return (
     <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 py-12">

@@ -109,3 +109,4 @@ As métricas são complementadas por logs estruturados no formato:
 **Última atualização**: 01/11/2024
 
 
+

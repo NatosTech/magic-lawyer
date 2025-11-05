@@ -70,6 +70,25 @@ export interface TenantConfigData {
     clientes: number;
     contratos: number;
   };
+  digitalCertificates: Array<{
+    id: string;
+    tenantId: string;
+    responsavelUsuarioId: string | null;
+    label: string | null;
+    tipo: string;
+    isActive: boolean;
+    validUntil: string | null;
+    lastValidatedAt: string | null;
+    lastUsedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    responsavelUsuario: {
+      id: string;
+      firstName: string | null;
+      lastName: string | null;
+      email: string;
+    } | null;
+  }>;
 }
 
 // Converter campos Decimal para number
@@ -213,6 +232,41 @@ export async function getTenantConfigData(): Promise<{
       routes: moduleRouteMap[slug] || [],
     }));
 
+    const certificates = await prisma.digitalCertificate.findMany({
+      where: {
+        tenantId,
+      },
+      orderBy: [
+        {
+          isActive: "desc",
+        },
+        {
+          createdAt: "desc",
+        },
+      ],
+      select: {
+        id: true,
+        tenantId: true,
+        responsavelUsuarioId: true,
+        label: true,
+        tipo: true,
+        isActive: true,
+        validUntil: true,
+        lastValidatedAt: true,
+        lastUsedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        responsavelUsuario: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
     const data: TenantConfigData = {
       tenant: {
         id: tenant.id,
@@ -283,6 +337,27 @@ export async function getTenantConfigData(): Promise<{
         clientes: tenant._count.clientes,
         contratos: tenant._count.contratos,
       },
+      digitalCertificates: certificates.map((cert) => ({
+        id: cert.id,
+        tenantId: cert.tenantId,
+        responsavelUsuarioId: cert.responsavelUsuarioId,
+        label: cert.label,
+        tipo: cert.tipo,
+        isActive: cert.isActive,
+        validUntil: cert.validUntil?.toISOString() ?? null,
+        lastValidatedAt: cert.lastValidatedAt?.toISOString() ?? null,
+        lastUsedAt: cert.lastUsedAt?.toISOString() ?? null,
+        createdAt: cert.createdAt.toISOString(),
+        updatedAt: cert.updatedAt.toISOString(),
+        responsavelUsuario: cert.responsavelUsuario
+          ? {
+              id: cert.responsavelUsuario.id,
+              firstName: cert.responsavelUsuario.firstName,
+              lastName: cert.responsavelUsuario.lastName,
+              email: cert.responsavelUsuario.email,
+            }
+          : null,
+      })),
     };
 
     return {

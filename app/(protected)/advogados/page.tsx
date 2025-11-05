@@ -32,10 +32,10 @@ export default async function AdvogadosPage() {
     const hasPermission = await checkPermission("equipe", "visualizar");
 
     if (!hasPermission) {
-      redirect("/dashboard");
-    }
+    redirect("/dashboard");
+  }
 
-    return <AdvogadosContent />;
+  return <AdvogadosContent />;
   } catch (error) {
     // Se houver erro ao verificar permissões, redirecionar
     console.error("Erro ao verificar permissões para /advogados:", error);

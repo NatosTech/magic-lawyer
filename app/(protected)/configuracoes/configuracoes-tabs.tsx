@@ -7,11 +7,12 @@ import { Chip } from "@heroui/chip";
 import { Badge } from "@heroui/badge";
 import { Button } from "@heroui/button";
 import NextLink from "next/link";
-import { Building2, Palette, Mail, BarChart3 } from "lucide-react";
+import { Building2, Palette, Mail, BarChart3, Shield } from "lucide-react";
 
 import { EmailCredentialsCard } from "./email-credentials-card";
 import { TenantSettingsForm } from "./tenant-settings-form";
 import { TenantBrandingForm } from "./tenant-branding-form";
+import { DigitalCertificatesPanel } from "./digital-certificates-panel";
 
 interface TenantSettingsFormProps {
   tenant: {
@@ -80,17 +81,41 @@ interface MetricsProps {
   };
 }
 
+interface DigitalCertificatesProps {
+  certificates: Array<{
+    id: string;
+    tenantId: string;
+    responsavelUsuarioId: string | null;
+    label: string | null;
+    tipo: string;
+    isActive: boolean;
+    validUntil: string | null;
+    lastValidatedAt: string | null;
+    lastUsedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    responsavelUsuario: {
+      id: string;
+      firstName: string | null;
+      lastName: string | null;
+      email: string;
+    } | null;
+  }>;
+}
+
 export function ConfiguracoesTabs({
   tenant,
   branding,
   subscription,
   modules,
   metrics,
+  certificates,
 }: TenantSettingsFormProps &
   TenantBrandingFormProps &
   SubscriptionProps &
   ModulesProps &
-  MetricsProps) {
+  MetricsProps &
+  DigitalCertificatesProps) {
   return (
     <Tabs
       aria-label="Configurações"
@@ -402,6 +427,21 @@ export function ConfiguracoesTabs({
       >
         <div className="mt-6">
           <EmailCredentialsCard />
+        </div>
+      </Tab>
+
+      {/* Tab 5: Integrações PJe */}
+      <Tab
+        key="certificates"
+        title={
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            <span>Integrações PJe</span>
+          </div>
+        }
+      >
+        <div className="mt-6">
+          <DigitalCertificatesPanel certificates={certificates} />
         </div>
       </Tab>
     </Tabs>
