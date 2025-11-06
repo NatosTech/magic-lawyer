@@ -13,6 +13,8 @@ import NextLink from "next/link";
 
 import { Logo } from "@/components/icons";
 import { useTenantFromDomain } from "@/hooks/use-tenant-from-domain";
+import { DevInfo } from "@/components/dev-info";
+import { LogIn } from "lucide-react";
 
 function LoginPageInner() {
   const params = useSearchParams();
@@ -435,14 +437,9 @@ function LoginPageInner() {
   }, [isDevMode]);
 
   useEffect(() => {
-    if (!isDevMode || !isLargeScreen || devQuickLogins.length === 0) {
-      return;
-    }
-
-    if (!devPanelOpen) {
-      setDevPanelOpen(true);
-    }
-  }, [devPanelOpen, devQuickLogins.length, isDevMode, isLargeScreen]);
+    // Garantir que o painel dev comece sempre fechado
+    setDevPanelOpen(false);
+  }, []);
 
   useEffect(() => {
     if (!isDevMode) {
@@ -632,15 +629,23 @@ function LoginPageInner() {
             />
           )}
 
-          <Button
-            className={`fixed z-40 shadow-lg ${isLargeScreen ? "top-20 right-6" : "bottom-20 right-6"}`}
-            color="primary"
-            size="sm"
-            variant="flat"
-            onPress={() => setDevPanelOpen((prev) => !prev)}
-          >
-            {devPanelOpen ? "Esconder logins" : "Logins rápidos"}
-          </Button>
+          <div className="fixed bottom-20 right-6 z-40 flex items-center gap-2">
+            <Button
+              key="dev-quick-logins-button"
+              className="shadow-lg"
+              color="primary"
+              size="sm"
+              startContent={<LogIn className="h-4 w-4" />}
+              variant="flat"
+              onPress={() => setDevPanelOpen((prev) => !prev)}
+            >
+              {devPanelOpen ? "Esconder logins" : "Logins rápidos"}
+            </Button>
+            <DevInfo
+              buttonContainerClassName=""
+              buttonClassName="shadow-lg"
+            />
+          </div>
 
           <aside
             className={`fixed z-50 transition-all duration-300 ${

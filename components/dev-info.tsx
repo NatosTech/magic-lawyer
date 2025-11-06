@@ -31,10 +31,17 @@ interface DevInfo {
   timestamp: string;
 }
 
-export function DevInfo() {
+interface DevInfoProps {
+  buttonClassName?: string;
+  buttonContainerClassName?: string;
+}
+
+export function DevInfo({
+  buttonClassName,
+  buttonContainerClassName,
+}: DevInfoProps = {}) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
 
@@ -70,12 +77,13 @@ export function DevInfo() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!hasAutoOpened && isVisible && isLargeScreen) {
-      setIsPanelOpen(true);
-      setHasAutoOpened(true);
-    }
-  }, [hasAutoOpened, isLargeScreen, isVisible]);
+  // Painel sempre inicia fechado - removido auto-open
+  // useEffect(() => {
+  //   if (!hasAutoOpened && isVisible && isLargeScreen) {
+  //     setIsPanelOpen(true);
+  //     setHasAutoOpened(true);
+  //   }
+  // }, [hasAutoOpened, isLargeScreen, isVisible]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -84,7 +92,7 @@ export function DevInfo() {
 
   if (!isVisible || !devInfo || isLoading || error) return null;
 
-  const buttonPosition = isLargeScreen
+  const defaultButtonPosition = isLargeScreen
     ? "bottom-6 right-6"
     : "bottom-6 right-6";
 
@@ -97,16 +105,31 @@ export function DevInfo() {
         />
       )}
 
-      <Button
-        className={`fixed z-[60] shadow-lg ${buttonPosition}`}
-        color="default"
-        size="sm"
-        startContent={<Server className="h-4 w-4" />}
-        variant="flat"
-        onPress={() => setIsPanelOpen((prev) => !prev)}
-      >
-        {isPanelOpen ? "Fechar painel dev" : "Painel dev"}
-      </Button>
+      {buttonContainerClassName ? (
+        <div className={buttonContainerClassName}>
+          <Button
+            className={buttonClassName || "shadow-lg"}
+            color="default"
+            size="sm"
+            startContent={<Server className="h-4 w-4" />}
+            variant="flat"
+            onPress={() => setIsPanelOpen((prev) => !prev)}
+          >
+            {isPanelOpen ? "Fechar painel dev" : "Painel dev"}
+          </Button>
+        </div>
+      ) : (
+        <Button
+          className={`fixed z-[60] shadow-lg ${defaultButtonPosition} ${buttonClassName || ""}`}
+          color="default"
+          size="sm"
+          startContent={<Server className="h-4 w-4" />}
+          variant="flat"
+          onPress={() => setIsPanelOpen((prev) => !prev)}
+        >
+          {isPanelOpen ? "Fechar painel dev" : "Painel dev"}
+        </Button>
+      )}
 
       <aside
         className={`fixed z-[60] transition-all duration-300 ${
