@@ -52,6 +52,7 @@ import {
   Info,
   Smartphone,
   Activity,
+  UploadCloud,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -82,6 +83,7 @@ import { TipoPessoa } from "@/app/generated/prisma";
 import { Modal } from "@/components/ui/modal";
 import { CpfInput } from "@/components/cpf-input";
 import { CnpjInput } from "@/components/cnpj-input";
+import { BulkExcelImportModal } from "@/components/bulk-excel-import-modal";
 
 export function ClientesContent() {
   const { permissions, isSuperAdmin, isAdmin } = useUserPermissions();
@@ -104,6 +106,7 @@ export function ClientesContent() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [clienteParaVisualizar, setClienteParaVisualizar] =
     useState<Cliente | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Buscar clientes (advogado ou admin)
   const {
@@ -363,6 +366,33 @@ export function ClientesContent() {
     { key: TipoPessoa.JURIDICA, label: "Pessoa Jurídica" },
   ];
 
+  const clienteImportFields = [
+    {
+      label: "nomeCompleto",
+      description: "Nome civil/social exatamente como no cadastro oficial.",
+    },
+    {
+      label: "email",
+      description: "Usado para login e notificações automáticas.",
+    },
+    {
+      label: "telefone",
+      description: "Aceita DDD + número (com ou sem máscara).",
+    },
+    {
+      label: "tipoPessoa",
+      description: "Informe FISICA ou JURIDICA.",
+    },
+    {
+      label: "documento",
+      description: "CPF/CNPJ somente números para validação.",
+    },
+    {
+      label: "dataNascimento",
+      description: "Formato AAAA-MM-DD (opcional para PJ).",
+    },
+  ];
+
   return (
     <div className="container mx-auto p-6 space-y-8">
       {/* Header Hero */}
@@ -390,6 +420,14 @@ export function ClientesContent() {
                       }}
                     >
                       Novo Cliente
+                    </Button>
+                    <Button
+                      variant="bordered"
+                      color="primary"
+                      startContent={<UploadCloud className="w-4 h-4" />}
+                      onPress={() => setIsImportModalOpen(true)}
+                    >
+                      Importar via Excel
                     </Button>
                   </div>
                 )}
@@ -2250,6 +2288,13 @@ export function ClientesContent() {
           </ModalContent>
         )}
       </HeroUIModal>
+      <BulkExcelImportModal
+        entityLabel="clientes"
+        isOpen={isImportModalOpen}
+        sampleFields={clienteImportFields}
+        templateUrl="/api/templates/import-clients"
+        onOpenChange={setIsImportModalOpen}
+      />
     </div>
   );
 }

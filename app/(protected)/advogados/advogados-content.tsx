@@ -73,11 +73,13 @@ import {
   Scale,
   Bell,
   Mail,
+  UploadCloud,
 } from "lucide-react";
 import { toast } from "sonner";
 import useSWR from "swr";
 
 import { AdvogadoHistorico } from "./components/advogado-historico";
+import { BulkExcelImportModal } from "@/components/bulk-excel-import-modal";
 import { AdvogadoNotificacoes } from "./components/advogado-notificacoes";
 import { AdvogadoFormModal } from "./components/advogado-form-modal";
 import {
@@ -211,6 +213,7 @@ export default function AdvogadosContent() {
   const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
   const [selectedAdvogadoForAvatar, setSelectedAdvogadoForAvatar] =
     useState<Advogado | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Hook para debounce da busca
   const useDebounce = (value: string, delay: number) => {
@@ -1548,6 +1551,37 @@ export default function AdvogadosContent() {
     { key: EspecialidadeJuridica.CONSUMIDOR, label: "Direito do Consumidor" },
   ];
 
+  const advogadoImportFields = [
+    {
+      label: "nomeCompleto",
+      description: "Mesmo nome utilizado na OAB.",
+    },
+    {
+      label: "email",
+      description: "Receberá convites de acesso e notificações.",
+    },
+    {
+      label: "oab",
+      description: "Número sem UF (apenas dígitos).",
+    },
+    {
+      label: "ufOAB",
+      description: "Sigla do estado (ex.: SP, RJ).",
+    },
+    {
+      label: "telefone",
+      description: "Contato principal do advogado.",
+    },
+    {
+      label: "especialidade",
+      description: "Ex.: Direito Empresarial, Direito Civil.",
+    },
+    {
+      label: "tipoVinculo",
+      description: "Use INTERNO ou EXTERNO/TERCEIRIZADO.",
+    },
+  ];
+
   if (loading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
@@ -1645,6 +1679,15 @@ export default function AdvogadosContent() {
           >
             <span className="hidden sm:inline">Comissões</span>
             <span className="sm:hidden">Comissões</span>
+          </Button>
+          <Button
+            variant="bordered"
+            className="w-full sm:w-auto"
+            size="sm"
+            startContent={<UploadCloud size={18} />}
+            onPress={() => setIsImportModalOpen(true)}
+          >
+            Importar Excel
           </Button>
           <Button
             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto"
@@ -4058,6 +4101,13 @@ export default function AdvogadosContent() {
           setSelectedAdvogadoForAvatar(null);
         }}
         onSave={handleSaveAvatar}
+      />
+      <BulkExcelImportModal
+        entityLabel="advogados"
+        isOpen={isImportModalOpen}
+        sampleFields={advogadoImportFields}
+        templateUrl="/api/templates/import-advogados"
+        onOpenChange={setIsImportModalOpen}
       />
     </div>
   );
