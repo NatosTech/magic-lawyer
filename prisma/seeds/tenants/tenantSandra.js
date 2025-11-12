@@ -86,6 +86,7 @@ async function seedTenantSandra(prisma, Prisma) {
       secondaryColor: "#F4F4F5",
       accentColor: "#F97316",
       logoUrl: "https://dummyimage.com/240x80/7f1d1d/ffffff&text=Sandra+Advocacia",
+      faviconUrl: "https://dummyimage.com/32x32/7f1d1d/ffffff&text=SA",
     },
     create: {
       tenantId: tenant.id,
@@ -93,6 +94,7 @@ async function seedTenantSandra(prisma, Prisma) {
       secondaryColor: "#F4F4F5",
       accentColor: "#F97316",
       logoUrl: "https://dummyimage.com/240x80/7f1d1d/ffffff&text=Sandra+Advocacia",
+      faviconUrl: "https://dummyimage.com/32x32/7f1d1d/ffffff&text=SA",
     },
   });
 

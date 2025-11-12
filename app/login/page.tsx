@@ -11,10 +11,13 @@ import { Chip } from "@heroui/chip";
 import { addToast, closeToast } from "@heroui/toast";
 import NextLink from "next/link";
 
+import Image from "next/image";
+import useSWR from "swr";
 import { Logo } from "@/components/icons";
 import { useTenantFromDomain } from "@/hooks/use-tenant-from-domain";
 import { DevInfo } from "@/components/dev-info";
 import { LogIn } from "lucide-react";
+import { getTenantBrandingFromDomain } from "@/app/actions/tenant-branding";
 
 function LoginPageInner() {
   const params = useSearchParams();
@@ -25,6 +28,15 @@ function LoginPageInner() {
   const [password, setPassword] = useState("");
   const [tenant, setTenant] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Buscar branding do tenant pelo domínio
+  const { data: tenantBranding } = useSWR("tenant-branding-from-domain", getTenantBrandingFromDomain, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  const tenantLogoUrl = tenantBranding?.success ? tenantBranding.data?.logoUrl : null;
+  const tenantName = tenantBranding?.success ? tenantBranding.data?.name : null;
   const [devQuickLogins, setDevQuickLogins] = useState<
     Array<{
       group: string;
@@ -35,13 +47,7 @@ function LoginPageInner() {
         email: string;
         password: string;
         tenant?: string;
-        chipColor?:
-          | "primary"
-          | "secondary"
-          | "success"
-          | "warning"
-          | "danger"
-          | "default";
+        chipColor?: "primary" | "secondary" | "success" | "warning" | "danger" | "default";
       }>;
     }>
   >([]);
@@ -54,8 +60,7 @@ function LoginPageInner() {
 
   const resolveRedirectTarget = useCallback(
     (role?: string | null) => {
-      const defaultTarget =
-        role === "SUPER_ADMIN" ? "/admin/dashboard" : "/dashboard";
+      const defaultTarget = role === "SUPER_ADMIN" ? "/admin/dashboard" : "/dashboard";
 
       if (!callbackUrl) {
         return defaultTarget;
@@ -99,19 +104,11 @@ function LoginPageInner() {
 
       return parsedTarget;
     },
-    [callbackUrl],
+    [callbackUrl]
   );
 
   const attemptLogin = useCallback(
-    async ({
-      email: rawEmail,
-      password: rawPassword,
-      tenantOverride,
-    }: {
-      email: string;
-      password: string;
-      tenantOverride?: string;
-    }) => {
+    async ({ email: rawEmail, password: rawPassword, tenantOverride }: { email: string; password: string; tenantOverride?: string }) => {
       const sanitizedEmail = rawEmail.trim();
       const sanitizedPassword = rawPassword.trim();
       const baseTenant = tenantOverride !== undefined ? tenantOverride : tenant;
@@ -150,9 +147,7 @@ function LoginPageInner() {
         });
 
         if (!response) {
-          throw new Error(
-            "Não foi possível contatar o servidor de autenticação.",
-          );
+          throw new Error("Não foi possível contatar o servidor de autenticação.");
         }
 
         if (!response.ok) {
@@ -172,16 +167,13 @@ function LoginPageInner() {
                 salba: ["luciano@salbaadvocacia.com.br"],
               };
 
-              for (const [tenantSlug, emails] of Object.entries(
-                tenantMappings,
-              )) {
+              for (const [tenantSlug, emails] of Object.entries(tenantMappings)) {
                 if (emails.includes(sanitizedEmail)) {
                   const redirectUrl = `https://${tenantSlug}.magiclawyer.vercel.app/login`;
 
                   addToast({
                     title: "Redirecionamento automático",
-                    description:
-                      "Você será redirecionado para o domínio correto do seu escritório.",
+                    description: "Você será redirecionado para o domínio correto do seu escritório.",
                     color: "primary",
                     timeout: 3000,
                   });
@@ -195,22 +187,16 @@ function LoginPageInner() {
               }
             }
 
-            throw new Error(
-              "Email ou senha incorretos. Verifique suas credenciais e tente novamente.",
-            );
+            throw new Error("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
           }
 
           if (response.error?.startsWith("REDIRECT_TO_TENANT:")) {
-            const tenantSlug = response.error.replace(
-              "REDIRECT_TO_TENANT:",
-              "",
-            );
+            const tenantSlug = response.error.replace("REDIRECT_TO_TENANT:", "");
             const redirectUrl = `https://${tenantSlug}.magiclawyer.vercel.app/login`;
 
             addToast({
               title: "Redirecionamento automático",
-              description:
-                "Você será redirecionado para o domínio correto do seu escritório.",
+              description: "Você será redirecionado para o domínio correto do seu escritório.",
               color: "primary",
               timeout: 3000,
             });
@@ -222,10 +208,7 @@ function LoginPageInner() {
             return;
           }
 
-          throw new Error(
-            response.error ??
-              "Credenciais inválidas. Verifique seus dados e tente novamente.",
-          );
+          throw new Error(response.error ?? "Credenciais inválidas. Verifique seus dados e tente novamente.");
         }
 
         return response;
@@ -263,10 +246,7 @@ function LoginPageInner() {
 
         return true;
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Ocorreu um erro inesperado durante o login.";
+        const message = error instanceof Error ? error.message : "Ocorreu um erro inesperado durante o login.";
 
         if (loaderKey) {
           closeToast(loaderKey);
@@ -278,26 +258,19 @@ function LoginPageInner() {
 
         if (message === "TENANT_SUSPENDED") {
           title = "🔒 Escritório Suspenso";
-          description =
-            "Sua conta foi temporariamente suspensa. Entre em contato com o suporte para mais informações.";
+          description = "Sua conta foi temporariamente suspensa. Entre em contato com o suporte para mais informações.";
           color = "warning";
         } else if (message === "TENANT_CANCELLED") {
           title = "❌ Escritório Cancelado";
-          description =
-            "Sua conta foi cancelada. Entre em contato com o suporte para reativar.";
+          description = "Sua conta foi cancelada. Entre em contato com o suporte para reativar.";
           color = "danger";
-        } else if (
-          message.includes("Email ou senha incorretos") ||
-          message.includes("credenciais inválidas")
-        ) {
+        } else if (message.includes("Email ou senha incorretos") || message.includes("credenciais inválidas")) {
           title = "❌ Email ou senha incorretos";
-          description =
-            "Verifique se digitou corretamente seu email e senha. Lembre-se: a senha é sensível a maiúsculas e minúsculas.";
+          description = "Verifique se digitou corretamente seu email e senha. Lembre-se: a senha é sensível a maiúsculas e minúsculas.";
           color = "warning";
         } else if (message.includes("Não foi possível contatar")) {
           title = "Erro de conexão";
-          description =
-            "Verifique sua conexão com a internet e tente novamente.";
+          description = "Verifique sua conexão com a internet e tente novamente.";
         }
 
         addToast({
@@ -312,7 +285,7 @@ function LoginPageInner() {
         setLoading(false);
       }
     },
-    [emailRegex, resolveRedirectTarget, router, tenant, tenantFromDomain],
+    [emailRegex, resolveRedirectTarget, router, tenant, tenantFromDomain]
   );
 
   // Exibir mensagem de motivo do redirecionamento
@@ -326,45 +299,38 @@ function LoginPageInner() {
         case "SUSPENDED":
         case "TENANT_SUSPENDED":
           title = "🔒 Escritório Suspenso";
-          description =
-            "Sua conta foi temporariamente suspensa. Entre em contato com o suporte para mais informações.";
+          description = "Sua conta foi temporariamente suspensa. Entre em contato com o suporte para mais informações.";
           color = "warning";
           break;
         case "CANCELLED":
         case "TENANT_CANCELLED":
           title = "❌ Escritório Cancelado";
-          description =
-            "Sua conta foi cancelada. Entre em contato com o suporte para reativar.";
+          description = "Sua conta foi cancelada. Entre em contato com o suporte para reativar.";
           color = "danger";
           break;
         case "TENANT_NOT_FOUND":
           title = "❌ Escritório Não Encontrado";
-          description =
-            "O escritório informado não existe ou foi removido do sistema.";
+          description = "O escritório informado não existe ou foi removido do sistema.";
           color = "danger";
           break;
         case "SESSION_VERSION_MISMATCH":
           title = "🔄 Sessão Expirada";
-          description =
-            "Suas credenciais foram alteradas. Por favor, faça login novamente.";
+          description = "Suas credenciais foram alteradas. Por favor, faça login novamente.";
           color = "warning";
           break;
         case "SESSION_REVOKED":
           title = "🔒 Sessão Revogada";
-          description =
-            "Sua sessão foi encerrada por segurança. Por favor, faça login novamente.";
+          description = "Sua sessão foi encerrada por segurança. Por favor, faça login novamente.";
           color = "warning";
           break;
         case "USER_DISABLED":
           title = "🚫 Usuário Desativado";
-          description =
-            "Sua conta foi desativada. Entre em contato com o administrador do escritório.";
+          description = "Sua conta foi desativada. Entre em contato com o administrador do escritório.";
           color = "warning";
           break;
         case "USER_ID_MISMATCH":
           title = "⚠️ Erro de Autenticação";
-          description =
-            "Houve um problema com sua sessão. Por favor, faça login novamente.";
+          description = "Houve um problema com sua sessão. Por favor, faça login novamente.";
           color = "warning";
           break;
         case "USER_NOT_FOUND":
@@ -379,14 +345,12 @@ function LoginPageInner() {
           break;
         case "INVALID_PAYLOAD":
           title = "⚠️ Erro de Comunicação";
-          description =
-            "Houve um problema ao validar sua sessão. Tente novamente.";
+          description = "Houve um problema ao validar sua sessão. Tente novamente.";
           color = "warning";
           break;
         case "INTERNAL_ERROR":
           title = "⚠️ Erro Interno";
-          description =
-            "Ocorreu um erro no servidor. Tente novamente mais tarde.";
+          description = "Ocorreu um erro no servidor. Tente novamente mais tarde.";
           color = "danger";
           break;
         default:
@@ -587,7 +551,7 @@ function LoginPageInner() {
         tenantOverride: option.tenant,
       });
     },
-    [attemptLogin, loading],
+    [attemptLogin, loading]
   );
 
   return (
@@ -601,18 +565,8 @@ function LoginPageInner() {
         radius="full"
         size="sm"
         startContent={
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M15 19l-7-7 7-7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-            />
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
           </svg>
         }
         variant="bordered"
@@ -622,12 +576,7 @@ function LoginPageInner() {
 
       {isDevMode && devQuickLogins.length > 0 && (
         <>
-          {!isLargeScreen && devPanelOpen && (
-            <div
-              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity"
-              onClick={() => setDevPanelOpen(false)}
-            />
-          )}
+          {!isLargeScreen && devPanelOpen && <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setDevPanelOpen(false)} />}
 
           <div className="fixed bottom-20 right-6 z-40 flex items-center gap-2">
             <Button
@@ -641,52 +590,27 @@ function LoginPageInner() {
             >
               {devPanelOpen ? "Esconder logins" : "Logins rápidos"}
             </Button>
-            <DevInfo
-              buttonContainerClassName=""
-              buttonClassName="shadow-lg"
-            />
+            <DevInfo buttonContainerClassName="" buttonClassName="shadow-lg" />
           </div>
 
           <aside
             className={`fixed z-50 transition-all duration-300 ${
-              isLargeScreen
-                ? "top-24 right-6 w-[320px]"
-                : "top-24 left-1/2 w-[min(420px,calc(100vw-2.5rem))] -translate-x-1/2"
+              isLargeScreen ? "top-24 right-6 w-[320px]" : "top-24 left-1/2 w-[min(420px,calc(100vw-2.5rem))] -translate-x-1/2"
             } ${devPanelOpen ? "opacity-100 pointer-events-auto translate-y-0" : isLargeScreen ? "opacity-0 pointer-events-none translate-x-6" : "opacity-0 pointer-events-none -translate-y-4"}`}
           >
             <Card className="border border-primary/20 shadow-2xl backdrop-blur bg-white/95 dark:bg-content1/90 h-full max-h-[75vh] flex flex-col">
               <CardHeader className="flex items-center justify-between gap-2 py-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-default-700 dark:text-default-200">
-                    Painel Dev
-                  </p>
-                  <p className="text-xs text-default-400">
-                    Logins rápidos para testes locais
-                  </p>
+                  <p className="text-sm font-semibold text-default-700 dark:text-default-200">Painel Dev</p>
+                  <p className="text-xs text-default-400">Logins rápidos para testes locais</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Chip color="primary" size="sm" variant="flat">
                     Dev only
                   </Chip>
-                  <Button
-                    isIconOnly
-                    aria-label="Fechar painel de logins"
-                    size="sm"
-                    variant="light"
-                    onPress={() => setDevPanelOpen(false)}
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.5}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        d="M18 6L6 18M6 6l12 12"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                  <Button isIconOnly aria-label="Fechar painel de logins" size="sm" variant="light" onPress={() => setDevPanelOpen(false)}>
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                      <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </Button>
                 </div>
@@ -696,14 +620,8 @@ function LoginPageInner() {
                 {devQuickLogins.map((group, groupIndex) => (
                   <div key={group.group} className="space-y-3">
                     <div>
-                      <p className="text-sm font-semibold text-default-600 dark:text-default-300">
-                        {group.group}
-                      </p>
-                      {group.description ? (
-                        <p className="text-xs text-default-400">
-                          {group.description}
-                        </p>
-                      ) : null}
+                      <p className="text-sm font-semibold text-default-600 dark:text-default-300">{group.group}</p>
+                      {group.description ? <p className="text-xs text-default-400">{group.description}</p> : null}
                     </div>
                     <div className="space-y-2">
                       {group.options.map((option) => (
@@ -712,25 +630,12 @@ function LoginPageInner() {
                           className="flex items-center justify-between gap-2 rounded-lg border border-default-200 bg-default-50 px-3 py-2 dark:border-default-100/20 dark:bg-default-50/10"
                         >
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-default-600 dark:text-default-100 truncate">
-                              {option.name}
-                            </p>
-                            <Chip
-                              className="mt-1"
-                              color={option.chipColor ?? "default"}
-                              size="sm"
-                              variant="flat"
-                            >
+                            <p className="text-sm font-medium text-default-600 dark:text-default-100 truncate">{option.name}</p>
+                            <Chip className="mt-1" color={option.chipColor ?? "default"} size="sm" variant="flat">
                               {option.roleLabel}
                             </Chip>
                           </div>
-                          <Button
-                            color="primary"
-                            isDisabled={loading}
-                            size="sm"
-                            variant="flat"
-                            onPress={() => handleDevQuickLogin(option)}
-                          >
+                          <Button color="primary" isDisabled={loading} size="sm" variant="flat" onPress={() => handleDevQuickLogin(option)}>
                             Logar
                           </Button>
                         </div>
@@ -739,10 +644,7 @@ function LoginPageInner() {
                     {groupIndex !== devQuickLogins.length - 1 && <Divider />}
                   </div>
                 ))}
-                <p className="text-[10px] text-default-400">
-                  Disponível apenas em ambientes de desenvolvimento. Usa as
-                  credenciais padrão do seed.
-                </p>
+                <p className="text-[10px] text-default-400">Disponível apenas em ambientes de desenvolvimento. Usa as credenciais padrão do seed.</p>
               </CardBody>
             </Card>
           </aside>
@@ -753,16 +655,18 @@ function LoginPageInner() {
         {/* Header com logo */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="rounded-2xl bg-primary/15 p-3">
-              <Logo className="h-8 w-8 text-primary" />
-            </div>
+            {tenantLogoUrl ? (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                <Image unoptimized alt={tenantName || "Logo do escritório"} className="h-12 w-auto object-contain" height={48} src={tenantLogoUrl} width={120} />
+              </div>
+            ) : (
+              <div className="rounded-2xl bg-primary/15 p-3">
+                <Logo className="h-8 w-8 text-primary" />
+              </div>
+            )}
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">
-            Bem-vindo de volta
-          </h1>
-          <p className="text-default-400 text-sm">
-            Entre na sua conta para acessar o escritório
-          </p>
+          <h1 className="text-2xl font-bold text-white mb-2">Bem-vindo de volta</h1>
+          <p className="text-default-400 text-sm">{tenantName ? `Entre na sua conta para acessar ${tenantName}` : "Entre na sua conta para acessar o escritório"}</p>
         </div>
 
         {/* Card de login */}
@@ -770,22 +674,15 @@ function LoginPageInner() {
           <CardHeader className="flex flex-col gap-2 pb-2">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🔐</span>
-              <h2 className="text-lg font-semibold text-white">
-                Acesso seguro
-              </h2>
+              <h2 className="text-lg font-semibold text-white">Acesso seguro</h2>
             </div>
-            <p className="text-sm text-default-400">
-              Suas credenciais são protegidas com criptografia de ponta
-            </p>
+            <p className="text-sm text-default-400">Suas credenciais são protegidas com criptografia de ponta</p>
             <div className="mt-2 rounded-lg bg-blue-500/10 border border-blue-500/20 p-3">
               <div className="flex items-start gap-2">
                 <span className="text-blue-400 text-sm">💡</span>
                 <div>
                   <p className="text-xs font-medium text-blue-300">Dica:</p>
-                  <p className="text-xs text-blue-200">
-                    Se não souber o slug do escritório, deixe o campo vazio. O
-                    sistema tentará encontrar automaticamente.
-                  </p>
+                  <p className="text-xs text-blue-200">Se não souber o slug do escritório, deixe o campo vazio. O sistema tentará encontrar automaticamente.</p>
                 </div>
               </div>
             </div>
@@ -797,9 +694,7 @@ function LoginPageInner() {
                 isRequired
                 className="mb-4"
                 label="E-mail"
-                startContent={
-                  <span className="text-default-400 text-sm">📧</span>
-                }
+                startContent={<span className="text-default-400 text-sm">📧</span>}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -808,9 +703,7 @@ function LoginPageInner() {
                 isRequired
                 className="mb-4"
                 label="Senha"
-                startContent={
-                  <span className="text-default-400 text-sm">🔒</span>
-                }
+                startContent={<span className="text-default-400 text-sm">🔒</span>}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -820,20 +713,11 @@ function LoginPageInner() {
                 description="Opcional. Se não souber, deixe vazio. Exemplo: meu-escritorio ou meuescritorio.com.br"
                 label="Escritório (slug/domínio)"
                 placeholder="meu-escritorio"
-                startContent={
-                  <span className="text-default-400 text-sm">🏢</span>
-                }
+                startContent={<span className="text-default-400 text-sm">🏢</span>}
                 value={tenant}
                 onChange={(e) => setTenant(e.target.value)}
               />
-              <Button
-                fullWidth
-                color="primary"
-                isLoading={loading}
-                size="lg"
-                startContent={loading ? null : <span>🚀</span>}
-                type="submit"
-              >
+              <Button fullWidth color="primary" isLoading={loading} size="lg" startContent={loading ? null : <span>🚀</span>} type="submit">
                 {loading ? "Conectando..." : "Entrar no sistema"}
               </Button>
             </form>
@@ -842,30 +726,12 @@ function LoginPageInner() {
 
         {/* Links úteis */}
         <div className="mt-6 text-center">
-          <p className="text-xs text-default-500 mb-4">
-            Não tem uma conta ainda?
-          </p>
+          <p className="text-xs text-default-500 mb-4">Não tem uma conta ainda?</p>
           <div className="flex flex-col gap-2">
-            <Button
-              as={NextLink}
-              className="border-white/20 text-white"
-              href="/precos"
-              radius="full"
-              size="sm"
-              startContent={<span>💎</span>}
-              variant="bordered"
-            >
+            <Button as={NextLink} className="border-white/20 text-white" href="/precos" radius="full" size="sm" startContent={<span>💎</span>} variant="bordered">
               Ver planos disponíveis
             </Button>
-            <Button
-              as={NextLink}
-              className="text-default-400"
-              href="/about"
-              radius="full"
-              size="sm"
-              startContent={<span>ℹ️</span>}
-              variant="light"
-            >
+            <Button as={NextLink} className="text-default-400" href="/about" radius="full" size="sm" startContent={<span>ℹ️</span>} variant="light">
               Saiba mais sobre a plataforma
             </Button>
           </div>
@@ -876,9 +742,7 @@ function LoginPageInner() {
           <CardBody className="py-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">✨</span>
-              <h3 className="text-sm font-semibold text-white">
-                Recursos em destaque
-              </h3>
+              <h3 className="text-sm font-semibold text-white">Recursos em destaque</h3>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="flex items-center gap-2">
@@ -903,12 +767,7 @@ function LoginPageInner() {
 
         {/* Badge de segurança */}
         <div className="mt-6 text-center">
-          <Chip
-            color="success"
-            size="sm"
-            startContent={<span>🛡️</span>}
-            variant="flat"
-          >
+          <Chip color="success" size="sm" startContent={<span>🛡️</span>} variant="flat">
             Login 100% seguro
           </Chip>
         </div>

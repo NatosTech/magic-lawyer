@@ -80,6 +80,7 @@ async function seedTenantLuana(prisma, Prisma) {
       secondaryColor: "#F0F9FF",
       accentColor: "#3B82F6",
       logoUrl: "https://dummyimage.com/240x80/1e3a8a/ffffff&text=Luana+Morais",
+      faviconUrl: "https://dummyimage.com/32x32/1e3a8a/ffffff&text=LM",
     },
     create: {
       tenantId: tenant.id,
@@ -87,6 +88,7 @@ async function seedTenantLuana(prisma, Prisma) {
       secondaryColor: "#F0F9FF",
       accentColor: "#3B82F6",
       logoUrl: "https://dummyimage.com/240x80/1e3a8a/ffffff&text=Luana+Morais",
+      faviconUrl: "https://dummyimage.com/32x32/1e3a8a/ffffff&text=LM",
     },
   });
 

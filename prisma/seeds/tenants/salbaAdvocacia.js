@@ -34,7 +34,16 @@ async function seedSalbaAdvocacia(prisma) {
   // 2. Criar branding do tenant
   await prisma.tenantBranding.upsert({
     where: { tenantId: tenant.id },
-    update: {},
+    update: {
+      primaryColor: "#1E40AF", // Azul mais escuro para diferenciação
+      secondaryColor: "#3B82F6",
+      accentColor: "#F59E0B",
+      logoUrl: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=200&h=200&fit=crop&crop=center",
+      faviconUrl: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=32&h=32&fit=crop&crop=center",
+      emailFromName: "Salba Advocacia",
+      emailFromAddress: "noreply@salbaadvocacia.com.br",
+      customDomainText: "Portal Salba Advocacia",
+    },
     create: {
       tenantId: tenant.id,
       primaryColor: "#1E40AF", // Azul mais escuro para diferenciação

@@ -23,6 +23,7 @@ import NextLink from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 
+import Image from "next/image";
 import { useAvatar } from "@/app/hooks/use-avatar";
 import { siteConfig } from "@/config/site";
 import packageInfo from "@/package.json";
@@ -30,6 +31,7 @@ import { SignInOut } from "@/components/signinout";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import { CentralizedSearchBar } from "@/components/centralized-search-bar";
+import { Logo } from "@/components/icons";
 import { TENANT_PERMISSIONS } from "@/types";
 import { UserRole, TenantPermission } from "@/app/generated/prisma";
 
@@ -261,6 +263,22 @@ export const Navbar = ({
           ) : null}
           <NavbarBrand className="min-w-0">
             <NextLink className="flex items-center gap-2" href="/">
+              {tenantLogoUrl ? (
+                <span className="flex h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-lg border border-divider bg-content1 p-1">
+                  <Image
+                    unoptimized
+                    alt={`Logo ${tenantName}`}
+                    className="max-h-full w-full object-contain"
+                    height={32}
+                    src={tenantLogoUrl}
+                    width={32}
+                  />
+                </span>
+              ) : (
+                <span className="flex h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/15 p-2 text-primary">
+                  <Logo className="h-5 w-5 sm:h-6 sm:w-6" />
+                </span>
+              )}
               <span className="flex min-w-0 flex-col leading-tight">
                 <span
                   className={clsx(

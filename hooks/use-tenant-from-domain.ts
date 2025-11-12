@@ -47,10 +47,13 @@ function extractTenantFromDomain(host: string): string | null {
     }
   }
 
-  // Para domínios diretos: sandra.com.br
-  // Neste caso, o domínio completo é o identificador do tenant
-  if (!cleanHost.includes("magiclawyer") && !cleanHost.includes("vercel.app")) {
-    return cleanHost;
+  // Para desenvolvimento local: subdomain.localhost
+  if (cleanHost.endsWith(".localhost")) {
+    const subdomain = cleanHost.replace(".localhost", "");
+
+    if (subdomain) {
+      return subdomain; // Manter case original
+    }
   }
 
   return null;
