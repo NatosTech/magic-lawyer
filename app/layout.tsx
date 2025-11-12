@@ -1,4 +1,5 @@
 import "@/styles/globals.css";
+import { headers } from "next/headers";
 import { Metadata, Viewport } from "next";
 import clsx from "clsx";
 import { Toaster } from "sonner";
@@ -8,10 +9,13 @@ import { Providers } from "./providers";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
-import { DynamicFavicon } from "@/components/dynamic-favicon";
 import { DevInfo } from "@/components/dev-info";
+import { getTenantBrandingByHost } from "@/lib/tenant-branding";
+import { buildIconList } from "@/lib/branding-icons";
 
-export const metadata: Metadata = {
+export const dynamic = "force-dynamic";
+
+const baseMetadata: Metadata = {
   title: {
     default: siteConfig.name,
     template: `%s - ${siteConfig.name}`,
@@ -24,6 +28,30 @@ export const metadata: Metadata = {
     ],
   },
 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "";
+  const branding = await getTenantBrandingByHost(host);
+
+  const faviconUrl = branding?.faviconUrl?.trim() || null;
+  const tenantName = branding?.name?.trim() || null;
+
+  const title = tenantName
+    ? {
+        default: `${tenantName} | ${siteConfig.name}`,
+        template: `%s - ${tenantName}`,
+      }
+    : baseMetadata.title;
+
+  return {
+    ...baseMetadata,
+    title,
+    icons: {
+      icon: buildIconList(faviconUrl),
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -43,17 +71,16 @@ export default function RootLayout({
       <body
         suppressHydrationWarning
         className={clsx(
-          "min-h-screen text-foreground bg-background font-sans antialiased",
-          fontSans.variable,
-        )}
-      >
-        <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-          <DynamicFavicon />
-          {children}
-          <DevInfo />
-          <Toaster richColors position="top-right" />
-          <Analytics />
-        </Providers>
+        "min-h-screen text-foreground bg-background font-sans antialiased",
+        fontSans.variable,
+      )}
+    >
+      <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
+        {children}
+        <DevInfo />
+        <Toaster richColors position="top-right" />
+        <Analytics />
+      </Providers>
       </body>
     </html>
   );

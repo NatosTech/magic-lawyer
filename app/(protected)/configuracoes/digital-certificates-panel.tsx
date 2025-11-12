@@ -137,11 +137,11 @@ export function DigitalCertificatesPanel({
   const [formErrors, setFormErrors] = useState<string | null>(null);
 
   const activeCertificate = useMemo(
-    () => certificates.find((cert) => cert.isActive),
+    () => (Array.isArray(certificates) ? certificates.find((cert) => cert.isActive) : undefined),
     [certificates],
   );
 
-  const hasCertificates = certificates.length > 0;
+  const hasCertificates = Array.isArray(certificates) && certificates.length > 0;
 
   const [formState, setFormState] = useState({
     file: null as File | null,

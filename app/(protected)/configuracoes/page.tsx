@@ -37,7 +37,7 @@ export default async function ConfiguracoesPage() {
     redirect("/dashboard");
   }
 
-  const { tenant, branding, subscription, modules, metrics } =
+  const { tenant, branding, subscription, modules, metrics, digitalCertificates } =
     tenantData.data;
 
   return (
@@ -61,6 +61,7 @@ export default async function ConfiguracoesPage() {
         modules={modules}
         subscription={subscription}
         tenant={tenant}
+        certificates={digitalCertificates}
       />
     </section>
   );

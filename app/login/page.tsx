@@ -17,7 +17,7 @@ import { Logo } from "@/components/icons";
 import { useTenantFromDomain } from "@/hooks/use-tenant-from-domain";
 import { DevInfo } from "@/components/dev-info";
 import { LogIn } from "lucide-react";
-import { getTenantBrandingFromDomain } from "@/app/actions/tenant-branding";
+import { fetchTenantBrandingFromDomain } from "@/lib/fetchers/tenant-branding";
 
 function LoginPageInner() {
   const params = useSearchParams();
@@ -30,10 +30,15 @@ function LoginPageInner() {
   const [loading, setLoading] = useState(false);
 
   // Buscar branding do tenant pelo domínio
-  const { data: tenantBranding } = useSWR("tenant-branding-from-domain", getTenantBrandingFromDomain, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-  });
+  const { data: tenantBranding } = useSWR(
+    "tenant-branding-from-domain",
+    fetchTenantBrandingFromDomain,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
+    }
+  );
 
   const tenantLogoUrl = tenantBranding?.success ? tenantBranding.data?.logoUrl : null;
   const tenantName = tenantBranding?.success ? tenantBranding.data?.name : null;

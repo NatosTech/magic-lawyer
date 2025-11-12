@@ -82,7 +82,7 @@ interface MetricsProps {
 }
 
 interface DigitalCertificatesProps {
-  certificates: Array<{
+  certificates?: Array<{
     id: string;
     tenantId: string;
     responsavelUsuarioId: string | null;
@@ -441,7 +441,7 @@ export function ConfiguracoesTabs({
         }
       >
         <div className="mt-6">
-          <DigitalCertificatesPanel certificates={certificates} />
+          <DigitalCertificatesPanel certificates={certificates ?? []} />
         </div>
       </Tab>
     </Tabs>
