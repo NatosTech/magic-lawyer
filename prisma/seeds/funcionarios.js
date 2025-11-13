@@ -205,8 +205,8 @@ async function seedFuncionarios(prisma, Prisma) {
           phone: "+55 11 94000-1122",
           role: "SECRETARIA",
           cargo: {
-            nome: "Secretária Assistente",
-            descricao: "Responsável por apoiar a Dra. Sandra em agenda, recepção e registros básicos.",
+            nome: "Secretária Executiva",
+            descricao: "Responsável pela agenda e comunicação com clientes.",
             nivel: 2,
           },
           perfil: {

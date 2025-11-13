@@ -288,8 +288,6 @@ Funcionalidades planejadas:
 - [ ] Marketplace de templates
 - [ ] API pública para integrações
 - [ ] Sistema de workflow personalizável
-- [ ] Integração oficial com Meta WhatsApp Cloud API para notificações e atendimento
-- [ ] Integração direta com ClickSign para coleta de assinaturas eletrônicas
 
 ---
 

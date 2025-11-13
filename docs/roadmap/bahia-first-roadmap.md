@@ -49,11 +49,6 @@
 
 **Custo transacional**: WhatsApp R$ 0,08–0,25/msg, SMS R$ 0,05–0,12/msg ( repassável).
 
-### Integrações priorizadas
-
-- [ ] **Meta WhatsApp Cloud API** — webhook, templates oficializados e roteamento automático de conversas para deadlines e atualizações de clientes.
-- [ ] **ClickSign** — sincronizar envelopes, status e documentos assinados diretamente com contratos e procurações do Magic Lawyer.
-
 ---
 
 ## Fase 4 — Assinatura & Procuração Digital · 30–60 dias
