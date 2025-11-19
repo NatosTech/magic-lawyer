@@ -207,8 +207,206 @@ async function seedSalbaAdvocacia(prisma) {
   // Clientes não têm permissões especiais (apenas acesso básico)
   console.log("✅ Clientes criados com acesso básico");
 
-  // 6. Processos serão criados posteriormente quando necessário
-  console.log("✅ Estrutura básica criada - processos podem ser adicionados via interface");
+  // 6. Criar registros completos (clientes, advogados, processos, eventos)
+  const adminUsuario = usuariosCriados.find((u) => u.email === "luciano@salbaadvocacia.com.br");
+  const marianaUsuario = usuariosCriados.find((u) => u.email === "mariana@salbaadvocacia.com.br");
+  const pedroUsuario = usuariosCriados.find((u) => u.email === "pedro@salbaadvocacia.com.br");
+  const clienteUsuarios = [
+    {
+      usuario: usuariosCriados.find((u) => u.email === "joao.silva@email.com"),
+      nome: "João Silva",
+      documento: "123.456.789-00",
+      telefone: "(11) 98888-1111",
+    },
+    {
+      usuario: usuariosCriados.find((u) => u.email === "maria.oliveira@email.com"),
+      nome: "Maria Oliveira",
+      documento: "321.654.987-00",
+      telefone: "(11) 97777-2222",
+    },
+    {
+      usuario: usuariosCriados.find((u) => u.email === "carlos.pereira@email.com"),
+      nome: "Carlos Pereira",
+      documento: "555.444.333-22",
+      telefone: "(11) 96666-3333",
+    },
+  ].filter((item) => item.usuario);
+
+  const clientesCriados = [];
+  for (const clienteInfo of clienteUsuarios) {
+    const cliente = await prisma.cliente.upsert({
+      where: {
+        tenantId_documento: {
+          tenantId: tenant.id,
+          documento: clienteInfo.documento,
+        },
+      },
+      update: {
+        nome: clienteInfo.nome,
+        email: clienteInfo.usuario.email,
+        telefone: clienteInfo.telefone,
+      },
+      create: {
+        tenantId: tenant.id,
+        usuarioId: clienteInfo.usuario.id,
+        nome: clienteInfo.nome,
+        documento: clienteInfo.documento,
+        email: clienteInfo.usuario.email,
+        telefone: clienteInfo.telefone,
+        tipoPessoa: "FISICA",
+      },
+      include: {
+        usuario: true,
+      },
+    });
+    clientesCriados.push(cliente);
+  }
+
+  const advogadosCriados = [];
+  const advUsuarios = [marianaUsuario, pedroUsuario].filter(Boolean);
+  for (const advogadoUsuario of advUsuarios) {
+    const especialidades =
+      advogadoUsuario.email === "mariana@salbaadvocacia.com.br"
+        ? ["TRABALHISTA", "FAMILIA"]
+        : ["EMPRESARIAL", "CIVIL"];
+    const advogado = await prisma.advogado.upsert({
+      where: { usuarioId: advogadoUsuario.id },
+      update: {
+        tenantId: tenant.id,
+        oabNumero: advogadoUsuario.email === "mariana@salbaadvocacia.com.br" ? "98765" : "11223",
+        oabUf: "SP",
+        especialidades,
+        telefone: "(11) 4000-7000",
+      },
+      create: {
+        tenantId: tenant.id,
+        usuarioId: advogadoUsuario.id,
+        oabNumero: advogadoUsuario.email === "mariana@salbaadvocacia.com.br" ? "98765" : "11223",
+        oabUf: "SP",
+        especialidades,
+        telefone: "(11) 4000-7000",
+      },
+      include: {
+        usuario: true,
+      },
+    });
+    advogadosCriados.push(advogado);
+  }
+
+  const processoConsultoria = await prisma.processo.upsert({
+    where: {
+      tenantId_numero: {
+        tenantId: tenant.id,
+        numero: "1054323-88.2024.8.26.0100",
+      },
+    },
+    update: {
+      titulo: "Ação de Rescisão Contratual - João Silva x InovaTech",
+      status: "EM_ANDAMENTO",
+    },
+    create: {
+      tenantId: tenant.id,
+      numero: "1054323-88.2024.8.26.0100",
+      titulo: "Ação de Rescisão Contratual - João Silva x InovaTech",
+      descricao: "Processo trabalhista envolvendo desligamento e verbas rescisórias.",
+      status: "EM_ANDAMENTO",
+      areaId: null,
+      classeProcessual: "Trabalhista",
+      foro: "São Paulo / SP",
+      clienteId: clientesCriados[0]?.id,
+      advogadoResponsavelId: advogadosCriados[0]?.id,
+      valorCausa: 75000,
+      segredoJustica: false,
+    },
+  });
+
+  const processoConsultivo = await prisma.processo.upsert({
+    where: {
+      tenantId_numero: {
+        tenantId: tenant.id,
+        numero: "2099881-32.2024.8.26.0100",
+      },
+    },
+    update: {
+      titulo: "Planejamento societário - Maria Oliveira",
+      status: "EM_ANDAMENTO",
+    },
+    create: {
+      tenantId: tenant.id,
+      numero: "2099881-32.2024.8.26.0100",
+      titulo: "Planejamento societário - Maria Oliveira",
+      descricao: "Assessoria completa para abertura de filial e reorganização contratual.",
+      status: "EM_ANDAMENTO",
+      clienteId: clientesCriados[1]?.id,
+      advogadoResponsavelId: advogadosCriados[1]?.id,
+      areaId: null,
+      classeProcessual: "Consultivo Empresarial",
+      foro: "São Paulo / SP",
+      valorCausa: 0,
+    },
+  });
+
+  await prisma.tarefa.createMany({
+    data: [
+      {
+        tenantId: tenant.id,
+        titulo: "Revisar cálculos rescisórios",
+        descricao: "Conferir valores e preparar planilha para audiência.",
+        status: "EM_ANDAMENTO",
+        responsavelId: advogadosCriados[0]?.usuarioId,
+        prazo: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        processoId: processoConsultoria.id,
+      },
+      {
+        tenantId: tenant.id,
+        titulo: "Reunião com cliente Maria",
+        descricao: "Alinhar documentos para reorganização societária.",
+        status: "PENDENTE",
+        responsavelId: advogadosCriados[1]?.usuarioId,
+        prazo: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+        processoId: processoConsultivo.id,
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  await prisma.evento.createMany({
+    data: [
+      {
+        id: `evento-salba-1`,
+        tenantId: tenant.id,
+        titulo: "Audiência Inicial - João Silva",
+        descricao: "Audiência de conciliação na 15ª Vara do Trabalho/SP.",
+        tipo: "AUDIENCIA",
+        status: "AGENDADO",
+        dataInicio: new Date("2025-02-10T10:00:00-03:00"),
+        dataFim: new Date("2025-02-10T11:00:00-03:00"),
+        local: "Fórum Trabalhista Ruy Barbosa",
+        processoId: processoConsultoria.id,
+        clienteId: clientesCriados[0]?.id,
+        advogadoResponsavelId: advogadosCriados[0]?.id,
+        lembreteMinutos: 60,
+      },
+      {
+        id: `evento-salba-2`,
+        tenantId: tenant.id,
+        titulo: "Workshop interno sobre holding familiar",
+        descricao: "Equipe discute estrutura proposta para a cliente Maria.",
+        tipo: "REUNIAO",
+        status: "CONFIRMADO",
+        dataInicio: new Date("2025-01-30T16:00:00-03:00"),
+        dataFim: new Date("2025-01-30T17:30:00-03:00"),
+        local: "Sede Salba Advocacia - Sala 3",
+        processoId: processoConsultivo.id,
+        clienteId: clientesCriados[1]?.id,
+        advogadoResponsavelId: advogadosCriados[1]?.id,
+        lembreteMinutos: 30,
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  console.log("✅ Casos reais, tarefas e eventos criados para Salba Advocacia");
 
   // 7. Áreas de processo já são criadas no seed básico
   console.log("✅ Áreas de processo disponíveis via seed básico");

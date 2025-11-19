@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, type ReactNode, useState, useEffect } from "react";
+import {
+  useMemo,
+  type ReactNode,
+  useState,
+  useEffect,
+  useTransition,
+} from "react";
 import Image from "next/image";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
@@ -23,11 +29,12 @@ import { Tooltip } from "@heroui/react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
+import { fetchSystemStatus } from "@/app/actions/system-status";
+import type { ExternalServiceStatus } from "@/app/actions/system-status";
 import { NotificationCenter } from "@/components/notifications/notification-center";
 import { Logo } from "@/components/icons";
 
 const navIconStroke = 1.6;
-
 type IconProps = {
   size?: number;
 };
@@ -894,7 +901,81 @@ function SidebarContent({
   isDesktop: boolean;
   onCloseMobile?: () => void;
 }) {
+  const { data: session } = useSession();
   const pathname = usePathname();
+  const isSuperAdmin = (session?.user as any)?.role === "SUPER_ADMIN";
+  const shouldFetchStatus = isSuperAdmin;
+  const showStatusPanel = shouldFetchStatus && !collapsed;
+  const [serviceStatus, setServiceStatus] = useState<{
+    loading: boolean;
+    items: ExternalServiceStatus[];
+    error?: string;
+    checkedAt?: string;
+  }>({
+    loading: false,
+    items: [],
+  });
+  const [isFetchingStatus, startStatusTransition] = useTransition();
+
+  useEffect(() => {
+    if (!shouldFetchStatus) {
+      return;
+    }
+
+    let active = true;
+
+    setServiceStatus((prev) => ({
+      ...prev,
+      loading: true,
+      error: undefined,
+    }));
+
+    startStatusTransition(() => {
+      fetchSystemStatus()
+        .then((result) => {
+          if (!active) return;
+
+          if (!result.success) {
+            setServiceStatus({
+              loading: false,
+              items: [],
+              error: result.error ?? "Falha ao consultar status",
+            });
+
+            return;
+          }
+
+          setServiceStatus({
+            loading: false,
+            items: Array.isArray(result.services) ? result.services : [],
+            checkedAt: new Date().toISOString(),
+          });
+        })
+        .catch((error) => {
+          if (!active) return;
+
+          setServiceStatus((prev) => ({
+            ...prev,
+            loading: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : "Falha ao consultar status",
+          }));
+        });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [shouldFetchStatus]);
+
+  const lastCheckedLabel = serviceStatus.checkedAt
+    ? new Date(serviceStatus.checkedAt).toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
 
   const sections = useMemo(() => {
     // Agrupar itens principais por seção
@@ -1098,6 +1179,61 @@ function SidebarContent({
             )}
           </div>
         ))}
+
+        {showStatusPanel ? (
+          <div className="rounded-2xl border border-success-200/30 bg-success-50/10 p-4 text-sm text-default-500">
+            <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.35em] text-success-200">
+              <div className="flex items-center gap-2">
+                <span>Status</span>
+                <Tooltip
+                  content="Testamos cada serviço chamando diretamente a API com as credenciais reais do sistema."
+                  placement="right"
+                  showArrow
+                >
+                  <span className="flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-success-200/50 text-[10px] text-success-50">
+                    ?
+                  </span>
+                </Tooltip>
+              </div>
+              {serviceStatus.loading ? (
+                <span className="text-warning-400">Checando…</span>
+              ) : lastCheckedLabel ? (
+                <span className="text-default-400">{lastCheckedLabel}</span>
+              ) : null}
+            </div>
+            {serviceStatus.error ? (
+              <p className="mt-2 text-xs text-danger-400">
+                {serviceStatus.error}
+              </p>
+            ) : serviceStatus.loading ? (
+              <p className="mt-2 text-xs text-default-400">
+                Validando integrações…
+              </p>
+            ) : serviceStatus.items.length === 0 ? (
+              <p className="mt-2 text-xs text-default-400">
+                Nenhuma verificação registrada.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {serviceStatus.items.map((service) => (
+                  <li
+                    key={service.id}
+                    className="flex items-center justify-between text-[13px]"
+                  >
+                    <span className="text-default-600">{service.name}</span>
+                    <span
+                      className={
+                        service.ok ? "text-success-400" : "text-danger-400"
+                      }
+                    >
+                      {service.ok ? "Conectado" : "Falhou"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
       </div>
 
       {isDesktop ? (

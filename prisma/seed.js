@@ -38,6 +38,74 @@ const { seedFuncionarios } = require("./seeds/funcionarios");
 
 const prisma = new PrismaClient();
 
+const TENANT_CREDENTIAL_SUMMARIES = [
+  {
+    name: "Sandra Advocacia",
+    slug: "sandra",
+    accessUrl: "http://localhost:9192/login",
+    credentials: [
+      "👑 ADMIN: sandra@adv.br / Sandra@123",
+      "⚖️ ADVOGADO: ricardo@sandraadv.br / Advogado@123",
+      "⚖️ ADVOGADO: fernanda@sandraadv.br / Advogado@123",
+      "👤 CLIENTE: cliente@sandraadv.br / Cliente@123",
+      "👤 CLIENTE: ana@sandraadv.br / Cliente@123",
+      "👤 CLIENTE: magiclawyersaas@gmail.com / Robson123!",
+      "👤 CLIENTE: inova@sandraadv.br / Cliente@123",
+    ],
+  },
+  {
+    name: "Luana Morais Advocacia",
+    slug: "luana",
+    accessUrl: "http://localhost:9192/login",
+    credentials: [
+      "👑 ADMIN: luana@adv.br / Luana@123",
+      "⚖️ ADVOGADO: gabriel@luanamorais.adv.br / Advogado@123",
+      "⚖️ ADVOGADO: juliana@luanamorais.adv.br / Advogado@123",
+      "👤 CLIENTE: paulo@luanamorais.adv.br / Cliente@123",
+      "👤 CLIENTE: maria@luanamorais.adv.br / Cliente@123",
+      "👤 CLIENTE: tech@luanamorais.adv.br / Cliente@123",
+    ],
+  },
+  {
+    name: "Salba Advocacia",
+    slug: "salba",
+    accessUrl: "http://localhost:9192/login",
+    credentials: [
+      "👑 ADMIN: luciano@salbaadvocacia.com.br / Luciano@123",
+      "⚖️ ADVOGADA: mariana@salbaadvocacia.com.br / Mariana@123",
+      "⚖️ ADVOGADO: pedro@salbaadvocacia.com.br / Pedro@123",
+      "👤 CLIENTE: joao.silva@email.com / Cliente1@123",
+      "👤 CLIENTE: maria.oliveira@email.com / Cliente2@123",
+      "👤 CLIENTE: carlos.pereira@email.com / Cliente3@123",
+    ],
+  },
+  {
+    name: "Frederico Leitão Advocacia",
+    slug: "fred",
+    accessUrl: "http://localhost:9192/login",
+    credentials: [
+      "👑 ADMIN: fredericopleitaoadv@gmail.com / Fred@123",
+      "⚖️ ADVOGADO: associado@fred.magiclawyer.com.br / Advogado@123",
+      "🗂️ SECRETARIA: secretaria@fred.magiclawyer.com.br / Funcionario@123",
+      "👤 CLIENTE: cliente.demo@fred.magiclawyer.com.br / Cliente@123",
+    ],
+  },
+];
+
+function printTenantCredentialSummary() {
+  console.log("\n============================");
+  console.log("📋 Visão geral de credenciais por tenant");
+  console.log("============================\n");
+
+  for (const tenant of TENANT_CREDENTIAL_SUMMARIES) {
+    console.log(`🏢 Tenant: ${tenant.name} (slug: ${tenant.slug})`);
+    console.log(`🔗 Acesso: ${tenant.accessUrl}`);
+    console.log("Credenciais de teste:");
+    tenant.credentials.forEach((line) => console.log(`   • ${line}`));
+    console.log("");
+  }
+}
+
 async function main() {
   console.log("🌱 Iniciando seed do banco de dados...\n");
 
@@ -274,6 +342,8 @@ async function main() {
     console.error("⚠️  Erro no seed de notificações:", error.message);
     console.log("   O sistema de notificações será configurado na próxima execução");
   }
+
+  printTenantCredentialSummary();
 
   console.log("\n🎉 Seed concluído com sucesso!");
   console.log("🚀 Sistema enterprise-grade pronto para produção!");

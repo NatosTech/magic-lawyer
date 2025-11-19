@@ -18,9 +18,16 @@ async function seedDadosFinanceiros(prisma) {
       return true;
     }
 
+    const planoUltra =
+      planos.find((plano) => plano.slug === "ultra" || plano.nome === "Ultra") ??
+      planos[planos.length - 1];
+    const tenantsUltra = new Set(["fred", "sandra", "salba"]);
+
     // Criar assinaturas para os tenants
     for (const tenant of tenants) {
-      const plano = planos[Math.floor(Math.random() * planos.length)];
+      const plano = tenantsUltra.has(tenant.slug.toLowerCase())
+        ? planoUltra
+        : planos[Math.floor(Math.random() * planos.length)];
       const versaoPublicada = await prisma.planoVersao.findFirst({
         where: {
           planoId: plano.id,

@@ -183,14 +183,14 @@ async function seedTenantFred(prisma) {
         tenantId: tenant.id,
         oabNumero: "123456",
         oabUf: "SP",
-        especialidades: ["CRIMINAL", "PENAL"],
+        especialidades: ["CRIMINAL", "CONSUMIDOR"],
       },
       create: {
         tenantId: tenant.id,
         usuarioId: advogado.id,
         oabNumero: "123456",
         oabUf: "SP",
-        especialidades: ["CRIMINAL", "PENAL"],
+        especialidades: ["CRIMINAL", "CONSUMIDOR"],
       },
     });
     console.log("✅ Perfil de advogado criminal criado para Ana");
@@ -207,14 +207,14 @@ async function seedTenantFred(prisma) {
         },
       },
       update: {
-        nomeCompleto: "Cliente Demo",
+        nome: "Cliente Demo",
         email: cliente.email,
         telefone: "(11) 91111-2222",
       },
       create: {
         tenantId: tenant.id,
         usuarioId: cliente.id,
-        nomeCompleto: "Cliente Demo",
+        nome: "Cliente Demo",
         documento: "123.456.789-00",
         email: cliente.email,
         telefone: "(11) 91111-2222",
@@ -454,6 +454,7 @@ async function seedTenantFred(prisma) {
   console.log("\n📋 Credenciais de teste (tenant Fred):");
   console.log("👑 ADMIN: fredericopleitaoadv@gmail.com / Fred@123");
   console.log("⚖️ ADVOGADO: associado@fred.magiclawyer.com.br / Advogado@123");
+  console.log("🗂️ SECRETARIA: secretaria@fred.magiclawyer.com.br / Funcionario@123");
   console.log("👤 CLIENTE: cliente.demo@fred.magiclawyer.com.br / Cliente@123");
   console.log("🏢 Slug do tenant: fred");
 
