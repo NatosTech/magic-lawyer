@@ -19,6 +19,7 @@ const seedModulos = require("./seeds/modulos");
 const { seedTenantSandra } = require("./seeds/tenants/tenantSandra");
 const { seedTenantLuana } = require("./seeds/tenants/tenantLuana");
 const { seedSalbaAdvocacia } = require("./seeds/tenants/salbaAdvocacia");
+const { seedTenantFred } = require("./seeds/tenants/tenantFred");
 const { seedEventos } = require("./seeds/eventos");
 const { seedJuizes } = require("./seeds/juizes");
 const { seedSuperAdmin } = require("./seeds/superAdmin");
@@ -92,6 +93,7 @@ async function main() {
     await seedTenantSandra(prisma, Prisma);
     await seedTenantLuana(prisma, Prisma);
     await seedSalbaAdvocacia(prisma);
+    await seedTenantFred(prisma);
     await seedFuncionarios(prisma, Prisma);
   } catch (error) {
     console.warn("⚠️ Tenants já criados:", error.message);

@@ -203,13 +203,13 @@ export function PermissoesNegadasTable() {
               });
             }}
           >
-            <SelectItem key="override" value="override">
+            <SelectItem key="override" textValue="override">
               Override
             </SelectItem>
-            <SelectItem key="cargo" value="cargo">
+            <SelectItem key="cargo" textValue="cargo">
               Cargo
             </SelectItem>
-            <SelectItem key="role" value="role">
+            <SelectItem key="role" textValue="role">
               Role
             </SelectItem>
           </Select>

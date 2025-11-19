@@ -14,6 +14,7 @@ Guia de configuração inicial e integrações externas:
 Documentação detalhada de cada funcionalidade:
 - **Notifications** - Sistema completo de notificações push
 - **Tenant Dashboard Enhancements** - Melhorias e funcionalidades do dashboard do tenant
+- **Novo Acervo** - [FAB_NOVO_ACERVO_CHECKLIST.md](./features/novo-acervo/FAB_NOVO_ACERVO_CHECKLIST.md) descreve o botão flutuante, modal “Novo Acervo” e pipeline de OCR/IA com checklist passo a passo
 
 ### 🏗️ [Arquitetura](./architecture/)
 Documentação técnica de arquitetura e estrutura:
@@ -24,6 +25,7 @@ Documentação técnica de arquitetura e estrutura:
 Documentação de serviços externos e configurações:
 - Cloudinary (armazenamento de arquivos)
 - Cron Jobs (tarefas agendadas)
+- Portal Comunica PJe (https://comunica.pje.jus.br/) e API Comunica PJe (https://comunicaapi.pje.jus.br/swagger/index.html#/), utilizadas para integração com o sistema PJe
 
 ### 🐛 [Correções](./fixes/)
 Registro de correções de bugs e problemas:
@@ -64,4 +66,3 @@ Para começar, veja:
 ---
 
 **Última atualização:** Organização completa da documentação em estrutura modular
-

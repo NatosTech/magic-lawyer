@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 
 import prisma from "@/app/lib/prisma";
 import {
+  Prisma,
   ContratoParcelaStatus,
   ContratoStatus,
   DocumentoAssinaturaStatus,

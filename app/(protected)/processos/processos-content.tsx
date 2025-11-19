@@ -29,6 +29,7 @@ import {
   MapPin,
   Shield,
   Building2,
+  Copy,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -41,6 +42,7 @@ import {
   ProcessoGrau,
 } from "@/app/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
+import { addToast } from "@heroui/toast";
 
 interface ProcessoFiltros {
   busca: string;
@@ -81,6 +83,30 @@ export function ProcessosContent() {
   });
 
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+
+  const copiarNumeroProcesso = async (numero: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    try {
+      await navigator.clipboard.writeText(numero);
+      addToast({
+        title: "Número copiado!",
+        description: `O número do processo "${numero}" foi copiado para a área de transferência.`,
+        color: "success",
+        timeout: 3000,
+      });
+    } catch (error) {
+      addToast({
+        title: "Erro ao copiar",
+        description: "Não foi possível copiar o número do processo.",
+        color: "danger",
+        timeout: 3000,
+      });
+    }
+  };
 
   const getStatusColor = (status: ProcessoStatus) => {
     switch (status) {
@@ -842,9 +868,26 @@ export function ProcessosContent() {
                     )}
                   </div>
                   <div className="w-full">
-                    <p className="text-sm font-semibold text-default-700">
-                      {processo.numero}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-default-700">
+                        {processo.numero}
+                      </p>
+                      <Button
+                        isIconOnly
+                        aria-label="Copiar número do processo"
+                        className="min-w-6 h-6 w-6"
+                        size="sm"
+                        variant="light"
+                        onPress={() => copiarNumeroProcesso(processo.numero)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          copiarNumeroProcesso(processo.numero, e);
+                        }}
+                      >
+                        <Copy className="h-3.5 w-3.5 text-default-400 hover:text-primary transition-colors" />
+                      </Button>
+                    </div>
                     {processo.numeroCnj && (
                       <p className="mt-0.5 text-xs text-default-500">
                         CNJ: {processo.numeroCnj}

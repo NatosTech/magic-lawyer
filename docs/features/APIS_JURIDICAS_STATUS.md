@@ -227,6 +227,8 @@ app/api/
 3. Criar serviços base para autenticação
 4. Criar helpers de normalização
 
+> 🔎 **Observação importante:** a API do Jusbrasil provavelmente já cobre grande parte (ou até a totalidade) das necessidades de consulta de jurisprudência e movimentações, então deve ser avaliada como fornecedora principal antes de implementar integrações mais complexas diretamente com múltiplas APIs de tribunais.
+
 ### Fase 2: Integração PJe (Prioridade Alta - 3-5 dias)
 1. Implementar autenticação PJe com certificado A1
 2. Criar serviço de consulta de processos
@@ -305,4 +307,3 @@ ls -la lib/api/juridical/ 2>/dev/null || echo "❌ Pasta não existe"
 
 **Última Atualização:** 05/11/2024  
 **Próxima Revisão:** Após implementação do scraping real
-

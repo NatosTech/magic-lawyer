@@ -25,9 +25,9 @@ export async function POST(request: Request) {
       case "createTenant": {
         const tenant = await prisma.tenant.create({
           data: {
-            nome: data.nome || "Test Tenant",
+            name: data.nome || "Test Tenant",
             slug: data.slug || `test-tenant-${Date.now()}`,
-            status: "ATIVO",
+            status: "ACTIVE",
           },
         });
 

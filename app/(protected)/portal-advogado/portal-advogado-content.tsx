@@ -39,8 +39,10 @@ export function PortalAdvogadoContent() {
     Awaited<ReturnType<typeof getTribunaisPorUF>>,
     Error
   >(
-    ufSelecionada ? [`portal-advogado-tribunais`, ufSelecionada] : null,
-    async ([, uf]) => {
+    ufSelecionada
+      ? (["portal-advogado-tribunais", ufSelecionada] as const)
+      : null,
+    async ([, uf]: readonly [string, string]) => {
       return await getTribunaisPorUF(uf);
     },
   );

@@ -66,11 +66,11 @@ export async function capturarProcesso(
       resultado = await consultarPJe({
         numeroProcesso,
         tribunalId,
-        certificadoId,
+        certificadoId: certificadoId || undefined,
       });
     } else if (tribunalConfig?.scrapingDisponivel) {
       // Usar web scraping
-      resultado = await consultarProcesso(numeroProcesso, sigla);
+      resultado = await consultarProcesso(numeroProcesso, sigla || undefined);
     } else {
       return {
         success: false,
@@ -127,7 +127,6 @@ export async function capturarAndamentos(
     tempoResposta: resultado.tempoResposta,
   };
 }
-
 
 
 

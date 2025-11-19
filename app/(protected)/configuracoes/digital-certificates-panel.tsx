@@ -282,7 +282,10 @@ export function DigitalCertificatesPanel({
           id: item.id,
           action: item.action,
           message: item.message ?? null,
-          createdAt: item.createdAt,
+          createdAt:
+            typeof item.createdAt === "string"
+              ? item.createdAt
+              : new Date(item.createdAt).toISOString(),
           actor: item.actor,
         })),
       );
@@ -299,7 +302,7 @@ export function DigitalCertificatesPanel({
   const statusChip = (certificate: CertificateSummary) => {
     if (certificate.isActive) {
       return (
-        <Chip color="success" size="sm" variant="dot">
+        <Chip color="success" size="sm" variant="flat">
           Ativo
         </Chip>
       );
@@ -310,16 +313,16 @@ export function DigitalCertificatesPanel({
       new Date(certificate.validUntil).getTime() < Date.now()
     ) {
       return (
-        <Chip color="danger" size="sm" variant="dot">
+        <Chip color="danger" size="sm" variant="flat">
           Expirado
         </Chip>
       );
     }
 
     return (
-      <Chip color="warning" size="sm" variant="dot">
-        Inativo
-      </Chip>
+        <Chip color="warning" size="sm" variant="flat">
+          Inativo
+        </Chip>
     );
   };
 
@@ -352,12 +355,12 @@ export function DigitalCertificatesPanel({
                   : "Nenhum certificado ativo"}
               </Badge>
               {activeCertificate?.validUntil && (
-                <Badge color="warning" variant="dot">
+                <Badge color="warning" variant="flat">
                   Válido até {formatDate(activeCertificate.validUntil)}
                 </Badge>
               )}
               {activeCertificate?.lastValidatedAt && (
-                <Badge color="primary" variant="dot">
+                <Badge color="primary" variant="flat">
                   Último teste: {formatDate(activeCertificate.lastValidatedAt)}
                 </Badge>
               )}

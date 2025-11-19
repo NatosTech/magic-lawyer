@@ -630,6 +630,9 @@ export async function protocolarPeticao(
 export async function getDashboardPeticoes() {
   try {
     const tenantId = await getTenantId();
+    const wherePeticoes: Prisma.PeticaoWhereInput = {
+      tenantId,
+    };
 
     // Total de petições
     const total = await prisma.peticao.count({

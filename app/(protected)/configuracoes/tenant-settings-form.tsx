@@ -61,16 +61,16 @@ export function TenantSettingsForm({ initialData }: TenantSettingsFormProps) {
         updatePayload.name = formData.name;
       }
       if (formData.email !== (initialData.email || "")) {
-        updatePayload.email = formData.email || null;
+        updatePayload.email = formData.email || undefined;
       }
       if (formData.telefone !== (initialData.telefone || "")) {
-        updatePayload.telefone = formData.telefone || null;
+        updatePayload.telefone = formData.telefone || undefined;
       }
       if (formData.razaoSocial !== (initialData.razaoSocial || "")) {
-        updatePayload.razaoSocial = formData.razaoSocial || null;
+        updatePayload.razaoSocial = formData.razaoSocial || undefined;
       }
       if (formData.nomeFantasia !== (initialData.nomeFantasia || "")) {
-        updatePayload.nomeFantasia = formData.nomeFantasia || null;
+        updatePayload.nomeFantasia = formData.nomeFantasia || undefined;
       }
       if (formData.timezone !== initialData.timezone) {
         updatePayload.timezone = formData.timezone;

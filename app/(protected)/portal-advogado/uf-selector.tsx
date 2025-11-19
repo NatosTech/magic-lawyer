@@ -141,9 +141,9 @@ export function UFSelector({
         const labelText = `${uf} - ${UF_LABELS[uf] || uf}`;
 
         return (
-          <SelectItem key={uf} textValue={labelText} value={uf}>
+          <SelectItem key={uf} textValue={labelText}>
             {labelText}
-        </SelectItem>
+          </SelectItem>
         );
       })}
     </Select>

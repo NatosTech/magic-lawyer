@@ -18,6 +18,7 @@ import { useTenantFromDomain } from "@/hooks/use-tenant-from-domain";
 import { DevInfo } from "@/components/dev-info";
 import { LogIn } from "lucide-react";
 import { fetchTenantBrandingFromDomain } from "@/lib/fetchers/tenant-branding";
+import { getDevQuickLogins } from "@/app/actions/tenant-domains";
 
 function LoginPageInner() {
   const params = useSearchParams();
@@ -423,80 +424,8 @@ function LoginPageInner() {
 
     const host = window.location.host;
 
-    if (host === "sandra.localhost:9192") {
-      setDevQuickLogins([
-        {
-          group: "Sandra Advocacia",
-          description: "Apenas para desenvolvimento local",
-          options: [
-            {
-              name: "Sandra (Admin)",
-              roleLabel: "ADMIN",
-              email: "sandra@adv.br",
-              password: "Sandra@123",
-              tenant: "sandra",
-              chipColor: "danger",
-            },
-            {
-              name: "Jaqueline (Secretaria)",
-              roleLabel: "SECRETARIA",
-              email: "jaqueline.souza@sandraadv.br",
-              password: "Funcionario@123",
-              tenant: "sandra",
-              chipColor: "secondary",
-            },
-            {
-              name: "Ricardo (Advogado)",
-              roleLabel: "ADVOGADO",
-              email: "ricardo@sandraadv.br",
-              password: "Advogado@123",
-              tenant: "sandra",
-              chipColor: "primary",
-            },
-            {
-              name: "Fernanda (Advogada)",
-              roleLabel: "ADVOGADA",
-              email: "fernanda@sandraadv.br",
-              password: "Advogado@123",
-              tenant: "sandra",
-              chipColor: "primary",
-            },
-            {
-              name: "Marcos (Cliente)",
-              roleLabel: "CLIENTE",
-              email: "cliente@sandraadv.br",
-              password: "Cliente@123",
-              tenant: "sandra",
-              chipColor: "success",
-            },
-            {
-              name: "Ana (Cliente)",
-              roleLabel: "CLIENTE",
-              email: "ana@sandraadv.br",
-              password: "Cliente@123",
-              tenant: "sandra",
-              chipColor: "success",
-            },
-            {
-              name: "Carlos (Cliente Inova)",
-              roleLabel: "CLIENTE",
-              email: "inova@sandraadv.br",
-              password: "Cliente@123",
-              tenant: "sandra",
-              chipColor: "success",
-            },
-            {
-              name: "Robson Nonato (Cliente)",
-              roleLabel: "CLIENTE",
-              email: "magiclawyersaas@gmail.com",
-              password: "Robson123!",
-              tenant: "sandra",
-              chipColor: "success",
-            },
-          ],
-        },
-      ]);
-    } else if (host === "localhost:9192") {
+    // Para localhost:9192 (Super Admin), manter hardcoded
+    if (host === "localhost:9192") {
       setDevQuickLogins([
         {
           group: "Super Admins",
@@ -519,9 +448,36 @@ function LoginPageInner() {
           ],
         },
       ]);
-    } else {
-      setDevQuickLogins([]);
+
+      return;
     }
+
+    // Para outros tenants, buscar do banco de dados
+    getDevQuickLogins(host)
+      .then((result) => {
+        if (result.success && result.tenant && result.usuarios && result.usuarios.length > 0) {
+          setDevQuickLogins([
+            {
+              group: result.tenant.name,
+              description: "Apenas para desenvolvimento local",
+              options: result.usuarios.map((usuario) => ({
+                name: usuario.name,
+                roleLabel: usuario.roleLabel,
+                email: usuario.email,
+                password: usuario.password,
+                tenant: usuario.tenant,
+                chipColor: usuario.chipColor,
+              })),
+            },
+          ]);
+        } else {
+          setDevQuickLogins([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Erro ao buscar logins rápidos:", error);
+        setDevQuickLogins([]);
+      });
   }, [isDevMode]);
 
   const onSubmit = async (e: React.FormEvent) => {

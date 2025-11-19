@@ -11,6 +11,13 @@ Documentação completa do sistema de notificações push em [notifications/](./
 - Guias de teste
 - Checklists
 
+### ⚖️ Jurisprudência
+Área dedicada no menu lateral para consulta de jurisprudências:
+- Coleta automática via web scraping nas fontes corretas
+- Armazenamento das decisões no banco de dados
+- Exibição organizada dentro do sistema para o usuário
+- Uso futuro de IA para analisar o acervo de jurisprudências e sugerir decisões relevantes aos clientes com mais precisão
+
 ## 📚 Como Usar
 
 Cada pasta contém toda a documentação relacionada a uma feature específica, incluindo:
@@ -18,4 +25,3 @@ Cada pasta contém toda a documentação relacionada a uma feature específica, 
 - Guias de uso
 - Testes
 - Checklists
-

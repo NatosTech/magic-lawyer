@@ -227,7 +227,10 @@ export async function getMetricasPermissoesNegadas(): Promise<{
     const porModulo: Record<string, number> = {};
     const porAcao: Record<string, number> = {};
     const porOrigem: Record<string, number> = {};
-    const porUsuarioMap: Record<string, { nome: string; total: number }> = {};
+    const porUsuarioMap: Record<
+      string,
+      { usuarioId: string; nome: string; total: number }
+    > = {};
 
     historico.forEach((h) => {
       const dados = h.dadosNovos as any;
@@ -248,13 +251,17 @@ export async function getMetricasPermissoesNegadas(): Promise<{
       porOrigem[origem] = (porOrigem[origem] || 0) + 1;
 
       // Por usuário
-      const usuarioId = h.usuarioId;
+      const usuarioId = h.usuarioId ?? "sem-id";
       const nomeUsuario =
         `${h.usuario.firstName || ""} ${h.usuario.lastName || ""}`.trim() ||
         "Sem nome";
 
       if (!porUsuarioMap[usuarioId]) {
-        porUsuarioMap[usuarioId] = { nome: nomeUsuario, total: 0 };
+        porUsuarioMap[usuarioId] = {
+          usuarioId,
+          nome: nomeUsuario,
+          total: 0,
+        };
       }
       porUsuarioMap[usuarioId].total++;
     });

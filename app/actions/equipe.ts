@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { UserRole } from "@/app/generated/prisma";
+import { Prisma, UserRole } from "@/app/generated/prisma";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { NotificationHelper } from "@/app/lib/notifications/notification-helper";
@@ -546,9 +546,9 @@ export async function atribuirCargoUsuario(
       action: "permissions-updated",
       changedBy: session.user.id!,
       permission: {
-        modulo,
-        acao,
-        permitido,
+        modulo: "equipe",
+        acao: "cargo_alterado",
+        permitido: true,
       },
     },
   }).catch((error) => {
@@ -712,7 +712,7 @@ export async function verificarPermissao(
     return false;
   }
 
-  const targetUsuarioId = usuarioId || session.user.id;
+  const targetUsuarioId = usuarioId ?? session.user.id ?? "desconhecido";
 
   // Admin e SuperAdmin têm todas as permissões
   if (
@@ -850,7 +850,7 @@ async function logPermissaoNegada(data: {
           tenantId: data.tenantId,
           usuarioId: data.usuarioId,
           acao: "permissao_negada",
-          dadosAntigos: null,
+          dadosAntigos: Prisma.JsonNull,
           dadosNovos: {
             modulo: data.modulo,
             acao: data.acao,
@@ -1451,8 +1451,8 @@ export async function updateUsuarioEquipe(
           observacoes: usuario.observacoes,
           role: usuario.role,
           avatarUrl: usuario.avatarUrl,
-        },
-        dadosNovos: updateData,
+        } as Prisma.InputJsonValue,
+        dadosNovos: updateData as unknown as Prisma.InputJsonValue,
         motivo: "Dados do usuário atualizados pelo admin",
         realizadoPor: session.user.id!,
       },

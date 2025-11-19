@@ -154,10 +154,10 @@ export async function uploadDigitalCertificate({
           responsavelUsuarioId: userId,
           label,
           tipo,
-          encryptedData: certificateEncryption.encrypted,
-          encryptedPassword: passwordEncryption.encrypted,
-          iv: certificateEncryption.iv,
-          passwordIv: passwordEncryption.iv,
+          encryptedData: new Uint8Array(certificateEncryption.encrypted),
+          encryptedPassword: new Uint8Array(passwordEncryption.encrypted),
+          iv: new Uint8Array(certificateEncryption.iv),
+          passwordIv: new Uint8Array(passwordEncryption.iv),
           isActive: activate,
           validUntil: validUntil ?? null,
           logs: {
@@ -588,12 +588,12 @@ export async function testDigitalCertificate({
 
   try {
     const certificateBuffer = decryptBuffer(
-      Buffer.from(certificate.encryptedData),
-      Buffer.from(certificate.iv),
+      new Uint8Array(certificate.encryptedData as unknown as Uint8Array),
+      new Uint8Array(certificate.iv as unknown as Uint8Array),
     );
     const password = decryptToString(
-      Buffer.from(certificate.encryptedPassword),
-      Buffer.from(certificate.passwordIv),
+      new Uint8Array(certificate.encryptedPassword as unknown as Uint8Array),
+      new Uint8Array(certificate.passwordIv as unknown as Uint8Array),
     );
 
     // Validação básica com Node crypto
@@ -601,7 +601,6 @@ export async function testDigitalCertificate({
       crypto.createPrivateKey({
         key: certificateBuffer,
         format: "der",
-        type: "pkcs12",
         passphrase: password,
       });
     } catch (cryptoError) {

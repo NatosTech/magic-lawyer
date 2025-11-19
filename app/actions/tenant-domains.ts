@@ -143,6 +143,26 @@ export async function getTenantByDomain(host: string) {
     return tenant;
   }
 
+  // Buscar por subdomínio localhost (ex: sandra.localhost:9192)
+  if (cleanHost.includes(".localhost")) {
+    const subdomain = cleanHost.split(".localhost")[0];
+
+    if (subdomain) {
+      return await prisma.tenant.findFirst({
+        where: {
+          slug: subdomain,
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          domain: true,
+          status: true,
+        },
+      });
+    }
+  }
+
   // Buscar por subdomínio (ex: sandra.magiclawyer.vercel.app)
   if (cleanHost.endsWith(".magiclawyer.vercel.app")) {
     const subdomain = cleanHost.replace(".magiclawyer.vercel.app", "");
@@ -164,4 +184,149 @@ export async function getTenantByDomain(host: string) {
   }
 
   return null;
+}
+
+/**
+ * Mapeamento de senhas padrão por tenant e role (apenas para desenvolvimento)
+ * Baseado nos seeds do projeto
+ */
+const DEFAULT_PASSWORDS: Record<string, Record<string, string>> = {
+  sandra: {
+    ADMIN: "Sandra@123",
+    SECRETARIA: "Funcionario@123",
+    ADVOGADO: "Advogado@123",
+    ADVOGADA: "Advogado@123",
+    CLIENTE: "Cliente@123",
+    DEFAULT: "Cliente@123",
+  },
+  salba: {
+    ADMIN: "Luciano@123",
+    ADVOGADO: "Mariana@123", // Senha padrão para advogados (Mariana)
+    ADVOGADA: "Mariana@123",
+    CLIENTE: "Cliente1@123", // Senha padrão para clientes
+    DEFAULT: "Cliente1@123",
+  },
+  luana: {
+    ADMIN: "Luana@123",
+    ADVOGADO: "Advogado@123",
+    CLIENTE: "Cliente@123",
+    DEFAULT: "Cliente@123",
+  },
+  fred: {
+    ADMIN: "Fred@123",
+    ADVOGADO: "Advogado@123",
+    SECRETARIA: "Advogado@123", // Mesma senha do advogado (erro no seed)
+    CLIENTE: "Cliente@123",
+    DEFAULT: "Cliente@123",
+  },
+};
+
+/**
+ * Mapeamento de senhas específicas por email (quando a senha não segue o padrão)
+ * Apenas para casos especiais onde a senha não pode ser inferida pelo role
+ */
+const SPECIFIC_EMAIL_PASSWORDS: Record<string, string> = {
+  // Salba - Pedro tem senha diferente
+  "pedro@salbaadvocacia.com.br": "Pedro@123",
+  // Clientes do Salba com senhas diferentes
+  "joao.silva@salbaadvocacia.com.br": "Cliente1@123",
+  "maria.oliveira@salbaadvocacia.com.br": "Cliente2@123",
+  "carlos.pereira@salbaadvocacia.com.br": "Cliente3@123",
+  // Sandra - Robson tem senha especial
+  "magiclawyersaas@gmail.com": "Robson123!",
+};
+
+/**
+ * Busca usuários de um tenant para logins rápidos em modo dev
+ * APENAS FUNCIONA EM MODO DE DESENVOLVIMENTO
+ */
+export async function getDevQuickLogins(host: string): Promise<{
+  success: boolean;
+  tenant?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  usuarios?: Array<{
+    name: string;
+    roleLabel: string;
+    email: string;
+    password: string;
+    tenant: string;
+    chipColor?: "primary" | "secondary" | "success" | "warning" | "danger" | "default";
+  }>;
+  error?: string;
+}> {
+  // Apenas em modo desenvolvimento
+  if (process.env.NODE_ENV !== "development") {
+    return { success: false, error: "Apenas disponível em modo desenvolvimento" };
+  }
+
+  try {
+    const tenant = await getTenantByDomain(host);
+
+    if (!tenant) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    // Buscar usuários do tenant
+    const usuarios = await prisma.usuario.findMany({
+      where: {
+        tenantId: tenant.id,
+        active: true,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+      },
+      orderBy: [
+        { role: "asc" },
+        { firstName: "asc" },
+      ],
+    });
+
+    // Mapear senhas padrão
+    const tenantPasswords = DEFAULT_PASSWORDS[tenant.slug.toLowerCase()] || DEFAULT_PASSWORDS["sandra"];
+
+    const usuariosComSenhas = usuarios.map((usuario) => {
+      const fullName = `${usuario.firstName ?? ""} ${usuario.lastName ?? ""}`.trim() || usuario.email;
+      
+      // Verificar se há senha específica para este email
+      const specificPassword = SPECIFIC_EMAIL_PASSWORDS[usuario.email.toLowerCase()];
+      const password = specificPassword || tenantPasswords[usuario.role] || tenantPasswords["DEFAULT"] || "Cliente@123";
+
+      // Determinar cor do chip baseado no role
+      let chipColor: "primary" | "secondary" | "success" | "warning" | "danger" | "default" = "default";
+      if (usuario.role === "ADMIN") chipColor = "danger";
+      else if (usuario.role === "SUPER_ADMIN") chipColor = "warning";
+      else if (usuario.role === "ADVOGADO") chipColor = "primary";
+      else if (usuario.role === "SECRETARIA") chipColor = "secondary";
+      else if (usuario.role === "CLIENTE") chipColor = "success";
+
+      return {
+        name: fullName,
+        roleLabel: usuario.role,
+        email: usuario.email,
+        password,
+        tenant: tenant.slug,
+        chipColor,
+      };
+    });
+
+    return {
+      success: true,
+      tenant: {
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
+      },
+      usuarios: usuariosComSenhas,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar logins rápidos:", error);
+    return { success: false, error: "Erro ao buscar usuários" };
+  }
 }

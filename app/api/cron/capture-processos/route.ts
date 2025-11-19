@@ -28,18 +28,17 @@ export async function POST(request: NextRequest) {
       where: {
         deletedAt: null,
         // Buscar processos que não foram atualizados nos últimos 7 dias
-        OR: [
-          { updatedAt: null },
-          {
-            updatedAt: {
-              lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-            },
-          },
-        ],
+        updatedAt: {
+          lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        },
       },
       take: 10, // Limitar a 10 por execução
       include: {
-        tribunal: true,
+        tribunal: {
+          select: {
+            esfera: true,
+          },
+        },
       },
     });
 
@@ -134,4 +133,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
