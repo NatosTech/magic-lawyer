@@ -229,7 +229,7 @@ async function seedTenantFred(prisma) {
   });
 
   if (advogadoModel && clienteRegistro) {
-    await prisma.processo.upsert({
+    const processoCriminal = await prisma.processo.upsert({
       where: {
         tenantId_numero: {
           tenantId: tenant.id,
@@ -257,16 +257,18 @@ async function seedTenantFred(prisma) {
           titulo: "Revisar petição inicial",
           descricao: "Conferir fatos, fundamentos jurídicos e pedidos.",
           status: "PENDENTE",
-          prazo: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-          responsavelId: advogadoModel.id,
+          dataLimite: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+          responsavelId: advogadoModel.usuarioId,
+          processoId: processoCriminal.id,
         },
         {
           tenantId: tenant.id,
           titulo: "Preparar documentos complementares",
           descricao: "Organizar contratos e comprovantes para anexar.",
           status: "EM_ANDAMENTO",
-          prazo: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-          responsavelId: advogadoModel.id,
+          dataLimite: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+          responsavelId: advogadoModel.usuarioId,
+          processoId: processoCriminal.id,
         },
       ],
       skipDuplicates: true,
@@ -275,38 +277,45 @@ async function seedTenantFred(prisma) {
     console.log("✅ Processo e tarefas de demonstração criados para o Fred");
 
     // Procuração vigente em favor do escritório
-    const procuracaoVigente = await prisma.procuracao.upsert({
+    let procuracaoVigente = await prisma.procuracao.findFirst({
       where: {
-        tenantId_numero: {
-          tenantId: tenant.id,
-          numero: "PROC-FRED-CRIMINAL-2025",
-        },
-      },
-      update: {
-        clienteId: clienteRegistro.id,
-        observacoes: "Procuração vigente em favor do escritório Frederico Pleitão para atuar em ações penais do Cliente Demo.",
-        emitidaEm: new Date("2025-01-10T10:00:00-03:00"),
-        assinadaPeloClienteEm: new Date("2025-01-10T10:00:00-03:00"),
-        validaAte: new Date("2027-01-10T10:00:00-03:00"),
-        status: "VIGENTE",
-        emitidaPor: "ADVOGADO",
-        ativa: true,
-        createdById: admin?.id ?? null,
-      },
-      create: {
         tenantId: tenant.id,
         numero: "PROC-FRED-CRIMINAL-2025",
-        clienteId: clienteRegistro.id,
-        observacoes: "Procuração vigente em favor do escritório Frederico Pleitão para atuar em ações penais do Cliente Demo.",
-        emitidaEm: new Date("2025-01-10T10:00:00-03:00"),
-        assinadaPeloClienteEm: new Date("2025-01-10T10:00:00-03:00"),
-        validaAte: new Date("2027-01-10T10:00:00-03:00"),
-        status: "VIGENTE",
-        emitidaPor: "ADVOGADO",
-        ativa: true,
-        createdById: admin?.id ?? null,
       },
     });
+
+    if (procuracaoVigente) {
+      procuracaoVigente = await prisma.procuracao.update({
+        where: { id: procuracaoVigente.id },
+        data: {
+          clienteId: clienteRegistro.id,
+          observacoes: "Procuração vigente em favor do escritório Frederico Pleitão para atuar em ações penais do Cliente Demo.",
+          emitidaEm: new Date("2025-01-10T10:00:00-03:00"),
+          assinadaPeloClienteEm: new Date("2025-01-10T10:00:00-03:00"),
+          validaAte: new Date("2027-01-10T10:00:00-03:00"),
+          status: "VIGENTE",
+          emitidaPor: "ADVOGADO",
+          ativa: true,
+          createdById: admin?.id ?? null,
+        },
+      });
+    } else {
+      procuracaoVigente = await prisma.procuracao.create({
+        data: {
+          tenantId: tenant.id,
+          numero: "PROC-FRED-CRIMINAL-2025",
+          clienteId: clienteRegistro.id,
+          observacoes: "Procuração vigente em favor do escritório Frederico Pleitão para atuar em ações penais do Cliente Demo.",
+          emitidaEm: new Date("2025-01-10T10:00:00-03:00"),
+          assinadaPeloClienteEm: new Date("2025-01-10T10:00:00-03:00"),
+          validaAte: new Date("2027-01-10T10:00:00-03:00"),
+          status: "VIGENTE",
+          emitidaPor: "ADVOGADO",
+          ativa: true,
+          createdById: admin?.id ?? null,
+        },
+      });
+    }
 
     await prisma.procuracaoProcesso.upsert({
       where: {
@@ -345,40 +354,47 @@ async function seedTenantFred(prisma) {
     }
 
     // Procuração anterior revogada em favor de terceiro
-    const procuracaoRevogada = await prisma.procuracao.upsert({
+    let procuracaoRevogada = await prisma.procuracao.findFirst({
       where: {
-        tenantId_numero: {
-          tenantId: tenant.id,
-          numero: "PROC-TERCEIRO-CRIMINAL-2024",
-        },
-      },
-      update: {
-        clienteId: clienteRegistro.id,
-        observacoes: "Procuração anterior em favor de terceiro advogado criminal, revogada quando o cliente contratou Frederico Pleitão.",
-        emitidaEm: new Date("2024-06-01T09:00:00-03:00"),
-        assinadaPeloClienteEm: new Date("2024-06-01T09:00:00-03:00"),
-        validaAte: new Date("2026-06-01T09:00:00-03:00"),
-        status: "REVOGADA",
-        emitidaPor: "ADVOGADO",
-        ativa: false,
-        revogadaEm: new Date("2025-01-05T15:00:00-03:00"),
-        createdById: admin?.id ?? null,
-      },
-      create: {
         tenantId: tenant.id,
         numero: "PROC-TERCEIRO-CRIMINAL-2024",
-        clienteId: clienteRegistro.id,
-        observacoes: "Procuração anterior em favor de terceiro advogado criminal, revogada quando o cliente contratou Frederico Pleitão.",
-        emitidaEm: new Date("2024-06-01T09:00:00-03:00"),
-        assinadaPeloClienteEm: new Date("2024-06-01T09:00:00-03:00"),
-        validaAte: new Date("2026-06-01T09:00:00-03:00"),
-        status: "REVOGADA",
-        emitidaPor: "ADVOGADO",
-        ativa: false,
-        revogadaEm: new Date("2025-01-05T15:00:00-03:00"),
-        createdById: admin?.id ?? null,
       },
     });
+
+    if (procuracaoRevogada) {
+      procuracaoRevogada = await prisma.procuracao.update({
+        where: { id: procuracaoRevogada.id },
+        data: {
+          clienteId: clienteRegistro.id,
+          observacoes: "Procuração anterior em favor de terceiro advogado criminal, revogada quando o cliente contratou Frederico Pleitão.",
+          emitidaEm: new Date("2024-06-01T09:00:00-03:00"),
+          assinadaPeloClienteEm: new Date("2024-06-01T09:00:00-03:00"),
+          validaAte: new Date("2026-06-01T09:00:00-03:00"),
+          status: "REVOGADA",
+          emitidaPor: "ADVOGADO",
+          ativa: false,
+          revogadaEm: new Date("2025-01-05T15:00:00-03:00"),
+          createdById: admin?.id ?? null,
+        },
+      });
+    } else {
+      procuracaoRevogada = await prisma.procuracao.create({
+        data: {
+          tenantId: tenant.id,
+          numero: "PROC-TERCEIRO-CRIMINAL-2024",
+          clienteId: clienteRegistro.id,
+          observacoes: "Procuração anterior em favor de terceiro advogado criminal, revogada quando o cliente contratou Frederico Pleitão.",
+          emitidaEm: new Date("2024-06-01T09:00:00-03:00"),
+          assinadaPeloClienteEm: new Date("2024-06-01T09:00:00-03:00"),
+          validaAte: new Date("2026-06-01T09:00:00-03:00"),
+          status: "REVOGADA",
+          emitidaPor: "ADVOGADO",
+          ativa: false,
+          revogadaEm: new Date("2025-01-05T15:00:00-03:00"),
+          createdById: admin?.id ?? null,
+        },
+      });
+    }
 
     // Contrato de honorários criminal para o Cliente Demo
     await prisma.contrato.upsert({

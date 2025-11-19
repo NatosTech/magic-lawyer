@@ -354,7 +354,7 @@ async function seedSalbaAdvocacia(prisma) {
         descricao: "Conferir valores e preparar planilha para audiência.",
         status: "EM_ANDAMENTO",
         responsavelId: advogadosCriados[0]?.usuarioId,
-        prazo: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        dataLimite: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
         processoId: processoConsultoria.id,
       },
       {
@@ -363,7 +363,7 @@ async function seedSalbaAdvocacia(prisma) {
         descricao: "Alinhar documentos para reorganização societária.",
         status: "PENDENTE",
         responsavelId: advogadosCriados[1]?.usuarioId,
-        prazo: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+        dataLimite: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
         processoId: processoConsultivo.id,
       },
     ],
