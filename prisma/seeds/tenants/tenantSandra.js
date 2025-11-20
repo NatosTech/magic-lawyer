@@ -1,4 +1,61 @@
 const bcrypt = require("bcryptjs");
+const {
+  processosJusticaTrabalho,
+  processosProjudi,
+  processosForum,
+} = require("../data/sandraProcessos");
+
+function normalizeUpper(value = "") {
+  if (!value) return "";
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+}
+
+function inferTipoPessoaFromNome(nome) {
+  const normalized = normalizeUpper(nome);
+  if (!normalized) return "FISICA";
+
+  const juridicaKeywords = [
+    "LTDA",
+    "S/A",
+    "SA ",
+    "EIRELI",
+    "MEI",
+    "EPP",
+    "ASSOCIACAO",
+    "CONDOMINIO",
+    "COND",
+    "EMPRESA",
+    "COMERCIO",
+    "INDUSTRIA",
+    "COOPERATIVA",
+    "HOSPITAL",
+    "CLINICA",
+    "SERVICOS",
+    "ALPHAVILLE",
+    "(PJE)",
+  ];
+
+  return juridicaKeywords.some((keyword) => normalized.includes(keyword))
+    ? "JURIDICA"
+    : "FISICA";
+}
+
+function buildVaraDescricao(raw, suffix) {
+  if (!raw && !suffix) return null;
+  if (!raw) return suffix ?? null;
+
+  const cleaned = raw.replace(/[-–]+$/u, "").trim();
+  if (!cleaned && !suffix) return null;
+
+  if (!cleaned) return suffix ?? null;
+  if (!suffix) return cleaned;
+
+  return `${cleaned} ${suffix}`.replace(/\s+/g, " ").trim();
+}
 
 async function ensureUsuario(prisma, tenantId, email, data) {
   const existing = await prisma.usuario.findFirst({
@@ -79,6 +136,60 @@ async function seedTenantSandra(prisma, Prisma) {
       telefone: "+55 71 98734-3180",
     },
   });
+
+  const clienteCache = new Map();
+
+  async function getOrCreateClienteFromPlanilha(nome) {
+    if (!nome) return null;
+    const key = normalizeUpper(nome);
+    if (clienteCache.has(key)) {
+      return clienteCache.get(key);
+    }
+
+    let cliente = await prisma.cliente.findFirst({
+      where: {
+        tenantId: tenant.id,
+        nome: {
+          equals: nome,
+          mode: "insensitive",
+        },
+      },
+    });
+
+    if (!cliente) {
+      cliente = await prisma.cliente.create({
+        data: {
+          tenantId: tenant.id,
+          nome,
+          tipoPessoa: inferTipoPessoaFromNome(nome),
+        },
+      });
+    }
+
+    clienteCache.set(key, cliente);
+
+    return cliente;
+  }
+
+  async function vincularClienteAdvogado(clienteId, advogadoId, relacionamento) {
+    if (!clienteId || !advogadoId) return;
+
+    await prisma.advogadoCliente.upsert({
+      where: {
+        advogadoId_clienteId: {
+          advogadoId,
+          clienteId,
+        },
+      },
+      update: relacionamento ? { relacionamento } : {},
+      create: {
+        tenantId: tenant.id,
+        advogadoId,
+        clienteId,
+        relacionamento: relacionamento ?? null,
+      },
+    });
+  }
 
   await prisma.tenantBranding.upsert({
     where: { tenantId: tenant.id },
@@ -651,6 +762,72 @@ async function seedTenantSandra(prisma, Prisma) {
       slug: "criminal",
     },
   });
+  const baseDistribuicaoPlanilhas = new Date("2024-11-01T10:00:00-03:00").getTime();
+  let processosPlanilhaImportados = 0;
+
+  async function importarProcessosPlanilha(processos, options) {
+    if (!Array.isArray(processos) || processos.length === 0) {
+      return;
+    }
+
+    for (const processoLinha of processos) {
+      if (!processoLinha?.numero || !processoLinha?.autor) continue;
+
+      const cliente = await getOrCreateClienteFromPlanilha(processoLinha.autor);
+      if (!cliente) continue;
+
+      await vincularClienteAdvogado(
+        cliente.id,
+        options.advogadoId,
+        `Cliente importado (${options.tag})`,
+      );
+
+      const numero = processoLinha.numero;
+      const partesDescricao = processoLinha.reu
+        ? `${processoLinha.autor} move demanda contra ${processoLinha.reu}`
+        : `${processoLinha.autor} possui processo acompanhado pelo escritório`;
+
+      const processoData = {
+        tenantId: tenant.id,
+        numero,
+        numeroCnj: numero,
+        titulo: `${options.etiquetaTitulo ?? "Processo"} - ${processoLinha.autor}${
+          processoLinha.reu ? ` x ${processoLinha.reu}` : ""
+        }`,
+        descricao: `${partesDescricao}. Origem: ${options.fonteDescricao}.`,
+        status: "EM_ANDAMENTO",
+        grau: "PRIMEIRO",
+        fase: "INSTRUCAO",
+        areaId: options.areaId ?? null,
+        classeProcessual:
+          processoLinha.classe || processoLinha.acao || options.classePadrao || null,
+        orgaoJulgador: options.orgaoJulgador || null,
+        vara: buildVaraDescricao(processoLinha.vara, options.varaSuffix),
+        comarca: options.comarcaPadrao || "Salvador/BA",
+        foro: options.foroPadrao || null,
+        segredoJustica: false,
+        dataDistribuicao: new Date(
+          baseDistribuicaoPlanilhas + processosPlanilhaImportados * 86400000,
+        ),
+        clienteId: cliente.id,
+        advogadoResponsavelId: options.advogadoId,
+        tags: ["planilha", options.tag],
+      };
+
+      processosPlanilhaImportados += 1;
+
+      await prisma.processo.upsert({
+        where: {
+          tenantId_numero: {
+            tenantId: tenant.id,
+            numero,
+          },
+        },
+        update: processoData,
+        create: processoData,
+      });
+    }
+  }
 
   let processoMarcos = await prisma.processo.findFirst({
     where: { tenantId: tenant.id, numero: "1020304-56.2025.8.26.0100" },
@@ -834,6 +1011,45 @@ async function seedTenantSandra(prisma, Prisma) {
       },
     });
   }
+
+  console.log("📑 Importando processos reais das planilhas da Dra. Sandra...");
+  await importarProcessosPlanilha(processosJusticaTrabalho, {
+    tag: "justica_trabalho",
+    fonteDescricao: "Planilha Justiça do Trabalho (PJe)",
+    etiquetaTitulo: "Reclamação Trabalhista",
+    advogadoId: advogadoRicardo.id,
+    areaId: areaTrabalhista?.id ?? null,
+    varaSuffix: "Vara do Trabalho da Bahia",
+    comarcaPadrao: "Salvador/BA",
+    foroPadrao: "TRT da 5ª Região",
+    orgaoJulgador: "Tribunal Regional do Trabalho da 5ª Região",
+  });
+
+  await importarProcessosPlanilha(processosProjudi, {
+    tag: "projudi_trt",
+    fonteDescricao: "Planilha PROJUDI/TRT",
+    etiquetaTitulo: "Processo PROJUDI",
+    advogadoId: advogadoRicardo.id,
+    areaId: areaTrabalhista?.id ?? null,
+    varaSuffix: "Vara do Trabalho da Bahia",
+    comarcaPadrao: "Salvador/BA",
+    foroPadrao: "TRT da 5ª Região (PROJUDI)",
+    orgaoJulgador: "Tribunal Regional do Trabalho da 5ª Região",
+  });
+
+  await importarProcessosPlanilha(processosForum, {
+    tag: "forum_estadual",
+    fonteDescricao: "Planilha Fórum Estadual",
+    etiquetaTitulo: "Processo Cível",
+    advogadoId: advogadoSandra.id,
+    areaId: areaCivel?.id ?? null,
+    varaSuffix: "Vara Cível da Comarca de Salvador/BA",
+    comarcaPadrao: "Salvador/BA",
+    foroPadrao: "Tribunal de Justiça da Bahia",
+    orgaoJulgador: "Tribunal de Justiça do Estado da Bahia",
+    classePadrao: "Procedimento Comum Cível",
+  });
+  console.log("✅ Processos das planilhas importados.");
 
   const processoPartesConfigs = [
     {

@@ -30,6 +30,7 @@ import {
   Building2,
   Users,
   Copy,
+  UploadCloud,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -43,6 +44,7 @@ import {
 } from "@/app/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
 import { addToast } from "@heroui/toast";
+import { ProcessosImportModal } from "./processos-import-modal";
 
 interface ProcessoFiltros {
   busca: string;
@@ -118,7 +120,12 @@ const FilterToggleButton = ({
 );
 
 export function ProcessosContent() {
-  const { processos, isLoading, isError } = useAllProcessos();
+  const {
+    processos,
+    isLoading,
+    isError,
+    refresh: refreshProcessos,
+  } = useAllProcessos();
   const { clientes } = useClientesParaSelect();
 
   const [filtros, setFiltros] = useState<ProcessoFiltros>({
@@ -139,6 +146,7 @@ export function ProcessosContent() {
   });
 
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [mostrarModalImportacao, setMostrarModalImportacao] = useState(false);
 
   const copiarNumeroProcesso = async (numero: string, e?: React.MouseEvent) => {
     if (e) {
@@ -506,6 +514,14 @@ export function ProcessosContent() {
             onPress={() => setMostrarFiltros(!mostrarFiltros)}
           >
             Filtros
+          </Button>
+          <Button
+            color="secondary"
+            startContent={<UploadCloud className="h-4 w-4" />}
+            variant="flat"
+            onPress={() => setMostrarModalImportacao(true)}
+          >
+            Importar
           </Button>
           <Button
             as={Link}
@@ -1096,6 +1112,11 @@ export function ProcessosContent() {
           </div>
         )}
       </div>
+      <ProcessosImportModal
+        isOpen={mostrarModalImportacao}
+        onClose={() => setMostrarModalImportacao(false)}
+        onImported={() => refreshProcessos()}
+      />
     </div>
   );
 }
