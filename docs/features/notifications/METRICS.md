@@ -116,3 +116,5 @@ As métricas são complementadas por logs estruturados no formato:
 
 
 
+
+

@@ -111,3 +111,5 @@ Configurar no Vercel Cron ou similar para executar diariamente.
 
 
 
+
+

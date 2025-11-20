@@ -114,7 +114,7 @@
     "clsx": "2.1.1",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.18",
-    "framer-motion": "11.18.2",
+    "framer-motion": "^11.18.2",
     "googleapis": "^161.0.0",
     "intl-messageformat": "10.7.16",
     "ioredis": "^5.8.2",

@@ -45,6 +45,8 @@ import {
 import { DateUtils } from "@/app/lib/date-utils";
 import { addToast } from "@heroui/toast";
 import { ProcessosImportModal } from "./processos-import-modal";
+import { Pagination } from "@heroui/react";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface ProcessoFiltros {
   busca: string;
@@ -147,6 +149,8 @@ export function ProcessosContent() {
 
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [mostrarModalImportacao, setMostrarModalImportacao] = useState(false);
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const itensPorPagina = 9;
 
   const copiarNumeroProcesso = async (numero: string, e?: React.MouseEvent) => {
     if (e) {
@@ -465,6 +469,17 @@ export function ProcessosContent() {
     Array.isArray(valor) ? valor.length > 0 : valor !== "" && valor !== null,
   );
 
+  const totalPaginas = Math.max(
+    1,
+    Math.ceil(processosFiltrados.length / itensPorPagina),
+  );
+
+  const processosPaginados = useMemo(() => {
+    const start = (paginaAtual - 1) * itensPorPagina;
+    const end = start + itensPorPagina;
+    return processosFiltrados.slice(start, end);
+  }, [processosFiltrados, paginaAtual]);
+
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -554,32 +569,45 @@ export function ProcessosContent() {
             startContent={<Search className="h-4 w-4 text-default-400" />}
             value={filtros.busca}
             onChange={(e) =>
-              setFiltros((prev) => ({ ...prev, busca: e.target.value }))
+              setFiltros((prev) => {
+                setPaginaAtual(1);
+                return { ...prev, busca: e.target.value };
+              })
             }
           />
         </CardBody>
       </Card>
 
       {/* Filtros Avançados */}
-      {mostrarFiltros && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between w-full">
-              <h3 className="text-lg font-semibold">Filtros Avançados</h3>
-              <Button
-                isDisabled={!temFiltrosAtivos}
-                size="sm"
-                variant="light"
-                onPress={limparFiltros}
-              >
-                Limpar Filtros
-              </Button>
-            </div>
-          </CardHeader>
-          <Divider />
-          <CardBody>
-            <div className="space-y-4">
-              <div className="grid gap-4 lg:grid-cols-2">
+      <AnimatePresence initial={false}>
+        {mostrarFiltros ? (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <div className="flex items-center justify-between w-full">
+                  <h3 className="text-lg font-semibold">Filtros Avançados</h3>
+                  <Button
+                    isDisabled={!temFiltrosAtivos}
+                    size="sm"
+                    variant="light"
+                    onPress={() => {
+                      limparFiltros();
+                      setPaginaAtual(1);
+                    }}
+                  >
+                    Limpar Filtros
+                  </Button>
+                </div>
+              </CardHeader>
+              <Divider />
+              <CardBody>
+                <div className="space-y-4">
+                  <div className="grid gap-4 lg:grid-cols-2">
                 <FilterSection
                   icon={Scale}
                   title="Status e andamento"
@@ -908,11 +936,13 @@ export function ProcessosContent() {
                     </Select>
                   </div>
                 </FilterSection>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      )}
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {/* Lista de Processos */}
       <div className="grid gap-4">
@@ -942,16 +972,28 @@ export function ProcessosContent() {
             </CardBody>
           </Card>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {processosFiltrados.map((processo: any) => (
-              <Card
+          <>
+            <motion.div
+              layout
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              <AnimatePresence>
+                {processosPaginados.map((processo: any) => (
+                  <motion.div
+                    key={processo.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                  >
+                    <Card
                 key={processo.id}
                 isPressable
                 as={Link}
                 className="border border-default-200 hover:border-primary transition-all hover:shadow-lg cursor-pointer"
                 href={`/processos/${processo.id}`}
-              >
-                <CardHeader className="flex flex-col items-start gap-2 pb-2">
+                    >
+                      <CardHeader className="flex flex-col items-start gap-2 pb-2">
                   <div className="flex w-full items-start justify-between">
                     <Chip
                       color={getStatusColor(processo.status)}
@@ -1106,10 +1148,24 @@ export function ProcessosContent() {
                       {processo._count.eventos} eventos
                     </Chip>
                   </div>
-                </CardBody>
-              </Card>
-            ))}
-          </div>
+                      </CardBody>
+                    </Card>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+            {totalPaginas > 1 && (
+              <div className="flex justify-center">
+                <Pagination
+                  showControls
+                  showShadow
+                  page={paginaAtual}
+                  total={totalPaginas}
+                  onChange={setPaginaAtual}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
       <ProcessosImportModal
