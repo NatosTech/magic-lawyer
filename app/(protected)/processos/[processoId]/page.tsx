@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -41,6 +41,7 @@ import {
   Users,
   FileSignature,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -93,6 +94,74 @@ const prazoFormInitial = {
   dataVencimento: "",
   descricao: "",
   fundamentoLegal: "",
+};
+
+interface InfoItemProps {
+  label: string;
+  icon: LucideIcon;
+  children: ReactNode;
+  href?: string;
+  external?: boolean;
+  highlight?: boolean;
+}
+
+interface QuickAction {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  tab: string;
+  count?: number;
+}
+
+const InfoItem = ({
+  label,
+  icon: Icon,
+  children,
+  href,
+  external = false,
+  highlight = false,
+}: InfoItemProps) => {
+  const content = (
+    <div
+      className={`flex items-center gap-2 text-sm font-medium ${highlight ? "text-warning-600" : "text-default-700"}`}
+    >
+      <Icon
+        className={`h-4 w-4 ${highlight ? "text-warning" : "text-default-400"}`}
+      />
+      <span className="truncate">{children}</span>
+    </div>
+  );
+
+  const value = href ? (
+    external ? (
+      <a
+        className="block text-primary underline decoration-dotted decoration-primary/40 hover:decoration-solid"
+        href={href}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        {content}
+      </a>
+    ) : (
+      <Link
+        className="block text-primary underline decoration-dotted decoration-primary/40 hover:decoration-solid"
+        href={href}
+      >
+        {content}
+      </Link>
+    )
+  ) : (
+    content
+  );
+
+  return (
+    <div className="rounded-2xl border border-default-200/70 bg-default-50/60 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-default-400">
+        {label}
+      </p>
+      <div className="mt-2">{value}</div>
+    </div>
+  );
 };
 
 const getStatusColor = (status: ProcessoStatus) => {
@@ -236,6 +305,7 @@ export default function ProcessoDetalhesPage() {
   const [isCreatingPrazo, setIsCreatingPrazo] = useState(false);
   const [isLinkingProcuracao, setIsLinkingProcuracao] = useState(false);
   const [isJuizModalOpen, setIsJuizModalOpen] = useState(false);
+  const [abaAtual, setAbaAtual] = useState<string>("informacoes");
   const [, startTransition] = useTransition();
 
   const prazosOrdenados = useMemo(() => {
@@ -303,6 +373,59 @@ export default function ProcessoDetalhesPage() {
   const faseLabel = processo.fase ? getFaseLabel(processo.fase) : null;
   const grauLabel = processo.grau ? getGrauLabel(processo.grau) : null;
   const pastaUrl = processo.pastaCompartilhadaUrl;
+  const clienteLink = processo.cliente?.id
+    ? `/clientes/${processo.cliente.id}`
+    : undefined;
+  const advogadoLink = processo.advogadoResponsavel?.id
+    ? `/advogados/${processo.advogadoResponsavel.id}`
+    : undefined;
+
+  const quickActions: QuickAction[] = [
+    {
+      label: "Informações",
+      href: "#processo-informacoes",
+      icon: Info,
+      tab: "informacoes",
+    },
+    {
+      label: "Prazos",
+      href: "#processo-prazos",
+      icon: Clock,
+      tab: "prazos",
+      count: prazosOrdenados.length,
+    },
+    {
+      label: "Documentos",
+      href: "#processo-documentos",
+      icon: FileText,
+      tab: "documentos",
+      count: processo._count?.documentos ?? 0,
+    },
+    {
+      label: "Eventos",
+      href: "#processo-eventos",
+      icon: Calendar,
+      tab: "eventos",
+      count: processo._count?.eventos ?? 0,
+    },
+    {
+      label: "Procurações",
+      href: "#processo-procuracoes",
+      icon: FileSignature,
+      tab: "procuracoes",
+      count: processo.procuracoesVinculadas.length,
+    },
+  ];
+
+  const handleQuickAction = (action: QuickAction) => {
+    setAbaAtual(action.tab);
+    setTimeout(() => {
+      const section = document.querySelector(action.href);
+      if (section) {
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 80);
+  };
 
   const handleRefresh = () =>
     startTransition(() => {
@@ -517,156 +640,173 @@ export default function ProcessoDetalhesPage() {
       </div>
 
       <Card className="border border-default-200">
-        <CardBody className="space-y-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 flex-wrap">
-                <Scale className="h-8 w-8 text-primary" />
-                <div>
-                  <h1 className={title({ size: "md" })}>{processo.numero}</h1>
-                  {processo.numeroCnj &&
-                    processo.numeroCnj !== processo.numero && (
-                      <p className="text-xs text-default-500">
-                        CNJ: {processo.numeroCnj}
-                      </p>
-                    )}
-                  {processo.titulo && (
-                    <p className="mt-1 text-sm text-default-500">
-                      {processo.titulo}
-                    </p>
-                  )}
-                </div>
-              </div>
+        <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-start gap-4">
+            <div className="rounded-2xl bg-primary/10 p-3">
+              <Scale className="h-6 w-6 text-primary" />
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Chip
-                color={getStatusColor(processo.status)}
-                size="lg"
-                startContent={getStatusIcon(processo.status)}
-                variant="flat"
-              >
-                {getStatusLabel(processo.status)}
-              </Chip>
-              {faseLabel && (
-                <Chip
-                  color="secondary"
-                  size="lg"
-                  startContent={<Flag className="h-3 w-3" />}
-                  variant="flat"
-                >
-                  {faseLabel}
-                </Chip>
-              )}
-              {grauLabel && (
-                <Chip
-                  color="default"
-                  size="lg"
-                  startContent={<Layers className="h-3 w-3" />}
-                  variant="flat"
-                >
-                  {grauLabel}
-                </Chip>
-              )}
-              {processo.segredoJustica && (
-                <Chip color="warning" size="lg" variant="flat">
-                  Segredo de Justiça
-                </Chip>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-default-400">
+                Processo
+              </p>
+              <h1 className={title({ size: "md" })}>{processo.numero}</h1>
+              {processo.numeroCnj && processo.numeroCnj !== processo.numero ? (
+                <p className="text-xs text-default-500">CNJ: {processo.numeroCnj}</p>
+              ) : null}
+              {processo.titulo && (
+                <p className="mt-1 text-sm text-default-500">{processo.titulo}</p>
               )}
             </div>
           </div>
-
-          <Divider />
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {processo.area && (
-              <div className="flex items-center gap-2 text-sm">
-                <Briefcase className="h-4 w-4 text-default-400" />
-                <span className="text-default-600">{processo.area.nome}</span>
-              </div>
+          <div className="flex flex-wrap gap-2">
+            <Chip
+              color={getStatusColor(processo.status)}
+              size="lg"
+              startContent={getStatusIcon(processo.status)}
+              variant="flat"
+            >
+              {getStatusLabel(processo.status)}
+            </Chip>
+            {faseLabel && (
+              <Chip
+                color="secondary"
+                size="lg"
+                startContent={<Flag className="h-3 w-3" />}
+                variant="flat"
+              >
+                {faseLabel}
+              </Chip>
             )}
-            {processo.cliente && (
-              <div className="flex items-center gap-2 text-sm">
-                {processo.cliente.tipoPessoa === "JURIDICA" ? (
-                  <Building2 className="h-4 w-4 text-default-400" />
-                ) : (
-                  <User className="h-4 w-4 text-default-400" />
-                )}
-                <span className="text-default-600">
+            {grauLabel && (
+              <Chip
+                color="default"
+                size="lg"
+                startContent={<Layers className="h-3 w-3" />}
+                variant="flat"
+              >
+                {grauLabel}
+              </Chip>
+            )}
+            {processo.segredoJustica && (
+              <Chip color="warning" size="lg" variant="flat">
+                Segredo de Justiça
+              </Chip>
+            )}
+          </div>
+        </CardHeader>
+        <Divider />
+        <CardBody className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {processo.area && (
+                <InfoItem icon={Briefcase} label="Área de atuação">
+                  {processo.area.nome}
+                </InfoItem>
+              )}
+              {processo.cliente && (
+                <InfoItem
+                  icon={
+                    processo.cliente.tipoPessoa === "JURIDICA"
+                      ? Building2
+                      : User
+                  }
+                  label="Cliente"
+                  href={clienteLink}
+                >
                   {processo.cliente.nome}
-                </span>
-              </div>
-            )}
-            {processo.advogadoResponsavel && (
-              <div className="flex items-center gap-2 text-sm">
-                <Briefcase className="h-4 w-4 text-default-400" />
-                <span className="text-default-600">
+                </InfoItem>
+              )}
+              {processo.advogadoResponsavel && (
+                <InfoItem
+                  icon={User}
+                  label="Advogado responsável"
+                  href={advogadoLink}
+                >
                   {processo.advogadoResponsavel.usuario.firstName}{" "}
                   {processo.advogadoResponsavel.usuario.lastName}
-                </span>
-              </div>
-            )}
-            {processo.vara && (
-              <div className="flex items-center gap-2 text-sm">
-                <Gavel className="h-4 w-4 text-default-400" />
-                <span className="text-default-600">{processo.vara}</span>
-              </div>
-            )}
-            {processo.comarca && (
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="h-4 w-4 text-default-400" />
-                <span className="text-default-600">{processo.comarca}</span>
-              </div>
-            )}
-            {processo.valorCausa && (
-              <div className="flex items-center gap-2 text-sm">
-                <DollarSign className="h-4 w-4 text-default-400" />
-                <span className="text-default-600">
+                </InfoItem>
+              )}
+              {processo.vara && (
+                <InfoItem icon={Gavel} label="Vara">
+                  {processo.vara}
+                </InfoItem>
+              )}
+              {processo.comarca && (
+                <InfoItem icon={MapPin} label="Comarca">
+                  {processo.comarca}
+                </InfoItem>
+              )}
+              {processo.valorCausa && (
+                <InfoItem icon={DollarSign} label="Valor da causa">
                   {Number(processo.valorCausa).toLocaleString("pt-BR", {
                     style: "currency",
                     currency: "BRL",
                   })}
-                </span>
-              </div>
-            )}
-            {processo.dataDistribuicao && (
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-default-400" />
-                <span className="text-default-600">
-                  Distribuído em{" "}
+                </InfoItem>
+              )}
+              {processo.dataDistribuicao && (
+                <InfoItem icon={Calendar} label="Distribuído em">
                   {DateUtils.formatDate(processo.dataDistribuicao)}
-                </span>
-              </div>
-            )}
-            {processo.prazoPrincipal && (
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-warning" />
-                <span className="text-warning-600">
-                  Prazo principal:{" "}
-                  {DateUtils.formatDate(processo.prazoPrincipal)}
-                </span>
-              </div>
-            )}
-            {processo.orgaoJulgador && (
-              <div className="flex items-center gap-2 text-sm">
-                <Landmark className="h-4 w-4 text-default-400" />
-                <span className="text-default-600">
-                  {processo.orgaoJulgador}
-                </span>
-              </div>
-            )}
-            {pastaUrl && (
-              <div className="flex items-center gap-2 text-sm">
-                <Link2 className="h-4 w-4 text-default-400" />
-                <a
-                  className="text-primary underline"
-                  href={pastaUrl}
-                  rel="noopener noreferrer"
-                  target="_blank"
+                </InfoItem>
+              )}
+              {processo.prazoPrincipal && (
+                <InfoItem
+                  icon={Clock}
+                  label="Prazo principal"
+                  highlight
                 >
-                  Pasta compartilhada
-                </a>
+                  {DateUtils.formatDate(processo.prazoPrincipal)}
+                </InfoItem>
+              )}
+              {processo.orgaoJulgador && (
+                <InfoItem icon={Landmark} label="Órgão julgador">
+                  {processo.orgaoJulgador}
+                </InfoItem>
+              )}
+              {pastaUrl && (
+                <InfoItem
+                  external
+                  href={pastaUrl}
+                  icon={Link2}
+                  label="Pasta compartilhada"
+                >
+                  Abrir arquivos
+                </InfoItem>
+              )}
+            </div>
+            <div className="space-y-3 rounded-2xl border border-default-200/80 bg-default-50/60 p-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-default-400">
+                  Atalhos rápidos
+                </p>
+                <p className="text-xs text-default-500">
+                  Vá direto para documentos, eventos, prazos e vínculos.
+                </p>
               </div>
-            )}
+              <div className="grid gap-2">
+                {quickActions.map((action) => (
+                  <Button
+                    key={action.href}
+                    color="primary"
+                    radius="md"
+                    size="sm"
+                    variant="flat"
+                    className="justify-between"
+                    onPress={() => handleQuickAction(action)}
+                  >
+                    <span className="flex items-center gap-2">
+                      <action.icon className="h-4 w-4" />
+                      {action.label}
+                    </span>
+                    {typeof action.count === "number" ? (
+                      <Chip size="sm" variant="flat">
+                        {action.count}
+                      </Chip>
+                    ) : null}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </div>
         </CardBody>
       </Card>
@@ -674,7 +814,9 @@ export default function ProcessoDetalhesPage() {
       <Tabs
         aria-label="Informações do Processo"
         color="primary"
+        selectedKey={abaAtual}
         variant="underlined"
+        onSelectionChange={(key) => setAbaAtual(key as string)}
       >
         <Tab
           key="informacoes"
@@ -685,7 +827,10 @@ export default function ProcessoDetalhesPage() {
             </div>
           }
         >
-          <div className="mt-4 space-y-4">
+          <div
+            className="mt-4 space-y-4 scroll-mt-24"
+            id="processo-informacoes"
+          >
             {!isCliente && (
               <div className="flex justify-end">
                 <Button
@@ -949,7 +1094,10 @@ export default function ProcessoDetalhesPage() {
             </div>
           }
         >
-          <div className="mt-4 space-y-4">
+          <div
+            className="mt-4 space-y-4 scroll-mt-24"
+            id="processo-prazos"
+          >
             <Card className="border border-default-200">
               <CardHeader>
                 <div className="flex items-center justify-between w-full">
@@ -1135,7 +1283,10 @@ export default function ProcessoDetalhesPage() {
             </div>
           }
         >
-          <div className="mt-4 space-y-4">
+          <div
+            className="mt-4 space-y-4 scroll-mt-24"
+            id="processo-documentos"
+          >
             <Card className="border border-default-200">
               <CardHeader>
                 <div className="flex items-center justify-between w-full">
@@ -1356,7 +1507,10 @@ export default function ProcessoDetalhesPage() {
             </div>
           }
         >
-          <div className="mt-4 space-y-4">
+          <div
+            className="mt-4 space-y-4 scroll-mt-24"
+            id="processo-eventos"
+          >
             {isLoadingDocs ? (
               <div className="flex justify-center py-8">
                 <Spinner />
@@ -1431,7 +1585,10 @@ export default function ProcessoDetalhesPage() {
             </div>
           }
         >
-          <div className="mt-4 space-y-4">
+          <div
+            className="mt-4 space-y-4 scroll-mt-24"
+            id="processo-procuracoes"
+          >
             {isLoadingEventos ? (
               <div className="flex justify-center py-8">
                 <Spinner />

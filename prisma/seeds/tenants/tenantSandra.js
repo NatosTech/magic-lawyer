@@ -40,42 +40,43 @@ async function ensurePermission(prisma, tenantId, usuarioId, permissao) {
 }
 
 async function seedTenantSandra(prisma, Prisma) {
-  const [adminPasswordHash, clientePasswordHash, advogadoPasswordHash, robsonPasswordHash, lucenaPasswordHash] = await Promise.all([
+  const [adminPasswordHash, clientePasswordHash, advogadoPasswordHash, robsonPasswordHash, lucenaPasswordHash, secretariaPasswordHash] = await Promise.all([
     bcrypt.hash("Sandra@123", 10),
     bcrypt.hash("Cliente@123", 10),
     bcrypt.hash("Advogado@123", 10),
     bcrypt.hash("Robson123!", 10),
     bcrypt.hash("LucenaRevogada@123", 10),
+    bcrypt.hash("Funcionario@123", 10),
   ]);
 
   const tenant = await prisma.tenant.upsert({
     where: { slug: "sandra" },
     update: {
-      name: "Sandra Advocacia",
+      name: "Souza Costa Advogados Associados",
       status: "ACTIVE",
       timezone: "America/Sao_Paulo",
       tipoPessoa: "JURIDICA",
       documento: "12.345.678/0001-99",
-      razaoSocial: "Sandra Guimarães Sociedade Individual de Advocacia",
-      nomeFantasia: "Sandra Advocacia",
+      razaoSocial: "Souza Costa Advogados Associados",
+      nomeFantasia: "Souza Costa Advogados Associados",
       inscricaoMunicipal: "123456",
       inscricaoEstadual: null,
-      email: "contato@sandraadv.br",
-      telefone: "+55 11 4000-1234",
+      email: "contato@souzacostaadv.com.br",
+      telefone: "+55 71 98734-3180",
     },
     create: {
-      name: "Sandra Advocacia",
+      name: "Souza Costa Advogados Associados",
       slug: "sandra",
       timezone: "America/Sao_Paulo",
       status: "ACTIVE",
       tipoPessoa: "JURIDICA",
       documento: "12.345.678/0001-99",
-      razaoSocial: "Sandra Guimarães Sociedade Individual de Advocacia",
-      nomeFantasia: "Sandra Advocacia",
+      razaoSocial: "Souza Costa Advogados Associados",
+      nomeFantasia: "Souza Costa Advogados Associados",
       inscricaoMunicipal: "123456",
       inscricaoEstadual: null,
-      email: "contato@sandraadv.br",
-      telefone: "+55 11 4000-1234",
+      email: "contato@souzacostaadv.com.br",
+      telefone: "+55 71 98734-3180",
     },
   });
 
@@ -85,16 +86,20 @@ async function seedTenantSandra(prisma, Prisma) {
       primaryColor: "#7F1D1D",
       secondaryColor: "#F4F4F5",
       accentColor: "#F97316",
-      logoUrl: "https://dummyimage.com/240x80/7f1d1d/ffffff&text=Sandra+Advocacia",
-      faviconUrl: "https://dummyimage.com/32x32/7f1d1d/ffffff&text=SA",
+      logoUrl: "https://dummyimage.com/240x80/7f1d1d/ffffff&text=Souza+Costa+Advogados",
+      faviconUrl: "https://dummyimage.com/32x32/7f1d1d/ffffff&text=SC",
+      emailFromName: "Souza Costa Advogados Associados",
+      customDomainText: "Souza Costa Advogados Associados",
     },
     create: {
       tenantId: tenant.id,
       primaryColor: "#7F1D1D",
       secondaryColor: "#F4F4F5",
       accentColor: "#F97316",
-      logoUrl: "https://dummyimage.com/240x80/7f1d1d/ffffff&text=Sandra+Advocacia",
-      faviconUrl: "https://dummyimage.com/32x32/7f1d1d/ffffff&text=SA",
+      logoUrl: "https://dummyimage.com/240x80/7f1d1d/ffffff&text=Souza+Costa+Advogados",
+      faviconUrl: "https://dummyimage.com/32x32/7f1d1d/ffffff&text=SC",
+      emailFromName: "Souza Costa Advogados Associados",
+      customDomainText: "Souza Costa Advogados Associados",
     },
   });
 
@@ -144,7 +149,7 @@ async function seedTenantSandra(prisma, Prisma) {
     {
       apelido: "Matriz São Paulo",
       tipo: "MATRIZ",
-      principal: true,
+      principal: false,
       logradouro: "Av. Paulista",
       numero: "1000",
       complemento: "Conj. 101",
@@ -158,16 +163,16 @@ async function seedTenantSandra(prisma, Prisma) {
     {
       apelido: "Wall Street - Salvador",
       tipo: "ESCRITORIO",
-      principal: false,
-      logradouro: "Av. Luiz Viana Filho",
-      numero: "6462",
-      complemento: "Empresarial Wall Street, Torre A, Sala 1202",
-      bairro: "Paralela",
+      principal: true,
+      logradouro: "Av. Luis Viana Filho",
+      numero: "006462",
+      complemento: "Edif. Manhattan Square Wall Street East, Torre A, Sala 1202",
+      bairro: "Patamares",
       cidade: "Salvador",
       estado: "BA",
-      cep: "41730-101",
+      cep: "41680-400",
       pais: "Brasil",
-      telefone: "+55 71 4000-1234",
+      telefone: "+55 71 98734-3180",
     },
     {
       apelido: "Filial Rio de Janeiro",
@@ -233,6 +238,7 @@ async function seedTenantSandra(prisma, Prisma) {
     passwordHash: adminPasswordHash,
     role: "ADMIN",
     active: true,
+    dataNascimento: new Date("1975-12-20T00:00:00-03:00"),
   });
 
   await Promise.all([
@@ -246,14 +252,14 @@ async function seedTenantSandra(prisma, Prisma) {
     update: {
       oabNumero: "19872",
       oabUf: "BA",
-      especialidades: ["CIVIL", "EMPRESARIAL"],
+      especialidades: ["CIVIL", "CRIMINAL", "EMPRESARIAL"],
     },
     create: {
       tenantId: tenant.id,
       usuarioId: adminUser.id,
       oabNumero: "19872",
       oabUf: "BA",
-      especialidades: ["CIVIL", "EMPRESARIAL"],
+      especialidades: ["CIVIL", "CRIMINAL", "EMPRESARIAL"],
     },
   });
 
@@ -332,6 +338,44 @@ async function seedTenantSandra(prisma, Prisma) {
       isExterno: true, // Marcar como advogado externo
     },
   });
+
+  // Criar usuário da secretária Jaqueline
+  const jaquelineUser = await ensureUsuario(prisma, tenant.id, "souzacostaadv@hotmail.com", {
+    firstName: "Jaqueline",
+    lastName: "Cruz Santana",
+    passwordHash: secretariaPasswordHash,
+    role: "SECRETARIA",
+    active: true,
+  });
+
+  // Criar cliente para a secretária (caso necessário)
+  let clienteJaqueline = await prisma.cliente.findFirst({
+    where: { tenantId: tenant.id, documento: "821.646.905-59" },
+  });
+
+  if (clienteJaqueline) {
+    clienteJaqueline = await prisma.cliente.update({
+      where: { id: clienteJaqueline.id },
+      data: {
+        nome: "Jaqueline Cruz Santana",
+        email: "souzacostaadv@hotmail.com",
+        telefone: "+55 71 98734-3180",
+        celular: "+55 71 98734-3180",
+      },
+    });
+  } else {
+    clienteJaqueline = await prisma.cliente.create({
+      data: {
+        tenantId: tenant.id,
+        tipoPessoa: "FISICA",
+        nome: "Jaqueline Cruz Santana",
+        documento: "821.646.905-59",
+        email: "souzacostaadv@hotmail.com",
+        telefone: "+55 71 98734-3180",
+        celular: "+55 71 98734-3180",
+      },
+    });
+  }
 
   const clienteMarcosUser = await ensureUsuario(prisma, tenant.id, "cliente@sandraadv.br", {
     firstName: "Marcos",
@@ -1453,15 +1497,15 @@ async function seedTenantSandra(prisma, Prisma) {
     update: {
       tipo: "ESCRITORIO",
       principal: true,
-      logradouro: "Av. Luiz Viana Filho",
-      numero: "6462",
-      complemento: "Empresarial Wall Street, Torre A, Sala 1202",
-      bairro: "Paralela",
+      logradouro: "Av. Luis Viana Filho",
+      numero: "006462",
+      complemento: "Edif. Manhattan Square Wall Street East, Torre A, Sala 1202",
+      bairro: "Patamares",
       cidade: "Salvador",
       estado: "BA",
-      cep: "41730-101",
+      cep: "41680-400",
       pais: "Brasil",
-      telefone: "+55 71 4000-1234",
+      telefone: "+55 71 98734-3180",
       usuarioId: adminUser.id,
     },
     create: {
@@ -1469,15 +1513,15 @@ async function seedTenantSandra(prisma, Prisma) {
       apelido: "Wall Street - Sandra",
       tipo: "ESCRITORIO",
       principal: true,
-      logradouro: "Av. Luiz Viana Filho",
-      numero: "6462",
-      complemento: "Empresarial Wall Street, Torre A, Sala 1202",
-      bairro: "Paralela",
+      logradouro: "Av. Luis Viana Filho",
+      numero: "006462",
+      complemento: "Edif. Manhattan Square Wall Street East, Torre A, Sala 1202",
+      bairro: "Patamares",
       cidade: "Salvador",
       estado: "BA",
-      cep: "41730-101",
+      cep: "41680-400",
       pais: "Brasil",
-      telefone: "+55 71 4000-1234",
+      telefone: "+55 71 98734-3180",
       usuarioId: adminUser.id,
     },
   });
@@ -1603,8 +1647,9 @@ async function seedTenantSandra(prisma, Prisma) {
 
   console.log("✅ Endereços dos usuários criados com sucesso!");
 
-  console.log("\n📋 Credenciais de teste - Sandra Advocacia:");
+  console.log("\n📋 Credenciais de teste - Souza Costa Advogados Associados:");
   console.log("👑 ADMIN: sandra@adv.br / Sandra@123");
+  console.log("🗂️ SECRETARIA: souzacostaadv@hotmail.com / Funcionario@123");
   console.log("⚖️ ADVOGADO: ricardo@sandraadv.br / Advogado@123");
   console.log("⚖️ ADVOGADO: fernanda@sandraadv.br / Advogado@123");
   console.log("👤 CLIENTE: cliente@sandraadv.br / Cliente@123");

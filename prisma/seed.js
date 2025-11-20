@@ -40,11 +40,12 @@ const prisma = new PrismaClient();
 
 const TENANT_CREDENTIAL_SUMMARIES = [
   {
-    name: "Sandra Advocacia",
+    name: "Souza Costa Advogados Associados",
     slug: "sandra",
     accessUrl: "http://localhost:9192/login",
     credentials: [
       "👑 ADMIN: sandra@adv.br / Sandra@123",
+      "🗂️ SECRETARIA: souzacostaadv@hotmail.com / Funcionario@123",
       "⚖️ ADVOGADO: ricardo@sandraadv.br / Advogado@123",
       "⚖️ ADVOGADO: fernanda@sandraadv.br / Advogado@123",
       "👤 CLIENTE: cliente@sandraadv.br / Cliente@123",

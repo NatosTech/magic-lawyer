@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, ReactNode } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
@@ -8,7 +8,6 @@ import { Spinner } from "@heroui/spinner";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
-import { Checkbox } from "@heroui/checkbox";
 import {
   Scale,
   Briefcase,
@@ -29,6 +28,7 @@ import {
   MapPin,
   Shield,
   Building2,
+  Users,
   Copy,
 } from "lucide-react";
 import Link from "next/link";
@@ -60,6 +60,62 @@ interface ProcessoFiltros {
   dataDistribuicaoFim: string;
   prazoVencimento: string;
 }
+
+interface FilterSectionProps {
+  title: string;
+  description?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  children: ReactNode;
+}
+
+const FilterSection = ({
+  title,
+  description,
+  icon: Icon,
+  children,
+}: FilterSectionProps) => (
+  <section className="space-y-3 rounded-2xl border border-default-200/70 bg-default-50/70 p-4">
+    <div className="flex items-start gap-2">
+      {Icon ? <Icon className="h-4 w-4 text-default-400" /> : null}
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-default-400">
+          {title}
+        </p>
+        {description ? (
+          <p className="text-xs text-default-500">{description}</p>
+        ) : null}
+      </div>
+    </div>
+    {children}
+  </section>
+);
+
+interface FilterToggleButtonProps {
+  isActive: boolean;
+  onToggle: () => void;
+  label: string;
+  icon?: ReactNode;
+  activeColor?: "primary" | "secondary" | "success" | "warning" | "danger" | "default";
+}
+
+const FilterToggleButton = ({
+  isActive,
+  onToggle,
+  label,
+  icon,
+  activeColor = "primary",
+}: FilterToggleButtonProps) => (
+  <Button
+    radius="full"
+    size="sm"
+    startContent={icon}
+    variant={isActive ? "solid" : "bordered"}
+    color={isActive ? activeColor : "default"}
+    onPress={() => onToggle()}
+  >
+    {label}
+  </Button>
+);
 
 export function ProcessosContent() {
   const { processos, isLoading, isError } = useAllProcessos();
@@ -506,310 +562,336 @@ export function ProcessosContent() {
           </CardHeader>
           <Divider />
           <CardBody>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Status */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Status</p>
-                <div className="flex flex-wrap gap-2">
-                  {Object.values(ProcessoStatus).map((status) => (
-                    <Checkbox
-                      key={status}
-                      isSelected={filtros.status.includes(status)}
-                      onValueChange={(checked) => {
-                        setFiltros((prev) => ({
-                          ...prev,
-                          status: checked
-                            ? [...prev.status, status]
-                            : prev.status.filter((s) => s !== status),
-                        }));
-                      }}
-                    >
-                      {getStatusLabel(status)}
-                    </Checkbox>
-                  ))}
-                </div>
-              </div>
-
-              {/* Fase Processual */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Fase processual</p>
-                <div className="flex flex-wrap gap-2">
-                  {Object.values(ProcessoFase).map((fase) => (
-                    <Checkbox
-                      key={fase}
-                      isSelected={filtros.fase.includes(fase)}
-                      onValueChange={(checked) => {
-                        setFiltros((prev) => ({
-                          ...prev,
-                          fase: checked
-                            ? [...prev.fase, fase]
-                            : prev.fase.filter((f) => f !== fase),
-                        }));
-                      }}
-                    >
-                      {getFaseLabel(fase)}
-                    </Checkbox>
-                  ))}
-                </div>
-              </div>
-
-              {/* Grau */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Grau</p>
-                <div className="flex flex-wrap gap-2">
-                  {Object.values(ProcessoGrau).map((grau) => (
-                    <Checkbox
-                      key={grau}
-                      isSelected={filtros.grau.includes(grau)}
-                      onValueChange={(checked) => {
-                        setFiltros((prev) => ({
-                          ...prev,
-                          grau: checked
-                            ? [...prev.grau, grau]
-                            : prev.grau.filter((g) => g !== grau),
-                        }));
-                      }}
-                    >
-                      {getGrauLabel(grau)}
-                    </Checkbox>
-                  ))}
-                </div>
-              </div>
-
-              {/* Área */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Área</p>
-                <Select
-                  placeholder="Todas as áreas"
-                  selectedKeys={filtros.areaId ? [filtros.areaId] : []}
-                  onSelectionChange={(keys) => {
-                    const selectedKey = Array.from(keys)[0] as string;
-
-                    setFiltros((prev) => ({
-                      ...prev,
-                      areaId: selectedKey || "",
-                    }));
-                  }}
+            <div className="space-y-4">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <FilterSection
+                  icon={Scale}
+                  title="Status e andamento"
+                  description="Combine status, fase processual e grau para encontrar exatamente o caso que precisa."
                 >
-                  {areasUnicas.map((area) => (
-                    <SelectItem key={area}>{area}</SelectItem>
-                  ))}
-                </Select>
-              </div>
-
-              {/* Advogado */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Advogado</p>
-                <Select
-                  placeholder="Todos os advogados"
-                  selectedKeys={filtros.advogadoId ? [filtros.advogadoId] : []}
-                  onSelectionChange={(keys) => {
-                    const selectedKey = Array.from(keys)[0] as string;
-
-                    setFiltros((prev) => ({
-                      ...prev,
-                      advogadoId: selectedKey || "",
-                    }));
-                  }}
-                >
-                  {advogadosUnicos.map((advogado) => (
-                    <SelectItem key={advogado}>{advogado}</SelectItem>
-                  ))}
-                </Select>
-              </div>
-
-              {/* Cliente */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Cliente</p>
-                <Select
-                  placeholder="Todos os clientes"
-                  selectedKeys={filtros.clienteId ? [filtros.clienteId] : []}
-                  onSelectionChange={(keys) => {
-                    const selectedKey = Array.from(keys)[0] as string;
-
-                    setFiltros((prev) => ({
-                      ...prev,
-                      clienteId: selectedKey || "",
-                    }));
-                  }}
-                >
-                  {(clientes || []).map((cliente) => (
-                    <SelectItem key={cliente.id}>
-                      <div className="flex items-center gap-2">
-                        {cliente.tipoPessoa === "JURIDICA" ? (
-                          <Building2 className="h-4 w-4 text-default-400" />
-                        ) : (
-                          <User className="h-4 w-4 text-default-400" />
-                        )}
-                        <span>{cliente.nome}</span>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs font-semibold text-default-500">
+                        Status
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.values(ProcessoStatus).map((status) => {
+                          const isActive = filtros.status.includes(status);
+                          return (
+                            <FilterToggleButton
+                              key={status}
+                              activeColor={getStatusColor(status)}
+                              icon={getStatusIcon(status)}
+                              isActive={isActive}
+                              label={getStatusLabel(status)}
+                              onToggle={() =>
+                                setFiltros((prev) => ({
+                                  ...prev,
+                                  status: isActive
+                                    ? prev.status.filter((s) => s !== status)
+                                    : [...prev.status, status],
+                                }))
+                              }
+                            />
+                          );
+                        })}
                       </div>
-                    </SelectItem>
-                  ))}
-                </Select>
-              </div>
+                    </div>
+                    <Divider className="border-dashed border-default-200" />
+                    <div>
+                      <p className="text-xs font-semibold text-default-500">
+                        Fase processual
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.values(ProcessoFase).map((fase) => {
+                          const isActive = filtros.fase.includes(fase);
+                          return (
+                            <FilterToggleButton
+                              key={fase}
+                              activeColor="secondary"
+                              isActive={isActive}
+                              label={getFaseLabel(fase)}
+                              onToggle={() =>
+                                setFiltros((prev) => ({
+                                  ...prev,
+                                  fase: isActive
+                                    ? prev.fase.filter((f) => f !== fase)
+                                    : [...prev.fase, fase],
+                                }))
+                              }
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <Divider className="border-dashed border-default-200" />
+                    <div>
+                      <p className="text-xs font-semibold text-default-500">
+                        Grau do processo
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.values(ProcessoGrau).map((grau) => {
+                          const isActive = filtros.grau.includes(grau);
+                          return (
+                            <FilterToggleButton
+                              key={grau}
+                              isActive={isActive}
+                              label={getGrauLabel(grau)}
+                              onToggle={() =>
+                                setFiltros((prev) => ({
+                                  ...prev,
+                                  grau: isActive
+                                    ? prev.grau.filter((g) => g !== grau)
+                                    : [...prev.grau, grau],
+                                }))
+                              }
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </FilterSection>
 
-              {/* Comarca */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Comarca</p>
-                <Select
-                  placeholder="Todas as comarcas"
-                  selectedKeys={filtros.comarca ? [filtros.comarca] : []}
-                  onSelectionChange={(keys) => {
-                    const selectedKey = Array.from(keys)[0] as string;
-
-                    setFiltros((prev) => ({
-                      ...prev,
-                      comarca: selectedKey || "",
-                    }));
-                  }}
+                <FilterSection
+                  icon={Users}
+                  title="Equipe e partes"
+                  description="Refine por área, advogado responsável e cliente impactado."
                 >
-                  {comarcasUnicas.map((comarca) => (
-                    <SelectItem key={comarca}>{comarca}</SelectItem>
-                  ))}
-                </Select>
+                  <div className="space-y-3">
+                    <Select
+                      label="Área"
+                      placeholder="Todas as áreas"
+                      selectedKeys={filtros.areaId ? [filtros.areaId] : []}
+                      onSelectionChange={(keys) => {
+                        const selectedKey = Array.from(keys)[0] as string;
+
+                        setFiltros((prev) => ({
+                          ...prev,
+                          areaId: selectedKey || "",
+                        }));
+                      }}
+                    >
+                      {areasUnicas.map((area) => (
+                        <SelectItem key={area}>{area}</SelectItem>
+                      ))}
+                    </Select>
+
+                    <Select
+                      label="Advogado responsável"
+                      placeholder="Todos os advogados"
+                      selectedKeys={
+                        filtros.advogadoId ? [filtros.advogadoId] : []
+                      }
+                      onSelectionChange={(keys) => {
+                        const selectedKey = Array.from(keys)[0] as string;
+
+                        setFiltros((prev) => ({
+                          ...prev,
+                          advogadoId: selectedKey || "",
+                        }));
+                      }}
+                    >
+                      {advogadosUnicos.map((advogado) => (
+                        <SelectItem key={advogado}>{advogado}</SelectItem>
+                      ))}
+                    </Select>
+
+                    <Select
+                      label="Cliente"
+                      placeholder="Todos os clientes"
+                      selectedKeys={
+                        filtros.clienteId ? [filtros.clienteId] : []
+                      }
+                      onSelectionChange={(keys) => {
+                        const selectedKey = Array.from(keys)[0] as string;
+
+                        setFiltros((prev) => ({
+                          ...prev,
+                          clienteId: selectedKey || "",
+                        }));
+                      }}
+                    >
+                      {(clientes || []).map((cliente) => (
+                        <SelectItem key={cliente.id}>
+                          <div className="flex items-center gap-2">
+                            {cliente.tipoPessoa === "JURIDICA" ? (
+                              <Building2 className="h-4 w-4 text-default-400" />
+                            ) : (
+                              <User className="h-4 w-4 text-default-400" />
+                            )}
+                            <span>{cliente.nome}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  </div>
+                </FilterSection>
               </div>
 
-              {/* Segredo de Justiça */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Segredo de Justiça</p>
-                <Select
-                  placeholder="Todos"
-                  selectedKeys={
-                    filtros.segredoJustica !== null
-                      ? [filtros.segredoJustica.toString()]
-                      : []
-                  }
-                  onSelectionChange={(keys) => {
-                    const selectedKey = Array.from(keys)[0] as string;
-
-                    setFiltros((prev) => ({
-                      ...prev,
-                      segredoJustica:
-                        selectedKey === "" ? null : selectedKey === "true",
-                    }));
-                  }}
+              <div className="grid gap-4 lg:grid-cols-2">
+                <FilterSection
+                  icon={MapPin}
+                  title="Jurisdição e sigilo"
+                  description="Selecione rapidamente a comarca e o nível de sigilo."
                 >
-                  <SelectItem key="true">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-warning" />
-                      <span>Em Segredo</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem key="false">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4 text-success" />
-                      <span>Público</span>
-                    </div>
-                  </SelectItem>
-                </Select>
-              </div>
+                  <div className="space-y-3">
+                    <Select
+                      label="Comarca"
+                      placeholder="Todas as comarcas"
+                      selectedKeys={filtros.comarca ? [filtros.comarca] : []}
+                      onSelectionChange={(keys) => {
+                        const selectedKey = Array.from(keys)[0] as string;
 
-              {/* Valor da Causa */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Valor da Causa</p>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Mínimo"
-                    startContent={
-                      <DollarSign className="h-4 w-4 text-default-400" />
-                    }
-                    type="number"
-                    value={filtros.valorMinimo}
-                    onChange={(e) =>
-                      setFiltros((prev) => ({
-                        ...prev,
-                        valorMinimo: e.target.value,
-                      }))
-                    }
-                  />
-                  <Input
-                    placeholder="Máximo"
-                    startContent={
-                      <DollarSign className="h-4 w-4 text-default-400" />
-                    }
-                    type="number"
-                    value={filtros.valorMaximo}
-                    onChange={(e) =>
-                      setFiltros((prev) => ({
-                        ...prev,
-                        valorMaximo: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
+                        setFiltros((prev) => ({
+                          ...prev,
+                          comarca: selectedKey || "",
+                        }));
+                      }}
+                    >
+                      {comarcasUnicas.map((comarca) => (
+                        <SelectItem key={comarca}>{comarca}</SelectItem>
+                      ))}
+                    </Select>
 
-              {/* Data de Distribuição */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Data de Distribuição</p>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="De"
-                    type="date"
-                    value={filtros.dataDistribuicaoInicio}
-                    onChange={(e) =>
-                      setFiltros((prev) => ({
-                        ...prev,
-                        dataDistribuicaoInicio: e.target.value,
-                      }))
-                    }
-                  />
-                  <Input
-                    placeholder="Até"
-                    type="date"
-                    value={filtros.dataDistribuicaoFim}
-                    onChange={(e) =>
-                      setFiltros((prev) => ({
-                        ...prev,
-                        dataDistribuicaoFim: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
+                    <Select
+                      label="Segredo de justiça"
+                      placeholder="Todos"
+                      selectedKeys={
+                        filtros.segredoJustica !== null
+                          ? [filtros.segredoJustica.toString()]
+                          : []
+                      }
+                      onSelectionChange={(keys) => {
+                        const selectedKey = Array.from(keys)[0] as string;
 
-              {/* Prazo de Vencimento */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Prazo de Vencimento</p>
-                <Select
-                  placeholder="Todos os prazos"
-                  selectedKeys={
-                    filtros.prazoVencimento ? [filtros.prazoVencimento] : []
-                  }
-                  onSelectionChange={(keys) => {
-                    const selectedKey = Array.from(keys)[0] as string;
+                        setFiltros((prev) => ({
+                          ...prev,
+                          segredoJustica:
+                            selectedKey === "" ? null : selectedKey === "true",
+                        }));
+                      }}
+                    >
+                      <SelectItem key="true">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-warning" />
+                          <span>Em segredo</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem key="false">
+                        <div className="flex items-center gap-2">
+                          <Eye className="h-4 w-4 text-success" />
+                          <span>Público</span>
+                        </div>
+                      </SelectItem>
+                    </Select>
+                  </div>
+                </FilterSection>
 
-                    setFiltros((prev) => ({
-                      ...prev,
-                      prazoVencimento: selectedKey || "",
-                    }));
-                  }}
+                <FilterSection
+                  icon={Calendar}
+                  title="Valores e datas"
+                  description="Acompanhe valores da causa, distribuição e prazos críticos."
                 >
-                  <SelectItem key="vencido">
-                    <div className="flex items-center gap-2">
-                      <XCircle className="h-4 w-4 text-danger" />
-                      <span>Vencido</span>
+                  <div className="space-y-3">
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Input
+                        label="Valor mínimo"
+                        startContent={
+                          <DollarSign className="h-4 w-4 text-default-400" />
+                        }
+                        type="number"
+                        value={filtros.valorMinimo}
+                        onChange={(e) =>
+                          setFiltros((prev) => ({
+                            ...prev,
+                            valorMinimo: e.target.value,
+                          }))
+                        }
+                      />
+                      <Input
+                        label="Valor máximo"
+                        startContent={
+                          <DollarSign className="h-4 w-4 text-default-400" />
+                        }
+                        type="number"
+                        value={filtros.valorMaximo}
+                        onChange={(e) =>
+                          setFiltros((prev) => ({
+                            ...prev,
+                            valorMaximo: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
-                  </SelectItem>
-                  <SelectItem key="vencendo_hoje">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-warning" />
-                      <span>Vencendo Hoje</span>
+
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Input
+                        label="Distribuição (de)"
+                        type="date"
+                        value={filtros.dataDistribuicaoInicio}
+                        onChange={(e) =>
+                          setFiltros((prev) => ({
+                            ...prev,
+                            dataDistribuicaoInicio: e.target.value,
+                          }))
+                        }
+                      />
+                      <Input
+                        label="Distribuição (até)"
+                        type="date"
+                        value={filtros.dataDistribuicaoFim}
+                        onChange={(e) =>
+                          setFiltros((prev) => ({
+                            ...prev,
+                            dataDistribuicaoFim: e.target.value,
+                          }))
+                        }
+                      />
                     </div>
-                  </SelectItem>
-                  <SelectItem key="vencendo_7_dias">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-warning" />
-                      <span>Vencendo em 7 dias</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem key="vencendo_30_dias">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <span>Vencendo em 30 dias</span>
-                    </div>
-                  </SelectItem>
-                </Select>
+
+                    <Select
+                      label="Prazos principais"
+                      placeholder="Todos os prazos"
+                      selectedKeys={
+                        filtros.prazoVencimento ? [filtros.prazoVencimento] : []
+                      }
+                      onSelectionChange={(keys) => {
+                        const selectedKey = Array.from(keys)[0] as string;
+
+                        setFiltros((prev) => ({
+                          ...prev,
+                          prazoVencimento: selectedKey || "",
+                        }));
+                      }}
+                    >
+                      <SelectItem key="vencido">
+                        <div className="flex items-center gap-2">
+                          <XCircle className="h-4 w-4 text-danger" />
+                          <span>Vencido</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem key="vencendo_hoje">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-warning" />
+                          <span>Vencendo hoje</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem key="vencendo_7_dias">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-warning" />
+                          <span>Vencendo em 7 dias</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem key="vencendo_30_dias">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-primary" />
+                          <span>Vencendo em 30 dias</span>
+                        </div>
+                      </SelectItem>
+                    </Select>
+                  </div>
+                </FilterSection>
               </div>
             </div>
           </CardBody>

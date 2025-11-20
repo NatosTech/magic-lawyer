@@ -1,15 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { Badge } from "@heroui/badge";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
-import { Skeleton } from "@heroui/react";
+import { Skeleton, Tooltip } from "@heroui/react";
 import NextLink from "next/link";
-import { Tooltip } from "@heroui/react";
+import Image from "next/image";
+import { Input } from "@heroui/input";
+import { AnimatePresence, motion } from "framer-motion";
+import { Search, Filter, RotateCcw } from "lucide-react";
 
 import { getAllTenants, type TenantResponse } from "@/app/actions/admin";
 import { title, subtitle } from "@/components/primitives";
@@ -116,76 +119,103 @@ function TenantCard({ tenant, mutate }: TenantCardProps) {
     : "border border-white/10 bg-background/70 backdrop-blur transition hover:border-primary/40";
 
   return (
-    <Card key={tenant.id} className={cardClassName}>
-      <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-lg font-semibold text-white">{tenant.name}</p>
-            {statusReason ? (
-              <Tooltip content={statusReason}>
-                <Chip
-                  className={statusChanged ? "animate-bounce" : ""}
-                  color={statusTone[tenantStatus] ?? "secondary"}
-                  size="sm"
-                  variant="flat"
-                >
-                  {statusLabel[tenantStatus] ?? tenantStatus}
-                  {isUpdating && <span className="ml-1 text-xs">⟳</span>}
-                </Chip>
-              </Tooltip>
-            ) : (
-              <Chip
-                className={statusChanged ? "animate-bounce" : ""}
-                color={statusTone[tenantStatus] ?? "secondary"}
-                size="sm"
-                variant="flat"
-              >
-                {statusLabel[tenantStatus] ?? tenantStatus}
-                {isUpdating && <span className="ml-1 text-xs">⟳</span>}
-              </Chip>
-            )}
-            {tenant.plan?.name ? (
-              <Badge color="primary" variant="flat">
-                Plano {tenant.plan.name}
-              </Badge>
-            ) : null}
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      layout
+    >
+      <Card key={tenant.id} className={cardClassName}>
+        <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5">
+                {tenant.branding?.logoUrl ? (
+                  <Image
+                    alt={`Logo ${tenant.name}`}
+                    height={56}
+                    src={tenant.branding.logoUrl}
+                    width={56}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <span className="text-lg font-semibold text-white">
+                    {tenant.name?.charAt(0)?.toUpperCase() ?? "?"}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0 space-y-1">
+                <p className="text-lg font-semibold text-white">{tenant.name}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {statusReason ? (
+                    <Tooltip content={statusReason}>
+                      <Chip
+                        className={statusChanged ? "animate-bounce" : ""}
+                        color={statusTone[tenantStatus] ?? "secondary"}
+                        size="sm"
+                        variant="flat"
+                      >
+                        {statusLabel[tenantStatus] ?? tenantStatus}
+                        {isUpdating && <span className="ml-1 text-xs">⟳</span>}
+                      </Chip>
+                    </Tooltip>
+                  ) : (
+                    <Chip
+                      className={statusChanged ? "animate-bounce" : ""}
+                      color={statusTone[tenantStatus] ?? "secondary"}
+                      size="sm"
+                      variant="flat"
+                    >
+                      {statusLabel[tenantStatus] ?? tenantStatus}
+                      {isUpdating && <span className="ml-1 text-xs">⟳</span>}
+                    </Chip>
+                  )}
+                  {tenant.plan?.name ? (
+                    <Badge color="primary" variant="flat">
+                      Plano {tenant.plan.name}
+                    </Badge>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-default-400">
+              <span>Slug: {tenant.slug}</span>
+              {tenant.domain ? <span>• Domínio: {tenant.domain}</span> : null}
+              {tenant.email ? <span>• Email: {tenant.email}</span> : null}
+              {tenant.telefone ? (
+                <span>• Telefone: {tenant.telefone}</span>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap gap-3 text-xs text-default-500">
+              <span>{tenant.counts.usuarios} usuários</span>
+              <span>• {tenant.counts.processos} processos</span>
+              <span>• {tenant.counts.clientes} clientes</span>
+              <span>
+                • Criado em{" "}
+                {new Date(tenant.createdAt).toLocaleDateString("pt-BR")}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs text-default-400">
-            <span>Slug: {tenant.slug}</span>
-            {tenant.domain ? <span>• Domínio: {tenant.domain}</span> : null}
-            {tenant.email ? <span>• Email: {tenant.email}</span> : null}
-            {tenant.telefone ? (
-              <span>• Telefone: {tenant.telefone}</span>
-            ) : null}
+          <div className="flex flex-col items-end gap-2">
+            <Button
+              as={NextLink}
+              color="primary"
+              href={`/admin/tenants/${tenant.id}`}
+              radius="full"
+              size="sm"
+              variant="flat"
+            >
+              Gerenciar
+            </Button>
+            <p className="text-xs text-default-400">
+              Última atualização em{" "}
+              {new Date(tenant.updatedAt).toLocaleString("pt-BR")}
+            </p>
           </div>
-          <div className="flex flex-wrap gap-3 text-xs text-default-500">
-            <span>{tenant.counts.usuarios} usuários</span>
-            <span>• {tenant.counts.processos} processos</span>
-            <span>• {tenant.counts.clientes} clientes</span>
-            <span>
-              • Criado em{" "}
-              {new Date(tenant.createdAt).toLocaleDateString("pt-BR")}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <Button
-            as={NextLink}
-            color="primary"
-            href={`/admin/tenants/${tenant.id}`}
-            radius="full"
-            size="sm"
-            variant="flat"
-          >
-            Gerenciar
-          </Button>
-          <p className="text-xs text-default-400">
-            Última atualização em{" "}
-            {new Date(tenant.updatedAt).toLocaleString("pt-BR")}
-          </p>
-        </div>
-      </CardBody>
-    </Card>
+        </CardBody>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -200,6 +230,59 @@ export function TenantsContent() {
   );
 
   const { tenants, totals } = useTenantsData(data);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [planFilter, setPlanFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
+
+  const planOptions = useMemo(() => {
+    const options = tenants
+      .map((tenant) => tenant.plan?.name)
+      .filter((plan): plan is string => Boolean(plan));
+
+    return Array.from(new Set(options));
+  }, [tenants]);
+
+  const filteredTenants = useMemo(() => {
+    return tenants.filter((tenant) => {
+      if (searchTerm) {
+        const normalized = searchTerm.toLowerCase();
+        const matchesSearch =
+          tenant.name.toLowerCase().includes(normalized) ||
+          tenant.slug.toLowerCase().includes(normalized) ||
+          tenant.email?.toLowerCase().includes(normalized) ||
+          tenant.domain?.toLowerCase().includes(normalized);
+
+        if (!matchesSearch) return false;
+      }
+
+      if (statusFilter !== "all" && tenant.status !== statusFilter) {
+        return false;
+      }
+
+      if (planFilter !== "all") {
+        if (!tenant.plan?.name || tenant.plan.name !== planFilter) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [tenants, searchTerm, statusFilter, planFilter]);
+
+  const statusOptions = [
+    { value: "all", label: "Todos" },
+    { value: "ACTIVE", label: "Ativos" },
+    { value: "SUSPENDED", label: "Suspensos" },
+    { value: "CANCELLED", label: "Cancelados" },
+  ];
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setPlanFilter("all");
+  };
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-8 py-12 px-3 sm:px-6">
@@ -229,6 +312,123 @@ export function TenantsContent() {
           </div>
         </div>
       </header>
+
+      <Card className="border border-white/10 bg-background/70 backdrop-blur">
+        <CardBody className="space-y-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <Input
+              className="w-full md:max-w-lg"
+              placeholder="Buscar por nome, domínio, e-mail ou slug..."
+              startContent={<Search className="h-4 w-4 text-default-400" />}
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button
+                startContent={<Filter className="h-4 w-4" />}
+                variant={showFilters ? "solid" : "bordered"}
+                onPress={() => setShowFilters((prev) => !prev)}
+              >
+                {showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+              </Button>
+              <Button
+                startContent={<RotateCcw className="h-4 w-4" />}
+                variant="light"
+                onPress={resetFilters}
+              >
+                Limpar
+              </Button>
+            </div>
+          </div>
+
+          <AnimatePresence initial={false}>
+            {showFilters ? (
+              <motion.div
+                key="filters"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+              >
+                <div className="mt-2 grid gap-4 md:grid-cols-2">
+                  <Card className="border border-white/10 bg-white/5">
+                    <CardBody className="space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-default-500">
+                        Status
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {statusOptions.map((option) => (
+                          <Button
+                            key={option.value}
+                            color={
+                              statusFilter === option.value
+                                ? "primary"
+                                : "default"
+                            }
+                            radius="full"
+                            size="sm"
+                            variant={
+                              statusFilter === option.value
+                                ? "solid"
+                                : "bordered"
+                            }
+                            onPress={() => setStatusFilter(option.value)}
+                          >
+                            {option.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </CardBody>
+                  </Card>
+
+                  <Card className="border border-white/10 bg-white/5">
+                    <CardBody className="space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-default-500">
+                        Plano
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          color={planFilter === "all" ? "primary" : "default"}
+                          radius="full"
+                          size="sm"
+                          variant={planFilter === "all" ? "solid" : "bordered"}
+                          onPress={() => setPlanFilter("all")}
+                        >
+                          Todos
+                        </Button>
+                        {planOptions.map((plan) => (
+                          <Button
+                            key={plan}
+                            color={planFilter === plan ? "primary" : "default"}
+                            radius="full"
+                            size="sm"
+                            variant={
+                              planFilter === plan ? "solid" : "bordered"
+                            }
+                            onPress={() => setPlanFilter(plan)}
+                          >
+                            {plan}
+                          </Button>
+                        ))}
+                      </div>
+                    </CardBody>
+                  </Card>
+                </div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+
+          <p className="text-xs text-default-500">
+            Mostrando{" "}
+            <span className="font-semibold text-white">
+              {filteredTenants.length}
+            </span>{" "}
+            de{" "}
+            <span className="font-semibold text-white">{tenants.length}</span>{" "}
+            tenants
+          </p>
+        </CardBody>
+      </Card>
 
       {error ? (
         <Card className="border border-danger/30 bg-danger/10 text-danger">
@@ -287,23 +487,35 @@ export function TenantsContent() {
             </CardBody>
           </Card>
 
-          {tenants.length ? (
-            <div className="space-y-4">
-              {tenants.map((tenant) => (
+          {filteredTenants.length ? (
+            <motion.div layout className="space-y-4">
+              {filteredTenants.map((tenant) => (
                 <TenantCard key={tenant.id} mutate={mutate} tenant={tenant} />
               ))}
-            </div>
+            </motion.div>
           ) : (
             <Card className="border border-white/10 bg-background/70 backdrop-blur">
-              <CardBody className="text-center py-12">
-                <div className="text-5xl mb-4">🏢</div>
+              <CardBody className="py-12 text-center">
+                <div className="mb-4 text-5xl">🏢</div>
                 <h3 className="text-lg font-medium text-white mb-1">
                   Nenhum tenant localizado
                 </h3>
                 <p className="text-sm text-default-400">
-                  Assim que um escritório for criado, você poderá controlá-lo
-                  por aqui.
+                  {tenants.length === 0
+                    ? "Assim que um escritório for criado, você poderá controlá-lo por aqui."
+                    : "Nenhum escritório corresponde aos filtros atuais. Ajuste a busca ou limpe os filtros para ver todos."}
                 </p>
+                {tenants.length > 0 ? (
+                  <Button
+                    className="mt-4"
+                    radius="full"
+                    size="sm"
+                    variant="bordered"
+                    onPress={resetFilters}
+                  >
+                    Limpar filtros
+                  </Button>
+                ) : null}
               </CardBody>
             </Card>
           )}

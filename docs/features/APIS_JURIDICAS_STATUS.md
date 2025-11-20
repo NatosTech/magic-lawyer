@@ -97,6 +97,12 @@
 - ✅ `brazil-municipios.ts` - Lista de municípios via IBGE
 - **Status:** ✅ **COMPLETO** - APIs de dados brasileiros funcionais
 
+### 6. **Cliente Comunica PJe & Cron de captura**
+- ✅ `lib/api/juridical/pje/comunica.ts` - Cliente HTTPS que realiza login com certificado A1 e consome o endpoint `/api/v1/comunicacao`
+- ✅ `app/api/cron/comunica/route.ts` - Rota/cron que utiliza o certificado ativo do tenant, respeita o rate limit informado pelo PJe e armazena o payload em auditoria
+- ✅ Atualização automática dos logs do certificado (`lastUsedAt` + `DigitalCertificateLog`) sempre que a coleta roda
+- **Status:** ✅ **EM TESTES CONTROLADOS** – depende apenas de subir o `.pfx` real do escritório e apontar o cron
+
 ---
 
 ## ❌ **O QUE NÃO ESTÁ IMPLEMENTADO**
@@ -111,6 +117,7 @@
 - ❌ Normalização de dados do PJe
 - **Onde deveria estar:** `lib/api/juridical/pje/` ou similar
 - **Dependência:** Certificado A1 ativo no sistema (já implementado)
+- 🔄 **Progresso recente:** cliente HTTPS `lib/api/juridical/pje/comunica.ts` e cron `/api/cron/comunica` já autenticam no Comunica PJe e retornam as comunicações; falta somente persistir esses dados em tabelas próprias e iniciar a normalização
 
 #### ❌ Integração eProc
 - ❌ **Status:** Não implementado
