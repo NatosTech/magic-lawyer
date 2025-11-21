@@ -97,12 +97,9 @@ async function ensurePermission(prisma, tenantId, usuarioId, permissao) {
 }
 
 async function seedTenantSandra(prisma, Prisma) {
-  const [adminPasswordHash, clientePasswordHash, advogadoPasswordHash, robsonPasswordHash, lucenaPasswordHash, secretariaPasswordHash] = await Promise.all([
+  const [adminPasswordHash, robsonPasswordHash, secretariaPasswordHash] = await Promise.all([
     bcrypt.hash("Sandra@123", 10),
-    bcrypt.hash("Cliente@123", 10),
-    bcrypt.hash("Advogado@123", 10),
     bcrypt.hash("Robson123!", 10),
-    bcrypt.hash("LucenaRevogada@123", 10),
     bcrypt.hash("Funcionario@123", 10),
   ]);
 
@@ -374,82 +371,6 @@ async function seedTenantSandra(prisma, Prisma) {
     },
   });
 
-  const ricardoUser = await ensureUsuario(prisma, tenant.id, "ricardo@sandraadv.br", {
-    firstName: "Ricardo",
-    lastName: "Araújo",
-    passwordHash: advogadoPasswordHash,
-    role: "ADVOGADO",
-    active: true,
-  });
-
-  const advogadoRicardo = await prisma.advogado.upsert({
-    where: { usuarioId: ricardoUser.id },
-    update: {
-      oabNumero: "789012",
-      oabUf: "RJ",
-      especialidades: ["TRABALHISTA"],
-    },
-    create: {
-      tenantId: tenant.id,
-      usuarioId: ricardoUser.id,
-      oabNumero: "789012",
-      oabUf: "RJ",
-      especialidades: ["TRABALHISTA"],
-    },
-  });
-
-  const fernandaUser = await ensureUsuario(prisma, tenant.id, "fernanda@sandraadv.br", {
-    firstName: "Fernanda",
-    lastName: "Lima",
-    passwordHash: advogadoPasswordHash,
-    role: "ADVOGADO",
-    active: true,
-  });
-
-  const advogadoFernanda = await prisma.advogado.upsert({
-    where: { usuarioId: fernandaUser.id },
-    update: {
-      oabNumero: "345678",
-      oabUf: "SP",
-      especialidades: ["EMPRESARIAL"],
-    },
-    create: {
-      tenantId: tenant.id,
-      usuarioId: fernandaUser.id,
-      oabNumero: "345678",
-      oabUf: "SP",
-      especialidades: ["EMPRESARIAL"],
-    },
-  });
-
-  const lucenaUser = await ensureUsuario(prisma, tenant.id, "lucena.alves@externo.br", {
-    firstName: "Lucena",
-    lastName: "Mayara Alves",
-    passwordHash: lucenaPasswordHash,
-    role: "ADVOGADO",
-    active: false,
-  });
-
-  const advogadoLucena = await prisma.advogado.upsert({
-    where: { usuarioId: lucenaUser.id },
-    update: {
-      oabNumero: "45879",
-      oabUf: "BA",
-      especialidades: ["FAMILIA"],
-      bio: "Advogada anteriormente constituída pelo cliente, poderes revogados em 20/05/2025.",
-      isExterno: true, // Marcar como advogado externo
-    },
-    create: {
-      tenantId: tenant.id,
-      usuarioId: lucenaUser.id,
-      oabNumero: "45879",
-      oabUf: "BA",
-      especialidades: ["FAMILIA"],
-      bio: "Advogada anteriormente constituída pelo cliente, poderes revogados em 20/05/2025.",
-      isExterno: true, // Marcar como advogado externo
-    },
-  });
-
   // Criar usuário da secretária Jaqueline
   const jaquelineUser = await ensureUsuario(prisma, tenant.id, "souzacostaadv@hotmail.com", {
     firstName: "Jaqueline",
@@ -484,120 +405,6 @@ async function seedTenantSandra(prisma, Prisma) {
         email: "souzacostaadv@hotmail.com",
         telefone: "+55 71 98734-3180",
         celular: "+55 71 98734-3180",
-      },
-    });
-  }
-
-  const clienteMarcosUser = await ensureUsuario(prisma, tenant.id, "cliente@sandraadv.br", {
-    firstName: "Marcos",
-    lastName: "Souza",
-    passwordHash: clientePasswordHash,
-    role: "CLIENTE",
-    active: true,
-  });
-
-  let clienteMarcos = await prisma.cliente.findFirst({
-    where: { tenantId: tenant.id, documento: "123.456.789-00" },
-  });
-
-  if (clienteMarcos) {
-    clienteMarcos = await prisma.cliente.update({
-      where: { id: clienteMarcos.id },
-      data: {
-        nome: "Marcos Souza",
-        email: "cliente@sandraadv.br",
-        telefone: "+55 11 99999-0000",
-        usuarioId: clienteMarcosUser.id,
-      },
-    });
-  } else {
-    clienteMarcos = await prisma.cliente.create({
-      data: {
-        tenantId: tenant.id,
-        tipoPessoa: "FISICA",
-        nome: "Marcos Souza",
-        documento: "123.456.789-00",
-        email: "cliente@sandraadv.br",
-        telefone: "+55 11 99999-0000",
-        usuarioId: clienteMarcosUser.id,
-      },
-    });
-  }
-
-  const clienteAnaUser = await ensureUsuario(prisma, tenant.id, "ana@sandraadv.br", {
-    firstName: "Ana Paula",
-    lastName: "Oliveira",
-    passwordHash: clientePasswordHash,
-    role: "CLIENTE",
-    active: true,
-  });
-
-  let clienteAna = await prisma.cliente.findFirst({
-    where: { tenantId: tenant.id, documento: "987.654.321-00" },
-  });
-
-  if (clienteAna) {
-    clienteAna = await prisma.cliente.update({
-      where: { id: clienteAna.id },
-      data: {
-        nome: "Ana Paula Oliveira",
-        email: "ana@sandraadv.br",
-        telefone: "+55 21 98888-0000",
-        usuarioId: clienteAnaUser.id,
-      },
-    });
-  } else {
-    clienteAna = await prisma.cliente.create({
-      data: {
-        tenantId: tenant.id,
-        tipoPessoa: "FISICA",
-        nome: "Ana Paula Oliveira",
-        documento: "987.654.321-00",
-        email: "ana@sandraadv.br",
-        telefone: "+55 21 98888-0000",
-        usuarioId: clienteAnaUser.id,
-      },
-    });
-  }
-
-  const clienteInovaUser = await ensureUsuario(prisma, tenant.id, "inova@sandraadv.br", {
-    firstName: "Carlos",
-    lastName: "Mendes",
-    passwordHash: clientePasswordHash,
-    role: "CLIENTE",
-    active: true,
-  });
-
-  let clienteInova = await prisma.cliente.findFirst({
-    where: { tenantId: tenant.id, documento: "45.678.901/0001-11" },
-  });
-
-  if (clienteInova) {
-    clienteInova = await prisma.cliente.update({
-      where: { id: clienteInova.id },
-      data: {
-        nome: "Inova Tech Ltda",
-        email: "inova@sandraadv.br",
-        telefone: "+55 11 95555-2222",
-        responsavelNome: "Carlos Mendes",
-        responsavelEmail: "carlos.mendes@inovatech.com",
-        responsavelTelefone: "+55 11 95555-2222",
-        usuarioId: clienteInovaUser.id,
-      },
-    });
-  } else {
-    clienteInova = await prisma.cliente.create({
-      data: {
-        tenantId: tenant.id,
-        tipoPessoa: "JURIDICA",
-        nome: "Inova Tech Ltda",
-        documento: "45.678.901/0001-11",
-        email: "inova@sandraadv.br",
-        telefone: "+55 11 95555-2222",
-        responsavelNome: "Carlos Mendes",
-        responsavelEmail: "carlos.mendes@inovatech.com",
-        responsavelTelefone: "+55 11 95555-2222",
-        usuarioId: clienteInovaUser.id,
       },
     });
   }
@@ -829,72 +636,6 @@ async function seedTenantSandra(prisma, Prisma) {
     }
   }
 
-  let processoMarcos = await prisma.processo.findFirst({
-    where: { tenantId: tenant.id, numero: "1020304-56.2025.8.26.0100" },
-  });
-
-  if (!processoMarcos) {
-    processoMarcos = await prisma.processo.create({
-      data: {
-        tenantId: tenant.id,
-        numero: "1020304-56.2025.8.26.0100",
-        titulo: "Ação de Revisão Contratual",
-        status: "EM_ANDAMENTO",
-        clienteId: clienteMarcos.id,
-        advogadoResponsavelId: advogadoSandra.id,
-        areaId: areaCivel?.id ?? null,
-        comarca: "São Paulo",
-        foro: "Foro Central",
-        valorCausa: new Prisma.Decimal(50000),
-        dataDistribuicao: new Date("2025-01-15T12:00:00-03:00"),
-      },
-    });
-  }
-
-  let processoAna = await prisma.processo.findFirst({
-    where: { tenantId: tenant.id, numero: "2098765-12.2025.8.19.0001" },
-  });
-
-  if (!processoAna) {
-    processoAna = await prisma.processo.create({
-      data: {
-        tenantId: tenant.id,
-        numero: "2098765-12.2025.8.19.0001",
-        titulo: "Reclamação Trabalhista",
-        status: "EM_ANDAMENTO",
-        clienteId: clienteAna.id,
-        advogadoResponsavelId: advogadoRicardo.id,
-        areaId: areaTrabalhista?.id ?? null,
-        comarca: "Rio de Janeiro",
-        foro: "TRT 1ª Região",
-        valorCausa: new Prisma.Decimal(12000),
-        dataDistribuicao: new Date("2025-03-10T09:00:00-03:00"),
-      },
-    });
-  }
-
-  let processoInova = await prisma.processo.findFirst({
-    where: { tenantId: tenant.id, numero: "5032109-45.2025.8.26.0100" },
-  });
-
-  if (!processoInova) {
-    processoInova = await prisma.processo.create({
-      data: {
-        tenantId: tenant.id,
-        numero: "5032109-45.2025.8.26.0100",
-        titulo: "Revisão de Contrato de Fornecimento",
-        status: "RASCUNHO",
-        clienteId: clienteInova.id,
-        advogadoResponsavelId: advogadoFernanda.id,
-        areaId: areaEmpresarial?.id ?? null,
-        comarca: "São Paulo",
-        foro: "Foro Regional Pinheiros",
-        valorCausa: new Prisma.Decimal(250000),
-        dataDistribuicao: new Date("2025-04-22T14:30:00-03:00"),
-      },
-    });
-  }
-
   const processoGuardaNumero = "8154973-16.2024.8.05.0001";
   const processoGuardaData = {
     numero: processoGuardaNumero,
@@ -1017,7 +758,7 @@ async function seedTenantSandra(prisma, Prisma) {
     tag: "justica_trabalho",
     fonteDescricao: "Planilha Justiça do Trabalho (PJe)",
     etiquetaTitulo: "Reclamação Trabalhista",
-    advogadoId: advogadoRicardo.id,
+    advogadoId: advogadoSandra.id,
     areaId: areaTrabalhista?.id ?? null,
     varaSuffix: "Vara do Trabalho da Bahia",
     comarcaPadrao: "Salvador/BA",
@@ -1029,7 +770,7 @@ async function seedTenantSandra(prisma, Prisma) {
     tag: "projudi_trt",
     fonteDescricao: "Planilha PROJUDI/TRT",
     etiquetaTitulo: "Processo PROJUDI",
-    advogadoId: advogadoRicardo.id,
+    advogadoId: advogadoSandra.id,
     areaId: areaTrabalhista?.id ?? null,
     varaSuffix: "Vara do Trabalho da Bahia",
     comarcaPadrao: "Salvador/BA",
@@ -1441,263 +1182,100 @@ async function seedTenantSandra(prisma, Prisma) {
     },
   });
 
-  let procuracaoLucena = await prisma.procuracao.findFirst({
-    where: { tenantId: tenant.id, numero: "PROC-LUCENA-2024" },
-  });
-
-  const procuracaoLucenaData = {
-    clienteId: clienteRobson.id,
-    arquivoUrl: null,
-    observacoes: "Procuração originalmente outorgada à Dra. Lucena Mayara Alves, revogada com substabelecimento em favor da Dra. Sandra em 20/05/2025.",
-    emitidaEm: new Date("2024-10-20T15:00:00-03:00"),
-    assinadaPeloClienteEm: new Date("2024-10-20T15:00:00-03:00"),
-    validaAte: new Date("2026-10-20T15:00:00-03:00"),
-    status: "REVOGADA",
-    emitidaPor: "ADVOGADO",
-    ativa: false,
-    revogadaEm: new Date("2025-05-20T08:00:00-03:00"),
-    createdById: adminUser.id,
-  };
-
-  if (procuracaoLucena) {
-    procuracaoLucena = await prisma.procuracao.update({
-      where: { id: procuracaoLucena.id },
-      data: procuracaoLucenaData,
-    });
-  } else {
-    procuracaoLucena = await prisma.procuracao.create({
-      data: {
-        tenantId: tenant.id,
-        numero: "PROC-LUCENA-2024",
-        ...procuracaoLucenaData,
-      },
-    });
-  }
-
-  for (const processo of processosRobson) {
-    await prisma.procuracaoProcesso.upsert({
-      where: {
-        procuracaoId_processoId: {
-          procuracaoId: procuracaoLucena.id,
-          processoId: processo.id,
-        },
-      },
-      update: {},
-      create: {
-        tenantId: tenant.id,
-        procuracaoId: procuracaoLucena.id,
-        processoId: processo.id,
-      },
-    });
-  }
-
-  await prisma.procuracaoAdvogado.upsert({
-    where: {
-      procuracaoId_advogadoId: {
-        procuracaoId: procuracaoLucena.id,
-        advogadoId: advogadoLucena.id,
-      },
-    },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      procuracaoId: procuracaoLucena.id,
-      advogadoId: advogadoLucena.id,
-    },
-  });
-
-  const documentoRg = await prisma.documento.upsert({
-    where: { id: `doc-rg-${clienteMarcos.id}` },
-    update: {
-      nome: "RG - Marcos Souza.pdf",
-      url: "https://dummyimage.com/600x800/cccccc/000000&text=RG",
+  // Documentos reais do Robson (armazenados em public/docs/sandra para dev/vercel sem Cloudinary)
+  const documentosRobson = [
+    {
+      id: "doc-robson-contrato",
+      nome: "Contrato de Honorários - Robson.pdf",
+      url: "/docs/sandra/CONTRATO_DE_HONORARIOS_2.pdf",
       contentType: "application/pdf",
       tamanhoBytes: 250000,
-      clienteId: clienteMarcos.id,
-      origem: "CLIENTE",
-      visivelParaCliente: true,
-      visivelParaEquipe: true,
+      origem: "ESCRITORIO",
+      processo: null,
     },
-    create: {
-      id: `doc-rg-${clienteMarcos.id}`,
-      tenantId: tenant.id,
-      nome: "RG - Marcos Souza.pdf",
-      url: "https://dummyimage.com/600x800/cccccc/000000&text=RG",
+    {
+      id: "doc-robson-guarda",
+      nome: "Processo 8154973-16.2024.8.05.0001 - Guarda de Família.pdf",
+      url: "/docs/sandra/PROCESSO_8154973_guarda.pdf",
       contentType: "application/pdf",
       tamanhoBytes: 250000,
-      clienteId: clienteMarcos.id,
-      origem: "CLIENTE",
-      visivelParaCliente: true,
-      visivelParaEquipe: true,
+      origem: "ESCRITORIO",
+      processo: processoGuarda,
     },
-  });
+    {
+      id: "doc-robson-uniao",
+      nome: "Processo 8155658-23.2024.8.05.0001 - União Estável.pdf",
+      url: "/docs/sandra/PROCESSO_8155658_uniao_estavel.pdf",
+      contentType: "application/pdf",
+      tamanhoBytes: 250000,
+      origem: "ESCRITORIO",
+      processo: processoUniao,
+    },
+    {
+      id: "doc-robson-medidas",
+      nome: "Processo 8155723-18.2024.8.05.0001 - Medidas Protetivas.pdf",
+      url: "/docs/sandra/PROCESSO_8155723_medidas_protetivas.pdf",
+      contentType: "application/pdf",
+      tamanhoBytes: 250000,
+      origem: "ESCRITORIO",
+      processo: processoMedidas,
+    },
+    {
+      id: "doc-robson-procuracao",
+      nome: "Procuração Robson assinada.pdf",
+      url: "/docs/sandra/PROCURACAO_ROBSON_assinado.pdf",
+      contentType: "application/pdf",
+      tamanhoBytes: 250000,
+      origem: "ESCRITORIO",
+      processo: null,
+    },
+  ];
 
-  await prisma.processoDocumento.upsert({
-    where: {
-      processoId_documentoId: {
-        processoId: processoMarcos.id,
-        documentoId: documentoRg.id,
+  for (const doc of documentosRobson) {
+    const documento = await prisma.documento.upsert({
+      where: { id: doc.id },
+      update: {
+        nome: doc.nome,
+        url: doc.url,
+        contentType: doc.contentType,
+        tamanhoBytes: doc.tamanhoBytes,
+        clienteId: clienteRobson.id,
+        origem: doc.origem,
+        visivelParaCliente: true,
+        visivelParaEquipe: true,
       },
-    },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      processoId: processoMarcos.id,
-      documentoId: documentoRg.id,
-      visivelParaCliente: true,
-    },
-  });
-
-  let procuracaoMarcos = await prisma.procuracao.findFirst({
-    where: { tenantId: tenant.id, numero: "PROC-2025-001" },
-  });
-
-  if (!procuracaoMarcos) {
-    procuracaoMarcos = await prisma.procuracao.create({
-      data: {
-        tenantId: tenant.id,
-        clienteId: clienteMarcos.id,
-        numero: "PROC-2025-001",
-        emitidaEm: new Date("2025-02-01T10:00:00-03:00"),
-        assinadaPeloClienteEm: new Date("2025-02-01T10:30:00-03:00"),
-        status: "VIGENTE",
-        emitidaPor: "ESCRITORIO",
-        validaAte: new Date("2026-02-01T10:00:00-03:00"),
-      },
-    });
-  }
-
-  await prisma.procuracaoProcesso.upsert({
-    where: {
-      procuracaoId_processoId: {
-        procuracaoId: procuracaoMarcos.id,
-        processoId: processoMarcos.id,
-      },
-    },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      procuracaoId: procuracaoMarcos.id,
-      processoId: processoMarcos.id,
-    },
-  });
-
-  const equipePrincipal = [advogadoSandra, advogadoRicardo, advogadoFernanda];
-  for (const advogadoEquipe of equipePrincipal) {
-    await prisma.procuracaoAdvogado.upsert({
-      where: {
-        procuracaoId_advogadoId: {
-          procuracaoId: procuracaoMarcos.id,
-          advogadoId: advogadoEquipe.id,
-        },
-      },
-      update: {},
       create: {
+        id: doc.id,
         tenantId: tenant.id,
-        procuracaoId: procuracaoMarcos.id,
-        advogadoId: advogadoEquipe.id,
+        nome: doc.nome,
+        url: doc.url,
+        contentType: doc.contentType,
+        tamanhoBytes: doc.tamanhoBytes,
+        clienteId: clienteRobson.id,
+        origem: doc.origem,
+        visivelParaCliente: true,
+        visivelParaEquipe: true,
       },
     });
-  }
 
-  let procuracaoAna = await prisma.procuracao.findFirst({
-    where: { tenantId: tenant.id, numero: "PROC-2025-002" },
-  });
-
-  if (!procuracaoAna) {
-    procuracaoAna = await prisma.procuracao.create({
-      data: {
-        tenantId: tenant.id,
-        clienteId: clienteAna.id,
-        numero: "PROC-2025-002",
-        emitidaEm: new Date("2025-03-01T11:00:00-03:00"),
-        assinadaPeloClienteEm: new Date("2025-03-01T11:15:00-03:00"),
-        status: "VIGENTE",
-        emitidaPor: "ADVOGADO",
-        validaAte: new Date("2026-03-01T11:00:00-03:00"),
-      },
-    });
-  }
-
-  await prisma.procuracaoProcesso.upsert({
-    where: {
-      procuracaoId_processoId: {
-        procuracaoId: procuracaoAna.id,
-        processoId: processoAna.id,
-      },
-    },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      procuracaoId: procuracaoAna.id,
-      processoId: processoAna.id,
-    },
-  });
-
-  for (const advogadoEquipe of [advogadoRicardo, advogadoFernanda]) {
-    await prisma.procuracaoAdvogado.upsert({
-      where: {
-        procuracaoId_advogadoId: {
-          procuracaoId: procuracaoAna.id,
-          advogadoId: advogadoEquipe.id,
+    if (doc.processo) {
+      await prisma.processoDocumento.upsert({
+        where: {
+          processoId_documentoId: {
+            processoId: doc.processo.id,
+            documentoId: documento.id,
+          },
         },
-      },
-      update: {},
-      create: {
-        tenantId: tenant.id,
-        procuracaoId: procuracaoAna.id,
-        advogadoId: advogadoEquipe.id,
-      },
-    });
+        update: {},
+        create: {
+          tenantId: tenant.id,
+          processoId: doc.processo.id,
+          documentoId: documento.id,
+          visivelParaCliente: true,
+        },
+      });
+    }
   }
-
-  let procuracaoInova = await prisma.procuracao.findFirst({
-    where: { tenantId: tenant.id, numero: "PROC-2025-003" },
-  });
-
-  if (!procuracaoInova) {
-    procuracaoInova = await prisma.procuracao.create({
-      data: {
-        tenantId: tenant.id,
-        clienteId: clienteInova.id,
-        numero: "PROC-2025-003",
-        emitidaEm: new Date("2025-04-05T15:00:00-03:00"),
-        status: "PENDENTE_ASSINATURA",
-        emitidaPor: "ESCRITORIO",
-        validaAte: new Date("2026-04-05T15:00:00-03:00"),
-      },
-    });
-  }
-
-  await prisma.procuracaoProcesso.upsert({
-    where: {
-      procuracaoId_processoId: {
-        procuracaoId: procuracaoInova.id,
-        processoId: processoInova.id,
-      },
-    },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      procuracaoId: procuracaoInova.id,
-      processoId: processoInova.id,
-    },
-  });
-
-  await prisma.procuracaoAdvogado.upsert({
-    where: {
-      procuracaoId_advogadoId: {
-        procuracaoId: procuracaoInova.id,
-        advogadoId: advogadoFernanda.id,
-      },
-    },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      procuracaoId: procuracaoInova.id,
-      advogadoId: advogadoFernanda.id,
-    },
-  });
 
   // Criar endereços para os usuários
   console.log("🏠 Criando endereços dos usuários...");
@@ -1739,86 +1317,6 @@ async function seedTenantSandra(prisma, Prisma) {
       pais: "Brasil",
       telefone: "+55 71 98734-3180",
       usuarioId: adminUser.id,
-    },
-  });
-
-  // Endereço do Ricardo
-  await prisma.endereco.upsert({
-    where: {
-      tenantId_apelido: {
-        tenantId: tenant.id,
-        apelido: "Residencial - Ricardo",
-      },
-    },
-    update: {
-      tipo: "RESIDENCIAL",
-      principal: true,
-      logradouro: "Rua das Flores",
-      numero: "123",
-      complemento: "Apto 45",
-      bairro: "Copacabana",
-      cidade: "Rio de Janeiro",
-      estado: "RJ",
-      cep: "22000-000",
-      pais: "Brasil",
-      telefone: "+55 21 99999-1111",
-      usuarioId: ricardoUser.id,
-    },
-    create: {
-      tenantId: tenant.id,
-      apelido: "Residencial - Ricardo",
-      tipo: "RESIDENCIAL",
-      principal: true,
-      logradouro: "Rua das Flores",
-      numero: "123",
-      complemento: "Apto 45",
-      bairro: "Copacabana",
-      cidade: "Rio de Janeiro",
-      estado: "RJ",
-      cep: "22000-000",
-      pais: "Brasil",
-      telefone: "+55 21 99999-1111",
-      usuarioId: ricardoUser.id,
-    },
-  });
-
-  // Endereço do cliente Marcos
-  await prisma.endereco.upsert({
-    where: {
-      tenantId_apelido: {
-        tenantId: tenant.id,
-        apelido: "Casa - Marcos",
-      },
-    },
-    update: {
-      tipo: "RESIDENCIAL",
-      principal: true,
-      logradouro: "Av. Paulista",
-      numero: "2000",
-      complemento: "Conj. 501",
-      bairro: "Bela Vista",
-      cidade: "São Paulo",
-      estado: "SP",
-      cep: "01310-200",
-      pais: "Brasil",
-      telefone: "+55 11 99999-0000",
-      clienteId: clienteMarcos.id,
-    },
-    create: {
-      tenantId: tenant.id,
-      apelido: "Casa - Marcos",
-      tipo: "RESIDENCIAL",
-      principal: true,
-      logradouro: "Av. Paulista",
-      numero: "2000",
-      complemento: "Conj. 501",
-      bairro: "Bela Vista",
-      cidade: "São Paulo",
-      estado: "SP",
-      cep: "01310-200",
-      pais: "Brasil",
-      telefone: "+55 11 99999-0000",
-      clienteId: clienteMarcos.id,
     },
   });
 
@@ -1866,12 +1364,7 @@ async function seedTenantSandra(prisma, Prisma) {
   console.log("\n📋 Credenciais de teste - Souza Costa Advogados Associados:");
   console.log("👑 ADMIN: sandra@adv.br / Sandra@123");
   console.log("🗂️ SECRETARIA: souzacostaadv@hotmail.com / Funcionario@123");
-  console.log("⚖️ ADVOGADO: ricardo@sandraadv.br / Advogado@123");
-  console.log("⚖️ ADVOGADO: fernanda@sandraadv.br / Advogado@123");
-  console.log("👤 CLIENTE: cliente@sandraadv.br / Cliente@123");
-  console.log("👤 CLIENTE: ana@sandraadv.br / Cliente@123");
   console.log("👤 CLIENTE: magiclawyersaas@gmail.com / Robson123!");
-  console.log("👤 CLIENTE: inova@sandraadv.br / Cliente@123");
   console.log("\n🔗 Acesso: http://localhost:9192/login");
   console.log("🏢 Slug do tenant: sandra");
 

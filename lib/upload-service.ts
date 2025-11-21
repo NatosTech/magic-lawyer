@@ -781,6 +781,20 @@ export class UploadService {
         folders,
       };
     } catch (error) {
+      const httpCode = (error as any)?.http_code || (error as any)?.error?.http_code;
+
+      if (httpCode === 420) {
+        logger.warn("Cloudinary rate limit excedido ao listar subpastas", {
+          path,
+        });
+
+        return {
+          success: false,
+          folders: [],
+          error: "Limite da API do Cloudinary excedido, tente novamente em instantes.",
+        };
+      }
+
       logger.error("Erro ao listar subpastas no Cloudinary:", error);
 
       return {
@@ -817,7 +831,16 @@ export class UploadService {
 
           folders = Array.isArray(result.folders) ? result.folders : [];
         } catch (error: any) {
-          if (error?.http_code === 404 || error?.error?.http_code === 404) {
+          const httpCode = error?.http_code || error?.error?.http_code;
+
+          if (httpCode === 420) {
+            logger.warn(
+              "Cloudinary rate limit excedido ao listar subpastas (tree traverse)",
+              { currentPath },
+            );
+
+            folders = [];
+          } else if (httpCode === 404) {
             folders = [];
           } else {
             throw error;
@@ -846,6 +869,20 @@ export class UploadService {
         tree,
       };
     } catch (error) {
+      const httpCode = (error as any)?.http_code || (error as any)?.error?.http_code;
+
+      if (httpCode === 420) {
+        logger.warn("Cloudinary rate limit excedido ao construir árvore", {
+          path,
+        });
+
+        return {
+          success: false,
+          tree: null,
+          error: "Limite da API do Cloudinary excedido, tente novamente em instantes.",
+        };
+      }
+
       logger.error("Erro ao construir árvore de pastas do Cloudinary:", error);
 
       return {

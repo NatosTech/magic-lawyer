@@ -874,7 +874,6 @@ export async function getAllProcessos(): Promise<{
       orderBy: {
         createdAt: "desc",
       },
-      take: 100,
     });
 
     // Convert Decimal objects to numbers and serialize

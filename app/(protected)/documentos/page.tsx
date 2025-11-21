@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 
 import { DocumentosContent } from "./documentos-content";
 
-import { getDocumentExplorerData } from "@/app/actions/documentos-explorer";
+import {
+  getDocumentExplorerClientes,
+  getDocumentExplorerData,
+} from "@/app/actions/documentos-explorer";
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";
 import { UserRole } from "@/app/generated/prisma";
@@ -30,15 +33,14 @@ export default async function DocumentosPage() {
 
   // Admin sempre tem acesso
   if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) {
-    const explorerResult = await getDocumentExplorerData();
+    const clientesResult = await getDocumentExplorerClientes();
 
     return (
       <DocumentosContent
-        initialData={
-          explorerResult.success ? (explorerResult.data ?? null) : null
-        }
+        initialClientes={clientesResult.success ? clientesResult.data ?? [] : []}
+        initialData={null}
         initialError={
-          !explorerResult.success ? explorerResult.error : undefined
+          !clientesResult.success ? clientesResult.error : undefined
         }
       />
     );
@@ -53,15 +55,14 @@ export default async function DocumentosPage() {
       redirect("/dashboard");
     }
 
-    const explorerResult = await getDocumentExplorerData();
+    const clientesResult = await getDocumentExplorerClientes();
 
     return (
       <DocumentosContent
-        initialData={
-          explorerResult.success ? (explorerResult.data ?? null) : null
-        }
+        initialClientes={clientesResult.success ? clientesResult.data ?? [] : []}
+        initialData={null}
         initialError={
-          !explorerResult.success ? explorerResult.error : undefined
+          !clientesResult.success ? clientesResult.error : undefined
         }
       />
     );

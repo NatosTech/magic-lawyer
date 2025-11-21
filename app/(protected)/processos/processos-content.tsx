@@ -36,6 +36,7 @@ import Link from "next/link";
 
 import { useAllProcessos } from "@/app/hooks/use-processos";
 import { useClientesParaSelect } from "@/app/hooks/use-clientes";
+import { useAdvogadosParaSelect } from "@/app/hooks/use-advogados-select";
 import { title, subtitle } from "@/components/primitives";
 import {
   ProcessoStatus,
@@ -128,6 +129,7 @@ export function ProcessosContent() {
     isError,
     refresh: refreshProcessos,
   } = useAllProcessos();
+  const { advogados } = useAdvogadosParaSelect();
   const { clientes } = useClientesParaSelect();
 
   const [filtros, setFiltros] = useState<ProcessoFiltros>({
@@ -269,19 +271,12 @@ export function ProcessosContent() {
     return Array.from(new Set(areas));
   }, [processos]);
 
-  const advogadosUnicos = useMemo(() => {
-    if (!processos || !Array.isArray(processos)) return [];
-    const advogados = processos
-      .map(
-        (p: any) =>
-          p.advogadoResponsavel?.usuario?.firstName +
-          " " +
-          p.advogadoResponsavel?.usuario?.lastName,
-      )
-      .filter(Boolean);
-
-    return Array.from(new Set(advogados));
-  }, [processos]);
+  const advogadosOptions = useMemo(() => {
+    return (advogados || []).map((adv) => ({
+      id: adv.id,
+      label: adv.label,
+    }));
+  }, [advogados]);
 
   const comarcasUnicas = useMemo(() => {
     if (!processos || !Array.isArray(processos)) return [];
@@ -343,10 +338,7 @@ export function ProcessosContent() {
       // Advogado
       if (
         filtros.advogadoId &&
-        processo.advogadoResponsavel?.usuario?.firstName +
-          " " +
-          processo.advogadoResponsavel?.usuario?.lastName !==
-          filtros.advogadoId
+        processo.advogadoResponsavel?.id !== filtros.advogadoId
       ) {
         return false;
       }
@@ -734,10 +726,11 @@ export function ProcessosContent() {
                           ...prev,
                           advogadoId: selectedKey || "",
                         }));
+                        setPaginaAtual(1);
                       }}
                     >
-                      {advogadosUnicos.map((advogado) => (
-                        <SelectItem key={advogado}>{advogado}</SelectItem>
+                      {advogadosOptions.map((adv) => (
+                        <SelectItem key={adv.id}>{adv.label}</SelectItem>
                       ))}
                     </Select>
 

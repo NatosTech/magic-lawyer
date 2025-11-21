@@ -114,6 +114,15 @@ export interface DocumentExplorerData {
   };
 }
 
+export interface DocumentExplorerClienteSummary {
+  id: string;
+  nome: string;
+  documento: string | null;
+  email: string | null;
+  telefone: string | null;
+  processos: number;
+}
+
 interface SessionUser {
   id: string;
   tenantId: string;
@@ -342,15 +351,108 @@ function mapDocumentoToFiles(
       folderSegments,
       folderPath: folderSegments.join("/"),
       versionNumber: versao?.numeroVersao,
-      metadata:
-        typeof documento.metadados === "object"
-          ? (documento.metadados as any)
-          : null,
+      metadata: {
+        ...(typeof documento.metadados === "object"
+          ? ((documento.metadados as any) || {})
+          : {}),
+        origem: (documento as any).origem ?? undefined,
+        visivel: documento.visivelParaCliente,
+      },
     } satisfies DocumentExplorerFile;
   });
 }
 
-export async function getDocumentExplorerData(): Promise<{
+export async function getDocumentExplorerClientes(): Promise<{
+  success: boolean;
+  data?: DocumentExplorerClienteSummary[];
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any as SessionUser;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    let whereCliente: Prisma.ClienteWhereInput = {
+      tenantId: user.tenantId,
+      deletedAt: null,
+    };
+
+    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+
+    if (user.role === "CLIENTE") {
+      const clienteId = await getClienteIdFromSession(session);
+
+      if (!clienteId) {
+        return { success: false, error: "Cliente não encontrado" };
+      }
+
+      whereCliente = { ...whereCliente, id: clienteId };
+    } else if (!isAdmin) {
+      const { getAccessibleAdvogadoIds } = await import(
+        "@/app/lib/advogado-access"
+      );
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+
+      if (accessibleAdvogados.length > 0) {
+        whereCliente = {
+          ...whereCliente,
+          advogadoClientes: {
+            some: {
+              advogadoId: {
+                in: accessibleAdvogados,
+              },
+            },
+          },
+        };
+      }
+    }
+
+    const clientes = await prisma.cliente.findMany({
+      where: whereCliente,
+      select: {
+        id: true,
+        nome: true,
+        documento: true,
+        email: true,
+        telefone: true,
+        _count: {
+          select: {
+            processos: { where: { deletedAt: null } },
+          },
+        },
+      },
+      orderBy: { nome: "asc" },
+    });
+
+    const summaries: DocumentExplorerClienteSummary[] = clientes.map(
+      (cliente) => ({
+        id: cliente.id,
+        nome: cliente.nome,
+        documento: cliente.documento,
+        email: cliente.email,
+        telefone: cliente.telefone,
+        processos: cliente._count.processos,
+      }),
+    );
+
+    return { success: true, data: summaries };
+  } catch (error) {
+    logger.error("Erro ao listar clientes para explorer:", error);
+    return { success: false, error: "Erro ao carregar clientes" };
+  }
+}
+
+export async function getDocumentExplorerData(
+  clienteId?: string,
+): Promise<{
   success: boolean;
   data?: DocumentExplorerData;
   error?: string;
@@ -368,10 +470,12 @@ export async function getDocumentExplorerData(): Promise<{
       return { success: false, error: "Tenant não encontrado" };
     }
 
-    let whereCliente: Prisma.ClienteWhereInput = {
-      tenantId: user.tenantId,
-      deletedAt: null,
-    };
+    let whereCliente: Prisma.ClienteWhereInput = clienteId
+      ? { tenantId: user.tenantId, id: clienteId, deletedAt: null }
+      : {
+          tenantId: user.tenantId,
+          deletedAt: null,
+        };
 
     const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
 
@@ -521,6 +625,7 @@ export async function getDocumentExplorerData(): Promise<{
     let totalProcessos = 0;
     let totalDocumentos = 0;
     let totalArquivos = 0;
+    let cloudinaryRateLimited = false;
 
     for (const cliente of clientes) {
       const processosDto: DocumentExplorerProcess[] = [];
@@ -539,7 +644,13 @@ export async function getDocumentExplorerData(): Promise<{
         );
 
         const folderTreeResult =
-          await uploadService.buildFolderTree(baseFolder);
+          cloudinaryRateLimited
+            ? { success: false, tree: null, error: "Limite da API do Cloudinary excedido" }
+            : await uploadService.buildFolderTree(baseFolder);
+
+        if (folderTreeResult.error?.includes("Limite da API")) {
+          cloudinaryRateLimited = true;
+        }
 
         const causasProcesso =
           processo.causasVinculadas?.map((processoCausa: any) => ({
@@ -586,7 +697,13 @@ export async function getDocumentExplorerData(): Promise<{
         id: cliente.id,
         nome: cliente.nome,
       });
-      const treeResult = await uploadService.buildFolderTree(baseFolderCliente);
+      const treeResult = cloudinaryRateLimited
+        ? { success: false, tree: null, error: "Limite da API do Cloudinary excedido" }
+        : await uploadService.buildFolderTree(baseFolderCliente);
+
+      if (treeResult.error?.includes("Limite da API")) {
+        cloudinaryRateLimited = true;
+      }
 
       if (treeResult.success) {
         documentosGeraisTree = treeResult.tree;
