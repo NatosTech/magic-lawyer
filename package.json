@@ -6,6 +6,7 @@
     "dev": "pkill -f 'next dev' || true && cross-env PORT=9192 next dev --turbopack",
     "dev:mac": "PORT=9192 next dev --turbopack",
     "dev:windows": "set PORT=9192 && next dev --turbopack",
+    "dev:windows:ngrok": "concurrently \"npm run dev:windows\" \"ngrok http 9192\" \"node scripts/wait-and-cleanup.js\"",
     "dev:with-ngrok": "pkill -f 'next' || true && pkill -f 'ngrok' || true && pkill -f 'node.*magic-lawyer' || true && sleep 2 && concurrently \"npm run dev\" \"ngrok http 9192\" \"node scripts/wait-and-cleanup.js\"",
     "dev:worker": "node scripts/start-notifications-worker.js",
     "build": "prisma generate && next build",
