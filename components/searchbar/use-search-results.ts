@@ -6,13 +6,34 @@ import { useState, useEffect } from "react";
 
 import { searchContent } from "@/app/actions/search";
 
-export function useSearchResults(query: string, isOpen: boolean) {
+export function useSearchResults(
+  query: string,
+  isOpen: boolean,
+  tenantId?: string | null,
+  options?: {
+    allowEmptyQuery?: boolean;
+  },
+) {
   const [data, setData] = useState<SearchResult[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const allowEmptyQuery = options?.allowEmptyQuery ?? false;
+  const minQueryLength = allowEmptyQuery ? 0 : 2;
+  const normalizedQueryLength = query.trim().length;
+
+  // Para super admin, permitir "ALL" ou qualquer tenantId válido
+  // Para usuários normais, tenantId não pode ser vazio
+  const isValidTenantContext = 
+    tenantId === undefined || // Não especificado (usuário normal usa do session)
+    tenantId === null || // Null é válido para super admin sem tenant selecionado
+    tenantId === "ALL" || // "ALL" é válido para super admin
+    tenantId !== ""; // Qualquer string não vazia é válida
 
   const search = async () => {
-    if (!query.trim() || query.length < 2) {
+    if (
+      normalizedQueryLength < minQueryLength ||
+      !isValidTenantContext
+    ) {
       setData(null);
 
       return;
@@ -22,7 +43,9 @@ export function useSearchResults(query: string, isOpen: boolean) {
     setError(null);
 
     try {
-      const results = await searchContent(query);
+      const results = await searchContent(query, {
+        tenantId: tenantId ?? undefined,
+      });
 
       setData(results);
     } catch (err) {
@@ -35,8 +58,13 @@ export function useSearchResults(query: string, isOpen: boolean) {
 
   // Debounced search
   useEffect(() => {
-    if (!isOpen || !query.trim()) {
+    if (
+      !isOpen ||
+      normalizedQueryLength < minQueryLength ||
+      !isValidTenantContext
+    ) {
       setData(null);
+      setError(null);
 
       return;
     }
@@ -46,7 +74,7 @@ export function useSearchResults(query: string, isOpen: boolean) {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [query, isOpen]);
+  }, [query, isOpen, tenantId, minQueryLength, normalizedQueryLength]);
 
   return {
     data,

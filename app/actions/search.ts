@@ -5,31 +5,204 @@ import type { SearchResult } from "@/components/searchbar";
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
 import logger from "@/lib/logger";
+import { UserRole } from "@/app/generated/prisma";
 
-export async function searchContent(query: string): Promise<SearchResult[]> {
-  if (!query.trim() || query.length < 2) {
-    return [];
-  }
+interface SearchOptions {
+  tenantId?: string | null;
+}
 
+export async function searchContent(
+  query: string,
+  options: SearchOptions = {},
+): Promise<SearchResult[]> {
   const session = await getSession();
 
-  if (!session?.user?.tenantId) {
+  logger.info("[search] searchContent chamado", {
+    query,
+    optionsTenantId: options.tenantId,
+    hasSession: !!session,
+    userId: session?.user?.id,
+  });
+
+  const sessionTenantId = session?.user?.tenantId ?? options.tenantId ?? null;
+  const userRole = (session?.user as any)?.role as UserRole | undefined;
+  const isSuperAdmin = userRole === UserRole.SUPER_ADMIN;
+  const requestedTenantId = options.tenantId ?? sessionTenantId;
+
+  logger.info("[search] contexto determinado", {
+    sessionTenantId,
+    userRole,
+    isSuperAdmin,
+    requestedTenantId,
+  });
+
+  const rawQuery = query.trim();
+  const searchTerm = rawQuery.toLowerCase();
+  const normalizedDigits = rawQuery.replace(/\D/g, "");
+
+  const isQueryTooShort = !query.trim() || query.length < 2;
+
+  logger.info("[search] validação de query", {
+    rawQuery,
+    isQueryTooShort,
+    isSuperAdmin,
+    allowEmpty: isSuperAdmin,
+  });
+
+  if (isQueryTooShort && !isSuperAdmin) {
+    logger.info("[search] query muito curta para usuário normal");
     return [];
   }
 
-  const searchTerm = query.toLowerCase().trim();
+  // Para Super Admin: permitir busca sem tenant específico (retorna agregados)
+  // Para usuários normais: obrigatório ter tenantId da sessão
+  if (!isSuperAdmin) {
+    if (!requestedTenantId) {
+      logger.warn("[search] usuário normal sem tenantId");
+      return [];
+    }
+    if (requestedTenantId !== sessionTenantId) {
+      logger.warn("[search] tentativa de acesso a tenant diferente", {
+        requestedTenantId,
+        sessionTenantId,
+      });
+      return [];
+    }
+  }
+
   const results: SearchResult[] = [];
 
   try {
+    // Para Super Admin: retornar apenas agregados por tenant, sem dados sensíveis
+    if (isSuperAdmin) {
+      logger.info("[search] modo super admin", {
+        requestedTenantId,
+        searchTerm,
+        isAllTenants: requestedTenantId === "ALL" || !requestedTenantId,
+      });
+
+      // Se não há query ou query vazia, retornar todos os tenants (limitado)
+      const whereClause: any = {};
+      
+      if (requestedTenantId && requestedTenantId !== "ALL") {
+        whereClause.id = requestedTenantId;
+      }
+
+      // Se há query, adicionar filtro de busca
+      if (searchTerm && searchTerm.length > 0) {
+        whereClause.OR = [
+          { name: { contains: searchTerm, mode: "insensitive" as const } },
+          { slug: { contains: searchTerm, mode: "insensitive" as const } },
+          { domain: { contains: searchTerm, mode: "insensitive" as const } },
+        ];
+      }
+
+      const tenants = await prisma.tenant.findMany({
+        where: whereClause,
+        take: 10,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          domain: true,
+          _count: {
+            select: {
+              processos: true,
+              clientes: true,
+              documentos: true,
+            },
+          },
+        },
+        orderBy: {
+          name: "asc",
+        },
+      });
+
+      logger.info("[search] tenants encontrados para super admin", {
+        count: tenants.length,
+      });
+
+      // Fallback: se a busca não casar, mas há tenant selecionado, retorna ele
+      if (
+        tenants.length === 0 &&
+        requestedTenantId &&
+        requestedTenantId !== "ALL"
+      ) {
+        logger.info("[search] tentando buscar tenant específico", {
+          tenantId: requestedTenantId ?? undefined,
+        });
+
+        const tenant = await prisma.tenant.findUnique({
+          where: { id: requestedTenantId },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            domain: true,
+            _count: {
+              select: {
+                processos: true,
+                clientes: true,
+                documentos: true,
+              },
+            },
+          },
+        });
+
+        if (tenant) {
+          tenants.push(tenant);
+          logger.info("[search] tenant específico encontrado", {
+            tenantName: tenant.name,
+          });
+        }
+      }
+
+      tenants.forEach((tenant) => {
+        results.push({
+          id: `tenant-${tenant.id}`,
+          type: "tenant",
+          title: tenant.name,
+          description: tenant.domain ?? tenant.slug,
+          href: `/admin/tenants/${tenant.slug}`,
+          status: `${tenant._count.processos} processos · ${tenant._count.clientes} clientes`,
+          statusColor: "primary",
+        });
+      });
+
+      logger.info("[search] resultados super admin", {
+        total: results.length,
+      });
+
+      return results.slice(0, 10);
+    }
+
     // Buscar processos
+    logger.info("[search] processos query", {
+      tenantId: requestedTenantId ?? undefined,
+      rawQuery,
+      searchTerm,
+      normalizedDigits,
+    });
+
     const processos = await prisma.processo.findMany({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: requestedTenantId ?? undefined,
         deletedAt: null,
         OR: [
-          { numero: { contains: searchTerm, mode: "insensitive" } },
-          { titulo: { contains: searchTerm, mode: "insensitive" } },
-          { descricao: { contains: searchTerm, mode: "insensitive" } },
+          { numero: { contains: searchTerm, mode: "insensitive" as const } },
+          // Permitir busca por dígitos apenas (caso o formato salvo seja diferente)
+          ...(normalizedDigits.length >= 4
+            ? [
+                {
+                  numero: {
+                    contains: normalizedDigits,
+                    mode: "insensitive" as const,
+                  },
+                },
+              ]
+            : []),
+          { titulo: { contains: searchTerm, mode: "insensitive" as const } },
+          { descricao: { contains: searchTerm, mode: "insensitive" as const } },
         ],
       },
       take: 5,
@@ -45,6 +218,11 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
           },
         },
       },
+    });
+
+    logger.info("[search] processos encontrados", {
+      tenantId: requestedTenantId ?? undefined,
+      total: processos.length,
     });
 
     processos.forEach((processo) => {
@@ -65,11 +243,11 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     // Buscar clientes
     const clientes = await prisma.cliente.findMany({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: requestedTenantId ?? undefined,
         OR: [
-          { nome: { contains: searchTerm, mode: "insensitive" } },
-          { email: { contains: searchTerm, mode: "insensitive" } },
-          { documento: { contains: searchTerm, mode: "insensitive" } },
+          { nome: { contains: searchTerm, mode: "insensitive" as const } },
+          { email: { contains: searchTerm, mode: "insensitive" as const } },
+          { documento: { contains: searchTerm, mode: "insensitive" as const } },
         ],
       },
       take: 5,
@@ -99,10 +277,10 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     // Buscar documentos
     const documentos = await prisma.documento.findMany({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: requestedTenantId ?? undefined,
         OR: [
-          { nome: { contains: searchTerm, mode: "insensitive" } },
-          { descricao: { contains: searchTerm, mode: "insensitive" } },
+          { nome: { contains: searchTerm, mode: "insensitive" as const } },
+          { descricao: { contains: searchTerm, mode: "insensitive" as const } },
         ],
       },
       take: 5,
@@ -143,14 +321,17 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     // Buscar juízes
     const juizes = await prisma.juiz.findMany({
       where: {
+        ...(requestedTenantId
+          ? { processos: { some: { tenantId: requestedTenantId } } }
+          : {}),
         OR: [
-          { nome: { contains: searchTerm, mode: "insensitive" } },
-          { nomeCompleto: { contains: searchTerm, mode: "insensitive" } },
-          { cpf: { contains: searchTerm, mode: "insensitive" } },
-          { oab: { contains: searchTerm, mode: "insensitive" } },
-          { email: { contains: searchTerm, mode: "insensitive" } },
-          { vara: { contains: searchTerm, mode: "insensitive" } },
-          { comarca: { contains: searchTerm, mode: "insensitive" } },
+          { nome: { contains: searchTerm, mode: "insensitive" as const } },
+          { nomeCompleto: { contains: searchTerm, mode: "insensitive" as const } },
+          { cpf: { contains: searchTerm, mode: "insensitive" as const } },
+          { oab: { contains: searchTerm, mode: "insensitive" as const } },
+          { email: { contains: searchTerm, mode: "insensitive" as const } },
+          { vara: { contains: searchTerm, mode: "insensitive" as const } },
+          { comarca: { contains: searchTerm, mode: "insensitive" as const } },
         ],
       },
       take: 5,
@@ -180,11 +361,11 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
     // Buscar usuários (apenas se for admin)
     const usuarios = await prisma.usuario.findMany({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: requestedTenantId ?? undefined,
         OR: [
-          { firstName: { contains: searchTerm, mode: "insensitive" } },
-          { lastName: { contains: searchTerm, mode: "insensitive" } },
-          { email: { contains: searchTerm, mode: "insensitive" } },
+          { firstName: { contains: searchTerm, mode: "insensitive" as const } },
+          { lastName: { contains: searchTerm, mode: "insensitive" as const } },
+          { email: { contains: searchTerm, mode: "insensitive" as const } },
         ],
       },
       take: 3,
@@ -222,6 +403,16 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
 
       return a.title.localeCompare(b.title);
     });
+
+    if (results.length === 0) {
+      logger.info("[search] Nenhum resultado", {
+        query: rawQuery,
+        tenant: requestedTenantId,
+        userId: session?.user?.id,
+        role: userRole,
+        scope: "tenant-aggregated",
+      });
+    }
 
     return results.slice(0, 10); // Limitar a 10 resultados
   } catch (error) {

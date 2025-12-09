@@ -11,6 +11,11 @@ import {
   ProcessoPrazoStatus,
   ProcessoPolo,
 } from "@/app/generated/prisma";
+import {
+  extractChangedFieldsFromDiff,
+  logAudit,
+  toAuditJson,
+} from "@/app/lib/audit/log";
 import { ProcessoNotificationIntegration } from "@/app/lib/notifications/examples/processo-integration";
 import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notification-service";
 import { buildProcessoDiff } from "@/app/lib/processos/diff";
@@ -1922,6 +1927,43 @@ export async function createProcesso(data: ProcessoCreateInput) {
       logger.warn("Falha ao emitir notificação de processo criado", e);
     }
 
+    try {
+      const actorName =
+        `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+        (user.email as string | undefined) ||
+        "Usuário";
+      const auditDados = {
+        processoId: processo.id,
+        numero: processo.numero,
+        clienteId: processo.clienteId,
+        status: processo.status,
+        titulo: processo.titulo ?? null,
+        fase: processo.fase ?? null,
+        grau: processo.grau ?? null,
+        areaId: processo.areaId ?? null,
+        tribunalId: processo.tribunalId ?? null,
+        juizId: processo.juizId ?? null,
+        advogadoResponsavelId: processo.advogadoResponsavelId ?? null,
+        prazoPrincipal: processo.prazoPrincipal ?? null,
+        createdAt: processo.createdAt,
+        criadoPor: actorName,
+        criadoPorId: user.id,
+      };
+
+      await logAudit({
+        tenantId: user.tenantId,
+        usuarioId: user.id,
+        acao: "PROCESSO_CRIADO",
+        entidade: "Processo",
+        entidadeId: processo.id,
+        dados: toAuditJson(auditDados),
+        previousValues: null,
+        changedFields: Object.keys(auditDados),
+      });
+    } catch (auditError) {
+      logger.warn("Falha ao registrar auditoria de processo criado", auditError);
+    }
+
     return {
       success: true,
       processo: serialized,
@@ -2249,16 +2291,16 @@ export async function updateProcesso(
           (user.email as string | undefined) ||
           "Usuário";
 
-        const auditDiff: Prisma.JsonArray = diff.items.map((item) => ({
+        const auditDiff = diff.items.map((item) => ({
           field: item.field,
           label: item.label,
           before: item.before,
           after: item.after,
           beforeRaw: item.beforeRaw ?? null,
           afterRaw: item.afterRaw ?? null,
-        })) as Prisma.JsonArray;
+        }));
 
-        const auditStatusChange: Prisma.JsonValue = statusChange
+        const auditStatusChange = statusChange
           ? {
               de: statusChange.before,
               para: statusChange.after,
@@ -2267,7 +2309,7 @@ export async function updateProcesso(
             }
           : null;
 
-        const auditDados: Prisma.JsonObject = {
+        const auditDados = toAuditJson({
           processoId,
           numero: atualizado.numero,
           diff: auditDiff,
@@ -2280,20 +2322,22 @@ export async function updateProcesso(
           executadoPor: actorName,
           executadoPorId: user.id,
           executadoEm: new Date().toISOString(),
-        };
+          valoresAtuais: convertAllDecimalFields(atualizado as any),
+        });
 
-        await prisma.auditLog.create({
-          data: {
-            tenantId,
-            usuarioId: user.id,
-            acao: statusChange
-              ? "PROCESSO_STATUS_ALTERADO"
-              : "PROCESSO_ATUALIZADO",
-            entidade: "Processo",
-            entidadeId: processoId,
-            dados: auditDados,
-            ip: null,
-          },
+        await logAudit({
+          tenantId,
+          usuarioId: user.id,
+          acao: statusChange
+            ? "PROCESSO_STATUS_ALTERADO"
+            : "PROCESSO_ATUALIZADO",
+          entidade: "Processo",
+          entidadeId: processoId,
+          dados: auditDados,
+          previousValues: toAuditJson(
+            convertAllDecimalFields(processo as any),
+          ),
+          changedFields: extractChangedFieldsFromDiff(diff.items),
         });
       }
     } catch (e) {

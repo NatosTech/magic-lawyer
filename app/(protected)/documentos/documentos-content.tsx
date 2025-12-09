@@ -1208,6 +1208,13 @@ export function DocumentosContent({
                           label="Data de upload"
                           visibleMonths={1}
                           onChange={(range) => {
+                            if (!range) {
+                              setFiltros((prev) => ({
+                                ...prev,
+                                dataUpload: { start: null, end: null },
+                              }));
+                              return;
+                            }
                             setFiltros((prev) => ({
                               ...prev,
                               dataUpload: {

@@ -16,7 +16,7 @@ import { Modal } from "@/components/ui/modal";
 
 export type SearchResult = {
   id: string;
-  type: "processo" | "cliente" | "documento" | "usuario" | "juiz";
+  type: "processo" | "cliente" | "documento" | "usuario" | "juiz" | "tenant";
   title: string;
   description?: string;
   href: string;
@@ -127,6 +127,8 @@ export function SearchBar({ className }: SearchBarProps) {
         return "👥";
       case "juiz":
         return "👨‍⚖️";
+      case "tenant":
+        return "🏢";
       default:
         return "🔍";
     }
@@ -144,6 +146,8 @@ export function SearchBar({ className }: SearchBarProps) {
         return "Usuário";
       case "juiz":
         return "Juiz";
+      case "tenant":
+        return "Tenant";
       default:
         return "Resultado";
     }

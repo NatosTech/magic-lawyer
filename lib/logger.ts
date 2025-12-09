@@ -1,13 +1,15 @@
+/* eslint-disable no-console */
 /**
  * Logger util para centralizar o uso de logs e evitar warnings do ESLint.
- * Por padrão, silencia logs em produção; ajuste se quiser manter logs ativos.
+ * Por padrão, mantém logs ativos; defina LOG_SILENT=true para silenciar.
  */
-const isProduction = process.env.NODE_ENV === "production";
+const isSilenced =
+  process.env.LOG_SILENT === "true" || process.env.LOG_SILENT === "1";
 
 type LogFn = (...args: unknown[]) => void;
 
 const createLogger = (fn: LogFn): LogFn => {
-  if (isProduction) {
+  if (isSilenced) {
     return () => {
       /* noop em produção */
     };

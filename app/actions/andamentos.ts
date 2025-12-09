@@ -5,6 +5,11 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { MovimentacaoTipo } from "@/app/generated/prisma";
+import {
+  extractChangedFieldsFromDiff,
+  logAudit,
+  toAuditJson,
+} from "@/app/lib/audit/log";
 import { buildAndamentoDiff } from "@/app/lib/andamentos/diff";
 
 // ============================================
@@ -289,6 +294,12 @@ export async function createAndamento(
   try {
     const tenantId = await getTenantId();
     const userId = await getUserId();
+    const session = await getSession();
+    const actor = session?.user as any;
+    const actorName =
+      `${actor?.firstName ?? ""} ${actor?.lastName ?? ""}`.trim() ||
+      (actor?.email as string | undefined) ||
+      "Usuário";
 
     // Verificar se processo existe e pertence ao tenant
     const processo = await prisma.processo.findFirst({
@@ -431,6 +442,61 @@ export async function createAndamento(
       );
     }
 
+    try {
+      const auditDados = toAuditJson({
+        andamentoId: andamento.id,
+        processoId: input.processoId,
+        numeroProcesso: processo.numero,
+        titulo: andamento.titulo,
+        descricao: andamento.descricao ?? null,
+        tipo: andamento.tipo ?? null,
+        dataMovimentacao: andamento.dataMovimentacao,
+        prazo: andamento.prazo ?? null,
+        notificacoes: {
+          cliente: andamento.notificarCliente,
+          email: andamento.notificarEmail,
+          whatsapp: andamento.notificarWhatsapp,
+          mensagemPersonalizada: andamento.mensagemPersonalizada ?? null,
+        },
+        gerouPrazo: Boolean(input.geraPrazo && input.prazo),
+        criadoPor: actorName,
+        criadoPorId: userId,
+      });
+
+      const changedFields = [
+        "processoId",
+        "titulo",
+        "descricao",
+        "tipo",
+        "dataMovimentacao",
+        "prazo",
+        "notificarCliente",
+        "notificarEmail",
+        "notificarWhatsapp",
+        "mensagemPersonalizada",
+      ];
+
+      if (input.geraPrazo) {
+        changedFields.push("geraPrazo");
+      }
+
+      await logAudit({
+        tenantId,
+        usuarioId: userId,
+        acao: "ANDAMENTO_CRIADO",
+        entidade: "Andamento",
+        entidadeId: andamento.id,
+        dados: auditDados,
+        previousValues: null,
+        changedFields,
+      });
+    } catch (auditError) {
+      console.warn(
+        "Falha ao registrar auditoria de criação de andamento",
+        auditError,
+      );
+    }
+
     revalidatePath("/processos");
     revalidatePath(`/processos/${input.processoId}`);
 
@@ -458,6 +524,18 @@ export async function updateAndamento(
 ): Promise<ActionResponse<any>> {
   try {
     const tenantId = await getTenantId();
+    const session = await getSession();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const actor = session.user as any;
+    const actorName =
+      `${actor?.firstName ?? ""} ${actor?.lastName ?? ""}`.trim() ||
+      (actor?.email as string | undefined) ||
+      "Usuário";
 
     // Verificar se andamento existe e pertence ao tenant
     const andamentoExistente = await prisma.movimentacaoProcesso.findFirst({
@@ -584,6 +662,40 @@ export async function updateAndamento(
           e,
         );
       }
+
+      try {
+        const auditDados = toAuditJson({
+          andamentoId: andamento.id,
+          processoId: andamento.processo.id,
+          processoNumero: andamento.processo.numero,
+          diff: diff.items,
+          changesSummary:
+            diff.summary || "Informações do andamento foram atualizadas",
+          valoresAtuais: andamento,
+          atualizadoPor: actorName,
+          atualizadoPorId: userId,
+          atualizadoEm: new Date().toISOString(),
+        });
+
+        await logAudit({
+          tenantId,
+          usuarioId: userId,
+          acao: "ANDAMENTO_ATUALIZADO",
+          entidade: "Andamento",
+          entidadeId: andamento.id,
+          dados: auditDados,
+          previousValues: toAuditJson({
+            ...andamentoExistente,
+            processoId: andamentoExistente.processoId,
+          }),
+          changedFields: extractChangedFieldsFromDiff(diff.items),
+        });
+      } catch (auditError) {
+        console.warn(
+          "Falha ao registrar auditoria de atualização de andamento",
+          auditError,
+        );
+      }
     }
 
     revalidatePath("/processos");
@@ -612,6 +724,18 @@ export async function deleteAndamento(
 ): Promise<ActionResponse<null>> {
   try {
     const tenantId = await getTenantId();
+    const session = await getSession();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const actor = session.user as any;
+    const actorName =
+      `${actor?.firstName ?? ""} ${actor?.lastName ?? ""}`.trim() ||
+      (actor?.email as string | undefined) ||
+      "Usuário";
 
     // Verificar se andamento existe e pertence ao tenant
     const andamento = await prisma.movimentacaoProcesso.findFirst({
@@ -631,6 +755,30 @@ export async function deleteAndamento(
     await prisma.movimentacaoProcesso.delete({
       where: { id: andamentoId },
     });
+
+    try {
+      await logAudit({
+        tenantId,
+        usuarioId: userId,
+        acao: "ANDAMENTO_EXCLUIDO",
+        entidade: "Andamento",
+        entidadeId: andamentoId,
+        dados: toAuditJson({
+          andamentoId,
+          processoId: andamento.processoId,
+          removidoEm: new Date().toISOString(),
+          removidoPor: actorName,
+          removidoPorId: userId,
+        }),
+        previousValues: toAuditJson(andamento),
+        changedFields: ["deleted"],
+      });
+    } catch (auditError) {
+      console.warn(
+        "Falha ao registrar auditoria de exclusão de andamento",
+        auditError,
+      );
+    }
 
     revalidatePath("/processos");
     revalidatePath(`/processos/${andamento.processoId}`);
