@@ -1,5 +1,6 @@
 import { Suspense } from "react";
-import { Card, CardBody, Spinner } from "@heroui/react";
+import { Card, CardBody } from "@heroui/card";
+import { Spinner } from "@heroui/spinner";
 import { ShieldAlert } from "lucide-react";
 
 import { PermissoesNegadasTable } from "./permissoes-negadas-table";

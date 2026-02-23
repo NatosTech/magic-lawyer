@@ -217,7 +217,7 @@ export async function testarConfiguracaoEmail(): Promise<
         conexaoOk,
         detalhes: conexaoOk
           ? "Configuração de email está funcionando corretamente"
-          : "Erro na configuração de email. Verifique as variáveis de ambiente SMTP.",
+          : "Erro na configuração de email. Verifique o remetente e a API key do Resend.",
       },
     };
   } catch (error) {

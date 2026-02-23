@@ -68,7 +68,7 @@ import {
   upsertTenantEmailCredential,
   deleteTenantEmailCredential,
   testTenantEmailConnection,
-  logPasswordView,
+  logApiKeyView,
 } from "@/app/actions/tenant-email-credentials";
 import { UserManagementModal } from "@/components/user-management-modal";
 import {
@@ -1323,8 +1323,8 @@ function EmailTab({ tenantId }: { tenantId: string }) {
       return res.data.map((cred) => ({
         id: cred.id,
         type: cred.type,
-        email: cred.email,
-        appPassword: cred.appPassword,
+        fromAddress: cred.fromAddress,
+        apiKey: cred.apiKey,
         fromName: cred.fromName,
         createdAt: cred.createdAt.toISOString(),
         updatedAt: cred.updatedAt.toISOString(),
@@ -1333,9 +1333,9 @@ function EmailTab({ tenantId }: { tenantId: string }) {
   );
 
   const [formType, setFormType] = useState<"DEFAULT" | "ADMIN">("DEFAULT");
-  const [formEmail, setFormEmail] = useState("");
+  const [formFromAddress, setFormFromAddress] = useState("");
   const [formFromName, setFormFromName] = useState("");
-  const [formAppPassword, setFormAppPassword] = useState("");
+  const [formApiKey, setFormApiKey] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState<"DEFAULT" | "ADMIN" | null>(null);
@@ -1344,25 +1344,25 @@ function EmailTab({ tenantId }: { tenantId: string }) {
     if (!data) return;
     const existing = data.find((c) => c.type === formType);
 
-    setFormEmail(existing?.email ?? "");
+    setFormFromAddress(existing?.fromAddress ?? "");
     setFormFromName(existing?.fromName ?? "");
-    setFormAppPassword(existing?.appPassword ?? "");
+    setFormApiKey(existing?.apiKey ?? "");
     setIsPasswordVisible(false); // Resetar visibilidade ao mudar tipo
   }, [data, formType]);
 
   const handleTogglePasswordVisibility = async () => {
     if (!isPasswordVisible) {
-      // Ao mostrar a senha, registrar auditoria
-      await logPasswordView(tenantId, formType);
+      // Ao mostrar a API key, registrar auditoria
+      await logApiKeyView(tenantId, formType);
     }
     setIsPasswordVisible(!isPasswordVisible);
   };
 
   const handleSave = async () => {
-    if (!formEmail || !formAppPassword) {
+    if (!formFromAddress || !formApiKey) {
       addToast({
         title: "Campos obrigatórios",
-        description: "Informe email e senha de app",
+        description: "Informe remetente e API key do Resend",
         color: "warning",
       });
 
@@ -1373,8 +1373,8 @@ function EmailTab({ tenantId }: { tenantId: string }) {
       const res = await upsertTenantEmailCredential({
         tenantId,
         type: formType,
-        email: formEmail,
-        appPassword: formAppPassword,
+        fromAddress: formFromAddress,
+        apiKey: formApiKey,
         fromName: formFromName || null,
       });
 
@@ -1417,7 +1417,7 @@ function EmailTab({ tenantId }: { tenantId: string }) {
       } else {
         addToast({
           title: "❌ Falha na verificação",
-          description: `Não foi possível conectar com as credenciais ${type}. Verifique se o email e senha de app estão corretos.`,
+          description: `Não foi possível validar as credenciais ${type}. Verifique remetente e API key do Resend.`,
           color: "danger",
           timeout: 8000,
         });
@@ -1546,20 +1546,20 @@ function EmailTab({ tenantId }: { tenantId: string }) {
             />
             <Input
               isRequired
-              description="Email da conta de envio (Gmail, Outlook, etc.)"
-              label="Email do Provedor"
-              placeholder="email@provedor.com"
+              description="Endereço de remetente verificado no Resend"
+              label="Remetente (From Address)"
+              placeholder="noreply@seudominio.com"
               startContent={<Mail className="h-4 w-4 text-success" />}
               type="email"
-              value={formEmail}
-              onValueChange={setFormEmail}
+              value={formFromAddress}
+              onValueChange={setFormFromAddress}
             />
             <div className="md:col-span-3">
               <Input
                 isRequired
-                description="Senha de aplicativo do provedor (não a senha da conta)"
+                description="Chave de API do Resend para este tenant"
                 endContent={
-                  formAppPassword ? (
+                  formApiKey ? (
                     <Button
                       isIconOnly
                       aria-label={
@@ -1578,12 +1578,12 @@ function EmailTab({ tenantId }: { tenantId: string }) {
                     </Button>
                   ) : null
                 }
-                label="Senha de App"
-                placeholder="senha de app/provedor"
+                label="API Key do Resend"
+                placeholder="re_xxxxxxxxxxxxxxxxxx"
                 startContent={<KeyRound className="h-4 w-4 text-warning" />}
                 type={isPasswordVisible ? "text" : "password"}
-                value={formAppPassword}
-                onValueChange={setFormAppPassword}
+                value={formApiKey}
+                onValueChange={setFormApiKey}
               />
             </div>
           </div>
@@ -1663,7 +1663,9 @@ function EmailTab({ tenantId }: { tenantId: string }) {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-success" />
-                        <span className="text-default-500">{c.email}</span>
+                        <span className="text-default-500">
+                          {c.fromAddress}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -1684,7 +1686,7 @@ function EmailTab({ tenantId }: { tenantId: string }) {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <Tooltip content="Testa a conexão com o servidor de email do provedor (Gmail, Outlook, etc.) sem enviar email. Verifica se as credenciais estão corretas.">
+                        <Tooltip content="Valida a API key do Resend para este tipo de credencial sem disparar emails.">
                           <Button
                             color="success"
                             isLoading={isTesting === c.type}

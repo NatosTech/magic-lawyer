@@ -1,21 +1,34 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 import logger from "@/lib/logger";
 
-// Configuração do transporter do Nodemailer
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: process.env.SMTP_SECURE === "true", // true para 465, false para outras portas
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false, // Para desenvolvimento, em produção deve ser true
-    },
-  });
+const createResendClient = () => {
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY não configurada");
+  }
+
+  return new Resend(apiKey);
+};
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim() !== "") {
+      return message;
+    }
+  }
+
+  return fallback;
+};
+
+const toBase64AttachmentContent = (content: Buffer | string) => {
+  if (Buffer.isBuffer(content)) {
+    return content.toString("base64");
+  }
+
+  return Buffer.from(content).toString("base64");
 };
 
 // Interface para opções de email
@@ -34,47 +47,84 @@ export interface EmailOptions {
 // Função para enviar email
 export const sendEmail = async (options: EmailOptions) => {
   try {
-    const transporter = createTransporter();
+    const resend = createResendClient();
+    const from = process.env.RESEND_FROM_EMAIL;
 
-    const mailOptions = {
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: Array.isArray(options.to) ? options.to.join(", ") : options.to,
+    if (!from) {
+      throw new Error("RESEND_FROM_EMAIL não configurado");
+    }
+
+    if (!options.html && !options.text) {
+      throw new Error("É necessário informar html ou text para envio de email");
+    }
+
+    const basePayload = {
+      from,
+      to: Array.isArray(options.to) ? options.to : [options.to],
       subject: options.subject,
-      html: options.html,
-      text: options.text,
-      attachments: options.attachments,
+      attachments: options.attachments?.map((attachment) => ({
+        filename: attachment.filename,
+        content: toBase64AttachmentContent(attachment.content),
+        contentType: attachment.contentType,
+      })),
     };
 
-    const result = await transporter.sendMail(mailOptions);
+    const payload = options.html
+      ? {
+          ...basePayload,
+          html: options.html,
+          text: options.text,
+        }
+      : {
+          ...basePayload,
+          text: options.text!,
+        };
 
-    logger.info("Email enviado com sucesso:", result.messageId);
+    const { data, error } = await resend.emails.send(payload);
 
-    return { success: true, messageId: result.messageId };
+    if (error) {
+      return {
+        success: false,
+        error: getErrorMessage(error, "Falha ao enviar email via Resend"),
+      };
+    }
+
+    logger.info("Email enviado com sucesso:", data?.id);
+
+    return { success: true, messageId: data?.id };
   } catch (error) {
     logger.error("Erro ao enviar email:", error);
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro desconhecido",
+      error: getErrorMessage(error, "Erro desconhecido"),
     };
   }
 };
 
-// Função para verificar a conexão SMTP
+// Função para verificar a conexão com a API do Resend
 export const verifyEmailConnection = async () => {
   try {
-    const transporter = createTransporter();
+    const resend = createResendClient();
+    const { error } = await resend.domains.list();
 
-    await transporter.verify();
-    logger.info("Conexão SMTP verificada com sucesso");
+    if (error) {
+      logger.error("Falha na verificação da API Resend:", error);
+      return {
+        success: false,
+        error: getErrorMessage(error, "Falha ao validar API key do Resend"),
+      };
+    }
+
+    logger.info("Conexão Resend verificada com sucesso");
 
     return { success: true };
   } catch (error) {
-    logger.error("Erro na verificação SMTP:", error);
+    logger.error("Erro na verificação Resend:", error);
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro desconhecido",
+      error: getErrorMessage(error, "Erro desconhecido"),
     };
   }
 };

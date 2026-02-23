@@ -2,6 +2,7 @@
 
 import {
   useMemo,
+  type ReactElement,
   type ReactNode,
   useState,
   useEffect,
@@ -556,7 +557,7 @@ const ActivityIcon = ({ size = 18 }: IconProps) => (
   </svg>
 );
 
-const navIconMap: Record<string, JSX.Element> = {
+const navIconMap: Record<string, ReactElement> = {
   Painel: <DashboardIcon />,
   Dashboard: <DashboardIcon />,
   Clientes: <PeopleIcon />,
@@ -662,7 +663,7 @@ const AccordionNavItem = ({
 }: {
   item: SidebarNavItem;
   isActive: boolean;
-  icon: JSX.Element;
+  icon: ReactElement;
   isDesktop: boolean;
   onCloseMobile?: () => void;
 }) => {

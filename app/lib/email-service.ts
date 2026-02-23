@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 import prisma from "@/app/lib/prisma";
 
@@ -405,6 +405,17 @@ export const getNotificacaoTemplate = (data: {
 // =============================================
 
 class EmailService {
+  private getErrorMessage(error: unknown, fallback: string) {
+    if (error && typeof error === "object" && "message" in error) {
+      const message = (error as { message?: unknown }).message;
+      if (typeof message === "string" && message.trim() !== "") {
+        return message;
+      }
+    }
+
+    return fallback;
+  }
+
   private resolveFromName(tenantId: string, fallbackName?: string) {
     return prisma.tenantBranding
       .findUnique({ where: { tenantId } })
@@ -431,24 +442,8 @@ class EmailService {
     return cred;
   }
 
-  private createTransporter({
-    email,
-    appPassword,
-  }: {
-    email: string;
-    appPassword: string;
-  }) {
-    return nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: Number(process.env.SMTP_PORT || 465),
-      secure: process.env.SMTP_SECURE
-        ? process.env.SMTP_SECURE === "true"
-        : true,
-      auth: {
-        user: email,
-        pass: appPassword,
-      },
-    });
+  private createResendClient(apiKey: string) {
+    return new Resend(apiKey);
   }
 
   async sendEmailPerTenant(
@@ -471,18 +466,15 @@ class EmailService {
         };
       }
 
-      const transporter = this.createTransporter({
-        email: credential.email,
-        appPassword: credential.appPassword,
-      });
+      const resend = this.createResendClient(credential.apiKey);
 
       const fromName = await this.resolveFromName(
         tenantId,
         credential.fromName || emailData.fromNameFallback,
       );
-      const from = emailData.from || `${fromName} <${credential.email}>`;
+      const from = emailData.from || `${fromName} <${credential.fromAddress}>`;
 
-      const info = await transporter.sendMail({
+      const { data, error } = await resend.emails.send({
         from,
         to: emailData.to,
         subject: emailData.subject,
@@ -490,16 +482,20 @@ class EmailService {
         text: emailData.text || emailData.html.replace(/<[^>]*>/g, ""),
       });
 
-      return { success: true, messageId: info.messageId };
+      if (error) {
+        return {
+          success: false,
+          error: this.getErrorMessage(error, "Erro ao enviar email via Resend"),
+        };
+      }
+
+      return { success: true, messageId: data?.id };
     } catch (error) {
-      console.error("Error sending email (per-tenant):", error);
+      console.error("Error sending email (Resend/per-tenant):", error);
 
       return {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unknown error sending email",
+        error: this.getErrorMessage(error, "Unknown error sending email"),
       };
     }
   }
@@ -555,16 +551,17 @@ class EmailService {
 
       if (!credential) return false;
 
-      const transporter = this.createTransporter({
-        email: credential.email,
-        appPassword: credential.appPassword,
-      });
+      const resend = this.createResendClient(credential.apiKey);
+      const { error } = await resend.domains.list();
 
-      await transporter.verify();
+      if (error) {
+        console.error("Resend connection test failed:", error);
+        return false;
+      }
 
       return true;
     } catch (error) {
-      console.error("Email connection test failed:", error);
+      console.error("Email connection test failed (Resend):", error);
 
       return false;
     }
@@ -580,11 +577,11 @@ class EmailService {
 
     return [
       {
-        name: "Nodemailer (DEFAULT)",
+        name: "Resend (DEFAULT)",
         configured: Boolean(defaultCred),
       },
       {
-        name: "Nodemailer (ADMIN)",
+        name: "Resend (ADMIN)",
         configured: Boolean(adminCred),
       },
     ];

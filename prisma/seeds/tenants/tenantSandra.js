@@ -97,10 +97,16 @@ async function ensurePermission(prisma, tenantId, usuarioId, permissao) {
 }
 
 async function seedTenantSandra(prisma, Prisma) {
-  const [adminPasswordHash, robsonPasswordHash, secretariaPasswordHash] = await Promise.all([
+  const [
+    adminPasswordHash,
+    robsonPasswordHash,
+    secretariaPasswordHash,
+    lucianoPasswordHash,
+  ] = await Promise.all([
     bcrypt.hash("Sandra@123", 10),
     bcrypt.hash("Robson123!", 10),
     bcrypt.hash("Funcionario@123", 10),
+    bcrypt.hash("Luciano@123", 10),
   ]);
 
   const tenant = await prisma.tenant.upsert({
@@ -219,15 +225,15 @@ async function seedTenantSandra(prisma, Prisma) {
       },
     },
     update: {
-      email: "magiclawyersaas@gmail.com",
-      appPassword: "dxijwnbycpucxevl",
+      fromAddress: "magiclawyersaas@gmail.com",
+      apiKey: "dxijwnbycpucxevl",
       fromName: "Sandra Advocacia",
     },
     create: {
       tenantId: tenant.id,
       type: "DEFAULT",
-      email: "magiclawyersaas@gmail.com",
-      appPassword: "dxijwnbycpucxevl",
+      fromAddress: "magiclawyersaas@gmail.com",
+      apiKey: "dxijwnbycpucxevl",
       fromName: "Sandra Advocacia",
     },
   });
@@ -240,15 +246,15 @@ async function seedTenantSandra(prisma, Prisma) {
       },
     },
     update: {
-      email: "robsonnonatoiii@gmail.com",
-      appPassword: "hcwwwqxqzrhdgeuj",
+      fromAddress: "robsonnonatoiii@gmail.com",
+      apiKey: "hcwwwqxqzrhdgeuj",
       fromName: "Administração Sandra Advocacia",
     },
     create: {
       tenantId: tenant.id,
       type: "ADMIN",
-      email: "robsonnonatoiii@gmail.com",
-      appPassword: "hcwwwqxqzrhdgeuj",
+      fromAddress: "robsonnonatoiii@gmail.com",
+      apiKey: "hcwwwqxqzrhdgeuj",
       fromName: "Administração Sandra Advocacia",
     },
   });
@@ -415,6 +421,31 @@ async function seedTenantSandra(prisma, Prisma) {
     passwordHash: robsonPasswordHash,
     role: "CLIENTE",
     active: true,
+  });
+
+  const lucianoUser = await ensureUsuario(prisma, tenant.id, "luciano.santos@adv.br", {
+    firstName: "Luciano",
+    lastName: "de Sousa Santos",
+    passwordHash: lucianoPasswordHash,
+    role: "ADVOGADO",
+    active: true,
+    cpf: "630.479.425-87",
+  });
+
+  await prisma.advogado.upsert({
+    where: { usuarioId: lucianoUser.id },
+    update: {
+      oabNumero: "69211",
+      oabUf: "BA",
+      especialidades: ["CIVIL"],
+    },
+    create: {
+      tenantId: tenant.id,
+      usuarioId: lucianoUser.id,
+      oabNumero: "69211",
+      oabUf: "BA",
+      especialidades: ["CIVIL"],
+    },
   });
 
   let clienteRobson = await prisma.cliente.findFirst({
@@ -1365,6 +1396,7 @@ async function seedTenantSandra(prisma, Prisma) {
   console.log("👑 ADMIN: sandra@adv.br / Sandra@123");
   console.log("🗂️ SECRETARIA: souzacostaadv@hotmail.com / Funcionario@123");
   console.log("👤 CLIENTE: magiclawyersaas@gmail.com / Robson123!");
+  console.log("⚖️ ADVOGADO: luciano.santos@adv.br / Luciano@123");
   console.log("\n🔗 Acesso: http://localhost:9192/login");
   console.log("🏢 Slug do tenant: sandra");
 

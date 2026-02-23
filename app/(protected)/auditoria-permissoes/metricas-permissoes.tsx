@@ -1,4 +1,4 @@
-import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
 import { BarChart3, ShieldAlert, TrendingUp, Users } from "lucide-react";
 
 import { getMetricasPermissoesNegadas } from "@/app/actions/auditoria-permissoes";

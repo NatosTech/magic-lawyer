@@ -58,7 +58,7 @@ export function EmailCredentialsCard() {
       return res.data.map((cred) => ({
         id: cred.id,
         type: cred.type,
-        email: cred.email,
+        fromAddress: cred.fromAddress,
         fromName: cred.fromName,
         createdAt: cred.createdAt.toISOString(),
         updatedAt: cred.updatedAt.toISOString(),
@@ -67,9 +67,9 @@ export function EmailCredentialsCard() {
   );
 
   const [formType, setFormType] = useState<"DEFAULT" | "ADMIN">("DEFAULT");
-  const [formEmail, setFormEmail] = useState("");
+  const [formFromAddress, setFormFromAddress] = useState("");
   const [formFromName, setFormFromName] = useState("");
-  const [formAppPassword, setFormAppPassword] = useState("");
+  const [formApiKey, setFormApiKey] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState<"DEFAULT" | "ADMIN" | null>(null);
@@ -79,7 +79,7 @@ export function EmailCredentialsCard() {
     if (!data) return;
     const existing = data.find((c) => c.type === formType);
 
-    setFormEmail(existing?.email ?? "");
+    setFormFromAddress(existing?.fromAddress ?? "");
     setFormFromName(existing?.fromName ?? "");
     setHasExistingCredential(!!existing);
   }, [data, formType]);
@@ -95,10 +95,10 @@ export function EmailCredentialsCard() {
       return;
     }
 
-    if (!formEmail || !formAppPassword) {
+    if (!formFromAddress || !formApiKey) {
       addToast({
         title: "Campos obrigatórios",
-        description: "Informe email e senha de app",
+        description: "Informe remetente e API key do Resend",
         color: "warning",
       });
 
@@ -110,8 +110,8 @@ export function EmailCredentialsCard() {
       const res = await upsertTenantEmailCredential({
         tenantId,
         type: formType,
-        email: formEmail,
-        appPassword: formAppPassword,
+        fromAddress: formFromAddress,
+        apiKey: formApiKey,
         fromName: formFromName || null,
       });
 
@@ -121,7 +121,7 @@ export function EmailCredentialsCard() {
         description: `${formType} atualizado com sucesso`,
         color: "success",
       });
-      setFormAppPassword("");
+      setFormApiKey("");
       await mutate();
     } catch (error) {
       addToast({
@@ -187,7 +187,7 @@ export function EmailCredentialsCard() {
       } else {
         addToast({
           title: "❌ Falha na verificação",
-          description: `Não foi possível conectar com as credenciais ${type}. Verifique se o email e senha de app estão corretos.`,
+          description: `Não foi possível validar as credenciais ${type}. Verifique remetente e API key do Resend.`,
           color: "danger",
           timeout: 8000,
         });
@@ -320,21 +320,21 @@ export function EmailCredentialsCard() {
             />
             <Input
               isRequired
-              description="Email da conta de envio (Gmail, Outlook, etc.)"
-              label="Email do Provedor"
-              placeholder="email@provedor.com"
+              description="Endereço de remetente verificado no Resend"
+              label="Remetente (From Address)"
+              placeholder="noreply@seudominio.com"
               startContent={<Mail className="h-4 w-4 text-success" />}
               type="email"
-              value={formEmail}
-              onValueChange={setFormEmail}
+              value={formFromAddress}
+              onValueChange={setFormFromAddress}
             />
           </div>
           <div className="grid gap-3 md:grid-cols-1">
             <Input
               isRequired
-              description="Senha de aplicativo do provedor (não a senha da conta)"
+              description="Chave de API do Resend para este tenant"
               endContent={
-                formAppPassword ? (
+                formApiKey ? (
                   <Button
                     isIconOnly
                     aria-label={
@@ -353,16 +353,16 @@ export function EmailCredentialsCard() {
                   </Button>
                 ) : null
               }
-              label="Senha de App"
+              label="API Key do Resend"
               placeholder={
                 hasExistingCredential
-                  ? "•••••••••••• (senha já cadastrada)"
-                  : "senha de app/provedor"
+                  ? "re_•••••••••••• (api key já cadastrada)"
+                  : "re_xxxxxxxxxxxxxxxxxx"
               }
               startContent={<KeyRound className="h-4 w-4 text-warning" />}
               type={isPasswordVisible ? "text" : "password"}
-              value={formAppPassword}
-              onValueChange={setFormAppPassword}
+              value={formApiKey}
+              onValueChange={setFormApiKey}
             />
           </div>
           <div className="flex gap-3 justify-end">
@@ -441,7 +441,9 @@ export function EmailCredentialsCard() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-success" />
-                        <span className="text-default-500">{c.email}</span>
+                        <span className="text-default-500">
+                          {c.fromAddress}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -462,7 +464,7 @@ export function EmailCredentialsCard() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <Tooltip content="Testa a conexão com o servidor de email do provedor (Gmail, Outlook, etc.) sem enviar email. Verifica se as credenciais estão corretas.">
+                        <Tooltip content="Valida a API key do Resend para este tipo de credencial sem disparar emails.">
                           <Button
                             color="success"
                             isLoading={isTesting === c.type}

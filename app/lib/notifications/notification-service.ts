@@ -484,7 +484,7 @@ export class NotificationService {
   private static getProviderForChannel(channel: NotificationChannel): string {
     switch (channel) {
       case "EMAIL":
-        return "SMTP";
+        return "RESEND";
       case "PUSH":
         return "PUSH_GATEWAY";
       case "REALTIME":

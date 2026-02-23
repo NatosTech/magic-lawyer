@@ -36,12 +36,12 @@ export async function POST(request: Request) {
 
     // Revalidar tags específicas
     if (tenantId) {
-      revalidateTag(`tenant:${tenantId}`);
-      revalidateTag(`tenant-subscription:${tenantId}`);
+      revalidateTag(`tenant:${tenantId}`, "max");
+      revalidateTag(`tenant-subscription:${tenantId}`, "max");
     }
 
     if (userId) {
-      revalidateTag(`user:${userId}`);
+      revalidateTag(`user:${userId}`, "max");
     }
 
     // Revalidar paths específicos
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       case "notification.new":
         // Invalidar cache de notificações quando Ably falhar
         if (tenantId && userId) {
-          revalidateTag(`notifications:${tenantId}:${userId}`);
+          revalidateTag(`notifications:${tenantId}:${userId}`, "max");
         }
         break;
 

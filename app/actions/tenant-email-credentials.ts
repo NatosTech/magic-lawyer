@@ -9,8 +9,8 @@ export async function listTenantEmailCredentials(tenantId: string) {
     select: {
       id: true,
       type: true,
-      email: true,
-      appPassword: true,
+      fromAddress: true,
+      apiKey: true,
       fromName: true,
       createdAt: true,
       updatedAt: true,
@@ -24,16 +24,22 @@ export async function listTenantEmailCredentials(tenantId: string) {
 export async function upsertTenantEmailCredential(params: {
   tenantId: string;
   type: "DEFAULT" | "ADMIN";
-  email: string;
-  appPassword: string;
+  fromAddress: string;
+  apiKey: string;
   fromName?: string | null;
 }) {
-  const { tenantId, type, email, appPassword, fromName } = params;
+  const { tenantId, type, fromAddress, apiKey, fromName } = params;
 
   await prisma.tenantEmailCredential.upsert({
     where: { tenantId_type: { tenantId, type } },
-    update: { email, appPassword, fromName: fromName ?? null },
-    create: { tenantId, type, email, appPassword, fromName: fromName ?? null },
+    update: { fromAddress, apiKey, fromName: fromName ?? null },
+    create: {
+      tenantId,
+      type,
+      fromAddress,
+      apiKey,
+      fromName: fromName ?? null,
+    },
   });
 
   return { success: true } as const;
@@ -60,9 +66,9 @@ export async function testTenantEmailConnection(
 }
 
 /**
- * Registra auditoria quando SuperAdmin visualiza senha de app
+ * Registra auditoria quando SuperAdmin visualiza API key do Resend
  */
-export async function logPasswordView(
+export async function logApiKeyView(
   tenantId: string,
   credentialType: "DEFAULT" | "ADMIN",
 ) {
@@ -86,14 +92,14 @@ export async function logPasswordView(
   await prisma.superAdminAuditLog.create({
     data: {
       superAdminId,
-      acao: "VIEW_EMAIL_PASSWORD",
+      acao: "VIEW_EMAIL_API_KEY",
       entidade: "TenantEmailCredential",
       entidadeId: `${tenantId}:${credentialType}`,
       dadosNovos: {
         tenantName: tenant?.name || tenantId,
         tenantSlug: tenant?.slug,
         credentialType,
-        motivo: "Visualização de senha de app SMTP",
+        motivo: "Visualização de chave de API Resend",
       },
     },
   });

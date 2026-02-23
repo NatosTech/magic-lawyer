@@ -18,9 +18,9 @@ export function ConfiguracoesContent() {
       manutencao: false,
     },
     email: {
-      servidor: "smtp.gmail.com",
-      porta: "587",
-      usuario: "noreply@magiclawyer.com",
+      provider: "Resend",
+      fromAddress: "noreply@magiclawyer.com",
+      apiKey: "re_xxxxxxxxxxxxxxxxxx",
       ativo: true,
     },
     pagamentos: {
@@ -115,39 +115,39 @@ export function ConfiguracoesContent() {
             📧 Configurações de Email
           </h2>
           <p className="text-sm text-default-400">
-            Servidor SMTP para envio de notificações
+            Configuração do provedor Resend para envio de notificações
           </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="Servidor SMTP"
-              value={settings.email.servidor}
+              label="Provedor"
+              value={settings.email.provider}
               onChange={(e) =>
                 setSettings({
                   ...settings,
-                  email: { ...settings.email, servidor: e.target.value },
+                  email: { ...settings.email, provider: e.target.value },
                 })
               }
             />
             <Input
-              label="Porta"
-              value={settings.email.porta}
+              label="Remetente (From Address)"
+              value={settings.email.fromAddress}
               onChange={(e) =>
                 setSettings({
                   ...settings,
-                  email: { ...settings.email, porta: e.target.value },
+                  email: { ...settings.email, fromAddress: e.target.value },
                 })
               }
             />
             <Input
-              label="Usuário"
-              value={settings.email.usuario}
+              label="API Key"
+              value={settings.email.apiKey}
               onChange={(e) =>
                 setSettings({
                   ...settings,
-                  email: { ...settings.email, usuario: e.target.value },
+                  email: { ...settings.email, apiKey: e.target.value },
                 })
               }
             />

@@ -80,6 +80,7 @@ model Tenant {
   sessionVersion        Int                     @default(1)
   planRevision          Int                     @default(1)
   tenantSoftVersion     Int                     @default(1)
+  digitalCertificatePolicy DigitalCertificatePolicy @default(OFFICE)
   tipoPessoa            TipoPessoa              @default(JURIDICA)
   documento             String?                 @unique
   razaoSocial           String?
@@ -306,8 +307,8 @@ model TenantEmailCredential {
   id          String                    @id @default(cuid())
   tenantId    String
   type        TenantEmailCredentialType @default(DEFAULT)
-  email       String
-  appPassword String
+  fromAddress String                    @map("email")
+  apiKey      String                    @map("appPassword") @db.Text
   fromName    String?
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
@@ -3304,6 +3305,7 @@ model DigitalCertificate {
   responsavelUsuarioId String?
   label                String?
   tipo                 DigitalCertificateType @default(PJE)
+  scope                DigitalCertificateScope @default(OFFICE)
   encryptedData        Bytes
   encryptedPassword    Bytes
   iv                   Bytes
@@ -3320,6 +3322,7 @@ model DigitalCertificate {
   logs               DigitalCertificateLog[]
 
   @@index([tenantId, tipo])
+  @@index([tenantId, scope, tipo])
   @@index([isActive])
   @@schema("magiclawyer")
 }
@@ -3461,6 +3464,21 @@ enum DigitalCertificateType {
   PJE
   ESAJ
   OUTRO
+
+  @@schema("magiclawyer")
+}
+
+enum DigitalCertificateScope {
+  OFFICE
+  LAWYER
+
+  @@schema("magiclawyer")
+}
+
+enum DigitalCertificatePolicy {
+  OFFICE
+  LAWYER
+  HYBRID
 
   @@schema("magiclawyer")
 }
