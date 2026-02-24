@@ -1,6 +1,6 @@
 /**
- * Inicialização automática do worker de notificações
- * Este módulo deve ser importado no startup da aplicação
+ * Inicialização automática de workers assíncronos.
+ * Este módulo deve ser importado no startup da aplicação.
  */
 
 let workerInitialized = false;
@@ -22,17 +22,21 @@ export async function initNotificationWorker(): Promise<void> {
 
   try {
     const { getNotificationWorker } = await import("./notification-worker");
+    const { getPortalProcessSyncWorker } = await import(
+      "@/app/lib/juridical/process-sync-worker"
+    );
 
-    // Criar e iniciar worker (singleton)
-    // O worker inicia automaticamente quando criado, mas garantimos que seja criado
-    const worker = getNotificationWorker();
+    // Criar workers (singleton)
+    // Ambos iniciam automaticamente quando criados.
+    getNotificationWorker();
+    getPortalProcessSyncWorker();
 
     // Marcar como inicializado
     workerInitialized = true;
 
-    console.log("[NotificationWorker] ✅ Worker inicializado e pronto");
+    console.log("[Workers] ✅ Workers inicializados e prontos");
   } catch (error) {
-    console.error("[NotificationWorker] ❌ Erro ao inicializar worker:", error);
+    console.error("[Workers] ❌ Erro ao inicializar workers:", error);
     // Não falhar a aplicação se o worker não iniciar
     throw error;
   }
@@ -44,10 +48,7 @@ if (typeof window === "undefined") {
   // Usar process.nextTick para garantir que a aplicação esteja pronta
   process.nextTick(() => {
     initNotificationWorker().catch((error) => {
-      console.error(
-        "[NotificationWorker] Erro na inicialização automática:",
-        error,
-      );
+      console.error("[Workers] Erro na inicialização automática:", error);
     });
   });
 }

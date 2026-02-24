@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Script para iniciar o worker de notificações.
+ * Script para iniciar workers assíncronos.
  * Uso: npm run dev:worker
  */
 
@@ -23,11 +23,12 @@ require("tsconfig-paths/register");
 const path = require("path");
 
 async function main() {
-  console.log("🚀 Iniciando Worker de Notificações...");
+  console.log("🚀 Iniciando Workers Assíncronos...");
 
   try {
     const { testRedisConnection } = require(path.join(__dirname, "../app/lib/notifications/redis-config"));
     const { startNotificationWorker, stopNotificationWorker } = require(path.join(__dirname, "../app/lib/notifications/notification-worker"));
+    const { startPortalProcessSyncWorker, stopPortalProcessSyncWorker } = require(path.join(__dirname, "../app/lib/juridical/process-sync-worker"));
 
     console.log("📡 Testando conexão Redis...");
     const redisConnected = await testRedisConnection();
@@ -39,16 +40,18 @@ async function main() {
 
     console.log("✅ Conexão Redis OK");
 
-    console.log("👷 Iniciando worker...");
+    console.log("👷 Iniciando workers...");
     await startNotificationWorker();
+    await startPortalProcessSyncWorker();
 
-    console.log("✅ Worker iniciado com sucesso!");
+    console.log("✅ Workers iniciados com sucesso!");
     console.log("📊 Monitoramento disponível em: /api/admin/notifications/worker");
 
     process.on("SIGINT", async () => {
       console.log("\n🛑 Parando worker...");
+      await stopPortalProcessSyncWorker();
       await stopNotificationWorker();
-      console.log("✅ Worker parado");
+      console.log("✅ Workers parados");
       process.exit(0);
     });
 

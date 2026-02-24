@@ -8,6 +8,9 @@ import {
   Button,
   Chip,
   Spinner,
+  Input,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import {
   Building2,
@@ -16,23 +19,74 @@ import {
   Link as LinkIcon,
   Info,
   ExternalLink,
+  RefreshCw,
+  ShieldAlert,
+  CheckCircle2,
+  Clock3,
+  CircleDashed,
+  AlertTriangle,
 } from "lucide-react";
 import useSWR from "swr";
+import { addToast } from "@heroui/toast";
 
 import { UFSelector } from "./uf-selector";
 
 import {
+  getStatusSincronizacaoMeusProcessos,
+  getTribunaisSincronizacaoPortalAdvogado,
   getTribunaisPorUF,
   getUFsDisponiveis,
+  iniciarSincronizacaoMeusProcessos,
+  resolverCaptchaSincronizacaoMeusProcessos,
 } from "@/app/actions/portal-advogado";
 
 export function PortalAdvogadoContent() {
   const [ufSelecionada, setUfSelecionada] = useState<string | undefined>();
+  const [syncTribunalSigla, setSyncTribunalSigla] = useState("TJSP");
+  const [syncOab, setSyncOab] = useState("");
+  const [syncClienteNome, setSyncClienteNome] = useState("");
+  const [captchaText, setCaptchaText] = useState("");
+  const [syncId, setSyncId] = useState<string | undefined>();
+  const [isStartingSync, setIsStartingSync] = useState(false);
+  const [isResolvingCaptcha, setIsResolvingCaptcha] = useState(false);
 
   // Buscar tribunais da UF selecionada
   const { data: ufs } = useSWR<string[]>(
     "portal-advogado-ufs",
     getUFsDisponiveis,
+  );
+
+  const { data: syncTribunaisResponse, isLoading: isLoadingSyncTribunais } =
+    useSWR<
+      Awaited<ReturnType<typeof getTribunaisSincronizacaoPortalAdvogado>>,
+      Error
+    >(
+      "portal-advogado-sync-tribunais",
+      getTribunaisSincronizacaoPortalAdvogado,
+    );
+
+  const {
+    data: syncStatusResponse,
+    mutate: refreshSyncStatus,
+    isLoading: isLoadingSyncStatus,
+  } = useSWR<
+    Awaited<ReturnType<typeof getStatusSincronizacaoMeusProcessos>>,
+    Error
+  >(
+    `portal-advogado-sync-status:${syncId ?? "latest"}`,
+    async (key) => {
+      const currentSyncId = key.split(":").pop() || "latest";
+      return await getStatusSincronizacaoMeusProcessos({
+        syncId: currentSyncId === "latest" ? undefined : currentSyncId,
+      });
+    },
+    {
+      refreshInterval: (latestData) => {
+        const status = latestData?.status?.status;
+        return status === "QUEUED" || status === "RUNNING" ? 4000 : 0;
+      },
+      revalidateOnFocus: true,
+    },
   );
 
   const { data: tribunais, isLoading: isLoadingTribunais } = useSWR<
@@ -48,9 +102,329 @@ export function PortalAdvogadoContent() {
   );
 
   const ufOptions = useMemo(() => ufs ?? [], [ufs]);
+  const syncTribunais = useMemo(
+    () => (syncTribunaisResponse?.success ? syncTribunaisResponse.tribunais : []),
+    [syncTribunaisResponse],
+  );
+  const syncStatus = syncStatusResponse?.status;
+
+  const isSyncRunning =
+    syncStatus?.status === "QUEUED" || syncStatus?.status === "RUNNING";
+  const isWaitingCaptcha = syncStatus?.status === "WAITING_CAPTCHA";
+
+  const syncStatusMeta = useMemo(() => {
+    if (!syncStatus) return null;
+
+    switch (syncStatus.status) {
+      case "QUEUED":
+        return {
+          color: "default" as const,
+          label: "Na fila",
+          icon: <CircleDashed className="h-4 w-4" />,
+        };
+      case "RUNNING":
+        return {
+          color: "primary" as const,
+          label: "Executando",
+          icon: <Clock3 className="h-4 w-4" />,
+        };
+      case "WAITING_CAPTCHA":
+        return {
+          color: "warning" as const,
+          label: "Captcha pendente",
+          icon: <ShieldAlert className="h-4 w-4" />,
+        };
+      case "COMPLETED":
+        return {
+          color: "success" as const,
+          label: "Concluído",
+          icon: <CheckCircle2 className="h-4 w-4" />,
+        };
+      case "FAILED":
+      default:
+        return {
+          color: "danger" as const,
+          label: "Falhou",
+          icon: <AlertTriangle className="h-4 w-4" />,
+        };
+    }
+  }, [syncStatus]);
+
+  const iniciarSync = async () => {
+    setIsStartingSync(true);
+
+    try {
+      const response = await iniciarSincronizacaoMeusProcessos({
+        tribunalSigla: syncTribunalSigla,
+        oab: syncOab || undefined,
+        clienteNome: syncClienteNome || undefined,
+      });
+
+      if (!response.success) {
+        if (response.syncId) {
+          setSyncId(response.syncId);
+        }
+        addToast({
+          title: "Não foi possível iniciar",
+          description:
+            response.error || "Já existe uma sincronização em andamento.",
+          color: "warning",
+        });
+        await refreshSyncStatus();
+        return;
+      }
+
+      if (response.syncId) {
+        setSyncId(response.syncId);
+      }
+
+      setCaptchaText("");
+      addToast({
+        title: "Sincronização iniciada",
+        description:
+          "Aguarde enquanto buscamos seus processos em background.",
+        color: "success",
+      });
+      await refreshSyncStatus();
+    } catch (error) {
+      console.error(error);
+      addToast({
+        title: "Erro interno",
+        description: "Falha ao iniciar sincronização.",
+        color: "danger",
+      });
+    } finally {
+      setIsStartingSync(false);
+    }
+  };
+
+  const resolverCaptcha = async () => {
+    if (!syncStatus?.syncId) {
+      addToast({
+        title: "Sincronização ausente",
+        description: "Inicie uma sincronização para resolver captcha.",
+        color: "warning",
+      });
+      return;
+    }
+
+    if (!captchaText.trim()) {
+      addToast({
+        title: "Informe o captcha",
+        description: "Digite os caracteres da imagem para continuar.",
+        color: "warning",
+      });
+      return;
+    }
+
+    setIsResolvingCaptcha(true);
+
+    try {
+      const response = await resolverCaptchaSincronizacaoMeusProcessos({
+        syncId: syncStatus.syncId,
+        captchaText: captchaText.trim(),
+      });
+
+      if (!response.success) {
+        addToast({
+          title: "Falha ao validar captcha",
+          description: response.error || "Não foi possível continuar.",
+          color: "danger",
+        });
+        await refreshSyncStatus();
+        return;
+      }
+
+      setCaptchaText("");
+      addToast({
+        title: "Captcha enviado",
+        description: "Processamento retomado em background.",
+        color: "success",
+      });
+      await refreshSyncStatus();
+    } catch (error) {
+      console.error(error);
+      addToast({
+        title: "Erro interno",
+        description: "Falha ao enviar captcha.",
+        color: "danger",
+      });
+    } finally {
+      setIsResolvingCaptcha(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader className="flex items-center gap-2 pb-3">
+          <RefreshCw className="w-5 h-5 text-primary" />
+          <h2 className="text-xl font-semibold">Trazer meus processos</h2>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <p className="text-sm text-default-500">
+            Sincronize seus processos por OAB em segundo plano. Se o tribunal
+            exigir captcha, você valida aqui e a execução continua no worker.
+          </p>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <Select
+              isDisabled={isStartingSync || isResolvingCaptcha || isSyncRunning}
+              label="Tribunal"
+              placeholder="Selecione"
+              selectedKeys={syncTribunalSigla ? [syncTribunalSigla] : []}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys)[0] as string;
+                setSyncTribunalSigla(selected || "");
+              }}
+            >
+              {syncTribunais.map((tribunal) => (
+                <SelectItem key={tribunal.sigla}>
+                  {tribunal.sigla} · {tribunal.nome}
+                </SelectItem>
+              ))}
+            </Select>
+
+            <Input
+              isDisabled={isStartingSync || isResolvingCaptcha || isSyncRunning}
+              label="OAB (opcional)"
+              placeholder="Ex: 123456SP"
+              value={syncOab}
+              onChange={(event) => setSyncOab(event.target.value)}
+            />
+
+            <Input
+              isDisabled={isStartingSync || isResolvingCaptcha || isSyncRunning}
+              label="Cliente padrão (opcional)"
+              placeholder="Nome do cliente padrão"
+              value={syncClienteNome}
+              onChange={(event) => setSyncClienteNome(event.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              color="primary"
+              isDisabled={syncTribunais.length === 0 || !syncTribunalSigla}
+              isLoading={isStartingSync}
+              startContent={<RefreshCw className="h-4 w-4" />}
+              onPress={iniciarSync}
+            >
+              Trazer meus processos
+            </Button>
+            {(isLoadingSyncStatus || isLoadingSyncTribunais) && (
+              <div className="flex items-center gap-2 text-sm text-default-500">
+                <Spinner size="sm" />
+                Carregando estado da sincronização...
+              </div>
+            )}
+            {syncStatusMeta && (
+              <Chip
+                color={syncStatusMeta.color}
+                startContent={syncStatusMeta.icon}
+                variant="flat"
+              >
+                {syncStatusMeta.label}
+              </Chip>
+            )}
+          </div>
+
+          {syncStatus && (
+            <div className="rounded-lg border border-default-200 p-3 space-y-2">
+              <p className="text-xs text-default-500">
+                Atualizado em{" "}
+                {new Date(syncStatus.updatedAt).toLocaleString("pt-BR")}
+              </p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <div className="rounded-md border border-default-200 p-2">
+                  <p className="text-[11px] uppercase text-default-500">
+                    Capturados
+                  </p>
+                  <p className="text-lg font-semibold">
+                    {syncStatus.syncedCount ?? 0}
+                  </p>
+                </div>
+                <div className="rounded-md border border-default-200 p-2">
+                  <p className="text-[11px] uppercase text-default-500">
+                    Criados
+                  </p>
+                  <p className="text-lg font-semibold text-success">
+                    {syncStatus.createdCount ?? 0}
+                  </p>
+                </div>
+                <div className="rounded-md border border-default-200 p-2">
+                  <p className="text-[11px] uppercase text-default-500">
+                    Atualizados
+                  </p>
+                  <p className="text-lg font-semibold text-primary">
+                    {syncStatus.updatedCount ?? 0}
+                  </p>
+                </div>
+              </div>
+
+              {syncStatus.error && (
+                <div className="rounded-md border border-danger/30 bg-danger/5 p-2 text-xs text-danger-700">
+                  {syncStatus.error}
+                </div>
+              )}
+
+              {Array.isArray(syncStatus.processosNumeros) &&
+                syncStatus.processosNumeros.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {syncStatus.processosNumeros.slice(0, 6).map((numero) => (
+                      <Chip key={numero} size="sm" variant="flat">
+                        {numero}
+                      </Chip>
+                    ))}
+                  </div>
+                )}
+            </div>
+          )}
+
+          {isWaitingCaptcha && syncStatus?.captchaId && (
+            <div className="rounded-lg border border-warning/40 bg-warning/5 p-3 space-y-3">
+              <div className="flex items-center gap-2 text-warning-700">
+                <ShieldAlert className="h-4 w-4" />
+                <p className="text-sm font-semibold">
+                  Captcha necessário para continuar
+                </p>
+              </div>
+
+              {syncStatus.captchaImage ? (
+                <img
+                  alt="Captcha do tribunal"
+                  className="h-16 w-48 rounded-md border border-warning/30 bg-white object-contain p-1"
+                  src={syncStatus.captchaImage}
+                />
+              ) : (
+                <p className="text-xs text-warning-700">
+                  O tribunal exigiu captcha, mas não retornou imagem.
+                </p>
+              )}
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  className="sm:flex-1"
+                  isDisabled={isResolvingCaptcha}
+                  label="Código do captcha"
+                  placeholder="Digite os caracteres"
+                  value={captchaText}
+                  onChange={(event) => setCaptchaText(event.target.value)}
+                />
+                <Button
+                  className="sm:self-end"
+                  color="warning"
+                  isLoading={isResolvingCaptcha}
+                  onPress={resolverCaptcha}
+                >
+                  Validar captcha
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
       {/* Seletor de UF */}
       <Card>
         <CardBody>
