@@ -16,7 +16,7 @@ import {
   formatDateForAsaas,
   formatValueForAsaas,
 } from "@/lib/asaas";
-import { Prisma, type ContratoParcelaStatus } from "@/app/generated/prisma";
+import { Prisma, type ContratoParcelaStatus } from "@/generated/prisma";
 
 type ParcelaComRelacionamentos = Prisma.ContratoParcelaGetPayload<{
   include: {

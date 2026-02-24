@@ -1,14 +1,30 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { fetchComunica } from "@/lib/api/juridical/pje/comunica";
 import prisma from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { DigitalCertificateScope } from "@/generated/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (!cronSecret) {
+    logger.error("[Cron Comunica] CRON_SECRET nao configurado.");
+    return NextResponse.json(
+      { success: false, error: "CRON_SECRET não configurado." },
+      { status: 503 },
+    );
+  }
+
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ success: false, error: "Não autorizado" }, { status: 401 });
+  }
+
   // Seleciona o primeiro tenant com certificado ativo PJE
   const certificate = await prisma.digitalCertificate.findFirst({
-    where: { isActive: true, tipo: "PJE" },
+    where: { isActive: true, tipo: "PJE", scope: DigitalCertificateScope.OFFICE },
     select: {
       tenantId: true,
       tenant: {

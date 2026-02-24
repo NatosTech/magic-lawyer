@@ -24,6 +24,32 @@ export interface CapturaProcessoParams {
   tribunalSigla?: string;
   certificadoId?: string;
   processoId?: string; // ID do processo no nosso sistema (se já existe)
+  oab?: string;
+}
+
+function normalizeProcessoNumero(value?: string | null) {
+  if (!value) return "";
+  return value.replace(/\D/g, "");
+}
+
+function normalizeCapturedProcessos(resultado: CapturaResult) {
+  const list = resultado.processos?.length
+    ? resultado.processos
+    : resultado.processo
+      ? [resultado.processo]
+      : [];
+  const seen = new Set<string>();
+  const normalized: ProcessoJuridico[] = [];
+
+  for (const processo of list) {
+    const processoNormalizado = normalizarProcesso(processo);
+    const key = normalizeProcessoNumero(processoNormalizado.numeroProcesso);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    normalized.push(processoNormalizado);
+  }
+
+  return normalized;
 }
 
 /**
@@ -32,12 +58,20 @@ export interface CapturaProcessoParams {
 export async function capturarProcesso(
   params: CapturaProcessoParams,
 ): Promise<CapturaResult> {
-  const { numeroProcesso, tenantId, tribunalId, tribunalSigla, certificadoId } =
-    params;
+  const {
+    numeroProcesso,
+    tenantId,
+    tribunalId,
+    tribunalSigla,
+    certificadoId,
+    oab,
+  } = params;
 
   try {
     logger.info(
-      `[Capture Service] Capturando processo: ${numeroProcesso} (tenant: ${tenantId})`,
+      `[Capture Service] Capturando processo: ${
+        numeroProcesso || oab || "não informado"
+      } (tenant: ${tenantId})`,
     );
 
     // Buscar tribunal se não foi fornecido
@@ -56,6 +90,12 @@ export async function capturarProcesso(
 
     if (tribunalConfig?.sistema === TribunalSistema.PJE) {
       // Usar API PJe (requer certificado)
+      if (!numeroProcesso) {
+        return {
+          success: false,
+          error: "Número do processo é obrigatório para PJe",
+        };
+      }
       if (!certificadoId) {
         return {
           success: false,
@@ -70,7 +110,9 @@ export async function capturarProcesso(
       });
     } else if (tribunalConfig?.scrapingDisponivel) {
       // Usar web scraping
-      resultado = await consultarProcesso(numeroProcesso, sigla || undefined);
+      resultado = await consultarProcesso(numeroProcesso || "", sigla || undefined, {
+        oab,
+      });
     } else {
       return {
         success: false,
@@ -78,24 +120,33 @@ export async function capturarProcesso(
       };
     }
 
-    if (!resultado.success || !resultado.processo) {
+    if (!resultado.success) {
       return resultado;
     }
 
-    // Normalizar dados
-    const processoNormalizado = normalizarProcesso(resultado.processo);
+    const processosNormalizados = normalizeCapturedProcessos(resultado);
+    if (processosNormalizados.length === 0) {
+      return {
+        ...resultado,
+        success: false,
+        error:
+          resultado.error ||
+          "Captura retornou sucesso sem processos (inconsistência).",
+      };
+    }
 
     // Vincular ao nosso processo se já existe
     if (params.processoId) {
-      // TODO: Atualizar processo existente com dados capturados
+      const numero = processosNormalizados[0]?.numeroProcesso ?? "desconhecido";
       logger.info(
-        `[Capture Service] Processo ${params.processoId} será atualizado com dados capturados`,
+        `[Capture Service] Processo ${params.processoId} (${numero}) será sincronizado com dados capturados`,
       );
     }
 
     return {
       ...resultado,
-      processo: processoNormalizado,
+      processo: processosNormalizados[0],
+      processos: processosNormalizados,
     };
   } catch (error) {
     logger.error("[Capture Service] Erro ao capturar processo:", error);
@@ -127,8 +178,6 @@ export async function capturarAndamentos(
     tempoResposta: resultado.tempoResposta,
   };
 }
-
-
 
 
 

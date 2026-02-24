@@ -26,7 +26,7 @@ import {
   createContrato,
   type ContratoCreateInput,
 } from "@/app/actions/contratos";
-import { ContratoStatus } from "@/app/generated/prisma";
+import { ContratoStatus } from "@/generated/prisma";
 import {
   useClientesParaSelect,
   useProcuracoesDisponiveis,

@@ -7,7 +7,7 @@ import {
   JuizStatus,
   JuizNivel,
   EspecialidadeJuridica,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 
 // ============================================
 // TYPES

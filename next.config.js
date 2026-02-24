@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  productionBrowserSourceMaps: false,
   images: {
     remotePatterns: [
       {
@@ -17,6 +18,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "10mb", // Aumentar limite para 10MB (padrão é 1MB)
     },
+    webpackMemoryOptimizations: true,
   },
 };
 

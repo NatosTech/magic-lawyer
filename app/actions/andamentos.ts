@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
-import { MovimentacaoTipo } from "@/app/generated/prisma";
+import { MovimentacaoTipo } from "@/generated/prisma";
 import {
   extractChangedFieldsFromDiff,
   logAudit,

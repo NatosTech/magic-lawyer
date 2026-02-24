@@ -37,7 +37,7 @@ import {
   ProcessoStatus,
   ProcessoFase,
   ProcessoGrau,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import { useClientesParaSelect } from "@/app/hooks/use-clientes";
 import { useAdvogadosParaSelect } from "@/app/hooks/use-advogados-select";
 

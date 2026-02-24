@@ -6,7 +6,7 @@ import { JuizesContent } from "./juizes-content";
 import { ProfileDashboard } from "@/components/profile-dashboard";
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 
 export const metadata: Metadata = {
   title: "Base de Juízes",

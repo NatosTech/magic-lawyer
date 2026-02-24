@@ -4,7 +4,7 @@ import { randomBytes } from "crypto";
 
 import { revalidatePath } from "next/cache";
 
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { sendConviteEmail } from "@/app/lib/email-convite";

@@ -116,7 +116,7 @@ import {
 } from "@/app/hooks/use-dados-bancarios";
 import { enviarEmailBoasVindas } from "@/app/actions/advogados-emails";
 import { title } from "@/components/primitives";
-import { EspecialidadeJuridica } from "@/app/generated/prisma";
+import { EspecialidadeJuridica } from "@/generated/prisma";
 
 const createEndereco = (
   apelido = "Principal",

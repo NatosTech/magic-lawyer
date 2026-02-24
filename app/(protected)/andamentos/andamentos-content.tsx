@@ -65,7 +65,7 @@ import {
   type AndamentoCreateInput,
 } from "@/app/actions/andamentos";
 import { getAllProcessos } from "@/app/actions/processos";
-import { MovimentacaoTipo } from "@/app/generated/prisma";
+import { MovimentacaoTipo } from "@/generated/prisma";
 import { title, subtitle } from "@/components/primitives";
 
 // ============================================

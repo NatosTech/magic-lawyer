@@ -8,7 +8,7 @@ import {
   TicketStatus,
   TicketPriority,
   TicketCategory,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 
 export interface CreateTicketData {
   title: string;

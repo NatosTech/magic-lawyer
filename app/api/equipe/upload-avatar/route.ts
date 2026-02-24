@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/app/lib/auth";
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 import prisma from "@/app/lib/prisma";
 import { UploadService } from "@/lib/upload-service";
 

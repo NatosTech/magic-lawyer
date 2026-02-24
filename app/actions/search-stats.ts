@@ -3,7 +3,7 @@
 import { getServerSession } from "next-auth/next";
 
 import prisma from "@/app/lib/prisma";
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
 

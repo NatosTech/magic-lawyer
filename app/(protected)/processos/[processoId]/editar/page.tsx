@@ -40,7 +40,7 @@ import {
   ProcessoStatus,
   ProcessoFase,
   ProcessoGrau,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 
 export default function EditarProcessoPage() {
   const params = useParams();

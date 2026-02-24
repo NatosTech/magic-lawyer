@@ -3,7 +3,7 @@
 import { nanoid } from "nanoid";
 
 import prisma from "@/app/lib/prisma";
-import { Prisma } from "@/app/generated/prisma";
+import { Prisma } from "@/generated/prisma";
 import {
   AsaasClient,
   formatCpfCnpjForAsaas,

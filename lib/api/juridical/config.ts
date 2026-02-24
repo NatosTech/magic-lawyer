@@ -35,8 +35,8 @@ export const TRIBUNAIS_CONFIG: TribunaisConfig[] = [
     esfera: EsferaTribunal.ESTADUAL,
     uf: "BA",
     sistema: TribunalSistema.ESAJ,
-    urlBase: "https://www5.tjba.jus.br",
-    urlConsulta: "https://www5.tjba.jus.br/esaj/consultas/consulta_processual",
+    urlBase: "https://esaj.tjba.jus.br",
+    urlConsulta: "https://esaj.tjba.jus.br/cpopg/open.do",
     requerCertificado: false,
     apiDisponivel: false,
     scrapingDisponivel: true,
@@ -48,8 +48,8 @@ export const TRIBUNAIS_CONFIG: TribunaisConfig[] = [
     esfera: EsferaTribunal.ESTADUAL,
     uf: "SP",
     sistema: TribunalSistema.ESAJ,
-    urlBase: "https://www.tjsp.jus.br",
-    urlConsulta: "https://esaj.tjsp.jus.br/cjsg/consultaCompleta.do",
+    urlBase: "https://esaj.tjsp.jus.br",
+    urlConsulta: "https://esaj.tjsp.jus.br/cpopg/open.do",
     requerCertificado: false,
     apiDisponivel: false,
     scrapingDisponivel: true,
@@ -85,7 +85,6 @@ export function getTribunaisScrapingDisponiveis(): TribunaisConfig[] {
 export function getTribunaisApiDisponiveis(): TribunaisConfig[] {
   return TRIBUNAIS_CONFIG.filter((t) => t.apiDisponivel === true);
 }
-
 
 
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import prisma from "@/app/lib/prisma";
-import { TenantStatus } from "@/app/generated/prisma";
+import { TenantStatus } from "@/generated/prisma";
 
 /**
  * Valida se a sessão do tenant/usuário ainda é válida

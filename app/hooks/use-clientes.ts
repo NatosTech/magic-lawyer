@@ -1,4 +1,4 @@
-import type { Cliente } from "@/app/generated/prisma";
+import type { Cliente } from "@/generated/prisma";
 
 import useSWR from "swr";
 

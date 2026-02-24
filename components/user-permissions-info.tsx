@@ -21,7 +21,7 @@ import {
 
 import { getUserSelfEditData } from "@/app/actions/user-self-edit";
 import { type SelfEditPermissions } from "@/lib/user-permissions";
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 
 interface UserPermissionsInfoProps {
   className?: string;

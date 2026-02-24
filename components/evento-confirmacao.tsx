@@ -15,7 +15,7 @@ import { Check, X, HelpCircle, AlertCircle, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { confirmarParticipacaoEvento } from "@/app/actions/eventos";
-import { Evento, EventoConfirmacaoStatus } from "@/app/generated/prisma";
+import { Evento, EventoConfirmacaoStatus } from "@/generated/prisma";
 
 interface EventoConfirmacaoProps {
   isOpen: boolean;

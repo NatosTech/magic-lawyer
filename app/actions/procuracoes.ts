@@ -7,7 +7,7 @@ import {
   Prisma,
   ProcuracaoEmitidaPor,
   ProcuracaoStatus,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import {
   getAccessibleAdvogadoIds,
   getAdvogadoIdFromSession,

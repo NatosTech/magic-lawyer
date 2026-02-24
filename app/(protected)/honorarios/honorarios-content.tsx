@@ -62,7 +62,7 @@ import {
   Cliente,
   Advogado,
   Usuario,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 
 const TIPO_CONTA_BANCARIA_LABELS: Record<string, string> = {
   CORRENTE: "Conta Corrente",

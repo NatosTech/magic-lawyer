@@ -4,7 +4,7 @@ import HonorariosContent from "./honorarios-content";
 
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 
 export default async function HonorariosPage() {
   const session = await getSession();

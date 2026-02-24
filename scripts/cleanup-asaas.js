@@ -6,7 +6,7 @@
  * Atualiza automaticamente o webhook com a nova URL do ngrok
  */
 
-const { PrismaClient } = require("../app/generated/prisma");
+const { PrismaClient } = require("../generated/prisma");
 const axios = require("axios");
 
 const prisma = new PrismaClient();

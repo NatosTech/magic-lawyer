@@ -1,4 +1,4 @@
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 
 export type RolePermissionMatrix = Record<UserRole, Record<string, string[]>>;
 

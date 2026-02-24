@@ -7,6 +7,12 @@ import prisma from "@/app/lib/prisma";
 import { getTenantAccessibleModules } from "@/app/lib/tenant-modules";
 import { getModuleRouteMap } from "@/app/lib/module-map";
 import logger from "@/lib/logger";
+import {
+  DigitalCertificateLogAction,
+  DigitalCertificatePolicy,
+  DigitalCertificateScope,
+} from "@/generated/prisma";
+import { TENANT_PERMISSIONS } from "@/types";
 
 export interface TenantConfigData {
   tenant: {
@@ -25,6 +31,7 @@ export interface TenantConfigData {
     statusChangedAt: string | null;
     sessionVersion: number;
     planRevision: number;
+    digitalCertificatePolicy: DigitalCertificatePolicy;
     createdAt: string;
     updatedAt: string;
   };
@@ -78,6 +85,7 @@ export interface TenantConfigData {
     responsavelUsuarioId: string | null;
     label: string | null;
     tipo: string;
+    scope: string;
     isActive: boolean;
     validUntil: string | null;
     lastValidatedAt: string | null;
@@ -237,6 +245,7 @@ export async function getTenantConfigData(): Promise<{
     const certificates = await prisma.digitalCertificate.findMany({
       where: {
         tenantId,
+        scope: DigitalCertificateScope.OFFICE,
       },
       orderBy: [
         {
@@ -252,6 +261,7 @@ export async function getTenantConfigData(): Promise<{
         responsavelUsuarioId: true,
         label: true,
         tipo: true,
+        scope: true,
         isActive: true,
         validUntil: true,
         lastValidatedAt: true,
@@ -286,6 +296,8 @@ export async function getTenantConfigData(): Promise<{
         statusChangedAt: tenant.statusChangedAt?.toISOString() ?? null,
         sessionVersion: tenant.sessionVersion,
         planRevision: tenant.planRevision,
+        digitalCertificatePolicy:
+          tenant.digitalCertificatePolicy ?? DigitalCertificatePolicy.OFFICE,
         createdAt: tenant.createdAt.toISOString(),
         updatedAt: tenant.updatedAt.toISOString(),
       },
@@ -345,6 +357,7 @@ export async function getTenantConfigData(): Promise<{
         responsavelUsuarioId: cert.responsavelUsuarioId,
         label: cert.label,
         tipo: cert.tipo,
+        scope: cert.scope,
         isActive: cert.isActive,
         validUntil: cert.validUntil?.toISOString() ?? null,
         lastValidatedAt: cert.lastValidatedAt?.toISOString() ?? null,
@@ -385,6 +398,10 @@ export interface UpdateTenantBasicDataInput {
   razaoSocial?: string;
   nomeFantasia?: string;
   timezone?: string;
+}
+
+export interface UpdateTenantCertificatePolicyInput {
+  policy: DigitalCertificatePolicy;
 }
 
 export interface UpdateTenantBrandingInput {
@@ -531,6 +548,140 @@ export async function updateTenantBranding(
     return {
       success: false,
       error: "Erro interno ao salvar branding",
+    };
+  }
+}
+
+/**
+ * Atualiza política de certificados digitais do tenant.
+ */
+export async function updateTenantCertificatePolicy({
+  policy,
+}: UpdateTenantCertificatePolicyInput): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id || !session.user.tenantId) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const tenantId = session.user.tenantId;
+    const role = (session.user as any)?.role as string | undefined;
+    const permissions = ((session.user as any)?.permissions ?? []) as string[];
+
+    const hasPermission =
+      role === "SUPER_ADMIN" ||
+      permissions.includes(TENANT_PERMISSIONS.manageOfficeSettings);
+
+    if (!hasPermission) {
+      return {
+        success: false,
+        error: "Apenas administradores podem alterar essa política.",
+      };
+    }
+
+    if (
+      ![
+        DigitalCertificatePolicy.OFFICE,
+        DigitalCertificatePolicy.LAWYER,
+        DigitalCertificatePolicy.HYBRID,
+      ].includes(policy)
+    ) {
+      return { success: false, error: "Política inválida." };
+    }
+
+    const current = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { digitalCertificatePolicy: true },
+    });
+
+    if (!current) {
+      return { success: false, error: "Tenant não encontrado." };
+    }
+
+    if (current.digitalCertificatePolicy === policy) {
+      return { success: true };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.tenant.update({
+        where: { id: tenantId },
+        data: {
+          digitalCertificatePolicy: policy,
+          sessionVersion: { increment: 1 },
+        },
+      });
+
+      if (policy === DigitalCertificatePolicy.OFFICE) {
+        const activePersonal = await tx.digitalCertificate.findMany({
+          where: {
+            tenantId,
+            scope: DigitalCertificateScope.LAWYER,
+            isActive: true,
+          },
+          select: { id: true },
+        });
+
+        if (activePersonal.length > 0) {
+          const ids = activePersonal.map((item) => item.id);
+          await tx.digitalCertificate.updateMany({
+            where: { id: { in: ids } },
+            data: { isActive: false },
+          });
+
+          await tx.digitalCertificateLog.createMany({
+            data: ids.map((id) => ({
+              tenantId,
+              digitalCertificateId: id,
+              action: DigitalCertificateLogAction.DISABLED,
+              actorId: session.user.id,
+              message:
+                "Desativado ao alterar política para certificado do escritório.",
+            })),
+          });
+        }
+      }
+
+      if (policy === DigitalCertificatePolicy.LAWYER) {
+        const activeOffice = await tx.digitalCertificate.findMany({
+          where: {
+            tenantId,
+            scope: DigitalCertificateScope.OFFICE,
+            isActive: true,
+          },
+          select: { id: true },
+        });
+
+        if (activeOffice.length > 0) {
+          const ids = activeOffice.map((item) => item.id);
+          await tx.digitalCertificate.updateMany({
+            where: { id: { in: ids } },
+            data: { isActive: false },
+          });
+
+          await tx.digitalCertificateLog.createMany({
+            data: ids.map((id) => ({
+              tenantId,
+              digitalCertificateId: id,
+              action: DigitalCertificateLogAction.DISABLED,
+              actorId: session.user.id,
+              message:
+                "Desativado ao alterar política para certificados por advogado.",
+            })),
+          });
+        }
+      }
+    });
+
+    return { success: true };
+  } catch (error) {
+    logger.error("Erro ao atualizar política de certificados:", error);
+    return {
+      success: false,
+      error: "Erro interno ao salvar política de certificados.",
     };
   }
 }

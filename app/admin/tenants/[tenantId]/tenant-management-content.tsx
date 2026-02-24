@@ -76,7 +76,7 @@ import {
   SubscriptionStatus,
   TenantStatus,
   UserRole,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 
 interface TenantManagementContentProps {
   tenantId: string;

@@ -8,7 +8,7 @@ import {
   UserRole,
   ContratoParcelaStatus,
   HonorarioVisibilidade,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import logger from "@/lib/logger";
 
 // ============================================

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import prisma from "@/app/lib/prisma";
 import { authOptions } from "@/auth";
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 import {
   getSelfEditPermissions,
   type SelfEditPermissions,

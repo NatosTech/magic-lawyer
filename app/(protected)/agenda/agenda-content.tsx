@@ -74,7 +74,7 @@ import GoogleCalendarButton from "@/components/google-calendar-button";
 import GoogleCalendarStatusCard from "@/components/google-calendar-status";
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { DateUtils } from "@/app/lib/date-utils";
-import { Evento, EventoConfirmacaoStatus } from "@/app/generated/prisma";
+import { Evento, EventoConfirmacaoStatus } from "@/generated/prisma";
 
 type ViewMode = "calendar" | "list";
 

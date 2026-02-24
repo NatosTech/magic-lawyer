@@ -46,12 +46,16 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { EnderecoManager } from "@/components/endereco-manager";
 import { UserPermissionsInfo } from "@/components/user-permissions-info";
 import { AsaasConfigTab } from "@/components/asaas-config-tab";
-import { EspecialidadeJuridica } from "@/app/generated/prisma";
+import { EspecialidadeJuridica } from "@/generated/prisma";
 import { useEstadosBrasil } from "@/app/hooks/use-estados-brasil";
 import { useCurrentUserAdvogado } from "@/app/hooks/use-current-user-advogado";
-import { listMyDigitalCertificates } from "@/app/actions/digital-certificates";
+import {
+  getDigitalCertificatePolicy,
+  listMyDigitalCertificates,
+} from "@/app/actions/digital-certificates";
 import { DigitalCertificatesPanel } from "@/app/(protected)/configuracoes/digital-certificates-panel";
 import { useMeusDadosBancarios, useBancosDisponiveis, useTiposConta, useTiposContaBancaria, useTiposChavePix } from "@/app/hooks/use-dados-bancarios";
+import { DigitalCertificatePolicy } from "@/generated/prisma";
 
 const especialidadeLabels: Record<string, string> = {
   CIVIL: "Civil",
@@ -92,6 +96,11 @@ export function ProfileContent() {
 
   // Buscar certificados digitais do advogado atual
   const { data: myCertificates = [] } = useSWR(advogado ? "my-digital-certificates" : null, listMyDigitalCertificates);
+  const { data: policyResult } = useSWR("digital-certificate-policy", getDigitalCertificatePolicy);
+  const certificatePolicy =
+    policyResult?.success && policyResult.policy
+      ? (policyResult.policy as DigitalCertificatePolicy)
+      : DigitalCertificatePolicy.OFFICE;
 
   const profile = profileResult?.success ? profileResult.profile : null;
   const stats = statsResult?.success ? statsResult.stats : null;
@@ -838,7 +847,11 @@ export function ProfileContent() {
                 }
               >
                 <div className="p-3 sm:p-6 min-w-0 overflow-x-hidden">
-                  <DigitalCertificatesPanel certificates={myCertificates} />
+                  <DigitalCertificatesPanel
+                    certificates={myCertificates}
+                    mode="lawyer"
+                    policy={certificatePolicy}
+                  />
                 </div>
               </Tab>
             )}

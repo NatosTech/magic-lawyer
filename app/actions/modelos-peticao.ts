@@ -1,6 +1,6 @@
 "use server";
 
-import type { ModeloPeticao } from "@/app/generated/prisma";
+import type { ModeloPeticao } from "@/generated/prisma";
 
 import { revalidatePath } from "next/cache";
 

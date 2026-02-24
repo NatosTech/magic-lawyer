@@ -46,7 +46,7 @@ npx prisma migrate dev --name add_estagiaria_role
 ### 3. Atualizar Tipos TypeScript
 
 Após a migration, os tipos Prisma serão regenerados automaticamente. Verificar:
-- `app/generated/prisma/index.ts` deve incluir `ESTAGIARIA` no enum
+- `generated/prisma` (após `prisma generate`) deve incluir `ESTAGIARIA` no enum
 
 ### 4. Atualizar Permissões Padrão
 
@@ -157,4 +157,3 @@ Verificar se há validações específicas por role que precisam ser atualizadas
 ---
 
 **Última atualização:** Após análise do sistema de roles
-

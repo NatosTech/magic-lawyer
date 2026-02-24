@@ -1,4 +1,4 @@
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 
 // Interface para validações de auto-edição
 export interface SelfEditPermissions {

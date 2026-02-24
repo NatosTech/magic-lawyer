@@ -8,7 +8,7 @@ import NextLink from "next/link";
 import { title, subtitle } from "@/components/primitives";
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 
 export const metadata: Metadata = {
   title: "Relatórios",

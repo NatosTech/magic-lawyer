@@ -1,4 +1,4 @@
-import { Prisma } from "@/app/generated/prisma";
+import { Prisma } from "@/generated/prisma";
 import prisma from "@/app/lib/prisma";
 
 export type AuditLogParams = {

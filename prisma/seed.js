@@ -9,7 +9,7 @@ if (!process[tsNodeInstanceKey]) {
 }
 
 const { autoDetectModulesCore } = require("../lib/module-detection-core");
-const { PrismaClient, Prisma } = require("../app/generated/prisma");
+const { PrismaClient, Prisma } = require("../generated/prisma");
 
 const seedAreasProcesso = require("./seeds/areasProcesso");
 const seedTiposContrato = require("./seeds/tiposContrato");

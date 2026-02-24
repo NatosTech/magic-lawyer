@@ -60,7 +60,7 @@ import { type EnderecoFormData, type DadosBancariosFormData } from "./types";
 import { CepInput } from "@/components/cep-input";
 import { CpfInput } from "@/components/cpf-input";
 import { CnpjInput } from "@/components/cnpj-input";
-import { EspecialidadeJuridica } from "@/app/generated/prisma";
+import { EspecialidadeJuridica } from "@/generated/prisma";
 import { CidadeSelect } from "@/components/cidade-select";
 import { EstadoSelect } from "@/components/estado-select";
 

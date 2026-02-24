@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type DragEvent,
+} from "react";
 import {
   Card,
   CardHeader,
@@ -39,8 +45,15 @@ import {
   Activity,
   UserCircle2,
   ShieldOff,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Tag,
+  Calendar,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { AnimatePresence, motion } from "framer-motion";
 
 import {
   activateDigitalCertificate,
@@ -49,6 +62,7 @@ import {
   testDigitalCertificate,
   uploadDigitalCertificateFromForm,
 } from "@/app/actions/digital-certificates";
+import { DigitalCertificatePolicy } from "@/generated/prisma";
 
 interface CertificateResponsible {
   id: string;
@@ -63,6 +77,7 @@ interface CertificateSummary {
   responsavelUsuarioId: string | null;
   label: string | null;
   tipo: string;
+  scope?: string;
   isActive: boolean;
   validUntil: string | null;
   lastValidatedAt: string | null;
@@ -82,6 +97,29 @@ interface CertificateLog {
 
 interface DigitalCertificatesPanelProps {
   certificates: CertificateSummary[];
+  mode: "office" | "lawyer";
+  policy: DigitalCertificatePolicy;
+}
+
+const ACCEPTED_CERTIFICATE_EXTENSIONS = [".pfx", ".p12"];
+const MAX_CERTIFICATE_SIZE_BYTES = 2 * 1024 * 1024;
+
+function isValidCertificateFile(file: File) {
+  const normalized = file.name.toLowerCase();
+  return ACCEPTED_CERTIFICATE_EXTENSIONS.some((ext) =>
+    normalized.endsWith(ext),
+  );
+}
+
+function formatBytes(bytes: number) {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB"];
+  const idx = Math.min(
+    units.length - 1,
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+  );
+  const value = bytes / Math.pow(1024, idx);
+  return `${value.toFixed(value >= 10 || idx === 0 ? 0 : 1)} ${units[idx]}`;
 }
 
 function formatDate(date: string | null, fallback = "—") {
@@ -124,7 +162,20 @@ function fullName(responsible: CertificateResponsible | null) {
 
 export function DigitalCertificatesPanel({
   certificates,
+  mode,
+  policy,
 }: DigitalCertificatesPanelProps) {
+  const isOfficeMode = mode === "office";
+  const policyAllowsOffice =
+    policy === DigitalCertificatePolicy.OFFICE ||
+    policy === DigitalCertificatePolicy.HYBRID;
+  const policyAllowsLawyer =
+    policy === DigitalCertificatePolicy.LAWYER ||
+    policy === DigitalCertificatePolicy.HYBRID;
+  const policyAllowsCurrent = isOfficeMode
+    ? policyAllowsOffice
+    : policyAllowsLawyer;
+
   const [isUploadOpen, setUploadOpen] = useState(false);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [logs, setLogs] = useState<CertificateLog[]>([]);
@@ -135,6 +186,9 @@ export function DigitalCertificatesPanel({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<string | null>(null);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeCertificate = useMemo(
     () => (Array.isArray(certificates) ? certificates.find((cert) => cert.isActive) : undefined),
@@ -142,6 +196,15 @@ export function DigitalCertificatesPanel({
   );
 
   const hasCertificates = Array.isArray(certificates) && certificates.length > 0;
+  const dropzoneDisabled = isSubmitting || !policyAllowsCurrent;
+  const dropzoneTone = isDraggingFile
+    ? "border-primary/60 bg-primary/5"
+    : "border-default-200 bg-default-50";
+  const dropzoneState = dropzoneDisabled
+    ? "cursor-not-allowed opacity-60"
+    : "cursor-pointer hover:border-primary/50";
+  const acceptedExtensionsAccept = ACCEPTED_CERTIFICATE_EXTENSIONS.join(",");
+  const acceptedExtensionsLabel = ACCEPTED_CERTIFICATE_EXTENSIONS.join(", ");
 
   const [formState, setFormState] = useState({
     file: null as File | null,
@@ -151,6 +214,9 @@ export function DigitalCertificatesPanel({
     activate: true,
     tipo: "PJE" as string,
   });
+  const selectedFileLabel = formState.file
+    ? `${formState.file.name} • ${formatBytes(formState.file.size)}`
+    : null;
 
   const resetForm = () => {
     setFormState({
@@ -162,9 +228,89 @@ export function DigitalCertificatesPanel({
       tipo: "PJE",
     });
     setFormErrors(null);
+    setIsDraggingFile(false);
+    setIsPasswordVisible(false);
+  };
+
+  const togglePasswordVisibility = () => {
+    setIsPasswordVisible((prev) => !prev);
+  };
+
+  const handleFileSelection = (file: File | null) => {
+    if (!file) {
+      setFormState((prev) => ({ ...prev, file: null }));
+      return;
+    }
+
+    if (!isValidCertificateFile(file)) {
+      setFormState((prev) => ({ ...prev, file: null }));
+      setFormErrors("Formato invalido. Use arquivos .pfx ou .p12.");
+      return;
+    }
+
+    if (file.size > MAX_CERTIFICATE_SIZE_BYTES) {
+      setFormState((prev) => ({ ...prev, file: null }));
+      setFormErrors("Certificado excede o limite de 2MB.");
+      return;
+    }
+
+    setFormState((prev) => ({ ...prev, file }));
+    if (formErrors) {
+      setFormErrors(null);
+    }
+  };
+
+  const openFilePicker = () => {
+    if (dropzoneDisabled) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (dropzoneDisabled) {
+      setIsDraggingFile(false);
+      return;
+    }
+
+    const file = event.dataTransfer.files?.[0] ?? null;
+    handleFileSelection(file);
+    setIsDraggingFile(false);
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (dropzoneDisabled) return;
+    event.dataTransfer.dropEffect = "copy";
+    setIsDraggingFile(true);
+  };
+
+  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingFile(false);
+  };
+
+  const handleDragEnter = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (dropzoneDisabled) return;
+    setIsDraggingFile(true);
   };
 
   const handleUpload = async () => {
+    if (!policyAllowsCurrent) {
+      toast.error("Upload indisponivel", {
+        description:
+          "A politica atual do escritorio nao permite esse tipo de certificado.",
+      });
+
+      return;
+    }
+
     if (!formState.file) {
       setFormErrors("Selecione um certificado (.pfx/.p12)");
 
@@ -188,6 +334,7 @@ export function DigitalCertificatesPanel({
       fd.set("label", formState.label);
       fd.set("activate", String(formState.activate));
       fd.set("tipo", formState.tipo);
+      fd.set("scope", isOfficeMode ? "OFFICE" : "LAWYER");
 
       if (formState.validUntil) {
         fd.set("validUntil", formState.validUntil);
@@ -216,6 +363,10 @@ export function DigitalCertificatesPanel({
   };
 
   const handleDeactivate = (certificateId: string) => {
+    if (!policyAllowsCurrent) {
+      return;
+    }
+
     startTransition(async () => {
       const result = await deactivateDigitalCertificate({ certificateId });
 
@@ -234,6 +385,10 @@ export function DigitalCertificatesPanel({
   };
 
   const handleActivate = (certificateId: string) => {
+    if (!policyAllowsCurrent) {
+      return;
+    }
+
     startTransition(async () => {
       const result = await activateDigitalCertificate({ certificateId });
 
@@ -252,6 +407,10 @@ export function DigitalCertificatesPanel({
   };
 
   const handleTest = (certificateId: string) => {
+    if (!policyAllowsCurrent) {
+      return;
+    }
+
     startTransition(async () => {
       const result = await testDigitalCertificate({ certificateId });
 
@@ -334,11 +493,14 @@ export function DigitalCertificatesPanel({
             <ShieldCheck className="h-6 w-6" />
             <div>
               <h2 className="text-xl font-semibold text-white">
-                Integrações PJe e Certificados A1
+                {isOfficeMode
+                  ? "Integracoes PJe e Certificados A1"
+                  : "Certificados Digitais A1"}
               </h2>
               <p className="text-sm text-default-400">
-                Gerencie certificados ICP-Brasil do escritório. Somente admins
-                e super admins visualizam esta sessão.
+                {isOfficeMode
+                  ? "Gerencie certificados ICP-Brasil do escritorio. Somente admins e super admins visualizam esta sessao."
+                  : "Gerencie seu certificado ICP-Brasil para autenticacoes PJe."}
               </p>
             </div>
           </div>
@@ -351,9 +513,16 @@ export function DigitalCertificatesPanel({
                 variant="flat"
               >
                 {activeCertificate
-                  ? "Integração habilitada"
+                  ? isOfficeMode
+                    ? "Integracao habilitada"
+                    : "Certificado ativo"
                   : "Nenhum certificado ativo"}
               </Badge>
+              {!policyAllowsCurrent && (
+                <Badge color="warning" variant="flat">
+                  Upload desativado pela politica do escritorio
+                </Badge>
+              )}
               {activeCertificate?.validUntil && (
                 <Badge color="warning" variant="flat">
                   Válido até {formatDate(activeCertificate.validUntil)}
@@ -369,8 +538,12 @@ export function DigitalCertificatesPanel({
             <div className="flex flex-wrap gap-2">
               <Button
                 color="primary"
+                isDisabled={!policyAllowsCurrent}
                 startContent={<UploadCloud className="h-4 w-4" />}
                 onPress={() => {
+                  if (!policyAllowsCurrent) {
+                    return;
+                  }
                   resetForm();
                   setUploadOpen(true);
                 }}
@@ -380,6 +553,16 @@ export function DigitalCertificatesPanel({
             </div>
           </div>
 
+          {!policyAllowsCurrent && (
+            <Card className="border border-dashed border-warning/40 bg-warning/5">
+              <CardBody className="text-sm text-warning-700">
+                Este modo de certificados foi desativado pela politica atual do
+                escritorio. Fale com um administrador para alterar a
+                configuracao.
+              </CardBody>
+            </Card>
+          )}
+
           {!hasCertificates ? (
             <Card className="border border-dashed border-default-300 bg-white/5">
               <CardBody className="flex flex-col items-center gap-3 text-center text-default-400">
@@ -388,9 +571,9 @@ export function DigitalCertificatesPanel({
                   Nenhum certificado cadastrado
                 </p>
                 <p className="max-w-xl text-sm text-default-400">
-                  Faça o upload do certificado A1 (.pfx ou .p12) utilizado para
-                  peticionamento no PJe. O arquivo será criptografado
-                  imediatamente e somente usuários autorizados podem manipulá-lo.
+                  {isOfficeMode
+                    ? "Faca o upload do certificado A1 (.pfx ou .p12) utilizado para peticionamento no PJe. O arquivo sera criptografado imediatamente e somente usuarios autorizados podem manipula-lo."
+                    : "Envie seu certificado A1 (.pfx ou .p12) para autenticar consultas no PJe. O arquivo sera criptografado imediatamente."}
                 </p>
               </CardBody>
             </Card>
@@ -458,6 +641,7 @@ export function DigitalCertificatesPanel({
                           <Tooltip content="Visualizar histórico">
                             <Button
                               isIconOnly
+                              isDisabled={!policyAllowsCurrent}
                               size="sm"
                               variant="light"
                               onPress={() => handleOpenLogs(certificate.id)}
@@ -467,6 +651,7 @@ export function DigitalCertificatesPanel({
                           </Tooltip>
                           <Tooltip content="Testar acesso">
                             <Button
+                              isDisabled={!policyAllowsCurrent}
                               isLoading={
                                 isPending && selectedCertificateId === certificate.id
                               }
@@ -482,6 +667,7 @@ export function DigitalCertificatesPanel({
                             <Tooltip content="Desativar">
                               <Button
                                 color="danger"
+                                isDisabled={!policyAllowsCurrent}
                                 isLoading={
                                   isPending &&
                                   selectedCertificateId === certificate.id
@@ -497,6 +683,7 @@ export function DigitalCertificatesPanel({
                             <Tooltip content="Ativar">
                               <Button
                                 color="success"
+                                isDisabled={!policyAllowsCurrent}
                                 size="sm"
                                 variant="flat"
                                 onPress={() => handleActivate(certificate.id)}
@@ -516,13 +703,14 @@ export function DigitalCertificatesPanel({
         </CardBody>
         <CardFooter className="flex flex-col items-start gap-2 text-xs text-default-500">
           <p>
-            Os certificados são criptografados com AES-256-GCM e armazenados em
-            repouso com logs de auditoria. Ative somente o que pretende usar no
-            PJe para evitar instabilidades.
+            {isOfficeMode
+              ? "Os certificados sao criptografados com AES-256-GCM e armazenados em repouso com logs de auditoria. Ative somente o que pretende usar no PJe para evitar instabilidades."
+              : "Seu certificado e criptografado com AES-256-GCM e armazenado com logs de auditoria. Ative somente o que pretende usar no PJe para evitar instabilidades."}
           </p>
           <p>
-            Ao enviar um novo certificado do mesmo tipo, o anterior é arquivado
-            automaticamente e permanece disponível apenas para auditoria.
+            {isOfficeMode
+              ? "Ao enviar um novo certificado do mesmo tipo, o anterior e arquivado automaticamente e permanece disponivel apenas para auditoria."
+              : "Ao enviar um novo certificado do mesmo tipo, o anterior e arquivado automaticamente para auditoria."}
           </p>
         </CardFooter>
       </Card>
@@ -537,112 +725,256 @@ export function DigitalCertificatesPanel({
         }}
         size="lg"
       >
-        <ModalContent>
+        <ModalContent className="border border-primary/20 bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 shadow-[0_32px_80px_-40px_rgba(59,130,246,0.55)]">
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">
-                <span className="text-lg font-semibold">
-                  Enviar certificado A1
-                </span>
-                <span className="text-sm text-default-500">
-                  Somente formatos .pfx ou .p12 com senha ativa são aceitos.
-                </span>
+              <ModalHeader className="flex flex-col gap-3 border-b border-white/10 pb-4">
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                      <ShieldCheck className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <span className="text-lg font-semibold text-white">
+                        Enviar certificado A1
+                      </span>
+                      <p className="text-sm text-default-400">
+                        Somente formatos .pfx ou .p12 com senha ativa sao aceitos.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="hidden items-center gap-2 text-xs text-default-300 md:flex">
+                    <div className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-primary">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      AES-256
+                    </div>
+                    <div className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-emerald-300">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Valido localmente
+                    </div>
+                  </div>
+                </motion.div>
               </ModalHeader>
               <ModalBody className="space-y-4">
-                <Input
-                  accept=".pfx,.p12"
-                  isDisabled={isSubmitting}
-                  label="Arquivo .pfx / .p12"
-                  type="file"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0] ?? null;
-                    setFormState((prev) => ({ ...prev, file }));
-                    if (formErrors) {
-                      setFormErrors(null);
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="space-y-4"
+                >
+                  <motion.div
+                    animate={{ scale: isDraggingFile ? 1.02 : 1 }}
+                    className={`group relative flex min-h-[150px] flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${dropzoneTone} ${dropzoneState}`}
+                    role="button"
+                    tabIndex={dropzoneDisabled ? -1 : 0}
+                    transition={{ type: "spring", stiffness: 240, damping: 18 }}
+                    aria-disabled={dropzoneDisabled}
+                    onClick={openFilePicker}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openFilePicker();
+                      }
+                    }}
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      accept={acceptedExtensionsAccept}
+                      className="sr-only"
+                      disabled={dropzoneDisabled}
+                      type="file"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        handleFileSelection(file);
+                        event.currentTarget.value = "";
+                      }}
+                    />
+                    <AnimatePresence mode="wait">
+                      {formState.file ? (
+                        <motion.div
+                          key="selected"
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          initial={{ opacity: 0, y: 6 }}
+                          className="flex flex-col items-center gap-2 text-center"
+                        >
+                          <div className="flex items-center gap-2 text-success">
+                            <CheckCircle2 className="h-5 w-5" />
+                            <span className="text-sm font-medium text-success">
+                              Arquivo selecionado
+                            </span>
+                          </div>
+                          <p className="text-xs text-default-500">
+                            {selectedFileLabel}
+                          </p>
+                          <p className="text-xs text-default-400">
+                            Clique ou arraste outro arquivo para trocar.
+                          </p>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="empty"
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          initial={{ opacity: 0, y: 6 }}
+                          className="flex flex-col items-center gap-2 text-center"
+                        >
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <UploadCloud className="h-6 w-6" />
+                          </div>
+                          <p className="text-sm font-medium text-white">
+                            {dropzoneDisabled
+                              ? "Upload desativado pela politica"
+                              : isDraggingFile
+                                ? "Solte o certificado aqui"
+                                : "Arraste o certificado aqui"}
+                          </p>
+                          <p className="text-xs text-default-500">
+                            {dropzoneDisabled
+                              ? "Fale com um administrador para liberar."
+                              : `ou clique para selecionar (${acceptedExtensionsLabel})`}
+                          </p>
+                          {!dropzoneDisabled && (
+                            <p className="text-[11px] text-default-400">
+                              Limite maximo:{" "}
+                              {formatBytes(MAX_CERTIFICATE_SIZE_BYTES)}
+                            </p>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+
+                  <Input
+                    isDisabled={isSubmitting || !policyAllowsCurrent}
+                    label="Senha do certificado"
+                    placeholder="Informe a senha utilizada no órgão emissor"
+                    startContent={<KeyRound className="h-4 w-4 text-primary" />}
+                    type={isPasswordVisible ? "text" : "password"}
+                    value={formState.password}
+                    endContent={
+                      <Button
+                        isIconOnly
+                        aria-label={
+                          isPasswordVisible ? "Ocultar senha" : "Mostrar senha"
+                        }
+                        isDisabled={isSubmitting || !policyAllowsCurrent}
+                        size="sm"
+                        type="button"
+                        variant="light"
+                        onPress={togglePasswordVisibility}
+                      >
+                        {isPasswordVisible ? (
+                          <EyeOff className="h-4 w-4 text-default-400" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-default-400" />
+                        )}
+                      </Button>
                     }
-                  }}
-                />
-
-                <Input
-                  isDisabled={isSubmitting}
-                  label="Senha do certificado"
-                  placeholder="Informe a senha utilizada no órgão emissor"
-                  type="password"
-                  value={formState.password}
-                  onChange={(event) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      password: event.target.value,
-                    }))
-                  }
-                />
-
-                <Input
-                  isDisabled={isSubmitting}
-                  label="Identificação interna (opcional)"
-                  placeholder="Ex: Certificado Dra. Sandra 2025"
-                  value={formState.label}
-                  onChange={(event) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      label: event.target.value,
-                    }))
-                  }
-                />
-
-                <Input
-                  isDisabled={isSubmitting}
-                  label="Validade (opcional)"
-                  type="date"
-                  value={formState.validUntil}
-                  onChange={(event) =>
-                    setFormState((prev) => ({
-                      ...prev,
-                      validUntil: event.target.value,
-                    }))
-                  }
-                />
-
-                <div className="flex items-center justify-between rounded-lg border border-default-200 bg-default-50 px-3 py-2 text-sm text-default-500">
-                  <span>Ativar imediatamente após o upload</span>
-                  <Switch
-                    isDisabled={isSubmitting}
-                    isSelected={formState.activate}
-                    onValueChange={(value) =>
-                      setFormState((prev) => ({ ...prev, activate: value }))
+                    onChange={(event) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        password: event.target.value,
+                      }))
                     }
                   />
-                </div>
 
-                {formErrors && (
-                  <p className="text-sm text-danger-400">{formErrors}</p>
-                )}
+                  <Input
+                    isDisabled={isSubmitting || !policyAllowsCurrent}
+                    label="Identificação interna (opcional)"
+                    placeholder="Ex: Certificado Dra. Sandra 2025"
+                    startContent={<Tag className="h-4 w-4 text-secondary" />}
+                    value={formState.label}
+                    onChange={(event) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        label: event.target.value,
+                      }))
+                    }
+                  />
 
-                <Card className="border border-default-200 bg-default-50">
-                  <CardBody className="space-y-2 text-xs text-default-500">
-                    <p className="font-semibold text-default-600">
-                      Boas práticas
-                    </p>
-                    <ul className="list-disc space-y-1 pl-4">
-                      <li>
-                        Mantenha uma cópia segura do arquivo original em mídia
-                        offline.
-                      </li>
-                      <li>
-                        O Magic Lawyer não exibe o conteúdo do certificado após
-                        o upload.
-                      </li>
-                      <li>
-                        Configure alertas de validade para evitar indisponibilidade
-                        na integração.
-                      </li>
-                    </ul>
-                  </CardBody>
-                </Card>
+                  <Input
+                    isDisabled={isSubmitting || !policyAllowsCurrent}
+                    label="Validade (opcional)"
+                    type="date"
+                    startContent={<Calendar className="h-4 w-4 text-warning" />}
+                    value={formState.validUntil}
+                    onChange={(event) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        validUntil: event.target.value,
+                      }))
+                    }
+                  />
+
+                  <div className="flex items-center justify-between rounded-lg border border-default-200 bg-default-50 px-3 py-2 text-sm text-default-500">
+                    <span>Ativar imediatamente após o upload</span>
+                    <Switch
+                      isDisabled={isSubmitting || !policyAllowsCurrent}
+                      isSelected={formState.activate}
+                      onValueChange={(value) =>
+                        setFormState((prev) => ({ ...prev, activate: value }))
+                      }
+                    />
+                  </div>
+
+                  {formErrors && (
+                    <p className="text-sm text-danger-400">{formErrors}</p>
+                  )}
+
+                  <motion.div
+                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, y: 8 }}
+                    transition={{ duration: 0.25, ease: "easeOut", delay: 0.05 }}
+                  >
+                    <Card className="border border-emerald-500/20 bg-emerald-500/5">
+                      <CardBody className="space-y-2 text-xs text-default-500">
+                        <div className="flex items-center gap-2 text-emerald-200">
+                          <Sparkles className="h-4 w-4" />
+                          <p className="font-semibold text-emerald-100">
+                            Boas praticas
+                          </p>
+                        </div>
+                        <ul className="space-y-2 text-default-400">
+                          <li className="flex items-start gap-2">
+                            <ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-300" />
+                            <span>
+                              Mantenha uma copia segura do arquivo original em
+                              midia offline.
+                            </span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                            <span>
+                              O Magic Lawyer nao exibe o conteudo do certificado
+                              apos o upload.
+                            </span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <AlertTriangle className="mt-0.5 h-4 w-4 text-warning" />
+                            <span>
+                              Configure alertas de validade para evitar
+                              indisponibilidade na integracao.
+                            </span>
+                          </li>
+                        </ul>
+                      </CardBody>
+                    </Card>
+                  </motion.div>
+                </motion.div>
               </ModalBody>
               <ModalFooter className="flex items-center justify-between">
                 <Button
-                  isDisabled={isSubmitting}
+                  isDisabled={isSubmitting || !policyAllowsCurrent}
                   variant="light"
                   onPress={() => {
                     resetForm();
@@ -653,6 +985,7 @@ export function DigitalCertificatesPanel({
                 </Button>
                 <Button
                   color="primary"
+                  isDisabled={!policyAllowsCurrent}
                   isLoading={isSubmitting}
                   startContent={
                     isSubmitting ? <Spinner size="sm" color="white" /> : null
@@ -675,14 +1008,14 @@ export function DigitalCertificatesPanel({
         }}
         size="lg"
       >
-        <ModalContent>
+        <ModalContent className="max-h-[80vh] w-[92vw] max-w-4xl">
           {(onClose) => (
             <>
               <ModalHeader className="flex items-center gap-2">
                 <Activity className="h-5 w-5 text-primary" />
                 <span>Histórico do certificado</span>
               </ModalHeader>
-              <ModalBody>
+              <ModalBody className="max-h-[65vh] overflow-y-auto pr-4">
                 {isLoadingLogs ? (
                   <div className="flex min-h-[160px] items-center justify-center">
                     <Spinner color="primary" />

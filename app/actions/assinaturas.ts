@@ -1,6 +1,6 @@
 "use server";
 
-import type { AssinaturaPeticao } from "@/app/generated/prisma";
+import type { AssinaturaPeticao } from "@/generated/prisma";
 
 import { revalidatePath } from "next/cache";
 

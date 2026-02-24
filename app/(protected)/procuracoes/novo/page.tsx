@@ -41,7 +41,7 @@ import {
   ProcuracaoEmitidaPor,
   ProcuracaoStatus,
   TipoPessoa,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import { title } from "@/components/primitives";
 
 type ClienteSelectItem = Pick<

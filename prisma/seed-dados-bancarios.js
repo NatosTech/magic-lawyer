@@ -1,4 +1,4 @@
-const { PrismaClient } = require("../app/generated/prisma");
+const { PrismaClient } = require("../generated/prisma");
 const { seedDadosBancarios } = require("./seeds/dadosBancarios");
 
 const prisma = new PrismaClient();

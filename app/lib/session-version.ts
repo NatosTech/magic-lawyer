@@ -1,5 +1,5 @@
 import prisma from "@/app/lib/prisma";
-import { TenantStatus } from "@/app/generated/prisma";
+import { TenantStatus } from "@/generated/prisma";
 
 /**
  * Incrementa o sessionVersion de um tenant e atualiza statusChangedAt

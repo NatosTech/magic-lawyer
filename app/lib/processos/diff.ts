@@ -1,10 +1,10 @@
-import type { Processo } from "@/app/generated/prisma";
+import type { Processo } from "@/generated/prisma";
 
 import {
   ProcessoFase,
   ProcessoGrau,
   ProcessoStatus,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 
 type ProcessoWithRelations = Processo & {
   cliente?: {

@@ -29,7 +29,6 @@ export default defineConfig([
     "**/dist",
     "esm/*",
     "public/*",
-    "app/generated/prisma/**",
     "tests/*",
     "scripts/*",
     "**/*.config.js",

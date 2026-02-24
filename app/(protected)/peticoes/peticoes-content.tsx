@@ -57,7 +57,7 @@ import {
   removerDocumentoPeticao,
 } from "@/app/actions/upload-documento-peticao";
 import { getAllProcessos } from "@/app/actions/processos";
-import { PeticaoStatus } from "@/app/generated/prisma";
+import { PeticaoStatus } from "@/generated/prisma";
 import { useModelosPeticaoAtivos } from "@/app/hooks/use-modelos-peticao";
 import { processarTemplate } from "@/app/actions/modelos-peticao";
 import {

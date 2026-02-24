@@ -52,5 +52,6 @@ pnpm-lock.yaml
 yarn.lock
 bun.lockb
 /app/generated/prisma
+/generated/prisma
 redis-url.txt
 tmp/

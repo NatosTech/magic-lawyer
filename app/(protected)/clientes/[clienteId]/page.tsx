@@ -48,7 +48,7 @@ import {
   ProcessoStatus,
   ProcessoFase,
   ProcessoGrau,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
 import { Modal } from "@/components/ui/modal";
 import { anexarDocumentoCliente } from "@/app/actions/clientes";

@@ -58,7 +58,7 @@ import {
   Causa,
   RegimePrazo,
   Usuario,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 
 type DiligenciaCompleta = Diligencia & {
   processo?: Processo | null;

@@ -33,7 +33,7 @@ import { useSession } from "next-auth/react";
 import { CidadeSelect } from "./cidade-select";
 import { CepInput } from "./cep-input";
 
-import { TipoEndereco } from "@/app/generated/prisma";
+import { TipoEndereco } from "@/generated/prisma";
 import {
   getEnderecosUsuario,
   criarEndereco,

@@ -8,7 +8,7 @@ import {
   PaymentStatus,
   TenantStatus,
   UserRole,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
 

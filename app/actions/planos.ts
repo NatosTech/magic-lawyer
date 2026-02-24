@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma";
 import { getServerSession } from "next-auth/next";
 
 import prisma from "@/app/lib/prisma";

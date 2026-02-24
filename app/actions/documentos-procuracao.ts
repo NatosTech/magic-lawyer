@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { authOptions } from "@/auth";
 import { UploadService, DocumentUploadOptions } from "@/lib/upload-service";
-import { PrismaClient } from "@/app/generated/prisma";
+import { PrismaClient } from "@/generated/prisma";
 import logger from "@/lib/logger";
 import { DocumentNotifier } from "@/app/lib/notifications/document-notifier";
 

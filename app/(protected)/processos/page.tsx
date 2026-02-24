@@ -5,7 +5,7 @@ import { ProcessosContent } from "./processos-content";
 
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 
 export const metadata: Metadata = {
   title: "Processos",

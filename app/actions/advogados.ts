@@ -7,7 +7,7 @@ import { enviarEmailBoasVindas } from "./advogados-emails";
 
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
-import { EspecialidadeJuridica } from "@/app/generated/prisma";
+import { EspecialidadeJuridica } from "@/generated/prisma";
 import { UploadService } from "@/lib/upload-service";
 
 // =============================================

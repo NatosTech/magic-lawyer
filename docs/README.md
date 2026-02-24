@@ -13,6 +13,7 @@ Guia de configuração inicial e integrações externas:
 ### ✨ [Features](./features/)
 Documentação detalhada de cada funcionalidade:
 - **Notifications** - Sistema completo de notificações push
+- **Integrações** - Visão consolidada em [INTEGRACOES_STATUS.md](./features/INTEGRACOES_STATUS.md)
 - **Tenant Dashboard Enhancements** - Melhorias e funcionalidades do dashboard do tenant
 - **Novo Acervo** - [FAB_NOVO_ACERVO_CHECKLIST.md](./features/novo-acervo/FAB_NOVO_ACERVO_CHECKLIST.md) descreve o botão flutuante, modal “Novo Acervo” e pipeline de OCR/IA com checklist passo a passo
 

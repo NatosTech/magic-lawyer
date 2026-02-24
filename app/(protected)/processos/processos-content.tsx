@@ -42,7 +42,7 @@ import {
   ProcessoStatus,
   ProcessoFase,
   ProcessoGrau,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
 import { addToast } from "@heroui/toast";
 import { ProcessosImportModal } from "./processos-import-modal";

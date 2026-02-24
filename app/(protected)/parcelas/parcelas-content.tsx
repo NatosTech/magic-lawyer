@@ -78,7 +78,7 @@ import {
   Cliente,
   Advogado,
   Usuario,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 
 interface ProcessoComParcelas {
   id: string;

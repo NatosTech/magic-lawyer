@@ -39,7 +39,7 @@ import { mutate } from "swr";
 import { useProcuracao } from "@/app/hooks/use-procuracoes";
 import { useAdvogadosDisponiveis } from "@/app/hooks/use-advogados";
 import { title } from "@/components/primitives";
-import { ProcuracaoStatus, ProcuracaoEmitidaPor } from "@/app/generated/prisma";
+import { ProcuracaoStatus, ProcuracaoEmitidaPor } from "@/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
 import {
   updateProcuracao,

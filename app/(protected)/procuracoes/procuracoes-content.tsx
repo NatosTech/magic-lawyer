@@ -47,7 +47,7 @@ import { useClientesParaSelect } from "@/app/hooks/use-clientes";
 import { useProcessosCliente } from "@/app/hooks/use-processos";
 import { DateUtils } from "@/app/lib/date-utils";
 import { linkProcuracaoAoProcesso } from "@/app/actions/processos";
-import { ProcuracaoEmitidaPor, ProcuracaoStatus } from "@/app/generated/prisma";
+import { ProcuracaoEmitidaPor, ProcuracaoStatus } from "@/generated/prisma";
 import { title, subtitle } from "@/components/primitives";
 
 type ProcuracaoFiltroValue<T extends string> = T | "";

@@ -79,7 +79,7 @@ import {
   type ClienteCreateInput,
   type ClienteUpdateInput,
 } from "@/app/actions/clientes";
-import { TipoPessoa } from "@/app/generated/prisma";
+import { TipoPessoa } from "@/generated/prisma";
 import { Modal } from "@/components/ui/modal";
 import { CpfInput } from "@/components/cpf-input";
 import { CnpjInput } from "@/components/cnpj-input";

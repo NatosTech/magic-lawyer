@@ -39,7 +39,7 @@ import { getAdvogadoById } from "@/app/actions/advogados";
 import { useAdvogadoPerformance } from "@/app/hooks/use-advogados-performance";
 import { useAdvogadoComissoes } from "@/app/hooks/use-advogados-comissoes";
 import { useNotificacoesAdvogado } from "@/app/hooks/use-advogados-notificacoes";
-import { EspecialidadeJuridica } from "@/app/generated/prisma";
+import { EspecialidadeJuridica } from "@/generated/prisma";
 
 interface AdvogadoProfileContentProps {
   advogadoId: string;

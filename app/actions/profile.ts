@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import logger from "@/lib/logger";
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 
 type SessionUser = {
   id: string;

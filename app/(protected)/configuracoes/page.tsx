@@ -62,6 +62,7 @@ export default async function ConfiguracoesPage() {
         subscription={subscription}
         tenant={tenant}
         certificates={digitalCertificates}
+        certificatePolicy={tenant.digitalCertificatePolicy}
       />
     </section>
   );

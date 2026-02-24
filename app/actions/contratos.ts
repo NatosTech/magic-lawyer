@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth/next";
 
 import { authOptions } from "@/auth";
 import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
-import { ContratoStatus } from "@/app/generated/prisma";
+import { ContratoStatus } from "@/generated/prisma";
 import logger from "@/lib/logger";
 import { checkPermission } from "@/app/actions/equipe";
 import {

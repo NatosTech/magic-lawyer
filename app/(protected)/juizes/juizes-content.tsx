@@ -63,7 +63,7 @@ import {
   EspecialidadeJuridica,
   JuizStatus,
   JuizNivel,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import { JuizFotoUpload } from "@/app/(protected)/juizes/juiz-foto-upload";
 import { title, subtitle } from "@/components/primitives";
 

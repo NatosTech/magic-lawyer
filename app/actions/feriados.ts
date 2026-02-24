@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
-import { TipoFeriado } from "@/app/generated/prisma";
+import { TipoFeriado } from "@/generated/prisma";
 
 // ============================================
 // TIPOS

@@ -27,7 +27,7 @@ import { addToast } from "@heroui/toast";
 import { User, Briefcase, Shield, Save, X, MapPin } from "lucide-react";
 
 import { updateTenantUser, createTenantUser } from "@/app/actions/admin";
-import { UserRole, EspecialidadeJuridica } from "@/app/generated/prisma";
+import { UserRole, EspecialidadeJuridica } from "@/generated/prisma";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { EnderecoManager } from "@/components/endereco-manager";
 import { CpfInput } from "@/components/cpf-input";

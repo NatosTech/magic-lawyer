@@ -8,7 +8,7 @@ import prisma from "@/app/lib/prisma";
 import { getAdvogadoIdFromSession } from "@/app/lib/advogado-access";
 import { parsePlanilhaProcessos } from "@/app/lib/processos/planilha-import";
 import logger from "@/lib/logger";
-import { Prisma, ProcessoStatus } from "@/app/generated/prisma";
+import { Prisma, ProcessoStatus } from "@/generated/prisma";
 
 const normalizeCacheKey = (value: string) =>
   value

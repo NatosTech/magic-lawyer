@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { Prisma, UserRole } from "@/app/generated/prisma";
+import { Prisma, UserRole } from "@/generated/prisma";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { NotificationHelper } from "@/app/lib/notifications/notification-helper";

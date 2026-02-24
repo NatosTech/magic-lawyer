@@ -100,10 +100,29 @@ export interface ConsultaProcessoParams {
 export interface CapturaResult {
   success: boolean;
   processo?: ProcessoJuridico;
+  /**
+   * Quando a fonte retornar múltiplos processos (ex.: busca por OAB),
+   * este array contém todos os resultados normalizados.
+   */
+  processos?: ProcessoJuridico[];
   movimentacoes?: MovimentacaoProcesso[];
   error?: string;
   tentativas?: number;
   tempoResposta?: number;
+  /**
+   * Quando a consulta pública exige captcha (comum em busca por OAB),
+   * o scraper pode devolver o desafio para o front resolver manualmente.
+   */
+  captchaRequired?: boolean;
+  captcha?: {
+    id: string;
+    /** Data URL (base64) pronta para renderizar em <img src="..."> */
+    imageDataUrl?: string;
+    /** URL original detectada no HTML (debug) */
+    imageUrl?: string;
+  };
+  /** Informações extras para depuração (apenas em telas de teste) */
+  debug?: Record<string, unknown>;
 }
 
 export interface WorkerCapturaJob {
@@ -133,11 +152,3 @@ export interface TribunaisConfig {
   scrapingDisponivel?: boolean;
   observacoes?: string;
 }
-
-
-
-
-
-
-
-

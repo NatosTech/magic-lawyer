@@ -1,6 +1,6 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from "@/generated/prisma/runtime/library";
 
-import { PrismaClient } from "../generated/prisma";
+import { PrismaClient } from "@/generated/prisma";
 
 // Tipo base do Prisma Client
 type BasePrismaClient = PrismaClient;

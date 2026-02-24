@@ -1,4 +1,4 @@
-import type { MovimentacaoProcesso } from "@/app/generated/prisma";
+import type { MovimentacaoProcesso } from "@/generated/prisma";
 
 type AndamentoComparable = Pick<
   MovimentacaoProcesso,

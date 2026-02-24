@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
 import { capturarProcesso } from "@/app/lib/juridical/capture-service";
+import { upsertProcessoFromCapture } from "@/app/lib/juridical/processo-persistence";
 import logger from "@/lib/logger";
+import { DigitalCertificateScope } from "@/generated/prisma";
 
 /**
  * Endpoint para captura automática de processos
@@ -57,6 +59,7 @@ export async function POST(request: NextRequest) {
               tenantId: processo.tenantId,
               tipo: "PJE",
               isActive: true,
+              scope: DigitalCertificateScope.OFFICE,
             },
             orderBy: { createdAt: "desc" },
           });
@@ -71,19 +74,20 @@ export async function POST(request: NextRequest) {
           processoId: processo.id,
         });
 
-        if (resultado.success) {
-          // Atualizar processo com dados capturados
-          // O campo updatedAt é atualizado automaticamente pelo Prisma
-          // TODO: Atualizar outros campos conforme dados capturados
-          // await prisma.processo.update({
-          //   where: { id: processo.id },
-          //   data: { ...dadosCapturados },
-          // });
+        if (resultado.success && resultado.processo) {
+          const persistido = await upsertProcessoFromCapture({
+            tenantId: processo.tenantId,
+            processo: resultado.processo,
+            advogadoId: processo.advogadoResponsavelId || undefined,
+            updateIfExists: true,
+          });
 
           resultados.push({
-            processoId: processo.id,
-            numeroProcesso: processo.numeroCnj || processo.numero,
+            processoId: persistido.processoId,
+            numeroProcesso: resultado.processo.numeroProcesso,
             success: true,
+            created: persistido.created,
+            updated: persistido.updated,
           });
         } else {
           resultados.push({

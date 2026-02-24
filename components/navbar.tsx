@@ -33,7 +33,7 @@ import { NotificationCenter } from "@/components/notifications/notification-cent
 import { CentralizedSearchBar } from "@/components/centralized-search-bar";
 import { Logo } from "@/components/icons";
 import { TENANT_PERMISSIONS } from "@/types";
-import { UserRole, TenantPermission } from "@/app/generated/prisma";
+import { UserRole, TenantPermission } from "@/generated/prisma";
 
 const breadcrumbLabelMap: Record<string, string> = {
   dashboard: "Painel",

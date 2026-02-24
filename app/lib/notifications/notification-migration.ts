@@ -1,7 +1,7 @@
 import { NotificationService } from "./notification-service";
 import { NotificationEvent } from "./types";
 
-import { PrismaClient } from "@/app/generated/prisma";
+import { PrismaClient } from "@/generated/prisma";
 
 const prisma = new PrismaClient();
 

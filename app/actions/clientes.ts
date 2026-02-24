@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 
 import { getSession } from "@/app/lib/auth";
 import prisma, { toNumber, convertAllDecimalFields } from "@/app/lib/prisma";
-import { TipoPessoa, Prisma } from "@/app/generated/prisma";
+import { TipoPessoa, Prisma } from "@/generated/prisma";
 import logger from "@/lib/logger";
 import { DocumentNotifier } from "@/app/lib/notifications/document-notifier";
 import { checkPermission } from "@/app/actions/equipe";

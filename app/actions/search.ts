@@ -5,7 +5,7 @@ import type { SearchResult } from "@/components/searchbar";
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
 import logger from "@/lib/logger";
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 
 interface SearchOptions {
   tenantId?: string | null;

@@ -502,7 +502,7 @@
 ### ✅ **IMPLEMENTADO (79/94 funcionalidades)**
 - **Sistema Core**: 100% completo
 - **Autenticação**: 100% completo  
-- **Integrações**: 85% completo
+- **Integrações**: 85% completo _(ver status detalhado em `docs/features/INTEGRACOES_STATUS.md`)_
 - **Relatórios**: 80% completo
 - **Pagamentos**: 100% completo
 - **Personalização**: 80% completo

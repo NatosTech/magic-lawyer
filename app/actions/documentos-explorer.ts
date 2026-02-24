@@ -4,7 +4,7 @@ import type {
   Prisma,
   Documento,
   DocumentoVersao,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 
 import { revalidatePath } from "next/cache";
 

@@ -161,7 +161,7 @@ ASAAS_BASE_URL=https://sandbox.asaas.com/api/v3
 
 ### 📋 **Dependências:**
 - `axios` - Para requisições HTTP
-- `@prisma/client` - Para acesso ao banco (gerado automaticamente)
+- `generated/prisma` - Para acesso ao banco (gerado automaticamente pelo Prisma)
 - `ts-node` - Para executar TypeScript diretamente
 - `ngrok` - Para túneis (já instalado)
 

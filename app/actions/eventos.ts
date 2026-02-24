@@ -1,6 +1,6 @@
 "use server";
 
-import type { Evento, EventoConfirmacaoStatus } from "@/app/generated/prisma";
+import type { Evento, EventoConfirmacaoStatus } from "@/generated/prisma";
 
 import { getServerSession } from "next-auth/next";
 import { revalidatePath } from "next/cache";

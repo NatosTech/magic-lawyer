@@ -4,7 +4,6 @@ import { Tabs, Tab } from "@heroui/tabs";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Chip } from "@heroui/chip";
-import { Badge } from "@heroui/badge";
 import { Button } from "@heroui/button";
 import NextLink from "next/link";
 import { Building2, Palette, Mail, BarChart3, Shield } from "lucide-react";
@@ -13,6 +12,8 @@ import { EmailCredentialsCard } from "./email-credentials-card";
 import { TenantSettingsForm } from "./tenant-settings-form";
 import { TenantBrandingForm } from "./tenant-branding-form";
 import { DigitalCertificatesPanel } from "./digital-certificates-panel";
+import { DigitalCertificatePolicyCard } from "./digital-certificate-policy-card";
+import type { DigitalCertificatePolicy } from "@/generated/prisma";
 
 interface TenantSettingsFormProps {
   tenant: {
@@ -88,6 +89,7 @@ interface DigitalCertificatesProps {
     responsavelUsuarioId: string | null;
     label: string | null;
     tipo: string;
+    scope: string;
     isActive: boolean;
     validUntil: string | null;
     lastValidatedAt: string | null;
@@ -101,6 +103,7 @@ interface DigitalCertificatesProps {
       email: string;
     } | null;
   }>;
+  certificatePolicy: DigitalCertificatePolicy;
 }
 
 export function ConfiguracoesTabs({
@@ -110,18 +113,35 @@ export function ConfiguracoesTabs({
   modules,
   metrics,
   certificates,
+  certificatePolicy,
 }: TenantSettingsFormProps &
   TenantBrandingFormProps &
   SubscriptionProps &
   ModulesProps &
   MetricsProps &
   DigitalCertificatesProps) {
+  const isSubscriptionActive = subscription?.status === "ATIVA";
+  const statusPillClasses = isSubscriptionActive
+    ? "border-success/30 bg-success/10 text-success"
+    : "border-warning/30 bg-warning/10 text-warning";
+  const statusDotClasses = isSubscriptionActive
+    ? "bg-success shadow-[0_0_10px_rgba(34,197,94,0.6)]"
+    : "bg-warning shadow-[0_0_10px_rgba(251,191,36,0.6)]";
+
   return (
     <Tabs
       aria-label="Configurações"
       className="w-full"
       color="primary"
       variant="underlined"
+      classNames={{
+        base: "w-full",
+        tabList:
+          "w-full justify-center gap-2 overflow-x-auto flex-nowrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]",
+        tab: "max-w-fit px-3 sm:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0",
+        tabContent: "text-sm font-medium whitespace-nowrap",
+        panel: "w-full",
+      }}
     >
       {/* Tab 1: Visão Geral */}
       <Tab
@@ -137,23 +157,32 @@ export function ConfiguracoesTabs({
           {/* Informações do Plano */}
           {subscription && (
             <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-              <CardHeader className="flex flex-col gap-2 pb-2">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-white">
-                    Plano Atual
-                  </h2>
-                  <Badge
-                    color={
-                      subscription.status === "ATIVA" ? "success" : "warning"
-                    }
-                    variant="flat"
-                  >
-                    {subscription.status}
-                  </Badge>
+              <CardHeader className="flex flex-col gap-4 pb-3">
+                <div className="grid gap-4 md:grid-cols-[1fr_auto] items-start">
+                  <div className="space-y-1">
+                    <h2 className="text-lg font-semibold text-white">
+                      Plano Atual
+                    </h2>
+                    <p className="text-sm text-default-400">
+                      Informações sobre sua assinatura e plano contratado.
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-start md:items-end gap-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-default-500">
+                      Status
+                    </span>
+                    <div
+                      className={`flex items-center gap-2 rounded-full border px-3 py-1 ${statusPillClasses}`}
+                    >
+                      <span
+                        className={`h-2 w-2 rounded-full ${statusDotClasses}`}
+                      />
+                      <span className="text-xs font-semibold uppercase tracking-[0.2em]">
+                        {subscription.status}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm text-default-400">
-                  Informações sobre sua assinatura e plano contratado.
-                </p>
               </CardHeader>
               <Divider className="border-white/10" />
               <CardBody className="space-y-6">
@@ -441,7 +470,16 @@ export function ConfiguracoesTabs({
         }
       >
         <div className="mt-6">
-          <DigitalCertificatesPanel certificates={certificates ?? []} />
+          <div className="space-y-6">
+            <DigitalCertificatePolicyCard
+              initialPolicy={certificatePolicy}
+            />
+            <DigitalCertificatesPanel
+              certificates={certificates ?? []}
+              mode="office"
+              policy={certificatePolicy}
+            />
+          </div>
         </div>
       </Tab>
     </Tabs>

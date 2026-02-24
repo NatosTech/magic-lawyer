@@ -58,7 +58,7 @@ import {
   removerFavoritoJuiz,
 } from "@/app/actions/juizes";
 import { DateUtils } from "@/app/lib/date-utils";
-import { JuizNivel, JuizStatus } from "@/app/generated/prisma";
+import { JuizNivel, JuizStatus } from "@/generated/prisma";
 
 interface JuizModalProps {
   juizId: string;

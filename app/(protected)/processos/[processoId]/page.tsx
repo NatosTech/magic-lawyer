@@ -58,7 +58,7 @@ import {
   ProcessoPrazoStatus,
   ProcessoFase,
   ProcessoGrau,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
 import {
   createProcessoParte,

@@ -47,7 +47,7 @@ import {
   type FeriadoCreateInput,
 } from "@/app/actions/feriados";
 import { getEstadosBrasilCached } from "@/lib/api/brazil-states";
-import { TipoFeriado } from "@/app/generated/prisma";
+import { TipoFeriado } from "@/generated/prisma";
 import { title, subtitle } from "@/components/primitives";
 
 // ============================================

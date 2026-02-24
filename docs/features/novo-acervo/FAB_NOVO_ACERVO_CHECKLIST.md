@@ -71,7 +71,7 @@ Documento para guiar a implementação do botão flutuante arrastável, modal �
 ### 4.2 Banco & Prisma
 - [ ] Adicionar modelo `UserUiPreference` (ou expandir um existente) para salvar posição do FAB.
 - [ ] Adicionar campos/tabelas para rastro do OCR (ex.: `DocumentoOcr` ou `DocumentoVersao.metadata -> { ocrStatus, texto }`).
-- [ ] Criar migration + atualizar `@/app/generated/prisma`.
+- [ ] Criar migration + atualizar `generated/prisma`.
 
 ### 4.3 API / Server Actions
 - [ ] Criar server action `getUserFabPreferences` e `upsertUserFabPreferences`.

@@ -1,25 +1,31 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import crypto from "crypto";
+import tls from "tls";
 
 import { getServerSession } from "next-auth";
 
 import prisma from "@/app/lib/prisma";
 import {
   DigitalCertificateLogAction,
+  DigitalCertificatePolicy,
+  DigitalCertificateScope,
   DigitalCertificateType,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import {
   decryptBuffer,
   decryptToString,
   encryptBuffer,
   encryptString,
 } from "@/lib/certificate-crypto";
+import { normalizePkcs12Buffer, parsePkcs12ToPem } from "@/lib/pkcs12-utils";
 import logger from "@/lib/logger";
+import { testComunicaMtlsConnection } from "@/lib/api/juridical/pje/comunica";
 import { authOptions } from "@/auth";
+import { TENANT_PERMISSIONS } from "@/types";
 
 const MAX_CERTIFICATE_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+const DEFAULT_POLICY = DigitalCertificatePolicy.OFFICE;
 
 interface UploadCertificateParams {
   fileBuffer: Buffer;
@@ -28,9 +34,17 @@ interface UploadCertificateParams {
   validUntil?: Date | null;
   activate?: boolean;
   tipo?: DigitalCertificateType;
+  scope?: DigitalCertificateScope;
 }
 
-async function requireActionContext() {
+interface ActionContext {
+  tenantId: string;
+  userId: string;
+  role?: string;
+  permissions: string[];
+}
+
+async function requireActionContext(): Promise<ActionContext> {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.tenantId || !session.user.id) {
@@ -40,7 +54,170 @@ async function requireActionContext() {
   return {
     tenantId: session.user.tenantId,
     userId: session.user.id,
+    role: (session.user as any)?.role as string | undefined,
+    permissions: ((session.user as any)?.permissions ?? []) as string[],
   };
+}
+
+function hasOfficeSettingsPermission(context: ActionContext) {
+  return (
+    context.role === "SUPER_ADMIN" ||
+    context.permissions.includes(TENANT_PERMISSIONS.manageOfficeSettings)
+  );
+}
+
+function isSuperAdmin(context: ActionContext) {
+  return context.role === "SUPER_ADMIN";
+}
+
+function formatPkcs12Error(error: unknown) {
+  if (!(error instanceof Error)) {
+    return "erro desconhecido";
+  }
+
+  const message = error.message;
+
+  if (
+    /mac verify failure/i.test(message) ||
+    /pkcs#12 mac could not be verified/i.test(message) ||
+    /invalid password/i.test(message) ||
+    /bad decrypt/i.test(message) ||
+    /bad password/i.test(message)
+  ) {
+    return "Senha incorreta para o certificado. Verifique a senha e tente novamente.";
+  }
+
+  if (/Unsupported PKCS12 PFX data/i.test(message)) {
+    return `${message}. O certificado pode usar criptografia legada; reexporte em AES-256 ou habilite o provider legacy do OpenSSL.`;
+  }
+
+  return message;
+}
+
+function validatePkcs12Password(buffer: Buffer, password: string) {
+  try {
+    tls.createSecureContext({
+      pfx: buffer,
+      passphrase: password,
+    });
+  } catch (cryptoError) {
+    try {
+      const parsed = parsePkcs12ToPem(buffer, password);
+      tls.createSecureContext({
+        key: parsed.keyPem,
+        cert: parsed.certPem,
+        ca: parsed.caPem.length > 0 ? parsed.caPem : undefined,
+      });
+    } catch (fallbackError) {
+      const primaryMessage = formatPkcs12Error(cryptoError);
+      const fallbackMessage = formatPkcs12Error(fallbackError);
+      throw new Error(
+        `Falha ao importar certificado PKCS#12: ${primaryMessage} (${fallbackMessage})`,
+      );
+    }
+  }
+}
+
+function policyAllowsScope(
+  policy: DigitalCertificatePolicy,
+  scope: DigitalCertificateScope,
+) {
+  if (policy === DigitalCertificatePolicy.HYBRID) {
+    return true;
+  }
+
+  if (policy === DigitalCertificatePolicy.LAWYER) {
+    return scope === DigitalCertificateScope.LAWYER;
+  }
+
+  return scope === DigitalCertificateScope.OFFICE;
+}
+
+async function getTenantPolicy(
+  tenantId: string,
+): Promise<DigitalCertificatePolicy> {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { digitalCertificatePolicy: true },
+  });
+
+  return tenant?.digitalCertificatePolicy ?? DEFAULT_POLICY;
+}
+
+async function ensureAdvogado(tenantId: string, userId: string) {
+  const advogado = await prisma.advogado.findFirst({
+    where: {
+      tenantId,
+      usuarioId: userId,
+    },
+    select: { id: true },
+  });
+
+  if (!advogado) {
+    throw new Error("Somente advogados podem gerenciar certificados pessoais.");
+  }
+}
+
+async function assertUploadAllowed(
+  context: ActionContext,
+  scope: DigitalCertificateScope,
+  policy: DigitalCertificatePolicy,
+) {
+  if (!policyAllowsScope(policy, scope)) {
+    throw new Error("Política do escritório não permite esse tipo de certificado.");
+  }
+
+  if (scope === DigitalCertificateScope.OFFICE) {
+    if (!hasOfficeSettingsPermission(context)) {
+      throw new Error(
+        "Apenas administradores podem enviar certificados do escritório.",
+      );
+    }
+    return;
+  }
+
+  if (!isSuperAdmin(context)) {
+    await ensureAdvogado(context.tenantId, context.userId);
+  }
+}
+
+async function assertCertificateAccess(params: {
+  context: ActionContext;
+  certificate: {
+    id: string;
+    scope: DigitalCertificateScope;
+    responsavelUsuarioId: string | null;
+  };
+  policy: DigitalCertificatePolicy;
+}) {
+  const { context, certificate, policy } = params;
+
+  if (!policyAllowsScope(policy, certificate.scope)) {
+    throw new Error("Política do escritório não permite acessar este certificado.");
+  }
+
+  if (certificate.scope === DigitalCertificateScope.OFFICE) {
+    if (!hasOfficeSettingsPermission(context)) {
+      throw new Error(
+        "Apenas administradores podem gerenciar certificados do escritório.",
+      );
+    }
+    return;
+  }
+
+  if (isSuperAdmin(context)) {
+    return;
+  }
+
+  if (!certificate.responsavelUsuarioId) {
+    throw new Error("Certificado pessoal sem responsável definido.");
+  }
+
+  if (certificate.responsavelUsuarioId !== context.userId) {
+    throw new Error("Você não pode gerenciar certificados de outro advogado.");
+  }
+
+  await ensureAdvogado(context.tenantId, context.userId);
 }
 
 function sanitizeCertificate(cert: {
@@ -49,6 +226,7 @@ function sanitizeCertificate(cert: {
   responsavelUsuarioId: string | null;
   label: string | null;
   tipo: DigitalCertificateType;
+  scope: DigitalCertificateScope;
   isActive: boolean;
   validUntil: Date | null;
   lastValidatedAt: Date | null;
@@ -68,6 +246,7 @@ function sanitizeCertificate(cert: {
     responsavelUsuarioId: cert.responsavelUsuarioId,
     label: cert.label,
     tipo: cert.tipo,
+    scope: cert.scope,
     isActive: cert.isActive,
     validUntil: cert.validUntil,
     lastValidatedAt: cert.lastValidatedAt,
@@ -92,8 +271,10 @@ export async function uploadDigitalCertificate({
   validUntil,
   activate = true,
   tipo = DigitalCertificateType.PJE,
+  scope = DigitalCertificateScope.OFFICE,
 }: UploadCertificateParams) {
-  const { tenantId, userId } = await requireActionContext();
+  const context = await requireActionContext();
+  const { tenantId, userId } = context;
 
   if (!fileBuffer?.length) {
     throw new Error("Arquivo do certificado não foi enviado");
@@ -108,7 +289,13 @@ export async function uploadDigitalCertificate({
   }
 
   try {
-    const certificateEncryption = encryptBuffer(fileBuffer);
+    const policy = await getTenantPolicy(tenantId);
+
+    await assertUploadAllowed(context, scope, policy);
+
+    const normalizedBuffer = normalizePkcs12Buffer(fileBuffer);
+    validatePkcs12Password(normalizedBuffer, password);
+    const certificateEncryption = encryptBuffer(normalizedBuffer);
     const passwordEncryption = encryptString(password);
 
     const result = await prisma.$transaction(async (tx) => {
@@ -118,6 +305,10 @@ export async function uploadDigitalCertificate({
             tenantId,
             tipo,
             isActive: true,
+            scope,
+            ...(scope === DigitalCertificateScope.LAWYER
+              ? { responsavelUsuarioId: userId }
+              : {}),
           },
         });
 
@@ -154,6 +345,7 @@ export async function uploadDigitalCertificate({
           responsavelUsuarioId: userId,
           label,
           tipo,
+          scope,
           encryptedData: new Uint8Array(certificateEncryption.encrypted),
           encryptedPassword: new Uint8Array(passwordEncryption.encrypted),
           iv: new Uint8Array(certificateEncryption.iv),
@@ -241,6 +433,7 @@ export async function listDigitalCertificates(tenantId: string) {
       responsavelUsuarioId: true,
       label: true,
       tipo: true,
+      scope: true,
       isActive: true,
       validUntil: true,
       lastValidatedAt: true,
@@ -262,16 +455,24 @@ export async function listDigitalCertificates(tenantId: string) {
 }
 
 export async function listMyDigitalCertificates() {
-  const { tenantId, userId } = await requireActionContext();
+  const { tenantId, userId, role } = await requireActionContext();
+  const policy = await getTenantPolicy(tenantId);
+
+  if (!policyAllowsScope(policy, DigitalCertificateScope.LAWYER)) {
+    return [];
+  }
 
   // Verificar se o usuário é advogado
-  const advogado = await prisma.advogado.findFirst({
-    where: {
-      usuarioId: userId,
-      tenantId,
-    },
-    select: { id: true },
-  });
+  const advogado =
+    role === "SUPER_ADMIN"
+      ? { id: "super-admin" }
+      : await prisma.advogado.findFirst({
+          where: {
+            usuarioId: userId,
+            tenantId,
+          },
+          select: { id: true },
+        });
 
   if (!advogado) {
     return [];
@@ -282,6 +483,7 @@ export async function listMyDigitalCertificates() {
     where: {
       tenantId,
       responsavelUsuarioId: userId,
+      scope: DigitalCertificateScope.LAWYER,
     },
     orderBy: [
       {
@@ -297,6 +499,7 @@ export async function listMyDigitalCertificates() {
       responsavelUsuarioId: true,
       label: true,
       tipo: true,
+      scope: true,
       isActive: true,
       validUntil: true,
       lastValidatedAt: true,
@@ -327,18 +530,52 @@ export async function listMyDigitalCertificates() {
   });
 }
 
+export async function getDigitalCertificatePolicy() {
+  try {
+    const { tenantId } = await requireActionContext();
+    const policy = await getTenantPolicy(tenantId);
+
+    return { success: true, policy };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro ao buscar política.",
+    };
+  }
+}
+
 export async function deactivateDigitalCertificate({
   certificateId,
 }: {
   certificateId: string;
 }) {
-  const { tenantId, userId } = await requireActionContext();
+  const context = await requireActionContext();
+  const { tenantId, userId } = context;
 
   if (!certificateId) {
     throw new Error("certificateId é obrigatório");
   }
 
   try {
+    const policy = await getTenantPolicy(tenantId);
+    const certificate = await prisma.digitalCertificate.findFirst({
+      where: {
+        id: certificateId,
+        tenantId,
+      },
+      select: {
+        id: true,
+        scope: true,
+        responsavelUsuarioId: true,
+      },
+    });
+
+    if (!certificate) {
+      return { success: false, error: "Certificado não encontrado" };
+    }
+
+    await assertCertificateAccess({ context, certificate, policy });
+
     const updated = await prisma.digitalCertificate.update({
       where: {
         id: certificateId,
@@ -386,13 +623,16 @@ export async function activateDigitalCertificate({
 }: {
   certificateId: string;
 }) {
-  const { tenantId, userId } = await requireActionContext();
+  const context = await requireActionContext();
+  const { tenantId, userId } = context;
 
   if (!certificateId) {
     throw new Error("certificateId é obrigatório");
   }
 
   try {
+    const policy = await getTenantPolicy(tenantId);
+
     const result = await prisma.$transaction(async (tx) => {
       const certificate = await tx.digitalCertificate.findFirst({
         where: {
@@ -402,6 +642,8 @@ export async function activateDigitalCertificate({
         select: {
           id: true,
           tipo: true,
+          scope: true,
+          responsavelUsuarioId: true,
         },
       });
 
@@ -409,15 +651,29 @@ export async function activateDigitalCertificate({
         throw new Error("Certificado não encontrado");
       }
 
+      await assertCertificateAccess({
+        context,
+        certificate: {
+          id: certificate.id,
+          scope: certificate.scope,
+          responsavelUsuarioId: certificate.responsavelUsuarioId,
+        },
+        policy,
+      });
+
       // Desativar outros certificados do mesmo tipo
       const activeIds = await tx.digitalCertificate.findMany({
         where: {
           tenantId,
           tipo: certificate.tipo,
           isActive: true,
+          scope: certificate.scope,
           id: {
             not: certificateId,
           },
+          ...(certificate.scope === DigitalCertificateScope.LAWYER
+            ? { responsavelUsuarioId: certificate.responsavelUsuarioId }
+            : {}),
         },
         select: { id: true },
       });
@@ -494,11 +750,31 @@ export async function listDigitalCertificateLogs({
   cursor?: string;
   take?: number;
 }) {
-  const { tenantId } = await requireActionContext();
+  const context = await requireActionContext();
+  const { tenantId } = context;
 
   if (!certificateId) {
     throw new Error("certificateId é obrigatório");
   }
+
+  const policy = await getTenantPolicy(tenantId);
+  const certificate = await prisma.digitalCertificate.findFirst({
+    where: {
+      id: certificateId,
+      tenantId,
+    },
+    select: {
+      id: true,
+      scope: true,
+      responsavelUsuarioId: true,
+    },
+  });
+
+  if (!certificate) {
+    throw new Error("Certificado não encontrado");
+  }
+
+  await assertCertificateAccess({ context, certificate, policy });
 
   const logs = await prisma.digitalCertificateLog.findMany({
     where: {
@@ -559,7 +835,8 @@ export async function testDigitalCertificate({
 }: {
   certificateId: string;
 }) {
-  const { tenantId, userId } = await requireActionContext();
+  const context = await requireActionContext();
+  const { tenantId, userId } = context;
 
   if (!certificateId) {
     throw new Error("certificateId é obrigatório");
@@ -571,11 +848,14 @@ export async function testDigitalCertificate({
       tenantId,
     },
     select: {
+      id: true,
       encryptedData: true,
       iv: true,
       encryptedPassword: true,
       passwordIv: true,
       tipo: true,
+      scope: true,
+      responsavelUsuarioId: true,
     },
   });
 
@@ -587,6 +867,17 @@ export async function testDigitalCertificate({
   }
 
   try {
+    const policy = await getTenantPolicy(tenantId);
+    await assertCertificateAccess({
+      context,
+      certificate: {
+        id: certificate.id,
+        scope: certificate.scope,
+        responsavelUsuarioId: certificate.responsavelUsuarioId,
+      },
+      policy,
+    });
+
     const certificateBuffer = decryptBuffer(
       new Uint8Array(certificate.encryptedData as unknown as Uint8Array),
       new Uint8Array(certificate.iv as unknown as Uint8Array),
@@ -595,20 +886,22 @@ export async function testDigitalCertificate({
       new Uint8Array(certificate.encryptedPassword as unknown as Uint8Array),
       new Uint8Array(certificate.passwordIv as unknown as Uint8Array),
     );
+    const normalizedBuffer = normalizePkcs12Buffer(certificateBuffer);
 
-    // Validação básica com Node crypto
-    try {
-      crypto.createPrivateKey({
-        key: certificateBuffer,
-        format: "der",
+    validatePkcs12Password(normalizedBuffer, password);
+
+    let extraMessage: string | undefined;
+    if (certificate.tipo === DigitalCertificateType.PJE) {
+      const comunicaTest = await testComunicaMtlsConnection({
+        pfx: normalizedBuffer,
         passphrase: password,
       });
-    } catch (cryptoError) {
-      throw new Error(
-        `Falha ao importar certificado PKCS#12: ${
-          cryptoError instanceof Error ? cryptoError.message : "erro desconhecido"
-        }`,
-      );
+
+      if (!comunicaTest.ok) {
+        throw new Error(comunicaTest.message);
+      }
+
+      extraMessage = comunicaTest.message;
     }
 
     await prisma.digitalCertificate.update({
@@ -629,13 +922,18 @@ export async function testDigitalCertificate({
         digitalCertificateId: certificateId,
         action: DigitalCertificateLogAction.TESTED,
         actorId: userId,
-        message: `Teste de carga concluído (${certificate.tipo}).`,
+        message: `Teste concluído (${certificate.tipo}).${
+          extraMessage ? ` ${extraMessage}` : ""
+        }`,
       },
     });
 
     return {
       success: true,
-      message: "Certificado validado com sucesso.",
+      message:
+        certificate.tipo === DigitalCertificateType.PJE && extraMessage
+          ? extraMessage
+          : "Certificado validado com sucesso.",
     };
   } catch (error) {
     logger.error(
@@ -681,6 +979,7 @@ export async function uploadDigitalCertificateFromForm(
   const validUntilStr = formData.get("validUntil") as string | null;
   const activateStr = formData.get("activate") as string | null;
   const tipo = (formData.get("tipo") as string) || "PJE";
+  const scope = (formData.get("scope") as string) || "OFFICE";
 
   if (!file) {
     return {
@@ -706,6 +1005,11 @@ export async function uploadDigitalCertificateFromForm(
 
     const activate = activateStr !== "false";
 
+    const normalizedScope =
+      scope === DigitalCertificateScope.LAWYER
+        ? DigitalCertificateScope.LAWYER
+        : DigitalCertificateScope.OFFICE;
+
     return await uploadDigitalCertificate({
       fileBuffer,
       password,
@@ -713,6 +1017,7 @@ export async function uploadDigitalCertificateFromForm(
       validUntil,
       activate,
       tipo: tipo as DigitalCertificateType,
+      scope: normalizedScope,
     });
   } catch (error) {
     logger.error(

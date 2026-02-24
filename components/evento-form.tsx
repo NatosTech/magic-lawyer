@@ -27,7 +27,7 @@ import {
 } from "@/app/actions/eventos";
 import { useEventoFormData } from "@/app/hooks/use-eventos";
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
-import { Evento, EventoTipo, EventoStatus } from "@/app/generated/prisma";
+import { Evento, EventoTipo, EventoStatus } from "@/generated/prisma";
 
 // Interface específica para o formulário (com DateValue para datas)
 interface FormEventoData {

@@ -10,7 +10,7 @@ import {
   ProcessoGrau,
   ProcessoPrazoStatus,
   ProcessoPolo,
-} from "@/app/generated/prisma";
+} from "@/generated/prisma";
 import {
   extractChangedFieldsFromDiff,
   logAudit,

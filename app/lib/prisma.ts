@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "../generated/prisma";
+import { Prisma, PrismaClient } from "../../generated/prisma";
 
 const { Decimal } = Prisma;
 

@@ -2,7 +2,7 @@
 
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 
 export interface PermissaoNegadaData {
   id: string;

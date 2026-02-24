@@ -78,7 +78,7 @@ import { useSession } from "next-auth/react";
 import { MapPin, History as HistoryIcon } from "lucide-react";
 import useSWR from "swr";
 
-import { UserRole } from "@/app/generated/prisma";
+import { UserRole } from "@/generated/prisma";
 import {
   getCargos,
   getUsuariosEquipe,
