@@ -31,6 +31,7 @@ import {
   Users,
   Copy,
   UploadCloud,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -46,6 +47,7 @@ import {
 import { DateUtils } from "@/app/lib/date-utils";
 import { addToast } from "@heroui/toast";
 import { ProcessosImportModal } from "./processos-import-modal";
+import { ProcessosSyncOabModal } from "./processos-sync-oab-modal";
 import { Pagination } from "@heroui/react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -151,6 +153,8 @@ export function ProcessosContent() {
 
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [mostrarModalImportacao, setMostrarModalImportacao] = useState(false);
+  const [mostrarModalSincronizacaoOab, setMostrarModalSincronizacaoOab] =
+    useState(false);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const itensPorPagina = 9;
 
@@ -529,6 +533,14 @@ export function ProcessosContent() {
             onPress={() => setMostrarModalImportacao(true)}
           >
             Importar
+          </Button>
+          <Button
+            color="warning"
+            startContent={<RefreshCw className="h-4 w-4" />}
+            variant="flat"
+            onPress={() => setMostrarModalSincronizacaoOab(true)}
+          >
+            Sincronizar OAB
           </Button>
           <Button
             as={Link}
@@ -1165,6 +1177,11 @@ export function ProcessosContent() {
         isOpen={mostrarModalImportacao}
         onClose={() => setMostrarModalImportacao(false)}
         onImported={() => refreshProcessos()}
+      />
+      <ProcessosSyncOabModal
+        isOpen={mostrarModalSincronizacaoOab}
+        onClose={() => setMostrarModalSincronizacaoOab(false)}
+        onSynced={() => refreshProcessos()}
       />
     </div>
   );
