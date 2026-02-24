@@ -100,7 +100,7 @@ function extractTenantFromDomain(host: string): string | null {
 }
 
 export default withAuth(
-  async function middleware(req) {
+  async function proxy(req) {
     const pathname = req.nextUrl.pathname;
 
     const token = req.nextauth.token;
@@ -172,7 +172,7 @@ export default withAuth(
         } catch (error) {
           // Em dev/edge, falhas de rede não devem quebrar nem poluir o console
           if ((error as Error)?.message !== "skip-local-session-check") {
-            console.warn("[middleware] sessão não validada (continuando)");
+            console.warn("[proxy] sessão não validada (continuando)");
           }
           // Em caso de erro, continuar normalmente (fail-safe)
         }
@@ -236,7 +236,7 @@ export default withAuth(
           // Em dev/edge, falhas de rede não devem quebrar nem poluir o console
           if ((error as Error)?.message !== "skip-local-session-check") {
             console.warn(
-              "[middleware] sessão SuperAdmin não validada (continuando)",
+              "[proxy] sessão SuperAdmin não validada (continuando)",
             );
           }
           // Em caso de erro, continuar normalmente (fail-safe)
