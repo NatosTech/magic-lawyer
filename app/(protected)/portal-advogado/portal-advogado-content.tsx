@@ -272,14 +272,18 @@ export function PortalAdvogadoContent() {
               isDisabled={isStartingSync || isResolvingCaptcha || isSyncRunning}
               label="Tribunal"
               placeholder="Selecione"
-              selectedKeys={syncTribunalSigla ? [syncTribunalSigla] : []}
+              selectedKeys={
+                syncTribunalSigla && syncTribunais.some((t) => t.sigla === syncTribunalSigla)
+                  ? [syncTribunalSigla]
+                  : []
+              }
               onSelectionChange={(keys) => {
                 const selected = Array.from(keys)[0] as string;
                 setSyncTribunalSigla(selected || "");
               }}
             >
               {syncTribunais.map((tribunal) => (
-                <SelectItem key={tribunal.sigla}>
+                <SelectItem key={tribunal.sigla} textValue={`${tribunal.sigla} · ${tribunal.nome}`}>
                   {tribunal.sigla} · {tribunal.nome}
                 </SelectItem>
               ))}
