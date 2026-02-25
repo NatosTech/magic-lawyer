@@ -15,7 +15,11 @@ import { load } from "cheerio";
 import { ProcessoJuridico, MovimentacaoProcesso, ParteProcesso, CapturaResult, TribunalSistema, EsferaTribunal } from "./types";
 import { getTribunalConfig } from "./config";
 import logger from "@/lib/logger";
-import { cleanupOldEsajCaptchaChallenges, consumeEsajCaptchaChallenge, createEsajCaptchaChallenge } from "./esaj-captcha-store";
+import {
+  cleanupOldEsajCaptchaChallenges,
+  consumeEsajCaptchaChallenge,
+  createEsajCaptchaChallenge,
+} from "./esaj-captcha-store";
 
 interface ScrapingOptions {
   timeout?: number;
@@ -828,7 +832,7 @@ async function consultarEsaj(tribunalSigla: string, tribunalNome: string, uf: st
     if (searchByOab) {
       const captcha = detectEsajCaptcha(searchResult.body);
       if (captcha.required) {
-        cleanupOldEsajCaptchaChallenges();
+        await cleanupOldEsajCaptchaChallenges();
 
         const captchaUrl = captcha.imageSrc ? resolveLink(baseUrl, captcha.imageSrc) : undefined;
 
@@ -851,7 +855,7 @@ async function consultarEsaj(tribunalSigla: string, tribunalNome: string, uf: st
           paramsRecord[key] = value;
         });
 
-        const id = createEsajCaptchaChallenge({
+        const id = await createEsajCaptchaChallenge({
           tribunalSigla,
           baseUrl,
           cookieHeader: searchResult.cookieHeader,
@@ -1024,7 +1028,7 @@ async function consultarEsaj(tribunalSigla: string, tribunalNome: string, uf: st
 
 export async function resolverCaptchaEsaj(params: { captchaId: string; captchaText: string }): Promise<CapturaResult> {
   const start = Date.now();
-  const challenge = consumeEsajCaptchaChallenge(params.captchaId);
+  const challenge = await consumeEsajCaptchaChallenge(params.captchaId);
   if (!challenge) {
     return {
       success: false,

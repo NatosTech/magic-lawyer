@@ -1,5 +1,5 @@
 /**
- * Endpoint interno para garantir inicialização do worker
+ * Endpoint interno para garantir inicialização dos workers
  * Pode ser chamado no startup da aplicação ou via health check
  */
 
@@ -9,7 +9,7 @@ import { initNotificationWorker } from "@/app/lib/notifications/init-worker";
 
 /**
  * GET /api/internal/init-worker
- * Inicializa o worker de notificações se ainda não estiver rodando
+ * Inicializa workers assíncronos se ainda não estiverem rodando
  */
 export async function GET() {
   try {
@@ -17,7 +17,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      message: "Worker de notificações inicializado",
+      message: "Workers assíncronos inicializados",
     });
   } catch (error) {
     console.error("[InitWorker] Erro:", error);
@@ -31,7 +31,6 @@ export async function GET() {
     );
   }
 }
-
 
 
 
