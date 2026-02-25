@@ -448,10 +448,22 @@ export async function getSuperAdminDashboardData(): Promise<AdminDashboardRespon
     const tenantsForHighlights = tenantIds.length
       ? await prisma.tenant.findMany({
           where: { id: { in: tenantIds } },
-          include: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            status: true,
+            createdAt: true,
             subscription: {
-              include: {
-                plano: true,
+              select: {
+                plano: {
+                  select: {
+                    nome: true,
+                    valorMensal: true,
+                    valorAnual: true,
+                    moeda: true,
+                  },
+                },
               },
             },
             _count: {
@@ -559,7 +571,15 @@ export async function getSuperAdminDashboardData(): Promise<AdminDashboardRespon
     const latestTenantsRaw = await prisma.tenant.findMany({
       orderBy: { createdAt: "desc" },
       take: 8,
-      include: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        createdAt: true,
+        email: true,
+        telefone: true,
+        domain: true,
         _count: {
           select: {
             usuarios: true,

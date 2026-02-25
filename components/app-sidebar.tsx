@@ -18,6 +18,13 @@ import {
   DrawerContent,
   DrawerHeader,
 } from "@heroui/drawer";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { User } from "@heroui/user";
 import {
@@ -916,7 +923,9 @@ function SidebarContent({
     loading: false,
     items: [],
   });
-  const [isFetchingStatus, startStatusTransition] = useTransition();
+  const [selectedService, setSelectedService] =
+    useState<ExternalServiceStatus | null>(null);
+  const [, startStatusTransition] = useTransition();
 
   useEffect(() => {
     if (!shouldFetchStatus) {
@@ -949,7 +958,7 @@ function SidebarContent({
           setServiceStatus({
             loading: false,
             items: Array.isArray(result.services) ? result.services : [],
-            checkedAt: new Date().toISOString(),
+            checkedAt: result.checkedAt ?? new Date().toISOString(),
           });
         })
         .catch((error) => {
@@ -977,6 +986,37 @@ function SidebarContent({
         minute: "2-digit",
       })
     : null;
+
+  const selectedServiceCheckedLabel =
+    selectedService?.checkedAt || serviceStatus.checkedAt
+      ? new Date(
+          selectedService?.checkedAt || serviceStatus.checkedAt || Date.now(),
+        ).toLocaleString("pt-BR")
+      : "-";
+
+  const selectedServiceTerminalOutput = useMemo(() => {
+    if (!selectedService) {
+      return "";
+    }
+
+    const lines = [
+      `$ health-check --service ${selectedService.id}`,
+      `${selectedService.ok ? "[OK]" : "[ERROR]"} ${selectedService.name}`,
+      selectedService.ok
+        ? `Mensagem: ${selectedService.message || "Conectado com sucesso."}`
+        : `Falha: ${selectedService.message || "Sem detalhes de erro."}`,
+      `Checked at: ${selectedServiceCheckedLabel}`,
+    ];
+
+    if (selectedService.details && Object.keys(selectedService.details).length) {
+      lines.push("Detalhes técnicos:");
+      Object.entries(selectedService.details).forEach(([key, value]) => {
+        lines.push(`- ${key}: ${value}`);
+      });
+    }
+
+    return lines.join("\n");
+  }, [selectedService, selectedServiceCheckedLabel]);
 
   const sections = useMemo(() => {
     // Agrupar itens principais por seção
@@ -1219,16 +1259,22 @@ function SidebarContent({
                 {serviceStatus.items.map((service) => (
                   <li
                     key={service.id}
-                    className="flex items-center justify-between text-[13px]"
+                    className="text-[13px]"
                   >
-                    <span className="text-default-600">{service.name}</span>
-                    <span
-                      className={
-                        service.ok ? "text-success-400" : "text-danger-400"
-                      }
+                    <button
+                      className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left transition hover:bg-white/10"
+                      type="button"
+                      onClick={() => setSelectedService(service)}
                     >
-                      {service.ok ? "Conectado" : "Falhou"}
-                    </span>
+                      <span className="text-default-600">{service.name}</span>
+                      <span
+                        className={
+                          service.ok ? "text-success-400" : "text-danger-400"
+                        }
+                      >
+                        {service.ok ? "Conectado" : "Falhou"}
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -1236,6 +1282,61 @@ function SidebarContent({
           </div>
         ) : null}
       </div>
+
+      <Modal
+        isOpen={!!selectedService}
+        size="lg"
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedService(null);
+          }
+        }}
+      >
+        <ModalContent>
+          <ModalHeader className="flex items-center justify-between gap-3">
+            <div className="flex flex-col">
+              <span className="text-base font-semibold">
+                {selectedService?.name || "Serviço"}
+              </span>
+              <span className="text-xs text-default-500">
+                Última checagem: {selectedServiceCheckedLabel}
+              </span>
+            </div>
+            {selectedService ? (
+              <span
+                className={
+                  selectedService.ok ? "text-success-500" : "text-danger-500"
+                }
+              >
+                {selectedService.ok ? "Conectado" : "Falhou"}
+              </span>
+            ) : null}
+          </ModalHeader>
+          <ModalBody>
+            <div className="rounded-xl border border-default-200/60 bg-black/85 p-3">
+              <pre className="whitespace-pre-wrap break-words font-mono text-xs text-success-300">
+                {selectedServiceTerminalOutput}
+              </pre>
+            </div>
+            {selectedService?.message ? (
+              <p
+                className={
+                  selectedService.ok
+                    ? "text-sm text-success-600"
+                    : "text-sm text-danger-600"
+                }
+              >
+                {selectedService.message}
+              </p>
+            ) : null}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => setSelectedService(null)}>
+              Fechar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {isDesktop ? (
         <div className="border-t border-default-200 p-3 space-y-2">

@@ -15,45 +15,93 @@ export type ExternalServiceStatus = {
   name: string;
   ok: boolean;
   message?: string;
+  checkedAt: string;
+  details?: Record<string, string>;
 };
+
+function resolveErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message || "Erro desconhecido";
+  }
+
+  if (typeof error === "string" && error.trim().length > 0) {
+    return error;
+  }
+
+  return "Erro desconhecido";
+}
+
+function buildServiceStatus(
+  input: Omit<ExternalServiceStatus, "checkedAt">,
+): ExternalServiceStatus {
+  return {
+    ...input,
+    checkedAt: new Date().toISOString(),
+  };
+}
 
 async function checkDatabase(): Promise<ExternalServiceStatus> {
   try {
     await prisma.tenant.count();
 
-    return { id: "neon", name: "Neon (Postgres)", ok: true };
+    return buildServiceStatus({
+      id: "neon",
+      name: "Neon (Postgres)",
+      ok: true,
+      message: "Consulta de leitura executada com sucesso.",
+      details: {
+        probe: "SELECT COUNT(*) FROM Tenant",
+      },
+    });
   } catch (error) {
-    return {
+    return buildServiceStatus({
       id: "neon",
       name: "Neon (Postgres)",
       ok: false,
-      message: error instanceof Error ? error.message : "Erro desconhecido",
-    };
+      message: resolveErrorMessage(error),
+      details: {
+        probe: "SELECT COUNT(*) FROM Tenant",
+      },
+    });
   }
 }
 
 async function checkAbly(): Promise<ExternalServiceStatus> {
   if (!process.env.ABLY_API_KEY) {
-    return {
+    return buildServiceStatus({
       id: "ably",
       name: "Ably Realtime",
       ok: false,
       message: "ABLY_API_KEY não configurada",
-    };
+      details: {
+        env: "ABLY_API_KEY ausente",
+      },
+    });
   }
 
   try {
     const client = new Ably.Rest({ key: process.env.ABLY_API_KEY });
     await client.time();
 
-    return { id: "ably", name: "Ably Realtime", ok: true };
+    return buildServiceStatus({
+      id: "ably",
+      name: "Ably Realtime",
+      ok: true,
+      message: "Ably respondeu ao endpoint de tempo.",
+      details: {
+        probe: "Ably REST /time",
+      },
+    });
   } catch (error) {
-    return {
+    return buildServiceStatus({
       id: "ably",
       name: "Ably Realtime",
       ok: false,
-      message: error instanceof Error ? error.message : "Erro desconhecido",
-    };
+      message: resolveErrorMessage(error),
+      details: {
+        probe: "Ably REST /time",
+      },
+    });
   }
 }
 
@@ -63,12 +111,15 @@ async function checkCloudinary(): Promise<ExternalServiceStatus> {
     !process.env.CLOUDINARY_API_KEY ||
     !process.env.CLOUDINARY_API_SECRET
   ) {
-    return {
+    return buildServiceStatus({
       id: "cloudinary",
       name: "Cloudinary",
       ok: false,
       message: "Credenciais do Cloudinary não configuradas",
-    };
+      details: {
+        env: "CLOUDINARY_* ausente",
+      },
+    });
   }
 
   try {
@@ -79,48 +130,82 @@ async function checkCloudinary(): Promise<ExternalServiceStatus> {
     });
     await cloudinary.api.ping();
 
-    return { id: "cloudinary", name: "Cloudinary", ok: true };
+    return buildServiceStatus({
+      id: "cloudinary",
+      name: "Cloudinary",
+      ok: true,
+      message: "Cloudinary respondeu ao ping.",
+      details: {
+        probe: "cloudinary.api.ping()",
+      },
+    });
   } catch (error) {
-    return {
+    return buildServiceStatus({
       id: "cloudinary",
       name: "Cloudinary",
       ok: false,
-      message: error instanceof Error ? error.message : "Erro desconhecido",
-    };
+      message: resolveErrorMessage(error),
+      details: {
+        probe: "cloudinary.api.ping()",
+      },
+    });
   }
 }
 
 async function checkAsaas(): Promise<ExternalServiceStatus> {
-  if (!process.env.ASAAS_API_KEY) {
-    return {
+  const environment =
+    process.env.ASAAS_ENVIRONMENT?.toLowerCase() === "production"
+      ? "production"
+      : "sandbox";
+  const asaasApiKey = process.env.ASAAS_API_KEY?.trim();
+
+  if (!asaasApiKey) {
+    return buildServiceStatus({
       id: "asaas",
       name: "Asaas",
       ok: false,
-      message: "ASAAS_API_KEY não configurada",
-    };
+      message:
+        "ASAAS_API_KEY não configurada no ambiente de execução (deploy).",
+      details: {
+        environment,
+        source: "process.env.ASAAS_API_KEY",
+        env: "ASAAS_API_KEY ausente/vazia no servidor",
+      },
+    });
   }
 
   try {
-    const env =
-      process.env.ASAAS_ENVIRONMENT?.toLowerCase() === "production"
-        ? "production"
-        : "sandbox";
-    const client = new AsaasClient(process.env.ASAAS_API_KEY, env);
-    const ok = await client.testConnection();
+    const client = new AsaasClient(asaasApiKey, environment);
+    const accountInfo = await client.getAccountInfo();
 
-    return {
+    return buildServiceStatus({
       id: "asaas",
       name: "Asaas",
-      ok,
-      message: ok ? undefined : "Falha ao consultar API",
-    };
+      ok: true,
+      message: "Conta Asaas autenticada com sucesso.",
+      details: {
+        environment,
+        probe: "/myAccount",
+        account:
+          String(
+            accountInfo?.name ||
+              accountInfo?.email ||
+              accountInfo?.id ||
+              "conta autenticada",
+          ) || "conta autenticada",
+      },
+    });
   } catch (error) {
-    return {
+    return buildServiceStatus({
       id: "asaas",
       name: "Asaas",
       ok: false,
-      message: error instanceof Error ? error.message : "Erro desconhecido",
-    };
+      message: resolveErrorMessage(error),
+      details: {
+        environment,
+        probe: "/myAccount",
+      },
+    });
   }
 }
 
@@ -128,25 +213,39 @@ async function checkModuleMap(): Promise<ExternalServiceStatus> {
   try {
     await getModuleRouteMap();
 
-    return { id: "module_map", name: "Module Map", ok: true };
+    return buildServiceStatus({
+      id: "module_map",
+      name: "Module Map",
+      ok: true,
+      message: "Mapeamento de rotas carregado com sucesso.",
+      details: {
+        probe: "getModuleRouteMap()",
+      },
+    });
   } catch (error) {
-    return {
+    return buildServiceStatus({
       id: "module_map",
       name: "Module Map",
       ok: false,
-      message: error instanceof Error ? error.message : "Erro desconhecido",
-    };
+      message: resolveErrorMessage(error),
+      details: {
+        probe: "getModuleRouteMap()",
+      },
+    });
   }
 }
 
 async function checkRedis(): Promise<ExternalServiceStatus> {
   if (!process.env.REDIS_URL) {
-    return {
+    return buildServiceStatus({
       id: "redis",
       name: "Upstash Redis",
       ok: false,
       message: "REDIS_URL não configurada",
-    };
+      details: {
+        env: "REDIS_URL ausente",
+      },
+    });
   }
 
   const redis = new Redis(process.env.REDIS_URL, {
@@ -159,14 +258,25 @@ async function checkRedis(): Promise<ExternalServiceStatus> {
     await redis.connect();
     await redis.ping();
 
-    return { id: "redis", name: "Upstash Redis", ok: true };
+    return buildServiceStatus({
+      id: "redis",
+      name: "Upstash Redis",
+      ok: true,
+      message: "PING respondido com sucesso.",
+      details: {
+        probe: "redis.ping()",
+      },
+    });
   } catch (error) {
-    return {
+    return buildServiceStatus({
       id: "redis",
       name: "Upstash Redis",
       ok: false,
-      message: error instanceof Error ? error.message : "Erro desconhecido",
-    };
+      message: resolveErrorMessage(error),
+      details: {
+        probe: "redis.ping()",
+      },
+    });
   } finally {
     redis.disconnect();
   }
@@ -195,5 +305,6 @@ export async function fetchSystemStatus() {
   return {
     success: true,
     services,
+    checkedAt: new Date().toISOString(),
   };
 }
