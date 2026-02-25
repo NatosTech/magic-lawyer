@@ -2,6 +2,7 @@
 const nextConfig = {
   output: "standalone",
   productionBrowserSourceMaps: false,
+  serverExternalPackages: ["bullmq", "ioredis"],
   images: {
     remotePatterns: [
       {

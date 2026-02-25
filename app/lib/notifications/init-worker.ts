@@ -1,13 +1,13 @@
 /**
- * Inicialização automática de workers assíncronos.
- * Este módulo deve ser importado no startup da aplicação.
+ * Inicialização explícita de workers assíncronos.
+ * Não deve iniciar automaticamente no import para evitar side effects
+ * durante build e renderização no servidor.
  */
 
 let workerInitialized = false;
 
 /**
- * Inicializa o worker de notificações automaticamente
- * Apenas no servidor (não no cliente)
+ * Inicializa workers assíncronos (somente no servidor).
  */
 export async function initNotificationWorker(): Promise<void> {
   // Verificar se estamos no servidor
@@ -40,15 +40,4 @@ export async function initNotificationWorker(): Promise<void> {
     // Não falhar a aplicação se o worker não iniciar
     throw error;
   }
-}
-
-// Inicializar worker quando módulo for importado (apenas no servidor)
-// Isso garante que o worker seja criado no startup da aplicação Next.js
-if (typeof window === "undefined") {
-  // Usar process.nextTick para garantir que a aplicação esteja pronta
-  process.nextTick(() => {
-    initNotificationWorker().catch((error) => {
-      console.error("[Workers] Erro na inicialização automática:", error);
-    });
-  });
 }

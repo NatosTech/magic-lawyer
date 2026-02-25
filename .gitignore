@@ -31,6 +31,7 @@ Thumbs.db
 # misc
 .DS_Store
 *.pem
+*.pfx
 
 # debug
 npm-debug.log*
