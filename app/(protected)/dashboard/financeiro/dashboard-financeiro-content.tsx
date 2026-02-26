@@ -41,7 +41,7 @@ export default function DashboardFinanceiroPage() {
 
   if (error) {
     return (
-      <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 py-12 px-3 sm:px-6">
+      <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-8 py-12 px-3 sm:px-6">
         <Card className="border border-danger/30 bg-danger/10 text-danger">
           <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
@@ -63,7 +63,7 @@ export default function DashboardFinanceiroPage() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 py-12 px-3 sm:px-6">
+    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-8 py-12 px-3 sm:px-6">
       {/* Header */}
       <motion.header
         animate={{ opacity: 1, y: 0 }}

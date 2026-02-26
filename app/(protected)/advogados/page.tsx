@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import AdvogadosContent from "./advogados-content";
@@ -5,6 +6,11 @@ import AdvogadosContent from "./advogados-content";
 import { getSession } from "@/app/lib/auth";
 import { checkPermission } from "@/app/actions/equipe";
 import { UserRole } from "@/generated/prisma";
+
+export const metadata: Metadata = {
+  title: "Advogados",
+  description: "Gestão da equipe de advogados do escritório.",
+};
 
 export default async function AdvogadosPage() {
   const session = await getSession();
@@ -32,10 +38,10 @@ export default async function AdvogadosPage() {
     const hasPermission = await checkPermission("equipe", "visualizar");
 
     if (!hasPermission) {
-    redirect("/dashboard");
-  }
+      redirect("/dashboard");
+    }
 
-  return <AdvogadosContent />;
+    return <AdvogadosContent />;
   } catch (error) {
     // Se houver erro ao verificar permissões, redirecionar
     console.error("Erro ao verificar permissões para /advogados:", error);

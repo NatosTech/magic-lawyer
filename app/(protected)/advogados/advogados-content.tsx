@@ -20,7 +20,6 @@ import {
   ModalFooter,
   Divider,
   Badge,
-  Progress,
   Tooltip,
   Skeleton,
   Dropdown,
@@ -49,7 +48,6 @@ import {
   TrendingUp,
   CheckCircle,
   Crown,
-  Award,
   Info,
   Target,
   Users,
@@ -64,7 +62,6 @@ import {
   Shield,
   Activity,
   UserPlus,
-  Download,
   Table,
   CheckSquare,
   CheckCircle2,
@@ -115,7 +112,8 @@ import {
   useTiposChavePix,
 } from "@/app/hooks/use-dados-bancarios";
 import { enviarEmailBoasVindas } from "@/app/actions/advogados-emails";
-import { title } from "@/components/primitives";
+import { PeopleManagementNav } from "@/components/people-management-nav";
+import { PeopleMetricCard, PeoplePageHeader } from "@/components/people-ui";
 import { EspecialidadeJuridica } from "@/generated/prisma";
 
 const createEndereco = (
@@ -186,6 +184,7 @@ export default function AdvogadosContent() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedAdvogados, setSelectedAdvogados] = useState<string[]>([]);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+  const [isCompactView, setIsCompactView] = useState(true);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [comissaoMin, setComissaoMin] = useState<string>("");
   const [comissaoMax, setComissaoMax] = useState<string>("");
@@ -214,6 +213,16 @@ export default function AdvogadosContent() {
   const [selectedAdvogadoForAvatar, setSelectedAdvogadoForAvatar] =
     useState<Advogado | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isCompactView) {
+      return;
+    }
+
+    setShowPerformanceReports(false);
+    setShowCommissionsDashboard(false);
+    setShowAdvancedFilters(false);
+  }, [isCompactView]);
 
   // Hook para debounce da busca
   const useDebounce = (value: string, delay: number) => {
@@ -1585,6 +1594,8 @@ export default function AdvogadosContent() {
   if (loading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
+        <PeopleManagementNav active="advogados" />
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-32 rounded-xl" />
@@ -1601,380 +1612,183 @@ export default function AdvogadosContent() {
 
   if (errorMessage) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="text-danger text-center">
-          <p className="text-lg font-semibold">Erro ao carregar advogados</p>
-          <p className="text-sm">{errorMessage}</p>
+      <div className="container mx-auto p-6 space-y-6">
+        <PeopleManagementNav active="advogados" />
+
+        <div className="flex min-h-[300px] flex-col items-center justify-center space-y-4">
+          <div className="text-danger text-center">
+            <p className="text-lg font-semibold">Erro ao carregar advogados</p>
+            <p className="text-sm">{errorMessage}</p>
+          </div>
+          <Button color="primary" onClick={() => mutate()}>
+            Tentar novamente
+          </Button>
         </div>
-        <Button color="primary" onClick={() => mutate()}>
-          Tentar novamente
-        </Button>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header Melhorado */}
+      <PeopleManagementNav active="advogados" />
+
       <motion.div
         animate={{ opacity: 1, y: 0 }}
-        className="flex justify-between items-center"
         initial={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.5 }}
       >
-        <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>
-            Equipe de Advogados
-          </h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            Gerencie os advogados do seu escritório de advocacia
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <Dropdown>
-            <DropdownTrigger>
+        <PeoplePageHeader
+          description="Padrao unico para acompanhamento da equipe juridica, produtividade e operacao diaria."
+          title="Advogados"
+          actions={
+            <>
               <Button
-                className="border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 w-full sm:w-auto"
+                color="default"
                 size="sm"
-                startContent={<Download size={20} />}
-                variant="bordered"
+                startContent={isCompactView ? <Eye size={16} /> : <X size={16} />}
+                variant="flat"
+                onPress={() => setIsCompactView((prev) => !prev)}
               >
-                <span className="hidden sm:inline">Exportar</span>
-                <span className="sm:hidden">Exportar</span>
+                {isCompactView ? "Visão detalhada" : "Visão compacta"}
               </Button>
-            </DropdownTrigger>
-            <DropdownMenu aria-label="Opções de exportação">
-              <DropdownItem
-                key="csv"
-                startContent={<Table className="h-4 w-4" />}
-                onPress={exportToCSV}
+
+              <Dropdown>
+                <DropdownTrigger>
+                  <Button
+                    className="border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    size="sm"
+                    startContent={<MoreVertical size={16} />}
+                    variant="bordered"
+                  >
+                    Ações
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu aria-label="Ações da página de advogados">
+                  <DropdownItem
+                    key="import"
+                    startContent={<UploadCloud className="h-4 w-4" />}
+                    onPress={() => setIsImportModalOpen(true)}
+                  >
+                    Importar via Excel
+                  </DropdownItem>
+                  <DropdownItem
+                    key="csv"
+                    startContent={<Table className="h-4 w-4" />}
+                    onPress={exportToCSV}
+                  >
+                    Exportar para CSV
+                  </DropdownItem>
+                  <DropdownItem
+                    key="pdf"
+                    startContent={<FileText className="h-4 w-4" />}
+                    onPress={exportToPDF}
+                  >
+                    Exportar para PDF
+                  </DropdownItem>
+                  <DropdownItem
+                    key="performance"
+                    startContent={<BarChart3 className="h-4 w-4" />}
+                    onPress={() =>
+                      setShowPerformanceReports(!showPerformanceReports)
+                    }
+                  >
+                    {showPerformanceReports
+                      ? "Ocultar relatório de performance"
+                      : "Mostrar relatório de performance"}
+                  </DropdownItem>
+                  <DropdownItem
+                    key="commissions"
+                    startContent={<DollarSign className="h-4 w-4" />}
+                    onPress={() =>
+                      setShowCommissionsDashboard(!showCommissionsDashboard)
+                    }
+                  >
+                    {showCommissionsDashboard
+                      ? "Ocultar dashboard de comissões"
+                      : "Mostrar dashboard de comissões"}
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+
+              <Button
+                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white"
+                size="sm"
+                startContent={<Plus size={16} />}
+                onPress={() => {
+                  setFormState({ ...initialFormState });
+                  setEnderecos([createEndereco()]);
+                  setContasBancarias([createContaBancaria()]);
+                  setIsCreateModalOpen(true);
+                }}
               >
-                Exportar para CSV
-              </DropdownItem>
-              <DropdownItem
-                key="pdf"
-                startContent={<FileText className="h-4 w-4" />}
-                onPress={exportToPDF}
-              >
-                Exportar para PDF
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-          <Button
-            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto"
-            size="sm"
-            startContent={<BarChart3 size={20} />}
-            onPress={() => setShowPerformanceReports(!showPerformanceReports)}
-          >
-            <span className="hidden sm:inline">Relatórios</span>
-            <span className="sm:hidden">Relatórios</span>
-          </Button>
-          <Button
-            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto"
-            size="sm"
-            startContent={<DollarSign size={20} />}
-            onPress={() =>
-              setShowCommissionsDashboard(!showCommissionsDashboard)
-            }
-          >
-            <span className="hidden sm:inline">Comissões</span>
-            <span className="sm:hidden">Comissões</span>
-          </Button>
-          <Button
-            variant="bordered"
-            className="w-full sm:w-auto"
-            size="sm"
-            startContent={<UploadCloud size={18} />}
-            onPress={() => setIsImportModalOpen(true)}
-          >
-            Importar Excel
-          </Button>
-          <Button
-            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 w-full sm:w-auto"
-            size="sm"
-            startContent={<Plus size={20} />}
-            onPress={() => {
-              setFormState({ ...initialFormState });
-              setEnderecos([createEndereco()]);
-              setContasBancarias([createContaBancaria()]);
-              setIsCreateModalOpen(true);
-            }}
-          >
-            <span className="hidden sm:inline">Novo Advogado</span>
-            <span className="sm:hidden">Novo</span>
-          </Button>
-        </div>
+                Novo advogado
+              </Button>
+            </>
+          }
+        />
       </motion.div>
 
-      {/* Dashboard Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {/* Card Total de Advogados */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-            <CardBody className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-blue-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <Users className="text-white" size={24} />
-                </div>
-                <Badge color="success" content="+" variant="shadow">
-                  <TrendingUp
-                    className="text-blue-600 dark:text-blue-400"
-                    size={20}
-                  />
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
-                  Total de Advogados
-                </p>
-                <p className="text-4xl font-bold text-blue-800 dark:text-blue-200">
-                  {metrics.total}
-                </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400">
-                  Equipe do escritório
-                </p>
-              </div>
-              <div className="mt-4">
-                <Progress
-                  className="opacity-60"
-                  color="primary"
-                  size="sm"
-                  value={75}
-                />
-              </div>
-            </CardBody>
-          </Card>
-        </motion.div>
-
-        {/* Card Advogados Ativos */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <Card className="bg-gradient-to-br from-green-50 via-emerald-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-            <CardBody className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-green-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <CheckCircle className="text-white" size={24} />
-                </div>
-                <Badge color="success" content="✓" variant="shadow">
-                  <Activity
-                    className="text-green-600 dark:text-green-400"
-                    size={20}
-                  />
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">
-                  Advogados Ativos
-                </p>
-                <p className="text-4xl font-bold text-green-800 dark:text-green-200">
-                  {metrics.ativos}
-                </p>
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  Em atividade
-                </p>
-              </div>
-              <div className="mt-4">
-                <Progress
-                  className="opacity-60"
-                  color="success"
-                  size="sm"
-                  value={
-                    metrics.total > 0
-                      ? (metrics.ativos / metrics.total) * 100
-                      : 0
-                  }
-                />
-              </div>
-            </CardBody>
-          </Card>
-        </motion.div>
-
-        {/* Card Com OAB */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-            <CardBody className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <ScaleIcon className="text-white" size={24} />
-                </div>
-                <Badge color="secondary" content="OAB" variant="shadow">
-                  <Shield
-                    className="text-purple-600 dark:text-purple-400"
-                    size={20}
-                  />
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">
-                  Com OAB
-                </p>
-                <p className="text-4xl font-bold text-purple-800 dark:text-purple-200">
-                  {metrics.comOAB}
-                </p>
-                <p className="text-xs text-purple-600 dark:text-purple-400">
-                  Registrados na OAB
-                </p>
-              </div>
-              <div className="mt-4">
-                <Progress
-                  className="opacity-60"
-                  color="secondary"
-                  size="sm"
-                  value={
-                    metrics.total > 0
-                      ? (metrics.comOAB / metrics.total) * 100
-                      : 0
-                  }
-                />
-              </div>
-            </CardBody>
-          </Card>
-        </motion.div>
-
-        {/* Card Especialidades */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <Card className="bg-gradient-to-br from-orange-50 via-amber-100 to-yellow-200 dark:from-orange-900/30 dark:via-amber-800/20 dark:to-yellow-900/30 border-orange-300 dark:border-orange-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-            <CardBody className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-orange-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <Star className="text-white" size={24} />
-                </div>
-                <Badge color="warning" content="+" variant="shadow">
-                  <Award
-                    className="text-orange-600 dark:text-orange-400"
-                    size={20}
-                  />
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide">
-                  Especialidades
-                </p>
-                <p className="text-4xl font-bold text-orange-800 dark:text-orange-200">
-                  {metrics.especialidades}
-                </p>
-                <p className="text-xs text-orange-600 dark:text-orange-400">
-                  Áreas de atuação
-                </p>
-              </div>
-              <div className="mt-4">
-                <Progress
-                  className="opacity-60"
-                  color="warning"
-                  size="sm"
-                  value={75}
-                />
-              </div>
-            </CardBody>
-          </Card>
-        </motion.div>
-      </div>
-
-      {/* Cards Adicionais para Advogados Externos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Card Advogados do Escritório */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
-          <Card className="bg-gradient-to-br from-emerald-50 via-green-100 to-teal-200 dark:from-emerald-900/30 dark:via-green-800/20 dark:to-teal-900/30 border-emerald-300 dark:border-emerald-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-            <CardBody className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-emerald-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <Building2 className="text-white" size={24} />
-                </div>
-                <Badge color="success" content="🏢" variant="shadow">
-                  <Users
-                    className="text-emerald-600 dark:text-emerald-400"
-                    size={20}
-                  />
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
-                  Do Escritório
-                </p>
-                <p className="text-4xl font-bold text-emerald-800 dark:text-emerald-200">
-                  {metrics.escritorio}
-                </p>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                  Equipe interna
-                </p>
-              </div>
-              <div className="mt-4">
-                <Progress
-                  className="opacity-60"
-                  color="success"
-                  size="sm"
-                  value={
-                    metrics.total > 0
-                      ? (metrics.escritorio / metrics.total) * 100
-                      : 0
-                  }
-                />
-              </div>
-            </CardBody>
-          </Card>
-        </motion.div>
-
-        {/* Card Advogados Externos Identificados */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-        >
-          <Card className="bg-gradient-to-br from-rose-50 via-pink-100 to-red-200 dark:from-rose-900/30 dark:via-pink-800/20 dark:to-red-900/30 border-rose-300 dark:border-rose-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-            <CardBody className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-rose-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <User className="text-white" size={24} />
-                </div>
-                <Badge color="danger" content="🔍" variant="shadow">
-                  <Eye className="text-rose-600 dark:text-rose-400" size={20} />
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-rose-700 dark:text-rose-300 uppercase tracking-wide">
-                  Externos Identificados
-                </p>
-                <p className="text-4xl font-bold text-rose-800 dark:text-rose-200">
-                  {metrics.externos}
-                </p>
-                <p className="text-xs text-rose-600 dark:text-rose-400">
-                  Encontrados em processos
-                </p>
-              </div>
-              <div className="mt-4">
-                <Progress
-                  className="opacity-60"
-                  color="danger"
-                  size="sm"
-                  value={
-                    metrics.total > 0
-                      ? (metrics.externos / metrics.total) * 100
-                      : 0
-                  }
-                />
-              </div>
-            </CardBody>
-          </Card>
-        </motion.div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <PeopleMetricCard
+          helper="Equipe cadastrada"
+          icon={<Users className="h-4 w-4" />}
+          label="Total de advogados"
+          tone="primary"
+          value={metrics.total}
+        />
+        <PeopleMetricCard
+          helper={`${metrics.total ? Math.round((metrics.ativos / metrics.total) * 100) : 0}% ativos`}
+          icon={<CheckCircle className="h-4 w-4" />}
+          label="Advogados ativos"
+          tone="success"
+          value={metrics.ativos}
+        />
+        <PeopleMetricCard
+          helper="Com cadastro profissional"
+          icon={<ScaleIcon className="h-4 w-4" />}
+          label="Com OAB"
+          tone="secondary"
+          value={metrics.comOAB}
+        />
+        <PeopleMetricCard
+          helper="Areas de atuacao mapeadas"
+          icon={<Star className="h-4 w-4" />}
+          label="Especialidades"
+          tone="warning"
+          value={metrics.especialidades}
+        />
+        <PeopleMetricCard
+          helper="Equipe interna"
+          icon={<Building2 className="h-4 w-4" />}
+          label="Do escritorio"
+          tone="primary"
+          value={metrics.escritorio}
+        />
+        <PeopleMetricCard
+          helper="Mapeados por processo"
+          icon={<Eye className="h-4 w-4" />}
+          label="Externos identificados"
+          tone="danger"
+          value={metrics.externos}
+        />
+        {!isCompactView ? (
+          <>
+            <PeopleMetricCard
+              helper="Com conta de acesso"
+              icon={<Key className="h-4 w-4" />}
+              label="Cobertura de login"
+              tone="success"
+              value={`${metrics.total ? Math.round((metrics.ativos / metrics.total) * 100) : 0}%`}
+            />
+            <PeopleMetricCard
+              helper="Status da operacao"
+              icon={<Activity className="h-4 w-4" />}
+              label="Leitura geral"
+              tone="default"
+              value={metrics.total > 0 ? "Estavel" : "Sem base"}
+            />
+          </>
+        ) : null}
       </div>
 
       {/* Filtros Avançados */}
@@ -1983,19 +1797,21 @@ export default function AdvogadosContent() {
         initial={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="shadow-lg border-2 border-slate-200 dark:border-slate-700">
-          <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <CardHeader className="border-b border-white/10">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
                   <Filter className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                    Filtros Inteligentes
+                  <h3 className="text-lg font-bold text-white">
+                    {isCompactView ? "Filtros rápidos" : "Filtros inteligentes"}
                   </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Encontre exatamente o advogado que precisa
+                  <p className="text-sm text-default-400">
+                    {isCompactView
+                      ? "Localize advogados sem poluir a tela."
+                      : "Encontre exatamente o advogado que precisa."}
                   </p>
                 </div>
                 {hasActiveFilters && (
@@ -2072,28 +1888,32 @@ export default function AdvogadosContent() {
                     {showFilters ? "Ocultar" : "Mostrar"}
                   </Button>
                 </Tooltip>
-                <Tooltip color="secondary" content="Filtros avançados">
-                  <Button
-                    className={`hover:scale-105 transition-transform ${hasAdvancedFilters ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
-                    color="secondary"
-                    size="sm"
-                    startContent={<Filter className="w-4 h-4" />}
-                    variant="light"
-                    onPress={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  >
-                    Avançados
-                    {hasAdvancedFilters && (
-                      <Badge
-                        className="ml-1"
-                        color="primary"
-                        content="!"
-                        size="sm"
-                      >
-                        !
-                      </Badge>
-                    )}
-                  </Button>
-                </Tooltip>
+                {!isCompactView ? (
+                  <Tooltip color="secondary" content="Filtros avançados">
+                    <Button
+                      className={`hover:scale-105 transition-transform ${hasAdvancedFilters ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                      color="secondary"
+                      size="sm"
+                      startContent={<Filter className="w-4 h-4" />}
+                      variant="light"
+                      onPress={() =>
+                        setShowAdvancedFilters(!showAdvancedFilters)
+                      }
+                    >
+                      Avançados
+                      {hasAdvancedFilters && (
+                        <Badge
+                          className="ml-1"
+                          color="primary"
+                          content="!"
+                          size="sm"
+                        >
+                          !
+                        </Badge>
+                      )}
+                    </Button>
+                  </Tooltip>
+                ) : null}
               </div>
             </div>
           </CardHeader>
@@ -3158,8 +2978,8 @@ export default function AdvogadosContent() {
         initial={{ opacity: 0, y: 20 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <Card className="shadow-xl border-2 border-slate-200 dark:border-slate-700">
-          <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <CardHeader className="border-b border-white/10">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
@@ -3253,13 +3073,13 @@ export default function AdvogadosContent() {
                       whileHover={{ scale: 1.02 }}
                     >
                       <Card
-                        className={`border-2 transition-all duration-300 group shadow-lg hover:shadow-2xl ${
+                        className={`group border transition-all duration-300 ${
                           selectedAdvogados.includes(advogado.id)
-                            ? "border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                            : "border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500"
+                            ? "border-primary/50 bg-primary/10"
+                            : "border-white/10 bg-background/60 hover:border-primary/40 hover:bg-background/80"
                         }`}
                       >
-                        <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700 p-4">
+                        <CardHeader className="border-b border-white/10 p-4">
                           <div className="flex gap-3 w-full">
                             <Checkbox
                               className="mt-2 flex-shrink-0"

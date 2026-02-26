@@ -1,34 +1,27 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import NextLink from "next/link";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
+import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Spinner } from "@heroui/spinner";
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+} from "@heroui/table";
+import { Download, Search } from "lucide-react";
+import { toast } from "sonner";
 
 import { type RelatorioPeriodo, type RelatoriosTenantData } from "@/app/actions/relatorios";
 import { useRelatorios } from "@/app/hooks/use-relatorios";
-import { title, subtitle } from "@/components/primitives";
+import { subtitle, title } from "@/components/primitives";
 
 const PERIOD_OPTIONS: Array<{ key: RelatorioPeriodo; label: string }> = [
   { key: "30d", label: "Últimos 30 dias" },
@@ -37,7 +30,75 @@ const PERIOD_OPTIONS: Array<{ key: RelatorioPeriodo; label: string }> = [
   { key: "365d", label: "Últimos 12 meses" },
 ];
 
-const PIE_COLORS = ["#38bdf8", "#34d399", "#f59e0b", "#f87171", "#a78bfa"];
+const REPORT_CATEGORY_OPTIONS = [
+  { key: "TODAS", label: "Todas categorias" },
+  { key: "GERENCIAL", label: "Gerencial" },
+  { key: "FINANCEIRO", label: "Financeiro" },
+  { key: "OPERACIONAL", label: "Operacional" },
+  { key: "CLIENTES", label: "Clientes" },
+  { key: "JURIDICO", label: "Jurídico" },
+  { key: "COMPLIANCE", label: "Compliance" },
+] as const;
+
+const REPORT_STATUS_OPTIONS = [
+  { key: "TODOS", label: "Todos status" },
+  { key: "PRONTO", label: "Pronto para exportar" },
+  { key: "ATENCAO", label: "Requer atenção" },
+] as const;
+
+const REPORT_FORMAT_FILTER_OPTIONS = [
+  { key: "TODOS", label: "Todos formatos" },
+  { key: "csv", label: "CSV" },
+  { key: "xlsx", label: "XLSX" },
+  { key: "pdf", label: "PDF" },
+] as const;
+
+const EXPORT_FORMAT_OPTIONS = [
+  { key: "csv", label: "CSV" },
+  { key: "xlsx", label: "XLSX" },
+  { key: "pdf", label: "PDF" },
+] as const;
+
+type ReportCategoryFilter = (typeof REPORT_CATEGORY_OPTIONS)[number]["key"];
+type ReportCategory = Exclude<ReportCategoryFilter, "TODAS">;
+type ReportStatusFilter = (typeof REPORT_STATUS_OPTIONS)[number]["key"];
+type ReportStatus = Exclude<ReportStatusFilter, "TODOS">;
+type ReportFormatFilter = (typeof REPORT_FORMAT_FILTER_OPTIONS)[number]["key"];
+type ExportFormat = (typeof EXPORT_FORMAT_OPTIONS)[number]["key"];
+
+const CATEGORY_LABELS: Record<ReportCategory, string> = {
+  GERENCIAL: "Gerencial",
+  FINANCEIRO: "Financeiro",
+  OPERACIONAL: "Operacional",
+  CLIENTES: "Clientes",
+  JURIDICO: "Jurídico",
+  COMPLIANCE: "Compliance",
+};
+
+const STATUS_LABELS: Record<ReportStatus, string> = {
+  PRONTO: "Pronto",
+  ATENCAO: "Atenção",
+};
+
+const FORMAT_LABELS: Record<ExportFormat, string> = {
+  csv: "CSV",
+  xlsx: "XLSX",
+  pdf: "PDF",
+};
+
+interface PrebuiltReportItem {
+  id: string;
+  nome: string;
+  descricao: string;
+  categoria: ReportCategory;
+  periodicidade: string;
+  base: string;
+  registros: number;
+  status: ReportStatus;
+  atualizadoEm: string;
+  formatos: ExportFormat[];
+  rows: string[][];
+}
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -60,9 +121,10 @@ function formatDateTime(value: string) {
     return "-";
   }
 
-  return date.toLocaleDateString("pt-BR", {
+  return date.toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
+    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -74,67 +136,256 @@ function csvEscape(value: unknown) {
   return `"${serialized.replace(/"/g, '""')}"`;
 }
 
-function buildCsv(data: RelatoriosTenantData) {
-  const rows: string[][] = [];
+function getSingleSelectionKey(keys: unknown): string | undefined {
+  if (!keys || keys === "all") {
+    return undefined;
+  }
 
-  rows.push(["Relatório", "Tenant - Indicadores"]);
-  rows.push(["Período", `${data.intervalo.dias} dias`]);
-  rows.push(["Início", new Date(data.intervalo.inicio).toLocaleDateString("pt-BR")]);
-  rows.push(["Fim", new Date(data.intervalo.fim).toLocaleDateString("pt-BR")]);
-  rows.push([]);
+  const selected = Array.from(keys as Set<string>)[0];
 
-  rows.push(["Resumo"]);
-  rows.push(["Processos ativos", String(data.resumo.processosAtivos)]);
-  rows.push(["Processos novos", String(data.resumo.processosNovos)]);
-  rows.push(["Clientes ativos", String(data.resumo.clientesAtivos)]);
-  rows.push(["Clientes novos", String(data.resumo.novosClientes)]);
-  rows.push(["Contratos ativos", String(data.resumo.contratosAtivos)]);
-  rows.push(["Receita no período", String(data.resumo.receitaPeriodo)]);
-  rows.push(["Variação de receita (%)", String(data.resumo.variacaoReceita)]);
-  rows.push(["Tarefas abertas", String(data.resumo.tarefasAbertas)]);
-  rows.push(["Prazos urgentes", String(data.resumo.prazosUrgentes)]);
-  rows.push(["Faturas vencidas", String(data.resumo.faturasVencidas)]);
-  rows.push([]);
+  return typeof selected === "string" ? selected : undefined;
+}
 
-  rows.push(["Série mensal"]);
-  rows.push(["Mês", "Processos", "Clientes", "Receita", "Tarefas concluídas"]);
-  data.seriesMensais.forEach((item) => {
-    rows.push([
-      item.mes,
-      String(item.processos),
-      String(item.clientes),
-      String(item.receita),
-      String(item.tarefasConcluidas),
-    ]);
-  });
-  rows.push([]);
-
-  rows.push(["Processos por status"]);
-  rows.push(["Status", "Total"]);
-  data.distribuicoes.processosPorStatus.forEach((item) => {
-    rows.push([item.label, String(item.total)]);
-  });
-  rows.push([]);
-
-  rows.push(["Tarefas por status"]);
-  rows.push(["Status", "Total"]);
-  data.distribuicoes.tarefasPorStatus.forEach((item) => {
-    rows.push([item.label, String(item.total)]);
-  });
-  rows.push([]);
-
-  rows.push(["Top clientes"]);
-  rows.push(["Cliente", "Processos", "Contratos", "Faturamento"]);
-  data.rankings.clientes.forEach((item) => {
-    rows.push([
-      item.nome,
-      String(item.processos),
-      String(item.contratos),
-      String(item.faturamento),
-    ]);
-  });
-
+function buildCsvFromRows(rows: string[][]) {
   return rows.map((row) => row.map(csvEscape).join(";")).join("\n");
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function exportCsvFile(rows: string[][], fileName: string) {
+  const csvContent = buildCsvFromRows(rows);
+  const blob = new Blob([csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
+
+  downloadBlob(blob, fileName);
+}
+
+async function exportXlsxFile(rows: string[][], fileName: string) {
+  const XLSX = await import("xlsx");
+  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Relatorio");
+  XLSX.writeFile(workbook, fileName);
+}
+
+async function exportPdfFile(
+  reportName: string,
+  rows: string[][],
+  fileName: string,
+) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({
+    unit: "pt",
+    format: "a4",
+  });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  doc.setFontSize(14);
+  doc.text(reportName, 40, 42);
+  doc.setFontSize(10);
+
+  let cursorY = 66;
+
+  rows.forEach((row, index) => {
+    const line = row.join(" | ");
+    const wrapped = doc.splitTextToSize(line, pageWidth - 80);
+    const rowHeight = wrapped.length * 14 + (index === 0 ? 10 : 6);
+
+    if (cursorY + rowHeight > pageHeight - 40) {
+      doc.addPage();
+      cursorY = 40;
+    }
+
+    doc.text(wrapped, 40, cursorY);
+    cursorY += rowHeight;
+  });
+
+  doc.save(fileName);
+}
+
+function buildReportCatalog(data: RelatoriosTenantData): PrebuiltReportItem[] {
+  const agendaConsolidada = [
+    ...data.agenda.prazosProximos,
+    ...data.agenda.eventosProximos,
+  ].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+
+  const processosPorStatus = data.distribuicoes.processosPorStatus.filter(
+    (item) => item.total > 0,
+  );
+  const tarefasPorStatus = data.distribuicoes.tarefasPorStatus.filter(
+    (item) => item.total > 0,
+  );
+  const riscoImediato = data.resumo.prazosUrgentes + data.resumo.faturasVencidas;
+  const intervaloBase = `Últimos ${data.intervalo.dias} dias`;
+  const mesesBase = `${data.seriesMensais.length} meses`;
+
+  return [
+    {
+      id: "resumo-executivo",
+      nome: "Resumo executivo do tenant",
+      descricao: "KPIs centrais para diretoria, operação e financeiro.",
+      categoria: "GERENCIAL",
+      periodicidade: "Sob demanda",
+      base: intervaloBase,
+      registros: 10,
+      status: riscoImediato > 0 ? "ATENCAO" : "PRONTO",
+      atualizadoEm: data.intervalo.fim,
+      formatos: ["csv", "xlsx", "pdf"],
+      rows: [
+        ["Indicador", "Valor"],
+        ["Processos ativos", formatInteger(data.resumo.processosAtivos)],
+        ["Processos novos", formatInteger(data.resumo.processosNovos)],
+        ["Clientes ativos", formatInteger(data.resumo.clientesAtivos)],
+        ["Novos clientes", formatInteger(data.resumo.novosClientes)],
+        ["Contratos ativos", formatInteger(data.resumo.contratosAtivos)],
+        ["Receita do período", formatCurrency(data.resumo.receitaPeriodo)],
+        [
+          "Variação receita (%)",
+          `${data.resumo.variacaoReceita >= 0 ? "+" : ""}${data.resumo.variacaoReceita.toFixed(2)}%`,
+        ],
+        ["Tarefas abertas", formatInteger(data.resumo.tarefasAbertas)],
+        ["Prazos urgentes", formatInteger(data.resumo.prazosUrgentes)],
+        ["Faturas vencidas", formatInteger(data.resumo.faturasVencidas)],
+      ],
+    },
+    {
+      id: "receita-mensal",
+      nome: "Receita mensal consolidada",
+      descricao: "Evolução de recebimentos confirmados por mês.",
+      categoria: "FINANCEIRO",
+      periodicidade: "Mensal",
+      base: mesesBase,
+      registros: data.seriesMensais.length,
+      status:
+        data.resumo.variacaoReceita < 0 || data.resumo.faturasVencidas > 0
+          ? "ATENCAO"
+          : "PRONTO",
+      atualizadoEm: data.intervalo.fim,
+      formatos: ["csv", "xlsx", "pdf"],
+      rows: [
+        ["Mês", "Receita confirmada", "Variação acumulada"],
+        ...data.seriesMensais.map((item) => [
+          item.mes,
+          formatCurrency(item.receita),
+          formatInteger(item.processos + item.clientes + item.tarefasConcluidas),
+        ]),
+      ],
+    },
+    {
+      id: "pipeline-processos",
+      nome: "Pipeline de processos por status",
+      descricao: "Distribuição da carteira processual por estágio.",
+      categoria: "OPERACIONAL",
+      periodicidade: "Semanal",
+      base: intervaloBase,
+      registros: processosPorStatus.length,
+      status: "PRONTO",
+      atualizadoEm: data.intervalo.fim,
+      formatos: ["csv", "xlsx", "pdf"],
+      rows: [
+        ["Status", "Total"],
+        ...(processosPorStatus.length > 0
+          ? processosPorStatus.map((item) => [item.label, formatInteger(item.total)])
+          : [["Sem registros", "0"]]),
+      ],
+    },
+    {
+      id: "backlog-tarefas",
+      nome: "Backlog de tarefas da equipe",
+      descricao: "Situação atual das tarefas por status de execução.",
+      categoria: "OPERACIONAL",
+      periodicidade: "Diária",
+      base: intervaloBase,
+      registros: tarefasPorStatus.length,
+      status: data.resumo.tarefasAbertas > 0 ? "ATENCAO" : "PRONTO",
+      atualizadoEm: data.intervalo.fim,
+      formatos: ["csv", "xlsx"],
+      rows: [
+        ["Status", "Total"],
+        ...(tarefasPorStatus.length > 0
+          ? tarefasPorStatus.map((item) => [item.label, formatInteger(item.total)])
+          : [["Sem registros", "0"]]),
+      ],
+    },
+    {
+      id: "carteira-clientes",
+      nome: "Ranking da carteira de clientes",
+      descricao: "Top clientes por faturamento e volume de processos.",
+      categoria: "CLIENTES",
+      periodicidade: "Mensal",
+      base: "Top 5 clientes",
+      registros: data.rankings.clientes.length,
+      status: "PRONTO",
+      atualizadoEm: data.intervalo.fim,
+      formatos: ["csv", "xlsx", "pdf"],
+      rows: [
+        ["Cliente", "Processos", "Contratos", "Faturamento"],
+        ...(data.rankings.clientes.length > 0
+          ? data.rankings.clientes.map((item) => [
+              item.nome,
+              formatInteger(item.processos),
+              formatInteger(item.contratos),
+              formatCurrency(item.faturamento),
+            ])
+          : [["Sem clientes", "0", "0", formatCurrency(0)]]),
+      ],
+    },
+    {
+      id: "agenda-critica",
+      nome: "Agenda crítica (15 dias)",
+      descricao: "Prazos e eventos próximos para gestão preventiva.",
+      categoria: "JURIDICO",
+      periodicidade: "Diária",
+      base: "Próximos 15 dias",
+      registros: agendaConsolidada.length,
+      status: agendaConsolidada.length > 0 ? "ATENCAO" : "PRONTO",
+      atualizadoEm: data.intervalo.fim,
+      formatos: ["csv", "pdf"],
+      rows: [
+        ["Tipo", "Título", "Referência", "Data"],
+        ...(agendaConsolidada.length > 0
+          ? agendaConsolidada.map((item) => [
+              item.tipo,
+              item.titulo,
+              item.referencia || "-",
+              formatDateTime(item.data),
+            ])
+          : [["Sem itens críticos", "-", "-", "-"]]),
+      ],
+    },
+    {
+      id: "risco-conformidade",
+      nome: "Risco e conformidade",
+      descricao: "Consolidação de sinais de risco operacional e financeiro.",
+      categoria: "COMPLIANCE",
+      periodicidade: "Semanal",
+      base: intervaloBase,
+      registros: 4,
+      status: riscoImediato > 0 ? "ATENCAO" : "PRONTO",
+      atualizadoEm: data.intervalo.fim,
+      formatos: ["csv", "xlsx", "pdf"],
+      rows: [
+        ["Indicador", "Total"],
+        ["Prazos urgentes", formatInteger(data.resumo.prazosUrgentes)],
+        ["Faturas vencidas", formatInteger(data.resumo.faturasVencidas)],
+        ["Tarefas abertas", formatInteger(data.resumo.tarefasAbertas)],
+        ["Risco imediato consolidado", formatInteger(riscoImediato)],
+      ],
+    },
+  ];
 }
 
 function renderKpiCard(
@@ -166,47 +417,104 @@ function renderKpiCard(
 
 export function RelatoriosContent() {
   const [periodo, setPeriodo] = useState<RelatorioPeriodo>("90d");
+  const [busca, setBusca] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] =
+    useState<ReportCategoryFilter>("TODAS");
+  const [statusFiltro, setStatusFiltro] = useState<ReportStatusFilter>("TODOS");
+  const [formatoFiltro, setFormatoFiltro] =
+    useState<ReportFormatFilter>("TODOS");
+  const [formatoExportacao, setFormatoExportacao] =
+    useState<ExportFormat>("csv");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [exportingReportId, setExportingReportId] = useState<string | null>(
+    null,
+  );
+
   const { data, isLoading, isError, error, refresh } = useRelatorios(periodo);
-  const quickActions = [
-    { label: "Processos", href: "/processos", icon: "⚖️" },
-    { label: "Clientes", href: "/clientes", icon: "🤝" },
-    { label: "Agenda", href: "/agenda", icon: "🗓️" },
-    { label: "Financeiro", href: "/financeiro", icon: "💰" },
-    { label: "Documentos", href: "/documentos", icon: "📁" },
-    { label: "Configurações", href: "/configuracoes", icon: "⚙️" },
-  ] as const;
 
   const periodKeySet = useMemo(
     () => new Set(PERIOD_OPTIONS.map((option) => option.key)),
     [],
   );
+  const categoryKeySet = useMemo(
+    () => new Set(REPORT_CATEGORY_OPTIONS.map((option) => option.key)),
+    [],
+  );
+  const statusKeySet = useMemo(
+    () => new Set(REPORT_STATUS_OPTIONS.map((option) => option.key)),
+    [],
+  );
+  const formatFilterKeySet = useMemo(
+    () => new Set(REPORT_FORMAT_FILTER_OPTIONS.map((option) => option.key)),
+    [],
+  );
+  const exportFormatKeySet = useMemo(
+    () => new Set(EXPORT_FORMAT_OPTIONS.map((option) => option.key)),
+    [],
+  );
+
   const selectedPeriodKeys = periodKeySet.has(periodo) ? [periodo] : ["90d"];
+  const selectedCategoryKeys = categoryKeySet.has(categoriaFiltro)
+    ? [categoriaFiltro]
+    : ["TODAS"];
+  const selectedStatusKeys = statusKeySet.has(statusFiltro)
+    ? [statusFiltro]
+    : ["TODOS"];
+  const selectedFormatFilterKeys = formatFilterKeySet.has(formatoFiltro)
+    ? [formatoFiltro]
+    : ["TODOS"];
+  const selectedExportFormatKeys = exportFormatKeySet.has(formatoExportacao)
+    ? [formatoExportacao]
+    : ["csv"];
 
-  const agendaConsolidada = useMemo(() => {
-    if (!data) return [];
-
-    return [...data.agenda.prazosProximos, ...data.agenda.eventosProximos]
-      .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
-      .slice(0, 8);
-  }, [data]);
-
-  const processosDistribuicao = useMemo(
-    () =>
-      (data?.distribuicoes.processosPorStatus || []).filter(
-        (item) => item.total > 0,
-      ),
+  const reportCatalog = useMemo(
+    () => (data ? buildReportCatalog(data) : []),
     [data],
   );
-  const tarefasDistribuicao = useMemo(
-    () =>
-      (data?.distribuicoes.tarefasPorStatus || []).filter(
-        (item) => item.total > 0,
-      ),
-    [data],
+
+  const filteredReports = useMemo(() => {
+    const normalizedSearch = busca.trim().toLowerCase();
+
+    return reportCatalog.filter((report) => {
+      if (
+        categoriaFiltro !== "TODAS" &&
+        report.categoria !== categoriaFiltro
+      ) {
+        return false;
+      }
+
+      if (statusFiltro !== "TODOS" && report.status !== statusFiltro) {
+        return false;
+      }
+
+      if (formatoFiltro !== "TODOS" && !report.formatos.includes(formatoFiltro)) {
+        return false;
+      }
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      const searchTarget = [
+        report.nome,
+        report.descricao,
+        CATEGORY_LABELS[report.categoria],
+        report.periodicidade,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchTarget.includes(normalizedSearch);
+    });
+  }, [reportCatalog, busca, categoriaFiltro, statusFiltro, formatoFiltro]);
+
+  const totalAlertas = useMemo(
+    () => reportCatalog.filter((report) => report.status === "ATENCAO").length,
+    [reportCatalog],
   );
 
   const handlePeriodoChange = (keys: unknown) => {
-    const selected = Array.from(keys as Set<string>)[0];
+    const selected = getSingleSelectionKey(keys);
 
     if (
       typeof selected === "string" &&
@@ -216,26 +524,91 @@ export function RelatoriosContent() {
     }
   };
 
-  const handleExportCsv = () => {
-    if (!data) return;
+  const handleCategoriaChange = (keys: unknown) => {
+    const selected = getSingleSelectionKey(keys);
 
-    const csvContent = buildCsv(data);
-    const blob = new Blob([csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    if (
+      typeof selected === "string" &&
+      categoryKeySet.has(selected as ReportCategoryFilter)
+    ) {
+      setCategoriaFiltro(selected as ReportCategoryFilter);
+    }
+  };
 
-    link.href = url;
-    link.download = `relatorios-${periodo}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleStatusChange = (keys: unknown) => {
+    const selected = getSingleSelectionKey(keys);
+
+    if (
+      typeof selected === "string" &&
+      statusKeySet.has(selected as ReportStatusFilter)
+    ) {
+      setStatusFiltro(selected as ReportStatusFilter);
+    }
+  };
+
+  const handleFormatoFiltroChange = (keys: unknown) => {
+    const selected = getSingleSelectionKey(keys);
+
+    if (
+      typeof selected === "string" &&
+      formatFilterKeySet.has(selected as ReportFormatFilter)
+    ) {
+      setFormatoFiltro(selected as ReportFormatFilter);
+    }
+  };
+
+  const handleFormatoExportacaoChange = (keys: unknown) => {
+    const selected = getSingleSelectionKey(keys);
+
+    if (
+      typeof selected === "string" &&
+      exportFormatKeySet.has(selected as ExportFormat)
+    ) {
+      setFormatoExportacao(selected as ExportFormat);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleExportReport = async (report: PrebuiltReportItem) => {
+    if (!data) {
+      return;
+    }
+
+    const finalFormat = report.formatos.includes(formatoExportacao)
+      ? formatoExportacao
+      : report.formatos[0];
+    const fileBase = `${report.id}-${periodo}-${new Date().toISOString().slice(0, 10)}`;
+
+    setExportingReportId(report.id);
+
+    try {
+      if (finalFormat === "csv") {
+        exportCsvFile(report.rows, `${fileBase}.csv`);
+      } else if (finalFormat === "xlsx") {
+        await exportXlsxFile(report.rows, `${fileBase}.xlsx`);
+      } else {
+        await exportPdfFile(report.nome, report.rows, `${fileBase}.pdf`);
+      }
+
+      toast.success(`${report.nome} exportado em ${FORMAT_LABELS[finalFormat]}.`);
+    } catch (exportError) {
+      console.error("Erro ao exportar relatório", exportError);
+      toast.error("Não foi possível exportar o relatório.");
+    } finally {
+      setExportingReportId(null);
+    }
   };
 
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-3 py-10 sm:px-6">
+    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-3 py-10 sm:px-6">
       <header className="space-y-4">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
           Inteligência jurídica
@@ -243,16 +616,16 @@ export function RelatoriosContent() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 flex-1">
             <h1 className={title({ size: "lg", color: "blue" })}>
-              Relatórios operacionais do escritório
+              Catálogo de relatórios pré-prontos
             </h1>
             <p className={subtitle({ fullWidth: true })}>
-              Visão consolidada de produtividade, receita e riscos para tomada
-              de decisão diária.
+              Lista ERP para busca, filtro e exportação por formato conforme a
+              necessidade do cliente.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Select
-              aria-label="Período do relatório"
+              aria-label="Período base"
               className="min-w-[220px]"
               selectedKeys={selectedPeriodKeys}
               size="sm"
@@ -264,17 +637,14 @@ export function RelatoriosContent() {
                 </SelectItem>
               ))}
             </Select>
-            <Button color="primary" size="sm" variant="flat" onPress={refresh}>
-              Atualizar
-            </Button>
             <Button
-              color="secondary"
-              isDisabled={!data}
+              color="primary"
+              isLoading={isRefreshing}
               size="sm"
               variant="flat"
-              onPress={handleExportCsv}
+              onPress={handleRefresh}
             >
-              Exportar CSV
+              Atualizar dados
             </Button>
           </div>
         </div>
@@ -292,7 +662,7 @@ export function RelatoriosContent() {
                   "Tente novamente em instantes."}
               </p>
             </div>
-            <Button color="danger" variant="flat" onPress={refresh}>
+            <Button color="danger" variant="flat" onPress={handleRefresh}>
               Tentar novamente
             </Button>
           </CardBody>
@@ -303,7 +673,7 @@ export function RelatoriosContent() {
         <CardHeader className="flex flex-col gap-2 pb-2">
           <h2 className="text-lg font-semibold text-white">Resumo executivo</h2>
           <p className="text-sm text-default-400">
-            Indicadores centrais do período selecionado.
+            Indicadores centrais para priorizar exportações e ações do período.
           </p>
         </CardHeader>
         <Divider className="border-white/10" />
@@ -345,7 +715,9 @@ export function RelatoriosContent() {
               )}
               {renderKpiCard(
                 "Risco imediato",
-                formatInteger(data.resumo.prazosUrgentes + data.resumo.faturasVencidas),
+                formatInteger(
+                  data.resumo.prazosUrgentes + data.resumo.faturasVencidas,
+                ),
                 `${formatInteger(data.resumo.prazosUrgentes)} prazos + ${formatInteger(data.resumo.faturasVencidas)} faturas`,
                 data.resumo.prazosUrgentes + data.resumo.faturasVencidas > 0
                   ? "danger"
@@ -357,387 +729,205 @@ export function RelatoriosContent() {
       </Card>
 
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">Atalhos operacionais</h2>
-          <p className="text-sm text-default-400">
-            Rotas críticas para agir sobre os números do relatório.
-          </p>
+        <CardHeader className="flex flex-col gap-4 pb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-semibold text-white">
+                Lista de relatórios prontos
+              </h2>
+              <p className="text-sm text-default-400">
+                Pesquisa, filtro e exportação por relatório.
+              </p>
+            </div>
+            <Chip
+              color={totalAlertas > 0 ? "warning" : "success"}
+              size="sm"
+              variant="flat"
+            >
+              {totalAlertas > 0
+                ? `${totalAlertas} com atenção`
+                : "Sem alertas críticos"}
+            </Chip>
+          </div>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-5">
+            <Input
+              aria-label="Pesquisar relatório"
+              className="xl:col-span-2"
+              placeholder="Buscar por nome, categoria ou periodicidade..."
+              size="sm"
+              startContent={<Search className="h-4 w-4 text-default-400" />}
+              value={busca}
+              onValueChange={setBusca}
+            />
+            <Select
+              aria-label="Filtro de categoria"
+              selectedKeys={selectedCategoryKeys}
+              size="sm"
+              onSelectionChange={handleCategoriaChange}
+            >
+              {REPORT_CATEGORY_OPTIONS.map((option) => (
+                <SelectItem key={option.key} textValue={option.label}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </Select>
+            <Select
+              aria-label="Filtro de status"
+              selectedKeys={selectedStatusKeys}
+              size="sm"
+              onSelectionChange={handleStatusChange}
+            >
+              {REPORT_STATUS_OPTIONS.map((option) => (
+                <SelectItem key={option.key} textValue={option.label}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </Select>
+            <Select
+              aria-label="Filtro por formato"
+              selectedKeys={selectedFormatFilterKeys}
+              size="sm"
+              onSelectionChange={handleFormatoFiltroChange}
+            >
+              {REPORT_FORMAT_FILTER_OPTIONS.map((option) => (
+                <SelectItem key={option.key} textValue={option.label}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs uppercase tracking-[0.2em] text-default-500">
+              Formato padrão de exportação
+            </span>
+            <Select
+              aria-label="Formato de exportação"
+              className="w-[180px]"
+              selectedKeys={selectedExportFormatKeys}
+              size="sm"
+              onSelectionChange={handleFormatoExportacaoChange}
+            >
+              {EXPORT_FORMAT_OPTIONS.map((option) => (
+                <SelectItem key={option.key} textValue={option.label}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
         </CardHeader>
         <Divider className="border-white/10" />
-        <CardBody>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {quickActions.map((action) => (
-              <Button
-                key={action.href}
-                as={NextLink}
-                className="h-auto w-full justify-start gap-3 rounded-2xl border border-white/10 bg-background/40 p-4 text-left hover:bg-white/10"
-                href={action.href}
-                variant="bordered"
-              >
-                <span aria-hidden className="text-2xl">
-                  {action.icon}
-                </span>
-                <div className="min-w-0 text-left">
-                  <p className="truncate font-semibold text-white">
-                    {action.label}
-                  </p>
-                  <p className="text-xs text-default-400">
-                    Abrir {action.label.toLowerCase()}
-                  </p>
-                </div>
-              </Button>
-            ))}
-          </div>
+        <CardBody className="overflow-x-auto">
+          {isLoading && !data ? (
+            <div className="flex h-48 items-center justify-center">
+              <Spinner size="lg" />
+            </div>
+          ) : (
+            <Table
+              aria-label="Tabela de relatórios pré-prontos"
+              classNames={{
+                table: "min-w-[1120px]",
+              }}
+              removeWrapper
+            >
+              <TableHeader>
+                <TableColumn>RELATÓRIO</TableColumn>
+                <TableColumn>CATEGORIA</TableColumn>
+                <TableColumn>PERIODICIDADE</TableColumn>
+                <TableColumn>BASE</TableColumn>
+                <TableColumn>REGISTROS</TableColumn>
+                <TableColumn>ATUALIZADO EM</TableColumn>
+                <TableColumn>STATUS</TableColumn>
+                <TableColumn>FORMATOS</TableColumn>
+                <TableColumn>AÇÕES</TableColumn>
+              </TableHeader>
+              <TableBody emptyContent="Nenhum relatório encontrado para os filtros selecionados.">
+                {filteredReports.map((report) => {
+                  const exportFormat = report.formatos.includes(formatoExportacao)
+                    ? formatoExportacao
+                    : report.formatos[0];
+
+                  return (
+                    <TableRow key={report.id}>
+                      <TableCell>
+                        <div className="min-w-[220px]">
+                          <p className="font-medium text-white">{report.nome}</p>
+                          <p className="text-xs text-default-400">
+                            {report.descricao}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Chip size="sm" variant="flat">
+                          {CATEGORY_LABELS[report.categoria]}
+                        </Chip>
+                      </TableCell>
+                      <TableCell className="text-sm text-default-300">
+                        {report.periodicidade}
+                      </TableCell>
+                      <TableCell className="text-sm text-default-300">
+                        {report.base}
+                      </TableCell>
+                      <TableCell className="text-sm text-default-300">
+                        {formatInteger(report.registros)}
+                      </TableCell>
+                      <TableCell className="text-sm text-default-400">
+                        {formatDateTime(report.atualizadoEm)}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          color={report.status === "ATENCAO" ? "warning" : "success"}
+                          size="sm"
+                          variant="flat"
+                        >
+                          {STATUS_LABELS[report.status]}
+                        </Chip>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex min-w-[160px] flex-wrap gap-1">
+                          {report.formatos.map((format) => (
+                            <Chip
+                              key={`${report.id}-${format}`}
+                              color={
+                                format === exportFormat ? "primary" : "default"
+                              }
+                              size="sm"
+                              variant={format === exportFormat ? "solid" : "flat"}
+                            >
+                              {FORMAT_LABELS[format]}
+                            </Chip>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          color="primary"
+                          isDisabled={
+                            exportingReportId !== null &&
+                            exportingReportId !== report.id
+                          }
+                          isLoading={exportingReportId === report.id}
+                          size="sm"
+                          startContent={
+                            exportingReportId === report.id ? null : (
+                              <Download className="h-3.5 w-3.5" />
+                            )
+                          }
+                          variant="flat"
+                          onPress={() => handleExportReport(report)}
+                        >
+                          {exportingReportId === report.id
+                            ? "Exportando..."
+                            : `Exportar ${FORMAT_LABELS[exportFormat]}`}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </CardBody>
       </Card>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">Receita mensal</h2>
-            <p className="text-sm text-default-400">
-              Evolução de recebimentos confirmados.
-            </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody>
-            {isLoading || !data ? (
-              <div className="flex h-72 items-center justify-center">
-                <Spinner size="lg" />
-              </div>
-            ) : (
-              <div className="h-72 w-full">
-                <ResponsiveContainer height="100%" width="100%">
-                  <AreaChart data={data.seriesMensais}>
-                    <defs>
-                      <linearGradient id="relatoriosReceita" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.65} />
-                        <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.05} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      stroke="rgba(255,255,255,0.08)"
-                      strokeDasharray="3 3"
-                      vertical={false}
-                    />
-                    <XAxis
-                      axisLine={false}
-                      dataKey="mes"
-                      tick={{ fill: "rgba(255,255,255,0.65)", fontSize: 11 }}
-                      tickLine={false}
-                    />
-                    <YAxis hide />
-                    <Tooltip
-                      contentStyle={{
-                        background: "rgba(5, 8, 16, 0.92)",
-                        border: "1px solid rgba(255, 255, 255, 0.14)",
-                        borderRadius: "12px",
-                        color: "white",
-                      }}
-                      formatter={(value) => formatCurrency(Number(value))}
-                    />
-                    <Area
-                      dataKey="receita"
-                      fill="url(#relatoriosReceita)"
-                      fillOpacity={1}
-                      stroke="#38bdf8"
-                      strokeWidth={2.2}
-                      type="monotone"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">Volume operacional</h2>
-            <p className="text-sm text-default-400">
-              Processos, clientes e tarefas concluídas por mês.
-            </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody>
-            {isLoading || !data ? (
-              <div className="flex h-72 items-center justify-center">
-                <Spinner size="lg" />
-              </div>
-            ) : (
-              <div className="h-72 w-full">
-                <ResponsiveContainer height="100%" width="100%">
-                  <LineChart data={data.seriesMensais}>
-                    <CartesianGrid
-                      stroke="rgba(255,255,255,0.08)"
-                      strokeDasharray="3 3"
-                      vertical={false}
-                    />
-                    <XAxis
-                      axisLine={false}
-                      dataKey="mes"
-                      tick={{ fill: "rgba(255,255,255,0.65)", fontSize: 11 }}
-                      tickLine={false}
-                    />
-                    <YAxis hide />
-                    <Tooltip
-                      contentStyle={{
-                        background: "rgba(5, 8, 16, 0.92)",
-                        border: "1px solid rgba(255, 255, 255, 0.14)",
-                        borderRadius: "12px",
-                        color: "white",
-                      }}
-                    />
-                    <Legend />
-                    <Line
-                      dataKey="processos"
-                      dot={false}
-                      name="Processos"
-                      stroke="#38bdf8"
-                      strokeWidth={2}
-                      type="monotone"
-                    />
-                    <Line
-                      dataKey="clientes"
-                      dot={false}
-                      name="Clientes"
-                      stroke="#34d399"
-                      strokeWidth={2}
-                      type="monotone"
-                    />
-                    <Line
-                      dataKey="tarefasConcluidas"
-                      dot={false}
-                      name="Tarefas concluídas"
-                      stroke="#f59e0b"
-                      strokeWidth={2}
-                      type="monotone"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">
-              Processos por status
-            </h2>
-            <p className="text-sm text-default-400">
-              Distribuição atual do pipeline jurídico.
-            </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody>
-            {isLoading || !data ? (
-              <div className="flex h-64 items-center justify-center">
-                <Spinner size="lg" />
-              </div>
-            ) : processosDistribuicao.length > 0 ? (
-              <div className="h-64 w-full">
-                <ResponsiveContainer height="100%" width="100%">
-                  <BarChart data={processosDistribuicao} layout="vertical">
-                    <CartesianGrid
-                      stroke="rgba(255,255,255,0.08)"
-                      strokeDasharray="3 3"
-                      horizontal={false}
-                    />
-                    <XAxis hide type="number" />
-                    <YAxis
-                      axisLine={false}
-                      dataKey="label"
-                      tick={{ fill: "rgba(255,255,255,0.72)", fontSize: 12 }}
-                      tickLine={false}
-                      type="category"
-                      width={120}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "rgba(5, 8, 16, 0.92)",
-                        border: "1px solid rgba(255, 255, 255, 0.14)",
-                        borderRadius: "12px",
-                        color: "white",
-                      }}
-                    />
-                    <Bar dataKey="total" fill="#38bdf8" radius={[0, 8, 8, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <p className="text-sm text-default-500">
-                Sem dados de processos para o período.
-              </p>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">Tarefas por status</h2>
-            <p className="text-sm text-default-400">
-              Panorama do backlog operacional da equipe.
-            </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody>
-            {isLoading || !data ? (
-              <div className="flex h-64 items-center justify-center">
-                <Spinner size="lg" />
-              </div>
-            ) : tarefasDistribuicao.length > 0 ? (
-              <div className="h-64 w-full">
-                <ResponsiveContainer height="100%" width="100%">
-                  <PieChart>
-                    <Pie
-                      cx="50%"
-                      cy="50%"
-                      data={tarefasDistribuicao}
-                      dataKey="total"
-                      nameKey="label"
-                      outerRadius={85}
-                      strokeWidth={0}
-                    >
-                      {tarefasDistribuicao.map((item, index) => (
-                        <Cell
-                          key={`tarefas-status-${item.key}`}
-                          fill={PIE_COLORS[index % PIE_COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        background: "rgba(5, 8, 16, 0.92)",
-                        border: "1px solid rgba(255, 255, 255, 0.14)",
-                        borderRadius: "12px",
-                        color: "white",
-                      }}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <p className="text-sm text-default-500">
-                Sem dados de tarefas para o período.
-              </p>
-            )}
-          </CardBody>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.3fr_1fr]">
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">Top clientes</h2>
-            <p className="text-sm text-default-400">
-              Ranking por faturamento e volume operacional.
-            </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody>
-            {isLoading || !data ? (
-              <div className="flex h-40 items-center justify-center">
-                <Spinner size="lg" />
-              </div>
-            ) : data.rankings.clientes.length > 0 ? (
-              <div className="space-y-3">
-                {data.rankings.clientes.map((cliente, index) => (
-                  <div
-                    key={cliente.id}
-                    className="grid grid-cols-[32px_1fr_auto_auto_auto] items-center gap-2 rounded-2xl border border-white/10 bg-background/40 px-3 py-2"
-                  >
-                    <span className="text-sm font-semibold text-default-400">
-                      #{index + 1}
-                    </span>
-                    <span className="truncate text-sm text-white">
-                      {cliente.nome}
-                    </span>
-                    <Chip size="sm" variant="flat">
-                      {formatInteger(cliente.processos)} proc.
-                    </Chip>
-                    <Chip size="sm" variant="flat">
-                      {formatInteger(cliente.contratos)} ctr.
-                    </Chip>
-                    <span className="text-sm font-semibold text-success">
-                      {formatCurrency(cliente.faturamento)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-default-500">
-                Ainda sem dados suficientes para ranking de clientes.
-              </p>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">Agenda crítica</h2>
-            <p className="text-sm text-default-400">
-              Prazos e eventos mais próximos.
-            </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody>
-            {isLoading || !data ? (
-              <div className="flex h-40 items-center justify-center">
-                <Spinner size="lg" />
-              </div>
-            ) : agendaConsolidada.length > 0 ? (
-              <div className="space-y-3">
-                {agendaConsolidada.map((item) => (
-                  <div
-                    key={`${item.tipo}-${item.id}`}
-                    className="rounded-2xl border border-white/10 bg-background/40 px-3 py-3"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <Chip
-                        color={item.tipo === "PRAZO" ? "danger" : "primary"}
-                        size="sm"
-                        variant="flat"
-                      >
-                        {item.tipo}
-                      </Chip>
-                      <span className="text-xs text-default-400">
-                        {formatDateTime(item.data)}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm font-semibold text-white">
-                      {item.titulo}
-                    </p>
-                    {item.referencia ? (
-                      <p className="text-xs text-default-400">
-                        Processo {item.referencia}
-                      </p>
-                    ) : null}
-                    {item.href ? (
-                      <Button
-                        as={NextLink}
-                        className="mt-2 p-0 text-xs text-primary"
-                        href={item.href}
-                        size="sm"
-                        variant="light"
-                      >
-                        Abrir registro
-                      </Button>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-default-500">
-                Sem itens críticos na agenda para os próximos dias.
-              </p>
-            )}
-          </CardBody>
-        </Card>
-      </div>
     </section>
   );
 }

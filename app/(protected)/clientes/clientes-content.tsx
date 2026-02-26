@@ -2,7 +2,7 @@
 
 import type { CnpjData } from "@/types/brazil";
 
-import { useState, useMemo } from "react";
+import { memo, useCallback, useMemo, useState, type Key } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -46,7 +46,6 @@ import {
   XCircle,
   TrendingUp,
   BarChart3,
-  Zap,
   Target,
   Calendar,
   Info,
@@ -67,6 +66,7 @@ import {
 
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { useClientesAdvogado, useAllClientes } from "@/app/hooks/use-clientes";
+import { useAdvogadosParaSelect } from "@/app/hooks/use-advogados-select";
 import { fadeInUp } from "@/components/ui/motion-presets";
 import { ModalHeaderGradient } from "@/components/ui/modal-header-gradient";
 import { ModalSectionCard } from "@/components/ui/modal-section-card";
@@ -84,6 +84,393 @@ import { Modal } from "@/components/ui/modal";
 import { CpfInput } from "@/components/cpf-input";
 import { CnpjInput } from "@/components/cnpj-input";
 import { BulkExcelImportModal } from "@/components/bulk-excel-import-modal";
+import { PeopleManagementNav } from "@/components/people-management-nav";
+import {
+  PeopleMetricCard,
+  PeoplePageHeader,
+} from "@/components/people-ui";
+
+function formatDateToInput(value?: Date | string | null) {
+  if (!value) {
+    return "";
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateFromInput(value: string) {
+  if (!value) {
+    return undefined;
+  }
+
+  const [year, month, day] = value.split("-").map((part) => Number(part));
+
+  if (!year || !month || !day) {
+    return undefined;
+  }
+
+  return new Date(year, month - 1, day);
+}
+
+const INITIAL_CLIENTE_FORM_STATE: ClienteCreateInput = {
+  tipoPessoa: TipoPessoa.FISICA,
+  nome: "",
+  documento: "",
+  email: "",
+  telefone: "",
+  celular: "",
+  dataNascimento: undefined,
+  inscricaoEstadual: "",
+  observacoes: "",
+  responsavelNome: "",
+  responsavelEmail: "",
+  responsavelTelefone: "",
+  advogadosIds: undefined,
+};
+
+function getInitials(nome: string) {
+  const names = nome.split(" ");
+
+  if (names.length >= 2) {
+    return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+  }
+
+  return nome.substring(0, 2).toUpperCase();
+}
+
+interface ClientesListSectionProps {
+  clientesFiltrados: Cliente[];
+  isLoading: boolean;
+  hasActiveFilters: boolean;
+  canCreateClient: boolean;
+  onOpenCreateModal: () => void;
+  onViewCliente: (cliente: Cliente) => void;
+  onEditCliente: (cliente: Cliente) => void;
+  onOpenResetModal: (cliente: Cliente) => void;
+  onDeleteCliente: (clienteId: string) => void | Promise<void>;
+}
+
+const ClientesListSection = memo(function ClientesListSection({
+  clientesFiltrados,
+  isLoading,
+  hasActiveFilters,
+  canCreateClient,
+  onOpenCreateModal,
+  onViewCliente,
+  onEditCliente,
+  onOpenResetModal,
+  onDeleteCliente,
+}: ClientesListSectionProps) {
+  return (
+    <motion.div
+      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 20 }}
+      transition={{ duration: 0.4, delay: 0.1 }}
+    >
+      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+        <CardHeader className="border-b border-white/10">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+                  Carteira de Clientes
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  {clientesFiltrados.length} cliente(s) encontrado(s)
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge
+                color="primary"
+                content={clientesFiltrados.length}
+                size="lg"
+                variant="shadow"
+              >
+                <Target
+                  className="text-indigo-600 dark:text-indigo-400"
+                  size={20}
+                />
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardBody className="p-6">
+          {isLoading ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Skeleton key={i} className="h-64 rounded-xl" />
+              ))}
+            </div>
+          ) : clientesFiltrados.length === 0 ? (
+            <motion.div
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-16"
+              initial={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="p-6 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                <Users className="text-slate-400" size={48} />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                Nenhum cliente encontrado
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 mb-6">
+                {hasActiveFilters
+                  ? "Tente ajustar os filtros para encontrar clientes"
+                  : "Comece adicionando seu primeiro cliente"}
+              </p>
+              {!hasActiveFilters && canCreateClient && (
+                <Button
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600"
+                  color="primary"
+                  startContent={<Plus size={20} />}
+                  onPress={onOpenCreateModal}
+                >
+                  Adicionar Primeiro Cliente
+                </Button>
+              )}
+            </motion.div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <AnimatePresence>
+                {clientesFiltrados.map((cliente, index) => (
+                  <motion.div
+                    key={cliente.id}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <Card className="group border border-white/10 bg-background/60 transition-all duration-300 hover:border-primary/40 hover:bg-background/80">
+                      <CardHeader
+                        className="cursor-pointer border-b border-white/10"
+                        onClick={() => onViewCliente(cliente)}
+                      >
+                        <div className="flex gap-4 w-full">
+                          <motion.div
+                            transition={{
+                              type: "spring",
+                              stiffness: 400,
+                              damping: 10,
+                            }}
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                          >
+                            <Avatar
+                              showFallback
+                              className="bg-blue-500 text-white shadow-lg"
+                              icon={
+                                cliente.tipoPessoa === TipoPessoa.JURIDICA ? (
+                                  <Building2 className="text-white" />
+                                ) : (
+                                  <User className="text-white" />
+                                )
+                              }
+                              name={getInitials(cliente.nome)}
+                              size="lg"
+                            />
+                          </motion.div>
+                          <div className="flex flex-col flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                {cliente.nome}
+                              </h3>
+                              {cliente.usuarioId && (
+                                <Badge
+                                  color="success"
+                                  content="✓"
+                                  size="sm"
+                                  variant="shadow"
+                                >
+                                  <Chip
+                                    className="font-semibold"
+                                    color="success"
+                                    size="sm"
+                                    startContent={<Key className="h-3 w-3" />}
+                                    variant="flat"
+                                  >
+                                    Acesso
+                                  </Chip>
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Chip
+                                color={
+                                  cliente.tipoPessoa === TipoPessoa.FISICA
+                                    ? "secondary"
+                                    : "warning"
+                                }
+                                size="sm"
+                                startContent={
+                                  cliente.tipoPessoa === TipoPessoa.FISICA ? (
+                                    <User className="h-3 w-3" />
+                                  ) : (
+                                    <Building2 className="h-3 w-3" />
+                                  )
+                                }
+                                variant="flat"
+                              >
+                                {cliente.tipoPessoa === TipoPessoa.FISICA
+                                  ? "Pessoa Física"
+                                  : "Pessoa Jurídica"}
+                              </Chip>
+                            </div>
+                          </div>
+                          <Dropdown>
+                            <DropdownTrigger>
+                              <Button
+                                isIconOnly
+                                className="hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-110 transition-all"
+                                size="sm"
+                                variant="light"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownTrigger>
+                            <DropdownMenu aria-label="Ações do cliente">
+                              <DropdownItem
+                                key="view"
+                                as={Link}
+                                href={`/clientes/${cliente.id}`}
+                                startContent={<Eye className="h-4 w-4" />}
+                              >
+                                Ver Detalhes
+                              </DropdownItem>
+                              <DropdownItem
+                                key="edit"
+                                startContent={<Edit className="h-4 w-4" />}
+                                onPress={() => onEditCliente(cliente)}
+                              >
+                                Editar
+                              </DropdownItem>
+                              {cliente.usuarioId ? (
+                                <DropdownItem
+                                  key="reset-password"
+                                  className="text-warning"
+                                  color="warning"
+                                  startContent={<KeyRound className="h-4 w-4" />}
+                                  onPress={() => onOpenResetModal(cliente)}
+                                >
+                                  Resetar Senha
+                                </DropdownItem>
+                              ) : null}
+                              <DropdownItem
+                                key="delete"
+                                className="text-danger"
+                                color="danger"
+                                startContent={<Trash2 className="h-4 w-4" />}
+                                onPress={() => onDeleteCliente(cliente.id)}
+                              >
+                                Excluir
+                              </DropdownItem>
+                            </DropdownMenu>
+                          </Dropdown>
+                        </div>
+                      </CardHeader>
+                      <CardBody className="p-6 space-y-4">
+                        <div className="space-y-3">
+                          {cliente.documento && (
+                            <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                              <FileText className="h-4 w-4 text-blue-500" />
+                              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                {cliente.documento}
+                              </span>
+                            </div>
+                          )}
+                          {cliente.email && (
+                            <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                              <Mail className="h-4 w-4 text-green-500" />
+                              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                {cliente.email}
+                              </span>
+                            </div>
+                          )}
+                          {cliente.telefone && (
+                            <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                              <Phone className="h-4 w-4 text-purple-500" />
+                              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                {cliente.telefone}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <Divider className="my-4" />
+
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex gap-2">
+                              <Badge
+                                color="primary"
+                                content={cliente._count?.processos || 0}
+                                size="sm"
+                                variant="shadow"
+                              >
+                                <Chip
+                                  className="font-semibold"
+                                  color="primary"
+                                  size="md"
+                                  variant="flat"
+                                >
+                                  {cliente._count?.processos || 0} processo(s)
+                                </Chip>
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              as={Link}
+                              className="flex-1 hover:scale-105 transition-transform"
+                              color="primary"
+                              href={`/clientes/${cliente.id}`}
+                              size="sm"
+                              startContent={<Eye className="h-4 w-4" />}
+                              variant="flat"
+                            >
+                              Ver Detalhes
+                            </Button>
+                            <Button
+                              as={Link}
+                              className="hover:scale-105 transition-transform"
+                              color="secondary"
+                              href={`/clientes/${cliente.id}`}
+                              size="sm"
+                              startContent={<FileText className="h-4 w-4" />}
+                              variant="flat"
+                            >
+                              Processos
+                            </Button>
+                          </div>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </CardBody>
+      </Card>
+    </motion.div>
+  );
+});
 
 export function ClientesContent() {
   const { permissions, isSuperAdmin, isAdmin } = useUserPermissions();
@@ -119,43 +506,44 @@ export function ClientesContent() {
     isLoading: isLoadingAdmin,
     mutate: mutateAdmin,
   } = useAllClientes();
+  const { advogados, isLoading: isLoadingAdvogados } = useAdvogadosParaSelect();
 
-  const clientes = isAdmin ? clientesAdmin : clientesAdvogado;
-  const isLoading = isAdmin ? isLoadingAdmin : isLoadingAdvogado;
-  const mutate = isAdmin ? mutateAdmin : mutateAdvogado;
-
-  // Estado do formulário
-  const initialFormState: ClienteCreateInput = {
-    tipoPessoa: TipoPessoa.FISICA,
-    nome: "",
-    documento: "",
-    email: "",
-    telefone: "",
-    celular: "",
-    observacoes: "",
-    responsavelNome: "",
-    responsavelEmail: "",
-    responsavelTelefone: "",
-  };
+  const canManageAllClients = isAdmin || isSuperAdmin;
+  const clientes = canManageAllClients ? clientesAdmin : clientesAdvogado;
+  const isLoading = canManageAllClients ? isLoadingAdmin : isLoadingAdvogado;
+  const mutate = canManageAllClients ? mutateAdmin : mutateAdvogado;
 
   const [formState, setFormState] =
-    useState<ClienteCreateInput>(initialFormState);
+    useState<ClienteCreateInput>(INITIAL_CLIENTE_FORM_STATE);
+  const advogadoIdSet = useMemo(
+    () => new Set((advogados || []).map((advogado) => advogado.id)),
+    [advogados],
+  );
+  const selectedAdvogadosKeys = useMemo(
+    () =>
+      (formState.advogadosIds || []).filter((id) => advogadoIdSet.has(id)),
+    [advogadoIdSet, formState.advogadosIds],
+  );
 
   // Filtrar clientes
-  const clientesFiltrados =
-    clientes?.filter((cliente) => {
-      const matchSearch =
-        !searchTerm ||
-        cliente.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cliente.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cliente.documento?.toLowerCase().includes(searchTerm.toLowerCase());
+  const clientesFiltrados = useMemo(
+    () =>
+      clientes?.filter((cliente) => {
+        const search = searchTerm.toLowerCase();
+        const matchSearch =
+          !searchTerm ||
+          cliente.nome?.toLowerCase().includes(search) ||
+          cliente.email?.toLowerCase().includes(search) ||
+          cliente.documento?.toLowerCase().includes(search);
 
-      const matchTipoPessoa =
-        selectedTipoPessoa === "all" ||
-        cliente.tipoPessoa === selectedTipoPessoa;
+        const matchTipoPessoa =
+          selectedTipoPessoa === "all" ||
+          cliente.tipoPessoa === selectedTipoPessoa;
 
-      return matchSearch && matchTipoPessoa;
-    }) || [];
+        return matchSearch && matchTipoPessoa;
+      }) || [],
+    [clientes, searchTerm, selectedTipoPessoa],
+  );
 
   // Calcular métricas
   const metrics = useMemo(() => {
@@ -184,15 +572,22 @@ export function ClientesContent() {
   }, [clientes]);
 
   // Verificar se há filtros ativos
-  const hasActiveFilters = searchTerm || selectedTipoPessoa !== "all";
+  const hasActiveFilters =
+    searchTerm.trim().length > 0 || selectedTipoPessoa !== "all";
+  const taxaAcesso = metrics.total
+    ? Math.round((metrics.comAcesso / metrics.total) * 100)
+    : 0;
+  const taxaEngajamento = metrics.total
+    ? Math.round((metrics.comProcessos / metrics.total) * 100)
+    : 0;
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchTerm("");
     setSelectedTipoPessoa("all");
     setShowFilters(false);
-  };
+  }, []);
 
-  const handleDeleteCliente = async (clienteId: string) => {
+  const handleDeleteCliente = useCallback(async (clienteId: string) => {
     if (!confirm("Tem certeza que deseja excluir este cliente?")) return;
 
     try {
@@ -207,7 +602,7 @@ export function ClientesContent() {
     } catch (error) {
       toast.error("Erro ao excluir cliente");
     }
-  };
+  }, [mutate]);
 
   const handleCreateCliente = async () => {
     if (!formState.nome) {
@@ -224,12 +619,23 @@ export function ClientesContent() {
 
     setIsSaving(true);
     try {
-      const result = await createCliente({ ...formState, criarUsuario });
+      const payload: ClienteCreateInput = {
+        ...formState,
+        criarUsuario,
+        dataNascimento: formState.dataNascimento || undefined,
+        inscricaoEstadual: formState.inscricaoEstadual || undefined,
+        advogadosIds:
+          canManageAllClients && (formState.advogadosIds || []).length > 0
+            ? formState.advogadosIds
+            : undefined,
+      };
+
+      const result = await createCliente(payload);
 
       if (result.success) {
         toast.success("Cliente criado com sucesso!");
         setIsCreateModalOpen(false);
-        setFormState(initialFormState);
+        setFormState(INITIAL_CLIENTE_FORM_STATE);
         setCriarUsuario(true);
         mutate();
 
@@ -265,10 +671,14 @@ export function ClientesContent() {
         email: formState.email,
         telefone: formState.telefone,
         celular: formState.celular,
+        dataNascimento: formState.dataNascimento || undefined,
+        inscricaoEstadual: formState.inscricaoEstadual || undefined,
         observacoes: formState.observacoes,
         responsavelNome: formState.responsavelNome,
         responsavelEmail: formState.responsavelEmail,
         responsavelTelefone: formState.responsavelTelefone,
+        advogadosIds:
+          canManageAllClients ? formState.advogadosIds || [] : undefined,
       };
 
       const result = await updateCliente(selectedCliente.id, updateData);
@@ -277,7 +687,7 @@ export function ClientesContent() {
         toast.success("Cliente atualizado com sucesso!");
         setIsEditModalOpen(false);
         setSelectedCliente(null);
-        setFormState(initialFormState);
+        setFormState(INITIAL_CLIENTE_FORM_STATE);
         mutate();
       } else {
         toast.error(result.error || "Erro ao atualizar cliente");
@@ -289,7 +699,7 @@ export function ClientesContent() {
     }
   };
 
-  const handleEditCliente = (cliente: Cliente) => {
+  const handleEditCliente = useCallback((cliente: Cliente) => {
     setSelectedCliente(cliente);
     setFormState({
       nome: cliente.nome,
@@ -298,36 +708,135 @@ export function ClientesContent() {
       email: cliente.email || "",
       telefone: cliente.telefone || "",
       celular: cliente.celular || "",
+      dataNascimento: cliente.dataNascimento
+        ? new Date(cliente.dataNascimento)
+        : undefined,
+      inscricaoEstadual: cliente.inscricaoEstadual || "",
       observacoes: cliente.observacoes || "",
       responsavelNome: cliente.responsavelNome || "",
       responsavelEmail: cliente.responsavelEmail || "",
       responsavelTelefone: cliente.responsavelTelefone || "",
+      advogadosIds: (cliente.advogadoClientes || []).map(
+        (vinculo) => vinculo.advogadoId,
+      ),
     });
     setIsEditModalOpen(true);
-  };
+  }, []);
 
-  const handleViewCliente = (cliente: Cliente) => {
+  const handleViewCliente = useCallback((cliente: Cliente) => {
     setClienteParaVisualizar(cliente);
     setIsViewModalOpen(true);
-  };
+  }, []);
 
-  const handleCnpjFound = (cnpjData: CnpjData) => {
-    setFormState({
-      ...formState,
-      nome: cnpjData.razao_social || formState.nome,
+  const handleCnpjFound = useCallback((cnpjData: CnpjData) => {
+    setFormState((prev) => ({
+      ...prev,
+      nome: cnpjData.razao_social || prev.nome,
       documento: cnpjData.cnpj,
-    });
+    }));
     toast.success("Dados do CNPJ carregados!");
-  };
+  }, []);
 
-  const handleOpenResetModal = (cliente: Cliente) => {
+  const handleAdvogadosSelectionChange = useCallback((keys: "all" | Set<Key>) => {
+    if (keys === "all") {
+      const allAdvogados = (advogados || []).map((advogado) => advogado.id);
+
+      setFormState((prev) => ({
+        ...prev,
+        advogadosIds: allAdvogados.length > 0 ? allAdvogados : undefined,
+      }));
+
+      return;
+    }
+
+    const selected = Array.from(keys)
+      .filter((key): key is string => typeof key === "string")
+      .filter((id) => advogadoIdSet.has(id));
+
+    setFormState((prev) => ({
+      ...prev,
+      advogadosIds: selected.length > 0 ? selected : [],
+    }));
+  }, [advogadoIdSet, advogados]);
+
+  const handleOpenResetModal = useCallback((cliente: Cliente) => {
     if (!cliente.usuarioId) {
       toast.error("Este cliente não possui usuário de acesso");
 
       return;
     }
     setClienteParaResetarSenha(cliente);
-  };
+  }, []);
+
+  const handleOpenCreateModal = useCallback(() => {
+    setFormState(INITIAL_CLIENTE_FORM_STATE);
+    setCriarUsuario(true);
+    setIsCreateModalOpen(true);
+  }, []);
+
+  const applyTipoPessoaChange = useCallback((selectedTipo: TipoPessoa) => {
+    setFormState((prev) => ({
+      ...prev,
+      tipoPessoa: selectedTipo,
+      inscricaoEstadual:
+        selectedTipo === TipoPessoa.JURIDICA ? prev.inscricaoEstadual : "",
+      responsavelNome:
+        selectedTipo === TipoPessoa.JURIDICA ? prev.responsavelNome : "",
+      responsavelEmail:
+        selectedTipo === TipoPessoa.JURIDICA ? prev.responsavelEmail : "",
+      responsavelTelefone:
+        selectedTipo === TipoPessoa.JURIDICA ? prev.responsavelTelefone : "",
+    }));
+  }, []);
+
+  const handleTipoPessoaSelectionChange = useCallback(
+    (keys: unknown) => {
+      if (keys === "all" || keys == null) {
+        return;
+      }
+
+      let selectedTipo: TipoPessoa | undefined;
+
+      if (typeof keys === "string") {
+        if (keys === TipoPessoa.FISICA || keys === TipoPessoa.JURIDICA) {
+          selectedTipo = keys;
+        }
+      } else if (keys instanceof Set) {
+        selectedTipo = Array.from(keys).find(
+          (key): key is TipoPessoa =>
+            key === TipoPessoa.FISICA || key === TipoPessoa.JURIDICA,
+        );
+      } else if (
+        typeof keys === "object" &&
+        keys !== null &&
+        Symbol.iterator in keys
+      ) {
+        selectedTipo = Array.from(keys as Iterable<Key>).find(
+          (key): key is TipoPessoa =>
+            key === TipoPessoa.FISICA || key === TipoPessoa.JURIDICA,
+        );
+      } else if (
+        typeof keys === "object" &&
+        keys !== null &&
+        "currentKey" in keys
+      ) {
+        const currentKey = (keys as { currentKey?: Key | null }).currentKey;
+        if (
+          currentKey === TipoPessoa.FISICA ||
+          currentKey === TipoPessoa.JURIDICA
+        ) {
+          selectedTipo = currentKey;
+        }
+      }
+
+      if (!selectedTipo) {
+        return;
+      }
+
+      applyTipoPessoaChange(selectedTipo);
+    },
+    [applyTipoPessoaChange],
+  );
 
   const handleConfirmResetarSenha = async () => {
     if (!clienteParaResetarSenha) return;
@@ -348,16 +857,6 @@ export function ClientesContent() {
     } finally {
       setIsResettingPassword(false);
     }
-  };
-
-  const getInitials = (nome: string) => {
-    const names = nome.split(" ");
-
-    if (names.length >= 2) {
-      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
-    }
-
-    return nome.substring(0, 2).toUpperCase();
   };
 
   const tipoPessoaOptions = [
@@ -395,310 +894,101 @@ export function ClientesContent() {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
-      {/* Header Hero */}
+      <PeopleManagementNav active="clientes" />
+
       <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
-        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-blue-900 via-blue-900/90 to-indigo-800 text-white shadow-2xl">
-          <CardBody className="space-y-8">
-            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-3 max-w-2xl">
-                <h1 className="text-3xl font-semibold tracking-tight">
-                  Base de Clientes
-                </h1>
-                <p className="text-white/80">
-                  Gerencie sua carteira de clientes, acompanhe processos e
-                  mantenha relacionamentos organizados. Acesso completo às
-                  informações em tempo real.
-                </p>
-                {permissions.canViewAllClients && (
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      color="secondary"
-                      startContent={<Plus className="w-4 h-4" />}
-                      onPress={() => {
-                        setFormState(initialFormState);
-                        setIsCreateModalOpen(true);
-                      }}
-                    >
-                      Novo Cliente
-                    </Button>
-                    <Button
-                      variant="bordered"
-                      color="primary"
-                      startContent={<UploadCloud className="w-4 h-4" />}
-                      onPress={() => setIsImportModalOpen(true)}
-                    >
-                      Importar via Excel
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardBody>
-          <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-        </Card>
+        <PeoplePageHeader
+          description="Centralize cadastro, relacionamento e acesso dos clientes com o mesmo padrão visual usado em todo o módulo."
+          title="Clientes"
+          actions={
+            permissions.canViewAllClients ? (
+              <>
+                <Button
+                  color="primary"
+                  startContent={<Plus className="h-4 w-4" />}
+                  onPress={handleOpenCreateModal}
+                >
+                  Novo cliente
+                </Button>
+                <Button
+                  startContent={<UploadCloud className="h-4 w-4" />}
+                  variant="bordered"
+                  onPress={() => setIsImportModalOpen(true)}
+                >
+                  Importar Excel
+                </Button>
+              </>
+            ) : undefined
+          }
+        />
       </motion.div>
 
-      {/* Dashboard Cards */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <Skeleton key={`clientes-metric-skeleton-${index}`} className="h-28 rounded-xl" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {/* Card Total de Clientes */}
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-              <CardBody className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-blue-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <Users className="text-white" size={24} />
-                  </div>
-                  <Badge color="success" content="+" variant="shadow">
-                    <TrendingUp
-                      className="text-blue-600 dark:text-blue-400"
-                      size={20}
-                    />
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
-                    Total de Clientes
-                  </p>
-                  <p className="text-4xl font-bold text-blue-800 dark:text-blue-200">
-                    {metrics.total}
-                  </p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400">
-                    Carteira de clientes
-                  </p>
-                </div>
-              </CardBody>
-            </Card>
-          </motion.div>
-
-          {/* Card Clientes com Acesso */}
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <Card className="bg-gradient-to-br from-green-50 via-emerald-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-              <CardBody className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-green-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <Key className="text-white" size={24} />
-                  </div>
-                  <Badge color="success" content="✓" variant="shadow">
-                    <Activity
-                      className="text-green-600 dark:text-green-400"
-                      size={20}
-                    />
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">
-                    Com Acesso
-                  </p>
-                  <p className="text-4xl font-bold text-green-800 dark:text-green-200">
-                    {metrics.comAcesso}
-                  </p>
-                  <p className="text-xs text-green-600 dark:text-green-400">
-                    Com login ativo
-                  </p>
-                </div>
-              </CardBody>
-            </Card>
-          </motion.div>
-
-          {/* Card Pessoa Física */}
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-              <CardBody className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-purple-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <User className="text-white" size={24} />
-                  </div>
-                  <Badge color="secondary" content="👤" variant="shadow">
-                    <User
-                      className="text-purple-600 dark:text-purple-400"
-                      size={20}
-                    />
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">
-                    Pessoa Física
-                  </p>
-                  <p className="text-4xl font-bold text-purple-800 dark:text-purple-200">
-                    {metrics.fisica}
-                  </p>
-                  <p className="text-xs text-purple-600 dark:text-purple-400">
-                    Clientes PF
-                  </p>
-                </div>
-              </CardBody>
-            </Card>
-          </motion.div>
-
-          {/* Card Pessoa Jurídica */}
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            initial={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <Card className="bg-gradient-to-br from-amber-50 via-yellow-100 to-orange-200 dark:from-amber-900/30 dark:via-yellow-800/20 dark:to-orange-900/30 border-amber-300 dark:border-amber-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-              <CardBody className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-amber-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <Building2 className="text-white" size={24} />
-                  </div>
-                  <Badge color="warning" content="🏢" variant="shadow">
-                    <Building2
-                      className="text-amber-600 dark:text-amber-400"
-                      size={20}
-                    />
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">
-                    Pessoa Jurídica
-                  </p>
-                  <p className="text-4xl font-bold text-amber-800 dark:text-amber-200">
-                    {metrics.juridica}
-                  </p>
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    Clientes PJ
-                  </p>
-                </div>
-              </CardBody>
-            </Card>
-          </motion.div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <PeopleMetricCard
+            helper="Carteira cadastrada"
+            icon={<Users className="h-4 w-4" />}
+            label="Total de clientes"
+            tone="primary"
+            value={metrics.total}
+          />
+          <PeopleMetricCard
+            helper={`${taxaAcesso}% com acesso`}
+            icon={<Key className="h-4 w-4" />}
+            label="Clientes com login"
+            tone="success"
+            value={metrics.comAcesso}
+          />
+          <PeopleMetricCard
+            helper="Pessoa fisica"
+            icon={<User className="h-4 w-4" />}
+            label="Clientes PF"
+            tone="secondary"
+            value={metrics.fisica}
+          />
+          <PeopleMetricCard
+            helper="Pessoa juridica"
+            icon={<Building2 className="h-4 w-4" />}
+            label="Clientes PJ"
+            tone="warning"
+            value={metrics.juridica}
+          />
+          <PeopleMetricCard
+            helper="Clientes com processo"
+            icon={<FileText className="h-4 w-4" />}
+            label="Com processos"
+            tone="primary"
+            value={metrics.comProcessos}
+          />
+          <PeopleMetricCard
+            helper="Conversao da base"
+            icon={<TrendingUp className="h-4 w-4" />}
+            label="Taxa de acesso"
+            tone="success"
+            value={`${taxaAcesso}%`}
+          />
+          <PeopleMetricCard
+            helper="Engajamento da carteira"
+            icon={<Activity className="h-4 w-4" />}
+            label="Taxa de engajamento"
+            tone="secondary"
+            value={`${taxaEngajamento}%`}
+          />
+          <PeopleMetricCard
+            helper="Acoes comerciais"
+            icon={<BarChart3 className="h-4 w-4" />}
+            label="Status da carteira"
+            tone="default"
+            value={metrics.total > 0 ? "Ativa" : "Vazia"}
+          />
         </div>
       )}
-
-      {/* Cards de Estatísticas Adicionais */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Card de Processos Ativos */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
-          <Card className="bg-gradient-to-br from-cyan-50 via-blue-100 to-cyan-200 dark:from-cyan-900/30 dark:via-blue-800/20 dark:to-cyan-900/30 border-cyan-300 dark:border-cyan-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-            <CardBody className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-cyan-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <FileText className="text-white" size={24} />
-                </div>
-                <Badge
-                  color="primary"
-                  content={metrics.comProcessos}
-                  variant="shadow"
-                >
-                  <FileText
-                    className="text-cyan-600 dark:text-cyan-400"
-                    size={20}
-                  />
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wide">
-                  Com Processos
-                </p>
-                <p className="text-4xl font-bold text-cyan-800 dark:text-cyan-200">
-                  {metrics.comProcessos}
-                </p>
-                <p className="text-xs text-cyan-600 dark:text-cyan-400">
-                  Clientes ativos
-                </p>
-              </div>
-            </CardBody>
-          </Card>
-        </motion.div>
-
-        {/* Card de Taxa de Conversão */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-        >
-          <Card className="bg-gradient-to-br from-pink-50 via-rose-100 to-pink-200 dark:from-pink-900/30 dark:via-rose-800/20 dark:to-pink-900/30 border-pink-300 dark:border-pink-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-            <CardBody className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-pink-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <BarChart3 className="text-white" size={24} />
-                </div>
-                <Badge color="secondary" content="%" variant="shadow">
-                  <TrendingUp
-                    className="text-pink-600 dark:text-pink-400"
-                    size={20}
-                  />
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-pink-700 dark:text-pink-300 uppercase tracking-wide">
-                  Taxa de Conversão
-                </p>
-                <p className="text-4xl font-bold text-pink-800 dark:text-pink-200">
-                  {metrics.total > 0
-                    ? Math.round((metrics.comAcesso / metrics.total) * 100)
-                    : 0}
-                  %
-                </p>
-                <p className="text-xs text-pink-600 dark:text-pink-400">
-                  Com acesso ao sistema
-                </p>
-              </div>
-            </CardBody>
-          </Card>
-        </motion.div>
-
-        {/* Card de Produtividade */}
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          initial={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.7 }}
-        >
-          <Card className="bg-gradient-to-br from-indigo-50 via-purple-100 to-indigo-200 dark:from-indigo-900/30 dark:via-purple-800/20 dark:to-indigo-900/30 border-indigo-300 dark:border-indigo-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-            <CardBody className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-indigo-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <Zap className="text-white" size={24} />
-                </div>
-                <Badge color="secondary" content="⚡" variant="shadow">
-                  <Zap
-                    className="text-indigo-600 dark:text-indigo-400"
-                    size={20}
-                  />
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300 uppercase tracking-wide">
-                  Engajamento
-                </p>
-                <p className="text-4xl font-bold text-indigo-800 dark:text-indigo-200">
-                  {metrics.comProcessos > 0
-                    ? Math.round((metrics.comProcessos / metrics.total) * 100)
-                    : 0}
-                  %
-                </p>
-                <p className="text-xs text-indigo-600 dark:text-indigo-400">
-                  Com processos ativos
-                </p>
-              </div>
-            </CardBody>
-          </Card>
-        </motion.div>
-      </div>
 
       {/* Filtros Avançados Melhorados */}
       <motion.div
@@ -706,19 +996,19 @@ export function ClientesContent() {
         initial={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="shadow-lg border-2 border-slate-200 dark:border-slate-700">
-          <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <CardHeader className="border-b border-white/10">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
                   <Filter className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                    Filtros Inteligentes
+                  <h3 className="text-lg font-bold text-white">
+                    Filtros operacionais
                   </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Encontre exatamente o cliente que precisa
+                  <p className="text-sm text-default-400">
+                    Refine rapidamente a carteira ativa.
                   </p>
                 </div>
                 {hasActiveFilters && (
@@ -925,315 +1215,17 @@ export function ClientesContent() {
         </Card>
       </motion.div>
 
-      {/* Lista de Clientes Melhorada */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-      >
-        <Card className="shadow-xl border-2 border-slate-200 dark:border-slate-700">
-          <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
-                    Carteira de Clientes
-                  </h2>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {clientesFiltrados.length} cliente(s) encontrado(s)
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge
-                  color="primary"
-                  content={clientesFiltrados.length}
-                  size="lg"
-                  variant="shadow"
-                >
-                  <Target
-                    className="text-indigo-600 dark:text-indigo-400"
-                    size={20}
-                  />
-                </Badge>
-              </div>
-            </div>
-          </CardHeader>
-          <CardBody className="p-6">
-            {isLoading ? (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Skeleton key={i} className="h-64 rounded-xl" />
-                ))}
-              </div>
-            ) : clientesFiltrados.length === 0 ? (
-              <motion.div
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-16"
-                initial={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="p-6 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-                  <Users className="text-slate-400" size={48} />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Nenhum cliente encontrado
-                </h3>
-                <p className="text-slate-500 dark:text-slate-400 mb-6">
-                  {hasActiveFilters
-                    ? "Tente ajustar os filtros para encontrar clientes"
-                    : "Comece adicionando seu primeiro cliente"}
-                </p>
-                {!hasActiveFilters && permissions.canViewAllClients && (
-                  <Button
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600"
-                    color="primary"
-                    startContent={<Plus size={20} />}
-                    onPress={() => {
-                      setFormState(initialFormState);
-                      setIsCreateModalOpen(true);
-                    }}
-                  >
-                    Adicionar Primeiro Cliente
-                  </Button>
-                )}
-              </motion.div>
-            ) : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                <AnimatePresence>
-                  {clientesFiltrados.map((cliente, index) => (
-                    <motion.div
-                      key={cliente.id}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      initial={{ opacity: 0, y: 20 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      <Card className="border-2 border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 group shadow-lg hover:shadow-2xl">
-                        <CardHeader
-                          className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700 cursor-pointer"
-                          onClick={() => handleViewCliente(cliente)}
-                        >
-                          <div className="flex gap-4 w-full">
-                            <motion.div
-                              transition={{
-                                type: "spring",
-                                stiffness: 400,
-                                damping: 10,
-                              }}
-                              whileHover={{ scale: 1.1, rotate: 5 }}
-                            >
-                              <Avatar
-                                showFallback
-                                className="bg-blue-500 text-white shadow-lg"
-                                icon={
-                                  cliente.tipoPessoa === TipoPessoa.JURIDICA ? (
-                                    <Building2 className="text-white" />
-                                  ) : (
-                                    <User className="text-white" />
-                                  )
-                                }
-                                name={getInitials(cliente.nome)}
-                                size="lg"
-                              />
-                            </motion.div>
-                            <div className="flex flex-col flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                  {cliente.nome}
-                                </h3>
-                                {cliente.usuarioId && (
-                                  <Badge
-                                    color="success"
-                                    content="✓"
-                                    size="sm"
-                                    variant="shadow"
-                                  >
-                                    <Chip
-                                      className="font-semibold"
-                                      color="success"
-                                      size="sm"
-                                      startContent={<Key className="h-3 w-3" />}
-                                      variant="flat"
-                                    >
-                                      Acesso
-                                    </Chip>
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Chip
-                                  color={
-                                    cliente.tipoPessoa === TipoPessoa.FISICA
-                                      ? "secondary"
-                                      : "warning"
-                                  }
-                                  size="sm"
-                                  startContent={
-                                    cliente.tipoPessoa === TipoPessoa.FISICA ? (
-                                      <User className="h-3 w-3" />
-                                    ) : (
-                                      <Building2 className="h-3 w-3" />
-                                    )
-                                  }
-                                  variant="flat"
-                                >
-                                  {cliente.tipoPessoa === TipoPessoa.FISICA
-                                    ? "Pessoa Física"
-                                    : "Pessoa Jurídica"}
-                                </Chip>
-                              </div>
-                            </div>
-                            <Dropdown>
-                              <DropdownTrigger>
-                                <Button
-                                  isIconOnly
-                                  className="hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-110 transition-all"
-                                  size="sm"
-                                  variant="light"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownTrigger>
-                              <DropdownMenu aria-label="Ações do cliente">
-                                <DropdownItem
-                                  key="view"
-                                  as={Link}
-                                  href={`/clientes/${cliente.id}`}
-                                  startContent={<Eye className="h-4 w-4" />}
-                                >
-                                  Ver Detalhes
-                                </DropdownItem>
-                                <DropdownItem
-                                  key="edit"
-                                  startContent={<Edit className="h-4 w-4" />}
-                                  onPress={() => handleEditCliente(cliente)}
-                                >
-                                  Editar
-                                </DropdownItem>
-                                {cliente.usuarioId ? (
-                                  <DropdownItem
-                                    key="reset-password"
-                                    className="text-warning"
-                                    color="warning"
-                                    startContent={
-                                      <KeyRound className="h-4 w-4" />
-                                    }
-                                    onPress={() =>
-                                      handleOpenResetModal(cliente)
-                                    }
-                                  >
-                                    Resetar Senha
-                                  </DropdownItem>
-                                ) : null}
-                                <DropdownItem
-                                  key="delete"
-                                  className="text-danger"
-                                  color="danger"
-                                  startContent={<Trash2 className="h-4 w-4" />}
-                                  onPress={() =>
-                                    handleDeleteCliente(cliente.id)
-                                  }
-                                >
-                                  Excluir
-                                </DropdownItem>
-                              </DropdownMenu>
-                            </Dropdown>
-                          </div>
-                        </CardHeader>
-                        <CardBody className="p-6 space-y-4">
-                          {/* Informações de Contato */}
-                          <div className="space-y-3">
-                            {cliente.documento && (
-                              <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <FileText className="h-4 w-4 text-blue-500" />
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                  {cliente.documento}
-                                </span>
-                              </div>
-                            )}
-                            {cliente.email && (
-                              <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <Mail className="h-4 w-4 text-green-500" />
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                  {cliente.email}
-                                </span>
-                              </div>
-                            )}
-                            {cliente.telefone && (
-                              <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <Phone className="h-4 w-4 text-purple-500" />
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                  {cliente.telefone}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-
-                          <Divider className="my-4" />
-
-                          {/* Estatísticas e Ações */}
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex gap-2">
-                                <Badge
-                                  color="primary"
-                                  content={cliente._count?.processos || 0}
-                                  size="sm"
-                                  variant="shadow"
-                                >
-                                  <Chip
-                                    className="font-semibold"
-                                    color="primary"
-                                    size="md"
-                                    variant="flat"
-                                  >
-                                    {cliente._count?.processos || 0} processo(s)
-                                  </Chip>
-                                </Badge>
-                              </div>
-                            </div>
-
-                            <div className="flex gap-2">
-                              <Button
-                                as={Link}
-                                className="flex-1 hover:scale-105 transition-transform"
-                                color="primary"
-                                href={`/clientes/${cliente.id}`}
-                                size="sm"
-                                startContent={<Eye className="h-4 w-4" />}
-                                variant="flat"
-                              >
-                                Ver Detalhes
-                              </Button>
-                              <Button
-                                as={Link}
-                                className="hover:scale-105 transition-transform"
-                                color="secondary"
-                                href={`/clientes/${cliente.id}`}
-                                size="sm"
-                                startContent={<FileText className="h-4 w-4" />}
-                                variant="flat"
-                              >
-                                Processos
-                              </Button>
-                            </div>
-                          </div>
-                        </CardBody>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-      </motion.div>
+      <ClientesListSection
+        canCreateClient={permissions.canViewAllClients}
+        clientesFiltrados={clientesFiltrados}
+        hasActiveFilters={hasActiveFilters}
+        isLoading={isLoading}
+        onDeleteCliente={handleDeleteCliente}
+        onEditCliente={handleEditCliente}
+        onOpenCreateModal={handleOpenCreateModal}
+        onOpenResetModal={handleOpenResetModal}
+        onViewCliente={handleViewCliente}
+      />
 
       {/* Modal Criar Cliente */}
       <HeroUIModal
@@ -1283,18 +1275,22 @@ export function ClientesContent() {
                       <Select
                         label="Tipo de Pessoa"
                         placeholder="Selecione"
-                        selectedKeys={[formState.tipoPessoa]}
-                        onChange={(e) =>
-                          setFormState({
-                            ...formState,
-                            tipoPessoa: e.target.value as TipoPessoa,
-                          })
-                        }
+                        selectedKeys={new Set([formState.tipoPessoa])}
+                        onChange={(e) => {
+                          const nextTipo = e.target.value;
+                          if (
+                            nextTipo === TipoPessoa.FISICA ||
+                            nextTipo === TipoPessoa.JURIDICA
+                          ) {
+                            applyTipoPessoaChange(nextTipo);
+                          }
+                        }}
+                        onSelectionChange={handleTipoPessoaSelectionChange}
                       >
-                        <SelectItem key={TipoPessoa.FISICA}>
+                        <SelectItem key={TipoPessoa.FISICA} textValue="Pessoa Física">
                           Pessoa Física
                         </SelectItem>
-                        <SelectItem key={TipoPessoa.JURIDICA}>
+                        <SelectItem key={TipoPessoa.JURIDICA} textValue="Pessoa Jurídica">
                           Pessoa Jurídica
                         </SelectItem>
                       </Select>
@@ -1340,8 +1336,62 @@ export function ClientesContent() {
                           onCnpjFound={handleCnpjFound}
                         />
                       )}
+
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Input
+                          label="Data de Nascimento"
+                          type="date"
+                          value={formatDateToInput(formState.dataNascimento)}
+                          onValueChange={(value) =>
+                            setFormState({
+                              ...formState,
+                              dataNascimento: parseDateFromInput(value),
+                            })
+                          }
+                        />
+                        {formState.tipoPessoa === TipoPessoa.JURIDICA ? (
+                          <Input
+                            label="Inscrição Estadual"
+                            placeholder="Informe a inscrição estadual"
+                            value={formState.inscricaoEstadual}
+                            onValueChange={(value) =>
+                              setFormState({
+                                ...formState,
+                                inscricaoEstadual: value,
+                              })
+                            }
+                          />
+                        ) : null}
+                      </div>
                     </div>
                   </ModalSectionCard>
+
+                  {(isAdmin || isSuperAdmin) && (
+                    <ModalSectionCard
+                      description="Defina quais advogados terão gestão direta deste cliente."
+                      title="Vínculo de Advogados"
+                    >
+                      <Select
+                        className="w-full"
+                        isLoading={isLoadingAdvogados}
+                        label="Advogados vinculados"
+                        placeholder="Selecione um ou mais advogados"
+                        selectedKeys={selectedAdvogadosKeys}
+                        selectionMode="multiple"
+                        onSelectionChange={handleAdvogadosSelectionChange}
+                      >
+                        {(advogados || []).map((advogado) => (
+                          <SelectItem
+                            key={advogado.id}
+                            textValue={`${advogado.label} ${advogado.oab || ""}`.trim()}
+                          >
+                            {advogado.label}
+                            {advogado.oab ? ` (${advogado.oab})` : ""}
+                          </SelectItem>
+                        ))}
+                      </Select>
+                    </ModalSectionCard>
+                  )}
                 </div>
               </Tab>
 
@@ -1595,18 +1645,22 @@ export function ClientesContent() {
                       <Select
                         label="Tipo de Pessoa"
                         placeholder="Selecione"
-                        selectedKeys={[formState.tipoPessoa]}
-                        onChange={(e) =>
-                          setFormState({
-                            ...formState,
-                            tipoPessoa: e.target.value as TipoPessoa,
-                          })
-                        }
+                        selectedKeys={new Set([formState.tipoPessoa])}
+                        onChange={(e) => {
+                          const nextTipo = e.target.value;
+                          if (
+                            nextTipo === TipoPessoa.FISICA ||
+                            nextTipo === TipoPessoa.JURIDICA
+                          ) {
+                            applyTipoPessoaChange(nextTipo);
+                          }
+                        }}
+                        onSelectionChange={handleTipoPessoaSelectionChange}
                       >
-                        <SelectItem key={TipoPessoa.FISICA}>
+                        <SelectItem key={TipoPessoa.FISICA} textValue="Pessoa Física">
                           Pessoa Física
                         </SelectItem>
-                        <SelectItem key={TipoPessoa.JURIDICA}>
+                        <SelectItem key={TipoPessoa.JURIDICA} textValue="Pessoa Jurídica">
                           Pessoa Jurídica
                         </SelectItem>
                       </Select>
@@ -1652,8 +1706,62 @@ export function ClientesContent() {
                           onCnpjFound={handleCnpjFound}
                         />
                       )}
+
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Input
+                          label="Data de Nascimento"
+                          type="date"
+                          value={formatDateToInput(formState.dataNascimento)}
+                          onValueChange={(value) =>
+                            setFormState({
+                              ...formState,
+                              dataNascimento: parseDateFromInput(value),
+                            })
+                          }
+                        />
+                        {formState.tipoPessoa === TipoPessoa.JURIDICA ? (
+                          <Input
+                            label="Inscrição Estadual"
+                            placeholder="Informe a inscrição estadual"
+                            value={formState.inscricaoEstadual}
+                            onValueChange={(value) =>
+                              setFormState({
+                                ...formState,
+                                inscricaoEstadual: value,
+                              })
+                            }
+                          />
+                        ) : null}
+                      </div>
                     </div>
                   </ModalSectionCard>
+
+                  {(isAdmin || isSuperAdmin) && (
+                    <ModalSectionCard
+                      description="Ajuste os advogados responsáveis por este cliente."
+                      title="Vínculo de Advogados"
+                    >
+                      <Select
+                        className="w-full"
+                        isLoading={isLoadingAdvogados}
+                        label="Advogados vinculados"
+                        placeholder="Selecione um ou mais advogados"
+                        selectedKeys={selectedAdvogadosKeys}
+                        selectionMode="multiple"
+                        onSelectionChange={handleAdvogadosSelectionChange}
+                      >
+                        {(advogados || []).map((advogado) => (
+                          <SelectItem
+                            key={advogado.id}
+                            textValue={`${advogado.label} ${advogado.oab || ""}`.trim()}
+                          >
+                            {advogado.label}
+                            {advogado.oab ? ` (${advogado.oab})` : ""}
+                          </SelectItem>
+                        ))}
+                      </Select>
+                    </ModalSectionCard>
+                  )}
                 </div>
               </Tab>
 
@@ -2259,15 +2367,23 @@ export function ClientesContent() {
                       description={`Total: ${clienteParaVisualizar._count?.processos || 0} processos`}
                       title="Processos do Cliente"
                     >
-                      <div className="flex items-center justify-center py-8">
-                        <div className="text-center">
-                          <FileText className="w-12 h-12 text-default-300 mx-auto mb-4" />
-                          <p className="text-default-500">
-                            {clienteParaVisualizar._count?.processos === 0
-                              ? "Este cliente ainda não possui processos vinculados"
-                              : "Lista de processos será implementada em breve"}
-                          </p>
-                        </div>
+                      <div className="space-y-4 py-4 text-center">
+                        <FileText className="mx-auto mb-2 h-12 w-12 text-default-300" />
+                        <p className="text-default-500">
+                          {clienteParaVisualizar._count?.processos === 0
+                            ? "Este cliente ainda não possui processos vinculados."
+                            : "Abra a página completa para visualizar processos, contratos, procurações e demais relações."}
+                        </p>
+                        <Button
+                          as={Link}
+                          color="primary"
+                          href={`/clientes/${clienteParaVisualizar.id}`}
+                          size="sm"
+                          startContent={<Eye className="h-4 w-4" />}
+                          variant="flat"
+                        >
+                          Abrir página completa
+                        </Button>
                       </div>
                     </ModalSectionCard>
                   </div>

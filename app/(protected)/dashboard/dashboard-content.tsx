@@ -771,7 +771,7 @@ export function DashboardContent() {
   ] as const;
 
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-3 py-10 sm:px-6">
+    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-3 py-10 sm:px-6">
       <header className="space-y-4">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
           Visão geral

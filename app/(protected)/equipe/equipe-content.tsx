@@ -102,6 +102,8 @@ import { EnderecoManager } from "@/components/endereco-manager";
 import { useModulosTenant, useCargos } from "@/app/hooks/use-equipe";
 import { ModalHeaderGradient } from "@/components/ui/modal-header-gradient";
 import { ModalSectionCard } from "@/components/ui/modal-section-card";
+import { PeopleManagementNav } from "@/components/people-management-nav";
+import { PeopleMetricCard, PeoplePageHeader } from "@/components/people-ui";
 
 const containerVariants = {
   hidden: {},
@@ -169,90 +171,35 @@ function DashboardEquipe() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-      {/* Card Total de Usuários */}
-      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.1 }}>
-        <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-          <CardBody className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="p-2 sm:p-3 bg-blue-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Users className="text-white w-5 h-5" />
-              </div>
-              <div className="hidden sm:flex items-center justify-center p-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30">
-                <TrendingUp className="text-blue-600 dark:text-blue-400 w-3 h-3 sm:w-4 sm:h-4" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs sm:text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Total de Usuários</p>
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-blue-800 dark:text-blue-200">{dashboardData.totalUsuarios}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400">Equipe do escritório</p>
-            </div>
-          </CardBody>
-        </Card>
-      </motion.div>
-
-      {/* Card Cargos Ativos */}
-      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.2 }}>
-        <Card className="bg-gradient-to-br from-green-50 via-emerald-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-          <CardBody className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="p-2 sm:p-3 bg-green-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Shield className="text-white w-5 h-5" />
-              </div>
-              <div className="hidden sm:flex items-center justify-center p-1.5 rounded-full bg-green-100 dark:bg-green-900/30">
-                <Activity className="text-green-600 dark:text-green-400 w-3 h-3 sm:w-4 sm:h-4" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs sm:text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">Cargos Ativos</p>
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-800 dark:text-green-200">{dashboardData.totalCargos}</p>
-              <p className="text-xs text-green-600 dark:text-green-400">Cargos configurados</p>
-            </div>
-          </CardBody>
-        </Card>
-      </motion.div>
-
-      {/* Card Convites Pendentes */}
-      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.3 }}>
-        <Card className="bg-gradient-to-br from-amber-50 via-yellow-100 to-orange-200 dark:from-amber-900/30 dark:via-yellow-800/20 dark:to-orange-900/30 border-amber-300 dark:border-amber-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-          <CardBody className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="p-2 sm:p-3 bg-amber-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Mail className="text-white w-5 h-5" />
-              </div>
-              <div className="hidden sm:flex items-center justify-center p-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30">
-                <Clock className="text-amber-600 dark:text-amber-400 w-3 h-3 sm:w-4 sm:h-4" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs sm:text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">Convites Pendentes</p>
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-amber-800 dark:text-amber-200">{dashboardData.convitesPendentes}</p>
-              <p className="text-xs text-amber-600 dark:text-amber-400">Aguardando resposta</p>
-            </div>
-          </CardBody>
-        </Card>
-      </motion.div>
-
-      {/* Card Vinculações Ativas */}
-      <motion.div animate={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.4 }}>
-        <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
-          <CardBody className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="p-2 sm:p-3 bg-purple-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <LinkIcon className="text-white w-5 h-5" />
-              </div>
-              <div className="hidden sm:flex items-center justify-center p-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30">
-                <LinkIcon className="text-purple-600 dark:text-purple-400 w-3 h-3 sm:w-4 sm:h-4" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Vinculações Ativas</p>
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-purple-800 dark:text-purple-200">{dashboardData.vinculacoesAtivas}</p>
-              <p className="text-xs text-purple-600 dark:text-purple-400">Usuários vinculados</p>
-            </div>
-          </CardBody>
-        </Card>
-      </motion.div>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <PeopleMetricCard
+        helper="Equipe ativa do escritorio"
+        icon={<Users className="h-4 w-4" />}
+        label="Total de usuarios"
+        tone="primary"
+        value={dashboardData.totalUsuarios}
+      />
+      <PeopleMetricCard
+        helper="Perfis de acesso configurados"
+        icon={<Shield className="h-4 w-4" />}
+        label="Cargos ativos"
+        tone="success"
+        value={dashboardData.totalCargos}
+      />
+      <PeopleMetricCard
+        helper="Pendentes de aceite"
+        icon={<Mail className="h-4 w-4" />}
+        label="Convites pendentes"
+        tone="warning"
+        value={dashboardData.convitesPendentes}
+      />
+      <PeopleMetricCard
+        helper="Relacoes usuario-advogado"
+        icon={<LinkIcon className="h-4 w-4" />}
+        label="Vinculacoes ativas"
+        tone="secondary"
+        value={dashboardData.vinculacoesAtivas}
+      />
     </div>
   );
 }
@@ -3574,57 +3521,54 @@ export default function EquipeContent() {
 
   return (
     <div className="space-y-8">
-      <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
-        <Card className="relative overflow-hidden border border-default-200 bg-content1 shadow-xl dark:bg-content1/80">
-          <CardBody className="space-y-8">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="space-y-3 max-w-2xl">
-                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground dark:text-foreground">Equipe & Permissões</h1>
-                <p className="text-sm sm:text-base text-default-600 dark:text-default-400 max-w-xl">
-                  Controle cargos, perfis de acesso e convites da sua equipe em tempo real. Use os cargos como identidade principal e mantenha a segurança alinhada ao dia a dia do escritório.
-                </p>
-                <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-                  <Button className="w-full sm:w-auto" color="secondary" size="sm" startContent={<Users className="w-4 h-4" />} onPress={() => setSelectedTab("usuarios")}>
-                    <span className="hidden sm:inline">Gerenciar Usuários</span>
-                    <span className="sm:hidden">Usuários</span>
-                  </Button>
-                  <Button className="w-full sm:w-auto" size="sm" startContent={<Crown className="w-4 h-4" />} variant="bordered" onPress={() => setSelectedTab("cargos")}>
-                    <span className="hidden sm:inline">Configurar Cargos</span>
-                    <span className="sm:hidden">Cargos</span>
-                  </Button>
-                </div>
-              </div>
-              <motion.div
-                animate="visible"
-                className="flex flex-row flex-wrap gap-2 sm:gap-3 text-default-600 dark:text-default-300 w-full sm:w-auto lg:w-auto"
-                initial="hidden"
-                variants={containerVariants}
-              >
-                <motion.div
-                  className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-default-200 bg-default-100 dark:bg-default-50/10 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs sm:text-sm"
-                  variants={cardVariants}
-                >
-                  <Activity className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 text-primary" />
-                  <span>Sincronização em tempo real ativada</span>
-                </motion.div>
-                <motion.div
-                  className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-default-200 bg-default-100 dark:bg-default-50/10 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs sm:text-sm"
-                  variants={cardVariants}
-                >
-                  <Shield className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 text-primary" />
-                  <span>Overrides e cargos com auditoria</span>
-                </motion.div>
-              </motion.div>
-            </div>
+      <PeopleManagementNav active="equipe" />
 
+      <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
+        <PeoplePageHeader
+          description="Controle cargos, usuarios e convites com trilha de auditoria e padrao visual unificado."
+          title="Equipe e permissoes"
+          actions={
+            <>
+              <Button
+                color="primary"
+                size="sm"
+                startContent={<Users className="w-4 h-4" />}
+                onPress={() => setSelectedTab("usuarios")}
+              >
+                Gerenciar usuários
+              </Button>
+              <Button
+                size="sm"
+                startContent={<Crown className="w-4 h-4" />}
+                variant="bordered"
+                onPress={() => setSelectedTab("cargos")}
+              >
+                Configurar cargos
+              </Button>
+            </>
+          }
+        />
+      </motion.div>
+
+      <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <CardHeader className="pb-2">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Resumo da equipe</h2>
+              <p className="text-sm text-default-400">
+                Indicadores consolidados de estrutura, convites e vinculações.
+              </p>
+            </div>
+          </CardHeader>
+          <Divider className="border-white/10" />
+          <CardBody>
             <DashboardEquipe />
           </CardBody>
-          <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary/15 dark:bg-primary/10 blur-3xl" />
         </Card>
       </motion.div>
 
       <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
-        <Card className="border-none bg-white/90 shadow-lg backdrop-blur dark:bg-content1/80">
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
           <CardBody className="space-y-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:items-center">
@@ -3697,7 +3641,7 @@ export default function EquipeContent() {
       </motion.div>
 
       <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
-        <Card className="border border-default-200 shadow-md bg-content1 dark:bg-content1/80">
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
           <CardBody className="p-0">
             <Tabs
               aria-label="Gestão de Equipe"

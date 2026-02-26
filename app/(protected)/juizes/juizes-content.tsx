@@ -365,7 +365,7 @@ export function JuizesContent() {
 
   return (
     <PermissionGuard permission="canViewJudgesDatabase">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 py-8 px-3 sm:px-6">
+      <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 py-8 px-3 sm:px-6">
         {/* Header com gradiente */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-secondary/10 to-background p-8 backdrop-blur-xl border border-primary/20">
           <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" />

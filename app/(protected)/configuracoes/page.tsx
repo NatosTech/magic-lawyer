@@ -41,7 +41,7 @@ export default async function ConfiguracoesPage() {
     tenantData.data;
 
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 py-12">
+    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-8 py-12">
       <header className="space-y-4">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
           Configurações

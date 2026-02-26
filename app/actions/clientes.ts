@@ -32,14 +32,37 @@ export interface Cliente {
   responsavelEmail: string | null;
   responsavelTelefone: string | null;
   observacoes: string | null;
+  asaasCustomerId?: string | null;
   usuarioId: string | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  advogadoClientes?: {
+    id: string;
+    advogadoId: string;
+    relacionamento: string | null;
+    advogado: {
+      id: string;
+      oabNumero: string | null;
+      oabUf: string | null;
+      usuario: {
+        firstName: string | null;
+        lastName: string | null;
+        email: string | null;
+      };
+    };
+  }[];
   _count?: {
     processos: number;
     contratos: number;
     documentos: number;
+    procuracoes?: number;
+    tarefas?: number;
+    eventos?: number;
+    enderecos?: number;
+    dadosBancarios?: number;
+    documentoAssinaturas?: number;
+    advogadoClientes?: number;
   };
 }
 
@@ -73,6 +96,110 @@ export interface ClienteComProcessos extends Cliente {
       eventos: number;
       movimentacoes: number;
       procuracoesVinculadas: number;
+    };
+  }[];
+  enderecos: {
+    id: string;
+    apelido: string;
+    tipo: string;
+    principal: boolean;
+    logradouro: string;
+    numero: string | null;
+    complemento: string | null;
+    bairro: string | null;
+    cidade: string;
+    estado: string;
+    cep: string | null;
+    pais: string;
+    telefone: string | null;
+    observacoes: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
+  dadosBancarios: {
+    id: string;
+    bancoCodigo: string;
+    agencia: string;
+    conta: string;
+    digitoConta: string | null;
+    tipoConta: string;
+    tipoContaBancaria: string;
+    chavePix: string | null;
+    tipoChavePix: string | null;
+    titularNome: string;
+    titularDocumento: string;
+    titularEmail: string | null;
+    titularTelefone: string | null;
+    cidade: string | null;
+    estado: string | null;
+    ativo: boolean;
+    principal: boolean;
+    observacoes: string | null;
+    banco: {
+      codigo: string;
+      nome: string;
+      nomeCompleto: string | null;
+    };
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
+  tarefas: {
+    id: string;
+    titulo: string;
+    descricao: string | null;
+    status: string;
+    prioridade: string;
+    dataLimite: Date | null;
+    completedAt: Date | null;
+    createdAt: Date;
+    processo: {
+      id: string;
+      numero: string;
+      titulo: string | null;
+    } | null;
+    responsavel: {
+      id: string;
+      firstName: string | null;
+      lastName: string | null;
+      email: string | null;
+    } | null;
+  }[];
+  eventos: {
+    id: string;
+    titulo: string;
+    descricao: string | null;
+    tipo: string;
+    status: string;
+    dataInicio: Date;
+    dataFim: Date;
+    local: string | null;
+    processo: {
+      id: string;
+      numero: string;
+      titulo: string | null;
+    } | null;
+    advogadoResponsavel: {
+      id: string;
+      usuario: {
+        firstName: string | null;
+        lastName: string | null;
+        email: string | null;
+      };
+    } | null;
+  }[];
+  documentoAssinaturas: {
+    id: string;
+    titulo: string;
+    descricao: string | null;
+    status: string;
+    dataEnvio: Date | null;
+    dataAssinatura: Date | null;
+    dataExpiracao: Date | null;
+    createdAt: Date;
+    documento: {
+      id: string;
+      nome: string;
+      url: string;
     };
   }[];
 }
@@ -146,6 +273,27 @@ export async function getClientesAdvogado(): Promise<{
     const clientesRaw = await prisma.cliente.findMany({
       where: whereCliente,
       include: {
+        advogadoClientes: {
+          select: {
+            id: true,
+            advogadoId: true,
+            relacionamento: true,
+            advogado: {
+              select: {
+                id: true,
+                oabNumero: true,
+                oabUf: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         _count: {
           select: {
             processos: { where: { deletedAt: null } },
@@ -208,6 +356,27 @@ export async function getAllClientesTenant(): Promise<{
         deletedAt: null,
       },
       include: {
+        advogadoClientes: {
+          select: {
+            id: true,
+            advogadoId: true,
+            relacionamento: true,
+            advogado: {
+              select: {
+                id: true,
+                oabNumero: true,
+                oabUf: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         _count: {
           select: {
             processos: { where: { deletedAt: null } },
@@ -285,12 +454,56 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
     const clienteRaw = await prisma.cliente.findFirst({
       where: whereClause,
       include: {
+        advogadoClientes: {
+          include: {
+            advogado: {
+              select: {
+                id: true,
+                oabNumero: true,
+                oabUf: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
         _count: {
           select: {
             processos: { where: { deletedAt: null } },
             contratos: true,
             documentos: { where: { deletedAt: null } },
+            procuracoes: true,
+            tarefas: { where: { deletedAt: null } },
+            eventos: true,
+            enderecos: true,
+            dadosBancarios: true,
+            documentoAssinaturas: true,
+            advogadoClientes: true,
           },
+        },
+        enderecos: {
+          orderBy: [{ principal: "desc" }, { createdAt: "asc" }],
+        },
+        dadosBancarios: {
+          where: { deletedAt: null },
+          include: {
+            banco: {
+              select: {
+                codigo: true,
+                nome: true,
+                nomeCompleto: true,
+              },
+            },
+          },
+          orderBy: [{ principal: "desc" }, { createdAt: "asc" }],
         },
         processos: {
           where: {
@@ -327,6 +540,75 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
             createdAt: "desc",
           },
         },
+        tarefas: {
+          where: {
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            titulo: true,
+            descricao: true,
+            status: true,
+            prioridade: true,
+            dataLimite: true,
+            completedAt: true,
+            createdAt: true,
+            processo: {
+              select: {
+                id: true,
+                numero: true,
+                titulo: true,
+              },
+            },
+            responsavel: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: [{ dataLimite: "asc" }, { createdAt: "desc" }],
+        },
+        eventos: {
+          include: {
+            processo: {
+              select: {
+                id: true,
+                numero: true,
+                titulo: true,
+              },
+            },
+            advogadoResponsavel: {
+              select: {
+                id: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: [{ dataInicio: "asc" }, { createdAt: "desc" }],
+        },
+        documentoAssinaturas: {
+          include: {
+            documento: {
+              select: {
+                id: true,
+                nome: true,
+                url: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
       },
     });
 
@@ -340,6 +622,12 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
       processos: clienteRaw.processos.map((p: any) => ({
         ...p,
         valorCausa: toNumber(p.valorCausa),
+      })),
+      tarefas: clienteRaw.tarefas.map((tarefa: any) => ({
+        ...tarefa,
+      })),
+      dadosBancarios: clienteRaw.dadosBancarios.map((conta: any) => ({
+        ...conta,
       })),
     };
 
@@ -402,6 +690,27 @@ export async function getClienteById(clienteId: string): Promise<{
     const cliente = await prisma.cliente.findFirst({
       where: whereClause,
       include: {
+        advogadoClientes: {
+          select: {
+            id: true,
+            advogadoId: true,
+            relacionamento: true,
+            advogado: {
+              select: {
+                id: true,
+                oabNumero: true,
+                oabUf: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         _count: {
           select: {
             processos: { where: { deletedAt: null } },
@@ -607,6 +916,27 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
           : undefined,
       },
       include: {
+        advogadoClientes: {
+          select: {
+            id: true,
+            advogadoId: true,
+            relacionamento: true,
+            advogado: {
+              select: {
+                id: true,
+                oabNumero: true,
+                oabUf: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         _count: {
           select: {
             processos: { where: { deletedAt: null } },
@@ -715,6 +1045,27 @@ export async function updateCliente(
       where: { id: clienteId },
       data: updateData,
       include: {
+        advogadoClientes: {
+          select: {
+            id: true,
+            advogadoId: true,
+            relacionamento: true,
+            advogado: {
+              select: {
+                id: true,
+                oabNumero: true,
+                oabUf: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         _count: {
           select: {
             processos: { where: { deletedAt: null } },
@@ -883,6 +1234,27 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
     const clientes = await prisma.cliente.findMany({
       where: whereClause,
       include: {
+        advogadoClientes: {
+          select: {
+            id: true,
+            advogadoId: true,
+            relacionamento: true,
+            advogado: {
+              select: {
+                id: true,
+                oabNumero: true,
+                oabUf: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         _count: {
           select: {
             processos: { where: { deletedAt: null } },
@@ -1378,6 +1750,39 @@ export async function getProcuracoesCliente(clienteId: string) {
             email: true,
           },
         },
+        poderes: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+        assinaturas: {
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
+        documentos: {
+          select: {
+            id: true,
+            fileName: true,
+            originalName: true,
+            description: true,
+            tipo: true,
+            url: true,
+            size: true,
+            mimeType: true,
+            createdAt: true,
+            uploader: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -1586,17 +1991,101 @@ export async function getContratosCliente(clienteId: string): Promise<{
       include: {
         tipo: {
           select: {
+            id: true,
             nome: true,
           },
         },
         advogadoResponsavel: {
           select: {
+            id: true,
+            oabNumero: true,
+            oabUf: true,
             usuario: {
               select: {
                 firstName: true,
                 lastName: true,
+                email: true,
               },
             },
+          },
+        },
+        processo: {
+          select: {
+            id: true,
+            numero: true,
+            titulo: true,
+          },
+        },
+        responsavelUsuario: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        dadosBancarios: {
+          select: {
+            id: true,
+            bancoCodigo: true,
+            agencia: true,
+            conta: true,
+            digitoConta: true,
+            titularNome: true,
+            titularDocumento: true,
+            principal: true,
+            banco: {
+              select: {
+                codigo: true,
+                nome: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            honorarios: true,
+            parcelas: true,
+            faturas: true,
+            documentos: true,
+          },
+        },
+        honorarios: {
+          include: {
+            advogado: {
+              select: {
+                id: true,
+                oabNumero: true,
+                oabUf: true,
+                usuario: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+        parcelas: {
+          orderBy: {
+            numeroParcela: "asc",
+          },
+        },
+        faturas: {
+          include: {
+            pagamentos: {
+              orderBy: {
+                createdAt: "desc",
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
           },
         },
       },
@@ -1606,13 +2095,9 @@ export async function getContratosCliente(clienteId: string): Promise<{
     });
 
     // Converter Decimal para number
-    const contratosFormatted = contratos.map((c: any) => ({
-      ...c,
-      valor: toNumber(c.valor),
-      comissaoAdvogado: toNumber(c.comissaoAdvogado),
-      percentualAcaoGanha: toNumber(c.percentualAcaoGanha),
-      valorAcaoGanha: toNumber(c.valorAcaoGanha),
-    }));
+    const contratosFormatted = contratos.map((contrato) =>
+      convertAllDecimalFields(contrato),
+    );
 
     return {
       success: true,
@@ -1690,14 +2175,30 @@ export async function getDocumentosCliente(clienteId: string): Promise<{
       include: {
         processo: {
           select: {
+            id: true,
             numero: true,
+            titulo: true,
+          },
+        },
+        contrato: {
+          select: {
+            id: true,
+            titulo: true,
+          },
+        },
+        movimentacao: {
+          select: {
+            id: true,
+            tipo: true,
             titulo: true,
           },
         },
         uploadedBy: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
+            email: true,
           },
         },
       },

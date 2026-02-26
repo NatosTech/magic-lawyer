@@ -479,7 +479,7 @@ export function AdminDashboardContent() {
   );
 
   return (
-    <section className="mx-auto flex w-full max-w-full xl:max-w-6xl flex-col gap-8 py-6 px-2 sm:py-8 sm:px-4 md:px-6">
+    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-8 py-6 px-2 sm:py-8 sm:px-4 md:px-6">
       <header className="space-y-4">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
           Administração

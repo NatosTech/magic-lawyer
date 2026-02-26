@@ -839,7 +839,7 @@ export function DocumentosContent({
 
   if (!data && isLoading) {
     return (
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 py-12">
+      <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 py-12">
         <ExplorerSkeleton />
       </section>
     );

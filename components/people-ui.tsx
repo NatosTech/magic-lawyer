@@ -1,0 +1,155 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Divider } from "@heroui/divider";
+
+type PeopleTone =
+  | "primary"
+  | "success"
+  | "warning"
+  | "danger"
+  | "secondary"
+  | "default";
+
+const toneMap: Record<
+  PeopleTone,
+  { card: string; value: string; iconWrap: string; label: string }
+> = {
+  primary: {
+    card: "border-primary/20 bg-primary/5",
+    value: "text-primary",
+    iconWrap: "bg-primary/20 text-primary",
+    label: "text-primary/80",
+  },
+  success: {
+    card: "border-success/20 bg-success/5",
+    value: "text-success",
+    iconWrap: "bg-success/20 text-success",
+    label: "text-success/80",
+  },
+  warning: {
+    card: "border-warning/20 bg-warning/5",
+    value: "text-warning",
+    iconWrap: "bg-warning/20 text-warning",
+    label: "text-warning/80",
+  },
+  danger: {
+    card: "border-danger/20 bg-danger/5",
+    value: "text-danger",
+    iconWrap: "bg-danger/20 text-danger",
+    label: "text-danger/80",
+  },
+  secondary: {
+    card: "border-secondary/20 bg-secondary/5",
+    value: "text-secondary",
+    iconWrap: "bg-secondary/20 text-secondary",
+    label: "text-secondary/80",
+  },
+  default: {
+    card: "border-white/10 bg-background/50",
+    value: "text-white",
+    iconWrap: "bg-white/10 text-default-300",
+    label: "text-default-400",
+  },
+};
+
+interface PeoplePageHeaderProps {
+  title: string;
+  description: string;
+  actions?: ReactNode;
+  tag?: string;
+}
+
+export function PeoplePageHeader({
+  title,
+  description,
+  actions,
+  tag = "Gestao de pessoas",
+}: PeoplePageHeaderProps) {
+  return (
+    <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+      <CardBody className="flex flex-col gap-4 p-5 sm:p-6">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            {tag}
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            {title}
+          </h1>
+          <p className="max-w-3xl text-sm text-default-400 sm:text-base">
+            {description}
+          </p>
+        </div>
+        {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+      </CardBody>
+    </Card>
+  );
+}
+
+interface PeopleMetricCardProps {
+  label: string;
+  value: string | number;
+  helper?: string;
+  icon?: ReactNode;
+  tone?: PeopleTone;
+}
+
+export function PeopleMetricCard({
+  label,
+  value,
+  helper,
+  icon,
+  tone = "default",
+}: PeopleMetricCardProps) {
+  const toneStyle = toneMap[tone];
+
+  return (
+    <Card className={`border ${toneStyle.card}`}>
+      <CardBody className="flex flex-col gap-2 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${toneStyle.label}`}>
+            {label}
+          </p>
+          {icon ? (
+            <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${toneStyle.iconWrap}`}>
+              {icon}
+            </span>
+          ) : null}
+        </div>
+        <p className={`text-2xl font-semibold ${toneStyle.value}`}>{value}</p>
+        {helper ? <p className="text-xs text-default-400">{helper}</p> : null}
+      </CardBody>
+    </Card>
+  );
+}
+
+interface PeoplePanelProps {
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+  children: ReactNode;
+}
+
+export function PeoplePanel({
+  title,
+  description,
+  actions,
+  children,
+}: PeoplePanelProps) {
+  return (
+    <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+      <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-white">{title}</h2>
+          {description ? (
+            <p className="text-sm text-default-400">{description}</p>
+          ) : null}
+        </div>
+        {actions ? <div className="flex gap-2">{actions}</div> : null}
+      </CardHeader>
+      <Divider className="border-white/10" />
+      <CardBody>{children}</CardBody>
+    </Card>
+  );
+}

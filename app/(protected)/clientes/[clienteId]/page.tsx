@@ -32,6 +32,11 @@ import {
   Upload,
   Flag,
   Layers,
+  CheckSquare,
+  CalendarDays,
+  CreditCard,
+  Users,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -48,6 +53,9 @@ import {
   ProcessoStatus,
   ProcessoFase,
   ProcessoGrau,
+  TarefaStatus,
+  TarefaPrioridade,
+  EventoStatus,
 } from "@/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
 import { Modal } from "@/components/ui/modal";
@@ -62,7 +70,6 @@ export default function ClienteDetalhesPage() {
     cliente,
     isLoading,
     isError,
-    error,
     mutate: mutateCliente,
   } = useClienteComProcessos(clienteId);
   const { contratos, isLoading: isLoadingContratos } =
@@ -276,6 +283,78 @@ export default function ClienteDetalhesPage() {
     }
   };
 
+  const formatDateTime = (value?: Date | string | null) => {
+    if (!value) return "-";
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) return "-";
+
+    return date.toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getTarefaStatusColor = (status: TarefaStatus) => {
+    switch (status) {
+      case TarefaStatus.CONCLUIDA:
+        return "success";
+      case TarefaStatus.EM_ANDAMENTO:
+        return "primary";
+      case TarefaStatus.CANCELADA:
+        return "danger";
+      case TarefaStatus.PENDENTE:
+      default:
+        return "warning";
+    }
+  };
+
+  const getTarefaStatusLabel = (status: TarefaStatus) => {
+    switch (status) {
+      case TarefaStatus.CONCLUIDA:
+        return "Concluída";
+      case TarefaStatus.EM_ANDAMENTO:
+        return "Em andamento";
+      case TarefaStatus.CANCELADA:
+        return "Cancelada";
+      case TarefaStatus.PENDENTE:
+      default:
+        return "Pendente";
+    }
+  };
+
+  const getTarefaPrioridadeColor = (prioridade: TarefaPrioridade) => {
+    switch (prioridade) {
+      case TarefaPrioridade.CRITICA:
+        return "danger";
+      case TarefaPrioridade.ALTA:
+        return "warning";
+      case TarefaPrioridade.MEDIA:
+        return "primary";
+      case TarefaPrioridade.BAIXA:
+      default:
+        return "default";
+    }
+  };
+
+  const getEventoStatusColor = (status: EventoStatus) => {
+    switch (status) {
+      case EventoStatus.CONFIRMADO:
+      case EventoStatus.REALIZADO:
+        return "success";
+      case EventoStatus.CANCELADO:
+        return "danger";
+      case EventoStatus.ADIADO:
+        return "warning";
+      case EventoStatus.AGENDADO:
+      default:
+        return "primary";
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header com Botões */}
@@ -375,7 +454,59 @@ export default function ClienteDetalhesPage() {
                     <span className="text-default-600">{cliente.telefone}</span>
                   </div>
                 )}
+                {cliente.celular && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-default-400" />
+                    <span className="text-default-600">{cliente.celular}</span>
+                  </div>
+                )}
+                {cliente.dataNascimento && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="h-4 w-4 text-default-400" />
+                    <span className="text-default-600">
+                      Nascimento: {DateUtils.formatDate(cliente.dataNascimento)}
+                    </span>
+                  </div>
+                )}
+                {cliente.inscricaoEstadual && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <FileSignature className="h-4 w-4 text-default-400" />
+                    <span className="text-default-600">
+                      IE: {cliente.inscricaoEstadual}
+                    </span>
+                  </div>
+                )}
+                {cliente.asaasCustomerId && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <CreditCard className="h-4 w-4 text-default-400" />
+                    <span className="text-default-600">
+                      Asaas: {cliente.asaasCustomerId}
+                    </span>
+                  </div>
+                )}
               </div>
+
+              {cliente.tipoPessoa === "JURIDICA" &&
+              (cliente.responsavelNome ||
+                cliente.responsavelEmail ||
+                cliente.responsavelTelefone) ? (
+                <div className="rounded-lg border border-default-200 bg-default-50 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-default-500">
+                    Responsável Legal
+                  </p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                    <p className="text-sm text-default-600">
+                      {cliente.responsavelNome || "Nome não informado"}
+                    </p>
+                    <p className="text-sm text-default-600">
+                      {cliente.responsavelEmail || "Email não informado"}
+                    </p>
+                    <p className="text-sm text-default-600">
+                      {cliente.responsavelTelefone || "Telefone não informado"}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
 
               {cliente.observacoes && (
                 <div className="rounded-lg bg-default-100 p-3">
@@ -398,6 +529,21 @@ export default function ClienteDetalhesPage() {
                 <Chip color="warning" size="sm" variant="flat">
                   {cliente._count?.documentos || 0} documentos
                 </Chip>
+                <Chip color="secondary" size="sm" variant="flat">
+                  {cliente._count?.enderecos || 0} endereços
+                </Chip>
+                <Chip color="secondary" size="sm" variant="flat">
+                  {cliente._count?.dadosBancarios || 0} contas bancárias
+                </Chip>
+                <Chip color="primary" size="sm" variant="flat">
+                  {cliente._count?.tarefas || 0} tarefas
+                </Chip>
+                <Chip color="primary" size="sm" variant="flat">
+                  {cliente._count?.eventos || 0} eventos
+                </Chip>
+                <Chip color="success" size="sm" variant="flat">
+                  {cliente._count?.documentoAssinaturas || 0} assinaturas
+                </Chip>
               </div>
             </div>
           </div>
@@ -410,6 +556,172 @@ export default function ClienteDetalhesPage() {
         color="primary"
         variant="underlined"
       >
+        <Tab
+          key="cadastro"
+          title={
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              <span>Cadastro</span>
+            </div>
+          }
+        >
+          <div className="mt-4 grid gap-4 xl:grid-cols-2">
+            <Card className="border border-default-200">
+              <CardHeader className="pb-2">
+                <div>
+                  <p className="text-sm font-semibold">Advogados vinculados</p>
+                  <p className="text-xs text-default-400">
+                    Profissionais com acesso direto ao cliente.
+                  </p>
+                </div>
+              </CardHeader>
+              <Divider />
+              <CardBody className="gap-3 pt-3">
+                {cliente.advogadoClientes &&
+                cliente.advogadoClientes.length > 0 ? (
+                  cliente.advogadoClientes.map((vinculo) => (
+                    <div
+                      key={vinculo.id}
+                      className="rounded-lg border border-default-200 p-3"
+                    >
+                      <p className="text-sm font-semibold">
+                        {vinculo.advogado.usuario.firstName}{" "}
+                        {vinculo.advogado.usuario.lastName}
+                      </p>
+                      <p className="text-xs text-default-500">
+                        {vinculo.advogado.usuario.email || "Sem email"}
+                      </p>
+                      <p className="text-xs text-default-500">
+                        OAB: {vinculo.advogado.oabNumero || "-"}
+                        {vinculo.advogado.oabUf
+                          ? `/${vinculo.advogado.oabUf}`
+                          : ""}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-default-500">
+                    Nenhum advogado vinculado.
+                  </p>
+                )}
+              </CardBody>
+            </Card>
+
+            <Card className="border border-default-200">
+              <CardHeader className="pb-2">
+                <div>
+                  <p className="text-sm font-semibold">Endereços</p>
+                  <p className="text-xs text-default-400">
+                    Endereços cadastrados para este cliente.
+                  </p>
+                </div>
+              </CardHeader>
+              <Divider />
+              <CardBody className="gap-3 pt-3">
+                {cliente.enderecos && cliente.enderecos.length > 0 ? (
+                  cliente.enderecos.map((endereco) => (
+                    <div
+                      key={endereco.id}
+                      className="rounded-lg border border-default-200 p-3"
+                    >
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <Chip
+                          color={endereco.principal ? "primary" : "default"}
+                          size="sm"
+                          variant="flat"
+                        >
+                          {endereco.apelido}
+                        </Chip>
+                        {endereco.principal ? (
+                          <Chip color="success" size="sm" variant="flat">
+                            Principal
+                          </Chip>
+                        ) : null}
+                      </div>
+                      <p className="text-sm text-default-700">
+                        {endereco.logradouro}, {endereco.numero || "s/n"}
+                        {endereco.complemento
+                          ? ` - ${endereco.complemento}`
+                          : ""}
+                      </p>
+                      <p className="text-xs text-default-500">
+                        {endereco.bairro ? `${endereco.bairro} - ` : ""}
+                        {endereco.cidade}/{endereco.estado} {endereco.cep || ""}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-default-500">
+                    Nenhum endereço cadastrado.
+                  </p>
+                )}
+              </CardBody>
+            </Card>
+
+            <Card className="border border-default-200 xl:col-span-2">
+              <CardHeader className="pb-2">
+                <div>
+                  <p className="text-sm font-semibold">Dados bancários</p>
+                  <p className="text-xs text-default-400">
+                    Contas cadastradas para contratos e repasses.
+                  </p>
+                </div>
+              </CardHeader>
+              <Divider />
+              <CardBody className="gap-3 pt-3">
+                {cliente.dadosBancarios && cliente.dadosBancarios.length > 0 ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {cliente.dadosBancarios.map((conta) => (
+                      <div
+                        key={conta.id}
+                        className="rounded-lg border border-default-200 p-3"
+                      >
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <Chip
+                            color={conta.principal ? "success" : "default"}
+                            size="sm"
+                            variant="flat"
+                          >
+                            {conta.banco.nome}
+                          </Chip>
+                          <Chip size="sm" variant="flat">
+                            {conta.tipoContaBancaria}
+                          </Chip>
+                          {conta.ativo ? (
+                            <Chip color="primary" size="sm" variant="flat">
+                              Ativa
+                            </Chip>
+                          ) : (
+                            <Chip color="default" size="sm" variant="flat">
+                              Inativa
+                            </Chip>
+                          )}
+                        </div>
+                        <p className="text-sm text-default-700">
+                          Agência {conta.agencia} | Conta {conta.conta}
+                          {conta.digitoConta ? `-${conta.digitoConta}` : ""}
+                        </p>
+                        <p className="text-xs text-default-500">
+                          Titular: {conta.titularNome} ({conta.titularDocumento})
+                        </p>
+                        {conta.chavePix ? (
+                          <p className="text-xs text-default-500">
+                            PIX: {conta.tipoChavePix || "Chave"} - {conta.chavePix}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-default-500">
+                    Nenhum dado bancário cadastrado.
+                  </p>
+                )}
+              </CardBody>
+            </Card>
+          </div>
+        </Tab>
+
         {/* Tab de Processos */}
         <Tab
           key="processos"
@@ -637,11 +949,286 @@ export default function ClienteDetalhesPage() {
                           </span>
                         </div>
                       )}
+                      {contrato.processo && (
+                        <div className="flex items-center gap-2 text-xs text-default-500">
+                          <Scale className="h-3 w-3" />
+                          <span>Processo: {contrato.processo.numero}</span>
+                        </div>
+                      )}
+                      {contrato.advogadoResponsavel && (
+                        <div className="flex items-center gap-2 text-xs text-default-500">
+                          <Users className="h-3 w-3" />
+                          <span>
+                            Responsável:{" "}
+                            {contrato.advogadoResponsavel.usuario.firstName}{" "}
+                            {contrato.advogadoResponsavel.usuario.lastName}
+                          </span>
+                        </div>
+                      )}
                       {contrato.dataInicio && (
                         <div className="text-xs text-default-500">
                           Início: {DateUtils.formatDate(contrato.dataInicio)}
                         </div>
                       )}
+                      <div className="flex flex-wrap gap-2">
+                        <Chip size="sm" variant="flat">
+                          {contrato._count?.parcelas || 0} parcelas
+                        </Chip>
+                        <Chip size="sm" variant="flat">
+                          {contrato._count?.faturas || 0} faturas
+                        </Chip>
+                        <Chip size="sm" variant="flat">
+                          {contrato._count?.honorarios || 0} honorários
+                        </Chip>
+                        <Chip size="sm" variant="flat">
+                          {contrato._count?.documentos || 0} docs
+                        </Chip>
+                      </div>
+                    </CardBody>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </Tab>
+
+        <Tab
+          key="tarefas"
+          title={
+            <div className="flex items-center gap-2">
+              <CheckSquare className="h-4 w-4" />
+              <span>Tarefas</span>
+              {cliente.tarefas && cliente.tarefas.length > 0 ? (
+                <Chip size="sm" variant="flat">
+                  {cliente.tarefas.length}
+                </Chip>
+              ) : null}
+            </div>
+          }
+        >
+          <div className="mt-4">
+            {!cliente.tarefas || cliente.tarefas.length === 0 ? (
+              <Card className="border border-default-200">
+                <CardBody className="py-12 text-center">
+                  <CheckSquare className="mx-auto h-12 w-12 text-default-300" />
+                  <p className="mt-4 text-lg font-semibold text-default-600">
+                    Nenhuma tarefa vinculada
+                  </p>
+                  <p className="mt-2 text-sm text-default-400">
+                    Este cliente ainda não possui tarefas associadas.
+                  </p>
+                </CardBody>
+              </Card>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {cliente.tarefas.map((tarefa) => (
+                  <Card key={tarefa.id} className="border border-default-200">
+                    <CardBody className="gap-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-semibold">{tarefa.titulo}</p>
+                        <Chip
+                          color={getTarefaStatusColor(
+                            tarefa.status as TarefaStatus,
+                          )}
+                          size="sm"
+                          variant="flat"
+                        >
+                          {getTarefaStatusLabel(tarefa.status as TarefaStatus)}
+                        </Chip>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Chip
+                          color={getTarefaPrioridadeColor(
+                            tarefa.prioridade as TarefaPrioridade,
+                          )}
+                          size="sm"
+                          variant="flat"
+                        >
+                          Prioridade: {tarefa.prioridade}
+                        </Chip>
+                        {tarefa.dataLimite ? (
+                          <Chip size="sm" variant="flat">
+                            Limite: {DateUtils.formatDate(tarefa.dataLimite)}
+                          </Chip>
+                        ) : null}
+                      </div>
+                      {tarefa.processo ? (
+                        <p className="text-xs text-default-500">
+                          Processo: {tarefa.processo.numero}
+                        </p>
+                      ) : null}
+                      {tarefa.responsavel ? (
+                        <p className="text-xs text-default-500">
+                          Responsável: {tarefa.responsavel.firstName}{" "}
+                          {tarefa.responsavel.lastName}
+                        </p>
+                      ) : null}
+                      {tarefa.descricao ? (
+                        <p className="text-xs text-default-500 line-clamp-2">
+                          {tarefa.descricao}
+                        </p>
+                      ) : null}
+                    </CardBody>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </Tab>
+
+        <Tab
+          key="eventos"
+          title={
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              <span>Eventos</span>
+              {cliente.eventos && cliente.eventos.length > 0 ? (
+                <Chip size="sm" variant="flat">
+                  {cliente.eventos.length}
+                </Chip>
+              ) : null}
+            </div>
+          }
+        >
+          <div className="mt-4">
+            {!cliente.eventos || cliente.eventos.length === 0 ? (
+              <Card className="border border-default-200">
+                <CardBody className="py-12 text-center">
+                  <CalendarDays className="mx-auto h-12 w-12 text-default-300" />
+                  <p className="mt-4 text-lg font-semibold text-default-600">
+                    Nenhum evento vinculado
+                  </p>
+                  <p className="mt-2 text-sm text-default-400">
+                    Este cliente ainda não possui eventos associados.
+                  </p>
+                </CardBody>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {cliente.eventos.map((evento) => (
+                  <Card key={evento.id} className="border border-default-200">
+                    <CardBody className="gap-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold">{evento.titulo}</p>
+                          <p className="text-xs text-default-500">
+                            {formatDateTime(evento.dataInicio)} -{" "}
+                            {formatDateTime(evento.dataFim)}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Chip
+                            color={getEventoStatusColor(
+                              evento.status as EventoStatus,
+                            )}
+                            size="sm"
+                            variant="flat"
+                          >
+                            {evento.status}
+                          </Chip>
+                          <Chip size="sm" variant="flat">
+                            {evento.tipo}
+                          </Chip>
+                        </div>
+                      </div>
+                      {evento.local ? (
+                        <p className="text-xs text-default-500">
+                          Local: {evento.local}
+                        </p>
+                      ) : null}
+                      {evento.processo ? (
+                        <p className="text-xs text-default-500">
+                          Processo: {evento.processo.numero}
+                        </p>
+                      ) : null}
+                      {evento.advogadoResponsavel ? (
+                        <p className="text-xs text-default-500">
+                          Responsável:{" "}
+                          {evento.advogadoResponsavel.usuario.firstName}{" "}
+                          {evento.advogadoResponsavel.usuario.lastName}
+                        </p>
+                      ) : null}
+                      {evento.descricao ? (
+                        <p className="text-xs text-default-500 line-clamp-2">
+                          {evento.descricao}
+                        </p>
+                      ) : null}
+                    </CardBody>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </Tab>
+
+        <Tab
+          key="assinaturas"
+          title={
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4" />
+              <span>Assinaturas</span>
+              {cliente.documentoAssinaturas &&
+              cliente.documentoAssinaturas.length > 0 ? (
+                <Chip size="sm" variant="flat">
+                  {cliente.documentoAssinaturas.length}
+                </Chip>
+              ) : null}
+            </div>
+          }
+        >
+          <div className="mt-4">
+            {!cliente.documentoAssinaturas ||
+            cliente.documentoAssinaturas.length === 0 ? (
+              <Card className="border border-default-200">
+                <CardBody className="py-12 text-center">
+                  <ShieldCheck className="mx-auto h-12 w-12 text-default-300" />
+                  <p className="mt-4 text-lg font-semibold text-default-600">
+                    Nenhuma assinatura encontrada
+                  </p>
+                  <p className="mt-2 text-sm text-default-400">
+                    Este cliente não possui assinaturas pendentes ou concluídas.
+                  </p>
+                </CardBody>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {cliente.documentoAssinaturas.map((assinatura) => (
+                  <Card key={assinatura.id} className="border border-default-200">
+                    <CardBody className="gap-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold">
+                            {assinatura.titulo}
+                          </p>
+                          <p className="text-xs text-default-500">
+                            Documento: {assinatura.documento.nome}
+                          </p>
+                        </div>
+                        <Chip size="sm" variant="flat">
+                          {assinatura.status}
+                        </Chip>
+                      </div>
+                      <div className="grid gap-1 text-xs text-default-500 sm:grid-cols-3">
+                        <p>Envio: {formatDateTime(assinatura.dataEnvio)}</p>
+                        <p>
+                          Assinado: {formatDateTime(assinatura.dataAssinatura)}
+                        </p>
+                        <p>Expira: {formatDateTime(assinatura.dataExpiracao)}</p>
+                      </div>
+                      {assinatura.documento.url ? (
+                        <Button
+                          as="a"
+                          color="primary"
+                          href={assinatura.documento.url}
+                          rel="noopener noreferrer"
+                          size="sm"
+                          startContent={<Eye className="h-3 w-3" />}
+                          target="_blank"
+                          variant="flat"
+                        >
+                          Abrir documento
+                        </Button>
+                      ) : null}
                     </CardBody>
                   </Card>
                 ))}
@@ -729,6 +1316,17 @@ export default function ClienteDetalhesPage() {
                     </CardHeader>
                     <Divider />
                     <CardBody className="gap-3 pt-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Chip size="sm" variant="flat">
+                          {procuracao.poderes?.length || 0} poderes
+                        </Chip>
+                        <Chip size="sm" variant="flat">
+                          {procuracao.documentos?.length || 0} docs
+                        </Chip>
+                        <Chip size="sm" variant="flat">
+                          {procuracao.assinaturas?.length || 0} assinaturas
+                        </Chip>
+                      </div>
                       {procuracao.outorgados &&
                         procuracao.outorgados.length > 0 && (
                           <div className="space-y-1">
@@ -756,6 +1354,27 @@ export default function ClienteDetalhesPage() {
                             )}
                           </div>
                         )}
+                      {procuracao.poderes && procuracao.poderes.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-default-500">
+                            Poderes:
+                          </p>
+                          {procuracao.poderes.slice(0, 2).map((poder: any) => (
+                            <p
+                              key={poder.id}
+                              className="text-xs text-default-600 line-clamp-1"
+                            >
+                              {poder.titulo ? `${poder.titulo}: ` : ""}
+                              {poder.descricao}
+                            </p>
+                          ))}
+                          {procuracao.poderes.length > 2 && (
+                            <p className="text-xs text-default-400">
+                              +{procuracao.poderes.length - 2} poderes
+                            </p>
+                          )}
+                        </div>
+                      )}
                       {procuracao.processos &&
                         procuracao.processos.length > 0 && (
                           <div className="space-y-1">
@@ -863,15 +1482,18 @@ export default function ClienteDetalhesPage() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <p className="text-sm font-semibold">
-                            {doc.titulo || doc.nomeArquivo}
+                            {doc.nome || doc.titulo || doc.nomeArquivo}
                           </p>
                           <p className="text-xs text-default-400">
                             {DateUtils.formatDate(doc.createdAt)}
                           </p>
                         </div>
-                        {doc.tamanho && (
+                        {(doc.tamanhoBytes || doc.tamanho) && (
                           <Chip size="sm" variant="flat">
-                            {(doc.tamanho / 1024).toFixed(2)} KB
+                            {(
+                              Number(doc.tamanhoBytes || doc.tamanho) / 1024
+                            ).toFixed(2)}{" "}
+                            KB
                           </Chip>
                         )}
                       </div>
@@ -879,6 +1501,18 @@ export default function ClienteDetalhesPage() {
                         <div className="flex items-center gap-1 text-xs text-default-500">
                           <Scale className="h-3 w-3" />
                           <span>Processo: {doc.processo.numero}</span>
+                        </div>
+                      )}
+                      {doc.contrato && (
+                        <div className="flex items-center gap-1 text-xs text-default-500">
+                          <FileSignature className="h-3 w-3" />
+                          <span>Contrato: {doc.contrato.titulo}</span>
+                        </div>
+                      )}
+                      {doc.movimentacao && (
+                        <div className="flex items-center gap-1 text-xs text-default-500">
+                          <Clock className="h-3 w-3" />
+                          <span>Movimentação: {doc.movimentacao.titulo}</span>
                         </div>
                       )}
                       {doc.descricao && (
