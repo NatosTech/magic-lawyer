@@ -243,34 +243,50 @@ export default function AdvogadosContent() {
   };
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const shouldLoadPerformanceData = showPerformanceReports;
+  const shouldLoadCommissionsData = showCommissionsDashboard;
+  const shouldLoadFormAuxData = isCreateModalOpen || isEditModalOpen;
 
   // Hooks de performance
   const {
     performance: performanceData,
     isLoading: isLoadingPerformance,
     error: performanceError,
-  } = useAdvogadosPerformance();
+  } = useAdvogadosPerformance(undefined, {
+    enabled: shouldLoadPerformanceData,
+    refreshInterval: 120000,
+  });
   const {
     performance: performanceGeral,
     isLoading: isLoadingPerformanceGeral,
     error: performanceGeralError,
-  } = usePerformanceGeral();
+  } = usePerformanceGeral(undefined, {
+    enabled: shouldLoadPerformanceData,
+    refreshInterval: 120000,
+  });
 
   // Debug logs removidos para produção
 
   // Hooks de comissões
   const { comissoes: comissoesData, isLoading: isLoadingComissoes } =
-    useAdvogadosComissoes();
+    useAdvogadosComissoes(undefined, {
+      enabled: shouldLoadCommissionsData,
+      refreshInterval: 120000,
+    });
   const { comissoes: comissoesGeral, isLoading: isLoadingComissoesGeral } =
-    useComissoesGeral();
+    useComissoesGeral(undefined, {
+      enabled: shouldLoadCommissionsData,
+      refreshInterval: 120000,
+    });
 
   // Hook de estados do Brasil
 
   // Hooks para dados bancários
-  const { bancos } = useBancosDisponiveis();
-  const { tipos: tiposConta } = useTiposConta();
-  const { tipos: tiposContaBancaria } = useTiposContaBancaria();
-  const { tipos: tiposChavePix } = useTiposChavePix();
+  const { bancos } = useBancosDisponiveis(shouldLoadFormAuxData);
+  const { tipos: tiposConta } = useTiposConta(shouldLoadFormAuxData);
+  const { tipos: tiposContaBancaria } =
+    useTiposContaBancaria(shouldLoadFormAuxData);
+  const { tipos: tiposChavePix } = useTiposChavePix(shouldLoadFormAuxData);
 
   // Estados para múltiplos endereços e dados bancários
   const [enderecos, setEnderecos] = useState<EnderecoFormData[]>([

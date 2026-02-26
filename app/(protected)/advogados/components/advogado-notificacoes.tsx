@@ -125,10 +125,16 @@ export function AdvogadoNotificacoes({
     error,
     marcarComoLida,
     marcarTodasComoLidas,
-  } = useNotificacoesAdvogado(advogadoId);
+  } = useNotificacoesAdvogado(advogadoId, {
+    enabled: isOpen,
+    refreshInterval: 30000,
+  });
 
   const { estatisticas, isLoading: isLoadingStats } =
-    useEstatisticasNotificacoes(advogadoId);
+    useEstatisticasNotificacoes(advogadoId, {
+      enabled: isOpen,
+      refreshInterval: 30000,
+    });
 
   const handleMarcarComoLida = async (notificacaoId: string) => {
     const result = await marcarComoLida(notificacaoId);

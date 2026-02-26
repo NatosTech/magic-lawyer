@@ -6,15 +6,15 @@ import { useSessionGuard } from "@/app/hooks/use-session-guard";
  * Componente wrapper que aplica a guarda de sessão
  *
  * Este componente é usado no layout protegido para garantir
- * que a sessão seja validada periodicamente (a cada 5s).
+ * que a sessão seja validada no fallback de conexão.
  *
  * Se a sessão for invalidada, redireciona automaticamente
  * para /login com o motivo.
  */
 export function SessionGuard({ children }: { children: React.ReactNode }) {
-  // Aplicar a guarda de sessão com verificação a cada 5s
+  // Polling apenas como fallback (quando realtime estiver indisponível)
   const { isRevoked } = useSessionGuard({
-    interval: 5, // Verificar a cada 5 segundos
+    interval: 60,
     publicRoutes: ["/login", "/", "/about", "/precos"],
   });
 

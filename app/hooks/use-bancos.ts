@@ -47,9 +47,9 @@ export function useBanco(codigo: string) {
 }
 
 // Hook para bancos ativos (para selects)
-export function useBancosAtivos() {
+export function useBancosAtivos(enabled = true) {
   const { data, error, isLoading, mutate } = useSWR(
-    "bancos-ativos",
+    enabled ? "bancos-ativos" : null,
     () => getBancosAtivos(),
     {
       revalidateOnFocus: false,
@@ -66,8 +66,8 @@ export function useBancosAtivos() {
 }
 
 // Hook para bancos disponíveis (alias para bancos ativos)
-export function useBancosDisponiveis() {
-  return useBancosAtivos();
+export function useBancosDisponiveis(enabled = true) {
+  return useBancosAtivos(enabled);
 }
 
 // Hook para dashboard de bancos

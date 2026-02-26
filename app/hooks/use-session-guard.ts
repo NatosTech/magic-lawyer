@@ -10,7 +10,7 @@ import { useRealtime } from "@/app/providers/realtime-provider";
 
 interface SessionGuardOptions {
   /**
-   * Intervalo em segundos para verificar a sessão (padrão: 15s)
+   * Intervalo em segundos para verificar a sessão (fallback quando realtime cair)
    */
   interval?: number;
   /**
@@ -46,15 +46,17 @@ export function useSessionGuard(
   options: SessionGuardOptions = {},
 ): SessionGuardResult {
   const { interval = 30, publicRoutes = ["/login", "/", "/about", "/precos"] } =
-    options; // Aumentado para 30s (fallback se WebSocket falhar)
+    options;
 
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const realtime = useRealtime();
+  const currentUserId = session?.user?.id;
 
   // Flag para impedir revalidações repetidas
   const revokedRef = useRef(false);
+  const validationInFlightRef = useRef(false);
   const [isRevoked, setIsRevoked] = useState(false);
 
   // Verificar se a rota atual é pública
@@ -67,12 +69,6 @@ export function useSessionGuard(
     return pathname?.startsWith(route);
   });
 
-  console.log("[useSessionGuard] Configuração:", {
-    pathname,
-    isPublicRoute,
-    publicRoutes,
-  });
-
   /**
    * Função para validar a sessão contra o banco de dados
    */
@@ -80,33 +76,21 @@ export function useSessionGuard(
     // Se não está autenticado, está em rota pública ou já foi revogada, não precisa verificar
     if (
       sessionStatus !== "authenticated" ||
-      !session?.user ||
+      !currentUserId ||
       isPublicRoute ||
       revokedRef.current ||
       isRevoked
     ) {
-      console.log("[useSessionGuard] Verificação pulada:", {
-        sessionStatus,
-        hasUser: !!session?.user,
-        isPublicRoute,
-        revokedRef: revokedRef.current,
-        isRevoked,
-      });
-
       return;
     }
 
+    if (validationInFlightRef.current) {
+      return;
+    }
+
+    validationInFlightRef.current = true;
+
     try {
-      const tenantSessionVersion = (session.user as any)?.tenantSessionVersion;
-      const userSessionVersion = (session.user as any)?.sessionVersion;
-
-      console.log("[useSessionGuard] Iniciando validação:", {
-        userId: session.user.id,
-        tenantId: (session.user as any)?.tenantId,
-        tenantSessionVersion,
-        userSessionVersion,
-      });
-
       // Usar rota pública intermediária que valida no servidor sem expor token interno
       const response = await fetch("/api/session/check", {
         method: "POST",
@@ -114,40 +98,20 @@ export function useSessionGuard(
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          userId: session.user.id,
-          tenantId: (session.user as any)?.tenantId,
-          tenantSessionVersion,
-          userSessionVersion,
-        }),
+        body: "{}",
       });
 
       const data = await response.json();
-
-      console.log("[useSessionGuard] Resposta recebida:", {
-        status: response.status,
-        valid: data.valid,
-        reason: data.reason,
-      });
 
       // Se a sessão foi invalidada (qualquer resposta que não seja válida)
       if (!data.valid) {
         const reason = data.reason || "SESSION_REVOKED";
 
-        console.log("[useSessionGuard] ⚠️ Sessão inválida detectada:", {
-          reason,
-        });
-
         // Prevenir revalidações repetidas
         if (revokedRef.current) {
-          console.log(
-            "[useSessionGuard] ⚠️ Revalidação ignorada (já revogada)",
-          );
-
           return;
         }
 
-        console.log("[useSessionGuard] 🔒 Iniciando logout forçado...");
         revokedRef.current = true;
         setIsRevoked(true);
 
@@ -156,24 +120,16 @@ export function useSessionGuard(
 
         // Dar tempo para limpar UI antes de redirecionar
         setTimeout(() => {
-          // Usar replace para não permitir voltar
-          console.log(
-            `[useSessionGuard] 🔄 Redirecionando para /login?reason=${reason}`,
-          );
           router.replace(`/login?reason=${reason}`);
         }, 100);
-
-        return;
       }
-
-      console.log("[useSessionGuard] ✅ Sessão válida");
-
-      // Tudo OK, sessão válida
     } catch (error) {
       // Em caso de erro de rede, não fazer nada (fail-open)
-      console.warn("[useSessionGuard] Erro ao validar sessão", error);
+      console.warn("[useSessionGuard] Falha na validação de sessão", error);
+    } finally {
+      validationInFlightRef.current = false;
     }
-  }, [session, sessionStatus, isPublicRoute, router]);
+  }, [sessionStatus, currentUserId, isPublicRoute, isRevoked, router]);
 
   /**
    * Função para forçar logout quando evento hard é recebido
@@ -181,15 +137,9 @@ export function useSessionGuard(
   const forceLogout = useCallback(
     async (reason: string) => {
       if (revokedRef.current) {
-        console.log("[useSessionGuard] ⚠️ Logout ignorado (já revogada)");
-
         return;
       }
 
-      console.log(
-        "[useSessionGuard] 🔒 Evento WebSocket detectou revogação:",
-        reason,
-      );
       revokedRef.current = true;
       setIsRevoked(true);
 
@@ -208,7 +158,7 @@ export function useSessionGuard(
   useEffect(() => {
     if (
       sessionStatus !== "authenticated" ||
-      !session?.user ||
+      !currentUserId ||
       isPublicRoute ||
       revokedRef.current ||
       isRevoked
@@ -216,19 +166,10 @@ export function useSessionGuard(
       return;
     }
 
-    console.log(
-      "[useSessionGuard] 📡 Registrando listener WebSocket para tenant-status",
-    );
-
     // Subscribe em eventos tenant-status (hard logout para todos do tenant)
     const unsubscribeTenant = realtime.subscribe(
       "tenant-status",
       (event: RealtimeEvent) => {
-        console.log(
-          "[useSessionGuard] 📨 Evento tenant-status recebido:",
-          event,
-        );
-
         const payload = event.payload as any;
 
         // Se tenant ou usuário foi desativado, fazer logout
@@ -246,12 +187,10 @@ export function useSessionGuard(
     const unsubscribeUser = realtime.subscribe(
       "user-status",
       (event: RealtimeEvent) => {
-        console.log("[useSessionGuard] 📨 Evento user-status recebido:", event);
-
         const payload = event.payload as any;
         const targetUserId = payload.userId || event.userId;
 
-        if (targetUserId === session.user.id && payload.active === false) {
+        if (targetUserId === currentUserId && payload.active === false) {
           forceLogout("USER_DEACTIVATED");
         }
       },
@@ -259,77 +198,93 @@ export function useSessionGuard(
 
     // Cleanup
     return () => {
-      console.log("[useSessionGuard] 📡 Removendo listener WebSocket");
       unsubscribeTenant();
       unsubscribeUser();
     };
-  }, [sessionStatus, session, isPublicRoute, realtime, forceLogout, isRevoked]);
+  }, [
+    sessionStatus,
+    currentUserId,
+    isPublicRoute,
+    realtime,
+    forceLogout,
+    isRevoked,
+  ]);
 
   /**
-   * Efeito para configurar verificação periódica (fallback se WebSocket falhar)
+   * Efeito para verificação periódica (fallback apenas quando realtime estiver desconectado)
    */
   useEffect(() => {
-    // Não fazer verificação se não estiver autenticado ou em rota pública
-    if (
+    const shouldSkipValidation =
       sessionStatus !== "authenticated" ||
-      !session?.user ||
+      !currentUserId ||
       isPublicRoute ||
       revokedRef.current ||
-      isRevoked
-    ) {
-      console.log("[useSessionGuard] useEffect: Verificação não iniciada:", {
-        sessionStatus,
-        hasUser: !!session?.user,
-        isPublicRoute,
-        revokedRef: revokedRef.current,
-        isRevoked,
-      });
+      isRevoked;
 
+    // Sem sessão válida, não há o que validar
+    if (shouldSkipValidation) {
       return;
     }
 
-    console.log(
-      `[useSessionGuard] 🔄 Iniciando verificação periódica (intervalo: ${interval}s)`,
-    );
+    // Empresa grande: com realtime conectado, evita polling agressivo
+    if (realtime.isConnected) {
+      return;
+    }
 
-    // Executar verificação imediatamente na primeira vez
-    validateSession();
-
-    // Configurar intervalo para verificação periódica
-    const intervalId = setInterval(() => {
-      console.log(
-        `[useSessionGuard] ⏰ Intervalo disparado (a cada ${interval}s)`,
-      );
-      validateSession();
-    }, interval * 1000);
-
-    // Adicionar listener para validar quando a aba recebe foco
-    const handleVisibilityChange = () => {
+    const runValidationIfVisible = () => {
       if (
         document.visibilityState === "visible" &&
         !revokedRef.current &&
         !isRevoked
       ) {
-        validateSession();
+        void validateSession();
       }
+    };
+
+    // Valida imediatamente ao entrar em modo fallback
+    runValidationIfVisible();
+
+    // Polling apenas em fallback
+    const intervalId = setInterval(runValidationIfVisible, interval * 1000);
+
+    // Ao voltar para a aba, valida instantaneamente
+    const handleVisibilityChange = () => {
+      runValidationIfVisible();
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    // Cleanup ao desmontar
     return () => {
-      console.log("[useSessionGuard] 🧹 Limpando intervalo e listeners");
       clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [
-    session,
     sessionStatus,
+    currentUserId,
     isPublicRoute,
     validateSession,
     interval,
     isRevoked,
+    realtime.isConnected,
   ]);
+
+  /**
+   * Validação inicial ao autenticar (independente de polling).
+   * Evita ficar com sessão inválida se houver perda de evento realtime.
+   */
+  useEffect(() => {
+    if (
+      sessionStatus !== "authenticated" ||
+      !currentUserId ||
+      isPublicRoute ||
+      revokedRef.current ||
+      isRevoked
+    ) {
+      return;
+    }
+
+    void validateSession();
+  }, [sessionStatus, currentUserId, isPublicRoute, isRevoked, validateSession]);
 
   return {
     isChecking: sessionStatus === "loading",

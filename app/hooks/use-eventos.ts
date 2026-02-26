@@ -24,7 +24,7 @@ export function useEventos(filters?: {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000, // Revalidar a cada 30 segundos
+      refreshInterval: 0,
     },
   );
 

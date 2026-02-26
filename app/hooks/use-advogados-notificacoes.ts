@@ -8,9 +8,20 @@ import {
   NotificacaoData,
 } from "@/app/actions/advogados-notificacoes";
 
-export function useNotificacoesAdvogado(advogadoId: string) {
+interface HookOptions {
+  enabled?: boolean;
+  refreshInterval?: number;
+}
+
+export function useNotificacoesAdvogado(
+  advogadoId: string,
+  options?: HookOptions,
+) {
+  const enabled = options?.enabled ?? true;
+  const refreshInterval = options?.refreshInterval ?? 0;
+
   const { data, error, isLoading, mutate } = useSWR<NotificacaoData[]>(
-    advogadoId ? `notificacoes-advogado-${advogadoId}` : null,
+    enabled && advogadoId ? `notificacoes-advogado-${advogadoId}` : null,
     async () => {
       const result = await getNotificacoesAdvogado(advogadoId);
 
@@ -25,7 +36,7 @@ export function useNotificacoesAdvogado(advogadoId: string) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000, // Atualizar a cada 30 segundos
+      refreshInterval,
     },
   );
 
@@ -61,9 +72,15 @@ export function useNotificacoesAdvogado(advogadoId: string) {
   };
 }
 
-export function useEstatisticasNotificacoes(advogadoId: string) {
+export function useEstatisticasNotificacoes(
+  advogadoId: string,
+  options?: HookOptions,
+) {
+  const enabled = options?.enabled ?? true;
+  const refreshInterval = options?.refreshInterval ?? 0;
+
   const { data, error, isLoading, mutate } = useSWR(
-    advogadoId ? `estatisticas-notificacoes-${advogadoId}` : null,
+    enabled && advogadoId ? `estatisticas-notificacoes-${advogadoId}` : null,
     async () => {
       const result = await getEstatisticasNotificacoes(advogadoId);
 
@@ -78,7 +95,7 @@ export function useEstatisticasNotificacoes(advogadoId: string) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000,
+      refreshInterval,
     },
   );
 

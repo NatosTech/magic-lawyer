@@ -138,6 +138,7 @@ export function useUsuariosEquipe() {
  */
 export function useDashboardEquipe() {
   const { data: session } = useSession();
+  const realtime = useRealtime();
 
   const tenantId = session?.user?.tenantId || null;
 
@@ -159,10 +160,48 @@ export function useDashboardEquipe() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 60000, // Atualizar a cada 1 minuto
+      refreshInterval: 0,
       dedupingInterval: 5000,
     },
   );
+
+  // Dashboard acompanha atualizações por evento (sem polling contínuo)
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const unsubscribeCargo = realtime.subscribe(
+      "cargo-update",
+      (event: RealtimeEvent) => {
+        if (event.tenantId === tenantId) {
+          mutate();
+        }
+      },
+    );
+
+    const unsubscribeUsuario = realtime.subscribe(
+      "usuario-update",
+      (event: RealtimeEvent) => {
+        if (event.tenantId === tenantId) {
+          mutate();
+        }
+      },
+    );
+
+    const unsubscribePlano = realtime.subscribe(
+      "plan-update",
+      (event: RealtimeEvent) => {
+        if (event.tenantId === tenantId) {
+          mutate();
+        }
+      },
+    );
+
+    return () => {
+      unsubscribeCargo();
+      unsubscribeUsuario();
+      unsubscribePlano();
+    };
+  }, [tenantId, realtime, mutate]);
 
   return {
     dashboard: data,

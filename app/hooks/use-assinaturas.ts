@@ -28,8 +28,8 @@ export function useStatusAssinatura(assinaturaId: string | null) {
     assinaturaId ? ["assinatura-status", assinaturaId] : null,
     () => (assinaturaId ? verificarStatusAssinatura(assinaturaId) : null),
     {
-      refreshInterval: 5000, // Atualiza a cada 5 segundos
-      revalidateOnFocus: true,
+      refreshInterval: 15000, // fallback conservador
+      revalidateOnFocus: false,
     },
   );
 }

@@ -24,7 +24,7 @@ export function useMetricasFinanceiras(filtros?: FiltrosDashboard) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000, // 30 segundos
+      refreshInterval: 0,
     },
   );
 
@@ -43,7 +43,7 @@ export function useGraficoParcelas(filtros?: FiltrosDashboard) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000, // 30 segundos
+      refreshInterval: 0,
     },
   );
 
@@ -62,7 +62,7 @@ export function useHonorariosPorAdvogado(filtros?: FiltrosDashboard) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000, // 30 segundos
+      refreshInterval: 0,
     },
   );
 
@@ -85,7 +85,7 @@ export function useDadosBancariosAtivos() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 60000, // 1 minuto
+      refreshInterval: 0,
     },
   );
 
@@ -104,7 +104,7 @@ export function useAdvogadosAtivos() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 60000, // 1 minuto
+      refreshInterval: 0,
     },
   );
 
@@ -123,7 +123,7 @@ export function useClientesAtivos() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 60000, // 1 minuto
+      refreshInterval: 0,
     },
   );
 

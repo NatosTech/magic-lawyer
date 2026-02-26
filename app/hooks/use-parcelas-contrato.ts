@@ -64,7 +64,7 @@ export function useDashboardParcelas() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000, // Atualizar a cada 30 segundos
+      refreshInterval: 0,
     },
   );
 

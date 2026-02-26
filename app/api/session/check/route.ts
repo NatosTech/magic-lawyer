@@ -23,21 +23,21 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validar e extrair payload
-    let payload;
+    // Payload opcional (compatibilidade com clientes antigos)
+    let payload: any = null;
 
     try {
       payload = await request.json();
-    } catch (error) {
-      return NextResponse.json(
-        { valid: false, reason: "INVALID_PAYLOAD" },
-        { status: 400 },
-      );
+    } catch {
+      payload = null;
     }
 
-    // Validar tipos dos campos obrigatórios
-    const { userId, tenantId, tenantSessionVersion, userSessionVersion } =
-      payload;
+    // Fonte da verdade: sessão do servidor, não o payload do cliente.
+    const sessionUser = session.user as any;
+    const userId = session.user.id;
+    const tenantId = sessionUser?.tenantId ?? null;
+    const tenantSessionVersion = sessionUser?.tenantSessionVersion;
+    const userSessionVersion = sessionUser?.sessionVersion;
 
     if (!userId || typeof userId !== "string") {
       return NextResponse.json(
@@ -46,30 +46,18 @@ export async function POST(request: Request) {
       );
     }
 
-    if (
-      tenantSessionVersion !== undefined &&
-      typeof tenantSessionVersion !== "number"
-    ) {
-      return NextResponse.json(
-        { valid: false, reason: "INVALID_VERSION" },
-        { status: 400 },
-      );
-    }
-
-    if (
-      userSessionVersion !== undefined &&
-      typeof userSessionVersion !== "number"
-    ) {
-      return NextResponse.json(
-        { valid: false, reason: "INVALID_VERSION" },
-        { status: 400 },
-      );
-    }
-
-    // Validar que o userId da requisição corresponde ao da sessão
-    if (userId !== session.user.id) {
+    // Se o cliente enviar userId divergente, rejeitar.
+    if (payload?.userId && payload.userId !== userId) {
       return NextResponse.json(
         { valid: false, reason: "USER_ID_MISMATCH" },
+        { status: 403 },
+      );
+    }
+
+    // Se o cliente enviar tenantId divergente, rejeitar.
+    if (payload?.tenantId && tenantId && payload.tenantId !== tenantId) {
+      return NextResponse.json(
+        { valid: false, reason: "TENANT_ID_MISMATCH" },
         { status: 403 },
       );
     }
@@ -127,8 +115,11 @@ export async function POST(request: Request) {
         );
       }
 
-      // Verificar versão da sessão do tenant
-      if (tenant.sessionVersion !== tenantSessionVersion) {
+      // Verificar versão da sessão do tenant (quando presente na sessão JWT)
+      if (
+        typeof tenantSessionVersion === "number" &&
+        tenant.sessionVersion !== tenantSessionVersion
+      ) {
         return NextResponse.json(
           { valid: false, reason: "SESSION_VERSION_MISMATCH" },
           { status: 409 },
@@ -136,8 +127,11 @@ export async function POST(request: Request) {
       }
     }
 
-    // Verificar versão da sessão do usuário
-    if (user.sessionVersion !== userSessionVersion) {
+    // Verificar versão da sessão do usuário (quando presente na sessão JWT)
+    if (
+      typeof userSessionVersion === "number" &&
+      user.sessionVersion !== userSessionVersion
+    ) {
       return NextResponse.json(
         { valid: false, reason: "SESSION_VERSION_MISMATCH" },
         { status: 409 },

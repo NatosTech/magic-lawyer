@@ -8,11 +8,24 @@ import {
   ComissaoFilters,
 } from "@/app/actions/advogados-comissoes";
 
-export function useAdvogadosComissoes(filters?: ComissaoFilters) {
+interface HookOptions {
+  enabled?: boolean;
+  refreshInterval?: number;
+}
+
+export function useAdvogadosComissoes(
+  filters?: ComissaoFilters,
+  options?: HookOptions,
+) {
+  const enabled = options?.enabled ?? true;
+  const refreshInterval = options?.refreshInterval ?? 0;
+
   const { data, error, isLoading, mutate } = useSWR<ComissaoData[]>(
-    filters
-      ? `advogados-comissoes-${JSON.stringify(filters)}`
-      : "advogados-comissoes",
+    enabled
+      ? filters
+        ? `advogados-comissoes-${JSON.stringify(filters)}`
+        : "advogados-comissoes"
+      : null,
     async () => {
       const result = await getAdvogadosComissoes(filters);
 
@@ -27,7 +40,7 @@ export function useAdvogadosComissoes(filters?: ComissaoFilters) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000, // Atualizar a cada 30 segundos
+      refreshInterval,
     },
   );
 
@@ -44,9 +57,13 @@ export function useAdvogadosComissoes(filters?: ComissaoFilters) {
 export function useAdvogadoComissoes(
   advogadoId: string,
   filters?: ComissaoFilters,
+  options?: HookOptions,
 ) {
+  const enabled = options?.enabled ?? true;
+  const refreshInterval = options?.refreshInterval ?? 0;
+
   const { data, error, isLoading, mutate } = useSWR<ComissaoData>(
-    advogadoId
+    enabled && advogadoId
       ? `advogado-comissoes-${advogadoId}-${JSON.stringify(filters || {})}`
       : null,
     async () => {
@@ -63,7 +80,7 @@ export function useAdvogadoComissoes(
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000,
+      refreshInterval,
     },
   );
 
@@ -77,9 +94,19 @@ export function useAdvogadoComissoes(
   };
 }
 
-export function useComissoesGeral(filters?: ComissaoFilters) {
+export function useComissoesGeral(
+  filters?: ComissaoFilters,
+  options?: HookOptions,
+) {
+  const enabled = options?.enabled ?? true;
+  const refreshInterval = options?.refreshInterval ?? 0;
+
   const { data, error, isLoading, mutate } = useSWR(
-    filters ? `comissoes-geral-${JSON.stringify(filters)}` : "comissoes-geral",
+    enabled
+      ? filters
+        ? `comissoes-geral-${JSON.stringify(filters)}`
+        : "comissoes-geral"
+      : null,
     async () => {
       const result = await getComissoesGeral(filters);
 
@@ -92,7 +119,7 @@ export function useComissoesGeral(filters?: ComissaoFilters) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000,
+      refreshInterval,
     },
   );
 

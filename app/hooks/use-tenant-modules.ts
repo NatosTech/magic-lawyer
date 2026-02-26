@@ -62,10 +62,10 @@ export function useTenantModules() {
     tenantId ? ["tenant-modules", tenantId] : null,
     () => fetchTenantModules(tenantId!),
     {
-      revalidateOnFocus: true,
+      revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 60000, // 1 minuto (fallback)
-      dedupingInterval: 2000,
+      refreshInterval: realtime.isConnected ? 0 : 300000, // fallback sem realtime
+      dedupingInterval: 10000,
     },
   );
 

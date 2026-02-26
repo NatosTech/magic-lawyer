@@ -8,11 +8,24 @@ import {
   type PerformanceFilters,
 } from "@/app/actions/advogados-performance";
 
-export function useAdvogadosPerformance(filters?: PerformanceFilters) {
+interface HookOptions {
+  enabled?: boolean;
+  refreshInterval?: number;
+}
+
+export function useAdvogadosPerformance(
+  filters?: PerformanceFilters,
+  options?: HookOptions,
+) {
+  const enabled = options?.enabled ?? true;
+  const refreshInterval = options?.refreshInterval ?? 0;
+
   const { data, error, isLoading, mutate } = useSWR<AdvogadoPerformanceData[]>(
-    filters
-      ? `advogados-performance-${JSON.stringify(filters)}`
-      : "advogados-performance",
+    enabled
+      ? filters
+        ? `advogados-performance-${JSON.stringify(filters)}`
+        : "advogados-performance"
+      : null,
     async () => {
       const result = await getAdvogadosPerformance(filters);
 
@@ -27,7 +40,7 @@ export function useAdvogadosPerformance(filters?: PerformanceFilters) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000, // Atualizar a cada 30 segundos
+      refreshInterval,
     },
   );
 
@@ -44,9 +57,13 @@ export function useAdvogadosPerformance(filters?: PerformanceFilters) {
 export function useAdvogadoPerformance(
   advogadoId: string,
   filters?: PerformanceFilters,
+  options?: HookOptions,
 ) {
+  const enabled = options?.enabled ?? true;
+  const refreshInterval = options?.refreshInterval ?? 0;
+
   const { data, error, isLoading, mutate } = useSWR<AdvogadoPerformanceData>(
-    advogadoId
+    enabled && advogadoId
       ? `advogado-performance-${advogadoId}-${JSON.stringify(filters || {})}`
       : null,
     async () => {
@@ -63,7 +80,7 @@ export function useAdvogadoPerformance(
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000,
+      refreshInterval,
     },
   );
 
@@ -77,11 +94,19 @@ export function useAdvogadoPerformance(
   };
 }
 
-export function usePerformanceGeral(filters?: PerformanceFilters) {
+export function usePerformanceGeral(
+  filters?: PerformanceFilters,
+  options?: HookOptions,
+) {
+  const enabled = options?.enabled ?? true;
+  const refreshInterval = options?.refreshInterval ?? 0;
+
   const { data, error, isLoading, mutate } = useSWR(
-    filters
-      ? `performance-geral-${JSON.stringify(filters)}`
-      : "performance-geral",
+    enabled
+      ? filters
+        ? `performance-geral-${JSON.stringify(filters)}`
+        : "performance-geral"
+      : null,
     async () => {
       const result = await getPerformanceGeral(filters);
 
@@ -94,7 +119,7 @@ export function usePerformanceGeral(filters?: PerformanceFilters) {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
-      refreshInterval: 30000,
+      refreshInterval,
     },
   );
 

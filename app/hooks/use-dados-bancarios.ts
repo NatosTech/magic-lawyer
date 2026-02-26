@@ -97,9 +97,9 @@ export function useDadosBancariosAtivos() {
 }
 
 // Hook para bancos disponíveis
-export function useBancosDisponiveis() {
+export function useBancosDisponiveis(enabled = true) {
   const { data, error, isLoading } = useSWR(
-    "bancos-disponiveis",
+    enabled ? "bancos-disponiveis" : null,
     getBancosDisponiveis,
     {
       revalidateOnFocus: false,
@@ -115,11 +115,15 @@ export function useBancosDisponiveis() {
 }
 
 // Hook para tipos de conta
-export function useTiposConta() {
-  const { data, error, isLoading } = useSWR("tipos-conta", getTiposConta, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-  });
+export function useTiposConta(enabled = true) {
+  const { data, error, isLoading } = useSWR(
+    enabled ? "tipos-conta" : null,
+    getTiposConta,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    },
+  );
 
   return {
     tipos: data?.data || [],
@@ -129,9 +133,9 @@ export function useTiposConta() {
 }
 
 // Hook para tipos de conta bancária
-export function useTiposContaBancaria() {
+export function useTiposContaBancaria(enabled = true) {
   const { data, error, isLoading } = useSWR(
-    "tipos-conta-bancaria",
+    enabled ? "tipos-conta-bancaria" : null,
     getTiposContaBancaria,
     {
       revalidateOnFocus: false,
@@ -147,9 +151,9 @@ export function useTiposContaBancaria() {
 }
 
 // Hook para tipos de chave PIX
-export function useTiposChavePix() {
+export function useTiposChavePix(enabled = true) {
   const { data, error, isLoading } = useSWR(
-    "tipos-chave-pix",
+    enabled ? "tipos-chave-pix" : null,
     getTiposChavePix,
     {
       revalidateOnFocus: false,
