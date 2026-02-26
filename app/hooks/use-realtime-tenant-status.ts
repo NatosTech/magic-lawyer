@@ -94,7 +94,7 @@ export function useRealtimeTenantStatus(tenantId: string | null) {
         revalidateOnReconnect: pollingInterval > 0,
         refreshInterval: pollingInterval, // fallback de baixa frequência em caso de queda de realtime
         dedupingInterval: 2000, // Evitar duplicatas
-        onSuccess: (data) => {
+        onSuccess: () => {
           // Marcar última atualização bem-sucedida
           if (typeof window !== "undefined") {
             sessionStorage.setItem(
@@ -132,33 +132,17 @@ export function useRealtimeTenantStatus(tenantId: string | null) {
 
   // Listener para eventos WebSocket (plan-update e tenant-soft-update)
   useEffect(() => {
-    if (!tenantId) return;
-
-    if (process.env.NODE_ENV === "development") {
-      console.log(
-        `[useRealtimeTenantStatus] 📡 Registrando listener WebSocket para tenant: ${tenantId}`,
-      );
+    if (!tenantId) {
+      return;
     }
 
     // Subscribe em plan-update (mudanças de plano/módulos)
     const unsubscribePlan = realtime.subscribe(
       "plan-update",
       (event: RealtimeEvent) => {
-        if (process.env.NODE_ENV === "development") {
-          console.log(
-            `[useRealtimeTenantStatus] 📨 Evento plan-update recebido:`,
-            event,
-          );
-        }
-
         // Se o evento é para este tenant, invalidar cache
         if (event.tenantId === tenantId) {
-          if (process.env.NODE_ENV === "development") {
-            console.log(
-              `[useRealtimeTenantStatus] 🔄 Invalidando cache para tenant ${tenantId}`,
-            );
-          }
-          mutate();
+          void mutate();
         }
       },
     );
@@ -167,31 +151,14 @@ export function useRealtimeTenantStatus(tenantId: string | null) {
     const unsubscribeSoft = realtime.subscribe(
       "tenant-soft-update",
       (event: RealtimeEvent) => {
-        if (process.env.NODE_ENV === "development") {
-          console.log(
-            `[useRealtimeTenantStatus] 📨 Evento tenant-soft-update recebido:`,
-            event,
-          );
-        }
-
         if (event.tenantId === tenantId) {
-          if (process.env.NODE_ENV === "development") {
-            console.log(
-              `[useRealtimeTenantStatus] 🔄 Invalidando cache para tenant ${tenantId}`,
-            );
-          }
-          mutate();
+          void mutate();
         }
       },
     );
 
     // Cleanup
     return () => {
-      if (process.env.NODE_ENV === "development") {
-        console.log(
-          `[useRealtimeTenantStatus] 📡 Removendo listeners WebSocket para tenant ${tenantId}`,
-        );
-      }
       unsubscribePlan();
       unsubscribeSoft();
     };

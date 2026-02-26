@@ -31,12 +31,48 @@ export async function POST(request: Request) {
       );
     }
 
-    const { tenantId, userId, tenantVersion, userVersion } =
-      await request.json();
+    const payload = await request.json().catch(() => null);
 
-    if (!tenantId || !tenantVersion) {
+    if (!payload || typeof payload !== "object") {
+      return NextResponse.json(
+        { success: false, error: "Invalid payload" },
+        { status: 400 },
+      );
+    }
+
+    const { tenantId, userId, tenantVersion, userVersion } = payload as {
+      tenantId?: unknown;
+      userId?: unknown;
+      tenantVersion?: unknown;
+      userVersion?: unknown;
+    };
+
+    if (
+      typeof tenantId !== "string" ||
+      tenantId.trim() === "" ||
+      typeof tenantVersion !== "number" ||
+      !Number.isFinite(tenantVersion)
+    ) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
+        { status: 400 },
+      );
+    }
+
+    const hasUserId = typeof userId === "string" && userId.trim() !== "";
+    const hasUserVersion =
+      typeof userVersion === "number" && Number.isFinite(userVersion);
+    const normalizedUserId = hasUserId ? (userId as string) : null;
+    const normalizedUserVersion = hasUserVersion
+      ? (userVersion as number)
+      : null;
+
+    if (hasUserId !== hasUserVersion) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "userId e userVersion devem ser enviados juntos",
+        },
         { status: 400 },
       );
     }
@@ -91,9 +127,9 @@ export async function POST(request: Request) {
     }
 
     // Validar usuário se informado
-    if (userId && userVersion !== undefined) {
+    if (normalizedUserId && normalizedUserVersion !== null) {
       const user = await prisma.usuario.findUnique({
-        where: { id: userId },
+        where: { id: normalizedUserId },
         select: {
           id: true,
           active: true,
@@ -123,7 +159,7 @@ export async function POST(request: Request) {
         );
       }
 
-      if (user.sessionVersion !== userVersion) {
+      if (user.sessionVersion !== normalizedUserVersion) {
         return NextResponse.json(
           {
             status: "revoked",
@@ -131,7 +167,7 @@ export async function POST(request: Request) {
             reason: "SESSION_VERSION_MISMATCH",
             details: {
               storedVersion: user.sessionVersion,
-              providedVersion: userVersion,
+              providedVersion: normalizedUserVersion,
             },
           },
           { status: 409 },

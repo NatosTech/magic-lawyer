@@ -163,31 +163,15 @@ export function useTenantModules() {
 
   // Listener para eventos plan-update
   useEffect(() => {
-    if (!tenantId) return;
-
-    if (process.env.NODE_ENV === "development") {
-      console.log(
-        `[useTenantModules] 📡 Registrando listener WebSocket para tenant: ${tenantId}`,
-      );
+    if (!tenantId) {
+      return;
     }
 
     const unsubscribe = realtime.subscribe(
       "plan-update",
       (event: RealtimeEvent) => {
-        if (process.env.NODE_ENV === "development") {
-          console.log(
-            `[useTenantModules] 📨 Evento plan-update recebido:`,
-            event,
-          );
-        }
-
         if (event.tenantId === tenantId) {
-          if (process.env.NODE_ENV === "development") {
-            console.log(
-              `[useTenantModules] 🔄 Atualizando módulos para tenant ${tenantId}`,
-            );
-          }
-          mutate(); // Revalidar cache de módulos
+          void mutate(); // Revalidar cache de módulos
         }
       },
     );
