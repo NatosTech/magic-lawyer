@@ -4,10 +4,16 @@ import type {
   RealtimeEvent,
   RealtimeEventType,
 } from "@/app/lib/realtime/types";
+import {
+  startPollingControlSync,
+  stopPollingControlSync,
+} from "@/app/lib/realtime/polling-telemetry";
 
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import Ably from "ably";
+
+const CONTROL_SYNC_INTERVAL_MS = 300000;
 
 interface RealtimeContextType {
   isConnected: boolean;
@@ -74,11 +80,60 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
     // Cleanup ao desmontar
     return () => {
-      client.close();
+      const client = clientRef.current;
+
+      if (client && typeof client.close === "function") {
+        try {
+          if (client.connection.state !== "closed") {
+            client.close();
+          }
+        } catch (error) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              "[RealtimeProvider] Falha ao fechar conexão Ably:",
+              error,
+            );
+          }
+        }
+      }
+
+      clientRef.current = null;
       channelsRef.current.clear();
       subscriptionsRef.current.clear();
     };
   }, [session]);
+
+  useEffect(() => {
+    if (!session?.user) {
+      stopPollingControlSync();
+      return;
+    }
+
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+      stopPollingControlSync();
+    } else {
+      startPollingControlSync(CONTROL_SYNC_INTERVAL_MS);
+    }
+
+    const handleVisibilityChange = () => {
+      if (typeof document === "undefined") {
+        return;
+      }
+
+      if (document.visibilityState === "hidden") {
+        stopPollingControlSync();
+      } else {
+        startPollingControlSync(CONTROL_SYNC_INTERVAL_MS);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      stopPollingControlSync();
+    };
+  }, [session?.user?.id]);
 
   /**
    * Subscribe ao canal do tenant

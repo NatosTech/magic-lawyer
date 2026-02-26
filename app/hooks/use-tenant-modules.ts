@@ -2,11 +2,18 @@
 
 import type { RealtimeEvent } from "@/app/lib/realtime/types";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 
 import { useRealtime } from "@/app/providers/realtime-provider";
+import { REALTIME_POLLING } from "@/app/lib/realtime/polling-policy";
+import {
+  isPollingGloballyEnabled,
+  resolvePollingInterval,
+  subscribePollingControl,
+  tracePollingAttempt,
+} from "@/app/lib/realtime/polling-telemetry";
 
 interface TenantModulesPayload {
   modules: string[];
@@ -56,15 +63,51 @@ async function fetchTenantModules(
 export function useTenantModules() {
   const { data: session, update: updateSession } = useSession();
   const realtime = useRealtime();
-
   const tenantId = session?.user?.tenantId || null;
+  const [isPollingEnabled, setIsPollingEnabled] = useState(() =>
+    isPollingGloballyEnabled(),
+  );
+  const [pollingInterval, setPollingInterval] = useState(0);
+
+  useEffect(() => {
+    const apply = (globalEnabled = isPollingEnabled) => {
+      setPollingInterval(
+        resolvePollingInterval({
+          isConnected: realtime.isConnected,
+          enabled: globalEnabled && Boolean(tenantId),
+          fallbackMs: REALTIME_POLLING.TENANT_MODULES_FALLBACK_MS,
+        }),
+      );
+    };
+
+    apply();
+
+    const unsubscribe = subscribePollingControl((enabled) => {
+      setIsPollingEnabled(enabled);
+      apply(enabled);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [realtime.isConnected, tenantId, isPollingEnabled]);
+
   const { data, mutate, error, isLoading } = useSWR<TenantModulesPayload>(
     tenantId ? ["tenant-modules", tenantId] : null,
-    () => fetchTenantModules(tenantId!),
+    () =>
+      tracePollingAttempt(
+        {
+          hookName: "useTenantModules",
+          endpoint: tenantId ? `/api/tenant-modules?tenantId=${tenantId}` : "tenant-modules",
+          source: "swr",
+          intervalMs: pollingInterval,
+        },
+        () => fetchTenantModules(tenantId!),
+      ),
     {
       revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      refreshInterval: realtime.isConnected ? 0 : 300000, // fallback sem realtime
+      revalidateOnReconnect: !realtime.isConnected,
+      refreshInterval: pollingInterval,
       dedupingInterval: 10000,
     },
   );
@@ -122,22 +165,28 @@ export function useTenantModules() {
   useEffect(() => {
     if (!tenantId) return;
 
-    console.log(
-      `[useTenantModules] 📡 Registrando listener WebSocket para tenant: ${tenantId}`,
-    );
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `[useTenantModules] 📡 Registrando listener WebSocket para tenant: ${tenantId}`,
+      );
+    }
 
     const unsubscribe = realtime.subscribe(
       "plan-update",
       (event: RealtimeEvent) => {
-        console.log(
-          `[useTenantModules] 📨 Evento plan-update recebido:`,
-          event,
-        );
+        if (process.env.NODE_ENV === "development") {
+          console.log(
+            `[useTenantModules] 📨 Evento plan-update recebido:`,
+            event,
+          );
+        }
 
         if (event.tenantId === tenantId) {
-          console.log(
-            `[useTenantModules] 🔄 Atualizando módulos para tenant ${tenantId}`,
-          );
+          if (process.env.NODE_ENV === "development") {
+            console.log(
+              `[useTenantModules] 🔄 Atualizando módulos para tenant ${tenantId}`,
+            );
+          }
           mutate(); // Revalidar cache de módulos
         }
       },
