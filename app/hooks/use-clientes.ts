@@ -279,9 +279,17 @@ export function useClientesParaSelect() {
 
 // Hook para buscar procurações disponíveis de um cliente
 export function useProcuracoesDisponiveis(clienteId: string | null) {
+  const fetchProcuracoes = async () => {
+    if (!clienteId) {
+      return [];
+    }
+
+    return getProcuracoesDisponiveis(clienteId);
+  };
+
   const { data, error, isLoading } = useSWR(
     clienteId ? `procuracoes-disponiveis-${clienteId}` : null,
-    () => (clienteId ? getProcuracoesDisponiveis(clienteId) : null),
+    fetchProcuracoes,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,

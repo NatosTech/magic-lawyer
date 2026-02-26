@@ -4,6 +4,8 @@ import {
   listarAssinaturas,
   verificarStatusAssinatura,
   verificarPeticaoAssinada,
+  type ActionResponse,
+  type AssinaturaInfo,
 } from "@/app/actions/assinaturas";
 import { REALTIME_POLLING } from "@/app/lib/realtime/polling-policy";
 import {
@@ -17,6 +19,17 @@ import { useEffect, useState } from "react";
  * Hook para listar assinaturas de uma petição
  */
 export function useAssinaturas(peticaoId: string | null) {
+  const fetchAssinaturas = async () => {
+    if (!peticaoId) {
+      return {
+        success: false,
+        error: "Petição não especificada",
+      } satisfies ActionResponse<AssinaturaInfo[]>;
+    }
+
+    return listarAssinaturas(peticaoId);
+  };
+
   return useSWR(
     peticaoId ? ["assinaturas", peticaoId] : null,
     () =>
@@ -26,7 +39,7 @@ export function useAssinaturas(peticaoId: string | null) {
           endpoint: peticaoId ? `/peticao/${peticaoId}/assinaturas` : "list-assinaturas",
           source: "swr",
         },
-        () => (peticaoId ? listarAssinaturas(peticaoId) : null),
+        fetchAssinaturas,
       ),
     {
       revalidateOnFocus: false,
@@ -42,6 +55,16 @@ export function useStatusAssinatura(assinaturaId: string | null) {
   const [isPollingEnabled, setIsPollingEnabled] = useState(() =>
     isPollingGloballyEnabled(),
   );
+  const fetchStatus = async () => {
+    if (!assinaturaId) {
+      return {
+        success: false,
+        error: "Assinatura não especificada",
+      };
+    }
+
+    return verificarStatusAssinatura(assinaturaId);
+  };
 
   useEffect(() => {
     return subscribePollingControl(setIsPollingEnabled);
@@ -58,7 +81,7 @@ export function useStatusAssinatura(assinaturaId: string | null) {
             : "assinatura-status",
           source: "swr",
         },
-        () => (assinaturaId ? verificarStatusAssinatura(assinaturaId) : null),
+        fetchStatus,
       ),
     {
       // Fallback inteligente: só consulta enquanto o status estiver pendente.
@@ -85,6 +108,17 @@ export function useStatusAssinatura(assinaturaId: string | null) {
  * Hook para verificar se uma petição está assinada
  */
 export function usePeticaoAssinada(peticaoId: string | null) {
+  const fetchPeticaoAssinada = async () => {
+    if (!peticaoId) {
+      return {
+        success: false,
+        error: "Petição não especificada",
+      };
+    }
+
+    return verificarPeticaoAssinada(peticaoId);
+  };
+
   return useSWR(
     peticaoId ? ["peticao-assinada", peticaoId] : null,
     () =>
@@ -94,7 +128,7 @@ export function usePeticaoAssinada(peticaoId: string | null) {
           endpoint: peticaoId ? `/peticao/${peticaoId}/assinada` : "peticao-assinada",
           source: "swr",
         },
-        () => (peticaoId ? verificarPeticaoAssinada(peticaoId) : null),
+        fetchPeticaoAssinada,
       ),
     {
       revalidateOnFocus: false,
