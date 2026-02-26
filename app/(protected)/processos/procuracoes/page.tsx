@@ -2,7 +2,6 @@ import { Metadata } from "next";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
-import NextLink from "next/link";
 
 import { title, subtitle } from "@/components/primitives";
 import { PermissionGuard } from "@/components/permission-guard";
@@ -111,7 +110,7 @@ export default function ProcuracoesPage() {
               <p className="text-white">Precisa de integração com cartórios?</p>
               <p>Conecte com sistemas de registro e reconhecimento de firma.</p>
             </div>
-            <Button as={NextLink} color="primary" href="/help" radius="full">
+            <Button as="a" color="primary" href="/help" radius="full">
               Solicitar integração
             </Button>
           </CardBody>

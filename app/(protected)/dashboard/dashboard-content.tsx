@@ -15,6 +15,15 @@ import NextLink from "next/link";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { title, subtitle } from "@/components/primitives";
 import { useDashboardData } from "@/app/hooks/use-dashboard";
@@ -67,6 +76,27 @@ const toneStyles: Record<
     helper: "text-default-400",
   },
 };
+
+const trendChartPalette = [
+  { stroke: "#38bdf8", fill: "rgba(56, 189, 248, 0.2)" },
+  { stroke: "#34d399", fill: "rgba(52, 211, 153, 0.2)" },
+  { stroke: "#f59e0b", fill: "rgba(245, 158, 11, 0.2)" },
+  { stroke: "#f472b6", fill: "rgba(244, 114, 182, 0.2)" },
+];
+
+interface TrendChartPoint {
+  period: string;
+  value: number;
+}
+
+interface TrendChartSeries {
+  key: string;
+  metric: string;
+  format?: StatFormat;
+  points: TrendChartPoint[];
+  latestValue: number;
+  deltaPercent?: number;
+}
 
 function formatStatValue(value: number | string, format?: StatFormat) {
   if (format === "currency") {
@@ -176,6 +206,15 @@ function buildQuickActions(
           icon: "🗓️",
         },
       );
+      if (permissions.canManageTeam) {
+        actions.push({
+          label: "Equipe",
+          description: "Usuários, cargos e permissões",
+          href: "/equipe",
+          tone: "secondary",
+          icon: "👥",
+        });
+      }
       if (permissions.canViewFinancialData) {
         actions.push({
           label: "Financeiro",
@@ -183,6 +222,24 @@ function buildQuickActions(
           href: "/financeiro",
           tone: "warning",
           icon: "💰",
+        });
+      }
+      if (permissions.canViewReports) {
+        actions.push({
+          label: "Relatórios",
+          description: "Indicadores de produtividade e receita",
+          href: "/relatorios",
+          tone: "success",
+          icon: "📈",
+        });
+      }
+      if (permissions.canManageOfficeSettings) {
+        actions.push({
+          label: "Configurações",
+          description: "Dados do escritório e regras operacionais",
+          href: "/configuracoes",
+          tone: "primary",
+          icon: "⚙️",
         });
       }
       break;
@@ -422,40 +479,155 @@ function renderListItem(item: DashboardListItem) {
   );
 }
 
-function renderTrendItem(trend: DashboardTrend, index: number) {
-  const previous =
-    typeof trend.previous === "number" ? trend.previous : undefined;
-  const delta = previous !== undefined ? trend.value - previous : undefined;
-  const deltaPercent =
-    previous !== undefined && previous !== 0
-      ? ((trend.value - previous) / previous) * 100
-      : undefined;
-  const trendTone =
-    delta === undefined ? "secondary" : delta >= 0 ? "success" : "danger";
-  const styles = toneStyles[trendTone] ?? toneStyles.default;
-  const key = trend.id ?? `${trend.label}-trend-${index}`;
+function buildTrendChartSeries(trends: DashboardTrend[]): TrendChartSeries[] {
+  const grouped = new Map<
+    string,
+    {
+      key: string;
+      metric: string;
+      format?: StatFormat;
+      points: TrendChartPoint[];
+      latestPrevious?: number;
+    }
+  >();
+
+  trends.forEach((trend) => {
+    const [rawMetric, ...rest] = trend.label.trim().split(/\s+/);
+    const metric = rawMetric || trend.label;
+    const period = rest.join(" ").trim() || trend.label;
+    const key = metric.toLowerCase().replace(/[^a-z0-9]+/gi, "-");
+
+    const existing = grouped.get(metric);
+
+    if (!existing) {
+      grouped.set(metric, {
+        key,
+        metric,
+        format: trend.format,
+        points: [{ period, value: trend.value }],
+        latestPrevious:
+          typeof trend.previous === "number" ? trend.previous : undefined,
+      });
+
+      return;
+    }
+
+    existing.points.push({
+      period,
+      value: trend.value,
+    });
+    existing.format = existing.format || trend.format;
+    existing.latestPrevious =
+      typeof trend.previous === "number" ? trend.previous : existing.latestPrevious;
+  });
+
+  return Array.from(grouped.values())
+    .map((series) => {
+      const latestPoint = series.points[series.points.length - 1];
+      const previousPoint = series.points[series.points.length - 2];
+      const previousValue = previousPoint?.value ?? series.latestPrevious;
+      const deltaPercent =
+        typeof previousValue === "number" && previousValue !== 0
+          ? ((latestPoint.value - previousValue) / previousValue) * 100
+          : undefined;
+
+      return {
+        key: series.key,
+        metric: series.metric,
+        format: series.format,
+        points: series.points,
+        latestValue: latestPoint.value,
+        deltaPercent,
+      };
+    })
+    .filter((series) => series.points.length > 0);
+}
+
+function renderTrendChartCard(series: TrendChartSeries, index: number) {
+  const palette = trendChartPalette[index % trendChartPalette.length];
+  const gradientId = `dashboard-trend-${series.key}-${index}`;
+  const deltaTone =
+    series.deltaPercent === undefined
+      ? "text-default-500"
+      : series.deltaPercent >= 0
+        ? "text-success"
+        : "text-danger";
 
   return (
-    <li
-      key={key}
-      className={`rounded-2xl border px-4 py-3 ${styles.container}`}
+    <div
+      key={`${series.key}-${index}`}
+      className="rounded-2xl border border-white/10 bg-background/45 p-4"
     >
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={`text-sm font-semibold ${styles.title}`}>
-            {trend.label}
+          <p className="text-xs uppercase tracking-[0.2em] text-default-500">
+            Tendência
           </p>
-          <p className="text-xs text-default-400">
-            {formatStatValue(trend.value, trend.format)}
+          <p className="truncate text-base font-semibold text-white">
+            {series.metric}
           </p>
         </div>
-        {deltaPercent !== undefined ? (
-          <span className={`text-xs font-semibold ${styles.title}`}>
-            {deltaPercent >= 0 ? "▲" : "▼"} {Math.abs(deltaPercent).toFixed(1)}%
-          </span>
-        ) : null}
+        <div className="text-right">
+          <p className="text-sm font-semibold text-white">
+            {formatStatValue(series.latestValue, series.format)}
+          </p>
+          {series.deltaPercent !== undefined ? (
+            <p className={`text-xs font-semibold ${deltaTone}`}>
+              {series.deltaPercent >= 0 ? "▲" : "▼"}{" "}
+              {Math.abs(series.deltaPercent).toFixed(1)}%
+            </p>
+          ) : null}
+        </div>
       </div>
-    </li>
+
+      <div className="mt-3 h-44 w-full">
+        <ResponsiveContainer height="100%" width="100%">
+          <AreaChart
+            data={series.points}
+            margin={{ top: 12, right: 8, left: 8, bottom: 0 }}
+          >
+            <defs>
+              <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
+                <stop offset="5%" stopColor={palette.stroke} stopOpacity={0.7} />
+                <stop offset="95%" stopColor={palette.stroke} stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid
+              stroke="rgba(255, 255, 255, 0.08)"
+              strokeDasharray="3 3"
+              vertical={false}
+            />
+            <XAxis
+              axisLine={false}
+              dataKey="period"
+              tick={{ fill: "rgba(255,255,255,0.65)", fontSize: 11 }}
+              tickLine={false}
+            />
+            <YAxis hide domain={["auto", "auto"]} />
+            <Tooltip
+              contentStyle={{
+                background: "rgba(5, 8, 16, 0.92)",
+                border: "1px solid rgba(255, 255, 255, 0.14)",
+                borderRadius: "12px",
+                color: "white",
+              }}
+              formatter={(value) =>
+                formatStatValue(Number(value), series.format)
+              }
+              labelStyle={{ color: "rgba(255, 255, 255, 0.75)" }}
+            />
+            <Area
+              dataKey="value"
+              fill={`url(#${gradientId})`}
+              fillOpacity={1}
+              stroke={palette.stroke}
+              strokeWidth={2}
+              type="monotone"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }
 
@@ -562,14 +734,49 @@ export function DashboardContent() {
   const showTrendsSkeleton = isLoading && trends.length === 0;
   const showAlertsSkeleton = isLoading && alerts.length === 0;
   const showActivitySkeleton = isLoading && activity.length === 0;
+  const trendSeries = buildTrendChartSeries(trends);
+  const primaryQuickActions = quickActions.slice(0, 6);
+  const urgentAlertCount = alerts.filter(
+    (alert) => alert.tone === "danger" || alert.tone === "warning",
+  ).length;
+  const commandCenterItems = [
+    {
+      id: "prioridades",
+      label: "Prioridades abertas",
+      value: pending.length + alerts.length,
+      helper: `${urgentAlertCount} críticas`,
+      tone: urgentAlertCount > 0 ? "danger" : "secondary",
+    },
+    {
+      id: "agenda",
+      label: "Itens em destaque",
+      value: highlights.length,
+      helper: "Compromissos próximos",
+      tone: highlights.length > 0 ? "primary" : "default",
+    },
+    {
+      id: "insights",
+      label: "Insights acionáveis",
+      value: insights.length,
+      helper: "Leituras de contexto",
+      tone: insights.length > 0 ? "success" : "default",
+    },
+    {
+      id: "atividade",
+      label: "Eventos recentes",
+      value: activity.length,
+      helper: "Últimos registros",
+      tone: activity.length > 0 ? "warning" : "default",
+    },
+  ] as const;
 
   return (
-    <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 py-12 px-3 sm:px-6">
+    <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-3 py-10 sm:px-6">
       <header className="space-y-4">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
           Visão geral
         </p>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 flex-1">
             <h1 className={title({ size: "lg", color: "blue" })}>
               {getDashboardTitle()}
@@ -577,6 +784,22 @@ export function DashboardContent() {
             <p className={subtitle({ fullWidth: true })}>
               {getDashboardDescription()}
             </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button color="primary" radius="full" variant="flat" onPress={() => refresh()}>
+              Atualizar agora
+            </Button>
+            {permissions.canViewReports ? (
+              <Button
+                as={NextLink}
+                color="primary"
+                href="/relatorios"
+                radius="full"
+                variant="bordered"
+              >
+                Ver relatórios
+              </Button>
+            ) : null}
           </div>
         </div>
 
@@ -605,6 +828,85 @@ export function DashboardContent() {
           </CardBody>
         </Card>
       ) : null}
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1.6fr]">
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <CardHeader className="flex flex-col gap-2 pb-2">
+            <h2 className="text-lg font-semibold text-white">Central de comando</h2>
+            <p className="text-sm text-default-400">
+              O que precisa de atenção agora.
+            </p>
+          </CardHeader>
+          <Divider className="border-white/10" />
+          <CardBody>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {commandCenterItems.map((item) => {
+                const styles = toneStyles[item.tone] ?? toneStyles.default;
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`rounded-2xl border p-4 ${styles.container}`}
+                  >
+                    <p className="text-xs uppercase tracking-[0.18em] text-default-500">
+                      {item.label}
+                    </p>
+                    <p className={`mt-1 text-2xl font-semibold ${styles.title}`}>
+                      {formatStatValue(item.value, "integer")}
+                    </p>
+                    <p className="text-xs text-default-400">{item.helper}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <CardHeader className="flex flex-col gap-2 pb-2">
+            <h2 className="text-lg font-semibold text-white">Atalhos estratégicos</h2>
+            <p className="text-sm text-default-400">
+              Rotas de maior uso para o seu perfil.
+            </p>
+          </CardHeader>
+          <Divider className="border-white/10" />
+          <CardBody>
+            {primaryQuickActions.length > 0 ? (
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {primaryQuickActions.map((action) => {
+                  const styles = toneStyles[action.tone] ?? toneStyles.default;
+
+                  return (
+                    <Button
+                      key={action.label}
+                      as={NextLink}
+                      className={`h-auto w-full justify-start gap-3 rounded-2xl border bg-background/40 p-4 text-left ${styles.container} hover:bg-white/10`}
+                      href={action.href}
+                      variant="bordered"
+                    >
+                      <span aria-hidden className="text-2xl">
+                        {action.icon}
+                      </span>
+                      <div className="min-w-0 text-left">
+                        <p className={`truncate font-semibold ${styles.title}`}>
+                          {action.label}
+                        </p>
+                        <p className="text-xs text-default-400">
+                          {action.description}
+                        </p>
+                      </div>
+                    </Button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-default-500">
+                Nenhuma ação disponível para o seu perfil no momento.
+              </p>
+            )}
+          </CardBody>
+        </Card>
+      </div>
 
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
@@ -644,93 +946,28 @@ export function DashboardContent() {
 
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">
-            Prioridades e insights
-          </h2>
+          <h2 className="text-lg font-semibold text-white">Evolução mensal</h2>
           <p className="text-sm text-default-400">
-            Contexto rápido para orientar as próximas ações.
-          </p>
-        </CardHeader>
-        <Divider className="border-white/10" />
-        <CardBody>
-          {showInsightsSkeleton ? (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div
-                  key={`insight-skeleton-${index}`}
-                  className="rounded-2xl border border-white/10 bg-background/40 p-4 animate-pulse"
-                >
-                  <div className="h-4 w-1/3 rounded bg-white/10" />
-                  <div className="mt-3 h-3 w-3/4 rounded bg-white/5" />
-                  <div className="mt-2 h-3 w-2/3 rounded bg-white/5" />
-                </div>
-              ))}
-            </div>
-          ) : insights.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {insights.map(renderInsightCard)}
-            </div>
-          ) : (
-            <p className="text-sm text-default-500">
-              Ainda não temos insights para exibir. Continue usando a plataforma
-              para gerar tendências.
-            </p>
-          )}
-        </CardBody>
-      </Card>
-
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">Alertas</h2>
-          <p className="text-sm text-default-400">
-            Itens críticos que impactam seu dia a dia.
-          </p>
-        </CardHeader>
-        <Divider className="border-white/10" />
-        <CardBody>
-          {showAlertsSkeleton ? (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {Array.from({ length: 2 }).map((_, index) => (
-                <div
-                  key={`alert-skeleton-${index}`}
-                  className="h-20 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
-                />
-              ))}
-            </div>
-          ) : alerts.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {alerts.map(renderAlertCard)}
-            </div>
-          ) : (
-            <p className="text-sm text-default-500">
-              Nenhum alerta crítico neste momento.
-            </p>
-          )}
-        </CardBody>
-      </Card>
-
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">Tendências</h2>
-          <p className="text-sm text-default-400">
-            Evolução recente dos indicadores principais.
+            Gráficos dos principais indicadores para decisão rápida.
           </p>
         </CardHeader>
         <Divider className="border-white/10" />
         <CardBody>
           {showTrendsSkeleton ? (
-            <ul className="space-y-3">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <li
-                  key={`trend-skeleton-${index}`}
-                  className="h-14 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              {Array.from({ length: 2 }).map((_, index) => (
+                <div
+                  key={`trend-chart-skeleton-${index}`}
+                  className="h-64 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
                 />
               ))}
-            </ul>
-          ) : trends.length > 0 ? (
-            <ul className="space-y-3">
-              {trends.map((trend, index) => renderTrendItem(trend, index))}
-            </ul>
+            </div>
+          ) : trendSeries.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              {trendSeries.map((series, index) =>
+                renderTrendChartCard(series, index),
+              )}
+            </div>
           ) : (
             <p className="text-sm text-default-500">
               Ainda sem séries históricas suficientes para exibir tendências.
@@ -739,63 +976,134 @@ export function DashboardContent() {
         </CardBody>
       </Card>
 
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">Em destaque</h2>
-          <p className="text-sm text-default-400">
-            Próximos compromissos e registros relevantes para você.
-          </p>
-        </CardHeader>
-        <Divider className="border-white/10" />
-        <CardBody>
-          {showHighlightsSkeleton ? (
-            <ul className="space-y-3">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <li
-                  key={`highlight-skeleton-${index}`}
-                  className="h-16 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
-                />
-              ))}
-            </ul>
-          ) : highlights.length > 0 ? (
-            <ul className="space-y-3">{highlights.map(renderListItem)}</ul>
-          ) : (
-            <p className="text-sm text-default-500">
-              Nada agendado por aqui. Assim que novos eventos surgirem,
-              listaremos nesta seção.
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <CardHeader className="flex flex-col gap-2 pb-2">
+            <h2 className="text-lg font-semibold text-white">
+              Prioridades e insights
+            </h2>
+            <p className="text-sm text-default-400">
+              Contexto rápido para orientar as próximas ações.
             </p>
-          )}
-        </CardBody>
-      </Card>
+          </CardHeader>
+          <Divider className="border-white/10" />
+          <CardBody>
+            {showInsightsSkeleton ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div
+                    key={`insight-skeleton-${index}`}
+                    className="rounded-2xl border border-white/10 bg-background/40 p-4 animate-pulse"
+                  >
+                    <div className="h-4 w-1/3 rounded bg-white/10" />
+                    <div className="mt-3 h-3 w-3/4 rounded bg-white/5" />
+                    <div className="mt-2 h-3 w-2/3 rounded bg-white/5" />
+                  </div>
+                ))}
+              </div>
+            ) : insights.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {insights.map(renderInsightCard)}
+              </div>
+            ) : (
+              <p className="text-sm text-default-500">
+                Ainda não temos insights para exibir. Continue usando a plataforma
+                para gerar tendências.
+              </p>
+            )}
+          </CardBody>
+        </Card>
 
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">Pendências</h2>
-          <p className="text-sm text-default-400">
-            Itens que exigem acompanhamento para evitar atrasos.
-          </p>
-        </CardHeader>
-        <Divider className="border-white/10" />
-        <CardBody>
-          {showPendingSkeleton ? (
-            <ul className="space-y-3">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <li
-                  key={`pending-skeleton-${index}`}
-                  className="h-16 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
-                />
-              ))}
-            </ul>
-          ) : pending.length > 0 ? (
-            <ul className="space-y-3">{pending.map(renderListItem)}</ul>
-          ) : (
-            <p className="text-sm text-default-500">
-              Nenhuma pendência urgente. Aproveite para revisar os próximos
-              passos com calma.
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <CardHeader className="flex flex-col gap-2 pb-2">
+            <h2 className="text-lg font-semibold text-white">Alertas</h2>
+            <p className="text-sm text-default-400">
+              Itens críticos que impactam seu dia a dia.
             </p>
-          )}
-        </CardBody>
-      </Card>
+          </CardHeader>
+          <Divider className="border-white/10" />
+          <CardBody>
+            {showAlertsSkeleton ? (
+              <div className="grid grid-cols-1 gap-4">
+                {Array.from({ length: 2 }).map((_, index) => (
+                  <div
+                    key={`alert-skeleton-${index}`}
+                    className="h-20 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : alerts.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4">
+                {alerts.map(renderAlertCard)}
+              </div>
+            ) : (
+              <p className="text-sm text-default-500">
+                Nenhum alerta crítico neste momento.
+              </p>
+            )}
+          </CardBody>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <CardHeader className="flex flex-col gap-2 pb-2">
+            <h2 className="text-lg font-semibold text-white">Em destaque</h2>
+            <p className="text-sm text-default-400">
+              Próximos compromissos e registros relevantes para você.
+            </p>
+          </CardHeader>
+          <Divider className="border-white/10" />
+          <CardBody>
+            {showHighlightsSkeleton ? (
+              <ul className="space-y-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <li
+                    key={`highlight-skeleton-${index}`}
+                    className="h-16 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
+                  />
+                ))}
+              </ul>
+            ) : highlights.length > 0 ? (
+              <ul className="space-y-3">{highlights.map(renderListItem)}</ul>
+            ) : (
+              <p className="text-sm text-default-500">
+                Nada agendado por aqui. Assim que novos eventos surgirem,
+                listaremos nesta seção.
+              </p>
+            )}
+          </CardBody>
+        </Card>
+
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <CardHeader className="flex flex-col gap-2 pb-2">
+            <h2 className="text-lg font-semibold text-white">Pendências</h2>
+            <p className="text-sm text-default-400">
+              Itens que exigem acompanhamento para evitar atrasos.
+            </p>
+          </CardHeader>
+          <Divider className="border-white/10" />
+          <CardBody>
+            {showPendingSkeleton ? (
+              <ul className="space-y-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <li
+                    key={`pending-skeleton-${index}`}
+                    className="h-16 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
+                  />
+                ))}
+              </ul>
+            ) : pending.length > 0 ? (
+              <ul className="space-y-3">{pending.map(renderListItem)}</ul>
+            ) : (
+              <p className="text-sm text-default-500">
+                Nenhuma pendência urgente. Aproveite para revisar os próximos
+                passos com calma.
+              </p>
+            )}
+          </CardBody>
+        </Card>
+      </div>
 
       <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
         <CardHeader className="flex flex-col gap-2 pb-2">
@@ -827,85 +1135,13 @@ export function DashboardContent() {
         </CardBody>
       </Card>
 
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">Ações rápidas</h2>
-          <p className="text-sm text-default-400">
-            Atalhos para os módulos mais utilizados no seu perfil.
-          </p>
-        </CardHeader>
-        <Divider className="border-white/10" />
-        <CardBody>
-          {quickActions.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {quickActions.map((action) => {
-                const styles = toneStyles[action.tone] ?? toneStyles.default;
-
-                return (
-                  <Button
-                    key={action.label}
-                    as={NextLink}
-                    className={`h-auto w-full justify-start gap-4 rounded-2xl border bg-background/40 p-5 text-left ${styles.container} hover:bg-white/10`}
-                    href={action.href}
-                    variant="bordered"
-                  >
-                    <span aria-hidden className="text-3xl">
-                      {action.icon}
-                    </span>
-                    <div className="min-w-0 text-left">
-                      <p className={`font-semibold ${styles.title}`}>
-                        {action.label}
-                      </p>
-                      <p className="text-sm text-default-400">
-                        {action.description}
-                      </p>
-                    </div>
-                  </Button>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-sm text-default-500">
-              Nenhuma ação disponível para o seu perfil no momento.
-            </p>
-          )}
-        </CardBody>
-      </Card>
-
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">Suas permissões</h2>
-          <p className="text-sm text-default-400">
-            Recursos liberados para o seu usuário.
-          </p>
-        </CardHeader>
-        <Divider className="border-white/10" />
-        <CardBody>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {Object.entries(permissions).map(([key, value]) => (
-              <div key={key} className="flex items-center gap-2 min-w-0">
-                <span
-                  aria-hidden
-                  className={`h-2 w-2 flex-shrink-0 rounded-full ${value ? "bg-success" : "bg-default-400"}`}
-                />
-                <span className="truncate text-sm text-default-600">
-                  {key
-                    .replace(/([A-Z])/g, " $1")
-                    .replace(/^./, (str) => str.toUpperCase())}
-                </span>
-              </div>
-            ))}
-          </div>
-        </CardBody>
-      </Card>
-
       <Card className="border border-white/10 bg-white/5">
         <CardBody className="flex flex-col gap-3 text-sm text-default-400 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0 flex-1">
             <p className="text-white">Roadmap do dashboard</p>
             <p>
-              Estamos preparando widgets dinâmicos com dados em tempo real,
-              exportações e comparativos por tenant.
+              Próxima etapa: widgets personalizados por papel com metas
+              operacionais, SLA e comparativos semanais.
             </p>
           </div>
           <Button
@@ -915,7 +1151,7 @@ export function DashboardContent() {
             href="/help"
             radius="full"
           >
-            Quero ser avisado
+            Quero influenciar
           </Button>
         </CardBody>
       </Card>

@@ -2,7 +2,6 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import NextLink from "next/link";
 
 import { title, subtitle } from "@/components/primitives";
 
@@ -91,7 +90,7 @@ export default function BlogPage() {
                 {post.excerpt}
               </p>
               <Button
-                as={NextLink}
+                as="a"
                 color={post.color}
                 href="#"
                 radius="full"
@@ -119,7 +118,7 @@ export default function BlogPage() {
               Inscrever-se
             </Button>
             <Button
-              as={NextLink}
+              as="a"
               className="border-white/20 text-white"
               href="/login"
               radius="full"

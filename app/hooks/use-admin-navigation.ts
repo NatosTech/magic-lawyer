@@ -7,6 +7,7 @@ export interface NavigationItem {
   description?: string;
   badge?: string;
   isAccordion?: boolean;
+  compactChildrenCount?: number;
   children?: NavigationItem[];
 }
 

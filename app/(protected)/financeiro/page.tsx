@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
-import NextLink from "next/link";
 
 import { title, subtitle } from "@/components/primitives";
 import { getSession } from "@/app/lib/auth";
@@ -107,7 +106,7 @@ function FinanceiroContent() {
               parceiro.
             </p>
           </div>
-          <Button as={NextLink} color="primary" href="/help" radius="full">
+          <Button as="a" color="primary" href="/help" radius="full">
             Agendar onboarding financeiro
           </Button>
         </CardBody>

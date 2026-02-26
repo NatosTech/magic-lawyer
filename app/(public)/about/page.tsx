@@ -1,7 +1,6 @@
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
-import NextLink from "next/link";
 
 import { title, subtitle } from "@/components/primitives";
 
@@ -71,7 +70,7 @@ export default function AboutPage() {
           </p>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Button
-              as={NextLink}
+              as="a"
               color="primary"
               href="/precos"
               radius="full"
@@ -80,7 +79,7 @@ export default function AboutPage() {
               Ver planos
             </Button>
             <Button
-              as={NextLink}
+              as="a"
               className="border-white/20 text-white"
               href="/login"
               radius="full"

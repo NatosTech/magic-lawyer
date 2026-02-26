@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
-import NextLink from "next/link";
 
 import { title, subtitle } from "@/components/primitives";
 
@@ -66,7 +65,7 @@ export default function HelpPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <Button
-          as={NextLink}
+          as="a"
           color="primary"
           href="mailto:suporte@magiclawyer.com"
           radius="full"
@@ -74,7 +73,7 @@ export default function HelpPage() {
           Enviar e-mail
         </Button>
         <Button
-          as={NextLink}
+          as="a"
           color="primary"
           href="/docs"
           radius="full"

@@ -130,6 +130,11 @@ export function ProfileContent() {
     newPassword: "",
     confirmPassword: "",
   });
+  const ufKeySet = new Set(ufs);
+  const selectedOabUfKeys =
+    advogadoData.oabUf && ufKeySet.has(advogadoData.oabUf)
+      ? [advogadoData.oabUf]
+      : [];
 
   // Atualizar dados pessoais
   const handleUpdateProfile = async () => {
@@ -450,7 +455,7 @@ export function ProfileContent() {
                     <Select
                       label="UF da OAB"
                       placeholder="Selecione o estado"
-                      selectedKeys={advogadoData.oabUf ? new Set([advogadoData.oabUf]) : new Set()}
+                      selectedKeys={selectedOabUfKeys}
                       onSelectionChange={(keys) => {
                         const [value] = Array.from(keys);
 
@@ -461,7 +466,9 @@ export function ProfileContent() {
                       }}
                     >
                       {ufs.map((uf) => (
-                        <SelectItem key={uf}>{uf}</SelectItem>
+                        <SelectItem key={uf} textValue={uf}>
+                          {uf}
+                        </SelectItem>
                       ))}
                     </Select>
                   </div>

@@ -13,6 +13,7 @@ export interface NavigationItem {
   badge?: string;
   children?: NavigationItem[];
   isAccordion?: boolean;
+  compactChildrenCount?: number;
   section?: string;
   requiredModules?: string[];
 }
@@ -458,6 +459,7 @@ export function useProfileNavigation() {
             ? "Minhas comissões"
             : "Gestão financeira",
         isAccordion: true,
+        compactChildrenCount: 2,
         section: "Operacional",
         children: [
           {
@@ -468,11 +470,11 @@ export function useProfileNavigation() {
             requiredModules: ["financeiro"],
           },
           {
-            label: "Honorários",
-            href: "/honorarios",
-            icon: "DollarSign",
-            description: "Honorários contratuais",
-            requiredModules: ["honorarios"],
+            label: "Faturas",
+            href: "/financeiro",
+            icon: "Receipt",
+            description: "Gestão de faturas",
+            requiredModules: ["financeiro"],
           },
           {
             label: "Parcelas",
@@ -482,18 +484,18 @@ export function useProfileNavigation() {
             requiredModules: ["parcelas"],
           },
           {
-            label: "Faturas",
-            href: "/financeiro",
-            icon: "Receipt",
-            description: "Gestão de faturas",
-            requiredModules: ["financeiro"],
-          },
-          {
             label: "Recibos",
             href: "/financeiro/recibos",
             icon: "FileText",
             description: "Comprovantes e recibos pagos",
             requiredModules: ["financeiro"],
+          },
+          {
+            label: "Honorários",
+            href: "/honorarios",
+            icon: "DollarSign",
+            description: "Honorários contratuais",
+            requiredModules: ["honorarios"],
           },
         ],
         requiredModules: ["financeiro"],

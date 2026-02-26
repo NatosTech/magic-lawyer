@@ -631,6 +631,7 @@ export type SidebarNavItem = {
   description?: string;
   children?: SidebarNavItem[];
   isAccordion?: boolean;
+  compactChildrenCount?: number;
   section?: string;
 };
 
@@ -663,31 +664,57 @@ const SidebarSectionLabel = ({
 // Componente para item com accordion
 const AccordionNavItem = ({
   item,
-  isActive,
   icon,
   isDesktop,
   onCloseMobile,
 }: {
   item: SidebarNavItem;
-  isActive: boolean;
   icon: ReactElement;
   isDesktop: boolean;
   onCloseMobile?: () => void;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showAllChildren, setShowAllChildren] = useState(false);
   const pathname = usePathname();
-
-  // Auto-expandir se algum filho estiver ativo
-  const hasActiveChild = item.children?.some(
+  const children = item.children ?? [];
+  const compactChildrenCount =
+    typeof item.compactChildrenCount === "number" &&
+    item.compactChildrenCount > 0
+      ? item.compactChildrenCount
+      : children.length;
+  const hasHiddenChildren = children.length > compactChildrenCount;
+  const activeChildIndex = children.findIndex(
     (child) => pathname === child.href || pathname.startsWith(`${child.href}/`),
   );
+  const hasActiveChild = activeChildIndex >= 0;
+  const visibleChildren =
+    hasHiddenChildren && !showAllChildren
+      ? children.slice(0, compactChildrenCount)
+      : children;
+  const hiddenChildrenCount = Math.max(children.length - compactChildrenCount, 0);
 
   // Expandir automaticamente se houver filho ativo
   useEffect(() => {
     if (hasActiveChild) {
       setIsExpanded(true);
+
+      if (hasHiddenChildren && activeChildIndex >= compactChildrenCount) {
+        setShowAllChildren(true);
+      }
     }
-  }, [hasActiveChild]);
+  }, [activeChildIndex, compactChildrenCount, hasActiveChild, hasHiddenChildren]);
+
+  const handleToggleAccordion = () => {
+    setIsExpanded((current) => {
+      const next = !current;
+
+      if (!next) {
+        setShowAllChildren(false);
+      }
+
+      return next;
+    });
+  };
 
   return (
     <li key={item.href}>
@@ -698,7 +725,7 @@ const AccordionNavItem = ({
           <button
             aria-label={isExpanded ? "Recolher" : "Expandir"}
             className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition text-default-400 hover:bg-default-100 hover:text-default-900 flex-1"
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={handleToggleAccordion}
           >
             <span className="shrink-0 text-base">{icon}</span>
             <span className="truncate">{item.label}</span>
@@ -712,12 +739,13 @@ const AccordionNavItem = ({
 
         {/* Sub-itens com animação */}
         <div
-          className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? "max-h-[40rem] opacity-100" : "max-h-0 opacity-0"}`}
         >
           <ul className="space-y-1 pl-6">
-            {item.children?.map((child) => {
-              const isChildActive = pathname === child.href;
-              const childIcon = navIconMap[child.label] ?? <DashboardIcon />;
+            {visibleChildren.map((child) => {
+              const isChildActive =
+                pathname === child.href ||
+                pathname.startsWith(`${child.href}/`);
 
               return (
                 <li key={child.href}>
@@ -729,8 +757,8 @@ const AccordionNavItem = ({
                     <NextLink
                       className={
                         isChildActive
-                          ? "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition bg-primary/25 text-primary"
-                          : "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition text-default-400 hover:bg-default-100 hover:text-default-900"
+                          ? "flex items-center gap-2 rounded-xl px-3 py-1.5 text-[13px] transition bg-primary/25 text-primary"
+                          : "flex items-center gap-2 rounded-xl px-3 py-1.5 text-[13px] transition text-default-400 hover:bg-default-100 hover:text-default-900"
                       }
                       href={child.href}
                       onClick={() => {
@@ -739,13 +767,39 @@ const AccordionNavItem = ({
                         }
                       }}
                     >
-                      <span className="shrink-0 text-base">{childIcon}</span>
+                      <span
+                        className={
+                          isChildActive
+                            ? "h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+                            : "h-1.5 w-1.5 shrink-0 rounded-full bg-default-500/70"
+                        }
+                      />
                       <span className="truncate">{child.label}</span>
                     </NextLink>
                   </Tooltip>
                 </li>
               );
             })}
+            {hasHiddenChildren ? (
+              <li>
+                <button
+                  className="ml-3 flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-default-500 transition hover:bg-default-100 hover:text-default-800"
+                  type="button"
+                  onClick={() => setShowAllChildren((current) => !current)}
+                >
+                  <span
+                    className={`transition-transform duration-200 ${showAllChildren ? "rotate-180" : ""}`}
+                  >
+                    <ChevronDownIcon size={12} />
+                  </span>
+                  <span>
+                    {showAllChildren
+                      ? "Mostrar menos"
+                      : `Mostrar mais (${hiddenChildrenCount})`}
+                  </span>
+                </button>
+              </li>
+            ) : null}
           </ul>
         </div>
       </div>
@@ -1186,7 +1240,6 @@ function SidebarContent({
                       <AccordionNavItem
                         key={item.href}
                         icon={icon}
-                        isActive={isActive}
                         isDesktop={isDesktop}
                         item={item}
                         onCloseMobile={onCloseMobile}

@@ -27,6 +27,7 @@ export function AdminAppShell({ children }: AdminAppShellProps) {
     return navigationItems.map((item) => ({
       label: item.label,
       href: item.href,
+      compactChildrenCount: item.compactChildrenCount,
       children: item.children,
       isAccordion: item.isAccordion,
     }));
@@ -36,6 +37,7 @@ export function AdminAppShell({ children }: AdminAppShellProps) {
     return secondaryNavigationItems.map((item) => ({
       label: item.label,
       href: item.href,
+      compactChildrenCount: item.compactChildrenCount,
       children: item.children,
       isAccordion: item.isAccordion,
     }));

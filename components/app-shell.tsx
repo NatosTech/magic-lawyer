@@ -28,6 +28,7 @@ export function AppShell({ children }: AppShellProps) {
       label: item.label,
       href: item.href,
       description: item.description,
+      compactChildrenCount: item.compactChildrenCount,
       children: item.children?.map((child) => ({
         label: child.label,
         href: child.href,
@@ -43,6 +44,7 @@ export function AppShell({ children }: AppShellProps) {
       label: item.label,
       href: item.href,
       description: item.description,
+      compactChildrenCount: item.compactChildrenCount,
       section: item.section, // ✨ Adicionar seção
     }));
   }, [secondaryNavigationItems]);

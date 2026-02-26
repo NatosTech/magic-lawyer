@@ -2,7 +2,6 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import NextLink from "next/link";
 
 import { title, subtitle } from "@/components/primitives";
 
@@ -119,7 +118,7 @@ export default function DocsPage() {
                 ))}
               </ul>
               <Button
-                as={NextLink}
+                as="a"
                 className="mt-4"
                 color={section.color}
                 href="#"
@@ -166,7 +165,7 @@ export default function DocsPage() {
           </div>
           <div className="mt-6 text-center">
             <Button
-              as={NextLink}
+              as="a"
               color="primary"
               href="/login"
               radius="full"
