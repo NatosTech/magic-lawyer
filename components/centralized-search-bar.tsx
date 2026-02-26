@@ -7,7 +7,7 @@ import { Kbd } from "@heroui/kbd";
 import { Spinner } from "@heroui/spinner";
 import { Avatar } from "@heroui/avatar";
 import { Chip } from "@heroui/chip";
-import { Select, SelectItem } from "@heroui/select";
+import { Select, SelectItem } from "@heroui/react";
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
 import { Search, X, AlertCircle } from "lucide-react";

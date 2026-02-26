@@ -14,7 +14,6 @@ import {
   DropdownMenu,
   DropdownItem,
 } from "@heroui/dropdown";
-import { Select, SelectItem } from "@heroui/select";
 import { Divider } from "@heroui/divider";
 import { Avatar } from "@heroui/avatar";
 import { Textarea } from "@heroui/input";
@@ -35,7 +34,7 @@ import {
   Mail,
   FileText,
   Users,
-  Key,
+  Key as KeyIcon,
   Copy,
   CheckCircle,
   KeyRound,
@@ -60,6 +59,8 @@ import {
   ModalContent,
   ModalBody,
   ModalFooter,
+  Select,
+  SelectItem,
   Tabs,
   Tab,
 } from "@heroui/react";
@@ -300,7 +301,7 @@ const ClientesListSection = memo(function ClientesListSection({
                                     className="font-semibold"
                                     color="success"
                                     size="sm"
-                                    startContent={<Key className="h-3 w-3" />}
+                                    startContent={<KeyIcon className="h-3 w-3" />}
                                     variant="flat"
                                   >
                                     Acesso
@@ -940,7 +941,7 @@ export function ClientesContent() {
           />
           <PeopleMetricCard
             helper={`${taxaAcesso}% com acesso`}
-            icon={<Key className="h-4 w-4" />}
+            icon={<KeyIcon className="h-4 w-4" />}
             label="Clientes com login"
             tone="success"
             value={metrics.comAcesso}
@@ -1273,18 +1274,15 @@ export function ClientesContent() {
                   >
                     <div className="space-y-4">
                       <Select
+                        popoverProps={{
+                          classNames: {
+                            base: "z-[10000]",
+                            content: "z-[10000]",
+                          },
+                        }}
                         label="Tipo de Pessoa"
                         placeholder="Selecione"
                         selectedKeys={new Set([formState.tipoPessoa])}
-                        onChange={(e) => {
-                          const nextTipo = e.target.value;
-                          if (
-                            nextTipo === TipoPessoa.FISICA ||
-                            nextTipo === TipoPessoa.JURIDICA
-                          ) {
-                            applyTipoPessoaChange(nextTipo);
-                          }
-                        }}
                         onSelectionChange={handleTipoPessoaSelectionChange}
                       >
                         <SelectItem key={TipoPessoa.FISICA} textValue="Pessoa Física">
@@ -1373,6 +1371,12 @@ export function ClientesContent() {
                     >
                       <Select
                         className="w-full"
+                        popoverProps={{
+                          classNames: {
+                            base: "z-[10000]",
+                            content: "z-[10000]",
+                          },
+                        }}
                         isLoading={isLoadingAdvogados}
                         label="Advogados vinculados"
                         placeholder="Selecione um ou mais advogados"
@@ -1520,7 +1524,7 @@ export function ClientesContent() {
                 title={
                   <div className="flex items-center gap-2">
                     <div className="p-1 rounded-md bg-purple-100 dark:bg-purple-900">
-                      <Key className="text-purple-600 dark:text-purple-300 w-4 h-4" />
+                      <KeyIcon className="text-purple-600 dark:text-purple-300 w-4 h-4" />
                     </div>
                     <span>Acesso</span>
                   </div>
@@ -1643,18 +1647,15 @@ export function ClientesContent() {
                   >
                     <div className="space-y-4">
                       <Select
+                        popoverProps={{
+                          classNames: {
+                            base: "z-[10000]",
+                            content: "z-[10000]",
+                          },
+                        }}
                         label="Tipo de Pessoa"
                         placeholder="Selecione"
                         selectedKeys={new Set([formState.tipoPessoa])}
-                        onChange={(e) => {
-                          const nextTipo = e.target.value;
-                          if (
-                            nextTipo === TipoPessoa.FISICA ||
-                            nextTipo === TipoPessoa.JURIDICA
-                          ) {
-                            applyTipoPessoaChange(nextTipo);
-                          }
-                        }}
                         onSelectionChange={handleTipoPessoaSelectionChange}
                       >
                         <SelectItem key={TipoPessoa.FISICA} textValue="Pessoa Física">
@@ -1743,6 +1744,12 @@ export function ClientesContent() {
                     >
                       <Select
                         className="w-full"
+                        popoverProps={{
+                          classNames: {
+                            base: "z-[10000]",
+                            content: "z-[10000]",
+                          },
+                        }}
                         isLoading={isLoadingAdvogados}
                         label="Advogados vinculados"
                         placeholder="Selecione um ou mais advogados"
@@ -1952,7 +1959,7 @@ export function ClientesContent() {
           <div className="space-y-4">
             <div className="rounded-lg bg-success/10 border border-success/20 p-4">
               <div className="flex items-start gap-3">
-                <Key className="h-5 w-5 text-success mt-0.5" />
+                <KeyIcon className="h-5 w-5 text-success mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-success">
                     Usuário de acesso criado
@@ -2192,7 +2199,7 @@ export function ClientesContent() {
                             <Chip
                               color="success"
                               size="sm"
-                              startContent={<Key className="h-3 w-3" />}
+                              startContent={<KeyIcon className="h-3 w-3" />}
                               variant="flat"
                             >
                               Tem Acesso

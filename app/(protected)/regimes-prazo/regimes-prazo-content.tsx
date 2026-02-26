@@ -14,7 +14,7 @@ import {
   ModalHeader,
 } from "@heroui/modal";
 import { Skeleton } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/select";
+import { Select, SelectItem } from "@heroui/react";
 import { Switch } from "@heroui/switch";
 import { Plus, RefreshCw, Edit3, Trash2 } from "lucide-react";
 import { toast } from "sonner";

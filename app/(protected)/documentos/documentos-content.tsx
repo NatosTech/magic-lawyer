@@ -15,7 +15,7 @@ import { Slider } from "@heroui/slider";
 import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/modal";
 import { Checkbox } from "@heroui/checkbox";
 import { Switch } from "@heroui/switch";
-import { Select, SelectItem } from "@heroui/select";
+import { Select, SelectItem } from "@heroui/react";
 import {
   FolderPlus,
   RefreshCw,

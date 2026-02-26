@@ -25,6 +25,18 @@ body {
     max-height: 2rem !important;
 }
 
+/*
+ * Garante que popovers da HeroUI (Select/Autocomplete/Dropdown)
+ * fiquem acima de modais e drawers em todo o sistema.
+ */
+[data-slot="base"][data-placement] {
+    z-index: 100000 !important;
+}
+
+[data-slot="content"][data-placement] {
+    z-index: 100000 !important;
+}
+
 .magic-logo__glow {
     stroke-dasharray: 120;
     stroke-dashoffset: 120;

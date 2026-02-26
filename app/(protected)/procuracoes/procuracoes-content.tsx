@@ -16,7 +16,7 @@ import {
   DropdownItem,
 } from "@heroui/dropdown";
 import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/select";
+import { Select, SelectItem } from "@heroui/react";
 import { Spinner } from "@heroui/spinner";
 import {
   Modal,
