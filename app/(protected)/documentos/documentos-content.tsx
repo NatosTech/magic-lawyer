@@ -389,7 +389,7 @@ export function DocumentosContent({
     },
     {
       fallbackData: initialData ?? undefined,
-      revalidateOnFocus: true,
+      revalidateOnFocus: false,
       revalidateOnReconnect: true,
     },
   );

@@ -24,6 +24,13 @@ import QRCodeLib from "qrcode";
 import useSWR from "swr";
 
 import { getPaymentStatus } from "@/app/actions/payment-status";
+import { REALTIME_POLLING } from "@/app/lib/realtime/polling-policy";
+import {
+  isPollingGloballyEnabled,
+  resolvePollingInterval,
+  subscribePollingControl,
+  tracePollingAttempt,
+} from "@/app/lib/realtime/polling-telemetry";
 import CreditCardForm from "@/components/credit-card-form";
 
 interface PaymentData {
@@ -39,6 +46,20 @@ export default function PagamentoPage() {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [checkoutId, setCheckoutId] = useState<string | null>(null);
   const [paymentProcessed, setPaymentProcessed] = useState(false);
+  const [isPollingEnabled, setIsPollingEnabled] = useState(() =>
+    isPollingGloballyEnabled(),
+  );
+
+  useEffect(() => {
+    return subscribePollingControl(setIsPollingEnabled);
+  }, []);
+
+  const pollingInterval = resolvePollingInterval({
+    isConnected: false,
+    enabled: isPollingEnabled && !paymentProcessed,
+    fallbackMs: REALTIME_POLLING.PAGAMENTO_POLLING_MS,
+    minimumMs: REALTIME_POLLING.PAGAMENTO_POLLING_MS,
+  });
 
   // SWR para buscar status do pagamento em tempo real
   const {
@@ -47,11 +68,22 @@ export default function PagamentoPage() {
     mutate,
   } = useSWR(
     checkoutId ? `payment-status-${checkoutId}` : null,
-    () => getPaymentStatus(checkoutId!),
+    () =>
+      tracePollingAttempt(
+        {
+          hookName: "PagamentoPage",
+          endpoint: checkoutId ? `/api/payment-status/${checkoutId}` : "payment-status",
+          source: "swr",
+          intervalMs: pollingInterval,
+        },
+        () => getPaymentStatus(checkoutId!),
+      ),
     {
-      refreshInterval: paymentProcessed ? 0 : 5000, // Para de atualizar se pagamento foi processado
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
+      refreshInterval: paymentProcessed
+        ? 0
+        : pollingInterval, // Para de atualizar se pagamento foi processado
+      revalidateOnFocus: false,
+      revalidateOnReconnect: !paymentProcessed,
     },
   );
 

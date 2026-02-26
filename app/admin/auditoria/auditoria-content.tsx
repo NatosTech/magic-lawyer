@@ -138,7 +138,7 @@ export function AuditoriaContent() {
     ([, params]) => getSystemAuditLogs(params),
     {
       revalidateOnFocus: false,
-      refreshInterval: 60000,
+      refreshInterval: 0,
     },
   );
 

@@ -14,7 +14,8 @@ import { useSessionGuard } from "@/app/hooks/use-session-guard";
 export function SessionGuard({ children }: { children: React.ReactNode }) {
   // Polling apenas como fallback (quando realtime estiver indisponível)
   const { isRevoked } = useSessionGuard({
-    interval: 60,
+    // Empresa grande: validação por evento em realtime + fallback humano (3 min)
+    interval: 180,
     publicRoutes: ["/login", "/", "/about", "/precos"],
   });
 

@@ -87,14 +87,18 @@ export default function ModulosAdminPage() {
   const { data: modulosData, mutate: mutateModulos } = useSWR(
     ["modulos", searchTerm],
     () => listModulos({ search: searchTerm || undefined, limit: 100 }),
-    { refreshInterval: 30000 },
+    {
+      revalidateOnFocus: false,
+      refreshInterval: 0,
+    },
   );
 
   const { data: dashboardData } = useSWR(
     "dashboard-modulos",
     getDashboardModulos,
     {
-      refreshInterval: 60000,
+      revalidateOnFocus: false,
+      refreshInterval: 0,
     },
   );
 
@@ -102,7 +106,8 @@ export default function ModulosAdminPage() {
     "module-map-status",
     getModuleMapStatus,
     {
-      refreshInterval: 30000,
+      revalidateOnFocus: false,
+      refreshInterval: 0,
     },
   );
 
@@ -110,7 +115,8 @@ export default function ModulosAdminPage() {
     "auto-detect-status",
     getAutoDetectStatus,
     {
-      refreshInterval: 30000,
+      revalidateOnFocus: false,
+      refreshInterval: 0,
     },
   );
 

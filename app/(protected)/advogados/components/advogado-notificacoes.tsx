@@ -127,13 +127,13 @@ export function AdvogadoNotificacoes({
     marcarTodasComoLidas,
   } = useNotificacoesAdvogado(advogadoId, {
     enabled: isOpen,
-    refreshInterval: 30000,
+    refreshInterval: 0,
   });
 
   const { estatisticas, isLoading: isLoadingStats } =
     useEstatisticasNotificacoes(advogadoId, {
       enabled: isOpen,
-      refreshInterval: 30000,
+      refreshInterval: 0,
     });
 
   const handleMarcarComoLida = async (notificacaoId: string) => {

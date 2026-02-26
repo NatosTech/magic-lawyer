@@ -6,7 +6,7 @@ import { getCurrentUserAvatar } from "@/app/actions/profile";
 
 export function useAvatar() {
   const { data, error, mutate } = useSWR("user-avatar", getCurrentUserAvatar, {
-    revalidateOnFocus: true,
+    revalidateOnFocus: false,
     revalidateOnReconnect: true,
     refreshInterval: 0, // Não fazer polling automático
   });

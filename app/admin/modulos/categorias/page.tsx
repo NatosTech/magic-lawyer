@@ -119,9 +119,9 @@ export default function ModuloCategoriasPage() {
         search: searchTerm,
         ativo: filterStatus === "all" ? undefined : filterStatus === "active",
       }),
-    {
-      refreshInterval: 30000,
+      {
       revalidateOnFocus: false,
+      refreshInterval: 0,
     },
   );
 
@@ -129,8 +129,8 @@ export default function ModuloCategoriasPage() {
     "dashboard-categorias",
     getDashboardModuloCategorias,
     {
-      refreshInterval: 30000,
       revalidateOnFocus: false,
+      refreshInterval: 0,
     },
   );
 

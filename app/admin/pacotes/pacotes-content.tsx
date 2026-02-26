@@ -80,7 +80,7 @@ export function PacotesContent() {
     ([, filters]) => getJuizesAdmin(filters),
     {
       revalidateOnFocus: false,
-      refreshInterval: 60000,
+      refreshInterval: 0,
     },
   );
 

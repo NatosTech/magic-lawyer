@@ -54,8 +54,9 @@ export function DevInfo({
     process.env.NODE_ENV === "development" ? "dev-info" : null,
     getDevInfo,
     {
-      refreshInterval: 10000, // Atualiza a cada 10 segundos
-      revalidateOnFocus: true,
+      refreshInterval: 0, // Sem polling automático
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
       onSuccess: () => setIsVisible(true),
     },
   );

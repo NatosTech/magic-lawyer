@@ -26,7 +26,7 @@ export function JuizesContent() {
     () => getJuizesAdmin(),
     {
       revalidateOnFocus: false,
-      refreshInterval: 60000,
+      refreshInterval: 0,
     },
   );
 

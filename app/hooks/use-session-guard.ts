@@ -7,6 +7,13 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 
 import { useRealtime } from "@/app/providers/realtime-provider";
+import { REALTIME_POLLING } from "@/app/lib/realtime/polling-policy";
+import {
+  isPollingGloballyEnabled,
+  resolvePollingInterval,
+  subscribePollingControl,
+  tracePollingAttempt,
+} from "@/app/lib/realtime/polling-telemetry";
 
 interface SessionGuardOptions {
   /**
@@ -45,7 +52,7 @@ interface SessionGuardResult {
 export function useSessionGuard(
   options: SessionGuardOptions = {},
 ): SessionGuardResult {
-  const { interval = 30, publicRoutes = ["/login", "/", "/about", "/precos"] } =
+  const { interval = REALTIME_POLLING.SESSION_GUARD_FALLBACK_MS / 1000, publicRoutes = ["/login", "/", "/about", "/precos"] } =
     options;
 
   const { data: session, status: sessionStatus } = useSession();
@@ -53,6 +60,17 @@ export function useSessionGuard(
   const pathname = usePathname();
   const realtime = useRealtime();
   const currentUserId = session?.user?.id;
+  const fallbackMs = interval * 1000;
+  const [isPollingEnabled, setIsPollingEnabled] = useState(() =>
+    isPollingGloballyEnabled(),
+  );
+  const [pollingInterval, setPollingInterval] = useState(() =>
+    resolvePollingInterval({
+      isConnected: true,
+      enabled: false,
+      fallbackMs,
+    }),
+  );
 
   // Flag para impedir revalidações repetidas
   const revokedRef = useRef(false);
@@ -69,67 +87,102 @@ export function useSessionGuard(
     return pathname?.startsWith(route);
   });
 
+  const canRunPolling =
+    sessionStatus === "authenticated" &&
+    Boolean(currentUserId) &&
+    !isPublicRoute &&
+    !revokedRef.current &&
+    !isRevoked;
+
+  useEffect(() => {
+    const apply = (globalEnabled = isPollingEnabled) => {
+      setPollingInterval(
+        resolvePollingInterval({
+          isConnected: realtime.isConnected,
+          enabled: globalEnabled && canRunPolling,
+          fallbackMs,
+        }),
+      );
+    };
+
+    apply();
+
+    const unsubscribe = subscribePollingControl((enabled) => {
+      setIsPollingEnabled(enabled);
+      apply(enabled);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [
+    canRunPolling,
+    fallbackMs,
+    isPollingEnabled,
+    realtime.isConnected,
+  ]);
+
   /**
    * Função para validar a sessão contra o banco de dados
    */
   const validateSession = useCallback(async () => {
     // Se não está autenticado, está em rota pública ou já foi revogada, não precisa verificar
-    if (
-      sessionStatus !== "authenticated" ||
-      !currentUserId ||
-      isPublicRoute ||
-      revokedRef.current ||
-      isRevoked
-    ) {
-      return;
-    }
-
-    if (validationInFlightRef.current) {
+    if (!canRunPolling || validationInFlightRef.current) {
       return;
     }
 
     validationInFlightRef.current = true;
 
     try {
-      // Usar rota pública intermediária que valida no servidor sem expor token interno
-      const response = await fetch("/api/session/check", {
-        method: "POST",
-        credentials: "same-origin", // Garantir envio de cookies
-        headers: {
-          "Content-Type": "application/json",
+      await tracePollingAttempt(
+        {
+          hookName: "useSessionGuard",
+          endpoint: "/api/session/check",
+          source: "manual",
+          intervalMs: pollingInterval,
         },
-        body: "{}",
-      });
+        async () => {
+          // Usar rota pública intermediária que valida no servidor sem expor token interno
+          const response = await fetch("/api/session/check", {
+            method: "POST",
+            credentials: "same-origin", // Garantir envio de cookies
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: "{}",
+          });
 
-      const data = await response.json();
+          const data = await response.json();
 
-      // Se a sessão foi invalidada (qualquer resposta que não seja válida)
-      if (!data.valid) {
-        const reason = data.reason || "SESSION_REVOKED";
+          // Se a sessão foi invalidada (qualquer resposta que não seja válida)
+          if (!data.valid) {
+            const reason = data.reason || "SESSION_REVOKED";
 
-        // Prevenir revalidações repetidas
-        if (revokedRef.current) {
-          return;
-        }
+            // Prevenir revalidações repetidas
+            if (revokedRef.current) {
+              return;
+            }
 
-        revokedRef.current = true;
-        setIsRevoked(true);
+            revokedRef.current = true;
+            setIsRevoked(true);
 
-        // Forçar logout do NextAuth para limpar token
-        await signOut({ redirect: false });
+            // Forçar logout do NextAuth para limpar token
+            await signOut({ redirect: false });
 
-        // Dar tempo para limpar UI antes de redirecionar
-        setTimeout(() => {
-          router.replace(`/login?reason=${reason}`);
-        }, 100);
-      }
+            // Dar tempo para limpar UI antes de redirecionar
+            setTimeout(() => {
+              router.replace(`/login?reason=${reason}`);
+            }, 100);
+          }
+        },
+      );
     } catch (error) {
       // Em caso de erro de rede, não fazer nada (fail-open)
       console.warn("[useSessionGuard] Falha na validação de sessão", error);
     } finally {
       validationInFlightRef.current = false;
     }
-  }, [sessionStatus, currentUserId, isPublicRoute, isRevoked, router]);
+  }, [canRunPolling, pollingInterval, router]);
 
   /**
    * Função para forçar logout quando evento hard é recebido
@@ -156,13 +209,7 @@ export function useSessionGuard(
    * Listener para eventos WebSocket (realtime)
    */
   useEffect(() => {
-    if (
-      sessionStatus !== "authenticated" ||
-      !currentUserId ||
-      isPublicRoute ||
-      revokedRef.current ||
-      isRevoked
-    ) {
+    if (!canRunPolling) {
       return;
     }
 
@@ -201,33 +248,23 @@ export function useSessionGuard(
       unsubscribeTenant();
       unsubscribeUser();
     };
-  }, [
-    sessionStatus,
-    currentUserId,
-    isPublicRoute,
-    realtime,
-    forceLogout,
-    isRevoked,
-  ]);
+  }, [canRunPolling, currentUserId, forceLogout, realtime]);
 
   /**
    * Efeito para verificação periódica (fallback apenas quando realtime estiver desconectado)
    */
   useEffect(() => {
-    const shouldSkipValidation =
-      sessionStatus !== "authenticated" ||
-      !currentUserId ||
-      isPublicRoute ||
-      revokedRef.current ||
-      isRevoked;
-
     // Sem sessão válida, não há o que validar
-    if (shouldSkipValidation) {
+    if (!canRunPolling) {
       return;
     }
 
-    // Empresa grande: com realtime conectado, evita polling agressivo
+    // Empresa grande: com realtime conectado, evita polling
     if (realtime.isConnected) {
+      return;
+    }
+
+    if (pollingInterval <= 0) {
       return;
     }
 
@@ -245,7 +282,7 @@ export function useSessionGuard(
     runValidationIfVisible();
 
     // Polling apenas em fallback
-    const intervalId = setInterval(runValidationIfVisible, interval * 1000);
+    const intervalId = setInterval(runValidationIfVisible, pollingInterval);
 
     // Ao voltar para a aba, valida instantaneamente
     const handleVisibilityChange = () => {
@@ -258,33 +295,19 @@ export function useSessionGuard(
       clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [
-    sessionStatus,
-    currentUserId,
-    isPublicRoute,
-    validateSession,
-    interval,
-    isRevoked,
-    realtime.isConnected,
-  ]);
+  }, [canRunPolling, isRevoked, pollingInterval, realtime.isConnected, validateSession]);
 
   /**
    * Validação inicial ao autenticar (independente de polling).
    * Evita ficar com sessão inválida se houver perda de evento realtime.
    */
   useEffect(() => {
-    if (
-      sessionStatus !== "authenticated" ||
-      !currentUserId ||
-      isPublicRoute ||
-      revokedRef.current ||
-      isRevoked
-    ) {
+    if (!canRunPolling) {
       return;
     }
 
     void validateSession();
-  }, [sessionStatus, currentUserId, isPublicRoute, isRevoked, validateSession]);
+  }, [canRunPolling, validateSession]);
 
   return {
     isChecking: sessionStatus === "loading",

@@ -254,7 +254,7 @@ export default function AdvogadosContent() {
     error: performanceError,
   } = useAdvogadosPerformance(undefined, {
     enabled: shouldLoadPerformanceData,
-    refreshInterval: 120000,
+    refreshInterval: 0,
   });
   const {
     performance: performanceGeral,
@@ -262,7 +262,7 @@ export default function AdvogadosContent() {
     error: performanceGeralError,
   } = usePerformanceGeral(undefined, {
     enabled: shouldLoadPerformanceData,
-    refreshInterval: 120000,
+    refreshInterval: 0,
   });
 
   // Debug logs removidos para produção
@@ -271,12 +271,12 @@ export default function AdvogadosContent() {
   const { comissoes: comissoesData, isLoading: isLoadingComissoes } =
     useAdvogadosComissoes(undefined, {
       enabled: shouldLoadCommissionsData,
-      refreshInterval: 120000,
+      refreshInterval: 0,
     });
   const { comissoes: comissoesGeral, isLoading: isLoadingComissoesGeral } =
     useComissoesGeral(undefined, {
       enabled: shouldLoadCommissionsData,
-      refreshInterval: 120000,
+      refreshInterval: 0,
     });
 
   // Hook de estados do Brasil

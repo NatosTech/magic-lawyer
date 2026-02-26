@@ -56,7 +56,7 @@ export function CausasContent() {
     "causas",
     causasFetcher,
     {
-      revalidateOnFocus: true,
+      revalidateOnFocus: false,
     },
   );
 

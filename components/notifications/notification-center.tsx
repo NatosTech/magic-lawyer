@@ -68,6 +68,7 @@ export const NotificationCenter = () => {
     unreadCount,
     isLoading,
     isValidating,
+    mutate: mutateNotifications,
     markAs,
     markAllAsRead,
     clearAll,
@@ -129,12 +130,12 @@ export const NotificationCenter = () => {
   // Realtime: invalidar quando chegar notification.new para o usuário atual
   useEffect(() => {
     const unsubscribe = subscribe("notification.new", () => {
-      // força um refetch rápido do SWR das notificações
-      router.refresh();
+      // Invalida apenas cache SWR das notificações, sem refresh global
+      void mutateNotifications();
     });
 
     return unsubscribe;
-  }, [subscribe, router]);
+  }, [subscribe, mutateNotifications]);
 
   const detailPayload = useMemo(() => {
     if (

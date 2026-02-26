@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { Badge } from "@heroui/badge";
 import { Button } from "@heroui/button";
@@ -15,8 +15,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Search, Filter, RotateCcw } from "lucide-react";
 
 import { getAllTenants, type TenantResponse } from "@/app/actions/admin";
+import { REALTIME_POLLING } from "@/app/lib/realtime/polling-policy";
 import { title, subtitle } from "@/components/primitives";
 import { useRealtimeTenantStatus } from "@/app/hooks/use-realtime-tenant-status";
+import {
+  isPollingGloballyEnabled,
+  resolvePollingInterval,
+  subscribePollingControl,
+  tracePollingAttempt,
+} from "@/app/lib/realtime/polling-telemetry";
 
 const statusLabel: Record<string, string> = {
   ACTIVE: "Ativo",
@@ -220,12 +227,39 @@ function TenantCard({ tenant, mutate }: TenantCardProps) {
 }
 
 export function TenantsContent() {
+  const [isPollingEnabled, setIsPollingEnabled] = useState(() =>
+    isPollingGloballyEnabled(),
+  );
+
+  useEffect(() => {
+    return subscribePollingControl(setIsPollingEnabled);
+  }, []);
+
+  const pollingInterval = resolvePollingInterval({
+    isConnected: false,
+    enabled: isPollingEnabled,
+    fallbackMs: REALTIME_POLLING.TENANT_STATUS_FALLBACK_MS,
+    minimumMs: REALTIME_POLLING.TENANT_STATUS_FALLBACK_MS,
+  });
+
   const { data, error, isLoading, mutate } = useSWR(
     "admin-tenants",
-    fetchTenants,
+    () =>
+      tracePollingAttempt(
+        {
+          hookName: "TenantsContent",
+          endpoint: "/api/admin/tenants",
+          source: "swr",
+          intervalMs: pollingInterval,
+        },
+        () => fetchTenants(),
+      ),
     {
-      revalidateOnFocus: true,
-      refreshInterval: 5000, // 5 segundos
+      revalidateOnFocus: false,
+      // 5 minutos no fallback sem realtime (ideal para admin com pouca frequência de alteração)
+      refreshInterval: isPollingEnabled ? pollingInterval : 0,
+      revalidateOnReconnect: false,
+      dedupingInterval: 30_000,
     },
   );
 

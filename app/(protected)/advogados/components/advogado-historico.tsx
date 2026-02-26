@@ -52,8 +52,8 @@ export function AdvogadoHistorico({
     isOpen ? `advogado-historico-${advogadoId}` : null,
     () => getAdvogadoHistorico(advogadoId),
     {
-      refreshInterval: 30000, // Atualizar a cada 30 segundos
-      revalidateOnFocus: true,
+      refreshInterval: 0,
+      revalidateOnFocus: false,
     },
   );
 

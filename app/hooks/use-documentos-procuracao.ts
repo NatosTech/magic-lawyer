@@ -29,7 +29,7 @@ export function useDocumentosProcuracao(procuracaoId: string | null) {
       return result.documentos || [];
     },
     {
-      revalidateOnFocus: true,
+      revalidateOnFocus: false,
       revalidateOnReconnect: true,
       refreshInterval: 0, // Não fazer refresh automático
       dedupingInterval: 2000, // Cache por 2 segundos

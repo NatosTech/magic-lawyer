@@ -34,9 +34,8 @@ function normalizeUrlForComparison(url: string | null) {
  *
  * Estratégia:
  * 1. Mantém um único <link> com ID fixo controlado pelo React
- * 2. Apenas atualiza href/type quando o tenant mudar
- * 3. MutationObserver recria o elemento se o Next remover durante navegação
- * 4. Nenhuma remoção direta de favicons criados pelo Next (evita conflitos)
+ * 2. Atualiza quando o tenant muda (sessão / domínio / rota)
+ * 3. MutationObserver refaz a atualização quando Next recria o <link>
  */
 export function DynamicFavicon() {
   const { data: session } = useSession();
@@ -53,10 +52,8 @@ export function DynamicFavicon() {
     },
   );
 
-  const faviconRef = useRef<HTMLLinkElement | null>(null);
-  const currentFaviconUrlRef = useRef<string | null>(null);
   const observerRef = useRef<MutationObserver | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const currentFaviconUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined" || !document.head) {
@@ -80,15 +77,11 @@ export function DynamicFavicon() {
         element.rel = "icon";
         element.id = FAVICON_ID;
         document.head.appendChild(element);
-        faviconRef.current = element;
         return [element];
       }
 
-      // Garantir que o primeiro tenha nosso ID (para observer & depuração)
       const [first, ...rest] = existingIcons;
       first.id = FAVICON_ID;
-      faviconRef.current = first;
-
       return [first, ...rest];
     };
 
@@ -123,9 +116,7 @@ export function DynamicFavicon() {
 
       const timestamp = Date.now();
       const cacheBustedUrl =
-        faviconUrl +
-        (faviconUrl.includes("?") ? "&" : "?") +
-        `t=${timestamp}`;
+        faviconUrl + (faviconUrl.includes("?") ? "&" : "?") + `t=${timestamp}`;
 
       applyHrefToElements(elements, cacheBustedUrl);
 
@@ -148,7 +139,7 @@ export function DynamicFavicon() {
       observerRef.current.disconnect();
     }
 
-    observerRef.current = new MutationObserver((mutations) => {
+    const observer = new MutationObserver((mutations) => {
       const iconMutation = mutations.some((mutation) =>
         Array.from(mutation.addedNodes).some(
           (node) =>
@@ -162,27 +153,19 @@ export function DynamicFavicon() {
       }
     });
 
-    observerRef.current.observe(document.head, { childList: true });
-
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    intervalRef.current = setInterval(() => {
-      scheduleRefresh();
-    }, 5000);
+    observer.observe(document.head, { childList: true });
+    observerRef.current = observer;
 
     return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
-      }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      observer.disconnect();
+      observerRef.current = null;
     };
-  }, [session, tenantBrandingFromDomain, pathname]);
+  }, [
+    session?.user?.tenantFaviconUrl,
+    tenantBrandingFromDomain?.success,
+    tenantBrandingFromDomain?.data?.faviconUrl,
+    pathname,
+  ]);
 
   return null;
 }

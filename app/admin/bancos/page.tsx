@@ -88,14 +88,18 @@ export default function BancosAdminPage() {
   const { data: bancosData, mutate: mutateBancos } = useSWR(
     ["bancos", searchTerm],
     () => listBancos({ search: searchTerm || undefined, limit: 100 }),
-    { refreshInterval: 30000 },
+    {
+      revalidateOnFocus: false,
+      refreshInterval: 0,
+    },
   );
 
   const { data: dashboardData } = useSWR(
     "dashboard-bancos",
     getDashboardBancos,
     {
-      refreshInterval: 60000,
+      revalidateOnFocus: false,
+      refreshInterval: 0,
     },
   );
 

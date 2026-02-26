@@ -12,6 +12,13 @@ import {
   type NotificationsResponse,
 } from "@/app/actions/notifications";
 import { useRealtime } from "@/app/providers/realtime-provider";
+import { REALTIME_POLLING } from "@/app/lib/realtime/polling-policy";
+import {
+  isPollingGloballyEnabled,
+  resolvePollingInterval,
+  subscribePollingControl,
+  tracePollingAttempt,
+} from "@/app/lib/realtime/polling-telemetry";
 
 export type NotificationItem = {
   id: string;
@@ -39,44 +46,70 @@ type UseNotificationsOptions = {
 /**
  * Hook para buscar notificações com fallback HTTP/polling
  *
- * Quando o Ably (WebSocket) não está conectado, aumenta automaticamente
- * a frequência de polling de 60s para 30s para garantir entrega rápida.
+ * Quando o Ably (WebSocket) não está conectado, usa polling de fallback
+ * com frequência conservadora para segurança e observabilidade.
  */
 export function useNotifications(options: UseNotificationsOptions = {}) {
-  const { limit, refreshInterval = 60000, enablePolling = true } = options;
+  const {
+    limit,
+    refreshInterval = REALTIME_POLLING.NOTIFICATION_FALLBACK_MS,
+    enablePolling = true,
+  } = options;
 
   // Detectar conexão Ably para ajustar polling
   const { isConnected } = useRealtime();
-  const [pollingInterval, setPollingInterval] = useState(refreshInterval);
+  const [isPollingEnabled, setIsPollingEnabled] = useState(() =>
+    isPollingGloballyEnabled(),
+  );
+  const [pollingInterval, setPollingInterval] = useState(() =>
+    resolvePollingInterval({
+      isConnected,
+      enabled: enablePolling,
+      fallbackMs: refreshInterval,
+    }),
+  );
 
-  // Ajustar intervalo de polling baseado na conexão WebSocket
   useEffect(() => {
-    if (!enablePolling) {
-      setPollingInterval(0); // Desabilitar polling se explicitamente desabilitado
+    const recalculate = () => {
+      setPollingInterval(
+        resolvePollingInterval({
+          isConnected,
+          enabled: enablePolling && isPollingEnabled,
+          fallbackMs: refreshInterval,
+        }),
+      );
+    };
 
-      return;
-    }
+    recalculate();
+    const unsubscribe = subscribePollingControl(setIsPollingEnabled);
 
-    // Se Ably não está conectado, usar polling mais frequente (30s)
-    // Caso contrário, usar intervalo padrão (60s ou customizado)
-    if (!isConnected) {
-      setPollingInterval(30000); // 30 segundos (fallback HTTP quando sem socket)
-    } else {
-      setPollingInterval(refreshInterval);
-    }
-  }, [isConnected, refreshInterval, enablePolling]);
+    return () => {
+      unsubscribe();
+    };
+  }, [isConnected, refreshInterval, enablePolling, isPollingEnabled]);
+
+  const shouldAutoPoll = pollingInterval > 0 && enablePolling && isPollingEnabled;
+
+  const swrFetcher = () =>
+    tracePollingAttempt(
+      {
+        hookName: "useNotifications",
+        endpoint: "/api/notifications",
+        source: "swr",
+        intervalMs: pollingInterval,
+      },
+      async () =>
+        getNotifications(typeof limit === "number" ? { limit } : undefined),
+    );
 
   const { data, error, isLoading, isValidating, mutate } =
     useSWR<NotificationsResponse>(
-      ["notifications", limit ?? null],
-      async ([, take]) =>
-        getNotifications(
-          typeof take === "number" ? { limit: take } : undefined,
-        ),
+      ["notifications", limit],
+      swrFetcher,
       {
-        revalidateOnFocus: true,
-        refreshInterval: pollingInterval, // Intervalo dinâmico baseado na conexão
-        revalidateOnReconnect: true,
+        revalidateOnFocus: false,
+        refreshInterval: shouldAutoPoll ? pollingInterval : 0,
+        revalidateOnReconnect: shouldAutoPoll,
         dedupingInterval: 2000, // Evitar requisições duplicadas
       },
     );
@@ -102,8 +135,6 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     [data?.notifications],
   );
 
-  const unreadCount = data?.unreadCount ?? 0;
-
   const markAs = useCallback(
     async (id: string, status: NotificationStatus) => {
       await setNotificationStatus(id, status);
@@ -124,7 +155,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
 
   return {
     notifications,
-    unreadCount,
+    unreadCount: data?.unreadCount ?? 0,
     isLoading,
     isValidating,
     error,

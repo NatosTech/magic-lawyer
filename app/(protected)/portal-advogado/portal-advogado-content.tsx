@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Card,
   CardBody,
@@ -39,6 +39,13 @@ import {
   iniciarSincronizacaoMeusProcessos,
   resolverCaptchaSincronizacaoMeusProcessos,
 } from "@/app/actions/portal-advogado";
+import { REALTIME_POLLING } from "@/app/lib/realtime/polling-policy";
+import {
+  isPollingGloballyEnabled,
+  resolvePollingInterval,
+  subscribePollingControl,
+  tracePollingAttempt,
+} from "@/app/lib/realtime/polling-telemetry";
 
 export function PortalAdvogadoContent() {
   const [ufSelecionada, setUfSelecionada] = useState<string | undefined>();
@@ -49,6 +56,13 @@ export function PortalAdvogadoContent() {
   const [syncId, setSyncId] = useState<string | undefined>();
   const [isStartingSync, setIsStartingSync] = useState(false);
   const [isResolvingCaptcha, setIsResolvingCaptcha] = useState(false);
+  const [isPollingEnabled, setIsPollingEnabled] = useState(() =>
+    isPollingGloballyEnabled(),
+  );
+
+  useEffect(() => {
+    return subscribePollingControl(setIsPollingEnabled);
+  }, []);
 
   // Buscar tribunais da UF selecionada
   const { data: ufs } = useSWR<string[]>(
@@ -76,16 +90,37 @@ export function PortalAdvogadoContent() {
     `portal-advogado-sync-status:${syncId ?? "latest"}`,
     async (key) => {
       const currentSyncId = key.split(":").pop() || "latest";
-      return await getStatusSincronizacaoMeusProcessos({
-        syncId: currentSyncId === "latest" ? undefined : currentSyncId,
-      });
+      return await tracePollingAttempt(
+        {
+          hookName: "PortalAdvogadoContent",
+          endpoint: `/portal-advogado/sync-status/${currentSyncId}`,
+          source: "swr",
+          intervalMs: REALTIME_POLLING.PORTAL_SYNC_STATUS_POLLING_MS,
+        },
+        () =>
+          getStatusSincronizacaoMeusProcessos({
+            syncId: currentSyncId === "latest" ? undefined : currentSyncId,
+          }),
+      );
     },
     {
       refreshInterval: (latestData) => {
         const status = latestData?.status?.status;
-        return status === "QUEUED" || status === "RUNNING" ? 4000 : 0;
+        const shouldPoll =
+          isPollingEnabled &&
+          (status === "QUEUED" || status === "RUNNING");
+
+        return shouldPoll
+          ? resolvePollingInterval({
+              isConnected: false,
+            enabled: true,
+            fallbackMs: REALTIME_POLLING.PORTAL_SYNC_STATUS_POLLING_MS,
+            minimumMs: REALTIME_POLLING.PORTAL_SYNC_STATUS_POLLING_MS,
+          })
+          : 0;
       },
-      revalidateOnFocus: true,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
     },
   );
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardBody, Chip, Button, Spinner } from "@heroui/react";
 import { toast } from "sonner";
 
@@ -8,6 +8,13 @@ import {
   consultarStatusPagamento,
   conciliarPagamento,
 } from "@/app/actions/cobranca-asaas";
+import { REALTIME_POLLING } from "@/app/lib/realtime/polling-policy";
+import {
+  isPollingGloballyEnabled,
+  resolvePollingInterval,
+  subscribePollingControl,
+  tracePollingAttempt,
+} from "@/app/lib/realtime/polling-telemetry";
 
 interface StatusPagamentoTempoRealProps {
   paymentId: string;
@@ -17,26 +24,55 @@ interface StatusPagamentoTempoRealProps {
 
 export function StatusPagamentoTempoReal({
   paymentId,
-  parcelaId,
   onStatusChange,
 }: StatusPagamentoTempoRealProps) {
   const [status, setStatus] = useState<string>("PENDENTE");
   const [isLoading, setIsLoading] = useState(false);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<Date>(new Date());
+  const latestStatus = useRef(status);
+  const [isPollingEnabled, setIsPollingEnabled] = useState(() =>
+    isPollingGloballyEnabled(),
+  );
+  const isTerminalStatus = status === "CONFIRMED" || status === "CANCELLED";
 
-  // Consultar status automaticamente a cada 30 segundos
   useEffect(() => {
-    if (!paymentId) return;
+    return subscribePollingControl(setIsPollingEnabled);
+  }, []);
+
+  const pollingIntervalMs = resolvePollingInterval({
+    isConnected: false,
+    enabled: isPollingEnabled && !isTerminalStatus,
+    fallbackMs: REALTIME_POLLING.PAGAMENTO_POLLING_MS,
+    minimumMs: REALTIME_POLLING.PAGAMENTO_POLLING_MS,
+  });
+
+  useEffect(() => {
+    latestStatus.current = status;
+  }, [status]);
+
+  useEffect(() => {
+    if (!paymentId || pollingIntervalMs <= 0) {
+      return;
+    }
 
     const consultarStatus = async () => {
       try {
-        const result = await consultarStatusPagamento(paymentId);
+        const result = await tracePollingAttempt(
+          {
+            hookName: "StatusPagamentoTempoReal",
+            endpoint: `/api/payment/${paymentId}/status`,
+            source: "interval",
+            intervalMs: pollingIntervalMs,
+          },
+          () => consultarStatusPagamento(paymentId),
+        );
 
         if (result.success && result.data) {
           const novoStatus = result.data.status ?? "PENDING";
 
-          if (novoStatus !== status) {
+          if (novoStatus !== latestStatus.current) {
             setStatus(novoStatus);
+            latestStatus.current = novoStatus;
             setUltimaAtualizacao(new Date());
             onStatusChange?.(novoStatus);
 
@@ -54,18 +90,25 @@ export function StatusPagamentoTempoReal({
     };
 
     // Consultar imediatamente
-    consultarStatus();
+    void consultarStatus();
 
-    // Configurar intervalo de 30 segundos
-    const interval = setInterval(consultarStatus, 30000);
+    // Fallback HTTP apenas enquanto o pagamento está pendente
+    const interval = setInterval(consultarStatus, pollingIntervalMs);
 
     return () => clearInterval(interval);
-  }, [paymentId, status, onStatusChange]);
+  }, [paymentId, pollingIntervalMs, isTerminalStatus, onStatusChange]);
 
   const handleConciliar = async () => {
     setIsLoading(true);
     try {
-      const result = await conciliarPagamento(paymentId);
+      const result = await tracePollingAttempt(
+        {
+          hookName: "StatusPagamentoTempoReal",
+          endpoint: `/api/payment/${paymentId}/conciliar`,
+          source: "manual",
+        },
+        () => conciliarPagamento(paymentId),
+      );
 
       if (result.success && result.data) {
         const paymentStatus = result.data.paymentStatus ?? status;
@@ -79,6 +122,7 @@ export function StatusPagamentoTempoReal({
       }
     } catch (error) {
       toast.error("Erro interno do servidor");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -174,7 +218,7 @@ export function StatusPagamentoTempoReal({
         {status === "PENDING" && (
           <div className="mt-3 p-2 bg-warning/10 rounded-lg">
             <p className="text-xs text-warning">
-              💡 O status é atualizado automaticamente a cada 30 segundos. Você
+              💡 O status é atualizado automaticamente enquanto pendente. Você
               também pode clicar em &quot;Conciliar&quot; para verificar
               manualmente.
             </p>

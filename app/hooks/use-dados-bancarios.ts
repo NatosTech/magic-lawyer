@@ -62,7 +62,7 @@ export function useMeusDadosBancarios() {
     session?.user?.id ? ["meus-dados-bancarios", session.user.id] : null,
     getMeusDadosBancarios,
     {
-      revalidateOnFocus: true,
+      revalidateOnFocus: false,
       revalidateOnReconnect: true,
       refreshInterval: 0,
       dedupingInterval: 0, // Desabilitar cache

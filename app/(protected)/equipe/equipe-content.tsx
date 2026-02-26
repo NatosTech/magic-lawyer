@@ -1003,8 +1003,8 @@ function UsuarioHistoricoTab({ usuarioId }: { usuarioId: string }) {
     isLoading,
     mutate,
   } = useSWR(`equipe-historico-${usuarioId}`, () => getEquipeHistorico(usuarioId), {
-    refreshInterval: 30000,
-    revalidateOnFocus: true,
+    refreshInterval: 0,
+    revalidateOnFocus: false,
   });
 
   const getAcaoColor = (acao: string): ChipProps["color"] => {
