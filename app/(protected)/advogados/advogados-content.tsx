@@ -70,6 +70,7 @@ import {
   Scale,
   Bell,
   Mail,
+  Copy,
   UploadCloud,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -458,12 +459,41 @@ export default function AdvogadosContent() {
     return `${firstName} ${lastName}`.trim() || "Nome não informado";
   };
 
+  const getNomePrimeiroUltimo = (advogado: Advogado) => {
+    const nomeCompleto = getNomeCompleto(advogado);
+
+    if (nomeCompleto === "Nome não informado") {
+      return nomeCompleto;
+    }
+
+    const partes = nomeCompleto.split(/\s+/).filter(Boolean);
+
+    if (partes.length <= 2) {
+      return nomeCompleto;
+    }
+
+    return `${partes[0]} ${partes[partes.length - 1]}`;
+  };
+
   const getOAB = (advogado: Advogado) => {
     if (advogado.oabNumero && advogado.oabUf) {
       return `${advogado.oabUf} ${advogado.oabNumero}`;
     }
 
     return "OAB não informada";
+  };
+
+  const getOABData = (
+    advogado: Advogado,
+  ): { uf: string; numero: string } | null => {
+    if (advogado.oabNumero && advogado.oabUf) {
+      return {
+        uf: advogado.oabUf.toUpperCase(),
+        numero: advogado.oabNumero,
+      };
+    }
+
+    return null;
   };
 
   const getStatusColor = (active: boolean) => {
@@ -965,6 +995,29 @@ export default function AdvogadosContent() {
       }
     } catch (error) {
       toast.error("Erro interno ao enviar email");
+    }
+  };
+
+  const handleCopyEmail = async (email: string) => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(email);
+      } else {
+        const textarea = document.createElement("textarea");
+
+        textarea.value = email;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+
+      toast.success("E-mail copiado para a área de transferência");
+    } catch (error) {
+      toast.error("Não foi possível copiar o e-mail");
     }
   };
 
@@ -1797,18 +1850,18 @@ export default function AdvogadosContent() {
         initial={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="border-b border-white/10">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
-                  <Filter className="w-5 h-5 text-white" />
+        <Card className="border border-divider/70 bg-content1/75 shadow-sm backdrop-blur-md">
+          <CardHeader className="border-b border-divider/70 px-4 py-4 sm:px-6">
+            <div className="flex w-full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 items-start gap-3 sm:items-center">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
+                  <Filter className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">
+                  <h3 className="text-base font-semibold text-foreground sm:text-lg">
                     {isCompactView ? "Filtros rápidos" : "Filtros inteligentes"}
                   </h3>
-                  <p className="text-sm text-default-400">
+                  <p className="text-xs text-default-500 sm:text-sm">
                     {isCompactView
                       ? "Localize advogados sem poluir a tela."
                       : "Encontre exatamente o advogado que precisa."}
@@ -1817,6 +1870,7 @@ export default function AdvogadosContent() {
                 {hasActiveFilters && (
                   <motion.div
                     animate={{ scale: 1 }}
+                    className="hidden sm:block"
                     initial={{ scale: 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   >
@@ -1830,13 +1884,13 @@ export default function AdvogadosContent() {
                           selectedTipo !== "all",
                         ].filter(Boolean).length
                       }
-                      size="lg"
+                      size="sm"
                       variant="shadow"
                     >
                       <Chip
                         className="font-semibold"
                         color="primary"
-                        size="lg"
+                        size="sm"
                         variant="flat"
                       >
                         {
@@ -1853,10 +1907,10 @@ export default function AdvogadosContent() {
                   </motion.div>
                 )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
                 <Tooltip color="warning" content="Limpar todos os filtros">
                   <Button
-                    className="hover:scale-105 transition-transform"
+                    className="flex-1 sm:flex-none"
                     color="warning"
                     isDisabled={!hasActiveFilters}
                     size="sm"
@@ -1872,7 +1926,7 @@ export default function AdvogadosContent() {
                   content={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
                 >
                   <Button
-                    className="hover:scale-105 transition-transform"
+                    className="flex-1 sm:flex-none"
                     color="primary"
                     size="sm"
                     startContent={
@@ -1891,7 +1945,7 @@ export default function AdvogadosContent() {
                 {!isCompactView ? (
                   <Tooltip color="secondary" content="Filtros avançados">
                     <Button
-                      className={`hover:scale-105 transition-transform ${hasAdvancedFilters ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                      className={`flex-1 sm:flex-none ${hasAdvancedFilters ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
                       color="secondary"
                       size="sm"
                       startContent={<Filter className="w-4 h-4" />}
@@ -1926,7 +1980,7 @@ export default function AdvogadosContent() {
                 initial={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <CardBody className="p-6">
+                <CardBody className="px-4 pb-5 pt-4 sm:px-6 sm:pb-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                     {/* Filtro por Busca */}
                     <motion.div
@@ -2978,23 +3032,23 @@ export default function AdvogadosContent() {
         initial={{ opacity: 0, y: 20 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="border-b border-white/10">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
-                  <Users className="w-6 h-6 text-white" />
+        <Card className="border border-divider/70 bg-content1/75 shadow-sm backdrop-blur-md">
+          <CardHeader className="border-b border-divider/70 px-4 py-4 sm:px-6">
+            <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
+                  <Users className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+                  <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
                     Equipe de Advogados
                   </h2>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <p className="text-sm text-default-500">
                     {advogadosFiltrados.length} advogado(s) encontrado(s)
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                 <Checkbox
                   isIndeterminate={
                     selectedAdvogados.length > 0 &&
@@ -3007,7 +3061,7 @@ export default function AdvogadosContent() {
                   size="sm"
                   onValueChange={handleSelectAll}
                 >
-                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                  <span className="hidden text-sm text-default-500 sm:inline">
                     Selecionar Todos
                   </span>
                 </Checkbox>
@@ -3025,7 +3079,7 @@ export default function AdvogadosContent() {
               </div>
             </div>
           </CardHeader>
-          <CardBody className="p-6">
+          <CardBody className="p-4 sm:p-6">
             {advogadosFiltrados.length === 0 ? (
               <motion.div
                 animate={{ opacity: 1, scale: 1 }}
@@ -3063,88 +3117,136 @@ export default function AdvogadosContent() {
             ) : (
               <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 <AnimatePresence>
-                  {advogadosFiltrados.map((advogado, index) => (
-                    <motion.div
-                      key={advogado.id}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      initial={{ opacity: 0, y: 20 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      <Card
-                        className={`group border transition-all duration-300 ${
-                          selectedAdvogados.includes(advogado.id)
-                            ? "border-primary/50 bg-primary/10"
-                            : "border-white/10 bg-background/60 hover:border-primary/40 hover:bg-background/80"
-                        }`}
+                  {advogadosFiltrados.map((advogado, index) => {
+                    const nomeCompleto = getNomeCompleto(advogado);
+                    const nomeResumido = getNomePrimeiroUltimo(advogado);
+                    const oabData = getOABData(advogado);
+                    const renderAdvogadoActionsMenu = () => (
+                      <DropdownMenu aria-label="Ações do advogado">
+                        <DropdownItem
+                          key="view"
+                          startContent={<Eye className="h-4 w-4" />}
+                          onPress={() => {
+                            // Abrir modal de visualização
+                            handleViewAdvogado(advogado);
+                          }}
+                        >
+                          Ver Detalhes
+                        </DropdownItem>
+                        <DropdownItem
+                          key="edit"
+                          startContent={<Edit className="h-4 w-4" />}
+                          onPress={() => {
+                            handleEditAdvogado(advogado);
+                          }}
+                        >
+                          Editar
+                        </DropdownItem>
+                        <DropdownItem
+                          key="history"
+                          startContent={<History className="h-4 w-4" />}
+                          onPress={() => {
+                            handleViewHistorico(advogado);
+                          }}
+                        >
+                          Histórico
+                        </DropdownItem>
+                        <DropdownItem
+                          key="notifications"
+                          startContent={<Bell className="h-4 w-4" />}
+                          onPress={() => {
+                            handleViewNotificacoes(advogado);
+                          }}
+                        >
+                          Notificações
+                        </DropdownItem>
+                        <DropdownItem
+                          key="email"
+                          startContent={<Mail className="h-4 w-4" />}
+                          onPress={() => {
+                            handleEnviarEmailBoasVindas(advogado);
+                          }}
+                        >
+                          Enviar boas-vindas
+                        </DropdownItem>
+                        <DropdownItem
+                          key="copy-email"
+                          startContent={<Copy className="h-4 w-4" />}
+                          onPress={() => {
+                            handleCopyEmail(advogado.usuario.email);
+                          }}
+                        >
+                          Copiar e-mail
+                        </DropdownItem>
+                        {advogado.isExterno ? (
+                          <DropdownItem
+                            key="convert"
+                            className="text-warning"
+                            color="warning"
+                            startContent={<UserPlus className="h-4 w-4" />}
+                            onPress={() => handleConvertToInterno(advogado.id)}
+                          >
+                            Transformar em Interno
+                          </DropdownItem>
+                        ) : null}
+                        <DropdownItem
+                          key="delete"
+                          className="text-danger"
+                          color="danger"
+                          startContent={<Trash2 className="h-4 w-4" />}
+                          onPress={() => handleDeleteAdvogado(advogado.id)}
+                        >
+                          Excluir
+                        </DropdownItem>
+                      </DropdownMenu>
+                    );
+
+                    return (
+                      <motion.div
+                        key={advogado.id}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                        whileHover={{ scale: 1.02 }}
                       >
-                        <CardHeader className="border-b border-white/10 p-4">
-                          <div className="flex gap-3 w-full">
-                            <Checkbox
-                              className="mt-2 flex-shrink-0"
-                              isSelected={selectedAdvogados.includes(
-                                advogado.id,
-                              )}
-                              size="sm"
-                              onValueChange={() =>
-                                handleSelectAdvogado(advogado.id)
-                              }
-                            />
-                            <motion.div
-                              className="flex-shrink-0 relative group"
-                              transition={{
-                                type: "spring",
-                                stiffness: 400,
-                                damping: 10,
-                              }}
-                              whileHover={{ scale: 1.1, rotate: 5 }}
-                            >
-                              <Avatar
-                                showFallback
-                                className="bg-blue-500 text-white shadow-lg"
-                                name={getInitials(getNomeCompleto(advogado))}
-                                size="lg"
-                                src={advogado.usuario.avatarUrl || undefined}
-                              />
-                              {isUploadingAvatar &&
-                                selectedAdvogadoForAvatar?.id ===
-                                  advogado.id && (
-                                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                                    <Spinner color="white" size="sm" />
-                                  </div>
-                                )}
-                              <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1">
-                                <Button
-                                  isIconOnly
-                                  className="h-6 w-6 min-w-6"
-                                  color="primary"
+                        <Card
+                          className={`group border transition-all duration-300 ${
+                            selectedAdvogados.includes(advogado.id)
+                              ? "border-primary/50 bg-primary/10"
+                              : "border-white/10 bg-background/60 hover:border-primary/40 hover:bg-background/80"
+                          }`}
+                        >
+                          <CardHeader className="border-b border-white/10 p-4">
+                            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+                              <div className="flex w-full items-center justify-between sm:hidden">
+                                <Checkbox
+                                  className="flex-shrink-0"
+                                  isSelected={selectedAdvogados.includes(
+                                    advogado.id,
+                                  )}
                                   size="sm"
-                                  variant="solid"
-                                  onPress={() => handleEditAvatar(advogado)}
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                {advogado.usuario.avatarUrl && (
-                                  <Button
-                                    isIconOnly
-                                    className="h-6 w-6 min-w-6"
-                                    color="danger"
-                                    size="sm"
-                                    variant="solid"
-                                    onPress={() => handleRemoveAvatar(advogado)}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                )}
+                                  onValueChange={() =>
+                                    handleSelectAdvogado(advogado.id)
+                                  }
+                                />
+                                <Dropdown>
+                                  <DropdownTrigger>
+                                    <Button
+                                      isIconOnly
+                                      className="transition-all hover:scale-110 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                      size="sm"
+                                      variant="light"
+                                    >
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownTrigger>
+                                  {renderAdvogadoActionsMenu()}
+                                </Dropdown>
                               </div>
-                            </motion.div>
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2 mb-2">
-                                <h3 className="font-bold text-base text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
-                                  {getNomeCompleto(advogado)}
-                                </h3>
-                                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+
+                              <div className="flex w-full flex-col items-center gap-2 sm:w-auto sm:items-start sm:gap-3">
+                                <div className="flex items-center justify-center gap-2 sm:hidden">
                                   {advogado.isExterno && (
                                     <Chip
                                       color="warning"
@@ -3156,126 +3258,167 @@ export default function AdvogadosContent() {
                                     </Chip>
                                   )}
                                   <Chip
-                                    color={getStatusColor(
-                                      advogado.usuario.active,
-                                    )}
+                                    color={getStatusColor(advogado.usuario.active)}
                                     size="sm"
                                     variant="flat"
                                   >
                                     {getStatusText(advogado.usuario.active)}
                                   </Chip>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-md">
-                                  <span className="text-sm font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1">
-                                    <ScaleIcon className="h-3 w-3" />
-                                    {getOAB(advogado)}
-                                  </span>
+
+                                <div className="flex items-center gap-3">
+                                  <Checkbox
+                                    className="hidden flex-shrink-0 sm:flex"
+                                    isSelected={selectedAdvogados.includes(
+                                      advogado.id,
+                                    )}
+                                    size="sm"
+                                    onValueChange={() =>
+                                      handleSelectAdvogado(advogado.id)
+                                    }
+                                  />
+                                  <motion.div
+                                    className="group relative flex-shrink-0"
+                                    transition={{
+                                      type: "spring",
+                                      stiffness: 400,
+                                      damping: 10,
+                                    }}
+                                    whileHover={{ scale: 1.1, rotate: 5 }}
+                                  >
+                                    <Avatar
+                                      showFallback
+                                      className="bg-blue-500 text-white shadow-lg"
+                                      name={getInitials(nomeCompleto)}
+                                      size="lg"
+                                      src={advogado.usuario.avatarUrl || undefined}
+                                    />
+                                    {isUploadingAvatar &&
+                                      selectedAdvogadoForAvatar?.id ===
+                                        advogado.id && (
+                                        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+                                          <Spinner color="white" size="sm" />
+                                        </div>
+                                      )}
+                                    <div className="absolute inset-0 flex items-center justify-center gap-1 rounded-full bg-black/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                                      <Button
+                                        isIconOnly
+                                        className="h-6 w-6 min-w-6"
+                                        color="primary"
+                                        size="sm"
+                                        variant="solid"
+                                        onPress={() => handleEditAvatar(advogado)}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      {advogado.usuario.avatarUrl && (
+                                        <Button
+                                          isIconOnly
+                                          className="h-6 w-6 min-w-6"
+                                          color="danger"
+                                          size="sm"
+                                          variant="solid"
+                                          onPress={() =>
+                                            handleRemoveAvatar(advogado)
+                                          }
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </motion.div>
+                                </div>
+
+                                <div className="w-full max-w-[220px] text-center sm:hidden">
+                                  <Tooltip content={nomeCompleto} placement="top">
+                                    <p className="break-words text-xs font-semibold leading-tight text-slate-700 dark:text-slate-300">
+                                      {nomeResumido}
+                                    </p>
+                                  </Tooltip>
+                                  <div className="mt-1 inline-flex max-w-full items-center gap-1 rounded-md bg-blue-100 px-2 py-0.5 dark:bg-blue-900/30">
+                                    <ScaleIcon className="h-3 w-3 text-blue-700 dark:text-blue-300" />
+                                    <span className="text-[10px] font-semibold text-blue-700 dark:text-blue-300">
+                                      {oabData
+                                        ? `${oabData.uf} ${oabData.numero}`
+                                        : "Sem OAB"}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
+
+                              <div className="hidden min-w-0 flex-1 flex-col sm:flex">
+                                <div className="mb-2 flex items-start justify-between gap-2">
+                                  <Tooltip content={nomeCompleto} placement="top">
+                                    <div className="min-w-0">
+                                      <h3 className="break-words text-base font-bold leading-tight text-slate-800 transition-colors group-hover:text-blue-600 dark:text-slate-200 dark:group-hover:text-blue-400 xl:hidden">
+                                        {nomeResumido}
+                                      </h3>
+                                      <h3 className="hidden break-words text-base font-bold leading-tight text-slate-800 transition-colors group-hover:text-blue-600 dark:text-slate-200 dark:group-hover:text-blue-400 xl:block">
+                                        {nomeCompleto}
+                                      </h3>
+                                    </div>
+                                  </Tooltip>
+                                  <div className="flex shrink-0 flex-col items-end gap-1">
+                                    {advogado.isExterno && (
+                                      <Chip
+                                        color="warning"
+                                        size="sm"
+                                        startContent={<Eye className="h-3 w-3" />}
+                                        variant="flat"
+                                      >
+                                        Externo
+                                      </Chip>
+                                    )}
+                                    <Chip
+                                      color={getStatusColor(advogado.usuario.active)}
+                                      size="sm"
+                                      variant="flat"
+                                    >
+                                      {getStatusText(advogado.usuario.active)}
+                                    </Chip>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  {oabData ? (
+                                    <div className="rounded-md bg-blue-100 px-2 py-1 dark:bg-blue-900/30">
+                                      <span className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-blue-700 dark:text-blue-300">
+                                        <ScaleIcon className="h-3 w-3" />
+                                        <span>{oabData.uf}</span>
+                                        <span className="font-bold tracking-wide">
+                                          {oabData.numero}
+                                        </span>
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div className="rounded-md bg-slate-100 px-2 py-1 dark:bg-slate-800/50">
+                                      <span className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                                        <ScaleIcon className="h-3 w-3" />
+                                        Sem OAB
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="hidden sm:block">
+                                <Dropdown>
+                                  <DropdownTrigger>
+                                    <Button
+                                      isIconOnly
+                                      className="transition-all hover:scale-110 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                      size="sm"
+                                      variant="light"
+                                    >
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownTrigger>
+                                  {renderAdvogadoActionsMenu()}
+                                </Dropdown>
+                              </div>
                             </div>
-                            <Dropdown>
-                              <DropdownTrigger>
-                                <Button
-                                  isIconOnly
-                                  className="hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-110 transition-all"
-                                  size="sm"
-                                  variant="light"
-                                >
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownTrigger>
-                              <DropdownMenu aria-label="Ações do advogado">
-                                <DropdownItem
-                                  key="view"
-                                  startContent={<Eye className="h-4 w-4" />}
-                                  onPress={() => {
-                                    // Abrir modal de visualização
-                                    handleViewAdvogado(advogado);
-                                  }}
-                                >
-                                  Ver Detalhes
-                                </DropdownItem>
-                                <DropdownItem
-                                  key="profile"
-                                  startContent={<User className="h-4 w-4" />}
-                                  onPress={() => {
-                                    window.open(
-                                      `/advogados/${advogado.id}`,
-                                      "_blank",
-                                    );
-                                  }}
-                                >
-                                  Perfil Completo
-                                </DropdownItem>
-                                <DropdownItem
-                                  key="history"
-                                  startContent={<History className="h-4 w-4" />}
-                                  onPress={() => {
-                                    handleViewHistorico(advogado);
-                                  }}
-                                >
-                                  Histórico
-                                </DropdownItem>
-                                <DropdownItem
-                                  key="notifications"
-                                  startContent={<Bell className="h-4 w-4" />}
-                                  onPress={() => {
-                                    handleViewNotificacoes(advogado);
-                                  }}
-                                >
-                                  Notificações
-                                </DropdownItem>
-                                <DropdownItem
-                                  key="email"
-                                  startContent={<Mail className="h-4 w-4" />}
-                                  onPress={() => {
-                                    handleEnviarEmailBoasVindas(advogado);
-                                  }}
-                                >
-                                  Enviar Email
-                                </DropdownItem>
-                                <DropdownItem
-                                  key="edit"
-                                  startContent={<Edit className="h-4 w-4" />}
-                                  onPress={() => {
-                                    handleEditAdvogado(advogado);
-                                  }}
-                                >
-                                  Editar
-                                </DropdownItem>
-                                {advogado.isExterno ? (
-                                  <DropdownItem
-                                    key="convert"
-                                    className="text-warning"
-                                    color="warning"
-                                    startContent={
-                                      <UserPlus className="h-4 w-4" />
-                                    }
-                                    onPress={() =>
-                                      handleConvertToInterno(advogado.id)
-                                    }
-                                  >
-                                    Transformar em Interno
-                                  </DropdownItem>
-                                ) : null}
-                                <DropdownItem
-                                  key="delete"
-                                  className="text-danger"
-                                  color="danger"
-                                  startContent={<Trash2 className="h-4 w-4" />}
-                                  onPress={() =>
-                                    handleDeleteAdvogado(advogado.id)
-                                  }
-                                >
-                                  Excluir
-                                </DropdownItem>
-                              </DropdownMenu>
-                            </Dropdown>
-                          </div>
-                        </CardHeader>
-                        <CardBody className="p-4 space-y-3">
+                          </CardHeader>
+                          <CardBody className="p-4 space-y-3">
                           {/* Informações de Contato */}
                           <div className="space-y-2">
                             <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
@@ -3398,10 +3541,11 @@ export default function AdvogadosContent() {
                               Editar
                             </Button>
                           </div>
-                        </CardBody>
-                      </Card>
-                    </motion.div>
-                  ))}
+                          </CardBody>
+                        </Card>
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </div>
             )}

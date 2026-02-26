@@ -3551,16 +3551,16 @@ export default function EquipeContent() {
       </motion.div>
 
       <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+        <Card className="border border-divider/70 bg-content1/75 shadow-sm backdrop-blur-md">
           <CardHeader className="pb-2">
             <div>
-              <h2 className="text-lg font-semibold text-white">Resumo da equipe</h2>
-              <p className="text-sm text-default-400">
+              <h2 className="text-lg font-semibold text-foreground">Resumo da equipe</h2>
+              <p className="text-sm text-default-500">
                 Indicadores consolidados de estrutura, convites e vinculações.
               </p>
             </div>
           </CardHeader>
-          <Divider className="border-white/10" />
+          <Divider className="border-divider/70" />
           <CardBody>
             <DashboardEquipe />
           </CardBody>
@@ -3568,8 +3568,22 @@ export default function EquipeContent() {
       </motion.div>
 
       <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardBody className="space-y-4">
+        <Card className="border border-divider/70 bg-content1/75 shadow-sm backdrop-blur-md">
+          <CardBody className="space-y-4 p-4 sm:p-6">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
+                <Filter className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-foreground sm:text-lg">
+                  Filtros operacionais
+                </h3>
+                <p className="text-xs text-default-500 sm:text-sm">
+                  Navegue por cargos, usuários e convites sem poluir a tela.
+                </p>
+              </div>
+            </div>
+
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:items-center">
                 <div className="relative flex-1">
@@ -3589,13 +3603,23 @@ export default function EquipeContent() {
                   />
                 </div>
 
-                <Button startContent={<Filter className="w-4 h-4" />} variant="flat" onPress={() => setShowFilters(!showFilters)}>
+                <Button
+                  className="w-full lg:w-auto"
+                  startContent={<Filter className="w-4 h-4" />}
+                  variant="flat"
+                  onPress={() => setShowFilters(!showFilters)}
+                >
                   Filtros
                 </Button>
               </div>
 
-              <div className="flex gap-2">
-                <Button startContent={<Download className="w-4 h-4" />} variant="flat" onPress={() => handleExportAll()}>
+              <div className="flex w-full gap-2 lg:w-auto">
+                <Button
+                  className="w-full lg:w-auto"
+                  startContent={<Download className="w-4 h-4" />}
+                  variant="flat"
+                  onPress={() => handleExportAll()}
+                >
                   Exportar visão
                 </Button>
               </div>
@@ -3641,12 +3665,13 @@ export default function EquipeContent() {
       </motion.div>
 
       <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+        <Card className="border border-divider/70 bg-content1/75 shadow-sm backdrop-blur-md">
           <CardBody className="p-0">
             <Tabs
               aria-label="Gestão de Equipe"
               classNames={{
-                tabList: "gap-6 w-full relative rounded-none px-4 pt-4 pb-0 border-b border-divider",
+                tabList:
+                  "gap-4 sm:gap-6 w-full relative rounded-none px-4 sm:px-6 pt-4 pb-0 border-b border-divider",
                 cursor: "w-full bg-primary",
                 tab: "max-w-fit px-0 h-12",
                 tabContent: "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
@@ -3666,7 +3691,7 @@ export default function EquipeContent() {
                   </div>
                 }
               >
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <CargosTab />
                 </div>
               </Tab>
@@ -3680,7 +3705,7 @@ export default function EquipeContent() {
                   </div>
                 }
               >
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <UsuariosTab />
                 </div>
               </Tab>
@@ -3694,7 +3719,7 @@ export default function EquipeContent() {
                   </div>
                 }
               >
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <ConvitesTab />
                 </div>
               </Tab>

@@ -1155,34 +1155,36 @@ function SidebarContent({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="mb-6 flex items-center gap-3 px-3 pt-4">
-        {tenantLogoUrl ? (
-          <span className="flex h-10 w-16 items-center justify-center rounded-xl border border-white/10 bg-white/5 p-1">
-            <Image
-              unoptimized
-              alt={`Logo ${tenantName}`}
-              className="max-h-full w-full object-contain"
-              height={40}
-              src={tenantLogoUrl}
-              width={64}
-            />
-          </span>
-        ) : (
-          <span className="rounded-xl bg-primary/15 p-2 text-primary">
-            <Logo className="h-6 w-6" />
-          </span>
-        )}
-        {!collapsed ? (
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-white">
-              {tenantName}
+      {isDesktop ? (
+        <div className="mb-6 flex items-center gap-3 px-3 pt-4">
+          {tenantLogoUrl ? (
+            <span className="flex h-10 w-16 items-center justify-center rounded-xl border border-white/10 bg-white/5 p-1">
+              <Image
+                unoptimized
+                alt={`Logo ${tenantName}`}
+                className="max-h-full w-full object-contain"
+                height={40}
+                src={tenantLogoUrl}
+                width={64}
+              />
             </span>
-            <span className="text-[11px] text-default-500">Workspace</span>
-          </div>
-        ) : null}
-      </div>
+          ) : (
+            <span className="rounded-xl bg-primary/15 p-2 text-primary">
+              <Logo className="h-6 w-6" />
+            </span>
+          )}
+          {!collapsed ? (
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-white">
+                {tenantName}
+              </span>
+              <span className="text-[11px] text-default-500">Workspace</span>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-2">
+      <div className="flex-1 space-y-3 overflow-y-auto px-2 pb-4">
         {sections.map((section, index) => (
           <div key={section.title} className="space-y-1.5">
             {/* Separador visual entre seções (exceto a primeira) */}
@@ -1474,7 +1476,7 @@ export function AppSidebar({
       <Drawer
         isOpen={isMobileOpen}
         placement="left"
-        size="xs"
+        size="sm"
         onOpenChange={(open) => {
           if (!open) {
             onCloseMobile();
@@ -1484,13 +1486,40 @@ export function AppSidebar({
         <DrawerContent className="bg-background/95 text-white">
           {(onClose) => (
             <>
-              <DrawerHeader className="text-sm font-semibold uppercase tracking-[0.3em] text-default-500">
-                Menu
+              <DrawerHeader className="border-b border-default-200/70 px-4 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  {tenantLogoUrl ? (
+                    <span className="flex h-9 w-12 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 p-1">
+                      <Image
+                        unoptimized
+                        alt={`Logo ${tenantName}`}
+                        className="max-h-full w-full object-contain"
+                        height={36}
+                        src={tenantLogoUrl}
+                        width={48}
+                      />
+                    </span>
+                  ) : (
+                    <span className="shrink-0 rounded-lg bg-primary/15 p-2 text-primary">
+                      <Logo className="h-5 w-5" />
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">
+                      {tenantName}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-default-500">
+                      Menu Principal
+                    </p>
+                  </div>
+                </div>
               </DrawerHeader>
               <DrawerBody className="p-0">
-                {/* Mobile Notifications (search movido para botão no header) */}
-                <div className="px-4 py-3 border-b border-default-200">
-                  <div className="flex items-center justify-end">
+                <div className="border-b border-default-200 px-4 py-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-default-500">
+                      Notificações
+                    </span>
                     <NotificationCenter />
                   </div>
                 </div>

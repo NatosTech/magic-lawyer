@@ -244,7 +244,7 @@ export const Navbar = ({
   return (
     <div className="sticky top-0 z-50 flex flex-col">
       <HeroUINavbar
-        className="border-b border-divider bg-background/95 backdrop-blur-xl py-1 md:py-2"
+        className="border-b border-divider bg-background/95 backdrop-blur-xl py-1.5 md:py-2"
         isBordered={false}
         maxWidth="full"
       >
@@ -262,7 +262,7 @@ export const Navbar = ({
             </Button>
           ) : null}
           <NavbarBrand className="min-w-0">
-            <NextLink className="flex items-center gap-2" href="/">
+            <NextLink className="flex items-center gap-2 sm:gap-3" href="/">
               {tenantLogoUrl ? (
                 <span className="flex h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-lg border border-divider bg-content1 p-1">
                   <Image
@@ -279,16 +279,16 @@ export const Navbar = ({
                   <Logo className="h-5 w-5 sm:h-6 sm:w-6" />
                 </span>
               )}
-              <span className="flex min-w-0 flex-col leading-tight">
+              <span className="hidden min-w-0 flex-col leading-tight sm:flex">
                 <span
                   className={clsx(
                     brandTitleClasses,
-                    "truncate max-w-[120px] sm:max-w-[180px] lg:max-w-none",
+                    "truncate max-w-[170px] lg:max-w-none",
                   )}
                 >
                   {tenantName}
                 </span>
-                <span className="block text-xs text-default-400 truncate max-w-[160px] sm:max-w-[220px] lg:max-w-none">
+                <span className="block text-xs text-default-400 truncate max-w-[220px] lg:max-w-none">
                   {brandSubtitle}
                 </span>
                 <span className="hidden md:block text-[10px] uppercase tracking-wide text-default-600">
@@ -304,7 +304,7 @@ export const Navbar = ({
           <>
             {/* Botão de lupa até xl (modo 50% usa botão) */}
             <NavbarContent
-              className="flex-1 min-w-0 px-1 sm:px-2 xl:hidden"
+              className="hidden sm:flex flex-1 min-w-0 px-1 sm:px-2 xl:hidden"
               justify="center"
             >
               <Button
@@ -346,8 +346,35 @@ export const Navbar = ({
         )}
 
         {/* Seção Direita - Ações */}
-        <NavbarContent className="flex-shrink-0 min-w-0" justify="end">
+        <NavbarContent className="flex-shrink-0 min-w-0 gap-1 sm:gap-2" justify="end">
           {session?.user ? rightExtras : null}
+          {session?.user ? (
+            <Button
+              isIconOnly
+              aria-label="Buscar"
+              className="h-8 w-8 min-w-8 border border-divider bg-content1 text-default-600 hover:text-primary sm:hidden"
+              radius="full"
+              size="sm"
+              variant="light"
+              onPress={() =>
+                window.dispatchEvent(new CustomEvent("open-search"))
+              }
+            >
+              <svg
+                aria-hidden
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" x2="16.65" y1="21" y2="16.65" />
+              </svg>
+            </Button>
+          ) : null}
           {session?.user ? (
             <div className="hidden sm:block">
               <NotificationCenter />

@@ -1,6 +1,6 @@
 "use client";
 
-import type { CnpjData } from "@/types/brazil";
+import type { CepData, CnpjData } from "@/types/brazil";
 
 import { memo, useCallback, useMemo, useState, type Key } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +21,7 @@ import { Checkbox } from "@heroui/checkbox";
 import { Badge } from "@heroui/badge";
 import { Tooltip } from "@heroui/tooltip";
 import { Skeleton } from "@heroui/skeleton";
+import { Spinner } from "@heroui/spinner";
 import {
   Plus,
   Search,
@@ -80,6 +81,7 @@ import {
   type ClienteCreateInput,
   type ClienteUpdateInput,
 } from "@/app/actions/clientes";
+import { buscarCepAction } from "@/app/actions/brazil-apis";
 import { TipoPessoa } from "@/generated/prisma";
 import { Modal } from "@/components/ui/modal";
 import { CpfInput } from "@/components/cpf-input";
@@ -123,6 +125,63 @@ function parseDateFromInput(value: string) {
   return new Date(year, month - 1, day);
 }
 
+function formatCepForInput(value: string) {
+  const digitsOnly = value.replace(/\D/g, "").slice(0, 8);
+
+  if (digitsOnly.length <= 5) {
+    return digitsOnly;
+  }
+
+  return `${digitsOnly.slice(0, 5)}-${digitsOnly.slice(5)}`;
+}
+
+const INITIAL_ENDERECO_PRINCIPAL: NonNullable<
+  ClienteCreateInput["enderecoPrincipal"]
+> = {
+  cep: "",
+  logradouro: "",
+  numero: "",
+  complemento: "",
+  bairro: "",
+  cidade: "",
+  estado: "",
+  pais: "Brasil",
+};
+
+function normalizeEnderecoPrincipalForPayload(
+  endereco?: ClienteCreateInput["enderecoPrincipal"],
+): ClienteCreateInput["enderecoPrincipal"] {
+  if (!endereco) {
+    return undefined;
+  }
+
+  const payload = {
+    cep: endereco.cep?.trim() || "",
+    logradouro: endereco.logradouro?.trim() || "",
+    numero: endereco.numero?.trim() || "",
+    complemento: endereco.complemento?.trim() || "",
+    bairro: endereco.bairro?.trim() || "",
+    cidade: endereco.cidade?.trim() || "",
+    estado: endereco.estado?.trim().toUpperCase() || "",
+    pais: endereco.pais?.trim() || "Brasil",
+  };
+
+  const hasEndereco =
+    payload.cep ||
+    payload.logradouro ||
+    payload.numero ||
+    payload.complemento ||
+    payload.bairro ||
+    payload.cidade ||
+    payload.estado;
+
+  return hasEndereco ? payload : undefined;
+}
+
+type EnderecoPrincipalField = keyof NonNullable<
+  ClienteCreateInput["enderecoPrincipal"]
+>;
+
 const INITIAL_CLIENTE_FORM_STATE: ClienteCreateInput = {
   tipoPessoa: TipoPessoa.FISICA,
   nome: "",
@@ -136,6 +195,7 @@ const INITIAL_CLIENTE_FORM_STATE: ClienteCreateInput = {
   responsavelNome: "",
   responsavelEmail: "",
   responsavelTelefone: "",
+  enderecoPrincipal: INITIAL_ENDERECO_PRINCIPAL,
   advogadosIds: undefined,
 };
 
@@ -178,23 +238,23 @@ const ClientesListSection = memo(function ClientesListSection({
       initial={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.4, delay: 0.1 }}
     >
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="border-b border-white/10">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
-                <Users className="w-6 h-6 text-white" />
+      <Card className="border border-divider/70 bg-content1/75 shadow-sm backdrop-blur-md">
+        <CardHeader className="border-b border-divider/70 px-4 py-4 sm:px-6">
+          <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
+                <Users className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+                <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
                   Carteira de Clientes
                 </h2>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p className="text-sm text-default-500">
                   {clientesFiltrados.length} cliente(s) encontrado(s)
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
               <Badge
                 color="primary"
                 content={clientesFiltrados.length}
@@ -209,7 +269,7 @@ const ClientesListSection = memo(function ClientesListSection({
             </div>
           </div>
         </CardHeader>
-        <CardBody className="p-6">
+        <CardBody className="p-4 sm:p-6">
           {isLoading ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -483,6 +543,7 @@ export function ClientesContent() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSearchingCep, setIsSearchingCep] = useState(false);
   const [criarUsuario, setCriarUsuario] = useState(true); // Criar usuário por padrão
   const [credenciaisModal, setCredenciaisModal] = useState<{
     email: string;
@@ -623,8 +684,17 @@ export function ClientesContent() {
       const payload: ClienteCreateInput = {
         ...formState,
         criarUsuario,
-        dataNascimento: formState.dataNascimento || undefined,
-        inscricaoEstadual: formState.inscricaoEstadual || undefined,
+        dataNascimento:
+          formState.tipoPessoa === TipoPessoa.FISICA
+            ? formState.dataNascimento || undefined
+            : undefined,
+        inscricaoEstadual:
+          formState.tipoPessoa === TipoPessoa.JURIDICA
+            ? formState.inscricaoEstadual || undefined
+            : undefined,
+        enderecoPrincipal: normalizeEnderecoPrincipalForPayload(
+          formState.enderecoPrincipal,
+        ),
         advogadosIds:
           canManageAllClients && (formState.advogadosIds || []).length > 0
             ? formState.advogadosIds
@@ -672,12 +742,21 @@ export function ClientesContent() {
         email: formState.email,
         telefone: formState.telefone,
         celular: formState.celular,
-        dataNascimento: formState.dataNascimento || undefined,
-        inscricaoEstadual: formState.inscricaoEstadual || undefined,
+        dataNascimento:
+          formState.tipoPessoa === TipoPessoa.FISICA
+            ? formState.dataNascimento || undefined
+            : undefined,
+        inscricaoEstadual:
+          formState.tipoPessoa === TipoPessoa.JURIDICA
+            ? formState.inscricaoEstadual || undefined
+            : undefined,
         observacoes: formState.observacoes,
         responsavelNome: formState.responsavelNome,
         responsavelEmail: formState.responsavelEmail,
         responsavelTelefone: formState.responsavelTelefone,
+        enderecoPrincipal: normalizeEnderecoPrincipalForPayload(
+          formState.enderecoPrincipal,
+        ),
         advogadosIds:
           canManageAllClients ? formState.advogadosIds || [] : undefined,
       };
@@ -701,6 +780,8 @@ export function ClientesContent() {
   };
 
   const handleEditCliente = useCallback((cliente: Cliente) => {
+    const enderecoPrincipal = cliente.enderecos?.[0];
+
     setSelectedCliente(cliente);
     setFormState({
       nome: cliente.nome,
@@ -717,6 +798,16 @@ export function ClientesContent() {
       responsavelNome: cliente.responsavelNome || "",
       responsavelEmail: cliente.responsavelEmail || "",
       responsavelTelefone: cliente.responsavelTelefone || "",
+      enderecoPrincipal: {
+        cep: enderecoPrincipal?.cep || "",
+        logradouro: enderecoPrincipal?.logradouro || "",
+        numero: enderecoPrincipal?.numero || "",
+        complemento: enderecoPrincipal?.complemento || "",
+        bairro: enderecoPrincipal?.bairro || "",
+        cidade: enderecoPrincipal?.cidade || "",
+        estado: enderecoPrincipal?.estado || "",
+        pais: enderecoPrincipal?.pais || "Brasil",
+      },
       advogadosIds: (cliente.advogadoClientes || []).map(
         (vinculo) => vinculo.advogadoId,
       ),
@@ -736,6 +827,20 @@ export function ClientesContent() {
       documento: cnpjData.cnpj,
     }));
     toast.success("Dados do CNPJ carregados!");
+  }, []);
+
+  const handleCepFound = useCallback((cepData: CepData) => {
+    setFormState((prev) => ({
+      ...prev,
+      enderecoPrincipal: {
+        ...(prev.enderecoPrincipal || INITIAL_ENDERECO_PRINCIPAL),
+        cep: formatCepForInput(cepData.cep || prev.enderecoPrincipal?.cep || ""),
+        logradouro: cepData.logradouro || prev.enderecoPrincipal?.logradouro || "",
+        bairro: cepData.bairro || prev.enderecoPrincipal?.bairro || "",
+        cidade: cepData.localidade || prev.enderecoPrincipal?.cidade || "",
+        estado: (cepData.uf || prev.enderecoPrincipal?.estado || "").toUpperCase(),
+      },
+    }));
   }, []);
 
   const handleAdvogadosSelectionChange = useCallback((keys: "all" | Set<Key>) => {
@@ -760,6 +865,49 @@ export function ClientesContent() {
     }));
   }, [advogadoIdSet, advogados]);
 
+  const handleEnderecoPrincipalChange = useCallback(
+    (field: EnderecoPrincipalField, value: string) => {
+      setFormState((prev) => ({
+        ...prev,
+        enderecoPrincipal: {
+          ...(prev.enderecoPrincipal || INITIAL_ENDERECO_PRINCIPAL),
+          [field]: field === "cep" ? formatCepForInput(value) : value,
+        },
+      }));
+    },
+    [],
+  );
+
+  const handleEnderecoCepBlur = useCallback(async () => {
+    const cep = formState.enderecoPrincipal?.cep || "";
+    const cepNumerico = cep.replace(/\D/g, "");
+
+    if (!cepNumerico) {
+      return;
+    }
+
+    if (cepNumerico.length !== 8) {
+      toast.error("CEP deve ter 8 dígitos");
+
+      return;
+    }
+
+    try {
+      setIsSearchingCep(true);
+      const result = await buscarCepAction(cepNumerico);
+
+      if (result.success && result.cepData) {
+        handleCepFound(result.cepData);
+      } else {
+        toast.error(result.error || "CEP não encontrado");
+      }
+    } catch (error) {
+      toast.error("Erro ao buscar CEP");
+    } finally {
+      setIsSearchingCep(false);
+    }
+  }, [formState.enderecoPrincipal?.cep, handleCepFound]);
+
   const handleOpenResetModal = useCallback((cliente: Cliente) => {
     if (!cliente.usuarioId) {
       toast.error("Este cliente não possui usuário de acesso");
@@ -779,6 +927,8 @@ export function ClientesContent() {
     setFormState((prev) => ({
       ...prev,
       tipoPessoa: selectedTipo,
+      dataNascimento:
+        selectedTipo === TipoPessoa.JURIDICA ? undefined : prev.dataNascimento,
       inscricaoEstadual:
         selectedTipo === TipoPessoa.JURIDICA ? prev.inscricaoEstadual : "",
       responsavelNome:
@@ -997,24 +1147,25 @@ export function ClientesContent() {
         initial={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="border-b border-white/10">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
-                  <Filter className="w-5 h-5 text-white" />
+        <Card className="border border-divider/70 bg-content1/75 shadow-sm backdrop-blur-md">
+          <CardHeader className="border-b border-divider/70 px-4 py-4 sm:px-6">
+            <div className="flex w-full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 items-start gap-3 sm:items-center">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
+                  <Filter className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">
+                  <h3 className="text-base font-semibold text-foreground sm:text-lg">
                     Filtros operacionais
                   </h3>
-                  <p className="text-sm text-default-400">
+                  <p className="text-xs text-default-500 sm:text-sm">
                     Refine rapidamente a carteira ativa.
                   </p>
                 </div>
                 {hasActiveFilters && (
                   <motion.div
                     animate={{ scale: 1 }}
+                    className="hidden sm:block"
                     initial={{ scale: 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   >
@@ -1025,13 +1176,13 @@ export function ClientesContent() {
                           Boolean,
                         ).length
                       }
-                      size="lg"
+                      size="sm"
                       variant="shadow"
                     >
                       <Chip
                         className="font-semibold"
                         color="primary"
-                        size="lg"
+                        size="sm"
                         variant="flat"
                       >
                         {
@@ -1045,10 +1196,10 @@ export function ClientesContent() {
                   </motion.div>
                 )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
                 <Tooltip color="warning" content="Limpar todos os filtros">
                   <Button
-                    className="hover:scale-105 transition-transform"
+                    className="flex-1 sm:flex-none"
                     color="warning"
                     isDisabled={!hasActiveFilters}
                     size="sm"
@@ -1064,7 +1215,7 @@ export function ClientesContent() {
                   content={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
                 >
                   <Button
-                    className="hover:scale-105 transition-transform"
+                    className="flex-1 sm:flex-none"
                     color="primary"
                     size="sm"
                     startContent={
@@ -1092,7 +1243,7 @@ export function ClientesContent() {
                 initial={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <CardBody className="p-6">
+                <CardBody className="px-4 pb-5 pt-4 sm:px-6 sm:pb-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Filtro por Busca */}
                     <motion.div
@@ -1335,7 +1486,7 @@ export function ClientesContent() {
                         />
                       )}
 
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      {formState.tipoPessoa === TipoPessoa.FISICA ? (
                         <Input
                           label="Data de Nascimento"
                           type="date"
@@ -1347,19 +1498,102 @@ export function ClientesContent() {
                             })
                           }
                         />
-                        {formState.tipoPessoa === TipoPessoa.JURIDICA ? (
-                          <Input
-                            label="Inscrição Estadual"
-                            placeholder="Informe a inscrição estadual"
-                            value={formState.inscricaoEstadual}
-                            onValueChange={(value) =>
-                              setFormState({
-                                ...formState,
-                                inscricaoEstadual: value,
-                              })
-                            }
-                          />
-                        ) : null}
+                      ) : (
+                        <Input
+                          label="Inscrição Estadual"
+                          placeholder="Informe a inscrição estadual"
+                          value={formState.inscricaoEstadual}
+                          onValueChange={(value) =>
+                            setFormState({
+                              ...formState,
+                              inscricaoEstadual: value,
+                            })
+                          }
+                        />
+                      )}
+                    </div>
+                  </ModalSectionCard>
+
+                  <ModalSectionCard
+                    description="Cadastro do endereço principal para comunicação e cobranças."
+                    title="Endereço Principal"
+                  >
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <Input
+                          endContent={isSearchingCep ? <Spinner size="sm" /> : null}
+                          label="CEP"
+                          placeholder="00000-000"
+                          value={formState.enderecoPrincipal?.cep || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("cep", value)
+                          }
+                          onBlur={handleEnderecoCepBlur}
+                        />
+                        <Input
+                          label="Logradouro"
+                          placeholder="Rua, avenida, etc."
+                          value={formState.enderecoPrincipal?.logradouro || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("logradouro", value)
+                          }
+                        />
+                        <Input
+                          label="Número"
+                          placeholder="123"
+                          value={formState.enderecoPrincipal?.numero || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("numero", value)
+                          }
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <Input
+                          label="Complemento"
+                          placeholder="Apto, sala, bloco..."
+                          value={formState.enderecoPrincipal?.complemento || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("complemento", value)
+                          }
+                        />
+                        <Input
+                          label="Bairro"
+                          placeholder="Bairro"
+                          value={formState.enderecoPrincipal?.bairro || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("bairro", value)
+                          }
+                        />
+                        <Input
+                          label="Cidade"
+                          placeholder="Cidade"
+                          value={formState.enderecoPrincipal?.cidade || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("cidade", value)
+                          }
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Input
+                          label="UF"
+                          maxLength={2}
+                          placeholder="SP"
+                          value={formState.enderecoPrincipal?.estado || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange(
+                              "estado",
+                              value.toUpperCase(),
+                            )
+                          }
+                        />
+                        <Input
+                          label="País"
+                          placeholder="Brasil"
+                          value={formState.enderecoPrincipal?.pais || "Brasil"}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("pais", value)
+                          }
+                        />
                       </div>
                     </div>
                   </ModalSectionCard>
@@ -1708,7 +1942,7 @@ export function ClientesContent() {
                         />
                       )}
 
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      {formState.tipoPessoa === TipoPessoa.FISICA ? (
                         <Input
                           label="Data de Nascimento"
                           type="date"
@@ -1720,19 +1954,102 @@ export function ClientesContent() {
                             })
                           }
                         />
-                        {formState.tipoPessoa === TipoPessoa.JURIDICA ? (
-                          <Input
-                            label="Inscrição Estadual"
-                            placeholder="Informe a inscrição estadual"
-                            value={formState.inscricaoEstadual}
-                            onValueChange={(value) =>
-                              setFormState({
-                                ...formState,
-                                inscricaoEstadual: value,
-                              })
-                            }
-                          />
-                        ) : null}
+                      ) : (
+                        <Input
+                          label="Inscrição Estadual"
+                          placeholder="Informe a inscrição estadual"
+                          value={formState.inscricaoEstadual}
+                          onValueChange={(value) =>
+                            setFormState({
+                              ...formState,
+                              inscricaoEstadual: value,
+                            })
+                          }
+                        />
+                      )}
+                    </div>
+                  </ModalSectionCard>
+
+                  <ModalSectionCard
+                    description="Cadastro do endereço principal para comunicação e cobranças."
+                    title="Endereço Principal"
+                  >
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <Input
+                          endContent={isSearchingCep ? <Spinner size="sm" /> : null}
+                          label="CEP"
+                          placeholder="00000-000"
+                          value={formState.enderecoPrincipal?.cep || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("cep", value)
+                          }
+                          onBlur={handleEnderecoCepBlur}
+                        />
+                        <Input
+                          label="Logradouro"
+                          placeholder="Rua, avenida, etc."
+                          value={formState.enderecoPrincipal?.logradouro || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("logradouro", value)
+                          }
+                        />
+                        <Input
+                          label="Número"
+                          placeholder="123"
+                          value={formState.enderecoPrincipal?.numero || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("numero", value)
+                          }
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <Input
+                          label="Complemento"
+                          placeholder="Apto, sala, bloco..."
+                          value={formState.enderecoPrincipal?.complemento || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("complemento", value)
+                          }
+                        />
+                        <Input
+                          label="Bairro"
+                          placeholder="Bairro"
+                          value={formState.enderecoPrincipal?.bairro || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("bairro", value)
+                          }
+                        />
+                        <Input
+                          label="Cidade"
+                          placeholder="Cidade"
+                          value={formState.enderecoPrincipal?.cidade || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("cidade", value)
+                          }
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <Input
+                          label="UF"
+                          maxLength={2}
+                          placeholder="SP"
+                          value={formState.enderecoPrincipal?.estado || ""}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange(
+                              "estado",
+                              value.toUpperCase(),
+                            )
+                          }
+                        />
+                        <Input
+                          label="País"
+                          placeholder="Brasil"
+                          value={formState.enderecoPrincipal?.pais || "Brasil"}
+                          onValueChange={(value) =>
+                            handleEnderecoPrincipalChange("pais", value)
+                          }
+                        />
                       </div>
                     </div>
                   </ModalSectionCard>

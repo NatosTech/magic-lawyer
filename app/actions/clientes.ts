@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 
 import { getSession } from "@/app/lib/auth";
 import prisma, { toNumber, convertAllDecimalFields } from "@/app/lib/prisma";
-import { TipoPessoa, Prisma } from "@/generated/prisma";
+import { TipoEndereco, TipoPessoa, Prisma } from "@/generated/prisma";
 import logger from "@/lib/logger";
 import { DocumentNotifier } from "@/app/lib/notifications/document-notifier";
 import { checkPermission } from "@/app/actions/equipe";
@@ -52,6 +52,20 @@ export interface Cliente {
       };
     };
   }[];
+  enderecos?: {
+    id: string;
+    apelido: string;
+    tipo: string;
+    principal: boolean;
+    logradouro: string;
+    numero: string | null;
+    complemento: string | null;
+    bairro: string | null;
+    cidade: string;
+    estado: string;
+    cep: string | null;
+    pais: string;
+  }[];
   _count?: {
     processos: number;
     contratos: number;
@@ -64,6 +78,17 @@ export interface Cliente {
     documentoAssinaturas?: number;
     advogadoClientes?: number;
   };
+}
+
+export interface EnderecoPrincipalInput {
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+  pais?: string;
 }
 
 export interface ClienteComProcessos extends Cliente {
@@ -294,6 +319,29 @@ export async function getClientesAdvogado(): Promise<{
             },
           },
         },
+        enderecos: {
+          where: {
+            principal: true,
+          },
+          select: {
+            id: true,
+            apelido: true,
+            tipo: true,
+            principal: true,
+            logradouro: true,
+            numero: true,
+            complemento: true,
+            bairro: true,
+            cidade: true,
+            estado: true,
+            cep: true,
+            pais: true,
+          },
+          take: 1,
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
         _count: {
           select: {
             processos: { where: { deletedAt: null } },
@@ -375,6 +423,29 @@ export async function getAllClientesTenant(): Promise<{
                 },
               },
             },
+          },
+        },
+        enderecos: {
+          where: {
+            principal: true,
+          },
+          select: {
+            id: true,
+            apelido: true,
+            tipo: true,
+            principal: true,
+            logradouro: true,
+            numero: true,
+            complemento: true,
+            bairro: true,
+            cidade: true,
+            estado: true,
+            cep: true,
+            pais: true,
+          },
+          take: 1,
+          orderBy: {
+            createdAt: "desc",
           },
         },
         _count: {
@@ -756,6 +827,7 @@ export interface ClienteCreateInput {
   responsavelNome?: string;
   responsavelEmail?: string;
   responsavelTelefone?: string;
+  enderecoPrincipal?: EnderecoPrincipalInput;
   advogadosIds?: string[]; // IDs dos advogados a vincular
   criarUsuario?: boolean; // Se deve criar usuário de acesso
 }
@@ -775,6 +847,63 @@ function generatePassword(length: number = 12): string {
   }
 
   return password;
+}
+
+function trimOptional(value?: string | null): string | undefined {
+  const parsed = value?.trim();
+
+  return parsed ? parsed : undefined;
+}
+
+function hasEnderecoData(endereco?: EnderecoPrincipalInput) {
+  if (!endereco) {
+    return false;
+  }
+
+  return Boolean(
+    trimOptional(endereco.cep) ||
+      trimOptional(endereco.logradouro) ||
+      trimOptional(endereco.numero) ||
+      trimOptional(endereco.complemento) ||
+      trimOptional(endereco.bairro) ||
+      trimOptional(endereco.cidade) ||
+      trimOptional(endereco.estado),
+  );
+}
+
+function sanitizeEnderecoInput(endereco?: EnderecoPrincipalInput) {
+  if (!hasEnderecoData(endereco)) {
+    return undefined;
+  }
+
+  return {
+    cep: trimOptional(endereco?.cep),
+    logradouro: trimOptional(endereco?.logradouro),
+    numero: trimOptional(endereco?.numero),
+    complemento: trimOptional(endereco?.complemento),
+    bairro: trimOptional(endereco?.bairro),
+    cidade: trimOptional(endereco?.cidade),
+    estado: trimOptional(endereco?.estado),
+    pais: trimOptional(endereco?.pais) || "Brasil",
+  };
+}
+
+function validateEnderecoInput(
+  endereco?: ReturnType<typeof sanitizeEnderecoInput>,
+) {
+  if (!endereco) {
+    return null;
+  }
+
+  if (!endereco.logradouro || !endereco.cidade || !endereco.estado) {
+    return "Para cadastrar o endereço, informe logradouro, cidade e estado";
+  }
+
+  return null;
+}
+
+function buildPrincipalEnderecoApelido(clienteId: string) {
+  return `Cliente principal ${clienteId.slice(-8)}-${Date.now()}`;
 }
 
 /**
@@ -812,7 +941,17 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
       };
     }
 
-    const { advogadosIds, criarUsuario, ...clienteData } = data;
+    const { advogadosIds, criarUsuario, enderecoPrincipal, ...clienteData } =
+      data;
+    const enderecoPrincipalData = sanitizeEnderecoInput(enderecoPrincipal);
+    const enderecoValidationError = validateEnderecoInput(enderecoPrincipalData);
+
+    if (enderecoValidationError) {
+      return {
+        success: false,
+        error: enderecoValidationError,
+      };
+    }
 
     // Validar email se for criar usuário
     if (criarUsuario && !clienteData.email) {
@@ -904,6 +1043,10 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
     const cliente = await prisma.cliente.create({
       data: {
         ...clienteData,
+        dataNascimento:
+          clienteData.tipoPessoa === TipoPessoa.JURIDICA
+            ? undefined
+            : clienteData.dataNascimento,
         tenantId: user.tenantId,
         usuarioId,
         advogadoClientes: advogadosParaVincular
@@ -947,6 +1090,40 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
       },
     });
 
+    if (enderecoPrincipalData) {
+      await prisma.endereco.updateMany({
+        where: {
+          tenantId: user.tenantId,
+          clienteId: cliente.id,
+          principal: true,
+        },
+        data: {
+          principal: false,
+        },
+      });
+
+      await prisma.endereco.create({
+        data: {
+          tenantId: user.tenantId,
+          clienteId: cliente.id,
+          apelido: buildPrincipalEnderecoApelido(cliente.id),
+          tipo:
+            clienteData.tipoPessoa === TipoPessoa.JURIDICA
+              ? TipoEndereco.COMERCIAL
+              : TipoEndereco.RESIDENCIAL,
+          principal: true,
+          logradouro: enderecoPrincipalData.logradouro!,
+          numero: enderecoPrincipalData.numero || null,
+          complemento: enderecoPrincipalData.complemento || null,
+          bairro: enderecoPrincipalData.bairro || null,
+          cidade: enderecoPrincipalData.cidade!,
+          estado: enderecoPrincipalData.estado!,
+          cep: enderecoPrincipalData.cep || null,
+          pais: enderecoPrincipalData.pais || "Brasil",
+        },
+      });
+    }
+
     return {
       success: true,
       cliente: cliente,
@@ -975,6 +1152,7 @@ export interface ClienteUpdateInput {
   responsavelEmail?: string;
   responsavelTelefone?: string;
   observacoes?: string;
+  enderecoPrincipal?: EnderecoPrincipalInput;
   advogadosIds?: string[]; // Se fornecido, substitui todos os vínculos
 }
 
@@ -1025,10 +1203,23 @@ export async function updateCliente(
       return { success: false, error: "Cliente não encontrado" };
     }
 
-    const { advogadosIds, ...clienteData } = data;
+    const { advogadosIds, enderecoPrincipal, ...clienteData } = data;
+    const enderecoPrincipalData = sanitizeEnderecoInput(enderecoPrincipal);
+    const enderecoValidationError = validateEnderecoInput(enderecoPrincipalData);
+
+    if (enderecoValidationError) {
+      return {
+        success: false,
+        error: enderecoValidationError,
+      };
+    }
 
     // Atualizar cliente
     const updateData: Prisma.ClienteUpdateInput = { ...clienteData };
+
+    if (clienteData.tipoPessoa === TipoPessoa.JURIDICA) {
+      updateData.dataNascimento = null;
+    }
 
     // Se advogadosIds foi fornecido, atualizar relacionamentos
     if (advogadosIds !== undefined) {
@@ -1075,6 +1266,75 @@ export async function updateCliente(
         },
       },
     });
+
+    if (enderecoPrincipalData) {
+      const tipoPessoaAtualizada = clienteData.tipoPessoa || existingCliente.tipoPessoa;
+      const tipoEndereco =
+        tipoPessoaAtualizada === TipoPessoa.JURIDICA
+          ? TipoEndereco.COMERCIAL
+          : TipoEndereco.RESIDENCIAL;
+
+      const enderecoPrincipalExistente = await prisma.endereco.findFirst({
+        where: {
+          tenantId: user.tenantId,
+          clienteId,
+          principal: true,
+        },
+        select: {
+          id: true,
+          apelido: true,
+        },
+      });
+
+      if (enderecoPrincipalExistente) {
+        await prisma.endereco.update({
+          where: {
+            id: enderecoPrincipalExistente.id,
+          },
+          data: {
+            tipo: tipoEndereco,
+            principal: true,
+            logradouro: enderecoPrincipalData.logradouro!,
+            numero: enderecoPrincipalData.numero || null,
+            complemento: enderecoPrincipalData.complemento || null,
+            bairro: enderecoPrincipalData.bairro || null,
+            cidade: enderecoPrincipalData.cidade!,
+            estado: enderecoPrincipalData.estado!,
+            cep: enderecoPrincipalData.cep || null,
+            pais: enderecoPrincipalData.pais || "Brasil",
+          },
+        });
+      } else {
+        await prisma.endereco.updateMany({
+          where: {
+            tenantId: user.tenantId,
+            clienteId,
+            principal: true,
+          },
+          data: {
+            principal: false,
+          },
+        });
+
+        await prisma.endereco.create({
+          data: {
+            tenantId: user.tenantId,
+            clienteId,
+            apelido: buildPrincipalEnderecoApelido(clienteId),
+            tipo: tipoEndereco,
+            principal: true,
+            logradouro: enderecoPrincipalData.logradouro!,
+            numero: enderecoPrincipalData.numero || null,
+            complemento: enderecoPrincipalData.complemento || null,
+            bairro: enderecoPrincipalData.bairro || null,
+            cidade: enderecoPrincipalData.cidade!,
+            estado: enderecoPrincipalData.estado!,
+            cep: enderecoPrincipalData.cep || null,
+            pais: enderecoPrincipalData.pais || "Brasil",
+          },
+        });
+      }
+    }
 
     return {
       success: true,
@@ -1253,6 +1513,29 @@ export async function searchClientes(filtros: ClientesFiltros = {}): Promise<{
                 },
               },
             },
+          },
+        },
+        enderecos: {
+          where: {
+            principal: true,
+          },
+          select: {
+            id: true,
+            apelido: true,
+            tipo: true,
+            principal: true,
+            logradouro: true,
+            numero: true,
+            complemento: true,
+            bairro: true,
+            cidade: true,
+            estado: true,
+            cep: true,
+            pais: true,
+          },
+          take: 1,
+          orderBy: {
+            createdAt: "desc",
           },
         },
         _count: {
