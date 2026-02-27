@@ -150,6 +150,24 @@ function formatListDate(date?: string) {
   });
 }
 
+function getActivityActionLabel(href: string) {
+  if (href.startsWith("/processos/")) return "Ver processo";
+  if (href === "/processos") return "Ir para processos";
+  if (href.startsWith("/clientes/")) return "Ver cliente";
+  if (href === "/clientes") return "Ir para clientes";
+  if (href.startsWith("/documentos")) return "Ir para documentos";
+  if (href.startsWith("/agenda")) return "Ir para agenda";
+  if (href.startsWith("/tarefas")) return "Ir para tarefas";
+  if (href.startsWith("/financeiro/recibos")) return "Ir para recibos";
+  if (href.startsWith("/financeiro")) return "Ir para financeiro";
+  if (href.startsWith("/admin/")) return "Abrir painel";
+  if (href.startsWith("http://") || href.startsWith("https://")) {
+    return "Abrir arquivo";
+  }
+
+  return "Abrir registro";
+}
+
 function buildQuickActions(
   role: string | null | undefined,
   permissions: UserPermissions,
@@ -668,6 +686,7 @@ function renderActivityItem(item: DashboardActivity) {
     ? (toneStyles[item.tone] ?? toneStyles.default)
     : toneStyles.default;
   const formattedDate = formatListDate(item.date);
+  const actionLabel = item.href ? getActivityActionLabel(item.href) : null;
 
   return (
     <li
@@ -698,7 +717,7 @@ function renderActivityItem(item: DashboardActivity) {
           size="sm"
           variant="light"
         >
-          Abrir registro
+          {actionLabel ?? "Abrir registro"}
         </Button>
       ) : null}
     </li>
@@ -784,22 +803,6 @@ export function DashboardContent() {
             <p className={subtitle({ fullWidth: true })}>
               {getDashboardDescription()}
             </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button color="primary" radius="full" variant="flat" onPress={() => refresh()}>
-              Atualizar agora
-            </Button>
-            {permissions.canViewReports ? (
-              <Button
-                as={NextLink}
-                color="primary"
-                href="/relatorios"
-                radius="full"
-                variant="bordered"
-              >
-                Ver relatórios
-              </Button>
-            ) : null}
           </div>
         </div>
 
@@ -1135,26 +1138,6 @@ export function DashboardContent() {
         </CardBody>
       </Card>
 
-      <Card className="border border-white/10 bg-white/5">
-        <CardBody className="flex flex-col gap-3 text-sm text-default-400 md:flex-row md:items-center md:justify-between">
-          <div className="min-w-0 flex-1">
-            <p className="text-white">Roadmap do dashboard</p>
-            <p>
-              Próxima etapa: widgets personalizados por papel com metas
-              operacionais, SLA e comparativos semanais.
-            </p>
-          </div>
-          <Button
-            as={NextLink}
-            className="flex-shrink-0"
-            color="primary"
-            href="/help"
-            radius="full"
-          >
-            Quero influenciar
-          </Button>
-        </CardBody>
-      </Card>
     </section>
   );
 }

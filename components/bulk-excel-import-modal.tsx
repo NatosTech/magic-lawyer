@@ -19,12 +19,23 @@ interface SampleField {
   description: string;
 }
 
+export interface BulkImportUploadResult {
+  success: boolean;
+  message?: string;
+  totalRows?: number;
+  importedCount?: number;
+  failedCount?: number;
+  errors?: string[];
+  warnings?: string[];
+}
+
 interface BulkExcelImportModalProps {
   entityLabel: string;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   templateUrl: string;
   sampleFields: SampleField[];
+  onUpload?: (file: File) => Promise<BulkImportUploadResult>;
 }
 
 export function BulkExcelImportModal({
@@ -33,6 +44,7 @@ export function BulkExcelImportModal({
   onOpenChange,
   templateUrl,
   sampleFields,
+  onUpload,
 }: BulkExcelImportModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -46,10 +58,37 @@ export function BulkExcelImportModal({
 
     setIsUploading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      toast.success(
-        `${selectedFile.name} recebido! Processamento em lote será liberado em breve.`,
-      );
+      if (onUpload) {
+        const result = await onUpload(selectedFile);
+
+        if (!result.success) {
+          toast.error(result.message || "Não foi possível importar o arquivo.");
+          if (result.errors?.length) {
+            toast.error(result.errors[0]!);
+          }
+
+          return;
+        }
+
+        const importedCount = result.importedCount ?? 0;
+        const failedCount = result.failedCount ?? 0;
+
+        toast.success(
+          result.message || `${importedCount} registro(s) importado(s).`,
+        );
+
+        if (failedCount > 0) {
+          toast.warning(
+            `${failedCount} linha(s) não puderam ser importadas.`,
+          );
+        }
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        toast.success(
+          `${selectedFile.name} recebido! Processamento em lote será liberado em breve.`,
+        );
+      }
+
       setSelectedFile(null);
       onOpenChange(false);
     } catch (error) {
@@ -146,16 +185,13 @@ export function BulkExcelImportModal({
                 </div>
               </div>
             </ModalBody>
-            <ModalFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-              <p className="text-xs text-default-500">
-                Importação em massa beta · validações e conciliação serão
-                habilitadas nas próximas sprints.
-              </p>
-              <div className="flex w-full justify-end gap-2 sm:w-auto">
-                <Button variant="flat" onPress={onClose}>
+            <ModalFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <Button className="w-full sm:w-auto" variant="flat" onPress={onClose}>
                   Cancelar
                 </Button>
                 <Button
+                  className="w-full whitespace-nowrap sm:w-auto"
                   color="primary"
                   isDisabled={!selectedFile}
                   isLoading={isUploading}

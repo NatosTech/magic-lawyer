@@ -2,7 +2,15 @@
 
 import type { CepData, CnpjData } from "@/types/brazil";
 
-import { memo, useCallback, useMemo, useState, type Key } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Key,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -60,6 +68,7 @@ import {
   ModalContent,
   ModalBody,
   ModalFooter,
+  Pagination,
   Select,
   SelectItem,
   Tabs,
@@ -81,13 +90,13 @@ import {
   type ClienteCreateInput,
   type ClienteUpdateInput,
 } from "@/app/actions/clientes";
+import { importarClientesPlanilha } from "@/app/actions/clientes-importacao";
 import { buscarCepAction } from "@/app/actions/brazil-apis";
 import { TipoPessoa } from "@/generated/prisma";
 import { Modal } from "@/components/ui/modal";
 import { CpfInput } from "@/components/cpf-input";
 import { CnpjInput } from "@/components/cnpj-input";
 import { BulkExcelImportModal } from "@/components/bulk-excel-import-modal";
-import { PeopleManagementNav } from "@/components/people-management-nav";
 import {
   PeopleMetricCard,
   PeoplePageHeader,
@@ -211,6 +220,7 @@ function getInitials(nome: string) {
 
 interface ClientesListSectionProps {
   clientesFiltrados: Cliente[];
+  paginationResetKey: string;
   isLoading: boolean;
   hasActiveFilters: boolean;
   canCreateClient: boolean;
@@ -223,6 +233,7 @@ interface ClientesListSectionProps {
 
 const ClientesListSection = memo(function ClientesListSection({
   clientesFiltrados,
+  paginationResetKey,
   isLoading,
   hasActiveFilters,
   canCreateClient,
@@ -232,6 +243,100 @@ const ClientesListSection = memo(function ClientesListSection({
   onOpenResetModal,
   onDeleteCliente,
 }: ClientesListSectionProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const scrollRestoreRef = useRef<number | null>(null);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(clientesFiltrados.length / itemsPerPage)),
+    [clientesFiltrados.length, itemsPerPage],
+  );
+
+  const paginatedClientes = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+
+    return clientesFiltrados.slice(start, end);
+  }, [clientesFiltrados, currentPage, itemsPerPage]);
+
+  const visibleRange = useMemo(() => {
+    if (clientesFiltrados.length === 0) {
+      return { start: 0, end: 0 };
+    }
+
+    const start = (currentPage - 1) * itemsPerPage + 1;
+    const end = Math.min(currentPage * itemsPerPage, clientesFiltrados.length);
+
+    return { start, end };
+  }, [clientesFiltrados.length, currentPage, itemsPerPage]);
+
+  const handleItemsPerPageChange = useCallback((keys: unknown) => {
+    if (!keys || keys === "all") {
+      return;
+    }
+
+    let selectedValue: string | undefined;
+
+    if (typeof keys === "string") {
+      selectedValue = keys;
+    } else if (keys instanceof Set) {
+      selectedValue = Array.from(keys).find(
+        (value): value is string => typeof value === "string",
+      );
+    } else if (
+      typeof keys === "object" &&
+      keys !== null &&
+      "currentKey" in keys
+    ) {
+      const currentKey = (keys as { currentKey?: Key | null }).currentKey;
+
+      if (typeof currentKey === "string") {
+        selectedValue = currentKey;
+      }
+    }
+
+    const parsed = selectedValue ? Number(selectedValue) : NaN;
+
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return;
+    }
+
+    setItemsPerPage(parsed);
+  }, []);
+
+  const handlePageChange = useCallback((page: number) => {
+    if (typeof window !== "undefined") {
+      scrollRestoreRef.current = window.scrollY;
+    }
+
+    setCurrentPage(page);
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [paginationResetKey, itemsPerPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    if (scrollRestoreRef.current == null || typeof window === "undefined") {
+      return;
+    }
+
+    const nextScrollTop = scrollRestoreRef.current;
+    scrollRestoreRef.current = null;
+
+    const raf = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: nextScrollTop, behavior: "auto" });
+    });
+
+    return () => window.cancelAnimationFrame(raf);
+  }, [currentPage]);
+
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
@@ -254,7 +359,24 @@ const ClientesListSection = memo(function ClientesListSection({
                 </p>
               </div>
             </div>
-            <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+            <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+              <Select
+                aria-label="Itens por página na lista de clientes"
+                className="w-full sm:w-[170px]"
+                selectedKeys={[String(itemsPerPage)]}
+                size="sm"
+                variant="bordered"
+                onSelectionChange={handleItemsPerPageChange}
+              >
+                {[12, 24, 48].map((value) => (
+                  <SelectItem
+                    key={String(value)}
+                    textValue={`${value} por página`}
+                  >
+                    {`${value} por página`}
+                  </SelectItem>
+                ))}
+              </Select>
               <Badge
                 color="primary"
                 content={clientesFiltrados.length}
@@ -306,15 +428,19 @@ const ClientesListSection = memo(function ClientesListSection({
               )}
             </motion.div>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <AnimatePresence>
-                {clientesFiltrados.map((cliente, index) => (
+            <>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <AnimatePresence>
+                  {paginatedClientes.map((cliente, index) => (
                   <motion.div
                     key={cliente.id}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     initial={{ opacity: 0, y: 20 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    transition={{
+                      duration: 0.24,
+                      delay: Math.min(index * 0.03, 0.2),
+                    }}
                     whileHover={{ scale: 1.02 }}
                   >
                     <Card className="group border border-white/10 bg-background/60 transition-all duration-300 hover:border-primary/40 hover:bg-background/80">
@@ -523,9 +649,26 @@ const ClientesListSection = memo(function ClientesListSection({
                       </CardBody>
                     </Card>
                   </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
+                  ))}
+                </AnimatePresence>
+              </div>
+              <div className="mt-6 flex flex-col gap-3 border-t border-divider/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-default-500">
+                  Mostrando {visibleRange.start}-{visibleRange.end} de{" "}
+                  {clientesFiltrados.length} cliente(s)
+                </p>
+                <Pagination
+                  isCompact
+                  showControls
+                  className="self-center sm:self-auto"
+                  color="primary"
+                  page={currentPage}
+                  size="sm"
+                  total={totalPages}
+                  onChange={handlePageChange}
+                />
+              </div>
+            </>
           )}
         </CardBody>
       </Card>
@@ -648,6 +791,23 @@ export function ClientesContent() {
     setSelectedTipoPessoa("all");
     setShowFilters(false);
   }, []);
+
+  const handleImportClientes = useCallback(
+    async (file: File) => {
+      const formData = new FormData();
+
+      formData.append("file", file);
+
+      const result = await importarClientesPlanilha(formData);
+
+      if (result.importedCount > 0) {
+        await mutate();
+      }
+
+      return result;
+    },
+    [mutate],
+  );
 
   const handleDeleteCliente = useCallback(async (clienteId: string) => {
     if (!confirm("Tem certeza que deseja excluir este cliente?")) return;
@@ -1018,8 +1178,8 @@ export function ClientesContent() {
 
   const clienteImportFields = [
     {
-      label: "nomeCompleto",
-      description: "Nome civil/social exatamente como no cadastro oficial.",
+      label: "nome",
+      description: "Nome principal do cliente (também aceitamos nomeCompleto).",
     },
     {
       label: "email",
@@ -1041,12 +1201,31 @@ export function ClientesContent() {
       label: "dataNascimento",
       description: "Formato AAAA-MM-DD (opcional para PJ).",
     },
+    {
+      label: "inscricaoEstadual",
+      description: "Opcional para pessoa jurídica.",
+    },
+    {
+      label: "observacoes",
+      description: "Observações internas do cadastro (opcional).",
+    },
+    {
+      label: "responsavelNome / responsavelEmail / responsavelTelefone",
+      description: "Contato do responsável do cliente (opcional).",
+    },
+    {
+      label: "cep / logradouro / numero / bairro / cidade / estado",
+      description:
+        "Para importar endereço, informe ao menos logradouro, cidade e estado.",
+    },
+    {
+      label: "criarUsuario",
+      description: "Use sim/nao para criação automática de acesso.",
+    },
   ];
 
   return (
     <div className="container mx-auto p-6 space-y-8">
-      <PeopleManagementNav active="clientes" />
-
       <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
         <PeoplePageHeader
           description="Centralize cadastro, relacionamento e acesso dos clientes com o mesmo padrão visual usado em todo o módulo."
@@ -1372,6 +1551,7 @@ export function ClientesContent() {
         clientesFiltrados={clientesFiltrados}
         hasActiveFilters={hasActiveFilters}
         isLoading={isLoading}
+        paginationResetKey={`${searchTerm}::${selectedTipoPessoa}`}
         onDeleteCliente={handleDeleteCliente}
         onEditCliente={handleEditCliente}
         onOpenCreateModal={handleOpenCreateModal}
@@ -2731,6 +2911,7 @@ export function ClientesContent() {
       <BulkExcelImportModal
         entityLabel="clientes"
         isOpen={isImportModalOpen}
+        onUpload={handleImportClientes}
         sampleFields={clienteImportFields}
         templateUrl="/api/templates/import-clients"
         onOpenChange={setIsImportModalOpen}

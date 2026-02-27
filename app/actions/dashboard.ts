@@ -460,6 +460,7 @@ async function buildSuperAdminDashboard(now: Date): Promise<DashboardData> {
     date: log.createdAt.toISOString(),
     icon: "🗂️",
     tone: "default",
+    href: "/admin/auditoria",
   }));
 
   const highlights: DashboardListItem[] = latestTenants.map((tenant) => ({
@@ -469,7 +470,7 @@ async function buildSuperAdminDashboard(now: Date): Promise<DashboardData> {
     badge: tenant.status,
     tone: tenant.status === "ACTIVE" ? "success" : "warning",
     date: tenant.createdAt.toISOString(),
-    href: `/admin/tenants/${tenant.slug}`,
+    href: `/admin/tenants/${tenant.id}`,
   }));
 
   const pending: DashboardListItem[] = criticalTickets.map((ticket) => ({
@@ -479,7 +480,7 @@ async function buildSuperAdminDashboard(now: Date): Promise<DashboardData> {
     badge: ticket.priority,
     tone: ticket.status === TicketStatus.IN_PROGRESS ? "warning" : "danger",
     date: ticket.createdAt.toISOString(),
-    href: `/admin/suporte/${ticket.id}`,
+    href: "/admin/suporte",
   }));
 
   return {
@@ -657,7 +658,7 @@ async function buildAdminDashboard(
         nome: true,
         createdAt: true,
         processo: { select: { id: true, numero: true } },
-        cliente: { select: { nome: true } },
+        cliente: { select: { id: true, nome: true } },
       },
     }),
     prisma.movimentacaoProcesso.findMany({
@@ -839,7 +840,7 @@ async function buildAdminDashboard(
         : "Evento registrado",
       date: (evento.createdAt ?? evento.dataInicio ?? now).toISOString(),
       icon: "🗓️",
-      href: evento.processo ? `/processos/${evento.processo.id}` : undefined,
+      href: evento.processo ? `/processos/${evento.processo.id}` : "/agenda",
     })),
     ...recentDocumentos.map((documento) => ({
       id: `documento-${documento.id}`,
@@ -851,7 +852,9 @@ async function buildAdminDashboard(
       icon: "📁",
       href: documento.processo
         ? `/processos/${documento.processo.id}`
-        : undefined,
+        : documento.cliente?.id
+          ? `/clientes/${documento.cliente.id}`
+          : "/documentos",
     })),
     ...recentMovimentacoes.map((movimentacao) => ({
       id: `movimentacao-${movimentacao.id}`,
@@ -863,7 +866,7 @@ async function buildAdminDashboard(
       icon: "⚖️",
       href: movimentacao.processo
         ? `/processos/${movimentacao.processo.id}`
-        : undefined,
+        : "/processos",
     })),
   ]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -1100,7 +1103,7 @@ async function buildAdvogadoDashboard(
         nome: true,
         createdAt: true,
         processo: { select: { id: true, numero: true } },
-        cliente: { select: { nome: true } },
+        cliente: { select: { id: true, nome: true } },
       },
     }),
     prisma.movimentacaoProcesso.findMany({
@@ -1281,7 +1284,7 @@ async function buildAdvogadoDashboard(
         : "Audiência agendada",
       date: evento.dataInicio?.toISOString() ?? now.toISOString(),
       icon: "📅",
-      href: evento.processo ? `/processos/${evento.processo.id}` : undefined,
+      href: evento.processo ? `/processos/${evento.processo.id}` : "/agenda",
     })),
     ...tarefasDetalhes.map((tarefa) => ({
       id: `tarefa-${tarefa.id}`,
@@ -1293,7 +1296,7 @@ async function buildAdvogadoDashboard(
         ? tarefa.dataLimite.toISOString()
         : now.toISOString(),
       icon: "🗂️",
-      href: tarefa.processo ? `/processos/${tarefa.processo.id}` : undefined,
+      href: tarefa.processo ? `/processos/${tarefa.processo.id}` : "/tarefas",
     })),
     ...documentosRecentes.map((doc) => ({
       id: `doc-${doc.id}`,
@@ -1303,7 +1306,11 @@ async function buildAdvogadoDashboard(
         : "Documento anexado",
       date: doc.createdAt.toISOString(),
       icon: "📁",
-      href: doc.processo ? `/processos/${doc.processo.id}` : undefined,
+      href: doc.processo
+        ? `/processos/${doc.processo.id}`
+        : doc.cliente?.id
+          ? `/clientes/${doc.cliente.id}`
+          : "/documentos",
     })),
     ...movimentacoesRecentes.map((mov) => ({
       id: `mov-${mov.id}`,
@@ -1313,7 +1320,7 @@ async function buildAdvogadoDashboard(
         : "Movimentação registrada",
       date: mov.createdAt.toISOString(),
       icon: "⚖️",
-      href: mov.processo ? `/processos/${mov.processo.id}` : undefined,
+      href: mov.processo ? `/processos/${mov.processo.id}` : "/processos",
     })),
   ]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -1660,9 +1667,7 @@ async function buildFinanceiroDashboard(
       tone: (pagamento.status === PaymentStatus.PAGO
         ? "success"
         : "warning") as Tone,
-      href: pagamento.fatura
-        ? `/financeiro/faturas/${pagamento.fatura.id}`
-        : undefined,
+      href: "/financeiro/recibos",
     })),
     ...faturasRecentes.map((fatura) => ({
       id: `fatura-${fatura.id}`,
@@ -1673,7 +1678,7 @@ async function buildFinanceiroDashboard(
       tone: (fatura.status === InvoiceStatus.VENCIDA
         ? "danger"
         : "secondary") as Tone,
-      href: `/financeiro/faturas/${fatura.id}`,
+      href: "/financeiro/recibos",
     })),
   ]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -1686,7 +1691,7 @@ async function buildFinanceiroDashboard(
       subtitle: `Valor: R$ ${Number(fatura.valor).toLocaleString("pt-BR")}`,
       tone: fatura.status === InvoiceStatus.VENCIDA ? "danger" : "warning",
       date: fatura.vencimento ? fatura.vencimento.toISOString() : undefined,
-      href: `/financeiro/faturas/${fatura.id}`,
+      href: "/financeiro/recibos",
     }),
   );
 
@@ -1998,7 +2003,7 @@ async function buildSecretariaDashboard(
       select: {
         id: true,
         titulo: true,
-        cliente: { select: { nome: true } },
+        cliente: { select: { id: true, nome: true } },
         processo: { select: { id: true, numero: true } },
         createdAt: true,
       },
@@ -2149,7 +2154,7 @@ async function buildSecretariaDashboard(
         : "Evento agendado",
       date: evento.dataInicio?.toISOString() ?? now.toISOString(),
       icon: "📅",
-      href: evento.processo ? `/processos/${evento.processo.id}` : undefined,
+      href: evento.processo ? `/processos/${evento.processo.id}` : "/agenda",
     })),
     ...documentosPendentesDetalhes.map((doc) => ({
       id: `doc-${doc.id}`,
@@ -2160,7 +2165,11 @@ async function buildSecretariaDashboard(
       date: doc.createdAt?.toISOString() ?? now.toISOString(),
       icon: "📁",
       tone: "warning",
-      href: doc.processo ? `/processos/${doc.processo.id}` : undefined,
+      href: doc.processo
+        ? `/processos/${doc.processo.id}`
+        : doc.cliente?.id
+          ? `/clientes/${doc.cliente.id}`
+          : "/documentos",
     })),
     ...tarefasRecentes.map((tarefa) => ({
       id: `tarefa-${tarefa.id}`,
@@ -2170,6 +2179,7 @@ async function buildSecretariaDashboard(
         : "Tarefa registrada",
       date: tarefa.createdAt.toISOString(),
       icon: "🗂️",
+      href: "/tarefas",
     })),
   ]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -2320,6 +2330,7 @@ async function buildClienteDashboard(
         id: true,
         titulo: true,
         dataInicio: true,
+        processo: { select: { id: true } },
       },
     }),
     prisma.contratoParcela.findMany({
@@ -2488,6 +2499,7 @@ async function buildClienteDashboard(
       date: evento.dataInicio?.toISOString() ?? now.toISOString(),
       icon: "📅",
       tone: "secondary" as Tone,
+      href: evento.processo ? `/processos/${evento.processo.id}` : "/processos",
     })),
     ...parcelasLista.map((parcela) => ({
       id: `parcela-${parcela.id}`,
@@ -2498,6 +2510,7 @@ async function buildClienteDashboard(
       tone: (parcela.status === ContratoParcelaStatus.ATRASADA
         ? "danger"
         : "warning") as Tone,
+      href: "/financeiro",
     })),
   ]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())

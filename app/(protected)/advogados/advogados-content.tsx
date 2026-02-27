@@ -113,7 +113,6 @@ import {
   useTiposChavePix,
 } from "@/app/hooks/use-dados-bancarios";
 import { enviarEmailBoasVindas } from "@/app/actions/advogados-emails";
-import { PeopleManagementNav } from "@/components/people-management-nav";
 import { PeopleMetricCard, PeoplePageHeader } from "@/components/people-ui";
 import { EspecialidadeJuridica } from "@/generated/prisma";
 
@@ -1663,8 +1662,6 @@ export default function AdvogadosContent() {
   if (loading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
-        <PeopleManagementNav active="advogados" />
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-32 rounded-xl" />
@@ -1682,8 +1679,6 @@ export default function AdvogadosContent() {
   if (errorMessage) {
     return (
       <div className="container mx-auto p-6 space-y-6">
-        <PeopleManagementNav active="advogados" />
-
         <div className="flex min-h-[300px] flex-col items-center justify-center space-y-4">
           <div className="text-danger text-center">
             <p className="text-lg font-semibold">Erro ao carregar advogados</p>
@@ -1699,8 +1694,6 @@ export default function AdvogadosContent() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <PeopleManagementNav active="advogados" />
-
       <motion.div
         animate={{ opacity: 1, y: 0 }}
         initial={{ opacity: 0, y: -20 }}

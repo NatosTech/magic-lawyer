@@ -102,7 +102,6 @@ import { EnderecoManager } from "@/components/endereco-manager";
 import { useModulosTenant, useCargos } from "@/app/hooks/use-equipe";
 import { ModalHeaderGradient } from "@/components/ui/modal-header-gradient";
 import { ModalSectionCard } from "@/components/ui/modal-section-card";
-import { PeopleManagementNav } from "@/components/people-management-nav";
 import { PeopleMetricCard, PeoplePageHeader } from "@/components/people-ui";
 
 const containerVariants = {
@@ -3521,8 +3520,6 @@ export default function EquipeContent() {
 
   return (
     <div className="space-y-8">
-      <PeopleManagementNav active="equipe" />
-
       <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
         <PeoplePageHeader
           description="Controle cargos, usuarios e convites com trilha de auditoria e padrao visual unificado."

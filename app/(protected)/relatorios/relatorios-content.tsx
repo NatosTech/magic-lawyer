@@ -5,7 +5,10 @@ import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
+import { DateRangePicker } from "@heroui/date-picker";
+import { type DateValue, getLocalTimeZone } from "@internationalized/date";
 import { Input } from "@heroui/input";
+import type { RangeValue } from "@react-types/shared";
 import { Select, SelectItem } from "@heroui/react";
 import { Spinner } from "@heroui/spinner";
 import {
@@ -99,6 +102,8 @@ interface PrebuiltReportItem {
   formatos: ExportFormat[];
   rows: string[][];
 }
+
+type PeriodoRange = RangeValue<DateValue>;
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -417,6 +422,7 @@ function renderKpiCard(
 
 export function RelatoriosContent() {
   const [periodo, setPeriodo] = useState<RelatorioPeriodo>("90d");
+  const [periodoRange, setPeriodoRange] = useState<PeriodoRange | null>(null);
   const [busca, setBusca] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] =
     useState<ReportCategoryFilter>("TODAS");
@@ -425,7 +431,6 @@ export function RelatoriosContent() {
     useState<ReportFormatFilter>("TODOS");
   const [formatoExportacao, setFormatoExportacao] =
     useState<ExportFormat>("csv");
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [exportingReportId, setExportingReportId] = useState<string | null>(
     null,
   );
@@ -474,6 +479,20 @@ export function RelatoriosContent() {
 
   const filteredReports = useMemo(() => {
     const normalizedSearch = busca.trim().toLowerCase();
+    const startDate = periodoRange?.start
+      ? new Date(periodoRange.start.toDate(getLocalTimeZone()))
+      : null;
+    const endDate = periodoRange?.end
+      ? new Date(periodoRange.end.toDate(getLocalTimeZone()))
+      : null;
+
+    if (startDate) {
+      startDate.setHours(0, 0, 0, 0);
+    }
+
+    if (endDate) {
+      endDate.setHours(23, 59, 59, 999);
+    }
 
     return reportCatalog.filter((report) => {
       if (
@@ -491,6 +510,22 @@ export function RelatoriosContent() {
         return false;
       }
 
+      if (startDate || endDate) {
+        const updatedAt = new Date(report.atualizadoEm);
+
+        if (Number.isNaN(updatedAt.getTime())) {
+          return false;
+        }
+
+        if (startDate && updatedAt < startDate) {
+          return false;
+        }
+
+        if (endDate && updatedAt > endDate) {
+          return false;
+        }
+      }
+
       if (!normalizedSearch) {
         return true;
       }
@@ -506,7 +541,14 @@ export function RelatoriosContent() {
 
       return searchTarget.includes(normalizedSearch);
     });
-  }, [reportCatalog, busca, categoriaFiltro, statusFiltro, formatoFiltro]);
+  }, [
+    reportCatalog,
+    busca,
+    categoriaFiltro,
+    statusFiltro,
+    formatoFiltro,
+    periodoRange,
+  ]);
 
   const totalAlertas = useMemo(
     () => reportCatalog.filter((report) => report.status === "ATENCAO").length,
@@ -569,12 +611,7 @@ export function RelatoriosContent() {
   };
 
   const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refresh();
-    } finally {
-      setIsRefreshing(false);
-    }
+    await refresh();
   };
 
   const handleExportReport = async (report: PrebuiltReportItem) => {
@@ -622,30 +659,6 @@ export function RelatoriosContent() {
               Lista ERP para busca, filtro e exportação por formato conforme a
               necessidade do cliente.
             </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Select
-              aria-label="Período base"
-              className="min-w-[220px]"
-              selectedKeys={selectedPeriodKeys}
-              size="sm"
-              onSelectionChange={handlePeriodoChange}
-            >
-              {PERIOD_OPTIONS.map((option) => (
-                <SelectItem key={option.key} textValue={option.label}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </Select>
-            <Button
-              color="primary"
-              isLoading={isRefreshing}
-              size="sm"
-              variant="flat"
-              onPress={handleRefresh}
-            >
-              Atualizar dados
-            </Button>
           </div>
         </div>
       </header>
@@ -749,10 +762,9 @@ export function RelatoriosContent() {
                 : "Sem alertas críticos"}
             </Chip>
           </div>
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
             <Input
               aria-label="Pesquisar relatório"
-              className="xl:col-span-2"
               placeholder="Buscar por nome, categoria ou periodicidade..."
               size="sm"
               startContent={<Search className="h-4 w-4 text-default-400" />}
@@ -795,6 +807,25 @@ export function RelatoriosContent() {
                 </SelectItem>
               ))}
             </Select>
+            <Select
+              aria-label="Período base"
+              selectedKeys={selectedPeriodKeys}
+              size="sm"
+              onSelectionChange={handlePeriodoChange}
+            >
+              {PERIOD_OPTIONS.map((option) => (
+                <SelectItem key={option.key} textValue={option.label}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </Select>
+            <DateRangePicker
+              aria-label="Filtro por data de atualização"
+              className="w-full"
+              size="sm"
+              value={periodoRange}
+              onChange={(value) => setPeriodoRange(value ?? null)}
+            />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs uppercase tracking-[0.2em] text-default-500">
