@@ -16,6 +16,7 @@ import {
   Tab,
   Tabs,
 } from "@heroui/react";
+import { Input } from "@heroui/input";
 import { Pagination } from "@heroui/pagination";
 import {
   ArrowLeft,
@@ -300,6 +301,13 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
   const [tarefasPage, setTarefasPage] = useState(1);
   const [eventosPage, setEventosPage] = useState(1);
   const [assinaturasPage, setAssinaturasPage] = useState(1);
+  const [clientesSearch, setClientesSearch] = useState("");
+  const [processosNumeroSearch, setProcessosNumeroSearch] = useState("");
+  const [processosNomeSearch, setProcessosNomeSearch] = useState("");
+  const [contratosClienteSearch, setContratosClienteSearch] = useState("");
+  const [contratosNumeroSearch, setContratosNumeroSearch] = useState("");
+  const [procuracoesClienteSearch, setProcuracoesClienteSearch] = useState("");
+  const [procuracoesNumeroSearch, setProcuracoesNumeroSearch] = useState("");
 
   const [isHistoricoModalOpen, setIsHistoricoModalOpen] = useState(false);
   const [isNotificacoesModalOpen, setIsNotificacoesModalOpen] = useState(false);
@@ -388,22 +396,114 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
     () => (advogado?.dadosBancarios || []),
     [advogado],
   );
+  const clientesVinculadosFiltrados = useMemo(() => {
+    const query = clientesSearch.trim().toLowerCase();
+
+    if (!query) {
+      return clientesVinculados;
+    }
+
+    return clientesVinculados.filter((item) => {
+      const searchableValues = [
+        item.cliente.nome,
+        item.cliente.documento,
+        item.cliente.email,
+        item.cliente.telefone,
+        item.cliente.tipoPessoa,
+        item.relacionamento,
+      ];
+
+      return searchableValues.some((value) =>
+        String(value || "").toLowerCase().includes(query),
+      );
+    });
+  }, [clientesVinculados, clientesSearch]);
+  const processosFiltrados = useMemo(() => {
+    const numeroQuery = processosNumeroSearch.trim().toLowerCase();
+    const nomeQuery = processosNomeSearch.trim().toLowerCase();
+
+    if (!numeroQuery && !nomeQuery) {
+      return processos;
+    }
+
+    return processos.filter((processo) => {
+      const matchNumero =
+        !numeroQuery ||
+        [processo.numero, processo.numeroCnj]
+          .some((value) => String(value || "").toLowerCase().includes(numeroQuery));
+      const matchNome =
+        !nomeQuery ||
+        [processo.titulo, processo.cliente?.nome, processo.area?.nome]
+          .some((value) => String(value || "").toLowerCase().includes(nomeQuery));
+
+      return matchNumero && matchNome;
+    });
+  }, [processos, processosNumeroSearch, processosNomeSearch]);
+  const contratosFiltrados = useMemo(() => {
+    const clienteQuery = contratosClienteSearch.trim().toLowerCase();
+    const numeroQuery = contratosNumeroSearch.trim().toLowerCase();
+
+    if (!clienteQuery && !numeroQuery) {
+      return contratos;
+    }
+
+    return contratos.filter((contrato) => {
+      const matchCliente =
+        !clienteQuery ||
+        String(contrato.cliente?.nome || "")
+          .toLowerCase()
+          .includes(clienteQuery);
+      const matchNumero =
+        !numeroQuery ||
+        [
+          contrato.processo?.numero,
+          contrato.id,
+          contrato.titulo,
+        ].some((value) => String(value || "").toLowerCase().includes(numeroQuery));
+
+      return matchCliente && matchNumero;
+    });
+  }, [contratos, contratosClienteSearch, contratosNumeroSearch]);
+  const procuracoesFiltradas = useMemo(() => {
+    const clienteQuery = procuracoesClienteSearch.trim().toLowerCase();
+    const numeroQuery = procuracoesNumeroSearch.trim().toLowerCase();
+
+    if (!clienteQuery && !numeroQuery) {
+      return procuracoes;
+    }
+
+    return procuracoes.filter((procuracao) => {
+      const matchCliente =
+        !clienteQuery ||
+        [procuracao.cliente?.nome, procuracao.cliente?.documento]
+          .some((value) => String(value || "").toLowerCase().includes(clienteQuery));
+      const matchNumero =
+        !numeroQuery ||
+        [
+          procuracao.numero,
+          procuracao.id,
+          ...procuracao.processos.map((item) => item.processo.numero),
+        ].some((value) => String(value || "").toLowerCase().includes(numeroQuery));
+
+      return matchCliente && matchNumero;
+    });
+  }, [procuracoes, procuracoesClienteSearch, procuracoesNumeroSearch]);
 
   const clientesTotalPages = useMemo(
-    () => getTotalPages(clientesVinculados.length, TAB_PAGE_SIZES.clientes),
-    [clientesVinculados.length],
+    () => getTotalPages(clientesVinculadosFiltrados.length, TAB_PAGE_SIZES.clientes),
+    [clientesVinculadosFiltrados.length],
   );
   const processosTotalPages = useMemo(
-    () => getTotalPages(processos.length, TAB_PAGE_SIZES.processos),
-    [processos.length],
+    () => getTotalPages(processosFiltrados.length, TAB_PAGE_SIZES.processos),
+    [processosFiltrados.length],
   );
   const contratosTotalPages = useMemo(
-    () => getTotalPages(contratos.length, TAB_PAGE_SIZES.contratos),
-    [contratos.length],
+    () => getTotalPages(contratosFiltrados.length, TAB_PAGE_SIZES.contratos),
+    [contratosFiltrados.length],
   );
   const procuracoesTotalPages = useMemo(
-    () => getTotalPages(procuracoes.length, TAB_PAGE_SIZES.procuracoes),
-    [procuracoes.length],
+    () => getTotalPages(procuracoesFiltradas.length, TAB_PAGE_SIZES.procuracoes),
+    [procuracoesFiltradas.length],
   );
   const tarefasTotalPages = useMemo(
     () => getTotalPages(tarefas.length, TAB_PAGE_SIZES.tarefas),
@@ -419,22 +519,22 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
   );
 
   const clientesPageItems = paginateItems(
-    clientesVinculados,
+    clientesVinculadosFiltrados,
     clientesPage,
     TAB_PAGE_SIZES.clientes,
   );
   const processosPageItems = paginateItems(
-    processos,
+    processosFiltrados,
     processosPage,
     TAB_PAGE_SIZES.processos,
   );
   const contratosPageItems = paginateItems(
-    contratos,
+    contratosFiltrados,
     contratosPage,
     TAB_PAGE_SIZES.contratos,
   );
   const procuracoesPageItems = paginateItems(
-    procuracoes,
+    procuracoesFiltradas,
     procuracoesPage,
     TAB_PAGE_SIZES.procuracoes,
   );
@@ -491,6 +591,22 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
   useEffect(() => {
     setAssinaturasPage((prev) => Math.min(prev, assinaturasTotalPages));
   }, [assinaturasTotalPages]);
+
+  useEffect(() => {
+    setClientesPage(1);
+  }, [clientesSearch]);
+
+  useEffect(() => {
+    setProcessosPage(1);
+  }, [processosNumeroSearch, processosNomeSearch]);
+
+  useEffect(() => {
+    setContratosPage(1);
+  }, [contratosClienteSearch, contratosNumeroSearch]);
+
+  useEffect(() => {
+    setProcuracoesPage(1);
+  }, [procuracoesClienteSearch, procuracoesNumeroSearch]);
 
   if (isLoadingAll) {
     return (
@@ -1062,42 +1178,63 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
                 </Card>
               ) : (
                 <>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {clientesPageItems.map((item) => (
-                      <Card
-                        key={item.id}
-                        as={Link}
-                        className="border border-default-200 transition-all hover:border-primary hover:shadow-md"
-                        href={`/clientes/${item.cliente.id}`}
-                      >
-                        <CardBody className="space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="text-sm font-semibold">{item.cliente.nome}</p>
-                              <p className="text-xs text-default-500">
-                                {item.cliente.documento || "Documento não informado"}
-                              </p>
-                            </div>
-                            <Chip color="primary" size="sm" variant="flat">
-                              {item.relacionamento || "Vínculo"}
-                            </Chip>
-                          </div>
-                          <div className="text-xs text-default-500">
-                            {item.cliente.tipoPessoa || "Sem tipo"}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-default-500">
-                            <Calendar className="h-3 w-3" />
-                            <span>Vinculado em {formatDate(item.createdAt)}</span>
-                          </div>
-                        </CardBody>
-                      </Card>
-                    ))}
+                  <div className="mb-4">
+                    <Input
+                      isClearable
+                      placeholder="Pesquisar cliente por nome, documento, email ou vínculo"
+                      size="sm"
+                      value={clientesSearch}
+                      variant="bordered"
+                      onValueChange={setClientesSearch}
+                    />
                   </div>
+                  {clientesPageItems.length === 0 ? (
+                    <Card className="border border-default-200">
+                      <CardBody className="py-8 text-center">
+                        <Users className="mx-auto h-10 w-10 text-default-400" />
+                        <p className="mt-3 text-sm text-default-500">
+                          Nenhum cliente encontrado com o filtro informado
+                        </p>
+                      </CardBody>
+                    </Card>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {clientesPageItems.map((item) => (
+                        <Card
+                          key={item.id}
+                          as={Link}
+                          className="border border-default-200 transition-all hover:border-primary hover:shadow-md"
+                          href={`/clientes/${item.cliente.id}`}
+                        >
+                          <CardBody className="space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="text-sm font-semibold">{item.cliente.nome}</p>
+                                <p className="text-xs text-default-500">
+                                  {item.cliente.documento || "Documento não informado"}
+                                </p>
+                              </div>
+                              <Chip color="primary" size="sm" variant="flat">
+                                {item.relacionamento || "Vínculo"}
+                              </Chip>
+                            </div>
+                            <div className="text-xs text-default-500">
+                              {item.cliente.tipoPessoa || "Sem tipo"}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-default-500">
+                              <Calendar className="h-3 w-3" />
+                              <span>Vinculado em {formatDate(item.createdAt)}</span>
+                            </div>
+                          </CardBody>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                   <TabPagination
                     itemLabel="clientes"
                     page={clientesPage}
                     pageSize={TAB_PAGE_SIZES.clientes}
-                    totalItems={clientesVinculados.length}
+                    totalItems={clientesVinculadosFiltrados.length}
                     totalPages={clientesTotalPages}
                     onChange={setClientesPage}
                   />
@@ -1130,115 +1267,144 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
                 </Card>
               ) : (
                 <>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {processosPageItems.map((processo) => (
-                      <Card
-                        key={processo.id}
-                        className="border border-default-200 transition-all hover:border-primary hover:shadow-md"
-                      >
-                        <CardHeader className="flex-col gap-2 pb-1">
-                          <div className="flex w-full items-start justify-between gap-2">
-                            <div className="flex flex-wrap gap-2">
-                              <Chip
-                                color={getChipStatusColor(processo.status)}
-                                size="sm"
-                                variant="flat"
-                              >
-                                {processo.status}
+                  <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                    <Input
+                      isClearable
+                      placeholder="Filtrar por número do processo ou CNJ"
+                      size="sm"
+                      value={processosNumeroSearch}
+                      variant="bordered"
+                      onValueChange={setProcessosNumeroSearch}
+                    />
+                    <Input
+                      isClearable
+                      placeholder="Filtrar por nome do cliente, título ou área"
+                      size="sm"
+                      value={processosNomeSearch}
+                      variant="bordered"
+                      onValueChange={setProcessosNomeSearch}
+                    />
+                  </div>
+                  {processosPageItems.length === 0 ? (
+                    <Card className="border border-default-200">
+                      <CardBody className="py-8 text-center">
+                        <Scale className="mx-auto h-10 w-10 text-default-400" />
+                        <p className="mt-3 text-sm text-default-500">
+                          Nenhum processo encontrado com os filtros informados
+                        </p>
+                      </CardBody>
+                    </Card>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {processosPageItems.map((processo) => (
+                        <Card
+                          key={processo.id}
+                          className="border border-default-200 transition-all hover:border-primary hover:shadow-md"
+                        >
+                          <CardHeader className="flex-col gap-2 pb-1">
+                            <div className="flex w-full items-start justify-between gap-2">
+                              <div className="flex flex-wrap gap-2">
+                                <Chip
+                                  color={getChipStatusColor(processo.status)}
+                                  size="sm"
+                                  variant="flat"
+                                >
+                                  {processo.status}
+                                </Chip>
+                                {processo.fase ? (
+                                  <Chip color="default" size="sm" variant="flat">
+                                    {processo.fase}
+                                  </Chip>
+                                ) : null}
+                                {processo.grau ? (
+                                  <Chip color="secondary" size="sm" variant="flat">
+                                    {processo.grau}
+                                  </Chip>
+                                ) : null}
+                              </div>
+                              <Chip color="primary" size="sm" variant="flat">
+                                {processo.participacao}
                               </Chip>
-                              {processo.fase ? (
-                                <Chip color="default" size="sm" variant="flat">
-                                  {processo.fase}
-                                </Chip>
+                            </div>
+                            <div>
+                              <p className="font-semibold">{processo.numero}</p>
+                              {processo.numeroCnj ? (
+                                <p className="text-xs text-default-500">CNJ {processo.numeroCnj}</p>
                               ) : null}
-                              {processo.grau ? (
-                                <Chip color="secondary" size="sm" variant="flat">
-                                  {processo.grau}
-                                </Chip>
+                              {processo.titulo ? (
+                                <p className="mt-1 text-xs text-default-600">{processo.titulo}</p>
                               ) : null}
                             </div>
-                            <Chip color="primary" size="sm" variant="flat">
-                              {processo.participacao}
-                            </Chip>
-                          </div>
-                          <div>
-                            <p className="font-semibold">{processo.numero}</p>
-                            {processo.numeroCnj ? (
-                              <p className="text-xs text-default-500">CNJ {processo.numeroCnj}</p>
-                            ) : null}
-                            {processo.titulo ? (
-                              <p className="mt-1 text-xs text-default-600">{processo.titulo}</p>
-                            ) : null}
-                          </div>
-                        </CardHeader>
-                        <Divider />
-                        <CardBody className="gap-2">
-                          <div className="flex items-center gap-2 text-xs">
-                            <Building2 className="h-3 w-3 text-default-400" />
-                            <span>{processo.area?.nome || "Sem área"}</span>
-                          </div>
-                          {processo.cliente ? (
+                          </CardHeader>
+                          <Divider />
+                          <CardBody className="gap-2">
                             <div className="flex items-center gap-2 text-xs">
-                              <Users className="h-3 w-3 text-default-400" />
-                              <p className="text-default-600">
-                                {processo.cliente.nome}
-                              </p>
+                              <Building2 className="h-3 w-3 text-default-400" />
+                              <span>{processo.area?.nome || "Sem área"}</span>
                             </div>
-                          ) : null}
-                          {processo.advogadoResponsavel ? (
-                            <div className="flex items-center gap-2 text-xs">
-                              <User className="h-3 w-3 text-default-400" />
-                              <p className="text-default-600">
-                                {processo.advogadoResponsavel.usuario?.firstName}{" "}
-                                {processo.advogadoResponsavel.usuario?.lastName}
-                              </p>
-                            </div>
-                          ) : null}
-                          <div className="flex flex-wrap gap-2 pt-2">
-                            <Chip size="sm" variant="flat">
-                              {processo._count.documentos} docs
-                            </Chip>
-                            <Chip size="sm" variant="flat">
-                              {processo._count.eventos} eventos
-                            </Chip>
-                            <Chip size="sm" variant="flat">
-                              {processo._count.movimentacoes} movs
-                            </Chip>
-                            <Chip size="sm" variant="flat">
-                              {processo._count.tarefas} tarefas
-                            </Chip>
-                          </div>
-                          <div className="flex flex-wrap gap-2 pt-1">
-                            <Button
-                              className="text-xs"
-                              color="primary"
-                              size="sm"
-                              startContent={<Eye className="h-3 w-3" />}
-                              variant="flat"
-                              onPress={() => router.push(`/processos/${processo.id}`)}
-                            >
-                              Abrir processo
-                            </Button>
                             {processo.cliente ? (
+                              <div className="flex items-center gap-2 text-xs">
+                                <Users className="h-3 w-3 text-default-400" />
+                                <p className="text-default-600">
+                                  {processo.cliente.nome}
+                                </p>
+                              </div>
+                            ) : null}
+                            {processo.advogadoResponsavel ? (
+                              <div className="flex items-center gap-2 text-xs">
+                                <User className="h-3 w-3 text-default-400" />
+                                <p className="text-default-600">
+                                  {processo.advogadoResponsavel.usuario?.firstName}{" "}
+                                  {processo.advogadoResponsavel.usuario?.lastName}
+                                </p>
+                              </div>
+                            ) : null}
+                            <div className="flex flex-wrap gap-2 pt-2">
+                              <Chip size="sm" variant="flat">
+                                {processo._count.documentos} docs
+                              </Chip>
+                              <Chip size="sm" variant="flat">
+                                {processo._count.eventos} eventos
+                              </Chip>
+                              <Chip size="sm" variant="flat">
+                                {processo._count.movimentacoes} movs
+                              </Chip>
+                              <Chip size="sm" variant="flat">
+                                {processo._count.tarefas} tarefas
+                              </Chip>
+                            </div>
+                            <div className="flex flex-wrap gap-2 pt-1">
                               <Button
                                 className="text-xs"
+                                color="primary"
                                 size="sm"
-                                variant="light"
-                                onPress={() => router.push(`/clientes/${processo.cliente.id}`)}
+                                startContent={<Eye className="h-3 w-3" />}
+                                variant="flat"
+                                onPress={() => router.push(`/processos/${processo.id}`)}
                               >
-                                Abrir cliente
+                                Abrir processo
                               </Button>
-                            ) : null}
-                          </div>
-                        </CardBody>
-                      </Card>
-                    ))}
-                  </div>
+                              {processo.cliente ? (
+                                <Button
+                                  className="text-xs"
+                                  size="sm"
+                                  variant="light"
+                                  onPress={() => router.push(`/clientes/${processo.cliente.id}`)}
+                                >
+                                  Abrir cliente
+                                </Button>
+                              ) : null}
+                            </div>
+                          </CardBody>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                   <TabPagination
                     itemLabel="processos"
                     page={processosPage}
                     pageSize={TAB_PAGE_SIZES.processos}
-                    totalItems={processos.length}
+                    totalItems={processosFiltrados.length}
                     totalPages={processosTotalPages}
                     onChange={setProcessosPage}
                   />
@@ -1271,58 +1437,87 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
                 </Card>
               ) : (
                 <>
-                  <div className="space-y-3">
-                    {contratosPageItems.map((contrato) => (
-                      <Card
-                        as={Link}
-                        href={`/contratos/${contrato.id}`}
-                        key={contrato.id}
-                        className="cursor-pointer border border-default-200 transition-all hover:border-primary hover:shadow-md"
-                      >
-                        <CardBody className="space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="font-semibold">{contrato.titulo}</p>
-                              <p className="text-xs text-default-500">
-                                {contrato.tipo?.nome || "Contrato sem tipo"}
-                              </p>
-                            </div>
-                            <Chip color={getChipStatusColor(contrato.status)} size="sm" variant="flat">
-                              {contrato.status}
-                            </Chip>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            <Chip size="sm" variant="flat">
-                              {contrato._count?.documentos || 0} documentos
-                            </Chip>
-                            <Chip size="sm" variant="flat">
-                              {contrato._count?.faturas || 0} faturas
-                            </Chip>
-                            <Chip size="sm" variant="flat">
-                              {contrato._count?.parcelas || 0} parcelas
-                            </Chip>
-                            <Chip size="sm" variant="flat">
-                              {contrato._count?.honorarios || 0} honorários
-                            </Chip>
-                          </div>
-
-                          <div className="grid gap-1 text-xs text-default-600 sm:grid-cols-2">
-                            <p>Cliente: {contrato.cliente?.nome || "Sem cliente"}</p>
-                            <p>Valor: {contrato.valor ? `R$ ${Number(contrato.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00"}</p>
-                            <p>Início: {formatDate(contrato.dataInicio)}</p>
-                            <p>Assinatura: {formatDate(contrato.dataAssinatura)}</p>
-                            <p>Processo: {contrato.processo?.numero || "N/D"}</p>
-                          </div>
-                        </CardBody>
-                      </Card>
-                    ))}
+                  <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                    <Input
+                      isClearable
+                      placeholder="Filtrar contratos por cliente"
+                      size="sm"
+                      value={contratosClienteSearch}
+                      variant="bordered"
+                      onValueChange={setContratosClienteSearch}
+                    />
+                    <Input
+                      isClearable
+                      placeholder="Filtrar por número (processo/referência)"
+                      size="sm"
+                      value={contratosNumeroSearch}
+                      variant="bordered"
+                      onValueChange={setContratosNumeroSearch}
+                    />
                   </div>
+                  {contratosPageItems.length === 0 ? (
+                    <Card className="border border-default-200">
+                      <CardBody className="py-8 text-center">
+                        <FileText className="mx-auto h-10 w-10 text-default-400" />
+                        <p className="mt-3 text-sm text-default-500">
+                          Nenhum contrato encontrado com os filtros informados
+                        </p>
+                      </CardBody>
+                    </Card>
+                  ) : (
+                    <div className="space-y-3">
+                      {contratosPageItems.map((contrato) => (
+                        <Card
+                          as={Link}
+                          href={`/contratos/${contrato.id}`}
+                          key={contrato.id}
+                          className="cursor-pointer border border-default-200 transition-all hover:border-primary hover:shadow-md"
+                        >
+                          <CardBody className="space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="font-semibold">{contrato.titulo}</p>
+                                <p className="text-xs text-default-500">
+                                  {contrato.tipo?.nome || "Contrato sem tipo"}
+                                </p>
+                              </div>
+                              <Chip color={getChipStatusColor(contrato.status)} size="sm" variant="flat">
+                                {contrato.status}
+                              </Chip>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              <Chip size="sm" variant="flat">
+                                {contrato._count?.documentos || 0} documentos
+                              </Chip>
+                              <Chip size="sm" variant="flat">
+                                {contrato._count?.faturas || 0} faturas
+                              </Chip>
+                              <Chip size="sm" variant="flat">
+                                {contrato._count?.parcelas || 0} parcelas
+                              </Chip>
+                              <Chip size="sm" variant="flat">
+                                {contrato._count?.honorarios || 0} honorários
+                              </Chip>
+                            </div>
+
+                            <div className="grid gap-1 text-xs text-default-600 sm:grid-cols-2">
+                              <p>Cliente: {contrato.cliente?.nome || "Sem cliente"}</p>
+                              <p>Valor: {contrato.valor ? `R$ ${Number(contrato.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00"}</p>
+                              <p>Início: {formatDate(contrato.dataInicio)}</p>
+                              <p>Assinatura: {formatDate(contrato.dataAssinatura)}</p>
+                              <p>Processo: {contrato.processo?.numero || "N/D"}</p>
+                            </div>
+                          </CardBody>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                   <TabPagination
                     itemLabel="contratos"
                     page={contratosPage}
                     pageSize={TAB_PAGE_SIZES.contratos}
-                    totalItems={contratos.length}
+                    totalItems={contratosFiltrados.length}
                     totalPages={contratosTotalPages}
                     onChange={setContratosPage}
                   />
@@ -1355,105 +1550,146 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
                 </Card>
               ) : (
                 <>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {procuracoesPageItems.map((procuracao) => (
-                      <div
-                        key={procuracao.id}
-                        className="rounded-medium cursor-pointer"
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => {
-                          router.push(`/procuracoes/${procuracao.id}`);
-                        }}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
+                  <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                    <Input
+                      isClearable
+                      placeholder="Filtrar procurações por cliente"
+                      size="sm"
+                      value={procuracoesClienteSearch}
+                      variant="bordered"
+                      onValueChange={setProcuracoesClienteSearch}
+                    />
+                    <Input
+                      isClearable
+                      placeholder="Filtrar por número da procuração/processo"
+                      size="sm"
+                      value={procuracoesNumeroSearch}
+                      variant="bordered"
+                      onValueChange={setProcuracoesNumeroSearch}
+                    />
+                  </div>
+                  {procuracoesPageItems.length === 0 ? (
+                    <Card className="border border-default-200">
+                      <CardBody className="py-8 text-center">
+                        <FileSignature className="mx-auto h-10 w-10 text-default-400" />
+                        <p className="mt-3 text-sm text-default-500">
+                          Nenhuma procuração encontrada com os filtros informados
+                        </p>
+                      </CardBody>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                      {procuracoesPageItems.map((procuracao) => (
+                        <div
+                          key={procuracao.id}
+                          className="rounded-medium w-full cursor-pointer"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => {
                             router.push(`/procuracoes/${procuracao.id}`);
-                          }
-                        }}
-                      >
-                        <Card className="cursor-pointer border border-default-200 transition-all hover:border-success hover:shadow-md">
-                          <CardHeader className="pb-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <p className="font-semibold">
-                                  Procuração {procuracao.numero || procuracao.id.slice(0, 8)}
-                                </p>
-                                <p className="text-xs text-default-500">
-                                  {procuracao.cliente?.nome || "Cliente não informado"}
-                                </p>
-                              </div>
-                              <Chip
-                                color={procuracao.ativa ? "success" : "default"}
-                                size="sm"
-                                variant="flat"
-                              >
-                                {procuracao.ativa ? "Ativa" : "Inativa"}
-                              </Chip>
-                            </div>
-                            <div className="mt-2 flex items-center gap-2">
-                              <Chip color={getChipStatusColor(procuracao.status)} size="sm" variant="flat">
-                                {procuracao.status}
-                              </Chip>
-                              {procuracao.emitidaEm ? (
-                                <Chip size="sm" variant="flat">
-                                  Emitida {formatDate(procuracao.emitidaEm)}
-                                </Chip>
-                              ) : null}
-                            </div>
-                          </CardHeader>
-                          <Divider />
-                          <CardBody className="gap-2">
-                            <div className="flex flex-wrap gap-2">
-                              <Chip size="sm" variant="flat">
-                                {procuracao._count.poderes} poderes
-                              </Chip>
-                              <Chip size="sm" variant="flat">
-                                {procuracao.processos.length} processos
-                              </Chip>
-                              <Chip size="sm" variant="flat">
-                                {procuracao._count.assinaturas} assinaturas
-                              </Chip>
-                            </div>
-                            <div className="text-xs text-default-500">
-                              Outorgados: {procuracao.outorgados.length || 0}
-                            </div>
-                            {procuracao.cliente?.id ? (
-                              <div className="flex flex-wrap gap-2 pt-1">
-                                <Button
-                                  size="sm"
-                                  variant="flat"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    router.push(`/clientes/${procuracao.cliente.id}`);
-                                  }}
-                                >
-                                  Cliente
-                                </Button>
-                                {procuracao.processos.length > 0 ? (
-                                  <Button
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              router.push(`/procuracoes/${procuracao.id}`);
+                            }
+                          }}
+                        >
+                          <Card className="h-full w-full cursor-pointer border border-default-200 transition-all hover:border-success hover:shadow-md">
+                            <CardHeader className="pb-2">
+                              <div className="w-full space-y-2">
+                                <div>
+                                  <p className="font-semibold">
+                                    Procuração {procuracao.numero || procuracao.id.slice(0, 8)}
+                                  </p>
+                                  <p className="text-xs text-default-500">
+                                    {procuracao.cliente?.nome || "Cliente não informado"}
+                                  </p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Chip
+                                    className="h-6"
+                                    color={procuracao.ativa ? "success" : "default"}
                                     size="sm"
-                                    variant="light"
+                                    variant="flat"
+                                  >
+                                    {procuracao.ativa ? "Ativa" : "Inativa"}
+                                  </Chip>
+                                  <Chip
+                                    className="h-6"
+                                    color={getChipStatusColor(procuracao.status)}
+                                    size="sm"
+                                    variant="flat"
+                                  >
+                                    {procuracao.status}
+                                  </Chip>
+                                  {procuracao.emitidaEm ? (
+                                    <Chip className="h-6" size="sm" variant="flat">
+                                      Emitida {formatDate(procuracao.emitidaEm)}
+                                    </Chip>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <Divider />
+                            <CardBody className="grid gap-3 md:grid-cols-2">
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap gap-2">
+                                  <Chip size="sm" variant="flat">
+                                    {procuracao._count.poderes} poderes
+                                  </Chip>
+                                  <Chip size="sm" variant="flat">
+                                    {procuracao.processos.length} processos
+                                  </Chip>
+                                  <Chip size="sm" variant="flat">
+                                    {procuracao._count.assinaturas} assinaturas
+                                  </Chip>
+                                </div>
+                                <div className="text-xs text-default-500">
+                                  Outorgados: {procuracao.outorgados.length || 0}
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap content-start gap-2 md:justify-end">
+                                {procuracao.cliente?.id ? (
+                                  <Button
+                                    color="primary"
+                                    size="sm"
+                                    variant="flat"
+                                    startContent={<Users className="h-3.5 w-3.5" />}
                                     onClick={(event) => {
                                       event.stopPropagation();
-                                      router.push(`/processos/${procuracao.processos[0].processo.id}`)
+                                      router.push(`/clientes/${procuracao.cliente.id}`);
+                                    }}
+                                  >
+                                    Cliente
+                                  </Button>
+                                ) : null}
+                                {procuracao.processos.length > 0 ? (
+                                  <Button
+                                    color="secondary"
+                                    size="sm"
+                                    variant="flat"
+                                    startContent={<Scale className="h-3.5 w-3.5" />}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      router.push(`/processos/${procuracao.processos[0].processo.id}`);
                                     }}
                                   >
                                     Processo principal
                                   </Button>
                                 ) : null}
                               </div>
-                            ) : null}
-                          </CardBody>
-                        </Card>
-                      </div>
-                    ))}
-                  </div>
+                            </CardBody>
+                          </Card>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <TabPagination
                     itemLabel="procurações"
                     page={procuracoesPage}
                     pageSize={TAB_PAGE_SIZES.procuracoes}
-                    totalItems={procuracoes.length}
+                    totalItems={procuracoesFiltradas.length}
                     totalPages={procuracoesTotalPages}
                     onChange={setProcuracoesPage}
                   />

@@ -2690,8 +2690,6 @@ export async function getAdvogadoCompleto(
             rg: true,
             dataNascimento: true,
             observacoes: true,
-          },
-          include: {
             enderecos: true,
             dadosBancarios: true,
           },

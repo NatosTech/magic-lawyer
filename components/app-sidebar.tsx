@@ -1155,36 +1155,12 @@ function SidebarContent({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {isDesktop ? (
-        <div className="mb-6 flex items-center gap-3 px-3 pt-4">
-          {tenantLogoUrl ? (
-            <span className="flex h-10 w-16 items-center justify-center rounded-xl border border-white/10 bg-white/5 p-1">
-              <Image
-                unoptimized
-                alt={`Logo ${tenantName}`}
-                className="max-h-full w-full object-contain"
-                height={40}
-                src={tenantLogoUrl}
-                width={64}
-              />
-            </span>
-          ) : (
-            <span className="rounded-xl bg-primary/15 p-2 text-primary">
-              <Logo className="h-6 w-6" />
-            </span>
-          )}
-          {!collapsed ? (
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-white">
-                {tenantName}
-              </span>
-              <span className="text-[11px] text-default-500">Workspace</span>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="flex-1 space-y-3 overflow-y-auto px-2 pb-4">
+      <div
+        className={clsx(
+          "flex-1 space-y-3 overflow-y-auto px-2 pb-4",
+          isDesktop ? "pt-4" : null,
+        )}
+      >
         {sections.map((section, index) => (
           <div key={section.title} className="space-y-1.5">
             {/* Separador visual entre seções (exceto a primeira) */}
@@ -1489,14 +1465,14 @@ export function AppSidebar({
               <DrawerHeader className="border-b border-default-200/70 px-4 py-3">
                 <div className="flex min-w-0 items-center gap-3">
                   {tenantLogoUrl ? (
-                    <span className="flex h-9 w-12 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 p-1">
+                    <span className="flex h-10 w-16 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 p-1">
                       <Image
                         unoptimized
                         alt={`Logo ${tenantName}`}
-                        className="max-h-full w-full object-contain"
-                        height={36}
+                        className="h-full w-full object-contain"
+                        height={40}
                         src={tenantLogoUrl}
-                        width={48}
+                        width={64}
                       />
                     </span>
                   ) : (
