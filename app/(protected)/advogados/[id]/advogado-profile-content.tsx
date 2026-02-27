@@ -1357,10 +1357,10 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {procuracoesPageItems.map((procuracao) => (
                       <Card
-                        as={Link}
-                        href={`/procuracoes/${procuracao.id}`}
                         key={procuracao.id}
+                        isPressable
                         className="border border-default-200 transition-all hover:border-success hover:shadow-md"
+                        onPress={() => router.push(`/procuracoes/${procuracao.id}`)}
                       >
                         <CardHeader className="pb-1">
                           <div className="flex items-start justify-between gap-2">
@@ -1400,19 +1400,19 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
                           {procuracao.cliente?.id ? (
                             <div className="flex flex-wrap gap-2 pt-1">
                               <Button
-                                as={Link}
-                                href={`/clientes/${procuracao.cliente.id}`}
                                 size="sm"
                                 variant="flat"
+                                onPress={() => router.push(`/clientes/${procuracao.cliente.id}`)}
                               >
                                 Cliente
                               </Button>
                               {procuracao.processos.length > 0 ? (
                                 <Button
-                                  as={Link}
-                                  href={`/processos/${procuracao.processos[0].processo.id}`}
                                   size="sm"
                                   variant="light"
+                                  onPress={() =>
+                                    router.push(`/processos/${procuracao.processos[0].processo.id}`)
+                                  }
                                 >
                                   Processo principal
                                 </Button>
