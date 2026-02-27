@@ -11,7 +11,7 @@ import { Tabs, Tab } from "@heroui/tabs";
 import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
 import { Checkbox } from "@heroui/checkbox";
-import { Select, SelectItem } from "@heroui/react";
+import { Pagination, Select, SelectItem } from "@heroui/react";
 import {
   ArrowLeft,
   User,
@@ -39,7 +39,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -60,6 +60,78 @@ import {
 import { DateUtils } from "@/app/lib/date-utils";
 import { Modal } from "@/components/ui/modal";
 import { anexarDocumentoCliente } from "@/app/actions/clientes";
+
+const TAB_PAGE_SIZES = {
+  processos: 6,
+  contratos: 6,
+  tarefas: 6,
+  eventos: 6,
+  assinaturas: 6,
+  procuracoes: 6,
+  documentos: 6,
+} as const;
+
+function getTotalPages(totalItems: number, pageSize: number) {
+  return Math.max(1, Math.ceil(totalItems / pageSize));
+}
+
+function paginateItems<T>(items: T[], page: number, pageSize: number) {
+  const safePage = Math.max(1, page);
+  const start = (safePage - 1) * pageSize;
+  const end = start + pageSize;
+
+  return items.slice(start, end);
+}
+
+function getPageRange(totalItems: number, page: number, pageSize: number) {
+  if (totalItems === 0) {
+    return { start: 0, end: 0 };
+  }
+
+  const start = (Math.max(1, page) - 1) * pageSize + 1;
+  const end = Math.min(Math.max(1, page) * pageSize, totalItems);
+
+  return { start, end };
+}
+
+function TabPagination({
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  itemLabel,
+  onChange,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  itemLabel: string;
+  onChange: (page: number) => void;
+}) {
+  if (totalItems <= pageSize) {
+    return null;
+  }
+
+  const range = getPageRange(totalItems, page, pageSize);
+
+  return (
+    <div className="mt-4 flex flex-col gap-2 border-t border-default-200 pt-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs text-default-500 sm:text-sm">
+        Mostrando {range.start}-{range.end} de {totalItems} {itemLabel}
+      </p>
+      <Pagination
+        isCompact
+        showControls
+        color="primary"
+        page={page}
+        size="sm"
+        total={totalPages}
+        onChange={onChange}
+      />
+    </div>
+  );
+}
 
 export default function ClienteDetalhesPage() {
   const params = useParams();
@@ -93,6 +165,13 @@ export default function ClienteDetalhesPage() {
     visivelParaCliente: false,
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [processosPage, setProcessosPage] = useState(1);
+  const [contratosPage, setContratosPage] = useState(1);
+  const [tarefasPage, setTarefasPage] = useState(1);
+  const [eventosPage, setEventosPage] = useState(1);
+  const [assinaturasPage, setAssinaturasPage] = useState(1);
+  const [procuracoesPage, setProcuracoesPage] = useState(1);
+  const [documentosPage, setDocumentosPage] = useState(1);
 
   // Proteção: Redirecionar se não autorizado
   useEffect(() => {
@@ -101,6 +180,16 @@ export default function ClienteDetalhesPage() {
       router.push("/clientes");
     }
   }, [isError, router]);
+
+  useEffect(() => {
+    setProcessosPage(1);
+    setContratosPage(1);
+    setTarefasPage(1);
+    setEventosPage(1);
+    setAssinaturasPage(1);
+    setProcuracoesPage(1);
+    setDocumentosPage(1);
+  }, [clienteId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -355,6 +444,123 @@ export default function ClienteDetalhesPage() {
     }
   };
 
+  const processosItems = cliente.processos || [];
+  const contratosItems = contratos || [];
+  const tarefasItems = cliente.tarefas || [];
+  const assinaturasItems = cliente.documentoAssinaturas || [];
+  const procuracoesItems = procuracoes || [];
+  const documentosItems = documentos || [];
+  const processoIdsDisponiveis = useMemo(
+    () => new Set(processosItems.map((processo) => processo.id)),
+    [processosItems],
+  );
+  const selectedProcessoKeys =
+    uploadFormData.processoId &&
+    processoIdsDisponiveis.has(uploadFormData.processoId)
+      ? [uploadFormData.processoId]
+      : [];
+  const eventosItems = useMemo(
+    () =>
+      [...(cliente.eventos || [])].sort(
+        (a, b) =>
+          new Date(b.dataInicio).getTime() - new Date(a.dataInicio).getTime(),
+      ),
+    [cliente.eventos],
+  );
+
+  const processosTotalPages = getTotalPages(
+    processosItems.length,
+    TAB_PAGE_SIZES.processos,
+  );
+  const contratosTotalPages = getTotalPages(
+    contratosItems.length,
+    TAB_PAGE_SIZES.contratos,
+  );
+  const tarefasTotalPages = getTotalPages(
+    tarefasItems.length,
+    TAB_PAGE_SIZES.tarefas,
+  );
+  const eventosTotalPages = getTotalPages(
+    eventosItems.length,
+    TAB_PAGE_SIZES.eventos,
+  );
+  const assinaturasTotalPages = getTotalPages(
+    assinaturasItems.length,
+    TAB_PAGE_SIZES.assinaturas,
+  );
+  const procuracoesTotalPages = getTotalPages(
+    procuracoesItems.length,
+    TAB_PAGE_SIZES.procuracoes,
+  );
+  const documentosTotalPages = getTotalPages(
+    documentosItems.length,
+    TAB_PAGE_SIZES.documentos,
+  );
+
+  const processosPaginados = paginateItems(
+    processosItems,
+    processosPage,
+    TAB_PAGE_SIZES.processos,
+  );
+  const contratosPaginados = paginateItems(
+    contratosItems,
+    contratosPage,
+    TAB_PAGE_SIZES.contratos,
+  );
+  const tarefasPaginadas = paginateItems(
+    tarefasItems,
+    tarefasPage,
+    TAB_PAGE_SIZES.tarefas,
+  );
+  const eventosPaginados = paginateItems(
+    eventosItems,
+    eventosPage,
+    TAB_PAGE_SIZES.eventos,
+  );
+  const assinaturasPaginadas = paginateItems(
+    assinaturasItems,
+    assinaturasPage,
+    TAB_PAGE_SIZES.assinaturas,
+  );
+  const procuracoesPaginadas = paginateItems(
+    procuracoesItems,
+    procuracoesPage,
+    TAB_PAGE_SIZES.procuracoes,
+  );
+  const documentosPaginados = paginateItems(
+    documentosItems,
+    documentosPage,
+    TAB_PAGE_SIZES.documentos,
+  );
+
+  useEffect(() => {
+    setProcessosPage((prev) => Math.min(prev, processosTotalPages));
+  }, [processosTotalPages]);
+
+  useEffect(() => {
+    setContratosPage((prev) => Math.min(prev, contratosTotalPages));
+  }, [contratosTotalPages]);
+
+  useEffect(() => {
+    setTarefasPage((prev) => Math.min(prev, tarefasTotalPages));
+  }, [tarefasTotalPages]);
+
+  useEffect(() => {
+    setEventosPage((prev) => Math.min(prev, eventosTotalPages));
+  }, [eventosTotalPages]);
+
+  useEffect(() => {
+    setAssinaturasPage((prev) => Math.min(prev, assinaturasTotalPages));
+  }, [assinaturasTotalPages]);
+
+  useEffect(() => {
+    setProcuracoesPage((prev) => Math.min(prev, procuracoesTotalPages));
+  }, [procuracoesTotalPages]);
+
+  useEffect(() => {
+    setDocumentosPage((prev) => Math.min(prev, documentosTotalPages));
+  }, [documentosTotalPages]);
+
   return (
     <div className="space-y-6">
       {/* Header com Botões */}
@@ -566,11 +772,11 @@ export default function ClienteDetalhesPage() {
           }
         >
           <div className="mt-4 grid gap-4 xl:grid-cols-2">
-            <Card className="border border-default-200">
-              <CardHeader className="pb-2">
-                <div>
-                  <p className="text-sm font-semibold">Advogados vinculados</p>
-                  <p className="text-xs text-default-400">
+              <Card className="border border-default-200">
+                <CardHeader className="pb-2">
+                  <div>
+                    <p className="text-sm font-semibold">Advogados vinculados</p>
+                    <p className="text-xs text-default-400">
                     Profissionais com acesso direto ao cliente.
                   </p>
                 </div>
@@ -580,9 +786,10 @@ export default function ClienteDetalhesPage() {
                 {cliente.advogadoClientes &&
                 cliente.advogadoClientes.length > 0 ? (
                   cliente.advogadoClientes.map((vinculo) => (
-                    <div
+                    <Link
                       key={vinculo.id}
-                      className="rounded-lg border border-default-200 p-3"
+                      className="block rounded-lg border border-default-200 p-3 transition-colors hover:border-primary hover:bg-primary/5"
+                      href={`/advogados/${vinculo.advogado.id}`}
                     >
                       <p className="text-sm font-semibold">
                         {vinculo.advogado.usuario.firstName}{" "}
@@ -597,7 +804,11 @@ export default function ClienteDetalhesPage() {
                           ? `/${vinculo.advogado.oabUf}`
                           : ""}
                       </p>
-                    </div>
+                      <div className="mt-2 flex items-center gap-1 text-xs font-medium text-primary">
+                        <Eye className="h-3 w-3" />
+                        <span>Abrir perfil do advogado</span>
+                      </div>
+                    </Link>
                   ))
                 ) : (
                   <p className="text-sm text-default-500">
@@ -606,6 +817,74 @@ export default function ClienteDetalhesPage() {
                 )}
               </CardBody>
             </Card>
+
+            {cliente.usuario ? (
+              <Card className="border border-default-200 xl:col-span-2">
+                <CardHeader className="pb-2">
+                  <div>
+                    <p className="text-sm font-semibold">Acesso do cliente</p>
+                    <p className="text-xs text-default-400">
+                      Conta vinculada para login no portal.
+                    </p>
+                  </div>
+                </CardHeader>
+                <Divider />
+                <CardBody className="gap-3 pt-3">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="rounded-lg border border-default-200 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-default-500">
+                        Nome da conta
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-default-700">
+                        {cliente.usuario.firstName || cliente.usuario.lastName
+                          ? `${cliente.usuario.firstName || ""} ${
+                              cliente.usuario.lastName || ""
+                            }`.trim()
+                          : "Não informado"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-default-200 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-default-500">
+                        E-mail de acesso
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-default-700 break-all">
+                        {cliente.usuario.email || "Não informado"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-default-200 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-default-500">
+                        Perfil
+                      </p>
+                      <div className="mt-2">
+                        <Chip size="sm" variant="flat">
+                          {cliente.usuario.role}
+                        </Chip>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-default-200 p-3">
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-default-500">
+                        Status da conta
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Chip
+                          color={cliente.usuario.active ? "success" : "danger"}
+                          size="sm"
+                          variant="flat"
+                        >
+                          {cliente.usuario.active ? "Ativa" : "Inativa"}
+                        </Chip>
+                        <Chip size="sm" variant="flat">
+                          Último login:{" "}
+                          {cliente.usuario.lastLoginAt
+                            ? DateUtils.formatDate(cliente.usuario.lastLoginAt)
+                            : "Nunca"}
+                        </Chip>
+                      </div>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+            ) : null}
 
             <Card className="border border-default-200">
               <CardHeader className="pb-2">
@@ -738,7 +1017,7 @@ export default function ClienteDetalhesPage() {
           }
         >
           <div className="mt-4">
-            {!cliente.processos || cliente.processos.length === 0 ? (
+            {processosItems.length === 0 ? (
               <Card className="border border-default-200">
                 <CardBody className="py-12 text-center">
                   <Scale className="mx-auto h-12 w-12 text-default-300" />
@@ -751,131 +1030,141 @@ export default function ClienteDetalhesPage() {
                 </CardBody>
               </Card>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {cliente.processos.map((processo) => (
-                  <Card
-                    key={processo.id}
-                    isPressable
-                    as={Link}
-                    className="border border-default-200 hover:border-primary transition-all hover:shadow-lg cursor-pointer"
-                    href={`/processos/${processo.id}`}
-                  >
-                    <CardHeader className="flex flex-col items-start gap-2 pb-2">
-                      <div className="flex w-full items-start justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Chip
-                            color={getStatusColor(
-                              processo.status as ProcessoStatus,
-                            )}
-                            size="sm"
-                            startContent={getStatusIcon(
-                              processo.status as ProcessoStatus,
-                            )}
-                            variant="flat"
-                          >
-                            {getStatusLabel(processo.status as ProcessoStatus)}
-                          </Chip>
-                          {processo.fase && (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {processosPaginados.map((processo) => (
+                    <Card
+                      key={processo.id}
+                      isPressable
+                      as={Link}
+                      className="border border-default-200 hover:border-primary transition-all hover:shadow-lg cursor-pointer"
+                      href={`/processos/${processo.id}`}
+                    >
+                      <CardHeader className="flex flex-col items-start gap-2 pb-2">
+                        <div className="flex w-full items-start justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <Chip
-                              color="secondary"
+                              color={getStatusColor(
+                                processo.status as ProcessoStatus,
+                              )}
                               size="sm"
-                              startContent={<Flag className="h-3 w-3" />}
+                              startContent={getStatusIcon(
+                                processo.status as ProcessoStatus,
+                              )}
                               variant="flat"
                             >
-                              {getFaseLabel(processo.fase as ProcessoFase)}
+                              {getStatusLabel(processo.status as ProcessoStatus)}
                             </Chip>
-                          )}
-                          {processo.grau && (
-                            <Chip
-                              color="default"
-                              size="sm"
-                              startContent={<Layers className="h-3 w-3" />}
-                              variant="flat"
-                            >
-                              {getGrauLabel(processo.grau as ProcessoGrau)}
+                            {processo.fase && (
+                              <Chip
+                                color="secondary"
+                                size="sm"
+                                startContent={<Flag className="h-3 w-3" />}
+                                variant="flat"
+                              >
+                                {getFaseLabel(processo.fase as ProcessoFase)}
+                              </Chip>
+                            )}
+                            {processo.grau && (
+                              <Chip
+                                color="default"
+                                size="sm"
+                                startContent={<Layers className="h-3 w-3" />}
+                                variant="flat"
+                              >
+                                {getGrauLabel(processo.grau as ProcessoGrau)}
+                              </Chip>
+                            )}
+                          </div>
+                          {processo._count.procuracoesVinculadas > 0 && (
+                            <Chip color="success" size="sm" variant="flat">
+                              {processo._count.procuracoesVinculadas} procuração
+                              {processo._count.procuracoesVinculadas > 1
+                                ? "ões"
+                                : ""}
                             </Chip>
                           )}
                         </div>
-                        {processo._count.procuracoesVinculadas > 0 && (
-                          <Chip color="success" size="sm" variant="flat">
-                            {processo._count.procuracoesVinculadas} procuração
-                            {processo._count.procuracoesVinculadas > 1
-                              ? "ões"
-                              : ""}
-                          </Chip>
-                        )}
-                      </div>
-                      <div className="w-full">
-                        <p className="text-sm font-semibold text-default-700">
-                          {processo.numero}
-                        </p>
-                        {processo.numeroCnj &&
-                          processo.numeroCnj !== processo.numero && (
-                            <p className="text-xs text-default-400">
-                              CNJ: {processo.numeroCnj}
+                        <div className="w-full">
+                          <p className="text-sm font-semibold text-default-700">
+                            {processo.numero}
+                          </p>
+                          {processo.numeroCnj &&
+                            processo.numeroCnj !== processo.numero && (
+                              <p className="text-xs text-default-400">
+                                CNJ: {processo.numeroCnj}
+                              </p>
+                            )}
+                          {processo.titulo && (
+                            <p className="mt-1 text-xs text-default-500 line-clamp-2">
+                              {processo.titulo}
                             </p>
                           )}
-                        {processo.titulo && (
-                          <p className="mt-1 text-xs text-default-500 line-clamp-2">
-                            {processo.titulo}
-                          </p>
+                        </div>
+                      </CardHeader>
+                      <Divider />
+                      <CardBody className="gap-3 pt-3">
+                        {processo.area && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <Briefcase className="h-3 w-3 text-default-400" />
+                            <span className="text-default-600">
+                              {processo.area.nome}
+                            </span>
+                          </div>
                         )}
-                      </div>
-                    </CardHeader>
-                    <Divider />
-                    <CardBody className="gap-3 pt-3">
-                      {processo.area && (
-                        <div className="flex items-center gap-2 text-xs">
-                          <Briefcase className="h-3 w-3 text-default-400" />
-                          <span className="text-default-600">
-                            {processo.area.nome}
-                          </span>
-                        </div>
-                      )}
-                      {processo.advogadoResponsavel && (
-                        <div className="flex items-center gap-2 text-xs">
-                          <User className="h-3 w-3 text-default-400" />
-                          <span className="text-default-600">
-                            {processo.advogadoResponsavel.usuario.firstName}{" "}
-                            {processo.advogadoResponsavel.usuario.lastName}
-                          </span>
-                        </div>
-                      )}
-                      {processo.dataDistribuicao && (
-                        <div className="flex items-center gap-2 text-xs">
-                          <Calendar className="h-3 w-3 text-default-400" />
-                          <span className="text-default-600">
-                            {DateUtils.formatDate(processo.dataDistribuicao)}
-                          </span>
-                        </div>
-                      )}
-                      {processo.prazoPrincipal && (
-                        <div className="flex items-center gap-2 text-xs">
-                          <Clock className="h-3 w-3 text-warning" />
-                          <span className="text-warning-600">
-                            Prazo:{" "}
-                            {DateUtils.formatDate(processo.prazoPrincipal)}
-                          </span>
-                        </div>
-                      )}
+                        {processo.advogadoResponsavel && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <User className="h-3 w-3 text-default-400" />
+                            <span className="text-default-600">
+                              {processo.advogadoResponsavel.usuario.firstName}{" "}
+                              {processo.advogadoResponsavel.usuario.lastName}
+                            </span>
+                          </div>
+                        )}
+                        {processo.dataDistribuicao && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <Calendar className="h-3 w-3 text-default-400" />
+                            <span className="text-default-600">
+                              {DateUtils.formatDate(processo.dataDistribuicao)}
+                            </span>
+                          </div>
+                        )}
+                        {processo.prazoPrincipal && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <Clock className="h-3 w-3 text-warning" />
+                            <span className="text-warning-600">
+                              Prazo:{" "}
+                              {DateUtils.formatDate(processo.prazoPrincipal)}
+                            </span>
+                          </div>
+                        )}
 
-                      <Divider className="my-2" />
+                        <Divider className="my-2" />
 
-                      <div className="flex flex-wrap gap-2">
-                        <Chip size="sm" variant="flat">
-                          {processo._count.documentos} docs
-                        </Chip>
-                        <Chip size="sm" variant="flat">
-                          {processo._count.eventos} eventos
-                        </Chip>
-                        <Chip size="sm" variant="flat">
-                          {processo._count.movimentacoes} movs
-                        </Chip>
-                      </div>
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Chip size="sm" variant="flat">
+                            {processo._count.documentos} docs
+                          </Chip>
+                          <Chip size="sm" variant="flat">
+                            {processo._count.eventos} eventos
+                          </Chip>
+                          <Chip size="sm" variant="flat">
+                            {processo._count.movimentacoes} movs
+                          </Chip>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </div>
+                <TabPagination
+                  itemLabel="processos"
+                  page={processosPage}
+                  pageSize={TAB_PAGE_SIZES.processos}
+                  totalItems={processosItems.length}
+                  totalPages={processosTotalPages}
+                  onChange={setProcessosPage}
+                />
+              </>
             )}
           </div>
         </Tab>
@@ -900,7 +1189,7 @@ export default function ClienteDetalhesPage() {
               <div className="flex justify-center py-12">
                 <Spinner size="lg" />
               </div>
-            ) : !contratos || contratos.length === 0 ? (
+            ) : contratosItems.length === 0 ? (
               <Card className="border border-default-200">
                 <CardBody className="py-12 text-center">
                   <FileSignature className="mx-auto h-12 w-12 text-default-300" />
@@ -913,81 +1202,101 @@ export default function ClienteDetalhesPage() {
                 </CardBody>
               </Card>
             ) : (
-              <div className="space-y-3">
-                {contratos.map((contrato: any) => (
-                  <Card key={contrato.id} className="border border-default-200">
-                    <CardBody className="gap-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold">
-                            {contrato.titulo}
-                          </p>
-                          {contrato.tipo && (
-                            <p className="text-xs text-default-400">
-                              {contrato.tipo.nome}
+              <>
+                <div className="space-y-3">
+                  {contratosPaginados.map((contrato: any) => (
+                    <Card
+                      key={contrato.id}
+                      isPressable
+                      as={Link}
+                      className="cursor-pointer border border-default-200 transition-all hover:border-primary hover:shadow-lg"
+                      href={`/contratos/${contrato.id}`}
+                    >
+                      <CardBody className="gap-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold">
+                              {contrato.titulo}
                             </p>
-                          )}
+                            {contrato.tipo && (
+                              <p className="text-xs text-default-400">
+                                {contrato.tipo.nome}
+                              </p>
+                            )}
+                          </div>
+                          <Chip
+                            color={
+                              contrato.status === "ATIVO" ? "success" : "default"
+                            }
+                            size="sm"
+                            variant="flat"
+                          >
+                            {contrato.status}
+                          </Chip>
                         </div>
-                        <Chip
-                          color={
-                            contrato.status === "ATIVO" ? "success" : "default"
-                          }
-                          size="sm"
-                          variant="flat"
-                        >
-                          {contrato.status}
-                        </Chip>
-                      </div>
-                      {contrato.valor && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className="text-default-400">Valor:</span>
-                          <span className="font-semibold text-default-700">
-                            {new Intl.NumberFormat("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            }).format(contrato.valor)}
-                          </span>
+                        <div className="flex items-center gap-1 text-xs font-medium text-primary">
+                          <Eye className="h-3 w-3" />
+                          <span>Abrir contrato completo</span>
                         </div>
-                      )}
-                      {contrato.processo && (
-                        <div className="flex items-center gap-2 text-xs text-default-500">
-                          <Scale className="h-3 w-3" />
-                          <span>Processo: {contrato.processo.numero}</span>
+                        {contrato.valor && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-default-400">Valor:</span>
+                            <span className="font-semibold text-default-700">
+                              {new Intl.NumberFormat("pt-BR", {
+                                style: "currency",
+                                currency: "BRL",
+                              }).format(contrato.valor)}
+                            </span>
+                          </div>
+                        )}
+                        {contrato.processo && (
+                          <div className="flex items-center gap-2 text-xs text-default-500">
+                            <Scale className="h-3 w-3" />
+                            <span>Processo: {contrato.processo.numero}</span>
+                          </div>
+                        )}
+                        {contrato.advogadoResponsavel && (
+                          <div className="flex items-center gap-2 text-xs text-default-500">
+                            <Users className="h-3 w-3" />
+                            <span>
+                              Responsável:{" "}
+                              {contrato.advogadoResponsavel.usuario.firstName}{" "}
+                              {contrato.advogadoResponsavel.usuario.lastName}
+                            </span>
+                          </div>
+                        )}
+                        {contrato.dataInicio && (
+                          <div className="text-xs text-default-500">
+                            Início: {DateUtils.formatDate(contrato.dataInicio)}
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          <Chip size="sm" variant="flat">
+                            {contrato._count?.parcelas || 0} parcelas
+                          </Chip>
+                          <Chip size="sm" variant="flat">
+                            {contrato._count?.faturas || 0} faturas
+                          </Chip>
+                          <Chip size="sm" variant="flat">
+                            {contrato._count?.honorarios || 0} honorários
+                          </Chip>
+                          <Chip size="sm" variant="flat">
+                            {contrato._count?.documentos || 0} docs
+                          </Chip>
                         </div>
-                      )}
-                      {contrato.advogadoResponsavel && (
-                        <div className="flex items-center gap-2 text-xs text-default-500">
-                          <Users className="h-3 w-3" />
-                          <span>
-                            Responsável:{" "}
-                            {contrato.advogadoResponsavel.usuario.firstName}{" "}
-                            {contrato.advogadoResponsavel.usuario.lastName}
-                          </span>
-                        </div>
-                      )}
-                      {contrato.dataInicio && (
-                        <div className="text-xs text-default-500">
-                          Início: {DateUtils.formatDate(contrato.dataInicio)}
-                        </div>
-                      )}
-                      <div className="flex flex-wrap gap-2">
-                        <Chip size="sm" variant="flat">
-                          {contrato._count?.parcelas || 0} parcelas
-                        </Chip>
-                        <Chip size="sm" variant="flat">
-                          {contrato._count?.faturas || 0} faturas
-                        </Chip>
-                        <Chip size="sm" variant="flat">
-                          {contrato._count?.honorarios || 0} honorários
-                        </Chip>
-                        <Chip size="sm" variant="flat">
-                          {contrato._count?.documentos || 0} docs
-                        </Chip>
-                      </div>
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </div>
+                <TabPagination
+                  itemLabel="contratos"
+                  page={contratosPage}
+                  pageSize={TAB_PAGE_SIZES.contratos}
+                  totalItems={contratosItems.length}
+                  totalPages={contratosTotalPages}
+                  onChange={setContratosPage}
+                />
+              </>
             )}
           </div>
         </Tab>
@@ -1007,7 +1316,7 @@ export default function ClienteDetalhesPage() {
           }
         >
           <div className="mt-4">
-            {!cliente.tarefas || cliente.tarefas.length === 0 ? (
+            {tarefasItems.length === 0 ? (
               <Card className="border border-default-200">
                 <CardBody className="py-12 text-center">
                   <CheckSquare className="mx-auto h-12 w-12 text-default-300" />
@@ -1020,58 +1329,68 @@ export default function ClienteDetalhesPage() {
                 </CardBody>
               </Card>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {cliente.tarefas.map((tarefa) => (
-                  <Card key={tarefa.id} className="border border-default-200">
-                    <CardBody className="gap-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold">{tarefa.titulo}</p>
-                        <Chip
-                          color={getTarefaStatusColor(
-                            tarefa.status as TarefaStatus,
-                          )}
-                          size="sm"
-                          variant="flat"
-                        >
-                          {getTarefaStatusLabel(tarefa.status as TarefaStatus)}
-                        </Chip>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Chip
-                          color={getTarefaPrioridadeColor(
-                            tarefa.prioridade as TarefaPrioridade,
-                          )}
-                          size="sm"
-                          variant="flat"
-                        >
-                          Prioridade: {tarefa.prioridade}
-                        </Chip>
-                        {tarefa.dataLimite ? (
-                          <Chip size="sm" variant="flat">
-                            Limite: {DateUtils.formatDate(tarefa.dataLimite)}
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {tarefasPaginadas.map((tarefa) => (
+                    <Card key={tarefa.id} className="border border-default-200">
+                      <CardBody className="gap-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-semibold">{tarefa.titulo}</p>
+                          <Chip
+                            color={getTarefaStatusColor(
+                              tarefa.status as TarefaStatus,
+                            )}
+                            size="sm"
+                            variant="flat"
+                          >
+                            {getTarefaStatusLabel(tarefa.status as TarefaStatus)}
                           </Chip>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Chip
+                            color={getTarefaPrioridadeColor(
+                              tarefa.prioridade as TarefaPrioridade,
+                            )}
+                            size="sm"
+                            variant="flat"
+                          >
+                            Prioridade: {tarefa.prioridade}
+                          </Chip>
+                          {tarefa.dataLimite ? (
+                            <Chip size="sm" variant="flat">
+                              Limite: {DateUtils.formatDate(tarefa.dataLimite)}
+                            </Chip>
+                          ) : null}
+                        </div>
+                        {tarefa.processo ? (
+                          <p className="text-xs text-default-500">
+                            Processo: {tarefa.processo.numero}
+                          </p>
                         ) : null}
-                      </div>
-                      {tarefa.processo ? (
-                        <p className="text-xs text-default-500">
-                          Processo: {tarefa.processo.numero}
-                        </p>
-                      ) : null}
-                      {tarefa.responsavel ? (
-                        <p className="text-xs text-default-500">
-                          Responsável: {tarefa.responsavel.firstName}{" "}
-                          {tarefa.responsavel.lastName}
-                        </p>
-                      ) : null}
-                      {tarefa.descricao ? (
-                        <p className="text-xs text-default-500 line-clamp-2">
-                          {tarefa.descricao}
-                        </p>
-                      ) : null}
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
+                        {tarefa.responsavel ? (
+                          <p className="text-xs text-default-500">
+                            Responsável: {tarefa.responsavel.firstName}{" "}
+                            {tarefa.responsavel.lastName}
+                          </p>
+                        ) : null}
+                        {tarefa.descricao ? (
+                          <p className="text-xs text-default-500 line-clamp-2">
+                            {tarefa.descricao}
+                          </p>
+                        ) : null}
+                      </CardBody>
+                    </Card>
+                  ))}
+                </div>
+                <TabPagination
+                  itemLabel="tarefas"
+                  page={tarefasPage}
+                  pageSize={TAB_PAGE_SIZES.tarefas}
+                  totalItems={tarefasItems.length}
+                  totalPages={tarefasTotalPages}
+                  onChange={setTarefasPage}
+                />
+              </>
             )}
           </div>
         </Tab>
@@ -1091,7 +1410,7 @@ export default function ClienteDetalhesPage() {
           }
         >
           <div className="mt-4">
-            {!cliente.eventos || cliente.eventos.length === 0 ? (
+            {eventosItems.length === 0 ? (
               <Card className="border border-default-200">
                 <CardBody className="py-12 text-center">
                   <CalendarDays className="mx-auto h-12 w-12 text-default-300" />
@@ -1104,59 +1423,72 @@ export default function ClienteDetalhesPage() {
                 </CardBody>
               </Card>
             ) : (
-              <div className="space-y-3">
-                {cliente.eventos.map((evento) => (
-                  <Card key={evento.id} className="border border-default-200">
-                    <CardBody className="gap-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold">{evento.titulo}</p>
+              <>
+                <p className="mb-3 text-xs text-default-500">
+                  Histórico completo: exibindo eventos passados e futuros.
+                </p>
+                <div className="space-y-3">
+                  {eventosPaginados.map((evento) => (
+                    <Card key={evento.id} className="border border-default-200">
+                      <CardBody className="gap-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-semibold">{evento.titulo}</p>
+                            <p className="text-xs text-default-500">
+                              {formatDateTime(evento.dataInicio)} -{" "}
+                              {formatDateTime(evento.dataFim)}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Chip
+                              color={getEventoStatusColor(
+                                evento.status as EventoStatus,
+                              )}
+                              size="sm"
+                              variant="flat"
+                            >
+                              {evento.status}
+                            </Chip>
+                            <Chip size="sm" variant="flat">
+                              {evento.tipo}
+                            </Chip>
+                          </div>
+                        </div>
+                        {evento.local ? (
                           <p className="text-xs text-default-500">
-                            {formatDateTime(evento.dataInicio)} -{" "}
-                            {formatDateTime(evento.dataFim)}
+                            Local: {evento.local}
                           </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Chip
-                            color={getEventoStatusColor(
-                              evento.status as EventoStatus,
-                            )}
-                            size="sm"
-                            variant="flat"
-                          >
-                            {evento.status}
-                          </Chip>
-                          <Chip size="sm" variant="flat">
-                            {evento.tipo}
-                          </Chip>
-                        </div>
-                      </div>
-                      {evento.local ? (
-                        <p className="text-xs text-default-500">
-                          Local: {evento.local}
-                        </p>
-                      ) : null}
-                      {evento.processo ? (
-                        <p className="text-xs text-default-500">
-                          Processo: {evento.processo.numero}
-                        </p>
-                      ) : null}
-                      {evento.advogadoResponsavel ? (
-                        <p className="text-xs text-default-500">
-                          Responsável:{" "}
-                          {evento.advogadoResponsavel.usuario.firstName}{" "}
-                          {evento.advogadoResponsavel.usuario.lastName}
-                        </p>
-                      ) : null}
-                      {evento.descricao ? (
-                        <p className="text-xs text-default-500 line-clamp-2">
-                          {evento.descricao}
-                        </p>
-                      ) : null}
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
+                        ) : null}
+                        {evento.processo ? (
+                          <p className="text-xs text-default-500">
+                            Processo: {evento.processo.numero}
+                          </p>
+                        ) : null}
+                        {evento.advogadoResponsavel ? (
+                          <p className="text-xs text-default-500">
+                            Responsável:{" "}
+                            {evento.advogadoResponsavel.usuario.firstName}{" "}
+                            {evento.advogadoResponsavel.usuario.lastName}
+                          </p>
+                        ) : null}
+                        {evento.descricao ? (
+                          <p className="text-xs text-default-500 line-clamp-2">
+                            {evento.descricao}
+                          </p>
+                        ) : null}
+                      </CardBody>
+                    </Card>
+                  ))}
+                </div>
+                <TabPagination
+                  itemLabel="eventos"
+                  page={eventosPage}
+                  pageSize={TAB_PAGE_SIZES.eventos}
+                  totalItems={eventosItems.length}
+                  totalPages={eventosTotalPages}
+                  onChange={setEventosPage}
+                />
+              </>
             )}
           </div>
         </Tab>
@@ -1177,8 +1509,7 @@ export default function ClienteDetalhesPage() {
           }
         >
           <div className="mt-4">
-            {!cliente.documentoAssinaturas ||
-            cliente.documentoAssinaturas.length === 0 ? (
+            {assinaturasItems.length === 0 ? (
               <Card className="border border-default-200">
                 <CardBody className="py-12 text-center">
                   <ShieldCheck className="mx-auto h-12 w-12 text-default-300" />
@@ -1191,48 +1522,58 @@ export default function ClienteDetalhesPage() {
                 </CardBody>
               </Card>
             ) : (
-              <div className="space-y-3">
-                {cliente.documentoAssinaturas.map((assinatura) => (
-                  <Card key={assinatura.id} className="border border-default-200">
-                    <CardBody className="gap-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold">
-                            {assinatura.titulo}
-                          </p>
-                          <p className="text-xs text-default-500">
-                            Documento: {assinatura.documento.nome}
-                          </p>
+              <>
+                <div className="space-y-3">
+                  {assinaturasPaginadas.map((assinatura) => (
+                    <Card key={assinatura.id} className="border border-default-200">
+                      <CardBody className="gap-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-semibold">
+                              {assinatura.titulo}
+                            </p>
+                            <p className="text-xs text-default-500">
+                              Documento: {assinatura.documento.nome}
+                            </p>
+                          </div>
+                          <Chip size="sm" variant="flat">
+                            {assinatura.status}
+                          </Chip>
                         </div>
-                        <Chip size="sm" variant="flat">
-                          {assinatura.status}
-                        </Chip>
-                      </div>
-                      <div className="grid gap-1 text-xs text-default-500 sm:grid-cols-3">
-                        <p>Envio: {formatDateTime(assinatura.dataEnvio)}</p>
-                        <p>
-                          Assinado: {formatDateTime(assinatura.dataAssinatura)}
-                        </p>
-                        <p>Expira: {formatDateTime(assinatura.dataExpiracao)}</p>
-                      </div>
-                      {assinatura.documento.url ? (
-                        <Button
-                          as="a"
-                          color="primary"
-                          href={assinatura.documento.url}
-                          rel="noopener noreferrer"
-                          size="sm"
-                          startContent={<Eye className="h-3 w-3" />}
-                          target="_blank"
-                          variant="flat"
-                        >
-                          Abrir documento
-                        </Button>
-                      ) : null}
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
+                        <div className="grid gap-1 text-xs text-default-500 sm:grid-cols-3">
+                          <p>Envio: {formatDateTime(assinatura.dataEnvio)}</p>
+                          <p>
+                            Assinado: {formatDateTime(assinatura.dataAssinatura)}
+                          </p>
+                          <p>Expira: {formatDateTime(assinatura.dataExpiracao)}</p>
+                        </div>
+                        {assinatura.documento.url ? (
+                          <Button
+                            as="a"
+                            color="primary"
+                            href={assinatura.documento.url}
+                            rel="noopener noreferrer"
+                            size="sm"
+                            startContent={<Eye className="h-3 w-3" />}
+                            target="_blank"
+                            variant="flat"
+                          >
+                            Abrir documento
+                          </Button>
+                        ) : null}
+                      </CardBody>
+                    </Card>
+                  ))}
+                </div>
+                <TabPagination
+                  itemLabel="assinaturas"
+                  page={assinaturasPage}
+                  pageSize={TAB_PAGE_SIZES.assinaturas}
+                  totalItems={assinaturasItems.length}
+                  totalPages={assinaturasTotalPages}
+                  onChange={setAssinaturasPage}
+                />
+              </>
             )}
           </div>
         </Tab>
@@ -1257,7 +1598,7 @@ export default function ClienteDetalhesPage() {
               <div className="flex min-h-[200px] items-center justify-center">
                 <Spinner size="lg" />
               </div>
-            ) : procuracoes.length === 0 ? (
+            ) : procuracoesItems.length === 0 ? (
               <Card className="border border-default-200">
                 <CardBody className="py-12 text-center">
                   <FileSignature className="mx-auto h-12 w-12 text-default-300" />
@@ -1270,174 +1611,190 @@ export default function ClienteDetalhesPage() {
                 </CardBody>
               </Card>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {procuracoes.map((procuracao: any) => (
-                  <Card
-                    key={procuracao.id}
-                    className="border border-default-200 hover:border-success transition-all hover:shadow-lg"
-                  >
-                    <CardHeader className="flex flex-col items-start gap-2 pb-2">
-                      <div className="flex w-full items-start justify-between">
-                        <Chip
-                          color={procuracao.ativa ? "success" : "default"}
-                          size="sm"
-                          startContent={
-                            procuracao.ativa ? (
-                              <CheckCircle className="h-3 w-3" />
-                            ) : (
-                              <XCircle className="h-3 w-3" />
-                            )
-                          }
-                          variant="flat"
-                        >
-                          {procuracao.ativa ? "Ativa" : "Inativa"}
-                        </Chip>
-                        <Chip
-                          color={
-                            procuracao.status === "VIGENTE"
-                              ? "success"
-                              : procuracao.status === "REVOGADA"
-                                ? "danger"
-                                : "warning"
-                          }
-                          size="sm"
-                          variant="flat"
-                        >
-                          {procuracao.status}
-                        </Chip>
-                      </div>
-                      {procuracao.numero && (
-                        <div className="w-full">
-                          <p className="text-sm font-semibold text-default-700">
-                            #{procuracao.numero}
-                          </p>
+              <>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {procuracoesPaginadas.map((procuracao: any) => (
+                    <Card
+                      key={procuracao.id}
+                      isPressable
+                      className="cursor-pointer border border-default-200 transition-all hover:border-success hover:shadow-lg"
+                      onPress={() => router.push(`/procuracoes/${procuracao.id}`)}
+                    >
+                      <CardHeader className="flex flex-col items-start gap-2 pb-2">
+                        <div className="flex w-full items-start justify-between">
+                          <Chip
+                            color={procuracao.ativa ? "success" : "default"}
+                            size="sm"
+                            startContent={
+                              procuracao.ativa ? (
+                                <CheckCircle className="h-3 w-3" />
+                              ) : (
+                                <XCircle className="h-3 w-3" />
+                              )
+                            }
+                            variant="flat"
+                          >
+                            {procuracao.ativa ? "Ativa" : "Inativa"}
+                          </Chip>
+                          <Chip
+                            color={
+                              procuracao.status === "VIGENTE"
+                                ? "success"
+                                : procuracao.status === "REVOGADA"
+                                  ? "danger"
+                                  : "warning"
+                            }
+                            size="sm"
+                            variant="flat"
+                          >
+                            {procuracao.status}
+                          </Chip>
                         </div>
-                      )}
-                    </CardHeader>
-                    <Divider />
-                    <CardBody className="gap-3 pt-3">
-                      <div className="flex flex-wrap gap-2">
-                        <Chip size="sm" variant="flat">
-                          {procuracao.poderes?.length || 0} poderes
-                        </Chip>
-                        <Chip size="sm" variant="flat">
-                          {procuracao.documentos?.length || 0} docs
-                        </Chip>
-                        <Chip size="sm" variant="flat">
-                          {procuracao.assinaturas?.length || 0} assinaturas
-                        </Chip>
-                      </div>
-                      {procuracao.outorgados &&
-                        procuracao.outorgados.length > 0 && (
-                          <div className="space-y-1">
-                            <p className="text-xs font-semibold text-default-500">
-                              Outorgados:
+                        {procuracao.numero && (
+                          <div className="w-full">
+                            <p className="text-sm font-semibold text-default-700">
+                              #{procuracao.numero}
                             </p>
-                            {procuracao.outorgados
-                              .slice(0, 2)
-                              .map((outorgado: any) => (
-                                <div
-                                  key={outorgado.id}
-                                  className="flex items-center gap-2 text-xs"
-                                >
-                                  <User className="h-3 w-3 text-default-400" />
-                                  <span className="text-default-600">
-                                    {outorgado.advogado.usuario.firstName}{" "}
-                                    {outorgado.advogado.usuario.lastName}
-                                  </span>
-                                </div>
-                              ))}
-                            {procuracao.outorgados.length > 2 && (
-                              <p className="text-xs text-default-400">
-                                +{procuracao.outorgados.length - 2} mais
-                              </p>
-                            )}
                           </div>
                         )}
-                      {procuracao.poderes && procuracao.poderes.length > 0 && (
-                        <div className="space-y-1">
-                          <p className="text-xs font-semibold text-default-500">
-                            Poderes:
-                          </p>
-                          {procuracao.poderes.slice(0, 2).map((poder: any) => (
-                            <p
-                              key={poder.id}
-                              className="text-xs text-default-600 line-clamp-1"
-                            >
-                              {poder.titulo ? `${poder.titulo}: ` : ""}
-                              {poder.descricao}
-                            </p>
-                          ))}
-                          {procuracao.poderes.length > 2 && (
-                            <p className="text-xs text-default-400">
-                              +{procuracao.poderes.length - 2} poderes
-                            </p>
+                        <div className="inline-flex items-center gap-1 text-xs font-medium text-success">
+                          <Eye className="h-3 w-3" />
+                          Abrir procuração completa
+                        </div>
+                      </CardHeader>
+                      <Divider />
+                      <CardBody className="gap-3 pt-3">
+                        <div className="flex flex-wrap gap-2">
+                          <Chip size="sm" variant="flat">
+                            {procuracao.poderes?.length || 0} poderes
+                          </Chip>
+                          <Chip size="sm" variant="flat">
+                            {procuracao.documentos?.length || 0} docs
+                          </Chip>
+                          <Chip size="sm" variant="flat">
+                            {procuracao.assinaturas?.length || 0} assinaturas
+                          </Chip>
+                        </div>
+                        {procuracao.outorgados &&
+                          procuracao.outorgados.length > 0 && (
+                            <div className="space-y-1">
+                              <p className="text-xs font-semibold text-default-500">
+                                Outorgados:
+                              </p>
+                              {procuracao.outorgados
+                                .slice(0, 2)
+                                .map((outorgado: any) => (
+                                  <div
+                                    key={outorgado.id}
+                                    className="flex items-center gap-2 text-xs"
+                                  >
+                                    <User className="h-3 w-3 text-default-400" />
+                                    <span className="text-default-600">
+                                      {outorgado.advogado.usuario.firstName}{" "}
+                                      {outorgado.advogado.usuario.lastName}
+                                    </span>
+                                  </div>
+                                ))}
+                              {procuracao.outorgados.length > 2 && (
+                                <p className="text-xs text-default-400">
+                                  +{procuracao.outorgados.length - 2} mais
+                                </p>
+                              )}
+                            </div>
                           )}
-                        </div>
-                      )}
-                      {procuracao.processos &&
-                        procuracao.processos.length > 0 && (
+                        {procuracao.poderes && procuracao.poderes.length > 0 && (
                           <div className="space-y-1">
                             <p className="text-xs font-semibold text-default-500">
-                              Processos vinculados:
+                              Poderes:
                             </p>
-                            {procuracao.processos
-                              .slice(0, 2)
-                              .map((proc: any) => (
-                                <div
-                                  key={proc.id}
-                                  className="flex items-center gap-2 text-xs"
-                                >
-                                  <Scale className="h-3 w-3 text-default-400" />
-                                  <span className="text-default-600 truncate">
-                                    {proc.processo.numero}
-                                  </span>
-                                </div>
-                              ))}
-                            {procuracao.processos.length > 2 && (
+                            {procuracao.poderes.slice(0, 2).map((poder: any) => (
+                              <p
+                                key={poder.id}
+                                className="text-xs text-default-600 line-clamp-1"
+                              >
+                                {poder.titulo ? `${poder.titulo}: ` : ""}
+                                {poder.descricao}
+                              </p>
+                            ))}
+                            {procuracao.poderes.length > 2 && (
                               <p className="text-xs text-default-400">
-                                +{procuracao.processos.length - 2} mais
+                                +{procuracao.poderes.length - 2} poderes
                               </p>
                             )}
                           </div>
                         )}
-                      {procuracao.emitidaEm && (
-                        <div className="flex items-center gap-2 text-xs">
-                          <Calendar className="h-3 w-3 text-default-400" />
-                          <span className="text-default-600">
-                            Emitida:{" "}
-                            {DateUtils.formatDate(procuracao.emitidaEm)}
-                          </span>
-                        </div>
-                      )}
-                      {procuracao.validaAte && (
-                        <div className="flex items-center gap-2 text-xs">
-                          <Clock className="h-3 w-3 text-default-400" />
-                          <span className="text-default-600">
-                            Válida até:{" "}
-                            {DateUtils.formatDate(procuracao.validaAte)}
-                          </span>
-                        </div>
-                      )}
-                      {procuracao.arquivoUrl && (
-                        <Button
-                          as="a"
-                          className="mt-2"
-                          color="success"
-                          href={procuracao.arquivoUrl}
-                          rel="noopener noreferrer"
-                          size="sm"
-                          startContent={<Eye className="h-3 w-3" />}
-                          target="_blank"
-                          variant="flat"
-                        >
-                          Visualizar
-                        </Button>
-                      )}
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
+                        {procuracao.processos &&
+                          procuracao.processos.length > 0 && (
+                            <div className="space-y-1">
+                              <p className="text-xs font-semibold text-default-500">
+                                Processos vinculados:
+                              </p>
+                              {procuracao.processos
+                                .slice(0, 2)
+                                .map((proc: any) => (
+                                  <div
+                                    key={proc.id}
+                                    className="flex items-center gap-2 text-xs"
+                                  >
+                                    <Scale className="h-3 w-3 text-default-400" />
+                                    <span className="text-default-600 truncate">
+                                      {proc.processo.numero}
+                                    </span>
+                                  </div>
+                                ))}
+                              {procuracao.processos.length > 2 && (
+                                <p className="text-xs text-default-400">
+                                  +{procuracao.processos.length - 2} mais
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        {procuracao.emitidaEm && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <Calendar className="h-3 w-3 text-default-400" />
+                            <span className="text-default-600">
+                              Emitida: {DateUtils.formatDate(procuracao.emitidaEm)}
+                            </span>
+                          </div>
+                        )}
+                        {procuracao.validaAte && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <Clock className="h-3 w-3 text-default-400" />
+                            <span className="text-default-600">
+                              Válida até:{" "}
+                              {DateUtils.formatDate(procuracao.validaAte)}
+                            </span>
+                          </div>
+                        )}
+                        {procuracao.arquivoUrl && (
+                          <Button
+                            as="a"
+                            className="mt-2"
+                            color="success"
+                            href={procuracao.arquivoUrl}
+                            onClick={(event) => event.stopPropagation()}
+                            rel="noopener noreferrer"
+                            size="sm"
+                            startContent={<Eye className="h-3 w-3" />}
+                            target="_blank"
+                            variant="flat"
+                          >
+                            Visualizar arquivo
+                          </Button>
+                        )}
+                      </CardBody>
+                    </Card>
+                  ))}
+                </div>
+                <TabPagination
+                  itemLabel="procurações"
+                  page={procuracoesPage}
+                  pageSize={TAB_PAGE_SIZES.procuracoes}
+                  totalItems={procuracoesItems.length}
+                  totalPages={procuracoesTotalPages}
+                  onChange={setProcuracoesPage}
+                />
+              </>
             )}
           </div>
         </Tab>
@@ -1462,7 +1819,7 @@ export default function ClienteDetalhesPage() {
               <div className="flex justify-center py-12">
                 <Spinner size="lg" />
               </div>
-            ) : !documentos || documentos.length === 0 ? (
+            ) : documentosItems.length === 0 ? (
               <Card className="border border-default-200">
                 <CardBody className="py-12 text-center">
                   <FileStack className="mx-auto h-12 w-12 text-default-300" />
@@ -1475,70 +1832,80 @@ export default function ClienteDetalhesPage() {
                 </CardBody>
               </Card>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {documentos.map((doc: any) => (
-                  <Card key={doc.id} className="border border-default-200">
-                    <CardBody className="gap-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold">
-                            {doc.nome || doc.titulo || doc.nomeArquivo}
-                          </p>
-                          <p className="text-xs text-default-400">
-                            {DateUtils.formatDate(doc.createdAt)}
-                          </p>
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {documentosPaginados.map((doc: any) => (
+                    <Card key={doc.id} className="border border-default-200">
+                      <CardBody className="gap-2">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold">
+                              {doc.nome || doc.titulo || doc.nomeArquivo}
+                            </p>
+                            <p className="text-xs text-default-400">
+                              {DateUtils.formatDate(doc.createdAt)}
+                            </p>
+                          </div>
+                          {(doc.tamanhoBytes || doc.tamanho) && (
+                            <Chip size="sm" variant="flat">
+                              {(
+                                Number(doc.tamanhoBytes || doc.tamanho) / 1024
+                              ).toFixed(2)}{" "}
+                              KB
+                            </Chip>
+                          )}
                         </div>
-                        {(doc.tamanhoBytes || doc.tamanho) && (
-                          <Chip size="sm" variant="flat">
-                            {(
-                              Number(doc.tamanhoBytes || doc.tamanho) / 1024
-                            ).toFixed(2)}{" "}
-                            KB
-                          </Chip>
+                        {doc.processo && (
+                          <div className="flex items-center gap-1 text-xs text-default-500">
+                            <Scale className="h-3 w-3" />
+                            <span>Processo: {doc.processo.numero}</span>
+                          </div>
                         )}
-                      </div>
-                      {doc.processo && (
-                        <div className="flex items-center gap-1 text-xs text-default-500">
-                          <Scale className="h-3 w-3" />
-                          <span>Processo: {doc.processo.numero}</span>
-                        </div>
-                      )}
-                      {doc.contrato && (
-                        <div className="flex items-center gap-1 text-xs text-default-500">
-                          <FileSignature className="h-3 w-3" />
-                          <span>Contrato: {doc.contrato.titulo}</span>
-                        </div>
-                      )}
-                      {doc.movimentacao && (
-                        <div className="flex items-center gap-1 text-xs text-default-500">
-                          <Clock className="h-3 w-3" />
-                          <span>Movimentação: {doc.movimentacao.titulo}</span>
-                        </div>
-                      )}
-                      {doc.descricao && (
-                        <p className="text-xs text-default-500 line-clamp-2">
-                          {doc.descricao}
-                        </p>
-                      )}
-                      {doc.url && (
-                        <Button
-                          as="a"
-                          className="mt-2"
-                          color="primary"
-                          href={doc.url}
-                          rel="noopener noreferrer"
-                          size="sm"
-                          startContent={<Eye className="h-3 w-3" />}
-                          target="_blank"
-                          variant="flat"
-                        >
-                          Visualizar
-                        </Button>
-                      )}
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
+                        {doc.contrato && (
+                          <div className="flex items-center gap-1 text-xs text-default-500">
+                            <FileSignature className="h-3 w-3" />
+                            <span>Contrato: {doc.contrato.titulo}</span>
+                          </div>
+                        )}
+                        {doc.movimentacao && (
+                          <div className="flex items-center gap-1 text-xs text-default-500">
+                            <Clock className="h-3 w-3" />
+                            <span>Movimentação: {doc.movimentacao.titulo}</span>
+                          </div>
+                        )}
+                        {doc.descricao && (
+                          <p className="text-xs text-default-500 line-clamp-2">
+                            {doc.descricao}
+                          </p>
+                        )}
+                        {doc.url && (
+                          <Button
+                            as="a"
+                            className="mt-2"
+                            color="primary"
+                            href={doc.url}
+                            rel="noopener noreferrer"
+                            size="sm"
+                            startContent={<Eye className="h-3 w-3" />}
+                            target="_blank"
+                            variant="flat"
+                          >
+                            Visualizar
+                          </Button>
+                        )}
+                      </CardBody>
+                    </Card>
+                  ))}
+                </div>
+                <TabPagination
+                  itemLabel="documentos"
+                  page={documentosPage}
+                  pageSize={TAB_PAGE_SIZES.documentos}
+                  totalItems={documentosItems.length}
+                  totalPages={documentosTotalPages}
+                  onChange={setDocumentosPage}
+                />
+              </>
             )}
           </div>
         </Tab>
@@ -1646,18 +2013,18 @@ export default function ClienteDetalhesPage() {
             <Select
               label="Vincular a Processo (opcional)"
               placeholder="Selecione um processo"
-              selectedKeys={
-                uploadFormData.processoId ? [uploadFormData.processoId] : []
-              }
+              selectedKeys={selectedProcessoKeys}
               onSelectionChange={(keys) =>
                 setUploadFormData((prev) => ({
                   ...prev,
-                  processoId: Array.from(keys)[0] as string,
+                  processoId: (Array.from(keys)[0] as string) || "",
                 }))
               }
             >
               {cliente.processos.map((processo) => (
-                <SelectItem key={processo.id}>{processo.numero}</SelectItem>
+                <SelectItem key={processo.id} textValue={processo.numero}>
+                  {processo.numero}
+                </SelectItem>
               ))}
             </Select>
           )}

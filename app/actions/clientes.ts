@@ -52,6 +52,15 @@ export interface Cliente {
       };
     };
   }[];
+  usuario?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+    active: boolean;
+    lastLoginAt: Date | null;
+  } | null;
   enderecos?: {
     id: string;
     apelido: string;
@@ -546,6 +555,17 @@ export async function getClienteComProcessos(clienteId: string): Promise<{
             createdAt: "asc",
           },
         },
+        usuario: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            active: true,
+            lastLoginAt: true,
+          },
+        },
         _count: {
           select: {
             processos: { where: { deletedAt: null } },
@@ -780,6 +800,17 @@ export async function getClienteById(clienteId: string): Promise<{
                 },
               },
             },
+          },
+        },
+        usuario: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            active: true,
+            lastLoginAt: true,
           },
         },
         _count: {
