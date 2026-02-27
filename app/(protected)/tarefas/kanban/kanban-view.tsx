@@ -4,16 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import {
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  useDisclosure,
-} from "@heroui/modal";
-import { Skeleton } from "@heroui/react";
+  Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure, } from "@heroui/modal";
+import { Skeleton, Select, SelectItem } from "@heroui/react";
 import { Plus, List, Kanban } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -26,7 +20,6 @@ import {
   useSensors,
   closestCorners,
 } from "@dnd-kit/core";
-import { DatePicker } from "@heroui/date-picker";
 
 import { KanbanColumn } from "./components/kanban-column";
 import { TarefaCard } from "./components/tarefa-card";
@@ -39,6 +32,7 @@ import { getAllProcessos } from "@/app/actions/processos";
 import { searchClientes } from "@/app/actions/clientes";
 import { title } from "@/components/primitives";
 import { useKanban } from "@/app/hooks/use-kanban";
+import { DateInput } from "@/components/ui/date-input";
 
 const prioridadeConfig = {
   BAIXA: { label: "Baixa", color: "default" as const },
@@ -519,24 +513,24 @@ export default function KanbanView() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <DatePicker
+                <DateInput
                   hideTimeZone
                   showMonthAndYearPickers
                   label="Data Limite"
-                  value={formData.dataLimite}
+                  dateValue={formData.dataLimite}
                   variant="bordered"
-                  onChange={(value) =>
+                  onDateChange={(value) =>
                     setFormData({ ...formData, dataLimite: value })
                   }
                 />
 
-                <DatePicker
+                <DateInput
                   hideTimeZone
                   showMonthAndYearPickers
                   label="Lembrete"
-                  value={formData.lembreteEm}
+                  dateValue={formData.lembreteEm}
                   variant="bordered"
-                  onChange={(value) =>
+                  onDateChange={(value) =>
                     setFormData({ ...formData, lembreteEm: value })
                   }
                 />

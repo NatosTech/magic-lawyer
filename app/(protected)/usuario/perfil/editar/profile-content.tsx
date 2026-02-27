@@ -12,31 +12,9 @@ import { Tabs, Tab } from "@heroui/tabs";
 import { Spinner } from "@heroui/spinner";
 import { toast } from "sonner";
 import {
-  User,
-  Mail,
-  Phone,
-  Shield,
-  Settings,
-  BarChart3,
-  UserCheck,
-  Lock,
-  Info,
-  MapPin,
-  Copy,
-  CopyCheck,
-  Briefcase,
-  Save,
-  CreditCard,
-  Building2,
-  PlusIcon,
-  Star,
-  Zap,
-  Bell,
-  ExternalLink,
-  ShieldCheck,
-} from "lucide-react";
+  User, Mail, Phone, Shield, Settings, BarChart3, UserCheck, Lock, Info, MapPin, Copy, CopyCheck, Briefcase, Save, CreditCard, Building2, PlusIcon, Star, Zap, Bell, ExternalLink, ShieldCheck, } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Select, SelectItem, Textarea } from "@heroui/react";
+import { Textarea, Select, SelectItem } from "@heroui/react";
 
 import { RoleSpecificInfo } from "./role-specific-info";
 
@@ -515,7 +493,7 @@ export function ProfileContent() {
                     }}
                   >
                     {Object.values(EspecialidadeJuridica).map((esp) => (
-                      <SelectItem key={esp}>{especialidadeLabels[esp]}</SelectItem>
+                      <SelectItem key={esp} textValue={especialidadeLabels[esp]}>{especialidadeLabels[esp]}</SelectItem>
                     ))}
                   </Select>
 

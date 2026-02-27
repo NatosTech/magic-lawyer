@@ -5,11 +5,10 @@ import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
-import { DateRangePicker } from "@heroui/date-picker";
 import { type DateValue, getLocalTimeZone } from "@internationalized/date";
 import { Input } from "@heroui/input";
 import type { RangeValue } from "@react-types/shared";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Spinner } from "@heroui/spinner";
 import {
   Table,
@@ -25,6 +24,8 @@ import { toast } from "sonner";
 import { type RelatorioPeriodo, type RelatoriosTenantData } from "@/app/actions/relatorios";
 import { useRelatorios } from "@/app/hooks/use-relatorios";
 import { subtitle, title } from "@/components/primitives";
+import { Select, SelectItem } from "@heroui/react";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 
 const PERIOD_OPTIONS: Array<{ key: RelatorioPeriodo; label: string }> = [
   { key: "30d", label: "Últimos 30 dias" },
@@ -819,12 +820,12 @@ export function RelatoriosContent() {
                 </SelectItem>
               ))}
             </Select>
-            <DateRangePicker
+            <DateRangeInput
               aria-label="Filtro por data de atualização"
               className="w-full"
+              rangeValue={periodoRange}
               size="sm"
-              value={periodoRange}
-              onChange={(value) => setPeriodoRange(value ?? null)}
+              onRangeValueChange={(value) => setPeriodoRange(value ?? null)}
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">

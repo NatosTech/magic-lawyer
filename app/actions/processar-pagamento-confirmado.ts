@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 
 import prisma, { toNumber } from "@/app/lib/prisma";
 import { emailService } from "@/app/lib/email-service";
+import { ensureDefaultCargosForTenant } from "@/app/lib/default-cargos";
 
 export type ProcessarPagamentoConfirmadoResult =
   | {
@@ -71,6 +72,8 @@ export async function processarPagamentoConfirmado(
         razaoSocial: checkoutData.nomeEmpresa,
       },
     });
+
+    await ensureDefaultCargosForTenant(prisma, tenant.id);
 
     await prisma.usuario.create({
       data: {

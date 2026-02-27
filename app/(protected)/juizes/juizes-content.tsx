@@ -12,12 +12,8 @@ import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/dropdown";
-import { Select, SelectItem } from "@heroui/react";
+  Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, } from "@heroui/dropdown";
+
 import { Divider } from "@heroui/divider";
 import { Avatar } from "@heroui/avatar";
 import { Textarea } from "@heroui/input";
@@ -66,6 +62,7 @@ import {
 } from "@/generated/prisma";
 import { JuizFotoUpload } from "@/app/(protected)/juizes/juiz-foto-upload";
 import { title, subtitle } from "@/components/primitives";
+import { Select, SelectItem } from "@heroui/react";
 
 export function JuizesContent() {
   const { permissions } = useUserPermissions();
@@ -486,7 +483,7 @@ export function JuizesContent() {
                     }
                   >
                     {(status) => (
-                      <SelectItem key={status.key}>{status.label}</SelectItem>
+                      <SelectItem key={status.key} textValue={status.label}>{status.label}</SelectItem>
                     )}
                   </Select>
 
@@ -511,7 +508,7 @@ export function JuizesContent() {
                     }
                   >
                     {(esp) => (
-                      <SelectItem key={esp.key}>{esp.label}</SelectItem>
+                      <SelectItem key={esp.key} textValue={esp.label}>{esp.label}</SelectItem>
                     )}
                   </Select>
 
@@ -533,7 +530,7 @@ export function JuizesContent() {
                     }
                   >
                     {(nivel) => (
-                      <SelectItem key={nivel.key}>{nivel.label}</SelectItem>
+                      <SelectItem key={nivel.key} textValue={nivel.label}>{nivel.label}</SelectItem>
                     )}
                   </Select>
                 </div>
@@ -1550,7 +1547,7 @@ export function JuizesContent() {
                   }
                 >
                   {(item) => (
-                    <SelectItem key={item.key}>{item.label}</SelectItem>
+                    <SelectItem key={item.key} textValue={item.label}>{item.label}</SelectItem>
                   )}
                 </Select>
                 <Select
@@ -1573,7 +1570,7 @@ export function JuizesContent() {
                   }
                 >
                   {(item) => (
-                    <SelectItem key={item.key}>{item.label}</SelectItem>
+                    <SelectItem key={item.key} textValue={item.label}>{item.label}</SelectItem>
                   )}
                 </Select>
                 <Select
@@ -1599,7 +1596,7 @@ export function JuizesContent() {
                   }
                 >
                   {(item) => (
-                    <SelectItem key={item.key}>{item.label}</SelectItem>
+                    <SelectItem key={item.key} textValue={item.label}>{item.label}</SelectItem>
                   )}
                 </Select>
               </div>

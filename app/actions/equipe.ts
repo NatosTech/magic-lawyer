@@ -371,6 +371,12 @@ export async function getUsuariosEquipe(): Promise<UsuarioEquipeData[]> {
   const usuarios = await prisma.usuario.findMany({
     where: {
       tenantId: session.user.tenantId,
+      role: {
+        notIn: [UserRole.CLIENTE, UserRole.ADVOGADO],
+      },
+      advogado: {
+        is: null,
+      },
     },
     include: {
       cargos: {
@@ -511,9 +517,21 @@ export async function atribuirCargoUsuario(
     },
   });
 
-  // Atribuir novo cargo
-  await prisma.usuarioCargo.create({
-    data: {
+  // Atribuir novo cargo (reativa se já existir vínculo histórico)
+  await prisma.usuarioCargo.upsert({
+    where: {
+      tenantId_usuarioId_cargoId: {
+        tenantId: session.user.tenantId,
+        usuarioId: usuarioId,
+        cargoId: cargoId,
+      },
+    },
+    update: {
+      ativo: true,
+      dataInicio: new Date(),
+      dataFim: null,
+    },
+    create: {
       tenantId: session.user.tenantId,
       usuarioId: usuarioId,
       cargoId: cargoId,
@@ -628,8 +646,8 @@ export async function vincularUsuarioAdvogado(
     );
   }
 
-  // Verificar se a vinculação já existe
-  const vinculacaoExistente = await prisma.usuarioVinculacao.findFirst({
+  // Verificar se a vinculação ativa já existe
+  const vinculacaoAtiva = await prisma.usuarioVinculacao.findFirst({
     where: {
       usuarioId: usuarioId,
       advogadoId: advogadoId,
@@ -638,20 +656,34 @@ export async function vincularUsuarioAdvogado(
     },
   });
 
-  if (vinculacaoExistente) {
+  if (vinculacaoAtiva) {
     throw new Error("Usuário já está vinculado a este advogado");
   }
 
-  // Criar vinculação
-  await prisma.usuarioVinculacao.create({
-    data: {
-      tenantId: session.user.tenantId,
-      usuarioId: usuarioId,
-      advogadoId: advogadoId,
-      tipo: tipo,
+  // Criar ou reativar vinculação histórica
+  await prisma.usuarioVinculacao.upsert({
+    where: {
+      tenantId_usuarioId_advogadoId: {
+        tenantId: session.user.tenantId,
+        usuarioId,
+        advogadoId,
+      },
+    },
+    update: {
+      tipo,
       ativo: true,
       dataInicio: new Date(),
-      observacoes: observacoes,
+      dataFim: null,
+      observacoes: observacoes ?? null,
+    },
+    create: {
+      tenantId: session.user.tenantId,
+      usuarioId,
+      advogadoId,
+      tipo,
+      ativo: true,
+      dataInicio: new Date(),
+      observacoes,
     },
   });
 
@@ -1153,6 +1185,7 @@ export async function getDashboardEquipe(): Promise<{
   usuariosPorCargo: { cargo: string; count: number }[];
   vinculacoesAtivas: number;
   permissoesIndividuais: number;
+  convitesPendentes: number;
 }> {
   const session = await getSession();
 
@@ -1166,9 +1199,18 @@ export async function getDashboardEquipe(): Promise<{
     usuariosPorCargo,
     vinculacoesAtivas,
     permissoesIndividuais,
+    convitesPendentes,
   ] = await Promise.all([
     prisma.usuario.count({
-      where: { tenantId: session.user.tenantId },
+      where: {
+        tenantId: session.user.tenantId,
+        role: {
+          notIn: [UserRole.CLIENTE, UserRole.ADVOGADO],
+        },
+        advogado: {
+          is: null,
+        },
+      },
     }),
     prisma.cargo.count({
       where: { tenantId: session.user.tenantId, ativo: true },
@@ -1189,6 +1231,12 @@ export async function getDashboardEquipe(): Promise<{
     }),
     prisma.usuarioPermissaoIndividual.count({
       where: { tenantId: session.user.tenantId },
+    }),
+    prisma.equipeConvite.count({
+      where: {
+        tenantId: session.user.tenantId,
+        status: "pendente",
+      },
     }),
   ]);
 
@@ -1213,6 +1261,7 @@ export async function getDashboardEquipe(): Promise<{
     usuariosPorCargo: usuariosPorCargoComNome,
     vinculacoesAtivas,
     permissoesIndividuais,
+    convitesPendentes,
   };
 }
 
@@ -1412,6 +1461,18 @@ export async function updateUsuarioEquipe(
 
   // Validar role - apenas ADMIN pode alterar role
   if (data.role !== undefined && data.role !== usuario.role) {
+    const allowedRoles = new Set<UserRole>([
+      UserRole.ADMIN,
+      UserRole.SECRETARIA,
+      UserRole.FINANCEIRO,
+    ]);
+
+    if (!allowedRoles.has(data.role)) {
+      throw new Error(
+        "Role inválido para equipe. Para ADVOGADO, utilize o módulo de Advogados.",
+      );
+    }
+
     // Não permitir alterar para SUPER_ADMIN ou alterar de SUPER_ADMIN
     if (
       data.role === UserRole.SUPER_ADMIN ||
@@ -1419,6 +1480,23 @@ export async function updateUsuarioEquipe(
     ) {
       throw new Error("Não é possível alterar role para/de SUPER_ADMIN");
     }
+
+    if (usuario.role === UserRole.ADVOGADO && data.role !== UserRole.ADVOGADO) {
+      const advogadoPerfil = await prisma.advogado.findFirst({
+        where: {
+          tenantId: session.user.tenantId,
+          usuarioId,
+        },
+        select: { id: true },
+      });
+
+      if (advogadoPerfil) {
+        throw new Error(
+          "Este usuário possui perfil de advogado. Altere o tipo pelo módulo de Advogados.",
+        );
+      }
+    }
+
     updateData.role = data.role;
   }
 

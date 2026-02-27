@@ -2,26 +2,14 @@
 
 import type { CepData, CnpjData } from "@/types/brazil";
 
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type Key,
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type Key, } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/dropdown";
+  Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, } from "@heroui/dropdown";
 import { Divider } from "@heroui/divider";
 import { Avatar } from "@heroui/avatar";
 import { Textarea } from "@heroui/input";
@@ -31,49 +19,11 @@ import { Tooltip } from "@heroui/tooltip";
 import { Skeleton } from "@heroui/skeleton";
 import { Spinner } from "@heroui/spinner";
 import {
-  Plus,
-  Search,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Eye,
-  User,
-  Building2,
-  Phone,
-  Mail,
-  FileText,
-  Users,
-  Key as KeyIcon,
-  Copy,
-  CheckCircle,
-  KeyRound,
-  RefreshCw,
-  AlertCircle,
-  Filter,
-  RotateCcw,
-  XCircle,
-  TrendingUp,
-  BarChart3,
-  Target,
-  Calendar,
-  Info,
-  Smartphone,
-  Activity,
-  UploadCloud,
-} from "lucide-react";
+  Plus, Search, MoreVertical, Edit, Trash2, Eye, User, Building2, Phone, Mail, FileText, Users, Key as KeyIcon, Copy, CheckCircle, KeyRound, RefreshCw, AlertCircle, Filter, RotateCcw, XCircle, TrendingUp, BarChart3, Target, Calendar, Info, Smartphone, Activity, UploadCloud, } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import {
-  Modal as HeroUIModal,
-  ModalContent,
-  ModalBody,
-  ModalFooter,
-  Pagination,
-  Select,
-  SelectItem,
-  Tabs,
-  Tab,
-} from "@heroui/react";
+  Modal as HeroUIModal, ModalContent, ModalBody, ModalFooter, Pagination, Tabs, Tab, Select, SelectItem } from "@heroui/react";
 
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { useClientesAdvogado, useAllClientes } from "@/app/hooks/use-clientes";
@@ -104,6 +54,7 @@ import {
   PeopleMetricCard,
   PeoplePageHeader,
 } from "@/components/people-ui";
+import { DateInput } from "@/components/ui/date-input";
 
 function formatDateToInput(value?: Date | string | null) {
   if (!value) {
@@ -1240,12 +1191,14 @@ export function ClientesContent() {
               <>
                 <Button
                   color="primary"
+                  size="sm"
                   startContent={<Plus className="h-4 w-4" />}
                   onPress={handleOpenCreateModal}
                 >
                   Novo cliente
                 </Button>
                 <Button
+                  size="sm"
                   startContent={<UploadCloud className="h-4 w-4" />}
                   variant="bordered"
                   onPress={() => setIsImportModalOpen(true)}
@@ -1672,9 +1625,8 @@ export function ClientesContent() {
                       )}
 
                       {formState.tipoPessoa === TipoPessoa.FISICA ? (
-                        <Input
+                        <DateInput
                           label="Data de Nascimento"
-                          type="date"
                           value={formatDateToInput(formState.dataNascimento)}
                           onValueChange={(value) =>
                             setFormState({
@@ -1682,7 +1634,7 @@ export function ClientesContent() {
                               dataNascimento: parseDateFromInput(value),
                             })
                           }
-                        />
+                         />
                       ) : (
                         <Input
                           label="Inscrição Estadual"
@@ -2128,9 +2080,8 @@ export function ClientesContent() {
                       )}
 
                       {formState.tipoPessoa === TipoPessoa.FISICA ? (
-                        <Input
+                        <DateInput
                           label="Data de Nascimento"
-                          type="date"
                           value={formatDateToInput(formState.dataNascimento)}
                           onValueChange={(value) =>
                             setFormState({
@@ -2138,7 +2089,7 @@ export function ClientesContent() {
                               dataNascimento: parseDateFromInput(value),
                             })
                           }
-                        />
+                         />
                       ) : (
                         <Input
                           label="Inscrição Estadual"

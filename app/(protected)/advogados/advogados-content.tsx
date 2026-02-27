@@ -3,32 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Avatar,
-  Spinner,
-  Input,
-  Select,
-  SelectItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Divider,
-  Badge,
-  Tooltip,
-  Skeleton,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Checkbox,
-  Pagination,
-} from "@heroui/react";
+  Button, Card, CardBody, CardHeader, Chip, Avatar, Spinner, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Divider, Badge, Tooltip, Skeleton, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Checkbox, Pagination, Select, SelectItem } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import {
   MailIcon,
@@ -120,6 +95,7 @@ import {
   PeoplePageHeader,
 } from "@/components/people-ui";
 import { EspecialidadeJuridica } from "@/generated/prisma";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 
 const createEndereco = (
   apelido = "Principal",
@@ -2265,32 +2241,21 @@ export default function AdvogadosContent() {
                         />
                       </div>
 
-                      {/* Filtro de Data de Início */}
-                      <div className="space-y-2">
+                      {/* Filtro de período */}
+                      <div className="space-y-2 sm:col-span-2 lg:col-span-2">
                         <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                          Data de Início
+                          Período de cadastro
                         </label>
-                        <Input
+                        <DateRangeInput
                           size="sm"
-                          type="date"
-                          value={dataInicio}
-                          onChange={(e) => setDataInicio(e.target.value)}
-                        />
-                      </div>
-
-                      {/* Filtro de Data de Fim */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          Data de Fim
-                        </label>
-                        <Input
-                          size="sm"
-                          type="date"
-                          value={dataFim}
-                          onChange={(e) => setDataFim(e.target.value)}
-                        />
+                          startValue={dataInicio}
+                          endValue={dataFim}
+                          onRangeChange={({ start, end }) => {
+                            setDataInicio(start);
+                            setDataFim(end);
+                          }}
+                         />
                       </div>
                     </div>
 
@@ -2925,10 +2890,10 @@ export default function AdvogadosContent() {
                       setCurrentPage(1);
                     }}
                   >
-                    <SelectItem key="5">5</SelectItem>
-                    <SelectItem key="10">10</SelectItem>
-                    <SelectItem key="20">20</SelectItem>
-                    <SelectItem key="50">50</SelectItem>
+                    <SelectItem key="5" textValue="5">5</SelectItem>
+                    <SelectItem key="10" textValue="10">10</SelectItem>
+                    <SelectItem key="20" textValue="20">20</SelectItem>
+                    <SelectItem key="50" textValue="50">50</SelectItem>
                   </Select>
                   <span className="text-sm text-slate-600 dark:text-slate-400">
                     por página

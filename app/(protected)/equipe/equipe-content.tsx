@@ -3,40 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Chip,
-  Avatar,
-  Spinner,
-  Input,
-  Select,
-  SelectItem,
-  Modal,
-  ModalContent,
-  ModalBody,
-  ModalFooter,
-  Textarea,
-  Divider,
-  Badge,
-  Tooltip,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Pagination,
-  Tabs,
-  Tab,
-  Switch,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  type ChipProps,
-} from "@heroui/react";
+  Button, Card, CardBody, CardHeader, Chip, Avatar, Spinner, Input, Modal, ModalContent, ModalBody, ModalFooter, Textarea, Divider, Badge, Tooltip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Pagination, Tabs, Tab, Switch, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, type ChipProps, Select, SelectItem } from "@heroui/react";
 import {
   Users,
   Shield,
@@ -54,7 +21,6 @@ import {
   X,
   Clock,
   Mail,
-  Building2,
   User,
   Award,
   Crown,
@@ -62,14 +28,11 @@ import {
   Download,
   Settings,
   HelpCircle,
-  UserPlus,
-  ExternalLink,
   RefreshCw,
   Calendar,
   FileText,
   CreditCard,
   Image,
-  GraduationCap,
   Phone,
   TrendingUp,
 } from "lucide-react";
@@ -109,6 +72,7 @@ import {
   PeopleMetricCard,
   PeoplePageHeader,
 } from "@/components/people-ui";
+import { DateInput } from "@/components/ui/date-input";
 
 const containerVariants = {
   hidden: {},
@@ -140,6 +104,35 @@ const fadeInUp = {
     transition: { duration: 0.25, ease: "easeOut" },
   },
 };
+
+function getRoleLabelPtBr(role: UserRole | string): string {
+  const labels: Record<string, string> = {
+    ADMIN: "Administrador",
+    ADVOGADO: "Advogado (legado)",
+    SECRETARIA: "Secretária",
+    FINANCEIRO: "Financeiro",
+    CLIENTE: "Cliente",
+    SUPER_ADMIN: "Super Admin",
+  };
+
+  return labels[String(role)] || String(role);
+}
+
+function getRoleFromCargoNivel(nivel?: number): UserRole {
+  if (!nivel) {
+    return UserRole.SECRETARIA;
+  }
+
+  if (nivel >= 4) {
+    return UserRole.ADMIN;
+  }
+
+  if (nivel === 3) {
+    return UserRole.FINANCEIRO;
+  }
+
+  return UserRole.SECRETARIA;
+}
 
 // ===== COMPONENTES =====
 
@@ -178,9 +171,9 @@ function DashboardEquipe() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <PeopleMetricCard
-        helper="Equipe ativa do escritorio"
+        helper="Funcionários ativos do escritório"
         icon={<Users className="h-4 w-4" />}
-        label="Total de usuarios"
+        label="Total de funcionários"
         tone="primary"
         value={dashboardData.totalUsuarios}
       />
@@ -199,9 +192,9 @@ function DashboardEquipe() {
         value={dashboardData.convitesPendentes}
       />
       <PeopleMetricCard
-        helper="Relacoes usuario-advogado"
+        helper="Relações funcionário-advogado"
         icon={<LinkIcon className="h-4 w-4" />}
-        label="Vinculacoes ativas"
+        label="Vinculações ativas"
         tone="secondary"
         value={dashboardData.vinculacoesAtivas}
       />
@@ -210,6 +203,10 @@ function DashboardEquipe() {
 }
 
 function CargosTab() {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role as UserRole | undefined;
+  const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.SUPER_ADMIN;
+
   const [cargos, setCargos] = useState<CargoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -263,6 +260,12 @@ function CargosTab() {
   }
 
   async function handleDeleteCargo(cargoId: string) {
+    if (!isAdmin) {
+      toast.error("Apenas administradores podem excluir cargos");
+
+      return;
+    }
+
     // Encontrar o cargo para mostrar o nome
     const cargo = cargos.find((c) => c.id === cargoId);
     const cargoNome = cargo?.nome || "este cargo";
@@ -284,6 +287,12 @@ function CargosTab() {
   }
 
   function handleEditCargo(cargo: CargoData) {
+    if (!isAdmin) {
+      toast.error("Apenas administradores podem editar cargos");
+
+      return;
+    }
+
     setEditingCargo(cargo);
     setModalOpen(true);
   }
@@ -292,7 +301,7 @@ function CargosTab() {
     const niveis = {
       1: "Estagiário",
       2: "Assistente",
-      3: "Advogado",
+      3: "Analista",
       4: "Coordenador",
       5: "Diretor",
     };
@@ -402,19 +411,21 @@ function CargosTab() {
                 <Button className="w-full sm:w-auto" size="sm" startContent={<Download className="w-4 h-4" />} variant="light" onPress={() => handleExportCargos()}>
                   Exportar
                 </Button>
-                <Button
-                  className="w-full sm:w-auto"
-                  color="primary"
-                  size="sm"
-                  startContent={<Plus className="w-4 h-4" />}
-                  onPress={() => {
-                    setEditingCargo(null);
-                    setModalOpen(true);
-                  }}
-                >
-                  <span className="hidden sm:inline">Novo Cargo</span>
-                  <span className="sm:hidden">Novo</span>
-                </Button>
+                {isAdmin ? (
+                  <Button
+                    className="w-full sm:w-auto"
+                    color="primary"
+                    size="sm"
+                    startContent={<Plus className="w-4 h-4" />}
+                    onPress={() => {
+                      setEditingCargo(null);
+                      setModalOpen(true);
+                    }}
+                  >
+                    <span className="hidden sm:inline">Novo Cargo</span>
+                    <span className="sm:hidden">Novo</span>
+                  </Button>
+                ) : null}
               </div>
             </div>
 
@@ -434,12 +445,12 @@ function CargosTab() {
                         setSelectedNivel(selected || "all");
                       }}
                     >
-                      <SelectItem key="all">Todos</SelectItem>
-                      <SelectItem key="1">Estagiário</SelectItem>
-                      <SelectItem key="2">Assistente</SelectItem>
-                      <SelectItem key="3">Advogado</SelectItem>
-                      <SelectItem key="4">Coordenador</SelectItem>
-                      <SelectItem key="5">Diretor</SelectItem>
+                      <SelectItem key="all" textValue="Todos">Todos</SelectItem>
+                      <SelectItem key="1" textValue="Estagiário">Estagiário</SelectItem>
+                      <SelectItem key="2" textValue="Assistente">Assistente</SelectItem>
+                      <SelectItem key="3" textValue="Analista">Analista</SelectItem>
+                      <SelectItem key="4" textValue="Coordenador">Coordenador</SelectItem>
+                      <SelectItem key="5" textValue="Diretor">Diretor</SelectItem>
                     </Select>
 
                     <Button
@@ -465,7 +476,14 @@ function CargosTab() {
         {paginatedCargos.map((cargo) => (
           <motion.div key={cargo.id} animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.3 }}>
             <Card className="h-full w-full hover:shadow-lg transition-shadow flex flex-col">
-              <CardHeader className="flex flex-col items-start gap-3 pb-2 cursor-pointer flex-shrink-0" onClick={() => handleEditCargo(cargo)}>
+              <CardHeader
+                className={`flex flex-col items-start gap-3 pb-2 flex-shrink-0 ${isAdmin ? "cursor-pointer" : ""}`}
+                onClick={() => {
+                  if (isAdmin) {
+                    handleEditCargo(cargo);
+                  }
+                }}
+              >
                 <div className="flex w-full items-start justify-between gap-3">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     <div className="p-2 rounded-lg bg-default-100 dark:bg-default-50 flex-shrink-0">
@@ -480,42 +498,44 @@ function CargosTab() {
                       </Tooltip>
                     </div>
                   </div>
-                  <Dropdown>
-                    <DropdownTrigger>
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        onClick={(e) => {
-                          e.stopPropagation();
+                  {isAdmin ? (
+                    <Dropdown>
+                      <DropdownTrigger>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu
+                        onAction={(key) => {
+                          if (key === "edit") {
+                            handleEditCargo(cargo);
+                          } else if (key === "delete") {
+                            handleDeleteCargo(cargo.id);
+                          }
                         }}
                       >
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                      onAction={(key) => {
-                        if (key === "edit") {
-                          handleEditCargo(cargo);
-                        } else if (key === "delete") {
-                          handleDeleteCargo(cargo.id);
-                        }
-                      }}
-                    >
-                      <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />}>
-                        Editar
-                      </DropdownItem>
-                      <DropdownItem
-                        key="delete"
-                        className="text-danger"
-                        color="danger"
-                        isDisabled={actionLoading === cargo.id}
-                        startContent={actionLoading === cargo.id ? <Spinner size="sm" /> : <Trash2 className="w-4 h-4" />}
-                      >
-                        {actionLoading === cargo.id ? "Excluindo..." : "Excluir"}
-                      </DropdownItem>
-                    </DropdownMenu>
-                  </Dropdown>
+                        <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />}>
+                          Editar
+                        </DropdownItem>
+                        <DropdownItem
+                          key="delete"
+                          className="text-danger"
+                          color="danger"
+                          isDisabled={actionLoading === cargo.id}
+                          startContent={actionLoading === cargo.id ? <Spinner size="sm" /> : <Trash2 className="w-4 h-4" />}
+                        >
+                          {actionLoading === cargo.id ? "Excluindo..." : "Excluir"}
+                        </DropdownItem>
+                      </DropdownMenu>
+                    </Dropdown>
+                  ) : null}
                 </div>
                 {cargo.descricao && <p className="text-sm text-default-500 line-clamp-2 mt-2">{cargo.descricao}</p>}
               </CardHeader>
@@ -582,33 +602,37 @@ function CargosTab() {
               <p className="text-sm text-default-500">
                 {searchTerm || selectedNivel !== "all" ? "Ajuste os filtros de busca para visualizar outros cargos." : "Crie o primeiro cargo para organizar a sua equipe."}
               </p>
-              <Button
-                color="primary"
-                startContent={<Plus className="w-4 h-4" />}
-                onPress={() => {
-                  setEditingCargo(null);
-                  setModalOpen(true);
-                }}
-              >
-                Criar Cargo
-              </Button>
+              {isAdmin ? (
+                <Button
+                  color="primary"
+                  startContent={<Plus className="w-4 h-4" />}
+                  onPress={() => {
+                    setEditingCargo(null);
+                    setModalOpen(true);
+                  }}
+                >
+                  Criar Cargo
+                </Button>
+              ) : null}
             </CardBody>
           </Card>
         </motion.div>
       )}
 
       {/* Modal de Cargo */}
-      <CargoModal
-        acoes={acoes}
-        cargo={editingCargo}
-        isOpen={modalOpen}
-        modulos={modulos}
-        onClose={() => setModalOpen(false)}
-        onSuccess={() => {
-          setModalOpen(false);
-          loadCargos();
-        }}
-      />
+      {isAdmin ? (
+        <CargoModal
+          acoes={acoes}
+          cargo={editingCargo}
+          isOpen={modalOpen}
+          modulos={modulos}
+          onClose={() => setModalOpen(false)}
+          onSuccess={() => {
+            setModalOpen(false);
+            loadCargos();
+          }}
+        />
+      ) : null}
     </motion.div>
   );
 }
@@ -814,7 +838,7 @@ function CargoModal({
                 <Input
                   isRequired
                   label="Nome do Cargo"
-                  placeholder="Ex: Advogado Sênior"
+                  placeholder="Ex: Analista Sênior"
                   startContent={<Shield className="w-4 h-4 text-default-400" />}
                   value={formData.nome}
                   onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
@@ -843,10 +867,10 @@ function CargoModal({
                       <span>Assistente</span>
                     </div>
                   </SelectItem>
-                  <SelectItem key="3" textValue="Advogado">
+                  <SelectItem key="3" textValue="Analista">
                     <div className="flex items-center gap-2">
                       <Shield className="w-4 h-4" />
-                      <span>Advogado</span>
+                      <span>Analista</span>
                     </div>
                   </SelectItem>
                   <SelectItem key="4" textValue="Coordenador">
@@ -1159,16 +1183,15 @@ function UsuariosTab() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [selectedTipo, setSelectedTipo] = useState<string>("all");
   const [selectedVinculacao, setSelectedVinculacao] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [advancedMode, setAdvancedMode] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedUsuario, setSelectedUsuario] = useState<UsuarioEquipeData | null>(null);
   const [editFormData, setEditFormData] = useState({
     firstName: "",
@@ -1206,6 +1229,20 @@ function UsuariosTab() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!advancedMode && isEditModalOpen && editFormData.cargoId) {
+      const cargoSelecionado = cargos.find((c) => c.id === editFormData.cargoId);
+      const roleSugerido = getRoleFromCargoNivel(cargoSelecionado?.nivel);
+
+      if (editFormData.role !== roleSugerido) {
+        setEditFormData((prev) => ({
+          ...prev,
+          role: roleSugerido,
+        }));
+      }
+    }
+  }, [advancedMode, isEditModalOpen, editFormData.cargoId, editFormData.role, cargos]);
 
   const advogadosOptions = useMemo(() => {
     return advogados.map((adv) => {
@@ -1380,12 +1417,22 @@ function UsuariosTab() {
     }
 
     if (actionKey === "edit") {
+      if (!isAdmin) {
+        toast.error("Apenas administradores podem editar usuários");
+
+        return;
+      }
       handleEditUsuario(usuario);
 
       return;
     }
 
     if (actionKey === "permissions") {
+      if (!advancedMode) {
+        toast.error("Ative o modo avançado para editar permissões individuais");
+
+        return;
+      }
       handlePermissionsUsuario(usuario);
 
       return;
@@ -1484,11 +1531,6 @@ function UsuariosTab() {
     }
   }
 
-  function handleOpenCreateUsuario() {
-    setSelectedUsuario(null);
-    setIsCreateModalOpen(true);
-  }
-
   function getRoleColor(role: string): ChipProps["color"] {
     const colors: Record<string, ChipProps["color"]> = {
       ADMIN: "danger",
@@ -1497,7 +1539,6 @@ function UsuariosTab() {
       FINANCEIRO: "success",
       CLIENTE: "warning",
       SUPER_ADMIN: "warning",
-      ESTAGIARIA: "default",
     };
 
     return colors[role] ?? "default";
@@ -1506,12 +1547,11 @@ function UsuariosTab() {
   function getRoleLabel(role: string) {
     const labels = {
       ADMIN: "Administrador",
-      ADVOGADO: "Advogado",
+      ADVOGADO: "Advogado (legado)",
       SECRETARIA: "Secretária",
       FINANCEIRO: "Financeiro",
       CLIENTE: "Cliente",
       SUPER_ADMIN: "Super Admin",
-      ESTAGIARIA: "Estagiária",
     };
 
     return labels[role as keyof typeof labels] || role;
@@ -1525,7 +1565,6 @@ function UsuariosTab() {
       FINANCEIRO: Award,
       CLIENTE: User,
       SUPER_ADMIN: Crown,
-      ESTAGIARIA: GraduationCap,
     };
     const IconComponent = icons[role] || User;
 
@@ -1589,14 +1628,13 @@ function UsuariosTab() {
     try {
       const csvContent = [
         // Cabeçalho
-        ["Nome", "Email", "Role", "Tipo", "Status", "Cargos", "Vinculações"].join(","),
+        ["Nome", "Email", "Role", "Status", "Cargos", "Vinculações"].join(","),
         // Dados
         ...filteredUsuarios.map((usuario) =>
           [
             `"${usuario.firstName && usuario.lastName ? `${usuario.firstName} ${usuario.lastName}` : usuario.email}"`,
             `"${usuario.email}"`,
             `"${getRoleLabel(usuario.role)}"`,
-            `"${usuario.role === "ADVOGADO" ? (usuario.isExterno ? "Externo" : "Interno") : "N/A"}"`,
             `"${usuario.active ? "Ativo" : "Inativo"}"`,
             `"${usuario.cargos.map((c) => c.nome).join("; ")}"`,
             `"${usuario.vinculacoes.map((v) => `${v.tipo} → ${v.advogadoNome}`).join("; ")}"`,
@@ -1632,18 +1670,12 @@ function UsuariosTab() {
       const matchesRole = selectedRole === "all" || usuario.role === selectedRole;
       const matchesStatus = selectedStatus === "all" || (selectedStatus === "active" && usuario.active) || (selectedStatus === "inactive" && !usuario.active);
 
-      const matchesTipo =
-        selectedTipo === "all" ||
-        (selectedTipo === "interno" && usuario.role === "ADVOGADO" && !usuario.isExterno) ||
-        (selectedTipo === "externo" && usuario.role === "ADVOGADO" && usuario.isExterno) ||
-        (selectedTipo === "nao-advogado" && usuario.role !== "ADVOGADO");
-
       const matchesVinculacao =
         selectedVinculacao === "all" || (selectedVinculacao === "com-vinculacao" && usuario.vinculacoes.length > 0) || (selectedVinculacao === "sem-vinculacao" && usuario.vinculacoes.length === 0);
 
-      return matchesSearch && matchesRole && matchesStatus && matchesTipo && matchesVinculacao;
+      return matchesSearch && matchesRole && matchesStatus && matchesVinculacao;
     });
-  }, [usuarios, searchTerm, selectedRole, selectedStatus, selectedTipo, selectedVinculacao]);
+  }, [usuarios, searchTerm, selectedRole, selectedStatus, selectedVinculacao]);
 
   // Paginação
   const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage);
@@ -1684,7 +1716,7 @@ function UsuariosTab() {
     <div className="space-y-6">
       {/* Toolbar com Estatísticas */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 2xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4 lg:gap-6 auto-rows-fr">
-        {/* Card Total de Usuários */}
+        {/* Card Total de Funcionários */}
         <motion.div animate={{ opacity: 1, y: 0 }} className="flex" initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.5, delay: 0.1 }}>
           <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group h-full w-full">
             <CardBody className="p-3 sm:p-4 md:p-6">
@@ -1697,7 +1729,7 @@ function UsuariosTab() {
                 </div>
               </div>
               <div className="space-y-1 sm:space-y-2">
-                <p className="text-xs sm:text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide line-clamp-1">Total de Usuários</p>
+                <p className="text-xs sm:text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide line-clamp-1">Total de Funcionários</p>
                 <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-blue-800 dark:text-blue-200">{usuarioStats.total}</p>
                 <p className="text-xs text-blue-600 dark:text-blue-400 line-clamp-1">Equipe do escritório</p>
               </div>
@@ -1823,7 +1855,7 @@ function UsuariosTab() {
                   </Button>
                 )
               }
-              placeholder="Buscar usuários..."
+              placeholder="Buscar funcionários..."
               startContent={<Search className="w-4 h-4 text-default-400" />}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -1836,15 +1868,54 @@ function UsuariosTab() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button className="w-full sm:w-auto" color="primary" size="sm" startContent={<UserPlus className="w-4 h-4" />} onPress={handleOpenCreateUsuario}>
-            <span className="hidden sm:inline">Novo Funcionário</span>
-            <span className="sm:hidden">Novo</span>
-          </Button>
+          {isAdmin ? (
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs">
+              <span className="text-warning-700 dark:text-warning-300">
+                Modo avançado
+              </span>
+              <Switch
+                isSelected={advancedMode}
+                size="sm"
+                onValueChange={setAdvancedMode}
+              />
+            </div>
+          ) : null}
           <Button className="w-full sm:w-auto" size="sm" startContent={<Download className="w-4 h-4" />} variant="light" onPress={() => handleExportUsuarios()}>
             Exportar
           </Button>
         </div>
       </div>
+
+      <Card className="border border-divider/70 bg-content1/70">
+        <CardBody className="py-3">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary">
+              <HelpCircle className="h-4 w-4" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">
+                O que significa a ação <strong>Vincular</strong>?
+              </p>
+              <p className="text-xs text-default-500">
+                Com escopo estrito: sem vínculo o colaborador não acessa
+                carteira de advogados. Com vínculo, ele acessa apenas os
+                advogados associados nos módulos com controle de escopo.
+                Vínculo não altera cargo nem role.
+              </p>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+
+      <Card className="border border-success/20 bg-success/5">
+        <CardBody className="py-3">
+          <p className="text-xs text-success-700 dark:text-success-300">
+            Esta aba lista apenas funcionários do escritório (secretaria,
+            financeiro, suporte e afins). Perfis de advogado devem ser geridos
+            no módulo de Advogados.
+          </p>
+        </CardBody>
+      </Card>
 
       {/* Filtros expandidos */}
       <AnimatePresence>
@@ -1864,11 +1935,10 @@ function UsuariosTab() {
                       setSelectedRole(selected || "all");
                     }}
                   >
-                    <SelectItem key="all">Todos</SelectItem>
-                    <SelectItem key="ADMIN">Administrador</SelectItem>
-                    <SelectItem key="ADVOGADO">Advogado</SelectItem>
-                    <SelectItem key="SECRETARIA">Secretária</SelectItem>
-                    <SelectItem key="CLIENTE">Cliente</SelectItem>
+                    <SelectItem key="all" textValue="Todos">Todos</SelectItem>
+                    <SelectItem key="ADMIN" textValue="Administrador">Administrador</SelectItem>
+                    <SelectItem key="SECRETARIA" textValue="Secretária">Secretária</SelectItem>
+                    <SelectItem key="FINANCEIRO" textValue="Financeiro">Financeiro</SelectItem>
                   </Select>
 
                   <Select
@@ -1882,26 +1952,9 @@ function UsuariosTab() {
                       setSelectedStatus(selected || "all");
                     }}
                   >
-                    <SelectItem key="all">Todos</SelectItem>
-                    <SelectItem key="active">Ativo</SelectItem>
-                    <SelectItem key="inactive">Inativo</SelectItem>
-                  </Select>
-
-                  <Select
-                    className="min-w-[140px] sm:min-w-40 flex-1 sm:flex-none"
-                    label="Tipo"
-                    placeholder="Todos os tipos"
-                    selectedKeys={selectedTipo === "all" ? [] : [selectedTipo]}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] as string;
-
-                      setSelectedTipo(selected || "all");
-                    }}
-                  >
-                    <SelectItem key="all">Todos</SelectItem>
-                    <SelectItem key="interno">Advogado Interno</SelectItem>
-                    <SelectItem key="externo">Advogado Externo</SelectItem>
-                    <SelectItem key="nao-advogado">Não Advogado</SelectItem>
+                    <SelectItem key="all" textValue="Todos">Todos</SelectItem>
+                    <SelectItem key="active" textValue="Ativo">Ativo</SelectItem>
+                    <SelectItem key="inactive" textValue="Inativo">Inativo</SelectItem>
                   </Select>
 
                   <Select
@@ -1915,9 +1968,9 @@ function UsuariosTab() {
                       setSelectedVinculacao(selected || "all");
                     }}
                   >
-                    <SelectItem key="all">Todas</SelectItem>
-                    <SelectItem key="com-vinculacao">Com Vinculação</SelectItem>
-                    <SelectItem key="sem-vinculacao">Sem Vinculação</SelectItem>
+                    <SelectItem key="all" textValue="Todas">Todas</SelectItem>
+                    <SelectItem key="com-vinculacao" textValue="Com Vinculação">Com Vinculação</SelectItem>
+                    <SelectItem key="sem-vinculacao" textValue="Sem Vinculação">Sem Vinculação</SelectItem>
                   </Select>
 
                   <Button
@@ -1927,7 +1980,6 @@ function UsuariosTab() {
                       setSearchTerm("");
                       setSelectedRole("all");
                       setSelectedStatus("all");
-                      setSelectedTipo("all");
                       setSelectedVinculacao("all");
                     }}
                   >
@@ -1987,13 +2039,15 @@ function UsuariosTab() {
                         >
                           Visualizar
                         </DropdownItem>
-                        <DropdownItem
-                          key="edit"
-                          startContent={<Edit className="w-4 h-4" />}
-                        >
-                          Editar
-                        </DropdownItem>
                         {isAdmin ? (
+                          <DropdownItem
+                            key="edit"
+                            startContent={<Edit className="w-4 h-4" />}
+                          >
+                            Editar
+                          </DropdownItem>
+                        ) : null}
+                        {isAdmin && advancedMode ? (
                           <DropdownItem
                             key="permissions"
                             startContent={<Shield className="w-4 h-4" />}
@@ -2006,7 +2060,7 @@ function UsuariosTab() {
                             key="link"
                             startContent={<LinkIcon className="w-4 h-4" />}
                           >
-                            Vincular
+                            Vincular advogado(s)
                           </DropdownItem>
                         ) : null}
                       </DropdownMenu>
@@ -2037,22 +2091,6 @@ function UsuariosTab() {
                     >
                       {usuario.active ? "Ativo" : "Inativo"}
                     </Chip>
-                    {usuario.role === "ADVOGADO" ? (
-                      <Chip
-                        color={usuario.isExterno ? "warning" : "success"}
-                        size="sm"
-                        startContent={
-                          usuario.isExterno ? (
-                            <ExternalLink className="w-3 h-3" />
-                          ) : (
-                            <Building2 className="w-3 h-3" />
-                          )
-                        }
-                        variant="flat"
-                      >
-                        {usuario.isExterno ? "Externo" : "Interno"}
-                      </Chip>
-                    ) : null}
                   </div>
                   <div className="space-y-1">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-default-500">
@@ -2108,12 +2146,6 @@ function UsuariosTab() {
                   <div className="flex items-center gap-2">
                     <Award className="w-4 h-4" />
                     FUNÇÃO
-                  </div>
-                </TableColumn>
-                <TableColumn>
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4" />
-                    TIPO
                   </div>
                 </TableColumn>
                 <TableColumn>
@@ -2179,20 +2211,6 @@ function UsuariosTab() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {usuario.role === "ADVOGADO" ? (
-                        <Chip
-                          color={usuario.isExterno ? "warning" : "success"}
-                          size="sm"
-                          startContent={usuario.isExterno ? <ExternalLink className="w-3 h-3" /> : <Building2 className="w-3 h-3" />}
-                          variant="flat"
-                        >
-                          {usuario.isExterno ? "Externo" : "Interno"}
-                        </Chip>
-                      ) : (
-                        <span className="text-sm text-default-400">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {usuario.cargos.map((cargo) => (
                           <Chip key={cargo.id} color="primary" size="sm" variant="flat">
@@ -2234,17 +2252,19 @@ function UsuariosTab() {
                           <DropdownItem key="view" startContent={<Eye className="w-4 h-4" />}>
                             Visualizar
                           </DropdownItem>
-                          <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />}>
-                            Editar
-                          </DropdownItem>
                           {isAdmin ? (
+                            <DropdownItem key="edit" startContent={<Edit className="w-4 h-4" />}>
+                              Editar
+                            </DropdownItem>
+                          ) : null}
+                          {isAdmin && advancedMode ? (
                             <DropdownItem key="permissions" startContent={<Shield className="w-4 h-4" />}>
                               Permissões
                             </DropdownItem>
                           ) : null}
                           {isAdmin ? (
                             <DropdownItem key="link" startContent={<LinkIcon className="w-4 h-4" />}>
-                              Vincular
+                              Vincular advogado(s)
                             </DropdownItem>
                           ) : null}
                         </DropdownMenu>
@@ -2290,52 +2310,13 @@ function UsuariosTab() {
             <Users className="w-12 h-12 text-default-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Nenhum usuário encontrado</h3>
             <p className="text-default-500">
-              {searchTerm || selectedRole !== "all" || selectedStatus !== "all" || selectedTipo !== "all" || selectedVinculacao !== "all"
+              {searchTerm || selectedRole !== "all" || selectedStatus !== "all" || selectedVinculacao !== "all"
                 ? "Tente ajustar os filtros de busca"
                 : "Nenhum usuário cadastrado na equipe"}
             </p>
           </CardBody>
         </Card>
       )}
-
-      {/* Modal de Criação de Funcionário */}
-      <Modal isOpen={isCreateModalOpen} scrollBehavior="inside" size="5xl" onClose={() => setIsCreateModalOpen(false)}>
-        <ModalContent>
-          <ModalHeaderGradient description="Cadastre colaboradores internos com dados trabalhistas completos" icon={UserPlus} title="Novo Funcionário" />
-          <ModalBody className="px-0">
-            <div className="space-y-6 px-6 pb-6">
-              <ModalSectionCard description="O modal de criação reutiliza as abas existentes (Perfil, Contatos, Cargo/Role) e adiciona etapas específicas para funcionários." title="Resumo do fluxo">
-                <ul className="list-disc pl-5 space-y-2 text-sm text-default-600">
-                  <li>Perfil: dados pessoais, CPF, geração de senha temporária, cargo principal.</li>
-                  <li>Dados trabalhistas: contrato, CTPS, PIS, jornada, flags de benefícios padrão.</li>
-                  <li>Benefícios: uso de `FuncionarioBeneficio` para registrar VA/VR/plano de saúde, com valores e vigência.</li>
-                  <li>Documentos: upload para Cloudinary (`FuncionarioDocumento`), com tipo, emissão e validade.</li>
-                  <li>Endereços e Contas: reaproveitar `EnderecoManager` e dados bancários existentes.</li>
-                  <li>Histórico: registrar alterações em `EquipeHistorico` (ex.: contrato alterado, benefício incluído).</li>
-                </ul>
-              </ModalSectionCard>
-
-              <ModalSectionCard description="Implemente as etapas conforme o roteiro documentado." title="Próximos passos">
-                <div className="space-y-3 text-sm text-default-600">
-                  <p>
-                    • Conferir o documento <code>docs/features/tenant-dashboard-enhancements/team-employee-profiles.md</code> para o passo a passo completo.
-                    <br />
-                    • Criar a action `createFuncionarioUsuario` (ou nome similar) reaproveitando padrões de `createCliente` / `createAdvogado`.
-                    <br />• Implementar realtime (<code>equipe.usuario.created</code>) e auditoria para cada operação.
-                    <br />• Atualizar a dashboard de estatísticas após salvar um novo registro.
-                  </p>
-                  <p className="text-xs text-default-500">Este modal é temporário – substitua-o pelo formulário definitivo assim que o backend estiver pronto.</p>
-                </div>
-              </ModalSectionCard>
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={() => setIsCreateModalOpen(false)}>
-              Fechar
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
 
       {/* Modal de Visualização de Usuário */}
       <Modal isOpen={isViewModalOpen} scrollBehavior="inside" size="5xl" onClose={() => setIsViewModalOpen(false)}>
@@ -2700,10 +2681,9 @@ function UsuariosTab() {
                           }
                         />
                       </div>
-                      <Input
+                      <DateInput
                         label="Data de Nascimento"
                         startContent={<Calendar className="w-4 h-4 text-default-400" />}
-                        type="date"
                         value={editFormData.dataNascimento}
                         onChange={(e) =>
                           setEditFormData({
@@ -2782,41 +2762,57 @@ function UsuariosTab() {
                           startContent={<Award className="w-4 h-4 text-default-400" />}
                           onSelectionChange={(keys) => {
                             const cargoId = Array.from(keys)[0] as string;
+                            const cargoSelecionado = cargos.find((c) => c.id === cargoId);
+                            const nextRole = cargoSelecionado
+                              ? getRoleFromCargoNivel(cargoSelecionado.nivel)
+                              : UserRole.SECRETARIA;
 
                             setEditFormData({
                               ...editFormData,
                               cargoId: cargoId || "",
+                              role: advancedMode ? editFormData.role : nextRole,
                             });
                           }}
                         >
                           {cargos
                             .filter((c) => c.ativo)
                             .map((cargo) => (
-                              <SelectItem key={cargo.id}>{cargo.nome}</SelectItem>
+                              <SelectItem key={cargo.id} textValue={cargo.nome}>{cargo.nome}</SelectItem>
                             ))}
                         </Select>
 
-                        <Select
-                          description="Nível base do sistema para permissões padrão"
-                          label="Role (Nível Base)"
-                          selectedKeys={[editFormData.role]}
-                          startContent={<User className="w-4 h-4 text-default-400" />}
-                          onSelectionChange={(keys) => {
-                            const role = Array.from(keys)[0] as string;
+                        {advancedMode ? (
+                          <Select
+                            description="Modo avançado ativo: altere role somente quando o cargo não cobrir o cenário"
+                            label="Role (Nível Base)"
+                            selectedKeys={[editFormData.role]}
+                            startContent={<User className="w-4 h-4 text-default-400" />}
+                            onSelectionChange={(keys) => {
+                              const role = Array.from(keys)[0] as string;
 
-                            setEditFormData({
-                              ...editFormData,
-                              role: role || "SECRETARIA",
-                            });
-                          }}
-                        >
-                          <SelectItem key="ADMIN">{getRoleLabel("ADMIN")}</SelectItem>
-                          <SelectItem key="ADVOGADO">{getRoleLabel("ADVOGADO")}</SelectItem>
-                          <SelectItem key="SECRETARIA">{getRoleLabel("SECRETARIA")}</SelectItem>
-                          <SelectItem key="FINANCEIRO">{getRoleLabel("FINANCEIRO")}</SelectItem>
-                          <SelectItem key="ESTAGIARIA">{getRoleLabel("ESTAGIARIA")}</SelectItem>
-                          <SelectItem key="CLIENTE">{getRoleLabel("CLIENTE")}</SelectItem>
-                        </Select>
+                              setEditFormData({
+                                ...editFormData,
+                                role: role || UserRole.SECRETARIA,
+                              });
+                            }}
+                          >
+                            <SelectItem key="ADMIN" textValue={getRoleLabel("ADMIN")}>{getRoleLabel("ADMIN")}</SelectItem>
+                            <SelectItem key="SECRETARIA" textValue={getRoleLabel("SECRETARIA")}>{getRoleLabel("SECRETARIA")}</SelectItem>
+                            <SelectItem key="FINANCEIRO" textValue={getRoleLabel("FINANCEIRO")}>{getRoleLabel("FINANCEIRO")}</SelectItem>
+                          </Select>
+                        ) : (
+                          <div className="space-y-2 rounded-xl border border-default-200 bg-default-50 p-3">
+                            <p className="text-xs font-medium uppercase tracking-wide text-default-500">
+                              Role base (automação simples)
+                            </p>
+                            <Chip color="default" size="sm" variant="flat">
+                              {getRoleLabel(editFormData.role)}
+                            </Chip>
+                            <p className="text-xs text-default-500">
+                              Para operação padrão, ajuste apenas o cargo. Role manual fica no modo avançado.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </ModalSectionCard>
@@ -2913,7 +2909,7 @@ function UsuariosTab() {
                           <strong className="text-secondary">Cargo</strong> - Permissão herdada do cargo ativo do usuário
                         </li>
                         <li>
-                          <strong className="text-default-500">Role padrão</strong> - Permissão padrão baseada no tipo de usuário (Advogado, Secretária, etc.)
+                          <strong className="text-default-500">Role padrão</strong> - Permissão base do perfil (Admin, Secretária, Financeiro etc.)
                         </li>
                       </ol>
 
@@ -2941,7 +2937,7 @@ function UsuariosTab() {
                             <Chip color="default" size="sm" variant="flat">
                               Padrão do role
                             </Chip>
-                            <span className="text-xs text-default-600">Permissão padrão do tipo de usuário</span>
+                            <span className="text-xs text-default-600">Permissão padrão do role base</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Chip color="danger" size="sm" variant="flat">
@@ -3060,15 +3056,35 @@ function UsuariosTab() {
       <Modal isOpen={isLinkModalOpen} scrollBehavior="inside" size="3xl" onClose={() => setIsLinkModalOpen(false)}>
         <ModalContent>
           <ModalHeaderGradient
-            description="Vincule este usuário a um advogado do escritório"
+            description="Crie vínculo operacional com advogado(s), sem alterar permissões do sistema"
             icon={LinkIcon}
             title={`Vincular Usuário - ${selectedUsuario?.firstName || selectedUsuario?.email || ""}`}
           />
           <ModalBody>
             <div className="space-y-6">
-              <ModalSectionCard description="Escolha um ou mais advogados aos quais este usuário será vinculado" title="Seleção do(s) Advogado(s)">
+              <Card className="border border-divider/70 bg-content1/70">
+                <CardBody className="py-3">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary">
+                      <HelpCircle className="h-4 w-4" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">
+                        Para que serve o vínculo
+                      </p>
+                      <p className="text-xs text-default-500">
+                        Use esta ação quando o colaborador apoia advogado(s)
+                        específico(s) no dia a dia. O vínculo é organizacional:
+                        não concede acesso extra por si só.
+                      </p>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+
+              <ModalSectionCard description="Escolha um ou mais advogados para organizar o atendimento deste usuário" title="Seleção do(s) Advogado(s)">
                 <Select
-                  description="Você pode selecionar múltiplos advogados. O usuário terá acesso aos dados de todos os advogados selecionados."
+                  description="Você pode selecionar múltiplos advogados. As permissões continuam sendo controladas por cargo, role e exceções."
                   label="Advogados"
                   placeholder="Selecione um ou mais advogados"
                   selectedKeys={new Set(validatedAdvogadoKeys)}
@@ -3117,9 +3133,9 @@ function UsuariosTab() {
                     setLinkForm({ ...linkForm, tipo: selected });
                   }}
                 >
-                  <SelectItem key="assistente">Assistente</SelectItem>
-                  <SelectItem key="responsavel">Responsável</SelectItem>
-                  <SelectItem key="colaborador">Colaborador</SelectItem>
+                  <SelectItem key="assistente" textValue="Assistente">Assistente</SelectItem>
+                  <SelectItem key="responsavel" textValue="Responsável">Responsável</SelectItem>
+                  <SelectItem key="colaborador" textValue="Colaborador">Colaborador</SelectItem>
                 </Select>
               </ModalSectionCard>
 
@@ -3149,22 +3165,45 @@ function UsuariosTab() {
 }
 
 function ConvitesTab() {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role as UserRole | undefined;
+  const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.SUPER_ADMIN;
+
   const [convites, setConvites] = useState<ConviteEquipeData[]>([]);
   const [cargos, setCargos] = useState<CargoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [advancedInviteMode, setAdvancedInviteMode] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<CreateConviteData>({
     email: "",
     nome: "",
     cargoId: "",
-    role: "ADVOGADO" as any,
+    role: UserRole.SECRETARIA,
     observacoes: "",
   });
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (isAdmin) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!advancedInviteMode && formData.cargoId) {
+      const cargoSelecionado = cargos.find((cargo) => cargo.id === formData.cargoId);
+      const roleSugerido = getRoleFromCargoNivel(cargoSelecionado?.nivel);
+
+      if (formData.role !== roleSugerido) {
+        setFormData((prev) => ({
+          ...prev,
+          role: roleSugerido,
+        }));
+      }
+    }
+  }, [advancedInviteMode, cargos, formData.cargoId, formData.role]);
 
   async function loadData() {
     try {
@@ -3219,11 +3258,12 @@ function ConvitesTab() {
       await createConviteEquipe(formData);
       toast.success("Convite enviado com sucesso!");
       setIsModalOpen(false);
+      setAdvancedInviteMode(false);
       setFormData({
         email: "",
         nome: "",
         cargoId: "",
-        role: "ADVOGADO" as any,
+        role: UserRole.SECRETARIA,
         observacoes: "",
       });
       loadData();
@@ -3294,9 +3334,9 @@ function ConvitesTab() {
   function getRoleLabel(role: string) {
     const labels = {
       ADMIN: "Administrador",
-      ADVOGADO: "Advogado",
+      ADVOGADO: "Advogado (legado)",
       SECRETARIA: "Secretária",
-      CLIENTE: "Cliente",
+      FINANCEIRO: "Financeiro",
     };
 
     return labels[role as keyof typeof labels] || role;
@@ -3333,6 +3373,18 @@ function ConvitesTab() {
       <div className="flex justify-center items-center h-32">
         <Spinner size="lg" />
       </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <Card className="border border-warning/20 bg-warning/5">
+        <CardBody className="py-6">
+          <p className="text-sm text-warning-600 dark:text-warning-300">
+            Apenas administradores podem gerenciar convites.
+          </p>
+        </CardBody>
+      </Card>
     );
   }
 
@@ -3430,10 +3482,19 @@ function ConvitesTab() {
           <CardBody>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-between">
               <div className="min-w-0 flex-1">
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold">Convites de Equipe</h2>
-                <p className="text-xs sm:text-sm text-default-500">Gerencie os convites enviados para novos membros</p>
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold">Convites de Funcionários</h2>
+                <p className="text-xs sm:text-sm text-default-500">Gerencie os convites enviados para novos colaboradores do escritório</p>
               </div>
-              <Button className="w-full sm:w-auto" color="primary" size="sm" startContent={<Plus className="w-4 h-4" />} onPress={() => setIsModalOpen(true)}>
+              <Button
+                className="w-full sm:w-auto"
+                color="primary"
+                size="sm"
+                startContent={<Plus className="w-4 h-4" />}
+                onPress={() => {
+                  setAdvancedInviteMode(false);
+                  setIsModalOpen(true);
+                }}
+              >
                 <span className="hidden sm:inline">Enviar Convite</span>
                 <span className="sm:hidden">Novo</span>
               </Button>
@@ -3448,8 +3509,15 @@ function ConvitesTab() {
             <CardBody className="space-y-3">
               <Mail className="mx-auto h-10 w-10 text-default-400" />
               <h3 className="text-lg font-semibold">Nenhum convite encontrado</h3>
-              <p className="text-sm text-default-500">Envie um convite para adicionar novos membros à equipe</p>
-              <Button color="primary" startContent={<Plus className="w-4 h-4" />} onPress={() => setIsModalOpen(true)}>
+              <p className="text-sm text-default-500">Envie um convite para adicionar novos colaboradores à equipe</p>
+              <Button
+                color="primary"
+                startContent={<Plus className="w-4 h-4" />}
+                onPress={() => {
+                  setAdvancedInviteMode(false);
+                  setIsModalOpen(true);
+                }}
+              >
                 Enviar Primeiro Convite
               </Button>
             </CardBody>
@@ -3512,9 +3580,17 @@ function ConvitesTab() {
       )}
 
       {/* Modal de Novo Convite */}
-      <Modal isOpen={isModalOpen} scrollBehavior="inside" size="5xl" onClose={() => setIsModalOpen(false)}>
+      <Modal
+        isOpen={isModalOpen}
+        scrollBehavior="inside"
+        size="5xl"
+        onClose={() => {
+          setIsModalOpen(false);
+          setAdvancedInviteMode(false);
+        }}
+      >
         <ModalContent>
-          <ModalHeaderGradient description="Convide um novo membro para a equipe" icon={Mail} title="Enviar Convite" />
+          <ModalHeaderGradient description="Convide um novo colaborador para a equipe" icon={Mail} title="Enviar Convite" />
           <ModalBody className="px-0">
             <Tabs
               aria-label="Formulário de convite"
@@ -3540,7 +3616,7 @@ function ConvitesTab() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard description="Dados do novo membro" title="Informações do Convite">
+                  <ModalSectionCard description="Dados do novo colaborador" title="Informações do Convite">
                     <div className="space-y-4">
                       <Input isRequired label="Email" placeholder="email@exemplo.com" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
 
@@ -3562,7 +3638,7 @@ function ConvitesTab() {
                 }
               >
                 <div className="space-y-6">
-                  <ModalSectionCard description="Configure cargo e role do novo membro" title="Função no Escritório">
+                  <ModalSectionCard description="Configure cargo e role do novo colaborador" title="Função no Escritório">
                     <div className="space-y-4">
                       <Select
                         label="Cargo (opcional)"
@@ -3570,36 +3646,71 @@ function ConvitesTab() {
                         selectedKeys={formData.cargoId ? [formData.cargoId] : []}
                         onSelectionChange={(keys) => {
                           const selectedKey = Array.from(keys)[0] as string;
+                          const cargoSelecionado = cargos.find(
+                            (cargo) => cargo.id === selectedKey,
+                          );
+                          const roleSugerido = getRoleFromCargoNivel(
+                            cargoSelecionado?.nivel,
+                          );
 
                           setFormData({
                             ...formData,
                             cargoId: selectedKey || "",
+                            role:
+                              !selectedKey || advancedInviteMode
+                                ? formData.role
+                                : roleSugerido,
                           });
                         }}
                       >
                         {cargos.map((cargo) => (
-                          <SelectItem key={cargo.id}>{cargo.nome}</SelectItem>
+                          <SelectItem key={cargo.id} textValue={cargo.nome}>{cargo.nome}</SelectItem>
                         ))}
                       </Select>
 
-                      <Select
-                        label="Role"
-                        placeholder="Selecione o role"
-                        selectedKeys={[formData.role]}
-                        onSelectionChange={(keys) => {
-                          const selectedKey = Array.from(keys)[0] as string;
+                      <div className="space-y-3 rounded-xl border border-default-200 bg-default-50 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-medium uppercase tracking-wide text-default-500">
+                              Role base do convite
+                            </p>
+                            <p className="text-sm font-medium">
+                              {getRoleLabelPtBr(formData.role)}
+                            </p>
+                          </div>
+                          <Switch
+                            isSelected={advancedInviteMode}
+                            size="sm"
+                            onValueChange={setAdvancedInviteMode}
+                          >
+                            Avançado
+                          </Switch>
+                        </div>
 
-                          setFormData({
-                            ...formData,
-                            role: selectedKey as any,
-                          });
-                        }}
-                      >
-                        <SelectItem key="ADMIN">Administrador</SelectItem>
-                        <SelectItem key="ADVOGADO">Advogado</SelectItem>
-                        <SelectItem key="SECRETARIA">Secretária</SelectItem>
-                        <SelectItem key="CLIENTE">Cliente</SelectItem>
-                      </Select>
+                        {advancedInviteMode ? (
+                          <Select
+                            label="Role manual (avançado)"
+                            placeholder="Selecione o role"
+                            selectedKeys={[formData.role]}
+                            onSelectionChange={(keys) => {
+                              const selectedKey = Array.from(keys)[0] as string;
+
+                              setFormData({
+                                ...formData,
+                                role: selectedKey as UserRole,
+                              });
+                            }}
+                          >
+                            <SelectItem key="ADMIN" textValue="Administrador">Administrador</SelectItem>
+                            <SelectItem key="SECRETARIA" textValue="Secretária">Secretária</SelectItem>
+                            <SelectItem key="FINANCEIRO" textValue="Financeiro">Financeiro</SelectItem>
+                          </Select>
+                        ) : (
+                          <p className="text-xs text-default-500">
+                            No fluxo simples, o role acompanha o cargo para reduzir erros.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </ModalSectionCard>
                 </div>
@@ -3652,10 +3763,55 @@ function ConvitesTab() {
 // ===== COMPONENTE PRINCIPAL =====
 
 export default function EquipeContent() {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role as UserRole | undefined;
+  const isAdmin = userRole === UserRole.ADMIN || userRole === UserRole.SUPER_ADMIN;
+
   const [selectedTab, setSelectedTab] = useState("cargos");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSection, setSelectedSection] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(true);
+  const availableTabs = useMemo(
+    () => (isAdmin ? ["cargos", "usuarios", "convites"] : ["cargos", "usuarios"]),
+    [isAdmin],
+  );
+
+  useEffect(() => {
+    if (!availableTabs.includes(selectedTab)) {
+      setSelectedTab(availableTabs[0]);
+    }
+  }, [availableTabs, selectedTab]);
+
+  useEffect(() => {
+    try {
+      const dismissed = window.localStorage.getItem("equipe:tutorial:dismissed");
+
+      if (dismissed === "1") {
+        setShowTutorial(false);
+      }
+    } catch {
+      // noop
+    }
+  }, []);
+
+  function handleDismissTutorial() {
+    setShowTutorial(false);
+    try {
+      window.localStorage.setItem("equipe:tutorial:dismissed", "1");
+    } catch {
+      // noop
+    }
+  }
+
+  function handleShowTutorialAgain() {
+    setShowTutorial(true);
+    try {
+      window.localStorage.removeItem("equipe:tutorial:dismissed");
+    } catch {
+      // noop
+    }
+  }
 
   function handleExportAll() {
     try {
@@ -3688,8 +3844,8 @@ export default function EquipeContent() {
     <div className="space-y-8">
       <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
         <PeoplePageHeader
-          description="Controle cargos, usuarios e convites com trilha de auditoria e padrao visual unificado."
-          title="Equipe e permissoes"
+          description="Controle cargos, funcionários e convites com trilha de auditoria e padrão visual unificado."
+          title="Equipe de funcionários"
           actions={
             <>
               <Button
@@ -3698,7 +3854,7 @@ export default function EquipeContent() {
                 startContent={<Users className="w-4 h-4" />}
                 onPress={() => setSelectedTab("usuarios")}
               >
-                Gerenciar usuários
+                Gerenciar funcionários
               </Button>
               <Button
                 size="sm"
@@ -3711,6 +3867,78 @@ export default function EquipeContent() {
             </>
           }
         />
+      </motion.div>
+
+      <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
+        {showTutorial ? (
+          <Card className="border border-primary/20 bg-primary/5">
+            <CardBody className="space-y-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">
+                    Tutorial rápido da tela de Equipe
+                  </h2>
+                  <p className="text-sm text-default-500">
+                    Fluxo pensado para operação simples: cargo principal, role base e exceção só no modo avançado.
+                  </p>
+                </div>
+                <Button size="sm" variant="flat" onPress={handleDismissTutorial}>
+                  Entendi, ocultar
+                </Button>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <Card className="border border-divider/70 bg-content1/80">
+                  <CardBody className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">Passo 1</p>
+                    <p className="text-sm font-medium">Configure os cargos</p>
+                    <p className="text-xs text-default-500">
+                      Abra a aba Cargos e garanta que cada função do escritório tenha permissões corretas.
+                    </p>
+                  </CardBody>
+                </Card>
+
+                <Card className="border border-divider/70 bg-content1/80">
+                  <CardBody className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">Passo 2</p>
+                    <p className="text-sm font-medium">Ajuste o funcionário</p>
+                    <p className="text-xs text-default-500">
+                      Na aba Funcionários, edite o colaborador e defina o cargo principal. Esse é o controle principal de acesso.
+                    </p>
+                  </CardBody>
+                </Card>
+
+                <Card className="border border-divider/70 bg-content1/80">
+                  <CardBody className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">Passo 3</p>
+                    <p className="text-sm font-medium">Use a ação Vincular quando necessário</p>
+                    <p className="text-xs text-default-500">
+                      No modo estrito, sem vínculo não há acesso à carteira.
+                      Vincule para liberar apenas o escopo necessário por
+                      advogado.
+                    </p>
+                  </CardBody>
+                </Card>
+
+                <Card className="border border-divider/70 bg-content1/80">
+                  <CardBody className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">Passo 4</p>
+                    <p className="text-sm font-medium">Modo avançado só exceção</p>
+                    <p className="text-xs text-default-500">
+                      Permissão individual é exceção. Ative modo avançado apenas quando houver necessidade real e registrada.
+                    </p>
+                  </CardBody>
+                </Card>
+              </div>
+            </CardBody>
+          </Card>
+        ) : (
+          <div className="flex justify-end">
+            <Button size="sm" variant="flat" onPress={handleShowTutorialAgain}>
+              Mostrar tutorial da equipe
+            </Button>
+          </div>
+        )}
       </motion.div>
 
       <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
@@ -3742,7 +3970,7 @@ export default function EquipeContent() {
                   Filtros operacionais
                 </h3>
                 <p className="text-xs text-default-500 sm:text-sm">
-                  Navegue por cargos, usuários e convites sem poluir a tela.
+                  Navegue por cargos, funcionários e convites sem poluir a tela.
                 </p>
               </div>
             </div>
@@ -3803,10 +4031,10 @@ export default function EquipeContent() {
                         setSelectedSection(selected || "all");
                       }}
                     >
-                      <SelectItem key="all">Todas</SelectItem>
-                      <SelectItem key="cargos">Cargos</SelectItem>
-                      <SelectItem key="usuarios">Usuários</SelectItem>
-                      <SelectItem key="convites">Convites</SelectItem>
+                      <SelectItem key="all" textValue="Todas">Todas</SelectItem>
+                      <SelectItem key="cargos" textValue="Cargos">Cargos</SelectItem>
+                      <SelectItem key="usuarios" textValue="Funcionários">Funcionários</SelectItem>
+                      {isAdmin ? <SelectItem key="convites" textValue="Convites">Convites</SelectItem> : null}
                     </Select>
 
                     <Button
@@ -3864,7 +4092,7 @@ export default function EquipeContent() {
                 title={
                   <div className="flex items-center space-x-2">
                     <Users className="w-4 h-4" />
-                    <span>Usuários</span>
+                    <span>Funcionários</span>
                   </div>
                 }
               >
@@ -3873,19 +4101,21 @@ export default function EquipeContent() {
                 </div>
               </Tab>
 
-              <Tab
-                key="convites"
-                title={
-                  <div className="flex items-center space-x-2">
-                    <Mail className="w-4 h-4" />
-                    <span>Convites</span>
+              {isAdmin ? (
+                <Tab
+                  key="convites"
+                  title={
+                    <div className="flex items-center space-x-2">
+                      <Mail className="w-4 h-4" />
+                      <span>Convites</span>
+                    </div>
+                  }
+                >
+                  <div className="p-4 sm:p-6">
+                    <ConvitesTab />
                   </div>
-                }
-              >
-                <div className="p-4 sm:p-6">
-                  <ConvitesTab />
-                </div>
-              </Tab>
+                </Tab>
+              ) : null}
             </Tabs>
           </CardBody>
         </Card>

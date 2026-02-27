@@ -10,7 +10,7 @@ import { Spinner } from "@heroui/spinner";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import {
   ArrowLeft,
   User,
@@ -70,6 +70,8 @@ import {
   unlinkProcuracaoDoProcesso,
 } from "@/app/actions/processos";
 import JuizModal from "@/components/juiz-modal";
+import { Select, SelectItem } from "@heroui/react";
+import { DateInput } from "@/components/ui/date-input";
 
 const parteFormInitial: {
   tipoPolo: ProcessoPolo;
@@ -1200,7 +1202,7 @@ export default function ProcessoDetalhesPage() {
                     }}
                   >
                     {polos.map((polo) => (
-                      <SelectItem key={polo}>{polo}</SelectItem>
+                      <SelectItem key={polo} textValue={polo}>{polo}</SelectItem>
                     ))}
                   </Select>
 
@@ -1441,12 +1443,11 @@ export default function ProcessoDetalhesPage() {
                     }
                   />
 
-                  <Input
+                  <DateInput
                     label="Data de vencimento"
                     startContent={
                       <Calendar className="h-4 w-4 text-default-400" />
                     }
-                    type="date"
                     value={prazoForm.dataVencimento}
                     onValueChange={(value) =>
                       setPrazoForm((prev) => ({

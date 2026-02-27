@@ -8,14 +8,14 @@ import { Input, Textarea } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Tooltip } from "@heroui/tooltip";
-import { Skeleton } from "@heroui/react";
+import { Skeleton, Select, SelectItem } from "@heroui/react";
 import { Badge } from "@heroui/badge";
-import { DateRangePicker } from "@heroui/date-picker";
 import { Slider } from "@heroui/slider";
 import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/modal";
 import { Checkbox } from "@heroui/checkbox";
 import { Switch } from "@heroui/switch";
-import { Select, SelectItem } from "@heroui/react";
+import { DateRangeInput } from "@/components/ui/date-range-input";
+
 import {
   FolderPlus,
   RefreshCw,
@@ -1178,10 +1178,10 @@ export function DocumentosContent({
                             setFiltros((prev) => ({ ...prev, origem: value }));
                           }}
                         >
-                          <SelectItem key="TODOS">Todas</SelectItem>
-                          <SelectItem key="CLIENTE">Cliente</SelectItem>
-                          <SelectItem key="ESCRITORIO">Escritório</SelectItem>
-                          <SelectItem key="SISTEMA">Sistema</SelectItem>
+                          <SelectItem key="TODOS" textValue="Todas">Todas</SelectItem>
+                          <SelectItem key="CLIENTE" textValue="Cliente">Cliente</SelectItem>
+                          <SelectItem key="ESCRITORIO" textValue="Escritório">Escritório</SelectItem>
+                          <SelectItem key="SISTEMA" textValue="Sistema">Sistema</SelectItem>
                         </Select>
                         <Select
                           label="Visível para"
@@ -1191,9 +1191,9 @@ export function DocumentosContent({
                             setFiltros((prev) => ({ ...prev, visibilidade: value }));
                           }}
                         >
-                          <SelectItem key="TODOS">Todos</SelectItem>
-                          <SelectItem key="CLIENTE">Cliente</SelectItem>
-                          <SelectItem key="EQUIPE">Somente equipe</SelectItem>
+                          <SelectItem key="TODOS" textValue="Todos">Todos</SelectItem>
+                          <SelectItem key="CLIENTE" textValue="Cliente">Cliente</SelectItem>
+                          <SelectItem key="EQUIPE" textValue="Somente equipe">Somente equipe</SelectItem>
                         </Select>
                       </div>
                     </FilterSection>
@@ -1204,11 +1204,13 @@ export function DocumentosContent({
                       description="Filtre por data de upload dos documentos."
                     >
                       <div className="space-y-3">
-                        <DateRangePicker
+                        <DateRangeInput
                           label="Data de upload"
+                          startValue={filtros.dataUpload?.start ?? ""}
+                          endValue={filtros.dataUpload?.end ?? ""}
                           visibleMonths={1}
-                          onChange={(range) => {
-                            if (!range) {
+                          onRangeChange={({ start, end }) => {
+                            if (!start || !end) {
                               setFiltros((prev) => ({
                                 ...prev,
                                 dataUpload: { start: null, end: null },
@@ -1218,8 +1220,8 @@ export function DocumentosContent({
                             setFiltros((prev) => ({
                               ...prev,
                               dataUpload: {
-                                start: range.start?.toString() ?? null,
-                                end: range.end?.toString() ?? null,
+                                start,
+                                end,
                               },
                             }));
                           }}
@@ -1948,11 +1950,14 @@ function UploadOptionsModal({
                       }}
                     >
                       {[
-                        <SelectItem key="__none">
+                        <SelectItem key="__none" textValue="Sem causa específica">
                           Sem causa específica
                         </SelectItem>,
                         ...causas.map((causa) => (
-                          <SelectItem key={causa.id}>
+                          <SelectItem
+                            key={causa.id}
+                            textValue={`${causa.nome}${causa.codigoCnj ? ` · ${causa.codigoCnj}` : ""}`}
+                          >
                             {causa.nome}
                             {causa.codigoCnj ? ` · ${causa.codigoCnj}` : ""}
                           </SelectItem>

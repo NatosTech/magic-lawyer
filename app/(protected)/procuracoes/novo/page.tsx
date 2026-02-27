@@ -13,7 +13,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Checkbox } from "@heroui/checkbox";
 import { Divider } from "@heroui/divider";
 import { Input, Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Spinner } from "@heroui/spinner";
 import {
   ArrowLeft,
@@ -43,6 +43,8 @@ import {
   TipoPessoa,
 } from "@/generated/prisma";
 import { title } from "@/components/primitives";
+import { Select, SelectItem } from "@heroui/react";
+import { DateInput } from "@/components/ui/date-input";
 
 type ClienteSelectItem = Pick<
   ClienteDTO,
@@ -103,6 +105,22 @@ export default function NovaProcuracaoPage() {
     useAdvogadosDisponiveis();
   const { processos: processosDoCliente, isLoading: isLoadingProcessos } =
     useProcessosCliente(formData.clienteId || null);
+  const clienteKeys = useMemo(
+    () => new Set((clientes || []).map((cliente) => cliente.id)),
+    [clientes],
+  );
+  const modeloKeys = useMemo(
+    () => new Set((modelos || []).map((modelo) => modelo.id)),
+    [modelos],
+  );
+  const processoKeys = useMemo(
+    () => new Set((processosDoCliente || []).map((processo) => processo.id)),
+    [processosDoCliente],
+  );
+  const advogadoKeys = useMemo(
+    () => new Set((advogados || []).map((advogado) => advogado.id)),
+    [advogados],
+  );
 
   useEffect(() => {
     if (clienteIdParam) {
@@ -119,14 +137,32 @@ export default function NovaProcuracaoPage() {
     }));
   }, [preselectedProcessoIds]);
 
+  const selectedClienteKeys =
+    formData.clienteId && clienteKeys.has(formData.clienteId)
+      ? [formData.clienteId]
+      : [];
+  const selectedModeloKeys =
+    formData.modeloId && modeloKeys.has(formData.modeloId)
+      ? [formData.modeloId]
+      : [];
   const selectedProcessoKeys = useMemo(
-    () => new Set(formData.processoIds ?? []),
-    [formData.processoIds],
+    () =>
+      new Set(
+        (formData.processoIds ?? []).filter((processoId) =>
+          processoKeys.has(processoId),
+        ),
+      ),
+    [formData.processoIds, processoKeys],
   );
 
   const selectedAdvogadoKeys = useMemo(
-    () => new Set(formData.advogadoIds ?? []),
-    [formData.advogadoIds],
+    () =>
+      new Set(
+        (formData.advogadoIds ?? []).filter((advogadoId) =>
+          advogadoKeys.has(advogadoId),
+        ),
+      ),
+    [formData.advogadoIds, advogadoKeys],
   );
 
   const poderes = formData.poderes ?? [];
@@ -321,12 +357,12 @@ export default function NovaProcuracaoPage() {
                 description="Selecione o cliente outorgante"
                 label="Cliente *"
                 placeholder="Selecione um cliente"
-                selectedKeys={formData.clienteId ? [formData.clienteId] : []}
+                selectedKeys={selectedClienteKeys}
                 startContent={<User className="h-4 w-4 text-default-400" />}
                 onSelectionChange={handleClienteSelection}
               >
                 {clientes.map((cliente: ClienteSelectItem) => (
-                  <SelectItem key={cliente.id}>
+                  <SelectItem key={cliente.id} textValue={cliente.nome}>
                     <div className="flex items-center gap-2">
                       {cliente.tipoPessoa === TipoPessoa.JURIDICA ? (
                         <Building2 className="h-4 w-4 text-default-400" />
@@ -363,7 +399,7 @@ export default function NovaProcuracaoPage() {
               isLoading={isLoadingModelos}
               label="Modelo de Procuração"
               placeholder="Selecione um modelo (opcional)"
-              selectedKeys={formData.modeloId ? [formData.modeloId] : []}
+              selectedKeys={selectedModeloKeys}
               onSelectionChange={(keys) => {
                 const [key] = Array.from(keys);
 
@@ -374,7 +410,7 @@ export default function NovaProcuracaoPage() {
               }}
             >
               {(modelos ?? []).map((modelo: ModeloSelectItem) => (
-                <SelectItem key={modelo.id}>
+                <SelectItem key={modelo.id} textValue={modelo.nome}>
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-default-700">
                       {modelo.nome}
@@ -431,7 +467,10 @@ export default function NovaProcuracaoPage() {
               onSelectionChange={handleProcessoSelectionChange}
             >
               {(processosDoCliente ?? []).map((processo: ProcessoDTO) => (
-                <SelectItem key={processo.id}>
+                <SelectItem
+                  key={processo.id}
+                  textValue={`${processo.numero}${processo.titulo ? ` - ${processo.titulo}` : ""}`}
+                >
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-default-700">
                       {processo.numero}
@@ -456,7 +495,13 @@ export default function NovaProcuracaoPage() {
               onSelectionChange={handleAdvogadoSelectionChange}
             >
               {(advogados ?? []).map((advogado: AdvogadoSelectItem) => (
-                <SelectItem key={advogado.id}>
+                <SelectItem
+                  key={advogado.id}
+                  textValue={
+                    `${advogado.usuario.firstName ?? ""} ${advogado.usuario.lastName ?? ""}`.trim() ||
+                    advogado.usuario.email
+                  }
+                >
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-default-700">
                       {`${advogado.usuario.firstName ?? ""} ${advogado.usuario.lastName ?? ""}`.trim() ||
@@ -496,17 +541,17 @@ export default function NovaProcuracaoPage() {
                   }));
                 }}
               >
-                <SelectItem key={ProcuracaoStatus.RASCUNHO}>
+                <SelectItem key={ProcuracaoStatus.RASCUNHO} textValue="Rascunho">
                   Rascunho
                 </SelectItem>
-                <SelectItem key={ProcuracaoStatus.PENDENTE_ASSINATURA}>
+                <SelectItem key={ProcuracaoStatus.PENDENTE_ASSINATURA} textValue="Pendente assinatura">
                   Pendente assinatura
                 </SelectItem>
-                <SelectItem key={ProcuracaoStatus.VIGENTE}>Vigente</SelectItem>
-                <SelectItem key={ProcuracaoStatus.REVOGADA}>
+                <SelectItem key={ProcuracaoStatus.VIGENTE} textValue="Vigente">Vigente</SelectItem>
+                <SelectItem key={ProcuracaoStatus.REVOGADA} textValue="Revogada">
                   Revogada
                 </SelectItem>
-                <SelectItem key={ProcuracaoStatus.EXPIRADA}>
+                <SelectItem key={ProcuracaoStatus.EXPIRADA} textValue="Expirada">
                   Expirada
                 </SelectItem>
               </Select>
@@ -526,20 +571,19 @@ export default function NovaProcuracaoPage() {
                   }));
                 }}
               >
-                <SelectItem key={ProcuracaoEmitidaPor.ESCRITORIO}>
+                <SelectItem key={ProcuracaoEmitidaPor.ESCRITORIO} textValue="Escritório">
                   Escritório
                 </SelectItem>
-                <SelectItem key={ProcuracaoEmitidaPor.ADVOGADO}>
+                <SelectItem key={ProcuracaoEmitidaPor.ADVOGADO} textValue="Advogado">
                   Advogado
                 </SelectItem>
               </Select>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input
+              <DateInput
                 label="Data de emissão"
                 startContent={<Calendar className="h-4 w-4 text-default-400" />}
-                type="date"
                 value={formatDateInput(formData.emitidaEm)}
                 onValueChange={(value) =>
                   setFormData((prev) => ({
@@ -549,10 +593,9 @@ export default function NovaProcuracaoPage() {
                 }
               />
 
-              <Input
+              <DateInput
                 label="Válida até"
                 startContent={<Calendar className="h-4 w-4 text-default-400" />}
-                type="date"
                 value={formatDateInput(formData.validaAte)}
                 onValueChange={(value) =>
                   setFormData((prev) => ({
@@ -564,10 +607,9 @@ export default function NovaProcuracaoPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input
+              <DateInput
                 label="Revogada em"
                 startContent={<Calendar className="h-4 w-4 text-default-400" />}
-                type="date"
                 value={formatDateInput(formData.revogadaEm)}
                 onValueChange={(value) =>
                   setFormData((prev) => ({
@@ -577,10 +619,9 @@ export default function NovaProcuracaoPage() {
                 }
               />
 
-              <Input
+              <DateInput
                 label="Assinada pelo cliente em"
                 startContent={<Calendar className="h-4 w-4 text-default-400" />}
-                type="date"
                 value={formatDateInput(formData.assinadaPeloClienteEm)}
                 onValueChange={(value) =>
                   setFormData((prev) => ({

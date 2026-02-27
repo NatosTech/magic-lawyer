@@ -5,7 +5,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Divider } from "@heroui/divider";
 import {
   ArrowLeft,
@@ -17,7 +17,7 @@ import {
   Building2,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Spinner } from "@heroui/spinner";
 
@@ -32,6 +32,8 @@ import {
   useProcuracoesDisponiveis,
 } from "@/app/hooks/use-clientes";
 import { useDadosBancariosAtivos } from "@/app/hooks/use-dados-bancarios";
+import { Select, SelectItem } from "@heroui/react";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 
 export default function NovoContratoPage() {
   const formatBancoLabel = (conta: any) => {
@@ -72,6 +74,23 @@ export default function NovoContratoPage() {
     useProcuracoesDisponiveis(formData.clienteId || null);
   const { dadosBancarios, isLoading: isLoadingDadosBancarios } =
     useDadosBancariosAtivos();
+  const clienteKeys = useMemo(
+    () => new Set((clientes || []).map((cliente: any) => cliente.id)),
+    [clientes],
+  );
+  const dadosBancariosKeys = useMemo(
+    () => new Set((dadosBancarios || []).map((conta: any) => conta.id)),
+    [dadosBancarios],
+  );
+  const selectedClienteKeys =
+    formData.clienteId && clienteKeys.has(formData.clienteId)
+      ? [formData.clienteId]
+      : [];
+  const selectedDadosBancariosKeys =
+    formData.dadosBancariosId &&
+    dadosBancariosKeys.has(formData.dadosBancariosId)
+      ? [formData.dadosBancariosId]
+      : [];
 
   if (isLoadingClientes && !clienteIdParam) {
     return (
@@ -174,7 +193,7 @@ export default function NovoContratoPage() {
                 description="Selecione o cliente vinculado a este contrato"
                 label="Cliente *"
                 placeholder="Selecione um cliente"
-                selectedKeys={formData.clienteId ? [formData.clienteId] : []}
+                selectedKeys={selectedClienteKeys}
                 startContent={<User className="h-4 w-4 text-default-400" />}
                 onSelectionChange={(keys) =>
                   setFormData((prev) => ({
@@ -258,13 +277,13 @@ export default function NovoContratoPage() {
                   }))
                 }
               >
-                <SelectItem key={ContratoStatus.RASCUNHO}>Rascunho</SelectItem>
-                <SelectItem key={ContratoStatus.ATIVO}>Ativo</SelectItem>
-                <SelectItem key={ContratoStatus.SUSPENSO}>Suspenso</SelectItem>
-                <SelectItem key={ContratoStatus.CANCELADO}>
+                <SelectItem key={ContratoStatus.RASCUNHO} textValue="Rascunho">Rascunho</SelectItem>
+                <SelectItem key={ContratoStatus.ATIVO} textValue="Ativo">Ativo</SelectItem>
+                <SelectItem key={ContratoStatus.SUSPENSO} textValue="Suspenso">Suspenso</SelectItem>
+                <SelectItem key={ContratoStatus.CANCELADO} textValue="Cancelado">
                   Cancelado
                 </SelectItem>
-                <SelectItem key={ContratoStatus.ENCERRADO}>
+                <SelectItem key={ContratoStatus.ENCERRADO} textValue="Encerrado">
                   Encerrado
                 </SelectItem>
               </Select>
@@ -291,9 +310,7 @@ export default function NovoContratoPage() {
               isLoading={isLoadingDadosBancarios}
               label="Conta Bancária para Recebimento"
               placeholder="Selecione uma conta (opcional)"
-              selectedKeys={
-                formData.dadosBancariosId ? [formData.dadosBancariosId] : []
-              }
+              selectedKeys={selectedDadosBancariosKeys}
               onSelectionChange={(keys) =>
                 setFormData((prev) => ({
                   ...prev,
@@ -336,47 +353,31 @@ export default function NovoContratoPage() {
               })}
             </Select>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input
-                label="Data de Início"
-                startContent={<Calendar className="h-4 w-4 text-default-400" />}
-                type="date"
-                value={
-                  formData.dataInicio
-                    ? typeof formData.dataInicio === "string"
-                      ? formData.dataInicio.split("T")[0]
-                      : new Date(formData.dataInicio)
-                          .toISOString()
-                          .split("T")[0]
-                    : ""
-                }
-                onValueChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    dataInicio: value || undefined,
-                  }))
-                }
-              />
-
-              <Input
-                label="Data de Término"
-                startContent={<Calendar className="h-4 w-4 text-default-400" />}
-                type="date"
-                value={
-                  formData.dataFim
-                    ? typeof formData.dataFim === "string"
-                      ? formData.dataFim.split("T")[0]
-                      : new Date(formData.dataFim).toISOString().split("T")[0]
-                    : ""
-                }
-                onValueChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    dataFim: value || undefined,
-                  }))
-                }
-              />
-            </div>
+            <DateRangeInput
+              label="Período do contrato"
+              startContent={<Calendar className="h-4 w-4 text-default-400" />}
+              startValue={
+                formData.dataInicio
+                  ? typeof formData.dataInicio === "string"
+                    ? formData.dataInicio.split("T")[0]
+                    : new Date(formData.dataInicio).toISOString().split("T")[0]
+                  : ""
+              }
+              endValue={
+                formData.dataFim
+                  ? typeof formData.dataFim === "string"
+                    ? formData.dataFim.split("T")[0]
+                    : new Date(formData.dataFim).toISOString().split("T")[0]
+                  : ""
+              }
+              onRangeChange={({ start, end }) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  dataInicio: start || undefined,
+                  dataFim: end || undefined,
+                }))
+              }
+             />
           </div>
 
           <Divider />

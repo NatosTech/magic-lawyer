@@ -5,7 +5,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Checkbox } from "@heroui/checkbox";
 import { Divider } from "@heroui/divider";
 import {
@@ -24,15 +24,17 @@ import {
   Clock,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Spinner } from "@heroui/spinner";
+import useSWR from "swr";
 
 import { title } from "@/components/primitives";
 import {
   createProcesso,
   type ProcessoCreateInput,
 } from "@/app/actions/processos";
+import { listAreasProcesso } from "@/app/actions/areas-processo";
 import {
   ProcessoStatus,
   ProcessoFase,
@@ -40,6 +42,8 @@ import {
 } from "@/generated/prisma";
 import { useClientesParaSelect } from "@/app/hooks/use-clientes";
 import { useAdvogadosParaSelect } from "@/app/hooks/use-advogados-select";
+import { Select, SelectItem } from "@heroui/react";
+import { DateInput } from "@/components/ui/date-input";
 
 export default function NovoProcessoPage() {
   const router = useRouter();
@@ -69,6 +73,41 @@ export default function NovoProcessoPage() {
   // Buscar clientes para o select (apenas se não veio de um cliente)
   const { clientes, isLoading: isLoadingClientes } = useClientesParaSelect();
   const { advogados, isLoading: isLoadingAdvogados } = useAdvogadosParaSelect();
+  const { data: areasData, isLoading: isLoadingAreas } = useSWR(
+    "areas-processo-select",
+    () => listAreasProcesso({ ativo: true }),
+  );
+  const areas = useMemo(() => {
+    if (!areasData?.success) {
+      return [];
+    }
+
+    return areasData.areas ?? [];
+  }, [areasData]);
+
+  const clienteKeys = useMemo(
+    () => new Set((clientes || []).map((cliente) => cliente.id)),
+    [clientes],
+  );
+  const areaKeys = useMemo(
+    () => new Set((areas || []).map((area) => area.id)),
+    [areas],
+  );
+  const advogadoKeys = useMemo(
+    () => new Set((advogados || []).map((advogado) => advogado.id)),
+    [advogados],
+  );
+  const selectedClienteKeys =
+    formData.clienteId && clienteKeys.has(formData.clienteId)
+      ? [formData.clienteId]
+      : [];
+  const selectedAdvogadoKeys =
+    formData.advogadoResponsavelId &&
+    advogadoKeys.has(formData.advogadoResponsavelId)
+      ? [formData.advogadoResponsavelId]
+      : [];
+  const selectedAreaKeys =
+    formData.areaId && areaKeys.has(formData.areaId) ? [formData.areaId] : [];
 
   const fases = Object.values(ProcessoFase);
   const graus = Object.values(ProcessoGrau);
@@ -242,10 +281,10 @@ export default function NovoProcessoPage() {
             {!clienteIdParam && (
               <Select
                 isRequired
-                description="Selecione o cliente vinculado a este processo"
+                description="Cliente principal do processo. Ele será incluído automaticamente como parte autora."
                 label="Cliente *"
                 placeholder="Selecione um cliente"
-                selectedKeys={formData.clienteId ? [formData.clienteId] : []}
+                selectedKeys={selectedClienteKeys}
                 startContent={<User className="h-4 w-4 text-default-400" />}
                 onSelectionChange={(keys) =>
                   setFormData((prev) => ({
@@ -280,14 +319,12 @@ export default function NovoProcessoPage() {
 
             {/* Select de Advogado Responsável */}
             <Select
-              description="Selecione o advogado responsável por este processo"
+              description="Pessoa que lidera o caso e recebe a responsabilidade principal."
+              isLoading={isLoadingAdvogados}
+              isClearable
               label="Advogado Responsável"
               placeholder="Selecione um advogado (opcional)"
-              selectedKeys={
-                formData.advogadoResponsavelId
-                  ? [formData.advogadoResponsavelId]
-                  : []
-              }
+              selectedKeys={selectedAdvogadoKeys}
               startContent={<Scale className="h-4 w-4 text-default-400" />}
               onSelectionChange={(keys) =>
                 setFormData((prev) => ({
@@ -318,7 +355,7 @@ export default function NovoProcessoPage() {
             <div className="grid gap-4 sm:grid-cols-3">
               <Input
                 isRequired
-                description="Número CNJ do processo"
+                description="Identificador principal do processo para busca e controle interno."
                 label="Número do Processo *"
                 placeholder="0000000-00.0000.0.00.0000"
                 value={formData.numero}
@@ -338,7 +375,7 @@ export default function NovoProcessoPage() {
               />
 
               <Input
-                description="Número interno do escritório"
+                description="Código interno para organização do escritório (opcional)."
                 label="Número Interno"
                 placeholder="Ex: 2024/001"
                 value={formData.numeroInterno || ""}
@@ -349,6 +386,7 @@ export default function NovoProcessoPage() {
             </div>
 
             <Input
+              description="Nome curto para identificar rapidamente o caso nas listagens."
               label="Título"
               placeholder="Ex: Ação de Despejo, Divórcio, etc."
               value={formData.titulo || ""}
@@ -358,6 +396,7 @@ export default function NovoProcessoPage() {
             />
 
             <Textarea
+              description="Resumo do contexto, estratégia ou observações importantes do caso."
               label="Descrição"
               minRows={3}
               placeholder="Resumo do caso..."
@@ -376,8 +415,9 @@ export default function NovoProcessoPage() {
               ⚖️ Classificação e Status
             </h3>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Select
+                description="Situação atual do processo no escritório."
                 label="Status"
                 placeholder="Selecione o status"
                 selectedKeys={formData.status ? [formData.status] : []}
@@ -388,20 +428,21 @@ export default function NovoProcessoPage() {
                   }))
                 }
               >
-                <SelectItem key={ProcessoStatus.RASCUNHO}>Rascunho</SelectItem>
-                <SelectItem key={ProcessoStatus.EM_ANDAMENTO}>
+                <SelectItem key={ProcessoStatus.RASCUNHO} textValue="Rascunho">Rascunho</SelectItem>
+                <SelectItem key={ProcessoStatus.EM_ANDAMENTO} textValue="Em Andamento">
                   Em Andamento
                 </SelectItem>
-                <SelectItem key={ProcessoStatus.SUSPENSO}>Suspenso</SelectItem>
-                <SelectItem key={ProcessoStatus.ENCERRADO}>
+                <SelectItem key={ProcessoStatus.SUSPENSO} textValue="Suspenso">Suspenso</SelectItem>
+                <SelectItem key={ProcessoStatus.ENCERRADO} textValue="Encerrado">
                   Encerrado
                 </SelectItem>
-                <SelectItem key={ProcessoStatus.ARQUIVADO}>
+                <SelectItem key={ProcessoStatus.ARQUIVADO} textValue="Arquivado">
                   Arquivado
                 </SelectItem>
               </Select>
 
               <Input
+                description="Classe jurídica informada no tribunal (ex.: Procedimento Comum)."
                 label="Classe Processual"
                 placeholder="Ex: Procedimento Comum"
                 value={formData.classeProcessual || ""}
@@ -409,10 +450,34 @@ export default function NovoProcessoPage() {
                   setFormData((prev) => ({ ...prev, classeProcessual: value }))
                 }
               />
+
+              <Select
+                description="Classificação por área de atuação (opcional). Configure áreas em Configurações."
+                isClearable
+                isLoading={isLoadingAreas}
+                label="Área do processo"
+                placeholder="Selecione uma área"
+                selectedKeys={selectedAreaKeys}
+                onSelectionChange={(keys) => {
+                  const selectedKey = Array.from(keys)[0] as string | undefined;
+
+                  setFormData((prev) => ({
+                    ...prev,
+                    areaId: selectedKey || undefined,
+                  }));
+                }}
+              >
+                {areas.map((area) => (
+                  <SelectItem key={area.id} textValue={area.nome}>
+                    {area.nome}
+                  </SelectItem>
+                ))}
+              </Select>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Select
+                description="Etapa do processo para orientar prazos e prioridade."
                 label="Fase processual"
                 placeholder="Selecione a fase"
                 selectedKeys={formData.fase ? [formData.fase] : []}
@@ -427,11 +492,12 @@ export default function NovoProcessoPage() {
                 }}
               >
                 {fases.map((fase) => (
-                  <SelectItem key={fase}>{getFaseLabel(fase)}</SelectItem>
+                  <SelectItem key={fase} textValue={getFaseLabel(fase)}>{getFaseLabel(fase)}</SelectItem>
                 ))}
               </Select>
 
               <Select
+                description="Instância de tramitação (1º grau, 2º grau ou tribunal superior)."
                 label="Grau"
                 placeholder="Selecione o grau"
                 selectedKeys={formData.grau ? [formData.grau] : []}
@@ -446,12 +512,13 @@ export default function NovoProcessoPage() {
                 }}
               >
                 {graus.map((grau) => (
-                  <SelectItem key={grau}>{getGrauLabel(grau)}</SelectItem>
+                  <SelectItem key={grau} textValue={getGrauLabel(grau)}>{getGrauLabel(grau)}</SelectItem>
                 ))}
               </Select>
             </div>
 
             <Input
+              description="Câmara, turma ou órgão responsável pelo julgamento."
               label="Órgão Julgador"
               placeholder="Ex: 2ª Câmara de Direito Público"
               startContent={<Landmark className="h-4 w-4 text-default-400" />}
@@ -463,6 +530,7 @@ export default function NovoProcessoPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
+                description="Procedimento aplicado ao caso (ordinário, sumário, especial etc.)."
                 label="Rito"
                 placeholder="Ex: Ordinário, Sumário"
                 value={formData.rito || ""}
@@ -472,6 +540,7 @@ export default function NovoProcessoPage() {
               />
 
               <Input
+                description="Valor econômico da ação, quando houver."
                 label="Valor da Causa (R$)"
                 placeholder="0,00"
                 startContent={
@@ -511,6 +580,7 @@ export default function NovoProcessoPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Input
+                description="Cidade/comarca em que o processo tramita."
                 label="Comarca"
                 placeholder="Ex: São Paulo"
                 startContent={<MapPin className="h-4 w-4 text-default-400" />}
@@ -521,6 +591,7 @@ export default function NovoProcessoPage() {
               />
 
               <Input
+                description="Foro ou regional do tribunal."
                 label="Foro"
                 placeholder="Ex: Foro Central"
                 value={formData.foro || ""}
@@ -531,6 +602,7 @@ export default function NovoProcessoPage() {
             </div>
 
             <Input
+              description="Vara ou juizado específico onde o processo corre."
               label="Vara"
               placeholder="Ex: 1ª Vara Cível"
               value={formData.vara || ""}
@@ -549,10 +621,10 @@ export default function NovoProcessoPage() {
             </h3>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input
+              <DateInput
+                description="Data oficial de distribuição do processo."
                 label="Data de Distribuição"
                 startContent={<Calendar className="h-4 w-4 text-default-400" />}
-                type="date"
                 value={
                   formData.dataDistribuicao
                     ? new Date(formData.dataDistribuicao)
@@ -568,10 +640,10 @@ export default function NovoProcessoPage() {
                 }
               />
 
-              <Input
+              <DateInput
+                description="Próximo prazo estratégico para acompanhamento da equipe."
                 label="Prazo Principal"
                 startContent={<Clock className="h-4 w-4 text-default-400" />}
-                type="date"
                 value={
                   formData.prazoPrincipal
                     ? new Date(formData.prazoPrincipal)
@@ -589,9 +661,11 @@ export default function NovoProcessoPage() {
             </div>
 
             <Input
-              label="Pasta Compartilhada"
-              placeholder="URL da pasta compartilhada com o cliente"
+              description="Cole aqui o link da pasta de documentos do caso (Google Drive, OneDrive etc.)."
+              label="Pasta de Documentos Compartilhada"
+              placeholder="Ex: https://drive.google.com/drive/folders/..."
               startContent={<Link2 className="h-4 w-4 text-default-400" />}
+              type="url"
               value={formData.pastaCompartilhadaUrl || ""}
               onValueChange={(value) =>
                 setFormData((prev) => ({

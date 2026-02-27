@@ -2,20 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  Textarea,
-  Select,
-  SelectItem,
-  Chip,
-  Spinner,
-  DatePicker,
-} from "@heroui/react";
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea, Chip, Spinner, Select, SelectItem } from "@heroui/react";
 import { Calendar, MapPin, Users, FileText, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { parseAbsoluteToLocal } from "@internationalized/date";
@@ -28,6 +15,7 @@ import {
 import { useEventoFormData } from "@/app/hooks/use-eventos";
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { Evento, EventoTipo, EventoStatus } from "@/generated/prisma";
+import { DateInput } from "@/components/ui/date-input";
 
 // Interface específica para o formulário (com DateValue para datas)
 interface FormEventoData {
@@ -193,6 +181,32 @@ export default function EventoForm({
       }) || []
     );
   }, [selectData?.processos, formData.clienteId, initialFormData.clienteId]);
+
+  const clienteKeys = useMemo(
+    () => new Set((selectData?.clientes || []).map((cliente) => cliente.id)),
+    [selectData?.clientes],
+  );
+  const processoKeys = useMemo(
+    () => new Set(processosFiltrados.map((processo) => processo.id)),
+    [processosFiltrados],
+  );
+  const advogadoKeys = useMemo(
+    () => new Set((selectData?.advogados || []).map((advogado) => advogado.id)),
+    [selectData?.advogados],
+  );
+  const selectedClienteKeys =
+    formData.clienteId && clienteKeys.has(formData.clienteId)
+      ? [formData.clienteId]
+      : [];
+  const selectedProcessoKeys =
+    formData.processoId && processoKeys.has(formData.processoId)
+      ? [formData.processoId]
+      : [];
+  const selectedAdvogadoKeys =
+    formData.advogadoResponsavelId &&
+    advogadoKeys.has(formData.advogadoResponsavelId)
+      ? [formData.advogadoResponsavelId]
+      : [];
 
   // Inicializar formData quando modal abre ou evento muda
   useEffect(() => {
@@ -415,7 +429,7 @@ export default function EventoForm({
                     }}
                   >
                     {tiposEvento.map((tipo) => (
-                      <SelectItem key={tipo.key}>{tipo.label}</SelectItem>
+                      <SelectItem key={tipo.key} textValue={tipo.label}>{tipo.label}</SelectItem>
                     ))}
                   </Select>
 
@@ -434,14 +448,14 @@ export default function EventoForm({
                     }}
                   >
                     {statusEvento.map((status) => (
-                      <SelectItem key={status.key}>{status.label}</SelectItem>
+                      <SelectItem key={status.key} textValue={status.label}>{status.label}</SelectItem>
                     ))}
                   </Select>
                 </div>
 
                 {/* Data e Hora */}
                 <div className="grid grid-cols-2 gap-4">
-                  <DatePicker
+                  <DateInput
                     hideTimeZone
                     isRequired
                     showMonthAndYearPickers
@@ -450,9 +464,9 @@ export default function EventoForm({
                     granularity="minute"
                     isInvalid={!!errors.dataInicio}
                     label="Data e Hora de Início"
-                    value={formData.dataInicio}
+                    dateValue={formData.dataInicio}
                     variant="bordered"
-                    onChange={(value) => {
+                    onDateChange={(value) => {
                       setFormData({ ...formData, dataInicio: value });
                       if (errors.dataInicio) {
                         setErrors({ ...errors, dataInicio: "" });
@@ -460,7 +474,7 @@ export default function EventoForm({
                     }}
                   />
 
-                  <DatePicker
+                  <DateInput
                     hideTimeZone
                     isRequired
                     showMonthAndYearPickers
@@ -469,9 +483,9 @@ export default function EventoForm({
                     granularity="minute"
                     isInvalid={!!errors.dataFim}
                     label="Data e Hora de Fim"
-                    value={formData.dataFim}
+                    dateValue={formData.dataFim}
                     variant="bordered"
-                    onChange={(value) => {
+                    onDateChange={(value) => {
                       setFormData({ ...formData, dataFim: value });
                       if (errors.dataFim) {
                         setErrors({ ...errors, dataFim: "" });
@@ -504,9 +518,7 @@ export default function EventoForm({
                     color="secondary"
                     label="Cliente"
                     placeholder="Selecione um cliente"
-                    selectedKeys={
-                      formData.clienteId ? [formData.clienteId] : []
-                    }
+                    selectedKeys={selectedClienteKeys}
                     onSelectionChange={(keys) => {
                       const selectedKey = Array.from(keys)[0] as string;
 
@@ -518,7 +530,7 @@ export default function EventoForm({
                     }}
                   >
                     {selectData?.clientes?.map((cliente) => (
-                      <SelectItem key={cliente.id}>{cliente.nome}</SelectItem>
+                      <SelectItem key={cliente.id} textValue={cliente.nome}>{cliente.nome}</SelectItem>
                     )) || []}
                   </Select>
 
@@ -531,9 +543,7 @@ export default function EventoForm({
                         ? "Selecione um processo"
                         : "Primeiro selecione um cliente"
                     }
-                    selectedKeys={
-                      formData.processoId ? [formData.processoId] : []
-                    }
+                    selectedKeys={selectedProcessoKeys}
                     onSelectionChange={(keys) => {
                       const selectedKey = Array.from(keys)[0] as string;
 
@@ -541,7 +551,7 @@ export default function EventoForm({
                     }}
                   >
                     {processosFiltrados.map((processo) => (
-                      <SelectItem key={processo.id}>
+                      <SelectItem key={processo.id} textValue={processo.numero}>
                         {processo.numero}
                       </SelectItem>
                     ))}
@@ -551,11 +561,7 @@ export default function EventoForm({
                     color="success"
                     label="Advogado Responsável"
                     placeholder="Selecione um advogado"
-                    selectedKeys={
-                      formData.advogadoResponsavelId
-                        ? [formData.advogadoResponsavelId]
-                        : []
-                    }
+                    selectedKeys={selectedAdvogadoKeys}
                     onSelectionChange={(keys) => {
                       const selectedKey = Array.from(keys)[0] as string;
 
@@ -566,7 +572,8 @@ export default function EventoForm({
                     }}
                   >
                     {selectData?.advogados?.map((advogado) => (
-                      <SelectItem key={advogado.id}>
+                      <SelectItem key={advogado.id} textValue={`${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() ||
+                          advogado.usuario.email}>
                         {`${advogado.usuario.firstName || ""} ${advogado.usuario.lastName || ""}`.trim() ||
                           advogado.usuario.email}
                       </SelectItem>
@@ -644,7 +651,7 @@ export default function EventoForm({
                   }}
                 >
                   {lembretes.map((lembrete) => (
-                    <SelectItem key={lembrete.key.toString()}>
+                    <SelectItem key={lembrete.key.toString()} textValue={lembrete.label}>
                       {lembrete.label}
                     </SelectItem>
                   ))}

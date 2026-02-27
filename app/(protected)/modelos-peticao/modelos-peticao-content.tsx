@@ -6,7 +6,7 @@ import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Spinner } from "@heroui/spinner";
 import {
   Dropdown,
@@ -50,6 +50,7 @@ import {
   toggleModeloPeticaoStatus,
   type ModeloPeticaoFilters,
 } from "@/app/actions/modelos-peticao";
+import { Select, SelectItem } from "@heroui/react";
 
 export default function ModelosPeticaoPage() {
   const router = useRouter();

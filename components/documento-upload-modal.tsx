@@ -1,17 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@heroui/modal";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Upload, FileText, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,6 +13,7 @@ import {
   useUploadDocumentoProcuracao,
   TIPOS_DOCUMENTO,
 } from "@/app/hooks/use-documentos-procuracao";
+import { Select, SelectItem } from "@heroui/react";
 
 interface DocumentoUploadModalProps {
   isOpen: boolean;

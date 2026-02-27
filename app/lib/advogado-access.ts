@@ -4,7 +4,17 @@ interface SessionLike {
   user?: {
     id?: string;
     tenantId?: string;
+    role?: string;
   };
+}
+
+const NO_ACCESS_ADVOGADO_ID = "__NO_ADVOGADO_ACCESS__";
+const PRIVILEGED_ROLES = new Set(["ADMIN", "SUPER_ADMIN"]);
+
+function isPrivilegedUser(session: SessionLike): boolean {
+  const role = session?.user?.role;
+
+  return typeof role === "string" && PRIVILEGED_ROLES.has(role);
 }
 
 export async function getAdvogadoIdFromSession(
@@ -49,6 +59,10 @@ export async function getLinkedAdvogadoIds(
 export async function getAccessibleAdvogadoIds(
   session: SessionLike,
 ): Promise<string[]> {
+  if (isPrivilegedUser(session)) {
+    return [];
+  }
+
   const ids = new Set<string>();
 
   const self = await getAdvogadoIdFromSession(session);
@@ -65,5 +79,14 @@ export async function getAccessibleAdvogadoIds(
     }
   }
 
-  return Array.from(ids);
+  const accessibleIds = Array.from(ids);
+
+  if (accessibleIds.length > 0) {
+    return accessibleIds;
+  }
+
+  // Escopo estrito: colaborador sem vínculo não acessa carteira de advogados.
+  // Retornamos um sentinela para que os filtros `in: [...]` dos módulos
+  // resultem em lista vazia, em vez de expandir para acesso total.
+  return [NO_ACCESS_ADVOGADO_ID];
 }

@@ -3,23 +3,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Textarea,
-  Chip,
-  Skeleton,
-  Tooltip,
-} from "@heroui/react";
+  Card, CardBody, CardHeader, Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Chip, Skeleton, Tooltip, Select, SelectItem } from "@heroui/react";
 import { toast } from "sonner";
 import {
   Calendar,
@@ -49,6 +33,7 @@ import {
 import { getEstadosBrasilCached } from "@/lib/api/brazil-states";
 import { TipoFeriado } from "@/generated/prisma";
 import { title, subtitle } from "@/components/primitives";
+import { DateInput } from "@/components/ui/date-input";
 
 // ============================================
 // TIPOS
@@ -386,7 +371,9 @@ export default function FeriadosPage() {
                 currentYear + 1,
                 currentYear + 2,
               ].map((ano) => (
-                <SelectItem key={ano.toString()}>{ano}</SelectItem>
+                <SelectItem key={ano.toString()} textValue={ano.toString()}>
+                  {ano}
+                </SelectItem>
               ))}
             </Select>
             <Button
@@ -408,7 +395,7 @@ export default function FeriadosPage() {
                 onChange={(e) => handleFilterChange("tipo", e.target.value)}
               >
                 {tipos.map((tipo) => (
-                  <SelectItem key={tipo}>{getTipoLabel(tipo)}</SelectItem>
+                  <SelectItem key={tipo} textValue={getTipoLabel(tipo)}>{getTipoLabel(tipo)}</SelectItem>
                 ))}
               </Select>
 
@@ -419,7 +406,7 @@ export default function FeriadosPage() {
                 onChange={(e) => handleFilterChange("uf", e.target.value)}
               >
                 {estados.map((estado) => (
-                  <SelectItem key={estado.sigla}>{estado.nome}</SelectItem>
+                  <SelectItem key={estado.sigla} textValue={estado.nome}>{estado.nome}</SelectItem>
                 ))}
               </Select>
 
@@ -725,16 +712,15 @@ function FeriadoModal({
               }
             />
 
-            <Input
+            <DateInput
               isRequired
               isReadOnly={isReadOnly}
               label="Data"
-              type="date"
               value={formData.data}
               onValueChange={(value) =>
                 setFormData({ ...formData, data: value })
               }
-            />
+             />
 
             <Select
               isRequired
@@ -747,7 +733,7 @@ function FeriadoModal({
               }
             >
               {tipos.map((tipo) => (
-                <SelectItem key={tipo}>{getTipoLabel(tipo)}</SelectItem>
+                <SelectItem key={tipo} textValue={getTipoLabel(tipo)}>{getTipoLabel(tipo)}</SelectItem>
               ))}
             </Select>
 
@@ -763,7 +749,7 @@ function FeriadoModal({
                 }
               >
                 {estados.map((estado) => (
-                  <SelectItem key={estado.sigla}>{estado.nome}</SelectItem>
+                  <SelectItem key={estado.sigla} textValue={estado.nome}>{estado.nome}</SelectItem>
                 ))}
               </Select>
             )}

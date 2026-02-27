@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import {
   Modal,
   ModalContent,
@@ -50,6 +50,7 @@ import {
 } from "@/app/actions/enderecos";
 import { useEstadosBrasil } from "@/hooks/use-brazil-apis";
 import { type CepData } from "@/types/brazil";
+import { Select, SelectItem } from "@heroui/react";
 
 // Opções de tipo de endereço para funcionários do escritório
 const tipoEnderecoEscritorioOptions = [
@@ -479,7 +480,7 @@ export function EnderecoManager({ className, userId }: EnderecoManagerProps) {
                 }}
               >
                 {getTipoEnderecoOptions().map((option) => (
-                  <SelectItem key={option.key}>{option.label}</SelectItem>
+                  <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
                 ))}
               </Select>
             </div>

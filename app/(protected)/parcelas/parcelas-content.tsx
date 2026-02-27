@@ -2,30 +2,7 @@
 
 import { useState } from "react";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Chip,
-  Spinner,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Textarea,
-  Tabs,
-  Tab,
-  DateRangePicker,
-  Switch,
-} from "@heroui/react";
+  Card, CardBody, CardHeader, Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip, Spinner, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Textarea, Tabs, Tab, Switch, Select, SelectItem } from "@heroui/react";
 import {
   PlusIcon,
   EyeIcon,
@@ -71,6 +48,8 @@ import { title, subtitle } from "@/components/primitives";
 import { DadosBancariosParcela } from "@/components/dados-bancarios-parcela";
 // import { ComprovantePagamentoUpload } from "@/components/comprovante-pagamento-upload";
 import { ValidacaoContaPrincipal } from "@/components/validacao-conta-principal";
+import { DateInput } from "@/components/ui/date-input";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 import {
   ContratoParcela,
   ContratoParcelaStatus,
@@ -678,7 +657,7 @@ export default function ParcelasContratoPage() {
                       </div>
                     </CardHeader>
                     <CardBody className="pt-0">
-                      <DateRangePicker
+                      <DateRangeInput
                         label="Período de vencimento"
                         size="sm"
                         startContent={
@@ -688,14 +667,12 @@ export default function ParcelasContratoPage() {
                           />
                         }
                         variant="bordered"
-                        onChange={(range: any) => {
-                          if (range && range.start && range.end) {
+                        onRangeChange={({ start, end }) => {
+                          if (start && end) {
                             setFilters({
                               ...filters,
-                              dataVencimentoInicio: new Date(
-                                range.start.toString(),
-                              ),
-                              dataVencimentoFim: new Date(range.end.toString()),
+                              dataVencimentoInicio: new Date(`${start}T00:00:00`),
+                              dataVencimentoFim: new Date(`${end}T23:59:59`),
                             });
                           } else {
                             setFilters({
@@ -1321,13 +1298,12 @@ export default function ParcelasContratoPage() {
                     </h3>
 
                     <div className="space-y-4">
-                      <Input
+                      <DateInput
                         isRequired
                         label="Data de Vencimento"
                         startContent={
                           <CalendarIcon className="text-orange-500" size={16} />
                         }
-                        type="date"
                         value={
                           formData.dataVencimento.toISOString().split("T")[0]
                         }
@@ -1340,7 +1316,7 @@ export default function ParcelasContratoPage() {
                       />
 
                       {formData.status === "PAGA" && (
-                        <Input
+                        <DateInput
                           label="Data de Pagamento"
                           startContent={
                             <CheckCircleIcon
@@ -1348,7 +1324,6 @@ export default function ParcelasContratoPage() {
                               size={16}
                             />
                           }
-                          type="date"
                           value={
                             formData.dataPagamento
                               ? formData.dataPagamento

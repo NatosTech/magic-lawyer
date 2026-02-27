@@ -1,20 +1,14 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction, } from "react";
 import useSWR from "swr";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
-import { Skeleton, Tooltip } from "@heroui/react";
+
+import { Skeleton, Tooltip, Select, SelectItem } from "@heroui/react";
 import {
   Table,
   TableBody,
@@ -77,6 +71,7 @@ import {
   TenantStatus,
   UserRole,
 } from "@/generated/prisma";
+import { DateInput } from "@/components/ui/date-input";
 
 interface TenantManagementContentProps {
   tenantId: string;
@@ -758,7 +753,7 @@ function OverviewTab({
               }}
             >
               {timezoneOptions.map((tz) => (
-                <SelectItem key={tz}>{tz}</SelectItem>
+                <SelectItem key={tz} textValue={tz}>{tz}</SelectItem>
               ))}
             </Select>
             <Input
@@ -965,12 +960,11 @@ function FinanceTab({
               }}
             >
               {subscriptionStatusOptions.map((option) => (
-                <SelectItem key={option.value}>{option.label}</SelectItem>
+                <SelectItem key={option.value} textValue={option.label}>{option.label}</SelectItem>
               ))}
             </Select>
-            <Input
+            <DateInput
               label="Término do trial"
-              type="date"
               value={subscriptionForm.trialEndsAt?.slice(0, 10) ?? ""}
               onValueChange={(value) =>
                 setSubscriptionForm((prev) => ({
@@ -978,10 +972,9 @@ function FinanceTab({
                   trialEndsAt: value ? new Date(value).toISOString() : null,
                 }))
               }
-            />
-            <Input
+             />
+            <DateInput
               label="Próxima renovação"
-              type="date"
               value={subscriptionForm.renovaEm?.slice(0, 10) ?? ""}
               onValueChange={(value) =>
                 setSubscriptionForm((prev) => ({
@@ -989,7 +982,7 @@ function FinanceTab({
                   renovaEm: value ? new Date(value).toISOString() : null,
                 }))
               }
-            />
+             />
           </div>
           <div className="flex justify-end">
             <Button

@@ -2,51 +2,11 @@
 
 import { useState, useMemo } from "react";
 import {
-  Calendar,
-  Plus,
-  Clock,
-  MapPin,
-  Users,
-  Edit,
-  Trash2,
-  CheckCircle,
-  MoreVertical,
-  Check,
-  X,
-  HelpCircle,
-  AlertCircle,
-  Info,
-  Filter,
-  Search,
-  CalendarDays,
-  User,
-  Building,
-  Scale,
-  FileText,
-  MapPin as LocationIcon,
-  XCircle,
-  RotateCcw,
-} from "lucide-react";
+  Calendar, Plus, Clock, MapPin, Users, Edit, Trash2, CheckCircle, MoreVertical, Check, X, HelpCircle, AlertCircle, Info, Filter, Search, CalendarDays, User, Building, Scale, FileText, MapPin as LocationIcon, XCircle, RotateCcw, } from "lucide-react";
 import { FaGoogle } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  ButtonGroup,
-  Chip,
-  Spinner,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Tooltip,
-  Input,
-  Select,
-  SelectItem,
-  DateRangePicker,
-} from "@heroui/react";
+  Card, CardBody, CardHeader, Button, ButtonGroup, Chip, Spinner, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Tooltip, Input, Select, SelectItem } from "@heroui/react";
 import { Calendar as CalendarComponent } from "@heroui/react";
 import {
   today,
@@ -75,6 +35,7 @@ import GoogleCalendarStatusCard from "@/components/google-calendar-status";
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { DateUtils } from "@/app/lib/date-utils";
 import { Evento, EventoConfirmacaoStatus } from "@/generated/prisma";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 
 type ViewMode = "calendar" | "list";
 
@@ -903,13 +864,13 @@ export default function AgendaPage() {
                         <CalendarDays className="w-4 h-4" />
                         Período
                       </label>
-                      <DateRangePicker
+                      <DateRangeInput
                         className="w-full"
                         label="Selecione o período"
+                        rangeValue={filtroDataRange}
                         size="sm"
-                        value={filtroDataRange}
                         variant="bordered"
-                        onChange={setFiltroDataRange}
+                        onRangeValueChange={setFiltroDataRange}
                       />
                     </div>
 

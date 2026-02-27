@@ -3,31 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Divider,
-  Skeleton,
-  Chip,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Pagination,
-  Input,
-  Select,
-  SelectItem,
-  DateRangePicker,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-} from "@heroui/react";
+  Card, CardBody, CardHeader, Button, Divider, Skeleton, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Pagination, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem } from "@heroui/react";
 import {
   Download,
   Search,
@@ -59,6 +35,7 @@ import {
   type FiltrosRecibos,
   type Recibo,
 } from "@/app/actions/recibos";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 
 type DateValueLike = {
   toDate: () => Date;
@@ -517,13 +494,13 @@ export default function RecibosPage() {
                         <CalendarDays className="w-4 h-4" />
                         Período
                       </label>
-                      <DateRangePicker
+                      <DateRangeInput
                         className="max-w-xs"
                         label="Selecione o período"
+                        rangeValue={periodo as any}
                         size="sm"
-                        value={periodo as any}
                         variant="bordered"
-                        onChange={(value) =>
+                        onRangeValueChange={(value) =>
                           handlePeriodoChange(value as PeriodoRange | null)
                         }
                       />

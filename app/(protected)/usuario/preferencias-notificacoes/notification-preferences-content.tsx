@@ -9,17 +9,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Switch,
-  Chip,
-  Spinner,
-  Select,
-  SelectItem,
-  Tooltip,
-} from "@heroui/react";
+  Card, CardBody, CardHeader, Button, Switch, Chip, Spinner, Tooltip, Select, SelectItem } from "@heroui/react";
 import {
   SearchIcon,
   Bell,
@@ -720,7 +710,7 @@ export function NotificationPreferencesContent() {
                                         >
                                           {Object.entries(URGENCY_LABELS).map(
                                             ([key, label]) => (
-                                              <SelectItem key={key}>
+                                              <SelectItem key={key} textValue={label}>
                                                 {label}
                                               </SelectItem>
                                             ),

@@ -63,6 +63,7 @@ import {
   uploadDigitalCertificateFromForm,
 } from "@/app/actions/digital-certificates";
 import { DigitalCertificatePolicy } from "@/generated/prisma";
+import { DateInput } from "@/components/ui/date-input";
 
 interface CertificateResponsible {
   id: string;
@@ -902,11 +903,10 @@ export function DigitalCertificatesPanel({
                     }
                   />
 
-                  <Input
+                  <DateInput
                     isDisabled={isSubmitting || !policyAllowsCurrent}
                     label="Validade (opcional)"
-                    type="date"
-                    startContent={<Calendar className="h-4 w-4 text-warning" />}
+                    startContent={<Calendar className="h-4 w-4 text-warning"  />}
                     value={formState.validUntil}
                     onChange={(event) =>
                       setFormState((prev) => ({

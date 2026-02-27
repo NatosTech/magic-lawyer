@@ -7,7 +7,7 @@ import { Kbd } from "@heroui/kbd";
 import { Spinner } from "@heroui/spinner";
 import { Avatar } from "@heroui/avatar";
 import { Chip } from "@heroui/chip";
-import { Select, SelectItem } from "@heroui/react";
+
 import useSWR from "swr";
 import { useSession } from "next-auth/react";
 import { Search, X, AlertCircle } from "lucide-react";
@@ -16,6 +16,7 @@ import { Modal } from "@/components/ui/modal";
 import { useSearchResults } from "@/components/searchbar/use-search-results";
 import { getTenantOptions, type TenantOption } from "@/app/actions/tenant-options";
 import { getSearchStats, type SearchStatsPayload } from "@/app/actions/search-stats";
+import { Select, SelectItem } from "@heroui/react";
 
 interface CentralizedSearchBarProps {
   className?: string;

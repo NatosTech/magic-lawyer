@@ -6,16 +6,10 @@ import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
-import { Select, SelectItem } from "@heroui/react";
+
 import {
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  useDisclosure,
-} from "@heroui/modal";
-import { Skeleton } from "@heroui/react";
+  Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure, } from "@heroui/modal";
+import { Skeleton, Select, SelectItem } from "@heroui/react";
 import {
   Plus,
   RefreshCw,
@@ -297,7 +291,10 @@ export default function TribunaisPage() {
                   }
                 >
                   {estados.map((estado: any) => (
-                    <SelectItem key={estado.sigla}>
+                    <SelectItem
+                      key={estado.sigla}
+                      textValue={`${estado.sigla} - ${estado.nome}`}
+                    >
                       {estado.sigla} - {estado.nome}
                     </SelectItem>
                   ))}
@@ -313,7 +310,7 @@ export default function TribunaisPage() {
                 }
               >
                 {ESFERAS.map((esfera) => (
-                  <SelectItem key={esfera.key}>{esfera.label}</SelectItem>
+                  <SelectItem key={esfera.key} textValue={esfera.label}>{esfera.label}</SelectItem>
                 ))}
               </Select>
 

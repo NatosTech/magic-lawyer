@@ -2,22 +2,7 @@
 
 import { useState } from "react";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Chip,
-  Select,
-  SelectItem,
-  Input,
-  Button,
-  Spinner,
-} from "@heroui/react";
+  Card, CardBody, CardHeader, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Input, Button, Spinner, Select, SelectItem } from "@heroui/react";
 import { Search, Download } from "lucide-react";
 import useSWR from "swr";
 

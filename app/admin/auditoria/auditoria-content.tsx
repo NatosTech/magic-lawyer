@@ -9,24 +9,13 @@ import { Divider } from "@heroui/divider";
 import { Badge } from "@heroui/badge";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-} from "@heroui/table";
+  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, } from "@heroui/table";
 import {
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-} from "@heroui/modal";
+  Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, } from "@heroui/modal";
 import { Popover, PopoverTrigger, PopoverContent } from "@heroui/popover";
-import { RangeCalendar, Tooltip } from "@heroui/react";
+import { RangeCalendar, Tooltip, Select, SelectItem } from "@heroui/react";
 import { CalendarDate, getLocalTimeZone } from "@internationalized/date";
 import {
   CalendarRange,
@@ -377,9 +366,9 @@ export function AuditoriaContent() {
               setFonteFiltro(value ?? "ALL");
             }}
           >
-            <SelectItem key="ALL">Todas</SelectItem>
-            <SelectItem key="SUPER_ADMIN">Super Admin</SelectItem>
-            <SelectItem key="TENANT">Tenant</SelectItem>
+            <SelectItem key="ALL" textValue="Todas">Todas</SelectItem>
+            <SelectItem key="SUPER_ADMIN" textValue="Super Admin">Super Admin</SelectItem>
+            <SelectItem key="TENANT" textValue="Tenant">Tenant</SelectItem>
           </Select>
           <Select
             items={entidadeOptions}
@@ -403,7 +392,7 @@ export function AuditoriaContent() {
               setEntidadeFiltro(value ?? "ALL");
             }}
           >
-            {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
+            {(item) => <SelectItem key={item.key} textValue={item.label}>{item.label}</SelectItem>}
           </Select>
           <Select
             items={acaoOptions}
@@ -427,7 +416,7 @@ export function AuditoriaContent() {
               setAcaoFiltro(value ?? "ALL");
             }}
           >
-            {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
+            {(item) => <SelectItem key={item.key} textValue={item.label}>{item.label}</SelectItem>}
           </Select>
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2 text-sm text-default-400">

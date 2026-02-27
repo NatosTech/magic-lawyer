@@ -38,6 +38,95 @@ const { seedFuncionarios } = require("./seeds/funcionarios");
 
 const prisma = new PrismaClient();
 
+const DEFAULT_TENANT_CARGOS = [
+  {
+    nome: "Secretária",
+    descricao: "Atendimento, agenda e apoio operacional ao escritório.",
+    nivel: 2,
+  },
+  {
+    nome: "Assistente Jurídico",
+    descricao: "Suporte em documentos, protocolos e acompanhamento processual.",
+    nivel: 2,
+  },
+  {
+    nome: "Financeiro",
+    descricao: "Cobrança, conciliação, fluxo de caixa e rotinas financeiras.",
+    nivel: 3,
+  },
+  {
+    nome: "Suporte de TI",
+    descricao: "Apoio técnico interno, acessos e infraestrutura digital.",
+    nivel: 2,
+  },
+  {
+    nome: "Coordenador Operacional",
+    descricao: "Coordenação de rotinas, equipe e indicadores administrativos.",
+    nivel: 4,
+  },
+];
+
+async function seedDefaultCargos(prisma) {
+  const tenants = await prisma.tenant.findMany({
+    where: {
+      slug: {
+        not: "global",
+      },
+    },
+    select: {
+      id: true,
+      slug: true,
+    },
+  });
+
+  for (const tenant of tenants) {
+    for (const template of DEFAULT_TENANT_CARGOS) {
+      const existing = await prisma.cargo.findFirst({
+        where: {
+          tenantId: tenant.id,
+          nome: template.nome,
+        },
+        select: {
+          id: true,
+          ativo: true,
+          descricao: true,
+        },
+      });
+
+      if (!existing) {
+        await prisma.cargo.create({
+          data: {
+            tenantId: tenant.id,
+            nome: template.nome,
+            descricao: template.descricao,
+            nivel: template.nivel,
+            ativo: true,
+          },
+        });
+        continue;
+      }
+
+      const nextData = {};
+
+      if (!existing.ativo) {
+        nextData.ativo = true;
+      }
+      if (!existing.descricao) {
+        nextData.descricao = template.descricao;
+      }
+
+      if (Object.keys(nextData).length > 0) {
+        await prisma.cargo.update({
+          where: {
+            id: existing.id,
+          },
+          data: nextData,
+        });
+      }
+    }
+  }
+}
+
 const TENANT_CREDENTIAL_SUMMARIES = [
   {
     name: "Souza Costa Advogados Associados",
@@ -163,9 +252,20 @@ async function main() {
     await seedTenantLuana(prisma, Prisma);
     await seedSalbaAdvocacia(prisma);
     await seedTenantFred(prisma);
-    await seedFuncionarios(prisma, Prisma);
   } catch (error) {
     console.warn("⚠️ Tenants já criados:", error.message);
+  }
+
+  try {
+    await seedDefaultCargos(prisma);
+  } catch (error) {
+    console.warn("⚠️ Cargos padrão já criados:", error.message);
+  }
+
+  try {
+    await seedFuncionarios(prisma, Prisma);
+  } catch (error) {
+    console.warn("⚠️ Funcionários já criados:", error.message);
   }
 
   console.log("\n🗂️  Criando catálogo de causas...\n");

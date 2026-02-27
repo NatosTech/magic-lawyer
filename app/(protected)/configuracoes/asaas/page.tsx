@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Spinner } from "@heroui/spinner";
@@ -15,6 +15,7 @@ import {
   testarConexaoAsaas,
   obterConfiguracaoAsaas,
 } from "@/app/actions/asaas";
+import { Select, SelectItem } from "@heroui/react";
 
 export default function ConfiguracaoAsaasPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -213,8 +214,8 @@ export default function ConfiguracaoAsaasPage() {
                   });
                 }}
               >
-                <SelectItem key="SANDBOX">Sandbox (Teste)</SelectItem>
-                <SelectItem key="PRODUCAO">Produção (Real)</SelectItem>
+                <SelectItem key="SANDBOX" textValue="Sandbox (Teste)">Sandbox (Teste)</SelectItem>
+                <SelectItem key="PRODUCAO" textValue="Produção (Real)">Produção (Real)</SelectItem>
               </Select>
             </div>
 

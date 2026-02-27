@@ -7,14 +7,9 @@ import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import {
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-} from "@heroui/modal";
-import { Skeleton } from "@heroui/react";
-import { Select, SelectItem } from "@heroui/react";
+  Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, } from "@heroui/modal";
+import { Skeleton, Select, SelectItem } from "@heroui/react";
+
 import { Switch } from "@heroui/switch";
 import { Plus, RefreshCw, Edit3, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -233,7 +228,7 @@ export function RegimesPrazoContent() {
             }}
           >
             {TIPO_OPTIONS.map((option) => (
-              <SelectItem key={option.key}>{option.label}</SelectItem>
+              <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
             ))}
           </Select>
           <div className="sm:col-span-2 flex items-center justify-between">
@@ -457,7 +452,7 @@ function EditRegimeModal({ regime, onClose, onSave }: EditRegimeModalProps) {
                 }}
               >
                 {TIPO_OPTIONS.map((option) => (
-                  <SelectItem key={option.key}>{option.label}</SelectItem>
+                  <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
                 ))}
               </Select>
               <Switch

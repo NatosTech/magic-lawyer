@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input, Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Checkbox } from "@heroui/checkbox";
 import { Divider } from "@heroui/divider";
 import { Chip } from "@heroui/chip";
@@ -30,6 +30,7 @@ import {
   useCategoriasModeloPeticao,
   useTiposModeloPeticao,
 } from "@/app/hooks/use-modelos-peticao";
+import { Select, SelectItem } from "@heroui/react";
 
 // Categorias padrão sugeridas
 const CATEGORIAS_PADRAO = [

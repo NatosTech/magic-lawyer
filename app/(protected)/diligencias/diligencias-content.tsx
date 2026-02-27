@@ -3,23 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import useSWR from "swr";
 import {
-  Card,
-  CardBody,
-  Button,
-  Input,
-  Textarea,
-  Chip,
-  Select,
-  SelectItem,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  Tabs,
-  Tab,
-  Spinner,
-} from "@heroui/react";
+  Card, CardBody, Button, Input, Textarea, Chip, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Tabs, Tab, Spinner, Select, SelectItem } from "@heroui/react";
 import {
   Plus,
   FileText,
@@ -49,6 +33,7 @@ import { listRegimesPrazo } from "@/app/actions/regimes-prazo";
 import { getClientesComRelacionamentos } from "@/app/actions/clientes";
 import { getUsuariosParaSelect } from "@/app/actions/usuarios";
 import { title, subtitle } from "@/components/primitives";
+import { DateInput } from "@/components/ui/date-input";
 import {
   Diligencia,
   DiligenciaStatus,
@@ -422,7 +407,7 @@ export function DiligenciasContent() {
                       }}
                     >
                       {STATUS_OPTIONS.map((option) => (
-                        <SelectItem key={option.key} startContent={option.icon}>
+                        <SelectItem key={option.key} startContent={option.icon} textValue={option.label}>
                           {option.label}
                         </SelectItem>
                       ))}
@@ -887,12 +872,11 @@ function CreateDiligenciaModal({
                       ))}
                     </Select>
 
-                    <Input
+                    <DateInput
                       label="Prazo Previsto"
                       startContent={
                         <Calendar className="text-orange-500" size={16} />
                       }
-                      type="date"
                       value={state.prazoPrevisto}
                       onChange={(e) =>
                         setState((prev) => ({

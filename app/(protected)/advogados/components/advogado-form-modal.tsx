@@ -2,30 +2,7 @@
 import type { CreateAdvogadoInput } from "@/app/actions/advogados";
 import type { CepData } from "@/types/brazil";
 
-import {
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  Tabs,
-  Tab,
-  Button,
-  Input,
-  Textarea,
-  Select,
-  SelectItem,
-  Checkbox,
-  Switch,
-  Card,
-  CardHeader,
-  CardBody,
-  Chip,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  Tooltip,
-} from "@heroui/react";
+import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Tabs, Tab, Button, Input, Textarea, Checkbox, Switch, Card, CardHeader, CardBody, Chip, Popover, PopoverTrigger, PopoverContent, Tooltip, Select, SelectItem } from "@heroui/react";
 import { motion } from "framer-motion";
 import {
   ScaleIcon,
@@ -63,6 +40,7 @@ import { CnpjInput } from "@/components/cnpj-input";
 import { EspecialidadeJuridica } from "@/generated/prisma";
 import { CidadeSelect } from "@/components/cidade-select";
 import { EstadoSelect } from "@/components/estado-select";
+import { DateInput } from "@/components/ui/date-input";
 
 interface SelectOption {
   value: string;
@@ -448,12 +426,11 @@ export function AdvogadoFormModal({
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input
+                        <DateInput
                           label="Data de Nascimento"
                           startContent={
                             <CalendarIcon className="w-4 h-4 text-default-400" />
                           }
-                          type="date"
                           value={formState.dataNascimento || ""}
                           onValueChange={(value) =>
                             setFormState((prev) => ({

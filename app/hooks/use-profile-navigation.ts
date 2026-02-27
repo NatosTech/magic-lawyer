@@ -224,25 +224,8 @@ export function useProfileNavigation() {
         href: "/peticoes",
         icon: "FileText",
         description: "Gestão de petições processuais",
-        isAccordion: true,
         section: "Atividades Jurídicas",
         requiredModules: ["peticoes"],
-        children: [
-          {
-            label: "Petições",
-            href: "/peticoes",
-            icon: "FileText",
-            description: "Gestão de petições processuais",
-            requiredModules: ["peticoes"],
-          },
-          {
-            label: "Modelos",
-            href: "/modelos-peticao",
-            icon: "FileTemplate",
-            description: "Modelos de petição",
-            requiredModules: ["modelos-peticao"],
-          },
-        ],
       });
     }
 
@@ -270,25 +253,8 @@ export function useProfileNavigation() {
         href: "/procuracoes",
         icon: "Shield",
         description: "Gestão de procurações e poderes",
-        isAccordion: true,
         section: "Atividades Jurídicas",
         requiredModules: ["procuracoes"],
-        children: [
-          {
-            label: "Procurações",
-            href: "/procuracoes",
-            icon: "Shield",
-            description: "Gestão de procurações ativas",
-            requiredModules: ["procuracoes"],
-          },
-          {
-            label: "Modelos",
-            href: "/modelos-procuracao",
-            icon: "FileTemplate",
-            description: "Modelos de procuração",
-            requiredModules: ["modelos-procuracao"],
-          },
-        ],
       });
     }
 
@@ -307,23 +273,9 @@ export function useProfileNavigation() {
           label: "Contratos",
           href: "/contratos",
           icon: "FileSignature",
-          description: "Gestão de contratos e modelos",
-          isAccordion: true,
+          description: "Gestão de contratos e honorários",
           section: "Atividades Jurídicas",
-          children: [
-            {
-              label: "Contratos",
-              href: "/contratos",
-              icon: "FileSignature",
-              description: "Gestão de contratos ativos",
-            },
-            {
-              label: "Modelos",
-              href: "/contratos/modelos",
-              icon: "FileTemplate",
-              description: "Modelos de contratos reutilizáveis",
-            },
-          ],
+          requiredModules: ["contratos"],
         });
       }
     }
@@ -339,41 +291,52 @@ export function useProfileNavigation() {
       });
     }
 
+    const apoioJuridicoItems: NavigationItem[] = [];
+
     if (
       !isCliente &&
       (permissions.canViewAllProcesses || permissions.canManageOfficeSettings)
     ) {
-      items.push({
+      apoioJuridicoItems.push({
         label: "Causas",
         href: "/causas",
         icon: "Scale",
         description: "Catálogo de assuntos processuais",
-        section: "Atividades Jurídicas",
         requiredModules: ["causas"],
       });
     }
 
     if (permissions.canViewJudgesDatabase) {
-      items.push({
+      apoioJuridicoItems.push({
         label: "Juízes",
         href: "/juizes",
         icon: "Scale",
         description: isCliente
           ? "Informações sobre juízes"
           : "Base de dados de juízes",
-        section: "Atividades Jurídicas",
         requiredModules: ["juizes"],
       });
     }
 
     // Portal do Advogado - Acesso para ADMIN e ADVOGADO
     if (isAdmin || isAdvogado) {
-      items.push({
+      apoioJuridicoItems.push({
         label: "Portal do Advogado",
         href: "/portal-advogado",
         icon: "Gavel",
         description: "Portais dos tribunais, recessos forenses e comunicados",
+      });
+    }
+
+    if (apoioJuridicoItems.length > 0) {
+      items.push({
+        label: "Apoio Jurídico",
+        href: apoioJuridicoItems[0].href,
+        icon: "Scale",
+        description: "Bases e ferramentas de apoio",
+        isAccordion: true,
         section: "Atividades Jurídicas",
+        children: apoioJuridicoItems,
       });
     }
 

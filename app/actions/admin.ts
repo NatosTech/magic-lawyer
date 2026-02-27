@@ -17,6 +17,7 @@ import {
 } from "@/generated/prisma";
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
+import { ensureDefaultCargosForTenant } from "@/app/lib/default-cargos";
 
 // =============================================
 // TENANT MANAGEMENT
@@ -222,6 +223,8 @@ export async function createTenant(
           superAdminId, // Vinculado ao super admin
         },
       });
+
+      await ensureDefaultCargosForTenant(tx, tenant.id);
 
       // Criar usuário admin do tenant
       const adminUser = await tx.usuario.create({

@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import {
   Modal,
   ModalContent,
@@ -48,6 +48,7 @@ import { useAllContratos } from "@/app/hooks/use-contratos";
 import { vincularContratoProcuracao } from "@/app/actions/contratos";
 import { DateUtils } from "@/app/lib/date-utils";
 import { title, subtitle } from "@/components/primitives";
+import { Select, SelectItem } from "@heroui/react";
 
 const STATUS_OPTIONS = [
   { key: "ATIVO", label: "Ativo", color: "success" as const },
@@ -273,6 +274,20 @@ export default function ContratosContent() {
         </Button>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <Button color="primary" size="sm" variant="flat">
+          Contratos
+        </Button>
+        <Button
+          as={Link}
+          href="/contratos/modelos"
+          size="sm"
+          variant="bordered"
+        >
+          Modelos de Contrato
+        </Button>
+      </div>
+
       {/* Filtros */}
       <Card>
         <CardBody className="gap-4">
@@ -303,7 +318,7 @@ export default function ContratosContent() {
                 onChange={(e) => setOrdenacao(e.target.value)}
               >
                 {ORDENACAO_OPTIONS.map((option) => (
-                  <SelectItem key={option.key}>{option.label}</SelectItem>
+                  <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
                 ))}
               </Select>
             </div>
@@ -320,7 +335,7 @@ export default function ContratosContent() {
               >
                 {[{ key: "todos", label: "Todos" }, ...STATUS_OPTIONS].map(
                   (option) => (
-                    <SelectItem key={option.key}>{option.label}</SelectItem>
+                    <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
                   ),
                 )}
               </Select>
@@ -333,7 +348,7 @@ export default function ContratosContent() {
               >
                 {[{ id: "todos", nome: "Todos" }, ...(clientes || [])].map(
                   (cliente) => (
-                    <SelectItem key={cliente.id}>{cliente.nome}</SelectItem>
+                    <SelectItem key={cliente.id} textValue={cliente.nome}>{cliente.nome}</SelectItem>
                   ),
                 )}
               </Select>

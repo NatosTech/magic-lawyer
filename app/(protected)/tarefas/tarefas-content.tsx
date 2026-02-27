@@ -6,16 +6,10 @@ import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input, Textarea } from "@heroui/input";
 import { Chip } from "@heroui/chip";
-import { Select, SelectItem } from "@heroui/react";
+
 import {
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  useDisclosure,
-} from "@heroui/modal";
-import { Skeleton } from "@heroui/react";
+  Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure, } from "@heroui/modal";
+import { Skeleton, Select, SelectItem } from "@heroui/react";
 import {
   Plus,
   CheckCircle2,
@@ -34,7 +28,6 @@ import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import { DatePicker } from "@heroui/date-picker";
 import { parseAbsoluteToLocal } from "@internationalized/date";
 
 import {
@@ -49,6 +42,7 @@ import { listCategoriasTarefa } from "@/app/actions/categorias-tarefa";
 import { getAllProcessos } from "@/app/actions/processos";
 import { searchClientes } from "@/app/actions/clientes";
 import { title } from "@/components/primitives";
+import { DateInput } from "@/components/ui/date-input";
 
 // Configurar dayjs
 dayjs.extend(isSameOrBefore);
@@ -528,7 +522,7 @@ export default function TarefasContent() {
               onChange={(e) => setFiltroStatus(e.target.value)}
             >
               {Object.entries(statusConfig).map(([key, config]) => (
-                <SelectItem key={key}>{config.label}</SelectItem>
+                <SelectItem key={key} textValue={config.label}>{config.label}</SelectItem>
               ))}
             </Select>
 
@@ -541,7 +535,7 @@ export default function TarefasContent() {
               onChange={(e) => setFiltroPrioridade(e.target.value)}
             >
               {Object.entries(prioridadeConfig).map(([key, config]) => (
-                <SelectItem key={key}>{config.label}</SelectItem>
+                <SelectItem key={key} textValue={config.label}>{config.label}</SelectItem>
               ))}
             </Select>
 
@@ -760,7 +754,7 @@ export default function TarefasContent() {
                   }
                 >
                   {Object.entries(prioridadeConfig).map(([key, config]) => (
-                    <SelectItem key={key}>{config.label}</SelectItem>
+                    <SelectItem key={key} textValue={config.label}>{config.label}</SelectItem>
                   ))}
                 </Select>
 
@@ -775,30 +769,30 @@ export default function TarefasContent() {
                   }
                 >
                   {(categorias || []).map((cat: any) => (
-                    <SelectItem key={cat.id}>{cat.nome}</SelectItem>
+                    <SelectItem key={cat.id} textValue={cat.nome}>{cat.nome}</SelectItem>
                   ))}
                 </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <DatePicker
+                <DateInput
                   hideTimeZone
                   showMonthAndYearPickers
                   label="Data Limite"
-                  value={formData.dataLimite}
+                  dateValue={formData.dataLimite}
                   variant="bordered"
-                  onChange={(value) =>
+                  onDateChange={(value) =>
                     setFormData({ ...formData, dataLimite: value })
                   }
                 />
 
-                <DatePicker
+                <DateInput
                   hideTimeZone
                   showMonthAndYearPickers
                   label="Lembrete"
-                  value={formData.lembreteEm}
+                  dateValue={formData.lembreteEm}
                   variant="bordered"
-                  onChange={(value) =>
+                  onDateChange={(value) =>
                     setFormData({ ...formData, lembreteEm: value })
                   }
                 />
@@ -813,7 +807,10 @@ export default function TarefasContent() {
                 }
               >
                 {(processos || []).map((proc: any) => (
-                  <SelectItem key={proc.id}>
+                  <SelectItem
+                    key={proc.id}
+                    textValue={`${proc.numero} - ${proc.titulo || "Sem título"}`}
+                  >
                     {proc.numero} - {proc.titulo || "Sem título"}
                   </SelectItem>
                 ))}
@@ -828,7 +825,7 @@ export default function TarefasContent() {
                 }
               >
                 {(clientes || []).map((cli: any) => (
-                  <SelectItem key={cli.id}>{cli.nome}</SelectItem>
+                  <SelectItem key={cli.id} textValue={cli.nome}>{cli.nome}</SelectItem>
                 ))}
               </Select>
 
@@ -851,7 +848,7 @@ export default function TarefasContent() {
                   >
                     {(boards || []).length > 0
                       ? (boards || []).map((b: any) => (
-                          <SelectItem key={b.id}>{b.nome}</SelectItem>
+                          <SelectItem key={b.id} textValue={b.nome}>{b.nome}</SelectItem>
                         ))
                       : null}
                   </Select>
@@ -867,7 +864,7 @@ export default function TarefasContent() {
                   >
                     {(colunas || []).length > 0
                       ? (colunas || []).map((col: any) => (
-                          <SelectItem key={col.id}>{col.nome}</SelectItem>
+                          <SelectItem key={col.id} textValue={col.nome}>{col.nome}</SelectItem>
                         ))
                       : null}
                   </Select>

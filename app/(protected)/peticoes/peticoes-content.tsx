@@ -2,26 +2,9 @@
 
 import { useEffect, useState } from "react";
 import useSWR from "swr";
+import Link from "next/link";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Chip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Textarea,
-  Autocomplete,
-  AutocompleteItem,
-  Skeleton,
-  Divider,
-} from "@heroui/react";
+  Card, CardBody, CardHeader, Button, Input, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Autocomplete, AutocompleteItem, Skeleton, Divider, Select, SelectItem } from "@heroui/react";
 import { toast } from "sonner";
 import {
   Search as MagnifyingGlassIcon,
@@ -324,6 +307,20 @@ export default function PeticoesPage() {
           onPress={openCreateModal}
         >
           Nova Petição
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button color="primary" size="sm" variant="flat">
+          Petições
+        </Button>
+        <Button
+          as={Link}
+          href="/modelos-peticao"
+          size="sm"
+          variant="bordered"
+        >
+          Modelos de Petição
         </Button>
       </div>
 

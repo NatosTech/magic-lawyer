@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Select, SelectItem } from "@heroui/react";
 import useSWR from "swr";
 import { MapPin } from "lucide-react";
 
 import { getTenantUF, getUFsDisponiveis } from "@/app/actions/portal-advogado";
+import { Select, SelectItem } from "@heroui/react";
 
 interface UFSelectorProps {
   value?: string;

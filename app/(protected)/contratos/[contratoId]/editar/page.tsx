@@ -6,7 +6,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Divider } from "@heroui/divider";
 import {
   Modal,
@@ -45,6 +45,8 @@ import {
 } from "@/app/hooks/use-clientes";
 import { useContratoDetalhado } from "@/app/hooks/use-contratos";
 import { useDadosBancariosAtivos } from "@/app/hooks/use-dados-bancarios";
+import { Select, SelectItem } from "@heroui/react";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 
 export default function EditarContratoPage({
   params,
@@ -95,6 +97,31 @@ export default function EditarContratoPage({
   const { contrato, mutate } = useContratoDetalhado(contratoId);
   const { dadosBancarios, isLoading: isLoadingDadosBancarios } =
     useDadosBancariosAtivos();
+  const clienteKeys = React.useMemo(
+    () => new Set((clientes || []).map((cliente: any) => cliente.id)),
+    [clientes],
+  );
+  const dadosBancariosKeys = React.useMemo(
+    () => new Set((dadosBancarios || []).map((conta: any) => conta.id)),
+    [dadosBancarios],
+  );
+  const procuracaoKeys = React.useMemo(
+    () => new Set((procuracoes || []).map((procuracao: any) => procuracao.id)),
+    [procuracoes],
+  );
+  const selectedClienteKeys =
+    formData.clienteId && clienteKeys.has(formData.clienteId)
+      ? [formData.clienteId]
+      : [];
+  const selectedDadosBancariosKeys =
+    formData.dadosBancariosId &&
+    dadosBancariosKeys.has(formData.dadosBancariosId)
+      ? [formData.dadosBancariosId]
+      : [];
+  const selectedProcuracaoKeys =
+    selectedProcuracao && procuracaoKeys.has(selectedProcuracao)
+      ? [selectedProcuracao]
+      : [];
 
   useEffect(() => {
     async function loadContrato() {
@@ -261,7 +288,7 @@ export default function EditarContratoPage({
               isRequired
               label="Cliente"
               placeholder="Selecione o cliente"
-              selectedKeys={formData.clienteId ? [formData.clienteId] : []}
+              selectedKeys={selectedClienteKeys}
               startContent={<User className="h-4 w-4 text-default-400" />}
               onSelectionChange={(keys) => {
                 const selected = Array.from(keys)[0] as string;
@@ -317,13 +344,13 @@ export default function EditarContratoPage({
                   setFormData((prev) => ({ ...prev, status: selected }));
                 }}
               >
-                <SelectItem key={ContratoStatus.RASCUNHO}>Rascunho</SelectItem>
-                <SelectItem key={ContratoStatus.ATIVO}>Ativo</SelectItem>
-                <SelectItem key={ContratoStatus.SUSPENSO}>Suspenso</SelectItem>
-                <SelectItem key={ContratoStatus.CANCELADO}>
+                <SelectItem key={ContratoStatus.RASCUNHO} textValue="Rascunho">Rascunho</SelectItem>
+                <SelectItem key={ContratoStatus.ATIVO} textValue="Ativo">Ativo</SelectItem>
+                <SelectItem key={ContratoStatus.SUSPENSO} textValue="Suspenso">Suspenso</SelectItem>
+                <SelectItem key={ContratoStatus.CANCELADO} textValue="Cancelado">
                   Cancelado
                 </SelectItem>
-                <SelectItem key={ContratoStatus.ENCERRADO}>
+                <SelectItem key={ContratoStatus.ENCERRADO} textValue="Encerrado">
                   Encerrado
                 </SelectItem>
               </Select>
@@ -350,9 +377,7 @@ export default function EditarContratoPage({
               isLoading={isLoadingDadosBancarios}
               label="Conta Bancária para Recebimento"
               placeholder="Selecione uma conta (opcional)"
-              selectedKeys={
-                formData.dadosBancariosId ? [formData.dadosBancariosId] : []
-              }
+              selectedKeys={selectedDadosBancariosKeys}
               onSelectionChange={(keys) =>
                 setFormData((prev) => ({
                   ...prev,
@@ -396,39 +421,31 @@ export default function EditarContratoPage({
             </Select>
 
             {/* Datas */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input
-                label="Data de Início"
-                startContent={<Calendar className="h-4 w-4 text-default-400" />}
-                type="date"
-                value={
-                  formData.dataInicio
-                    ? formData.dataInicio instanceof Date
-                      ? formData.dataInicio.toISOString().split("T")[0]
-                      : formData.dataInicio.toString().split("T")[0]
-                    : ""
-                }
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, dataInicio: value }))
-                }
-              />
-
-              <Input
-                label="Data de Término"
-                startContent={<Calendar className="h-4 w-4 text-default-400" />}
-                type="date"
-                value={
-                  formData.dataFim
-                    ? formData.dataFim instanceof Date
-                      ? formData.dataFim.toISOString().split("T")[0]
-                      : formData.dataFim.toString().split("T")[0]
-                    : ""
-                }
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, dataFim: value }))
-                }
-              />
-            </div>
+            <DateRangeInput
+              label="Período do contrato"
+              startContent={<Calendar className="h-4 w-4 text-default-400" />}
+              startValue={
+                formData.dataInicio
+                  ? formData.dataInicio instanceof Date
+                    ? formData.dataInicio.toISOString().split("T")[0]
+                    : formData.dataInicio.toString().split("T")[0]
+                  : ""
+              }
+              endValue={
+                formData.dataFim
+                  ? formData.dataFim instanceof Date
+                    ? formData.dataFim.toISOString().split("T")[0]
+                    : formData.dataFim.toString().split("T")[0]
+                  : ""
+              }
+              onRangeChange={({ start, end }) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  dataInicio: start || undefined,
+                  dataFim: end || undefined,
+                }))
+              }
+             />
 
             {/* Resumo */}
             <Textarea
@@ -620,9 +637,7 @@ export default function EditarContratoPage({
                   <Select
                     label="Selecione uma procuração"
                     placeholder="Escolha uma procuração"
-                    selectedKeys={
-                      selectedProcuracao ? [selectedProcuracao] : []
-                    }
+                    selectedKeys={selectedProcuracaoKeys}
                     onSelectionChange={(keys) => {
                       const selectedKey = Array.from(keys)[0] as string;
 

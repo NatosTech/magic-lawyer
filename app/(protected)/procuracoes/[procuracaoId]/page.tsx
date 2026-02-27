@@ -10,7 +10,7 @@ import { Spinner } from "@heroui/spinner";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Checkbox } from "@heroui/checkbox";
 import {
   ArrowLeft,
@@ -51,6 +51,8 @@ import {
 import { Modal } from "@/components/ui/modal";
 import DocumentoUploadModal from "@/components/documento-upload-modal";
 import DocumentosList from "@/components/documentos-list";
+import { Select, SelectItem } from "@heroui/react";
+import { DateInput } from "@/components/ui/date-input";
 
 const getStatusColor = (status: ProcuracaoStatus) => {
   switch (status) {
@@ -483,28 +485,27 @@ export default function ProcuracaoDetalhesPage() {
                     })
                   }
                 >
-                  <SelectItem key={ProcuracaoStatus.RASCUNHO}>
+                  <SelectItem key={ProcuracaoStatus.RASCUNHO} textValue="Rascunho">
                     Rascunho
                   </SelectItem>
-                  <SelectItem key={ProcuracaoStatus.PENDENTE_ASSINATURA}>
+                  <SelectItem key={ProcuracaoStatus.PENDENTE_ASSINATURA} textValue="Pendente Assinatura">
                     Pendente Assinatura
                   </SelectItem>
-                  <SelectItem key={ProcuracaoStatus.VIGENTE}>
+                  <SelectItem key={ProcuracaoStatus.VIGENTE} textValue="Vigente">
                     Vigente
                   </SelectItem>
-                  <SelectItem key={ProcuracaoStatus.EXPIRADA}>
+                  <SelectItem key={ProcuracaoStatus.EXPIRADA} textValue="Expirada">
                     Expirada
                   </SelectItem>
-                  <SelectItem key={ProcuracaoStatus.REVOGADA}>
+                  <SelectItem key={ProcuracaoStatus.REVOGADA} textValue="Revogada">
                     Revogada
                   </SelectItem>
                 </Select>
 
-                <Input
+                <DateInput
                   isReadOnly={!isEditing}
                   label="Data de Emissão"
                   startContent={<Calendar className="h-4 w-4" />}
-                  type="date"
                   value={formData.emitidaEm}
                   variant={isEditing ? "bordered" : "flat"}
                   onValueChange={(value) =>
@@ -512,11 +513,10 @@ export default function ProcuracaoDetalhesPage() {
                   }
                 />
 
-                <Input
+                <DateInput
                   isReadOnly={!isEditing}
                   label="Válida Até"
                   startContent={<Clock className="h-4 w-4" />}
-                  type="date"
                   value={formData.validaAte}
                   variant={isEditing ? "bordered" : "flat"}
                   onValueChange={(value) =>
@@ -536,10 +536,10 @@ export default function ProcuracaoDetalhesPage() {
                     })
                   }
                 >
-                  <SelectItem key={ProcuracaoEmitidaPor.ESCRITORIO}>
+                  <SelectItem key={ProcuracaoEmitidaPor.ESCRITORIO} textValue="Escritório">
                     Escritório
                   </SelectItem>
-                  <SelectItem key={ProcuracaoEmitidaPor.ADVOGADO}>
+                  <SelectItem key={ProcuracaoEmitidaPor.ADVOGADO} textValue="Advogado">
                     Advogado
                   </SelectItem>
                 </Select>

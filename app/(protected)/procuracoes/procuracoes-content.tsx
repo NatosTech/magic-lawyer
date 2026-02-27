@@ -5,18 +5,15 @@ import type { ProcuracaoListItem } from "@/app/actions/procuracoes";
 import type { Processo as ProcessoDTO } from "@/app/actions/processos";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/dropdown";
+  Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, } from "@heroui/dropdown";
 import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Spinner } from "@heroui/spinner";
 import {
   Modal,
@@ -49,6 +46,7 @@ import { DateUtils } from "@/app/lib/date-utils";
 import { linkProcuracaoAoProcesso } from "@/app/actions/processos";
 import { ProcuracaoEmitidaPor, ProcuracaoStatus } from "@/generated/prisma";
 import { title, subtitle } from "@/components/primitives";
+import { Select, SelectItem } from "@heroui/react";
 
 type ProcuracaoFiltroValue<T extends string> = T | "";
 
@@ -367,6 +365,20 @@ export function ProcuracoesContent() {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <Button color="primary" size="sm" variant="flat">
+          Procurações
+        </Button>
+        <Button
+          as={Link}
+          href="/modelos-procuracao"
+          size="sm"
+          variant="bordered"
+        >
+          Modelos de Procuração
+        </Button>
+      </div>
+
       {/* Filtros */}
       {mostrarFiltros && (
         <Card>
@@ -394,7 +406,7 @@ export function ProcuracoesContent() {
                 }}
               >
                 {statusUnicos.map((status) => (
-                  <SelectItem key={status}>{getStatusLabel(status)}</SelectItem>
+                  <SelectItem key={status} textValue={getStatusLabel(status)}>{getStatusLabel(status)}</SelectItem>
                 ))}
               </Select>
 
@@ -411,7 +423,7 @@ export function ProcuracoesContent() {
                 }}
               >
                 {emitidaPorUnicos.map((emitidaPor) => (
-                  <SelectItem key={emitidaPor}>
+                  <SelectItem key={emitidaPor} textValue={getEmitidaPorLabel(emitidaPor)}>
                     {getEmitidaPorLabel(emitidaPor)}
                   </SelectItem>
                 ))}
@@ -608,7 +620,7 @@ export function ProcuracoesContent() {
                       }}
                     >
                       {clientes.map((cliente) => (
-                        <SelectItem key={cliente.id}>
+                        <SelectItem key={cliente.id} textValue={cliente.id}>
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold text-default-700">
                               {cliente.nome}
@@ -650,7 +662,7 @@ export function ProcuracoesContent() {
                           onSelectionChange={handleProcessoSelectionChange}
                         >
                           {processosParaNovaProcuracao.map((processo) => (
-                            <SelectItem key={processo.id}>
+                            <SelectItem key={processo.id} textValue={processo.id}>
                               <div className="flex flex-col">
                                 <span className="text-sm font-semibold text-default-700">
                                   {processo.numero}
@@ -741,7 +753,7 @@ export function ProcuracoesContent() {
                     }}
                   >
                     {processosDisponiveis.map((processo) => (
-                      <SelectItem key={processo.id}>
+                      <SelectItem key={processo.id} textValue={processo.id}>
                         <div className="flex flex-col">
                           <span className="text-sm font-semibold">
                             {processo.numero}

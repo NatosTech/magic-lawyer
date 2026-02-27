@@ -5,35 +5,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import useSWR from "swr";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Input,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Chip,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-  Tooltip,
-  Select,
-  SelectItem,
-  Textarea,
-  Divider,
-  Progress,
-} from "@heroui/react";
+  Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Tooltip, Textarea, Divider, Progress, Select, SelectItem } from "@heroui/react";
 import {
   PlusIcon,
   SearchIcon,
@@ -426,9 +398,9 @@ export default function ModuloCategoriasPage() {
                   setFilterStatus(Array.from(keys)[0] as string)
                 }
               >
-                <SelectItem key="all">Todos</SelectItem>
-                <SelectItem key="active">Ativos</SelectItem>
-                <SelectItem key="inactive">Inativos</SelectItem>
+                <SelectItem key="all" textValue="Todos">Todos</SelectItem>
+                <SelectItem key="active" textValue="Ativos">Ativos</SelectItem>
+                <SelectItem key="inactive" textValue="Inativos">Inativos</SelectItem>
               </Select>
             </div>
           </div>
@@ -680,6 +652,7 @@ export default function ModuloCategoriasPage() {
                     <SelectItem
                       key={icon}
                       startContent={<IconComponent className="w-4 h-4" />}
+                      textValue={icon}
                     >
                       {icon}
                     </SelectItem>

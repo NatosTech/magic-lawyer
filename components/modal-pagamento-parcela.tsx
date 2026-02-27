@@ -2,22 +2,7 @@
 
 import { useState } from "react";
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Card,
-  CardBody,
-  Chip,
-  Spinner,
-  Tabs,
-  Tab,
-} from "@heroui/react";
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Card, CardBody, Chip, Spinner, Tabs, Tab, Select, SelectItem } from "@heroui/react";
 import { toast } from "sonner";
 
 import {
@@ -208,9 +193,9 @@ export function ModalPagamentoParcela({
                           );
                         }}
                       >
-                        <SelectItem key="PIX">PIX (Recomendado)</SelectItem>
-                        <SelectItem key="DINHEIRO">Dinheiro</SelectItem>
-                        <SelectItem key="CARTAO">Cartão de Crédito</SelectItem>
+                        <SelectItem key="PIX" textValue="PIX (Recomendado)">PIX (Recomendado)</SelectItem>
+                        <SelectItem key="DINHEIRO" textValue="Dinheiro">Dinheiro</SelectItem>
+                        <SelectItem key="CARTAO" textValue="Cartão de Crédito">Cartão de Crédito</SelectItem>
                       </Select>
                     </div>
 

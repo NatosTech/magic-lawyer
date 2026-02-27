@@ -3,26 +3,7 @@
 import { useState, useEffect } from "react";
 import { parseDate, type DateValue } from "@internationalized/date";
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Tabs,
-  Tab,
-  Card,
-  CardBody,
-  CardHeader,
-  Divider,
-  Switch,
-  Textarea,
-  Chip,
-  DatePicker,
-} from "@heroui/react";
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Tabs, Tab, Card, CardBody, CardHeader, Divider, Switch, Textarea, Chip, Select, SelectItem } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import { User, Briefcase, Shield, Save, X, MapPin } from "lucide-react";
 
@@ -32,6 +13,7 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { EnderecoManager } from "@/components/endereco-manager";
 import { CpfInput } from "@/components/cpf-input";
 import { CnpjInput } from "@/components/cnpj-input";
+import { DateInput } from "@/components/ui/date-input";
 import { getEstadosBrasilCached } from "@/lib/api/brazil-states";
 import { type CnpjData } from "@/types/brazil";
 
@@ -494,12 +476,12 @@ export function UserManagementModal({
                         value={rg}
                         onChange={(e) => setRg(e.target.value)}
                       />
-                      <DatePicker
+                      <DateInput
                         showMonthAndYearPickers
                         granularity="day"
                         label="Data de Nascimento"
-                        value={dataNascimentoUsuario as any}
-                        onChange={(value: any) =>
+                        dateValue={dataNascimentoUsuario as any}
+                        onDateChange={(value: any) =>
                           setDataNascimentoUsuario(value || undefined)
                         }
                       />
@@ -536,7 +518,7 @@ export function UserManagementModal({
                           }}
                         >
                           {roleOptions.map((option) => (
-                            <SelectItem key={option.value}>
+                            <SelectItem key={option.value} textValue={option.label}>
                               {option.label}
                             </SelectItem>
                           ))}
@@ -627,7 +609,7 @@ export function UserManagementModal({
                           }}
                         >
                           {ufs.map((uf) => (
-                            <SelectItem key={uf}>{uf}</SelectItem>
+                            <SelectItem key={uf} textValue={uf}>{uf}</SelectItem>
                           ))}
                         </Select>
                       </div>
@@ -659,7 +641,7 @@ export function UserManagementModal({
                         }}
                       >
                         {Object.values(EspecialidadeJuridica).map((esp) => (
-                          <SelectItem key={esp}>
+                          <SelectItem key={esp} textValue={especialidadeLabels[esp]}>
                             {especialidadeLabels[esp]}
                           </SelectItem>
                         ))}
@@ -760,8 +742,8 @@ export function UserManagementModal({
                             }
                           }}
                         >
-                          <SelectItem key="FISICA">Pessoa Física</SelectItem>
-                          <SelectItem key="JURIDICA">
+                          <SelectItem key="FISICA" textValue="Pessoa Física">Pessoa Física</SelectItem>
+                          <SelectItem key="JURIDICA" textValue="Pessoa Jurídica">
                             Pessoa Jurídica
                           </SelectItem>
                         </Select>
@@ -790,12 +772,12 @@ export function UserManagementModal({
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-2">
-                        <DatePicker
+                        <DateInput
                           showMonthAndYearPickers
                           granularity="day"
                           label="Data de Nascimento"
-                          value={dataNascimento as any}
-                          onChange={(value: any) =>
+                          dateValue={dataNascimento as any}
+                          onDateChange={(value: any) =>
                             setDataNascimento(value || undefined)
                           }
                         />

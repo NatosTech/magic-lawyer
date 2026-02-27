@@ -6,11 +6,12 @@ import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Checkbox } from "@heroui/checkbox";
 import { addToast } from "@heroui/toast";
 
 import { createTenant, type CreateTenantData } from "@/app/actions/admin";
+import { Select, SelectItem } from "@heroui/react";
 
 const timezoneOptions = [
   "America/Sao_Paulo",
@@ -229,7 +230,7 @@ export function TenantCreateContent() {
                 }}
               >
                 {timezoneOptions.map((option) => (
-                  <SelectItem key={option}>{option}</SelectItem>
+                  <SelectItem key={option} textValue={option}>{option}</SelectItem>
                 ))}
               </Select>
               <Input
@@ -261,7 +262,7 @@ export function TenantCreateContent() {
                 }}
               >
                 {tipoPessoaOptions.map((option) => (
-                  <SelectItem key={option.value}>{option.label}</SelectItem>
+                  <SelectItem key={option.value} textValue={option.label}>{option.label}</SelectItem>
                 ))}
               </Select>
               <Input
@@ -377,8 +378,8 @@ export function TenantCreateContent() {
                       handleChange("asaasAmbiente", value);
                     }}
                   >
-                    <SelectItem key="SANDBOX">Sandbox (Teste)</SelectItem>
-                    <SelectItem key="PRODUCAO">Produção</SelectItem>
+                    <SelectItem key="SANDBOX" textValue="Sandbox (Teste)">Sandbox (Teste)</SelectItem>
+                    <SelectItem key="PRODUCAO" textValue="Produção">Produção</SelectItem>
                   </Select>
                 </div>
 

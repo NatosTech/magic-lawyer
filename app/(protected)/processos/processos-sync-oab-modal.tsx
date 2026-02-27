@@ -2,20 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  Button,
-  Card,
-  CardBody,
-  Chip,
-  Input,
-  Select,
-  SelectItem,
-  Spinner,
-} from "@heroui/react";
+  Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Button, Card, CardBody, Chip, Input, Spinner, Select, SelectItem } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import {
   Bot,
@@ -348,7 +335,7 @@ export function ProcessosSyncOabModal({
               }}
             >
               {tribunais.map((tribunal) => (
-                <SelectItem key={tribunal.sigla}>
+                <SelectItem key={tribunal.sigla} textValue={tribunal.sigla}>
                   {tribunal.sigla} · {tribunal.nome} ({tribunal.uf})
                 </SelectItem>
               ))}

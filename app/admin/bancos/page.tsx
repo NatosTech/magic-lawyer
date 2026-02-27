@@ -3,31 +3,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Input,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Chip,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+  Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Select, SelectItem } from "@heroui/react";
 import {
   PlusIcon,
   SearchIcon,
@@ -583,8 +559,8 @@ export default function BancosAdminPage() {
                     setFormData({ ...formData, ativo: selected === "ativo" });
                   }}
                 >
-                  <SelectItem key="ativo">Ativo</SelectItem>
-                  <SelectItem key="inativo">Inativo</SelectItem>
+                  <SelectItem key="ativo" textValue="Ativo">Ativo</SelectItem>
+                  <SelectItem key="inativo" textValue="Inativo">Inativo</SelectItem>
                 </Select>
               )}
             </div>

@@ -3,12 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Button,
-  Select,
-  SelectItem,
-  DateRangePicker,
-  Skeleton,
-} from "@heroui/react";
+  Button, Skeleton, Select, SelectItem } from "@heroui/react";
 import {
   Filter,
   RotateCcw,
@@ -19,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { FiltrosDashboard } from "@/app/actions/dashboard-financeiro";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 
 interface FiltrosDashboardProps {
   filtros: FiltrosDashboard;
@@ -149,16 +145,16 @@ export function FiltrosDashboardComponent({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Período - Date Range */}
         <div className="md:col-span-2">
-          <DateRangePicker
+          <DateRangeInput
             className="w-full"
             label="Período"
             size="sm"
             startContent={<Calendar className="h-4 w-4 text-default-400" />}
             variant="bordered"
-            onChange={(range) => {
-              if (range && range.start && range.end) {
-                updateFiltro("dataInicio", range.start);
-                updateFiltro("dataFim", range.end);
+            onRangeChange={({ start, end }) => {
+              if (start && end) {
+                updateFiltro("dataInicio", new Date(`${start}T00:00:00`));
+                updateFiltro("dataFim", new Date(`${end}T23:59:59`));
               } else {
                 updateFiltro("dataInicio", null);
                 updateFiltro("dataFim", null);

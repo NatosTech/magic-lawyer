@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Spinner } from "@heroui/spinner";
@@ -23,6 +23,7 @@ import {
   testarConexaoAsaas,
   obterConfiguracaoAsaas,
 } from "@/app/actions/asaas";
+import { Select, SelectItem } from "@heroui/react";
 
 interface AsaasConfigTabProps {
   userRole: string;
@@ -285,8 +286,8 @@ export function AsaasConfigTab({ userRole }: AsaasConfigTabProps) {
                 handleInputChange("ambiente", value);
               }}
             >
-              <SelectItem key="SANDBOX">Sandbox (Teste)</SelectItem>
-              <SelectItem key="PRODUCAO">Produção</SelectItem>
+              <SelectItem key="SANDBOX" textValue="Sandbox (Teste)">Sandbox (Teste)</SelectItem>
+              <SelectItem key="PRODUCAO" textValue="Produção">Produção</SelectItem>
             </Select>
           </div>
 

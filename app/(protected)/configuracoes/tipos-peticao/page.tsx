@@ -1,26 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Chip,
-  Spinner,
-  Switch,
-  Textarea,
-  Tabs,
-  Tab,
-} from "@heroui/react";
+import { Card, CardBody, CardHeader, Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Chip, Spinner, Switch, Textarea, Tabs, Tab, Select, SelectItem } from "@heroui/react";
 import {
   PlusIcon,
   PencilIcon,

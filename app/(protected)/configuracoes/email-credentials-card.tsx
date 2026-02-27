@@ -7,17 +7,11 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from "@heroui/table";
+  Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, } from "@heroui/table";
 import { addToast } from "@heroui/toast";
-import { Tooltip } from "@heroui/react";
+import { Tooltip, Select, SelectItem } from "@heroui/react";
 import {
   Mail,
   Server,

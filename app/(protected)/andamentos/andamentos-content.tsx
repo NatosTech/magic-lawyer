@@ -5,25 +5,7 @@ import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Input,
-  Select,
-  SelectItem,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Textarea,
-  Chip,
-  Tooltip,
-  Skeleton,
-  DatePicker,
-  DateRangePicker,
-} from "@heroui/react";
+  Card, CardBody, CardHeader, Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Chip, Tooltip, Skeleton, Select, SelectItem } from "@heroui/react";
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date";
 import { toast } from "sonner";
 import {
@@ -67,6 +49,8 @@ import {
 import { getAllProcessos } from "@/app/actions/processos";
 import { MovimentacaoTipo } from "@/generated/prisma";
 import { title, subtitle } from "@/components/primitives";
+import { DateInput } from "@/components/ui/date-input";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 
 // ============================================
 // TIPOS
@@ -630,13 +614,13 @@ export default function AndamentosPage() {
                         <Calendar className="w-4 h-4" />
                         Período
                       </label>
-                      <DateRangePicker
+                      <DateRangeInput
                         className="max-w-xs"
                         id="filtro-data"
+                        rangeValue={dateRange}
                         size="sm"
-                        value={dateRange}
                         variant="bordered"
-                        onChange={(range) => {
+                        onRangeValueChange={(range) => {
                           setDateRange(range);
                           if (range?.start && range?.end) {
                             setFilters({
@@ -1209,12 +1193,12 @@ function AndamentoModal({
                   <Calendar className="text-blue-500" size={16} />
                   Data da Movimentação
                 </label>
-                <DatePicker
+                <DateInput
                   className="w-full"
                   id="modal-data-movimentacao"
                   isReadOnly={isReadOnly}
-                  value={formData.dataMovimentacao}
-                  onChange={(date) => {
+                  dateValue={formData.dataMovimentacao}
+                  onDateChange={(date) => {
                     if (date) {
                       setFormData({ ...formData, dataMovimentacao: date });
                     }
@@ -1230,13 +1214,13 @@ function AndamentoModal({
                   <Clock className="text-amber-500" size={16} />
                   Prazo (opcional)
                 </label>
-                <DatePicker
+                <DateInput
                   className="w-full"
                   description="Se houver prazo relacionado a este andamento"
                   id="modal-prazo"
                   isReadOnly={isReadOnly}
-                  value={formData.prazo}
-                  onChange={(date) => {
+                  dateValue={formData.prazo}
+                  onDateChange={(date) => {
                     setFormData({ ...formData, prazo: date });
                   }}
                 />

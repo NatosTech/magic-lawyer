@@ -54,13 +54,30 @@ export interface UpdateConviteData {
   observacoes?: string;
 }
 
-// Buscar todos os convites do tenant
-export async function getConvitesEquipe(): Promise<ConviteEquipeData[]> {
-  const session = await getSession();
+const EQUIPE_CONVITE_ALLOWED_ROLES = new Set<UserRole>([
+  UserRole.ADMIN,
+  UserRole.SECRETARIA,
+  UserRole.FINANCEIRO,
+]);
 
-  if (!session?.user) {
+function assertConvitesEquipeAdmin(session: Awaited<ReturnType<typeof getSession>>) {
+  if (!session?.user?.tenantId) {
     throw new Error("Não autorizado");
   }
+
+  if (
+    session.user.role !== UserRole.ADMIN &&
+    session.user.role !== UserRole.SUPER_ADMIN
+  ) {
+    throw new Error("Apenas administradores podem gerenciar convites");
+  }
+
+  return session;
+}
+
+// Buscar todos os convites do tenant
+export async function getConvitesEquipe(): Promise<ConviteEquipeData[]> {
+  const session = assertConvitesEquipeAdmin(await getSession());
 
   const convites = await prisma.equipeConvite.findMany({
     where: {
@@ -124,35 +141,65 @@ export async function getConvitesEquipe(): Promise<ConviteEquipeData[]> {
 export async function createConviteEquipe(
   data: CreateConviteData,
 ): Promise<ConviteEquipeData> {
-  const session = await getSession();
+  const session = assertConvitesEquipeAdmin(await getSession());
+  const tenantId = session.user.tenantId!;
 
-  if (!session?.user) {
-    throw new Error("Não autorizado");
+  if (!EQUIPE_CONVITE_ALLOWED_ROLES.has(data.role)) {
+    throw new Error("Role não permitido para convites de equipe");
   }
 
-  // Verificar se já existe um convite pendente para este email
-  const existingConvite = await prisma.equipeConvite.findFirst({
-    where: {
-      tenantId: session.user.tenantId,
-      email: data.email,
-      status: "pendente",
-    },
-  });
+  const normalizedEmail = data.email.trim().toLowerCase();
 
-  if (existingConvite) {
-    throw new Error("Já existe um convite pendente para este email");
+  if (!normalizedEmail) {
+    throw new Error("Email inválido");
+  }
+
+  if (data.cargoId) {
+    const cargo = await prisma.cargo.findFirst({
+      where: {
+        id: data.cargoId,
+        tenantId,
+        ativo: true,
+      },
+      select: { id: true },
+    });
+
+    if (!cargo) {
+      throw new Error("Cargo inválido ou inativo");
+    }
   }
 
   // Verificar se já existe um usuário com este email no tenant
   const existingUser = await prisma.usuario.findFirst({
     where: {
-      tenantId: session.user.tenantId,
-      email: data.email,
+      tenantId,
+      email: normalizedEmail,
     },
   });
 
   if (existingUser) {
     throw new Error("Já existe um usuário com este email no escritório");
+  }
+
+  // Fluxo compatível com @@unique([tenantId, email]):
+  // - pendente: bloqueia duplicidade
+  // - aceito: bloqueia novo convite
+  // - rejeitado/expirado: reaproveita registro e reabre como pendente
+  const existingConvite = await prisma.equipeConvite.findUnique({
+    where: {
+      tenantId_email: {
+        tenantId,
+        email: normalizedEmail,
+      },
+    },
+  });
+
+  if (existingConvite?.status === "pendente") {
+    throw new Error("Já existe um convite pendente para este email");
+  }
+
+  if (existingConvite?.status === "aceito") {
+    throw new Error("Este convite já foi aceito anteriormente");
   }
 
   // Gerar token único
@@ -163,46 +210,80 @@ export async function createConviteEquipe(
 
   expiraEm.setDate(expiraEm.getDate() + 7);
 
-  const convite = await prisma.equipeConvite.create({
-    data: {
-      tenantId: session.user.tenantId!,
-      email: data.email,
-      nome: data.nome,
-      cargoId: data.cargoId,
-      role: data.role,
-      token,
-      expiraEm,
-      observacoes: data.observacoes,
-      enviadoPor: session.user.id!,
-    },
-    include: {
-      cargo: {
-        select: {
-          id: true,
-          nome: true,
-          nivel: true,
+  const conviteData = {
+    email: normalizedEmail,
+    nome: data.nome?.trim() || null,
+    cargoId: data.cargoId || null,
+    role: data.role,
+    token,
+    expiraEm,
+    observacoes: data.observacoes?.trim() || null,
+    enviadoPor: session.user.id!,
+    status: "pendente",
+    aceitoEm: null,
+    rejeitadoEm: null,
+  };
+
+  const convite = existingConvite
+    ? await prisma.equipeConvite.update({
+        where: {
+          id: existingConvite.id,
         },
-      },
-      enviadoPorUsuario: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
+        data: {
+          ...conviteData,
+          updatedAt: new Date(),
         },
-      },
-    },
-  });
+        include: {
+          cargo: {
+            select: {
+              id: true,
+              nome: true,
+              nivel: true,
+            },
+          },
+          enviadoPorUsuario: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      })
+    : await prisma.equipeConvite.create({
+        data: {
+          tenantId,
+          ...conviteData,
+        },
+        include: {
+          cargo: {
+            select: {
+              id: true,
+              nome: true,
+              nivel: true,
+            },
+          },
+          enviadoPorUsuario: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      });
 
   // Enviar email de convite
   try {
     const tenant = await prisma.tenant.findUnique({
-      where: { id: session.user.tenantId },
+      where: { id: tenantId },
       select: { name: true },
     });
 
     if (tenant) {
-      await sendConviteEmail(session.user.tenantId!, {
+      await sendConviteEmail(tenantId, {
         email: convite.email,
         nome: convite.nome || undefined,
         nomeEscritorio: tenant.name,
@@ -229,7 +310,7 @@ export async function createConviteEquipe(
 
     const destinatarios = await prisma.usuario.findMany({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId,
         active: true,
         role: {
           in: [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SECRETARIA],
@@ -243,7 +324,7 @@ export async function createConviteEquipe(
 
     await Promise.all(
       destinatarios.map(({ id }) =>
-        NotificationHelper.notifyEquipeUserInvited(session.user.tenantId!, id, {
+        NotificationHelper.notifyEquipeUserInvited(tenantId, id, {
           conviteId: convite.id,
           email: convite.email,
           nome: convite.nome || undefined,
@@ -292,11 +373,7 @@ export async function createConviteEquipe(
 export async function resendConviteEquipe(
   conviteId: string,
 ): Promise<ConviteEquipeData> {
-  const session = await getSession();
-
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const session = assertConvitesEquipeAdmin(await getSession());
 
   const convite = await prisma.equipeConvite.findFirst({
     where: {
@@ -407,11 +484,7 @@ export async function resendConviteEquipe(
 
 // Cancelar convite
 export async function cancelConviteEquipe(conviteId: string): Promise<void> {
-  const session = await getSession();
-
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const session = assertConvitesEquipeAdmin(await getSession());
 
   const convite = await prisma.equipeConvite.findFirst({
     where: {
@@ -557,6 +630,7 @@ export async function acceptConviteEquipe(
   // Verificar se já existe um usuário com este email
   const existingUser = await prisma.usuario.findFirst({
     where: {
+      tenantId: convite.tenantId,
       email: convite.email,
     },
   });
@@ -690,11 +764,7 @@ export async function getDashboardConvites(): Promise<{
   rejeitados: number;
   expirados: number;
 }> {
-  const session = await getSession();
-
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const session = assertConvitesEquipeAdmin(await getSession());
 
   const [total, pendentes, aceitos, rejeitados, expirados] = await Promise.all([
     prisma.equipeConvite.count({

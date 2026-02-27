@@ -7,49 +7,25 @@ import { Divider } from "@heroui/divider";
 import { Spinner } from "@heroui/spinner";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Select, SelectItem } from "@heroui/react";
+
 import {
-  Scale,
-  Briefcase,
-  Calendar,
-  Clock,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  User,
-  FileText,
-  Plus,
-  Search,
-  Filter,
-  X,
-  Eye,
-  Edit,
-  DollarSign,
-  MapPin,
-  Shield,
-  Building2,
-  Users,
-  Copy,
-  UploadCloud,
-  RefreshCw,
-} from "lucide-react";
+  Scale, Briefcase, Calendar, Clock, AlertCircle, CheckCircle, XCircle, User, FileText, Plus, Search, Filter, X, Eye, Edit, DollarSign, MapPin, Shield, Building2, Users, Copy, UploadCloud, RefreshCw, LayoutGrid, List as ListIcon, } from "lucide-react";
 import Link from "next/link";
 
 import { useAllProcessos } from "@/app/hooks/use-processos";
 import { useClientesParaSelect } from "@/app/hooks/use-clientes";
 import { useAdvogadosParaSelect } from "@/app/hooks/use-advogados-select";
-import { title, subtitle } from "@/components/primitives";
+import { PeoplePageHeader } from "@/components/people-ui";
 import {
-  ProcessoStatus,
-  ProcessoFase,
-  ProcessoGrau,
-} from "@/generated/prisma";
+  ProcessoStatus, ProcessoFase, ProcessoGrau, } from "@/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
 import { addToast } from "@heroui/toast";
 import { ProcessosImportModal } from "./processos-import-modal";
 import { ProcessosSyncOabModal } from "./processos-sync-oab-modal";
-import { Pagination } from "@heroui/react";
+import { Pagination, Select, SelectItem } from "@heroui/react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useSession } from "next-auth/react";
+import { DateRangeInput } from "@/components/ui/date-range-input";
 
 interface ProcessoFiltros {
   busca: string;
@@ -125,6 +101,11 @@ const FilterToggleButton = ({
 );
 
 export function ProcessosContent() {
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role as string | undefined;
+  const canSyncOab =
+    role === "ADMIN" || role === "SUPER_ADMIN" || role === "ADVOGADO";
+
   const {
     processos,
     isLoading,
@@ -155,6 +136,9 @@ export function ProcessosContent() {
   const [mostrarModalImportacao, setMostrarModalImportacao] = useState(false);
   const [mostrarModalSincronizacaoOab, setMostrarModalSincronizacaoOab] =
     useState(false);
+  const [modoVisualizacao, setModoVisualizacao] = useState<"cards" | "lista">(
+    "cards",
+  );
   const [paginaAtual, setPaginaAtual] = useState(1);
   const itensPorPagina = 9;
 
@@ -288,6 +272,38 @@ export function ProcessosContent() {
 
     return Array.from(new Set(comarcas));
   }, [processos]);
+
+  const areaKeys = useMemo(() => new Set(areasUnicas), [areasUnicas]);
+  const selectedAreaKeys =
+    filtros.areaId && areaKeys.has(filtros.areaId) ? [filtros.areaId] : [];
+
+  const advogadoKeys = useMemo(
+    () => new Set(advogadosOptions.map((adv) => adv.id)),
+    [advogadosOptions],
+  );
+  const selectedAdvogadoKeys =
+    filtros.advogadoId && advogadoKeys.has(filtros.advogadoId)
+      ? [filtros.advogadoId]
+      : [];
+
+  const clienteKeys = useMemo(
+    () => new Set((clientes || []).map((cliente) => cliente.id)),
+    [clientes],
+  );
+  const selectedClienteKeys =
+    filtros.clienteId && clienteKeys.has(filtros.clienteId)
+      ? [filtros.clienteId]
+      : [];
+
+  const comarcaKeys = useMemo(() => new Set(comarcasUnicas), [comarcasUnicas]);
+  const selectedComarcaKeys =
+    filtros.comarca && comarcaKeys.has(filtros.comarca) ? [filtros.comarca] : [];
+
+  const selectedSegredoJusticaKeys =
+    filtros.segredoJustica !== null ? [filtros.segredoJustica.toString()] : [];
+  const selectedPrazoVencimentoKeys = filtros.prazoVencimento
+    ? [filtros.prazoVencimento]
+    : [];
 
   // Filtrar processos
   const processosFiltrados = useMemo(() => {
@@ -510,48 +526,80 @@ export function ProcessosContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>Processos</h1>
-          <p className={subtitle({ fullWidth: true })}>
-            {processosFiltrados.length} de {processos?.length || 0} processos
-            {temFiltrosAtivos && " (filtrados)"}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            startContent={<Filter className="h-4 w-4" />}
-            variant="bordered"
-            onPress={() => setMostrarFiltros(!mostrarFiltros)}
-          >
-            Filtros
-          </Button>
-          <Button
-            color="secondary"
-            startContent={<UploadCloud className="h-4 w-4" />}
-            variant="flat"
-            onPress={() => setMostrarModalImportacao(true)}
-          >
-            Importar
-          </Button>
-          <Button
-            color="warning"
-            startContent={<RefreshCw className="h-4 w-4" />}
-            variant="flat"
-            onPress={() => setMostrarModalSincronizacaoOab(true)}
-          >
-            Sincronizar OAB
-          </Button>
-          <Button
-            as={Link}
-            color="primary"
-            href="/processos/novo"
-            startContent={<Plus className="h-4 w-4" />}
-          >
-            Novo Processo
-          </Button>
-        </div>
-      </div>
+      <PeoplePageHeader
+        tag="Atividades jurídicas"
+        title="Processos"
+        description={`${processosFiltrados.length} de ${processos?.length || 0} processos${temFiltrosAtivos ? " (filtrados)" : ""}`}
+        actions={
+          <>
+            <div className="flex items-center rounded-xl border border-default-200 bg-content1 p-0.5">
+              <Button
+                isIconOnly
+                aria-label="Visualizar em cards"
+                color={modoVisualizacao === "cards" ? "primary" : "default"}
+                size="sm"
+                variant={modoVisualizacao === "cards" ? "solid" : "light"}
+                onPress={() => {
+                  setModoVisualizacao("cards");
+                  setPaginaAtual(1);
+                }}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                isIconOnly
+                aria-label="Visualizar em lista"
+                color={modoVisualizacao === "lista" ? "primary" : "default"}
+                size="sm"
+                variant={modoVisualizacao === "lista" ? "solid" : "light"}
+                onPress={() => {
+                  setModoVisualizacao("lista");
+                  setPaginaAtual(1);
+                }}
+              >
+                <ListIcon className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button
+              size="sm"
+              startContent={<Filter className="h-4 w-4" />}
+              variant="bordered"
+              onPress={() => setMostrarFiltros(!mostrarFiltros)}
+            >
+              Filtros
+            </Button>
+            <Button
+              color="secondary"
+              size="sm"
+              startContent={<UploadCloud className="h-4 w-4" />}
+              variant="flat"
+              onPress={() => setMostrarModalImportacao(true)}
+            >
+              Importar
+            </Button>
+            {canSyncOab ? (
+              <Button
+                color="warning"
+                size="sm"
+                startContent={<RefreshCw className="h-4 w-4" />}
+                variant="flat"
+                onPress={() => setMostrarModalSincronizacaoOab(true)}
+              >
+                Sincronizar OAB
+              </Button>
+            ) : null}
+            <Button
+              as={Link}
+              color="primary"
+              href="/processos/novo"
+              size="sm"
+              startContent={<Plus className="h-4 w-4" />}
+            >
+              Novo Processo
+            </Button>
+          </>
+        }
+      />
 
       {/* Barra de Busca */}
       <Card>
@@ -710,7 +758,7 @@ export function ProcessosContent() {
                     <Select
                       label="Área"
                       placeholder="Todas as áreas"
-                      selectedKeys={filtros.areaId ? [filtros.areaId] : []}
+                      selectedKeys={selectedAreaKeys}
                       onSelectionChange={(keys) => {
                         const selectedKey = Array.from(keys)[0] as string;
 
@@ -721,16 +769,16 @@ export function ProcessosContent() {
                       }}
                     >
                       {areasUnicas.map((area) => (
-                        <SelectItem key={area}>{area}</SelectItem>
+                        <SelectItem key={area} textValue={area}>
+                          {area}
+                        </SelectItem>
                       ))}
                     </Select>
 
                     <Select
                       label="Advogado responsável"
                       placeholder="Todos os advogados"
-                      selectedKeys={
-                        filtros.advogadoId ? [filtros.advogadoId] : []
-                      }
+                      selectedKeys={selectedAdvogadoKeys}
                       onSelectionChange={(keys) => {
                         const selectedKey = Array.from(keys)[0] as string;
 
@@ -742,16 +790,16 @@ export function ProcessosContent() {
                       }}
                     >
                       {advogadosOptions.map((adv) => (
-                        <SelectItem key={adv.id}>{adv.label}</SelectItem>
+                        <SelectItem key={adv.id} textValue={adv.label}>
+                          {adv.label}
+                        </SelectItem>
                       ))}
                     </Select>
 
                     <Select
                       label="Cliente"
                       placeholder="Todos os clientes"
-                      selectedKeys={
-                        filtros.clienteId ? [filtros.clienteId] : []
-                      }
+                      selectedKeys={selectedClienteKeys}
                       onSelectionChange={(keys) => {
                         const selectedKey = Array.from(keys)[0] as string;
 
@@ -762,7 +810,7 @@ export function ProcessosContent() {
                       }}
                     >
                       {(clientes || []).map((cliente) => (
-                        <SelectItem key={cliente.id}>
+                        <SelectItem key={cliente.id} textValue={cliente.nome}>
                           <div className="flex items-center gap-2">
                             {cliente.tipoPessoa === "JURIDICA" ? (
                               <Building2 className="h-4 w-4 text-default-400" />
@@ -788,7 +836,7 @@ export function ProcessosContent() {
                     <Select
                       label="Comarca"
                       placeholder="Todas as comarcas"
-                      selectedKeys={filtros.comarca ? [filtros.comarca] : []}
+                      selectedKeys={selectedComarcaKeys}
                       onSelectionChange={(keys) => {
                         const selectedKey = Array.from(keys)[0] as string;
 
@@ -799,18 +847,16 @@ export function ProcessosContent() {
                       }}
                     >
                       {comarcasUnicas.map((comarca) => (
-                        <SelectItem key={comarca}>{comarca}</SelectItem>
+                        <SelectItem key={comarca} textValue={comarca}>
+                          {comarca}
+                        </SelectItem>
                       ))}
                     </Select>
 
                     <Select
                       label="Segredo de justiça"
                       placeholder="Todos"
-                      selectedKeys={
-                        filtros.segredoJustica !== null
-                          ? [filtros.segredoJustica.toString()]
-                          : []
-                      }
+                      selectedKeys={selectedSegredoJusticaKeys}
                       onSelectionChange={(keys) => {
                         const selectedKey = Array.from(keys)[0] as string;
 
@@ -821,13 +867,13 @@ export function ProcessosContent() {
                         }));
                       }}
                     >
-                      <SelectItem key="true">
+                      <SelectItem key="true" textValue="Em segredo">
                         <div className="flex items-center gap-2">
                           <Shield className="h-4 w-4 text-warning" />
                           <span>Em segredo</span>
                         </div>
                       </SelectItem>
-                      <SelectItem key="false">
+                      <SelectItem key="false" textValue="Público">
                         <div className="flex items-center gap-2">
                           <Eye className="h-4 w-4 text-success" />
                           <span>Público</span>
@@ -874,37 +920,23 @@ export function ProcessosContent() {
                       />
                     </div>
 
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <Input
-                        label="Distribuição (de)"
-                        type="date"
-                        value={filtros.dataDistribuicaoInicio}
-                        onChange={(e) =>
-                          setFiltros((prev) => ({
-                            ...prev,
-                            dataDistribuicaoInicio: e.target.value,
-                          }))
-                        }
-                      />
-                      <Input
-                        label="Distribuição (até)"
-                        type="date"
-                        value={filtros.dataDistribuicaoFim}
-                        onChange={(e) =>
-                          setFiltros((prev) => ({
-                            ...prev,
-                            dataDistribuicaoFim: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
+                    <DateRangeInput
+                      label="Distribuição (de/até)"
+                      startValue={filtros.dataDistribuicaoInicio}
+                      endValue={filtros.dataDistribuicaoFim}
+                      onRangeChange={({ start, end }) =>
+                        setFiltros((prev) => ({
+                          ...prev,
+                          dataDistribuicaoInicio: start,
+                          dataDistribuicaoFim: end,
+                        }))
+                      }
+                     />
 
                     <Select
                       label="Prazos principais"
                       placeholder="Todos os prazos"
-                      selectedKeys={
-                        filtros.prazoVencimento ? [filtros.prazoVencimento] : []
-                      }
+                      selectedKeys={selectedPrazoVencimentoKeys}
                       onSelectionChange={(keys) => {
                         const selectedKey = Array.from(keys)[0] as string;
 
@@ -914,25 +946,31 @@ export function ProcessosContent() {
                         }));
                       }}
                     >
-                      <SelectItem key="vencido">
+                      <SelectItem key="vencido" textValue="Vencido">
                         <div className="flex items-center gap-2">
                           <XCircle className="h-4 w-4 text-danger" />
                           <span>Vencido</span>
                         </div>
                       </SelectItem>
-                      <SelectItem key="vencendo_hoje">
+                      <SelectItem key="vencendo_hoje" textValue="Vencendo hoje">
                         <div className="flex items-center gap-2">
                           <AlertCircle className="h-4 w-4 text-warning" />
                           <span>Vencendo hoje</span>
                         </div>
                       </SelectItem>
-                      <SelectItem key="vencendo_7_dias">
+                      <SelectItem
+                        key="vencendo_7_dias"
+                        textValue="Vencendo em 7 dias"
+                      >
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-warning" />
                           <span>Vencendo em 7 dias</span>
                         </div>
                       </SelectItem>
-                      <SelectItem key="vencendo_30_dias">
+                      <SelectItem
+                        key="vencendo_30_dias"
+                        textValue="Vencendo em 30 dias"
+                      >
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-primary" />
                           <span>Vencendo em 30 dias</span>
@@ -978,187 +1016,369 @@ export function ProcessosContent() {
           </Card>
         ) : (
           <>
-            <motion.div
-              layout
-              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-            >
-              <AnimatePresence>
-                {processosPaginados.map((processo: any) => (
-                  <motion.div
-                    key={processo.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -12 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                  >
-                    <Card
-                key={processo.id}
-                isPressable
-                as={Link}
-                className="border border-default-200 hover:border-primary transition-all hover:shadow-lg cursor-pointer"
-                href={`/processos/${processo.id}`}
+            {modoVisualizacao === "cards" ? (
+              <motion.div
+                layout
+                className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+              >
+                <AnimatePresence>
+                  {processosPaginados.map((processo: any) => (
+                    <motion.div
+                      key={processo.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -12 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
                     >
-                      <CardHeader className="flex flex-col items-start gap-2 pb-2">
-                  <div className="flex w-full items-start justify-between">
-                    <Chip
-                      color={getStatusColor(processo.status)}
-                      size="sm"
-                      startContent={getStatusIcon(processo.status)}
-                      variant="flat"
-                    >
-                      {getStatusLabel(processo.status)}
-                    </Chip>
-                    {processo.segredoJustica && (
-                      <Shield className="h-4 w-4 text-warning" />
-                    )}
-                  </div>
-                  <div className="w-full">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-default-700">
-                        {processo.numero}
-                      </p>
-                      <Button
-                        isIconOnly
-                        aria-label="Copiar número do processo"
-                        className="min-w-6 h-6 w-6"
-                        size="sm"
-                        variant="light"
-                        onPress={() => copiarNumeroProcesso(processo.numero)}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          copiarNumeroProcesso(processo.numero, e);
-                        }}
+                      <Card
+                        key={processo.id}
+                        isPressable
+                        as={Link}
+                        className="border border-default-200 hover:border-primary transition-all hover:shadow-lg cursor-pointer"
+                        href={`/processos/${processo.id}`}
                       >
-                        <Copy className="h-3.5 w-3.5 text-default-400 hover:text-primary transition-colors" />
-                      </Button>
-                    </div>
-                    {processo.numeroCnj && (
-                      <p className="mt-0.5 text-xs text-default-500">
-                        CNJ: {processo.numeroCnj}
-                      </p>
-                    )}
-                    {processo.titulo && (
-                      <p className="mt-1 text-xs text-default-500 line-clamp-2">
-                        {processo.titulo}
-                      </p>
-                    )}
+                        <CardHeader className="flex flex-col items-start gap-2 pb-2">
+                          <div className="flex w-full items-start justify-between">
+                            <Chip
+                              color={getStatusColor(processo.status)}
+                              size="sm"
+                              startContent={getStatusIcon(processo.status)}
+                              variant="flat"
+                            >
+                              {getStatusLabel(processo.status)}
+                            </Chip>
+                            {processo.segredoJustica && (
+                              <Shield className="h-4 w-4 text-warning" />
+                            )}
+                          </div>
+                          <div className="w-full">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-default-700">
+                                {processo.numero}
+                              </p>
+                              <Button
+                                isIconOnly
+                                aria-label="Copiar número do processo"
+                                className="min-w-6 h-6 w-6"
+                                size="sm"
+                                variant="light"
+                                onPress={() =>
+                                  copiarNumeroProcesso(processo.numero)
+                                }
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  copiarNumeroProcesso(processo.numero, e);
+                                }}
+                              >
+                                <Copy className="h-3.5 w-3.5 text-default-400 hover:text-primary transition-colors" />
+                              </Button>
+                            </div>
+                            {processo.numeroCnj && (
+                              <p className="mt-0.5 text-xs text-default-500">
+                                CNJ: {processo.numeroCnj}
+                              </p>
+                            )}
+                            {processo.titulo && (
+                              <p className="mt-1 text-xs text-default-500 line-clamp-2">
+                                {processo.titulo}
+                              </p>
+                            )}
+                          </div>
+                        </CardHeader>
+                        <Divider />
+                        <CardBody className="gap-3 pt-3">
+                          {processo.area && (
+                            <div className="flex items-center gap-2 text-xs">
+                              <Briefcase className="h-3 w-3 text-default-400" />
+                              <span className="text-default-600">
+                                {processo.area.nome}
+                              </span>
+                            </div>
+                          )}
+                          {processo.advogadoResponsavel && (
+                            <div className="flex items-center gap-2 text-xs">
+                              <User className="h-3 w-3 text-default-400" />
+                              <span className="text-default-600">
+                                {processo.advogadoResponsavel.usuario.firstName}{" "}
+                                {processo.advogadoResponsavel.usuario.lastName}
+                              </span>
+                            </div>
+                          )}
+                          {processo.cliente && (
+                            <div className="flex items-center gap-2 text-xs">
+                              {processo.cliente.tipoPessoa === "JURIDICA" ? (
+                                <Building2 className="h-3 w-3 text-default-400" />
+                              ) : (
+                                <User className="h-3 w-3 text-default-400" />
+                              )}
+                              <span className="text-default-600">
+                                {processo.cliente.nome}
+                              </span>
+                            </div>
+                          )}
+                          {processo.comarca && (
+                            <div className="flex items-center gap-2 text-xs">
+                              <MapPin className="h-3 w-3 text-default-400" />
+                              <span className="text-default-600">
+                                {processo.comarca}
+                              </span>
+                            </div>
+                          )}
+                          {processo.dataDistribuicao &&
+                            DateUtils.isValid(processo.dataDistribuicao) && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <Calendar className="h-3 w-3 text-default-400" />
+                                <span className="text-default-600">
+                                  {DateUtils.formatDate(processo.dataDistribuicao)}
+                                </span>
+                              </div>
+                            )}
+                          {processo.prazoPrincipal &&
+                            DateUtils.isValid(processo.prazoPrincipal) && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <Clock className="h-3 w-3 text-warning" />
+                                <span className="text-warning-600">
+                                  Prazo: {DateUtils.formatDate(processo.prazoPrincipal)}
+                                </span>
+                              </div>
+                            )}
+                          {processo.valorCausa !== null &&
+                            processo.valorCausa !== undefined &&
+                            !isNaN(Number(processo.valorCausa)) &&
+                            Number(processo.valorCausa) > 0 && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <DollarSign className="h-3 w-3 text-success" />
+                                <span className="text-success-600">
+                                  R${" "}
+                                  {Number(processo.valorCausa).toLocaleString(
+                                    "pt-BR",
+                                    {
+                                      minimumFractionDigits: 2,
+                                    },
+                                  )}
+                                </span>
+                              </div>
+                            )}
+
+                          {(processo.fase || processo.grau) && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {processo.fase && (
+                                <Chip color="secondary" size="sm" variant="flat">
+                                  {getFaseLabel(processo.fase)}
+                                </Chip>
+                              )}
+                              {processo.grau && (
+                                <Chip color="default" size="sm" variant="flat">
+                                  {getGrauLabel(processo.grau)}
+                                </Chip>
+                              )}
+                            </div>
+                          )}
+
+                          {Array.isArray(processo.partes) &&
+                            processo.partes.length > 0 && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <Scale className="h-3 w-3 text-default-400" />
+                                <span className="text-default-600">
+                                  {processo.partes.length}{" "}
+                                  {processo.partes.length === 1
+                                    ? "parte"
+                                    : "partes"}
+                                </span>
+                              </div>
+                            )}
+
+                          <Divider className="my-2" />
+
+                          <div className="flex flex-wrap gap-2">
+                            <Chip size="sm" variant="flat">
+                              {processo._count.documentos} docs
+                            </Chip>
+                            <Chip size="sm" variant="flat">
+                              {processo._count.eventos} eventos
+                            </Chip>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            ) : (
+              <Card className="border border-default-200">
+                <CardBody className="p-0">
+                  <div className="hidden border-b border-default-200 bg-default-50 px-4 py-3 md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,1fr)_auto] md:gap-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-default-500">
+                      Processo
+                    </p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-default-500">
+                      Cliente
+                    </p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-default-500">
+                      Advogado
+                    </p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-default-500">
+                      Status
+                    </p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-default-500">
+                      Prazos
+                    </p>
+                    <p className="text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-default-500">
+                      Ações
+                    </p>
                   </div>
-                </CardHeader>
-                <Divider />
-                <CardBody className="gap-3 pt-3">
-                  {processo.area && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <Briefcase className="h-3 w-3 text-default-400" />
-                      <span className="text-default-600">
-                        {processo.area.nome}
-                      </span>
-                    </div>
-                  )}
-                  {processo.advogadoResponsavel && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <User className="h-3 w-3 text-default-400" />
-                      <span className="text-default-600">
-                        {processo.advogadoResponsavel.usuario.firstName}{" "}
-                        {processo.advogadoResponsavel.usuario.lastName}
-                      </span>
-                    </div>
-                  )}
-                  {processo.cliente && (
-                    <div className="flex items-center gap-2 text-xs">
-                      {processo.cliente.tipoPessoa === "JURIDICA" ? (
-                        <Building2 className="h-3 w-3 text-default-400" />
-                      ) : (
-                        <User className="h-3 w-3 text-default-400" />
-                      )}
-                      <span className="text-default-600">
-                        {processo.cliente.nome}
-                      </span>
-                    </div>
-                  )}
-                  {processo.comarca && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <MapPin className="h-3 w-3 text-default-400" />
-                      <span className="text-default-600">
-                        {processo.comarca}
-                      </span>
-                    </div>
-                  )}
-                  {processo.dataDistribuicao &&
-                    DateUtils.isValid(processo.dataDistribuicao) && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <Calendar className="h-3 w-3 text-default-400" />
-                        <span className="text-default-600">
-                          {DateUtils.formatDate(processo.dataDistribuicao)}
-                        </span>
-                      </div>
-                    )}
-                  {processo.prazoPrincipal &&
-                    DateUtils.isValid(processo.prazoPrincipal) && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <Clock className="h-3 w-3 text-warning" />
-                        <span className="text-warning-600">
-                          Prazo: {DateUtils.formatDate(processo.prazoPrincipal)}
-                        </span>
-                      </div>
-                    )}
-                  {processo.valorCausa !== null &&
-                    processo.valorCausa !== undefined &&
-                    !isNaN(Number(processo.valorCausa)) &&
-                    Number(processo.valorCausa) > 0 && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <DollarSign className="h-3 w-3 text-success" />
-                        <span className="text-success-600">
-                          R${" "}
-                          {Number(processo.valorCausa).toLocaleString("pt-BR", {
-                            minimumFractionDigits: 2,
-                          })}
-                        </span>
-                      </div>
-                    )}
 
-                  {(processo.fase || processo.grau) && (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {processo.fase && (
-                        <Chip color="secondary" size="sm" variant="flat">
-                          {getFaseLabel(processo.fase)}
-                        </Chip>
-                      )}
-                      {processo.grau && (
-                        <Chip color="default" size="sm" variant="flat">
-                          {getGrauLabel(processo.grau)}
-                        </Chip>
-                      )}
-                    </div>
-                  )}
+                  <div className="divide-y divide-default-200">
+                    {processosPaginados.map((processo: any) => {
+                      const advogadoNome = processo.advogadoResponsavel
+                        ? `${processo.advogadoResponsavel.usuario.firstName ?? ""} ${
+                            processo.advogadoResponsavel.usuario.lastName ?? ""
+                          }`.trim()
+                        : "Não definido";
+                      const prazoPrincipal = processo.prazoPrincipal &&
+                        DateUtils.isValid(processo.prazoPrincipal)
+                        ? DateUtils.formatDate(processo.prazoPrincipal)
+                        : "-";
+                      const distribuicao = processo.dataDistribuicao &&
+                        DateUtils.isValid(processo.dataDistribuicao)
+                        ? DateUtils.formatDate(processo.dataDistribuicao)
+                        : "-";
 
-                  {Array.isArray(processo.partes) &&
-                    processo.partes.length > 0 && (
-                      <div className="flex items-center gap-2 text-xs">
-                        <Scale className="h-3 w-3 text-default-400" />
-                        <span className="text-default-600">
-                          {processo.partes.length}{" "}
-                          {processo.partes.length === 1 ? "parte" : "partes"}
-                        </span>
-                      </div>
-                    )}
+                      return (
+                        <div
+                          key={processo.id}
+                          className="px-4 py-3 transition-colors hover:bg-default-50/80"
+                        >
+                          <div className="flex flex-col gap-3 md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,1fr)_auto] md:items-center md:gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="truncate text-sm font-semibold text-default-700">
+                                  {processo.numero}
+                                </p>
+                                <Button
+                                  isIconOnly
+                                  aria-label="Copiar número do processo"
+                                  className="min-w-6 h-6 w-6"
+                                  size="sm"
+                                  variant="light"
+                                  onPress={() =>
+                                    copiarNumeroProcesso(processo.numero)
+                                  }
+                                >
+                                  <Copy className="h-3.5 w-3.5 text-default-400 hover:text-primary transition-colors" />
+                                </Button>
+                                {processo.segredoJustica ? (
+                                  <Shield className="h-3.5 w-3.5 text-warning" />
+                                ) : null}
+                              </div>
+                              {processo.numeroCnj ? (
+                                <p className="mt-0.5 text-xs text-default-500">
+                                  CNJ: {processo.numeroCnj}
+                                </p>
+                              ) : null}
+                              {processo.titulo ? (
+                                <p className="mt-1 text-xs text-default-500 line-clamp-1">
+                                  {processo.titulo}
+                                </p>
+                              ) : null}
+                              <p className="mt-1 text-xs text-default-400">
+                                {processo.area?.nome ?? "Área não informada"}
+                                {processo.comarca ? ` • ${processo.comarca}` : ""}
+                              </p>
+                            </div>
 
-                  <Divider className="my-2" />
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-default-400 md:hidden">
+                                Cliente
+                              </p>
+                              <div className="flex items-center gap-2">
+                                {processo.cliente?.tipoPessoa === "JURIDICA" ? (
+                                  <Building2 className="h-3.5 w-3.5 text-default-400" />
+                                ) : (
+                                  <User className="h-3.5 w-3.5 text-default-400" />
+                                )}
+                                <p className="truncate text-sm text-default-600">
+                                  {processo.cliente?.nome ?? "Não informado"}
+                                </p>
+                              </div>
+                            </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <Chip size="sm" variant="flat">
-                      {processo._count.documentos} docs
-                    </Chip>
-                    <Chip size="sm" variant="flat">
-                      {processo._count.eventos} eventos
-                    </Chip>
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-default-400 md:hidden">
+                                Advogado
+                              </p>
+                              <p className="truncate text-sm text-default-600">
+                                {advogadoNome || "Não definido"}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-default-400 md:hidden">
+                                Status
+                              </p>
+                              <Chip
+                                color={getStatusColor(processo.status)}
+                                size="sm"
+                                startContent={getStatusIcon(processo.status)}
+                                variant="flat"
+                              >
+                                {getStatusLabel(processo.status)}
+                              </Chip>
+                            </div>
+
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-default-400 md:hidden">
+                                Prazos
+                              </p>
+                              <p className="text-xs text-default-500">
+                                Prazo: {prazoPrincipal}
+                              </p>
+                              <p className="text-xs text-default-400">
+                                Distrib.: {distribuicao}
+                              </p>
+                              {processo.valorCausa !== null &&
+                              processo.valorCausa !== undefined &&
+                              !isNaN(Number(processo.valorCausa)) &&
+                              Number(processo.valorCausa) > 0 ? (
+                                <p className="text-xs font-medium text-success-600">
+                                  R${" "}
+                                  {Number(processo.valorCausa).toLocaleString(
+                                    "pt-BR",
+                                    { minimumFractionDigits: 2 },
+                                  )}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 md:justify-end">
+                              <div className="flex gap-2">
+                                <Chip size="sm" variant="flat">
+                                  {processo._count.documentos} docs
+                                </Chip>
+                                <Chip size="sm" variant="flat">
+                                  {processo._count.eventos} eventos
+                                </Chip>
+                              </div>
+                              <Button
+                                as={Link}
+                                color="primary"
+                                href={`/processos/${processo.id}`}
+                                size="sm"
+                                startContent={<Eye className="h-3.5 w-3.5" />}
+                                variant="flat"
+                              >
+                                Abrir
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                      </CardBody>
-                    </Card>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </motion.div>
+                </CardBody>
+              </Card>
+            )}
             {totalPaginas > 1 && (
               <div className="flex justify-center">
                 <Pagination
