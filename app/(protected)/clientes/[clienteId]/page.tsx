@@ -273,6 +273,34 @@ export default function ClienteDetalhesPage() {
     TAB_PAGE_SIZES.documentos,
   );
 
+  useEffect(() => {
+    setProcessosPage((prev) => Math.min(prev, processosTotalPages));
+  }, [processosTotalPages]);
+
+  useEffect(() => {
+    setContratosPage((prev) => Math.min(prev, contratosTotalPages));
+  }, [contratosTotalPages]);
+
+  useEffect(() => {
+    setTarefasPage((prev) => Math.min(prev, tarefasTotalPages));
+  }, [tarefasTotalPages]);
+
+  useEffect(() => {
+    setEventosPage((prev) => Math.min(prev, eventosTotalPages));
+  }, [eventosTotalPages]);
+
+  useEffect(() => {
+    setAssinaturasPage((prev) => Math.min(prev, assinaturasTotalPages));
+  }, [assinaturasTotalPages]);
+
+  useEffect(() => {
+    setProcuracoesPage((prev) => Math.min(prev, procuracoesTotalPages));
+  }, [procuracoesTotalPages]);
+
+  useEffect(() => {
+    setDocumentosPage((prev) => Math.min(prev, documentosTotalPages));
+  }, [documentosTotalPages]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
 
@@ -525,34 +553,6 @@ export default function ClienteDetalhesPage() {
         return "primary";
     }
   };
-
-  useEffect(() => {
-    setProcessosPage((prev) => Math.min(prev, processosTotalPages));
-  }, [processosTotalPages]);
-
-  useEffect(() => {
-    setContratosPage((prev) => Math.min(prev, contratosTotalPages));
-  }, [contratosTotalPages]);
-
-  useEffect(() => {
-    setTarefasPage((prev) => Math.min(prev, tarefasTotalPages));
-  }, [tarefasTotalPages]);
-
-  useEffect(() => {
-    setEventosPage((prev) => Math.min(prev, eventosTotalPages));
-  }, [eventosTotalPages]);
-
-  useEffect(() => {
-    setAssinaturasPage((prev) => Math.min(prev, assinaturasTotalPages));
-  }, [assinaturasTotalPages]);
-
-  useEffect(() => {
-    setProcuracoesPage((prev) => Math.min(prev, procuracoesTotalPages));
-  }, [procuracoesTotalPages]);
-
-  useEffect(() => {
-    setDocumentosPage((prev) => Math.min(prev, documentosTotalPages));
-  }, [documentosTotalPages]);
 
   return (
     <div className="space-y-6">
