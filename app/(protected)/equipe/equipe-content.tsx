@@ -102,7 +102,13 @@ import { EnderecoManager } from "@/components/endereco-manager";
 import { useModulosTenant, useCargos } from "@/app/hooks/use-equipe";
 import { ModalHeaderGradient } from "@/components/ui/modal-header-gradient";
 import { ModalSectionCard } from "@/components/ui/modal-section-card";
-import { PeopleMetricCard, PeoplePageHeader } from "@/components/people-ui";
+import {
+  PeopleEntityCard,
+  PeopleEntityCardBody,
+  PeopleEntityCardHeader,
+  PeopleMetricCard,
+  PeoplePageHeader,
+} from "@/components/people-ui";
 
 const containerVariants = {
   hidden: {},
@@ -1366,6 +1372,30 @@ function UsuariosTab() {
     setIsLinkModalOpen(true);
   }
 
+  function handleUsuarioAction(usuario: UsuarioEquipeData, actionKey: string) {
+    if (actionKey === "view") {
+      handleViewUsuario(usuario);
+
+      return;
+    }
+
+    if (actionKey === "edit") {
+      handleEditUsuario(usuario);
+
+      return;
+    }
+
+    if (actionKey === "permissions") {
+      handlePermissionsUsuario(usuario);
+
+      return;
+    }
+
+    if (actionKey === "link") {
+      handleLinkUsuario(usuario);
+    }
+  }
+
   async function handleSavePermission(modulo: string, acao: string, permitido: boolean) {
     if (!selectedUsuario) return;
 
@@ -1913,7 +1943,151 @@ function UsuariosTab() {
       {/* Tabela de usuários */}
       <Card>
         <CardBody className="p-0">
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="space-y-3 p-4 md:hidden">
+            {paginatedUsuarios.map((usuario) => (
+              <PeopleEntityCard
+                key={usuario.id}
+                isPressable
+                onPress={() => handleViewUsuario(usuario)}
+              >
+                <PeopleEntityCardHeader className="p-3">
+                  <div className="flex w-full items-center justify-between gap-3">
+                    <div className="min-w-0 flex items-center gap-3">
+                      <Avatar name={usuario.firstName || usuario.email} size="sm" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">
+                          {usuario.firstName && usuario.lastName
+                            ? `${usuario.firstName} ${usuario.lastName}`
+                            : usuario.email}
+                        </p>
+                        <p className="truncate text-xs text-default-500">
+                          {usuario.email}
+                        </p>
+                      </div>
+                    </div>
+                    <Dropdown>
+                      <DropdownTrigger>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu
+                        onAction={(key) =>
+                          handleUsuarioAction(usuario, String(key))
+                        }
+                      >
+                        <DropdownItem
+                          key="view"
+                          startContent={<Eye className="w-4 h-4" />}
+                        >
+                          Visualizar
+                        </DropdownItem>
+                        <DropdownItem
+                          key="edit"
+                          startContent={<Edit className="w-4 h-4" />}
+                        >
+                          Editar
+                        </DropdownItem>
+                        {isAdmin ? (
+                          <DropdownItem
+                            key="permissions"
+                            startContent={<Shield className="w-4 h-4" />}
+                          >
+                            Permissões
+                          </DropdownItem>
+                        ) : null}
+                        {isAdmin ? (
+                          <DropdownItem
+                            key="link"
+                            startContent={<LinkIcon className="w-4 h-4" />}
+                          >
+                            Vincular
+                          </DropdownItem>
+                        ) : null}
+                      </DropdownMenu>
+                    </Dropdown>
+                  </div>
+                </PeopleEntityCardHeader>
+                <PeopleEntityCardBody className="space-y-3 p-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Chip
+                      color={getDisplayColor(usuario)}
+                      size="sm"
+                      startContent={getDisplayIcon(usuario)}
+                      variant="flat"
+                    >
+                      {getDisplayLabel(usuario)}
+                    </Chip>
+                    <Chip
+                      color={usuario.active ? "success" : "default"}
+                      size="sm"
+                      startContent={
+                        usuario.active ? (
+                          <CheckCircle className="w-3 h-3" />
+                        ) : (
+                          <X className="w-3 h-3" />
+                        )
+                      }
+                      variant="flat"
+                    >
+                      {usuario.active ? "Ativo" : "Inativo"}
+                    </Chip>
+                    {usuario.role === "ADVOGADO" ? (
+                      <Chip
+                        color={usuario.isExterno ? "warning" : "success"}
+                        size="sm"
+                        startContent={
+                          usuario.isExterno ? (
+                            <ExternalLink className="w-3 h-3" />
+                          ) : (
+                            <Building2 className="w-3 h-3" />
+                          )
+                        }
+                        variant="flat"
+                      >
+                        {usuario.isExterno ? "Externo" : "Interno"}
+                      </Chip>
+                    ) : null}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-default-500">
+                      Cargos
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {usuario.cargos.length > 0 ? (
+                        usuario.cargos.slice(0, 2).map((cargo) => (
+                          <Chip
+                            key={cargo.id}
+                            color="primary"
+                            size="sm"
+                            variant="flat"
+                          >
+                            {cargo.nome}
+                          </Chip>
+                        ))
+                      ) : (
+                        <span className="text-xs text-default-400">
+                          Sem cargos
+                        </span>
+                      )}
+                      {usuario.cargos.length > 2 ? (
+                        <Chip color="default" size="sm" variant="flat">
+                          +{usuario.cargos.length - 2}
+                        </Chip>
+                      ) : null}
+                    </div>
+                  </div>
+                </PeopleEntityCardBody>
+              </PeopleEntityCard>
+            ))}
+          </div>
+
+          <div className="hidden overflow-x-auto -mx-4 sm:mx-0 md:block">
             <Table
               aria-label="Usuários da equipe"
               className="min-w-[800px]"
@@ -2045,26 +2219,18 @@ function UsuariosTab() {
                         {usuario.active ? "Ativo" : "Inativo"}
                       </Chip>
                     </TableCell>
-                    <TableCell>
-                      <Dropdown>
-                        <DropdownTrigger>
+	                    <TableCell>
+	                      <Dropdown>
+	                        <DropdownTrigger>
                           <Button isIconOnly size="sm" variant="light">
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownTrigger>
-                        <DropdownMenu
-                          onAction={(key) => {
-                            if (key === "view") {
-                              handleViewUsuario(usuario);
-                            } else if (key === "edit") {
-                              handleEditUsuario(usuario);
-                            } else if (key === "permissions") {
-                              handlePermissionsUsuario(usuario);
-                            } else if (key === "link") {
-                              handleLinkUsuario(usuario);
-                            }
-                          }}
-                        >
+	                        <DropdownMenu
+	                          onAction={(key) =>
+	                            handleUsuarioAction(usuario, String(key))
+	                          }
+	                        >
                           <DropdownItem key="view" startContent={<Eye className="w-4 h-4" />}>
                             Visualizar
                           </DropdownItem>

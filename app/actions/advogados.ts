@@ -8,6 +8,7 @@ import { enviarEmailBoasVindas } from "./advogados-emails";
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
 import { EspecialidadeJuridica } from "@/generated/prisma";
+import { convertAllDecimalFields } from "@/app/lib/prisma";
 import { UploadService } from "@/lib/upload-service";
 
 // =============================================
@@ -237,6 +238,198 @@ interface ActionResponse<T = any> {
   data?: T;
   error?: string;
   advogados?: T;
+}
+
+export interface AdvogadoProfileData extends AdvogadoData {
+  clientesVinculados: Array<{
+    id: string;
+    relacionamento: string | null;
+    cliente: {
+      id: string;
+      nome: string;
+      tipoPessoa: string;
+      documento: string | null;
+      email: string | null;
+      telefone: string | null;
+    };
+    createdAt: string;
+  }>;
+  processos: Array<{
+    id: string;
+    numero: string;
+    numeroCnj: string | null;
+    titulo: string | null;
+    status: string;
+    fase: string | null;
+    grau: string | null;
+    dataDistribuicao: string | null;
+    prazoPrincipal: string | null;
+    createdAt: string;
+    area: { id: string; nome: string } | null;
+    cliente: { id: string; nome: string; tipoPessoa: string };
+    advogadoResponsavel:
+      | {
+          id: string;
+          oabNumero: string | null;
+          oabUf: string | null;
+          usuario: { firstName: string | null; lastName: string | null };
+        }
+      | null;
+    _count: {
+      documentos: number;
+      eventos: number;
+      movimentacoes: number;
+      tarefas: number;
+    };
+    participacao: "Responsavel" | "Parte";
+  }>;
+  contratos: Array<{
+    id: string;
+    titulo: string;
+    status: string;
+    valor: number | null;
+    dataInicio: string | null;
+    dataAssinatura: string | null;
+    cliente: { id: string; nome: string };
+    processo: { id: string; numero: string } | null;
+    tipo: { id: string; nome: string } | null;
+    _count: {
+      documentos: number;
+      faturas: number;
+      honorarios: number;
+      parcelas: number;
+    };
+  }>;
+  procuracoes: Array<{
+    id: string;
+    numero: string | null;
+    ativa: boolean;
+    status: string;
+    emitidaEm: string | null;
+    validaAte: string | null;
+    arquivoUrl: string | null;
+    cliente: {
+      id: string;
+      nome: string;
+      documento: string | null;
+    };
+    _count: {
+      poderes: number;
+      documentos: number;
+      assinaturas: number;
+      processos: number;
+    };
+    outorgados: Array<{
+      advogado: {
+        id: string;
+        usuario: {
+          firstName: string | null;
+          lastName: string | null;
+        };
+      };
+    }>;
+    processos: Array<{
+      processo: {
+        id: string;
+        numero: string;
+      };
+    }>;
+  }>;
+  eventos: Array<{
+    id: string;
+    titulo: string;
+    status: string;
+    tipo: string;
+    dataInicio: string;
+    dataFim: string;
+    local: string | null;
+    cliente: { id: string; nome: string } | null;
+    processo: { id: string; numero: string } | null;
+  }>;
+  tarefas: Array<{
+    id: string;
+    titulo: string;
+    status: string;
+    prioridade: string;
+    dataLimite: string | null;
+    dataInicio: string | null;
+    createdAt: string;
+    processo: { id: string; numero: string } | null;
+    cliente: { id: string; nome: string } | null;
+  }>;
+  documentoAssinaturas: Array<{
+    id: string;
+    titulo: string;
+    status: string;
+    dataEnvio: string | null;
+    dataAssinatura: string | null;
+    dataExpiracao: string | null;
+    urlDocumento: string;
+    urlAssinado: string | null;
+    documento: {
+      id: string;
+      nome: string | null;
+      titulo?: string | null;
+      nomeArquivo?: string | null;
+    };
+    processo: { id: string; numero: string } | null;
+    cliente: { id: string; nome: string };
+  }>;
+}
+
+function buildProcessoCardData(
+  processo: {
+    id: string;
+    numero: string;
+    numeroCnj: string | null;
+    titulo: string | null;
+    status: string;
+    fase: string | null;
+    grau: string | null;
+    dataDistribuicao: Date | null;
+    prazoPrincipal: Date | null;
+    createdAt: Date;
+    area: { id: string; nome: string } | null;
+    cliente: { id: string; nome: string; tipoPessoa: string };
+    advogadoResponsavel:
+      | {
+          id: string;
+          oabNumero: string | null;
+          oabUf: string | null;
+          usuario: { firstName: string | null; lastName: string | null };
+        }
+      | null;
+    _count: {
+      documentos: number;
+      eventos: number;
+      movimentacoes: number;
+      tarefas: number;
+    };
+    participacao: "Responsavel" | "Parte";
+  },
+): AdvogadoProfileData["processos"][number] {
+  return convertAllDecimalFields({
+    id: processo.id,
+    numero: processo.numero,
+    numeroCnj: processo.numeroCnj,
+    titulo: processo.titulo,
+    status: processo.status,
+    fase: processo.fase,
+    grau: processo.grau,
+    dataDistribuicao: processo.dataDistribuicao?.toISOString() ?? null,
+    prazoPrincipal: processo.prazoPrincipal?.toISOString() ?? null,
+    createdAt: processo.createdAt.toISOString(),
+    area: processo.area
+      ? {
+          id: processo.area.id,
+          nome: processo.area.nome,
+        }
+      : null,
+    cliente: processo.cliente,
+    advogadoResponsavel: processo.advogadoResponsavel ?? null,
+    _count: processo._count,
+    participacao: processo.participacao,
+  });
 }
 
 interface CreateAdvogadoResponse extends ActionResponse<AdvogadoData> {
@@ -1820,6 +2013,584 @@ export async function getAdvogadoById(
     console.error("Erro ao buscar advogado por ID:", error);
 
     return { success: false, error: "Erro ao buscar advogado" };
+  }
+}
+
+export async function getAdvogadoPerfilById(
+  advogadoId: string,
+): Promise<ActionResponse<AdvogadoProfileData>> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user?.tenantId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const baseAdvogado = await prisma.advogado.findFirst({
+      where: {
+        id: advogadoId,
+        tenantId: session.user.tenantId,
+      },
+      select: {
+        id: true,
+        usuarioId: true,
+        oabNumero: true,
+        oabUf: true,
+        especialidades: true,
+        bio: true,
+        telefone: true,
+        whatsapp: true,
+        comissaoPadrao: true,
+        comissaoAcaoGanha: true,
+        comissaoHonorarios: true,
+        isExterno: true,
+        formacao: true,
+        experiencia: true,
+        premios: true,
+        publicacoes: true,
+        website: true,
+        linkedin: true,
+        twitter: true,
+        instagram: true,
+        notificarEmail: true,
+        notificarWhatsapp: true,
+        notificarSistema: true,
+        podeCriarProcessos: true,
+        podeEditarProcessos: true,
+        podeExcluirProcessos: true,
+        podeGerenciarClientes: true,
+        podeAcessarFinanceiro: true,
+        usuario: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+            active: true,
+            role: true,
+            cpf: true,
+            rg: true,
+            dataNascimento: true,
+            observacoes: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!baseAdvogado) {
+      return { success: false, error: "Advogado não encontrado" };
+    }
+
+    const [
+      clientesRaw,
+      processosResponsavelRaw,
+      processosParteRaw,
+      contratosRaw,
+      procuracoesRaw,
+      eventosRaw,
+      tarefasRaw,
+      assinaturasRaw,
+    ] = await Promise.all([
+      prisma.advogadoCliente.findMany({
+        where: {
+          tenantId: session.user.tenantId,
+          advogadoId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          id: true,
+          relacionamento: true,
+          createdAt: true,
+          cliente: {
+            select: {
+              id: true,
+              nome: true,
+              tipoPessoa: true,
+              documento: true,
+              email: true,
+              telefone: true,
+            },
+          },
+        },
+      }),
+      prisma.processo.findMany({
+        where: {
+          tenantId: session.user.tenantId,
+          advogadoResponsavelId: advogadoId,
+          deletedAt: null,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          id: true,
+          numero: true,
+          numeroCnj: true,
+          titulo: true,
+          status: true,
+          fase: true,
+          grau: true,
+          dataDistribuicao: true,
+          prazoPrincipal: true,
+          createdAt: true,
+          area: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          cliente: {
+            select: {
+              id: true,
+              nome: true,
+              tipoPessoa: true,
+            },
+          },
+          advogadoResponsavel: {
+            select: {
+              id: true,
+              oabNumero: true,
+              oabUf: true,
+              usuario: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              documentos: true,
+              eventos: true,
+              movimentacoes: true,
+              tarefas: true,
+            },
+          },
+        },
+      }),
+      prisma.processoParte.findMany({
+        where: {
+          tenantId: session.user.tenantId,
+          advogadoId,
+          processo: {
+            deletedAt: null,
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          processo: {
+            select: {
+              id: true,
+              numero: true,
+              numeroCnj: true,
+              titulo: true,
+              status: true,
+              fase: true,
+              grau: true,
+              dataDistribuicao: true,
+              prazoPrincipal: true,
+              createdAt: true,
+              area: {
+                select: {
+                  id: true,
+                  nome: true,
+                },
+              },
+              cliente: {
+                select: {
+                  id: true,
+                  nome: true,
+                  tipoPessoa: true,
+                },
+              },
+              advogadoResponsavel: {
+                select: {
+                  id: true,
+                  oabNumero: true,
+                  oabUf: true,
+                  usuario: {
+                    select: {
+                      firstName: true,
+                      lastName: true,
+                    },
+                  },
+                },
+              },
+              _count: {
+                select: {
+                  documentos: true,
+                  eventos: true,
+                  movimentacoes: true,
+                  tarefas: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.contrato.findMany({
+        where: {
+          tenantId: session.user.tenantId,
+          advogadoResponsavelId: advogadoId,
+          deletedAt: null,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          id: true,
+          titulo: true,
+          status: true,
+          valor: true,
+          dataInicio: true,
+          dataAssinatura: true,
+          cliente: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          processo: {
+            select: {
+              id: true,
+              numero: true,
+            },
+          },
+          tipo: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          _count: {
+            select: {
+              documentos: true,
+              faturas: true,
+              honorarios: true,
+              parcelas: true,
+            },
+          },
+        },
+      }),
+      prisma.procuracaoAdvogado.findMany({
+        where: {
+          tenantId: session.user.tenantId,
+          advogadoId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          procuracao: {
+            select: {
+              id: true,
+              numero: true,
+              ativa: true,
+              status: true,
+              emitidaEm: true,
+              validaAte: true,
+              arquivoUrl: true,
+              cliente: {
+                select: {
+                  id: true,
+                  nome: true,
+                  documento: true,
+                },
+              },
+              _count: {
+                select: {
+                  poderes: true,
+                  documentos: true,
+                  assinaturas: true,
+                  processos: true,
+                },
+              },
+              outorgados: {
+                select: {
+                  advogado: {
+                    select: {
+                      id: true,
+                      usuario: {
+                        select: {
+                          firstName: true,
+                          lastName: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+              processos: {
+                select: {
+                  processo: {
+                    select: {
+                      id: true,
+                      numero: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.evento.findMany({
+        where: {
+          tenantId: session.user.tenantId,
+          advogadoResponsavelId: advogadoId,
+        },
+        orderBy: {
+          dataInicio: "desc",
+        },
+        select: {
+          id: true,
+          titulo: true,
+          status: true,
+          tipo: true,
+          dataInicio: true,
+          dataFim: true,
+          local: true,
+          cliente: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          processo: {
+            select: {
+              id: true,
+              numero: true,
+            },
+          },
+        },
+      }),
+      prisma.tarefa.findMany({
+        where: {
+          tenantId: session.user.tenantId,
+          responsavelId: baseAdvogado.usuarioId,
+          deletedAt: null,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          id: true,
+          titulo: true,
+          status: true,
+          prioridade: true,
+          dataInicio: true,
+          dataLimite: true,
+          createdAt: true,
+          cliente: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          processo: {
+            select: {
+              id: true,
+              numero: true,
+            },
+          },
+        },
+      }),
+      prisma.documentoAssinatura.findMany({
+        where: {
+          tenantId: session.user.tenantId,
+          advogadoResponsavelId: advogadoId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          id: true,
+          titulo: true,
+          status: true,
+          dataEnvio: true,
+          dataAssinatura: true,
+          dataExpiracao: true,
+          urlDocumento: true,
+          urlAssinado: true,
+          documento: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          processo: {
+            select: {
+              id: true,
+              numero: true,
+            },
+          },
+          cliente: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const base = convertAllDecimalFields({
+      id: baseAdvogado.id,
+      usuarioId: baseAdvogado.usuarioId,
+      oabNumero: baseAdvogado.oabNumero,
+      oabUf: baseAdvogado.oabUf,
+      especialidades: baseAdvogado.especialidades,
+      bio: baseAdvogado.bio,
+      telefone: baseAdvogado.telefone,
+      whatsapp: baseAdvogado.whatsapp,
+      comissaoPadrao: Number(baseAdvogado.comissaoPadrao || 0),
+      comissaoAcaoGanha: Number(baseAdvogado.comissaoAcaoGanha || 0),
+      comissaoHonorarios: Number(baseAdvogado.comissaoHonorarios || 0),
+      isExterno: baseAdvogado.isExterno,
+      processosCount: 0,
+      formacao: baseAdvogado.formacao,
+      experiencia: baseAdvogado.experiencia,
+      premios: baseAdvogado.premios,
+      publicacoes: baseAdvogado.publicacoes,
+      website: baseAdvogado.website,
+      linkedin: baseAdvogado.linkedin,
+      twitter: baseAdvogado.twitter,
+      instagram: baseAdvogado.instagram,
+      notificarEmail: baseAdvogado.notificarEmail,
+      notificarWhatsapp: baseAdvogado.notificarWhatsapp,
+      notificarSistema: baseAdvogado.notificarSistema,
+      podeCriarProcessos: baseAdvogado.podeCriarProcessos,
+      podeEditarProcessos: baseAdvogado.podeEditarProcessos,
+      podeExcluirProcessos: baseAdvogado.podeExcluirProcessos,
+      podeGerenciarClientes: baseAdvogado.podeGerenciarClientes,
+      podeAcessarFinanceiro: baseAdvogado.podeAcessarFinanceiro,
+      usuario: baseAdvogado.usuario,
+    }) as Omit<
+      AdvogadoData,
+      "especialidades"
+    > & {
+      id: string;
+      usuarioId: string;
+      oabNumero: string | null;
+      oabUf: string | null;
+      especialidades: EspecialidadeJuridica[];
+      usuario: {
+        id: string;
+        firstName: string | null;
+        lastName: string | null;
+        email: string;
+        phone: string | null;
+        avatarUrl: string | null;
+        active: boolean;
+        role: string;
+        cpf?: string | null;
+        rg?: string | null;
+        dataNascimento?: string | null;
+        observacoes?: string | null;
+        createdAt?: Date | string;
+      };
+    };
+
+    const processosMap = new Map<string, AdvogadoProfileData["processos"][number]>();
+
+    for (const processo of processosResponsavelRaw) {
+      processosMap.set(
+        processo.id,
+        buildProcessoCardData({
+          ...processo,
+          participacao: "Responsavel",
+        }),
+      );
+    }
+
+    for (const item of processosParteRaw) {
+      const processo = item.processo;
+
+      if (!processo) {
+        continue;
+      }
+
+      const existent = processosMap.get(processo.id);
+
+      if (existent) {
+        existent.participacao = "Parte";
+      } else {
+        processosMap.set(
+          processo.id,
+          buildProcessoCardData({
+            ...processo,
+            participacao: "Parte",
+          }),
+        );
+      }
+    }
+
+    const processos = Array.from(processosMap.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
+    const procuracoes = procuracoesRaw
+      .map((item) => item.procuracao)
+      .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      .map((procuracao) => ({
+        ...procuracao,
+        outorgados: procuracao.outorgados.map((item) => ({
+          advogado: item.advogado,
+        })),
+        processos: procuracao.processos
+          .map((item) => item.processo)
+          .filter((processo): processo is NonNullable<typeof processo> => Boolean(processo))
+          .map((processo) => ({
+            processo: {
+              id: processo.id,
+              numero: processo.numero,
+            },
+          })),
+      }));
+
+    const data: AdvogadoProfileData = {
+      ...base,
+      clientesVinculados: clientesRaw.map((item) => ({
+        ...item,
+        cliente: convertAllDecimalFields(item.cliente),
+        createdAt: item.createdAt.toISOString(),
+      })),
+      processos: processos as AdvogadoProfileData["processos"],
+      contratos: contratosRaw as AdvogadoProfileData["contratos"],
+      procuracoes: procuracoes as AdvogadoProfileData["procuracoes"],
+      eventos: eventosRaw.map((evento) => ({
+        ...evento,
+        dataInicio: evento.dataInicio.toISOString(),
+        dataFim: evento.dataFim.toISOString(),
+      })),
+      tarefas: tarefasRaw.map((tarefa) => ({
+        ...tarefa,
+        dataInicio: tarefa.dataInicio ? tarefa.dataInicio.toISOString() : null,
+        dataLimite: tarefa.dataLimite ? tarefa.dataLimite.toISOString() : null,
+        createdAt: tarefa.createdAt.toISOString(),
+      })),
+      documentoAssinaturas: assinaturasRaw as AdvogadoProfileData["documentoAssinaturas"],
+    };
+
+    return {
+      success: true,
+      data: convertAllDecimalFields(data),
+    };
+  } catch (error) {
+    console.error("Erro ao buscar perfil completo do advogado:", error);
+
+    return {
+      success: false,
+      error: "Erro ao buscar perfil completo do advogado",
+    };
   }
 }
 

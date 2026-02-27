@@ -39,7 +39,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -190,6 +190,88 @@ export default function ClienteDetalhesPage() {
     setProcuracoesPage(1);
     setDocumentosPage(1);
   }, [clienteId]);
+
+  const processosItems = cliente?.processos || [];
+  const contratosItems = contratos || [];
+  const tarefasItems = cliente?.tarefas || [];
+  const assinaturasItems = cliente?.documentoAssinaturas || [];
+  const procuracoesItems = procuracoes || [];
+  const documentosItems = documentos || [];
+  const clienteEventos = cliente?.eventos || [];
+  const processoIdsDisponiveis = new Set(processosItems.map((processo) => processo.id));
+  const selectedProcessoKeys =
+    uploadFormData.processoId && processoIdsDisponiveis.has(uploadFormData.processoId)
+      ? [uploadFormData.processoId]
+      : [];
+  const eventosItems = [...clienteEventos].sort(
+    (a, b) =>
+      new Date(b.dataInicio).getTime() - new Date(a.dataInicio).getTime(),
+  );
+
+  const processosTotalPages = getTotalPages(
+    processosItems.length,
+    TAB_PAGE_SIZES.processos,
+  );
+  const contratosTotalPages = getTotalPages(
+    contratosItems.length,
+    TAB_PAGE_SIZES.contratos,
+  );
+  const tarefasTotalPages = getTotalPages(
+    tarefasItems.length,
+    TAB_PAGE_SIZES.tarefas,
+  );
+  const eventosTotalPages = getTotalPages(
+    eventosItems.length,
+    TAB_PAGE_SIZES.eventos,
+  );
+  const assinaturasTotalPages = getTotalPages(
+    assinaturasItems.length,
+    TAB_PAGE_SIZES.assinaturas,
+  );
+  const procuracoesTotalPages = getTotalPages(
+    procuracoesItems.length,
+    TAB_PAGE_SIZES.procuracoes,
+  );
+  const documentosTotalPages = getTotalPages(
+    documentosItems.length,
+    TAB_PAGE_SIZES.documentos,
+  );
+
+  const processosPaginados = paginateItems(
+    processosItems,
+    processosPage,
+    TAB_PAGE_SIZES.processos,
+  );
+  const contratosPaginados = paginateItems(
+    contratosItems,
+    contratosPage,
+    TAB_PAGE_SIZES.contratos,
+  );
+  const tarefasPaginadas = paginateItems(
+    tarefasItems,
+    tarefasPage,
+    TAB_PAGE_SIZES.tarefas,
+  );
+  const eventosPaginados = paginateItems(
+    eventosItems,
+    eventosPage,
+    TAB_PAGE_SIZES.eventos,
+  );
+  const assinaturasPaginadas = paginateItems(
+    assinaturasItems,
+    assinaturasPage,
+    TAB_PAGE_SIZES.assinaturas,
+  );
+  const procuracoesPaginadas = paginateItems(
+    procuracoesItems,
+    procuracoesPage,
+    TAB_PAGE_SIZES.procuracoes,
+  );
+  const documentosPaginados = paginateItems(
+    documentosItems,
+    documentosPage,
+    TAB_PAGE_SIZES.documentos,
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -443,95 +525,6 @@ export default function ClienteDetalhesPage() {
         return "primary";
     }
   };
-
-  const processosItems = cliente.processos || [];
-  const contratosItems = contratos || [];
-  const tarefasItems = cliente.tarefas || [];
-  const assinaturasItems = cliente.documentoAssinaturas || [];
-  const procuracoesItems = procuracoes || [];
-  const documentosItems = documentos || [];
-  const processoIdsDisponiveis = useMemo(
-    () => new Set(processosItems.map((processo) => processo.id)),
-    [processosItems],
-  );
-  const selectedProcessoKeys =
-    uploadFormData.processoId &&
-    processoIdsDisponiveis.has(uploadFormData.processoId)
-      ? [uploadFormData.processoId]
-      : [];
-  const eventosItems = useMemo(
-    () =>
-      [...(cliente.eventos || [])].sort(
-        (a, b) =>
-          new Date(b.dataInicio).getTime() - new Date(a.dataInicio).getTime(),
-      ),
-    [cliente.eventos],
-  );
-
-  const processosTotalPages = getTotalPages(
-    processosItems.length,
-    TAB_PAGE_SIZES.processos,
-  );
-  const contratosTotalPages = getTotalPages(
-    contratosItems.length,
-    TAB_PAGE_SIZES.contratos,
-  );
-  const tarefasTotalPages = getTotalPages(
-    tarefasItems.length,
-    TAB_PAGE_SIZES.tarefas,
-  );
-  const eventosTotalPages = getTotalPages(
-    eventosItems.length,
-    TAB_PAGE_SIZES.eventos,
-  );
-  const assinaturasTotalPages = getTotalPages(
-    assinaturasItems.length,
-    TAB_PAGE_SIZES.assinaturas,
-  );
-  const procuracoesTotalPages = getTotalPages(
-    procuracoesItems.length,
-    TAB_PAGE_SIZES.procuracoes,
-  );
-  const documentosTotalPages = getTotalPages(
-    documentosItems.length,
-    TAB_PAGE_SIZES.documentos,
-  );
-
-  const processosPaginados = paginateItems(
-    processosItems,
-    processosPage,
-    TAB_PAGE_SIZES.processos,
-  );
-  const contratosPaginados = paginateItems(
-    contratosItems,
-    contratosPage,
-    TAB_PAGE_SIZES.contratos,
-  );
-  const tarefasPaginadas = paginateItems(
-    tarefasItems,
-    tarefasPage,
-    TAB_PAGE_SIZES.tarefas,
-  );
-  const eventosPaginados = paginateItems(
-    eventosItems,
-    eventosPage,
-    TAB_PAGE_SIZES.eventos,
-  );
-  const assinaturasPaginadas = paginateItems(
-    assinaturasItems,
-    assinaturasPage,
-    TAB_PAGE_SIZES.assinaturas,
-  );
-  const procuracoesPaginadas = paginateItems(
-    procuracoesItems,
-    procuracoesPage,
-    TAB_PAGE_SIZES.procuracoes,
-  );
-  const documentosPaginados = paginateItems(
-    documentosItems,
-    documentosPage,
-    TAB_PAGE_SIZES.documentos,
-  );
 
   useEffect(() => {
     setProcessosPage((prev) => Math.min(prev, processosTotalPages));

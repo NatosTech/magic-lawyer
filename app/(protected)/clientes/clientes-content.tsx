@@ -98,6 +98,9 @@ import { CpfInput } from "@/components/cpf-input";
 import { CnpjInput } from "@/components/cnpj-input";
 import { BulkExcelImportModal } from "@/components/bulk-excel-import-modal";
 import {
+  PeopleEntityCard,
+  PeopleEntityCardBody,
+  PeopleEntityCardHeader,
   PeopleMetricCard,
   PeoplePageHeader,
 } from "@/components/people-ui";
@@ -443,12 +446,12 @@ const ClientesListSection = memo(function ClientesListSection({
                     }}
                     whileHover={{ scale: 1.02 }}
                   >
-                    <Card className="group border border-white/10 bg-background/60 transition-all duration-300 hover:border-primary/40 hover:bg-background/80">
-                      <CardHeader
-                        className="cursor-pointer border-b border-white/10"
-                        onClick={() => onViewCliente(cliente)}
-                      >
-                        <div className="flex gap-4 w-full">
+	                    <PeopleEntityCard
+	                      isPressable
+	                      onPress={() => onViewCliente(cliente)}
+	                    >
+	                      <PeopleEntityCardHeader className="cursor-pointer">
+	                        <div className="flex gap-4 w-full">
                           <motion.div
                             transition={{
                               type: "spring",
@@ -518,9 +521,9 @@ const ClientesListSection = memo(function ClientesListSection({
                               </Chip>
                             </div>
                           </div>
-                          <Dropdown>
-                            <DropdownTrigger>
-                              <Button
+	                          <Dropdown>
+	                            <DropdownTrigger>
+	                              <Button
                                 isIconOnly
                                 className="hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-110 transition-all"
                                 size="sm"
@@ -567,10 +570,10 @@ const ClientesListSection = memo(function ClientesListSection({
                                 Excluir
                               </DropdownItem>
                             </DropdownMenu>
-                          </Dropdown>
-                        </div>
-                      </CardHeader>
-                      <CardBody className="p-6 space-y-4">
+	                          </Dropdown>
+	                        </div>
+	                      </PeopleEntityCardHeader>
+	                      <PeopleEntityCardBody className="space-y-4 p-6">
                         <div className="space-y-3">
                           {cliente.documento && (
                             <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
@@ -622,33 +625,35 @@ const ClientesListSection = memo(function ClientesListSection({
                           </div>
 
                           <div className="flex gap-2">
-                            <Button
-                              as={Link}
-                              className="flex-1 hover:scale-105 transition-transform"
-                              color="primary"
-                              href={`/clientes/${cliente.id}`}
-                              size="sm"
-                              startContent={<Eye className="h-4 w-4" />}
-                              variant="flat"
+	                            <Button
+	                              as={Link}
+	                              className="flex-1 hover:scale-105 transition-transform"
+	                              color="primary"
+	                              href={`/clientes/${cliente.id}`}
+	                              onClick={(event) => event.stopPropagation()}
+	                              size="sm"
+	                              startContent={<Eye className="h-4 w-4" />}
+	                              variant="flat"
                             >
                               Ver Detalhes
                             </Button>
-                            <Button
-                              as={Link}
-                              className="hover:scale-105 transition-transform"
-                              color="secondary"
-                              href={`/clientes/${cliente.id}`}
-                              size="sm"
-                              startContent={<FileText className="h-4 w-4" />}
-                              variant="flat"
+	                            <Button
+	                              as={Link}
+	                              className="hover:scale-105 transition-transform"
+	                              color="secondary"
+	                              href={`/clientes/${cliente.id}`}
+	                              onClick={(event) => event.stopPropagation()}
+	                              size="sm"
+	                              startContent={<FileText className="h-4 w-4" />}
+	                              variant="flat"
                             >
                               Processos
                             </Button>
-                          </div>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </motion.div>
+	                          </div>
+	                        </div>
+	                      </PeopleEntityCardBody>
+	                    </PeopleEntityCard>
+	                  </motion.div>
                   ))}
                 </AnimatePresence>
               </div>

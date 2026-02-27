@@ -1,41 +1,60 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import {
-  Card,
-  CardBody,
-  Button,
-  Avatar,
-  Chip,
-  Badge,
-  Tabs,
-  Tab,
-  Spinner,
-} from "@heroui/react";
-import {
-  ArrowLeft,
-  Mail,
-  Phone,
-  Scale,
-  Calendar,
-  TrendingUp,
-  DollarSign,
-  Clock,
-  XCircle,
-  Bell,
-  History,
-  Edit,
-  BarChart3,
-} from "lucide-react";
-import useSWR from "swr";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Chip,
+  Divider,
+  Spinner,
+  Tab,
+  Tabs,
+} from "@heroui/react";
+import { Pagination } from "@heroui/pagination";
+import {
+  ArrowLeft,
+  Bell,
+  Calendar,
+  CalendarDays,
+  CheckCircle,
+  Clock,
+  Eye,
+  FileSignature,
+  FileText,
+  History,
+  Mail,
+  MessageSquareText,
+  Phone,
+  Scale,
+  ShieldCheck,
+  Star,
+  User,
+  Users,
+  Wallet,
+  Briefcase,
+  TrendingUp,
+  DollarSign,
+  Building2,
+  AlertCircle,
+  XCircle,
+} from "lucide-react";
+import useSWR from "swr";
 
 import { AdvogadoHistorico } from "../components/advogado-historico";
 import { AdvogadoNotificacoes } from "../components/advogado-notificacoes";
 
-import { getAdvogadoById } from "@/app/actions/advogados";
+import {
+  getAdvogadoPerfilById,
+  getAdvogadoCompleto,
+  type AdvogadoCompleto,
+  type AdvogadoProfileData,
+} from "@/app/actions/advogados";
 import { useAdvogadoPerformance } from "@/app/hooks/use-advogados-performance";
 import { useAdvogadoComissoes } from "@/app/hooks/use-advogados-comissoes";
 import { useNotificacoesAdvogado } from "@/app/hooks/use-advogados-notificacoes";
@@ -45,111 +64,459 @@ interface AdvogadoProfileContentProps {
   advogadoId: string;
 }
 
-export default function AdvogadoProfileContent({
-  advogadoId,
-}: AdvogadoProfileContentProps) {
+interface ActionResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+type AdvogadoProfileFull = AdvogadoProfileData & {
+  enderecos?: AdvogadoCompleto["enderecos"];
+  dadosBancarios?: AdvogadoCompleto["dadosBancarios"];
+};
+
+const TAB_PAGE_SIZES = {
+  clientes: 6,
+  processos: 6,
+  contratos: 6,
+  procuracoes: 6,
+  tarefas: 6,
+  eventos: 6,
+  assinaturas: 6,
+} as const;
+
+type DateInput = string | Date | null | undefined;
+
+function getTotalPages(totalItems: number, pageSize: number) {
+  return Math.max(1, Math.ceil(totalItems / pageSize));
+}
+
+function paginateItems<T>(items: T[], page: number, pageSize: number) {
+  const safePage = Math.max(1, page);
+  const start = (safePage - 1) * pageSize;
+
+  return items.slice(start, start + pageSize);
+}
+
+function getPageRange(totalItems: number, page: number, pageSize: number) {
+  if (totalItems === 0) {
+    return { start: 0, end: 0 };
+  }
+
+  const start = (Math.max(1, page) - 1) * pageSize + 1;
+  const end = Math.min(Math.max(1, page) * pageSize, totalItems);
+
+  return { start, end };
+}
+
+function TabPagination({
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  itemLabel,
+  onChange,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  itemLabel: string;
+  onChange: (page: number) => void;
+}) {
+  if (totalItems <= pageSize) {
+    return null;
+  }
+
+  const range = getPageRange(totalItems, page, pageSize);
+
+  return (
+    <div className="mt-4 flex flex-col gap-2 border-t border-divider pt-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs text-default-500 sm:text-sm">
+        Mostrando {range.start}-{range.end} de {totalItems} {itemLabel}
+      </p>
+      <Pagination
+        color="primary"
+        isCompact
+        page={page}
+        showControls
+        size="sm"
+        total={totalPages}
+        onChange={onChange}
+      />
+    </div>
+  );
+}
+
+function formatDate(value?: DateInput) {
+  if (!value) {
+    return "Não informada";
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "Data inválida";
+  }
+
+  return parsed.toLocaleDateString("pt-BR");
+}
+
+function formatDateTime(value?: DateInput) {
+  if (!value) {
+    return "Não informada";
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "Data inválida";
+  }
+
+  return parsed.toLocaleString("pt-BR");
+}
+
+function getNomeCompleto(advogado: AdvogadoProfileData) {
+  const firstName = advogado.usuario.firstName || "";
+  const lastName = advogado.usuario.lastName || "";
+
+  return `${firstName} ${lastName}`.trim() || "Nome não informado";
+}
+
+function getIniciais(nome: string) {
+  const parts = nome.split(" ").filter(Boolean);
+
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+
+  return nome.slice(0, 2).toUpperCase();
+}
+
+function getOAB(advogado: AdvogadoProfileData) {
+  if (advogado.oabNumero && advogado.oabUf) {
+    return `${advogado.oabUf}/${advogado.oabNumero}`;
+  }
+
+  return "Não informada";
+}
+
+function getEspecialidadeColor(especialidade: EspecialidadeJuridica) {
+  const colors: Record<string, string> = {
+    CIVIL: "primary",
+    CRIMINAL: "danger",
+    TRABALHISTA: "warning",
+    TRIBUTARIO: "secondary",
+    ADMINISTRATIVO: "success",
+    CONSTITUCIONAL: "default",
+    EMPRESARIAL: "primary",
+    FAMILIA: "secondary",
+    CONSUMIDOR: "warning",
+    AMBIENTAL: "success",
+    PREVIDENCIARIO: "default",
+    ELETORAL: "primary",
+    MILITAR: "danger",
+    INTERNACIONAL: "success",
+    OUTROS: "default",
+  };
+
+  return (colors[especialidade] || "default") as never;
+}
+
+function getStatusColor(active: boolean) {
+  return active ? "success" : "danger";
+}
+
+function getStatusText(active: boolean) {
+  return active ? "Ativo" : "Inativo";
+}
+
+function getChipStatusColor(status: string) {
+  switch (status) {
+    case "ATIVO":
+    case "ATIVA":
+    case "VIGENTE":
+    case "EM_ANDAMENTO":
+    case "ABERTO":
+    case "PENDENTE":
+      return "success";
+    case "ARQUIVADO":
+    case "INATIVO":
+    case "CONCLUIDO":
+    case "CONCLUÍDO":
+    case "CANCELADO":
+    case "CANCELADA":
+      return "default";
+    case "SUSPENSO":
+    case "AGUARDANDO":
+      return "warning";
+    default:
+      return "primary";
+  }
+}
+
+function getTipoContaLabel(tipo: string) {
+  switch (tipo) {
+    case "PESSOA_FISICA":
+      return "Pessoa Física";
+    case "PESSOA_JURIDICA":
+      return "Pessoa Jurídica";
+    default:
+      return tipo || "Tipo não informado";
+  }
+}
+
+function getTipoContaBancariaLabel(tipo: string) {
+  switch (tipo) {
+    case "CORRENTE":
+      return "Corrente";
+    case "POUPANCA":
+      return "Poupança";
+    case "SALARIO":
+      return "Salário";
+    case "INVESTIMENTO":
+      return "Investimento";
+    default:
+      return tipo || "Conta";
+  }
+}
+
+function getTipoEnderecoLabel(tipo: string) {
+  if (!tipo) {
+    return "Endereço";
+  }
+
+  return tipo.replaceAll("_", " ");
+}
+
+export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileContentProps) {
   const router = useRouter();
+
   const [activeTab, setActiveTab] = useState("overview");
+  const [clientesPage, setClientesPage] = useState(1);
+  const [processosPage, setProcessosPage] = useState(1);
+  const [contratosPage, setContratosPage] = useState(1);
+  const [procuracoesPage, setProcuracoesPage] = useState(1);
+  const [tarefasPage, setTarefasPage] = useState(1);
+  const [eventosPage, setEventosPage] = useState(1);
+  const [assinaturasPage, setAssinaturasPage] = useState(1);
+
   const [isHistoricoModalOpen, setIsHistoricoModalOpen] = useState(false);
   const [isNotificacoesModalOpen, setIsNotificacoesModalOpen] = useState(false);
 
-  const { data, error, isLoading } = useSWR(
-    `advogado-${advogadoId}`,
-    () => getAdvogadoById(advogadoId),
+  const { data, error, isLoading } = useSWR<ActionResponse<AdvogadoProfileData>>(
+    ["advogado-perfil", advogadoId],
+    () => getAdvogadoPerfilById(advogadoId),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
     },
   );
 
-  const { performance, isLoading: isLoadingPerformance } =
-    useAdvogadoPerformance(advogadoId);
-  const { comissoes, isLoading: isLoadingComissoes } =
-    useAdvogadoComissoes(advogadoId);
-  const { notificacoes, isLoading: isLoadingNotificacoes } =
-    useNotificacoesAdvogado(advogadoId);
+  const { data: dataCompleto, isLoading: isLoadingCompleto } = useSWR<
+    ActionResponse<AdvogadoCompleto>
+  >(
+    ["advogado-completo", advogadoId],
+    () => getAdvogadoCompleto(advogadoId),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    },
+  );
 
-  const advogado = data?.data;
-  const loading = isLoading || !advogado;
+  const isLoadingAll = isLoading || isLoadingCompleto;
 
-  const tabsClassNames = {
-    tabList:
-      "gap-6 w-full relative rounded-none px-6 pt-6 pb-0 border-b border-divider",
-    cursor: "w-full bg-primary",
-    tab: "max-w-fit px-0 h-12",
-    tabContent:
-      "group-data-[selected=true]:text-primary font-medium text-sm tracking-wide",
-    panel: "px-6 pb-6 pt-4",
-  };
+  const advogado = useMemo<AdvogadoProfileFull | null>(() => {
+    if (!data?.success || !data.data) {
+      return null;
+    }
 
-  const getNomeCompleto = (advogado: any) => {
-    return (
-      `${advogado.usuario?.firstName || ""} ${advogado.usuario?.lastName || ""}`.trim() ||
-      advogado.usuario?.email ||
-      "Advogado"
-    );
-  };
+    const base = data.data;
+    const completo = dataCompleto?.success ? dataCompleto.data : null;
 
-  const getOAB = (advogado: any) => {
-    return advogado.oabNumero && advogado.oabUf
-      ? `${advogado.oabNumero}/${advogado.oabUf}`
-      : "N/A";
-  };
+    if (!completo) {
+      return {
+        ...base,
+        enderecos: [],
+        dadosBancarios: [],
+      } as AdvogadoProfileFull;
+    }
 
-  const getStatusColor = (active: boolean) => {
-    return active ? "success" : "danger";
-  };
-
-  const getStatusText = (active: boolean) => {
-    return active ? "Ativo" : "Inativo";
-  };
-
-  const getEspecialidadeColor = (especialidade: EspecialidadeJuridica) => {
-    const colors = {
-      CIVIL: "primary",
-      CRIMINAL: "danger",
-      TRABALHISTA: "warning",
-      TRIBUTARIO: "secondary",
-      ADMINISTRATIVO: "success",
-      CONSTITUCIONAL: "default",
-      EMPRESARIAL: "primary",
-      FAMILIA: "secondary",
-      CONSUMIDOR: "warning",
-      AMBIENTAL: "success",
-      PREVIDENCIARIO: "default",
-      ELETORAL: "primary",
-      MILITAR: "danger",
-      INTERNACIONAL: "success",
-      OUTROS: "default",
+    return {
+      ...base,
+      enderecos: completo.enderecos || [],
+      dadosBancarios: completo.dadosBancarios || [],
     };
+  }, [data?.success, data?.data, dataCompleto]);
 
-    return colors[especialidade] || "default";
-  };
+  const { performance, isLoading: isLoadingPerformance } = useAdvogadoPerformance(
+    advogado?.id || "",
+    undefined,
+    { enabled: activeTab === "overview" || activeTab === "performance" },
+  );
 
-  if (loading) {
+  const { comissoes, isLoading: isLoadingComissoes } = useAdvogadoComissoes(
+    advogado?.id || "",
+    undefined,
+    { enabled: activeTab === "overview" || activeTab === "comissoes" },
+  );
+
+  const { notificacoes, isLoading: isLoadingNotificacoes } = useNotificacoesAdvogado(
+    advogado?.id || "",
+    { enabled: activeTab === "notificacoes" },
+  );
+
+  const totalNotificacoesNaoLidas = (notificacoes || []).filter(
+    (n) => !n.lida,
+  ).length;
+
+  const clientesVinculados = useMemo(
+    () => (advogado?.clientesVinculados || []),
+    [advogado],
+  );
+  const processos = useMemo(() => (advogado?.processos || []), [advogado]);
+  const contratos = useMemo(() => (advogado?.contratos || []), [advogado]);
+  const procuracoes = useMemo(() => (advogado?.procuracoes || []), [advogado]);
+  const tarefas = useMemo(() => (advogado?.tarefas || []), [advogado]);
+  const eventos = useMemo(() => (advogado?.eventos || []), [advogado]);
+  const assinaturas = useMemo(
+    () => (advogado?.documentoAssinaturas || []),
+    [advogado],
+  );
+  const enderecos = useMemo(() => (advogado?.enderecos || []), [advogado]);
+  const dadosBancarios = useMemo(
+    () => (advogado?.dadosBancarios || []),
+    [advogado],
+  );
+
+  const clientesTotalPages = useMemo(
+    () => getTotalPages(clientesVinculados.length, TAB_PAGE_SIZES.clientes),
+    [clientesVinculados.length],
+  );
+  const processosTotalPages = useMemo(
+    () => getTotalPages(processos.length, TAB_PAGE_SIZES.processos),
+    [processos.length],
+  );
+  const contratosTotalPages = useMemo(
+    () => getTotalPages(contratos.length, TAB_PAGE_SIZES.contratos),
+    [contratos.length],
+  );
+  const procuracoesTotalPages = useMemo(
+    () => getTotalPages(procuracoes.length, TAB_PAGE_SIZES.procuracoes),
+    [procuracoes.length],
+  );
+  const tarefasTotalPages = useMemo(
+    () => getTotalPages(tarefas.length, TAB_PAGE_SIZES.tarefas),
+    [tarefas.length],
+  );
+  const eventosTotalPages = useMemo(
+    () => getTotalPages(eventos.length, TAB_PAGE_SIZES.eventos),
+    [eventos.length],
+  );
+  const assinaturasTotalPages = useMemo(
+    () => getTotalPages(assinaturas.length, TAB_PAGE_SIZES.assinaturas),
+    [assinaturas.length],
+  );
+
+  const clientesPageItems = paginateItems(
+    clientesVinculados,
+    clientesPage,
+    TAB_PAGE_SIZES.clientes,
+  );
+  const processosPageItems = paginateItems(
+    processos,
+    processosPage,
+    TAB_PAGE_SIZES.processos,
+  );
+  const contratosPageItems = paginateItems(
+    contratos,
+    contratosPage,
+    TAB_PAGE_SIZES.contratos,
+  );
+  const procuracoesPageItems = paginateItems(
+    procuracoes,
+    procuracoesPage,
+    TAB_PAGE_SIZES.procuracoes,
+  );
+  const tarefasPageItems = paginateItems(
+    tarefas,
+    tarefasPage,
+    TAB_PAGE_SIZES.tarefas,
+  );
+  const eventosPageItems = paginateItems(
+    eventos,
+    eventosPage,
+    TAB_PAGE_SIZES.eventos,
+  );
+  const assinaturasPageItems = paginateItems(
+    assinaturas,
+    assinaturasPage,
+    TAB_PAGE_SIZES.assinaturas,
+  );
+
+  useEffect(() => {
+    setClientesPage(1);
+    setProcessosPage(1);
+    setContratosPage(1);
+    setProcuracoesPage(1);
+    setTarefasPage(1);
+    setEventosPage(1);
+    setAssinaturasPage(1);
+  }, [activeTab]);
+
+  useEffect(() => {
+    setClientesPage((prev) => Math.min(prev, clientesTotalPages));
+  }, [clientesTotalPages]);
+
+  useEffect(() => {
+    setProcessosPage((prev) => Math.min(prev, processosTotalPages));
+  }, [processosTotalPages]);
+
+  useEffect(() => {
+    setContratosPage((prev) => Math.min(prev, contratosTotalPages));
+  }, [contratosTotalPages]);
+
+  useEffect(() => {
+    setProcuracoesPage((prev) => Math.min(prev, procuracoesTotalPages));
+  }, [procuracoesTotalPages]);
+
+  useEffect(() => {
+    setTarefasPage((prev) => Math.min(prev, tarefasTotalPages));
+  }, [tarefasTotalPages]);
+
+  useEffect(() => {
+    setEventosPage((prev) => Math.min(prev, eventosTotalPages));
+  }, [eventosTotalPages]);
+
+  useEffect(() => {
+    setAssinaturasPage((prev) => Math.min(prev, assinaturasTotalPages));
+  }, [assinaturasTotalPages]);
+
+  if (isLoadingAll) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="flex min-h-[400px] flex-col items-center justify-center gap-3">
         <Spinner size="lg" />
-        <p className="mt-4 text-slate-600 dark:text-slate-400">
-          Carregando perfil do advogado...
-        </p>
+        <p className="text-sm text-default-500">Carregando perfil do advogado...</p>
       </div>
     );
   }
 
-  if (error || !advogado) {
+  if (error || !advogado || !data?.success) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="p-3 bg-red-100 dark:bg-red-900 rounded-full mb-4">
-          <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+      <div className="flex min-h-[360px] flex-col items-center justify-center gap-3">
+        <div className="rounded-full bg-danger/10 p-3 text-danger">
+          <XCircle className="h-6 w-6" />
         </div>
-        <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
-          Erro ao carregar perfil
-        </h4>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-          {error?.message || "Advogado não encontrado"}
+        <h4 className="text-lg font-semibold">Não foi possível abrir o perfil</h4>
+        <p className="text-sm text-default-500">
+          {error?.message || data?.error || "Verifique a permissão ou o ID informado."}
         </p>
-        <Button as={Link} color="primary" href="/advogados">
+        <Button
+          as={Link}
+          href="/advogados"
+          color="primary"
+          variant="flat"
+        >
           Voltar para Advogados
         </Button>
       </div>
@@ -157,466 +524,1319 @@ export default function AdvogadoProfileContent({
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
-      {/* Header */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              as={Link}
-              href="/advogados"
-              startContent={<ArrowLeft className="h-4 w-4" />}
-              variant="light"
-            >
-              Voltar
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                Perfil do Advogado
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400">
-                Informações detalhadas e estatísticas
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              color="primary"
-              startContent={<History className="h-4 w-4" />}
-              variant="light"
-              onPress={() => setIsHistoricoModalOpen(true)}
-            >
-              Histórico
-            </Button>
-            <Button
-              color="secondary"
-              startContent={<Bell className="h-4 w-4" />}
-              variant="light"
-              onPress={() => setIsNotificacoesModalOpen(true)}
-            >
-              Notificações
-              {notificacoes &&
-                notificacoes.filter((n) => !n.lida).length > 0 && (
-                  <Badge
-                    color="danger"
-                    content={notificacoes.filter((n) => !n.lida).length}
-                    size="sm"
-                  >
-                    {notificacoes.filter((n) => !n.lida).length}
-                  </Badge>
-                )}
-            </Button>
-            <Button
-              color="primary"
-              startContent={<Edit className="h-4 w-4" />}
-              onPress={() => router.push(`/advogados/${advogadoId}/edit`)}
-            >
-              Editar
-            </Button>
+    <div className="space-y-6 px-4 pb-6 pt-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <Button
+            as={Link}
+            href="/advogados"
+            startContent={<ArrowLeft className="h-4 w-4" />}
+            variant="light"
+          >
+            Voltar
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold sm:text-2xl">Detalhes do Advogado</h1>
+            <p className="text-sm text-default-500">
+              Visão completa, relações e trilha de execução.
+            </p>
           </div>
         </div>
-      </motion.div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            color="primary"
+            startContent={<History className="h-4 w-4" />}
+            variant="flat"
+            onPress={() => setIsHistoricoModalOpen(true)}
+          >
+            Histórico
+          </Button>
+          <Button
+            color="secondary"
+            startContent={<Bell className="h-4 w-4" />}
+            variant="flat"
+            onPress={() => setIsNotificacoesModalOpen(true)}
+          >
+            Notificações
+            {totalNotificacoesNaoLidas > 0 ? (
+              <Badge
+                color="danger"
+                content={totalNotificacoesNaoLidas}
+                size="sm"
+              >
+                <span />
+              </Badge>
+            ) : null}
+          </Button>
+        </div>
+      </div>
 
-      {/* Informações Básicas */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
-        <Card className="shadow-lg border border-slate-200 dark:border-slate-700">
-          <CardBody className="p-6">
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* Avatar e Informações Principais */}
-              <div className="flex flex-col items-center lg:items-start">
-                <Avatar
-                  className="w-24 h-24 text-large mb-4"
-                  name={getNomeCompleto(advogado)}
-                  src={advogado.usuario.avatarUrl || undefined}
-                />
-                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 text-center lg:text-left">
-                  {getNomeCompleto(advogado)}
-                </h2>
-                <p className="text-slate-600 dark:text-slate-400 text-center lg:text-left">
-                  OAB {getOAB(advogado)}
+      <Card className="border border-default-200">
+        <CardBody className="p-6">
+          <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+            <div className="flex flex-col items-center gap-3 lg:items-start">
+              <Avatar
+                className="h-20 w-20 text-large"
+                name={getIniciais(getNomeCompleto(advogado))}
+                src={advogado.usuario.avatarUrl || undefined}
+              />
+              <div className="text-center lg:text-left">
+                <h2 className="text-lg font-bold">{getNomeCompleto(advogado)}</h2>
+                <p className="text-sm text-default-500">OAB {getOAB(advogado)}</p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+                <Chip
+                  color={getStatusColor(advogado.usuario.active)}
+                  size="sm"
+                  variant="flat"
+                >
+                  {getStatusText(advogado.usuario.active)}
+                </Chip>
+                {advogado.isExterno && (
+                  <Chip color="warning" size="sm" variant="flat">
+                    Externo
+                  </Chip>
+                )}
+              </div>
+            </div>
+
+            <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="rounded-lg border border-default-200 p-3">
+                <p className="text-xs uppercase tracking-[0.15em] text-default-500">CPF</p>
+                <p className="mt-1 text-sm font-semibold break-all">
+                  {advogado.usuario.cpf || "Não informado"}
                 </p>
-                <div className="flex items-center gap-2 mt-2">
+              </div>
+              <div className="rounded-lg border border-default-200 p-3">
+                <p className="text-xs uppercase tracking-[0.15em] text-default-500">Email</p>
+                <p className="mt-1 text-sm font-semibold break-all">
+                  {advogado.usuario.email}
+                </p>
+              </div>
+              <div className="rounded-lg border border-default-200 p-3">
+                <p className="text-xs uppercase tracking-[0.15em] text-default-500">Telefone</p>
+                <p className="mt-1 text-sm font-semibold">
+                  {advogado.usuario.phone || advogado.telefone || "Não informado"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-default-200 p-3">
+                <p className="text-xs uppercase tracking-[0.15em] text-default-500">WhatsApp</p>
+                <p className="mt-1 text-sm font-semibold">
+                  {advogado.whatsapp || "Não informado"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-default-200 p-3">
+                <p className="text-xs uppercase tracking-[0.15em] text-default-500">Cadastro</p>
+                <p className="mt-1 text-sm font-semibold">
+                  {formatDate(advogado.usuario.createdAt)}
+                </p>
+              </div>
+              <div className="rounded-lg border border-default-200 p-3">
+                <p className="text-xs uppercase tracking-[0.15em] text-default-500">Tipo</p>
+                <p className="mt-1 text-sm font-semibold">
+                  {advogado.isExterno ? "Externo" : "Interno"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Divider className="my-4" />
+
+          <div className="space-y-3">
+            <p className="text-sm font-semibold">Especialidades</p>
+            {advogado.especialidades.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {advogado.especialidades.map((especialidade) => (
                   <Chip
-                    color={getStatusColor(advogado.usuario.active)}
+                    key={especialidade}
+                    color={getEspecialidadeColor(especialidade)}
                     size="sm"
                     variant="flat"
                   >
-                    {getStatusText(advogado.usuario.active)}
+                    {especialidade.replaceAll("_", " ")}
                   </Chip>
-                  {advogado.isExterno && (
-                    <Chip color="warning" size="sm" variant="flat">
-                      Externo
-                    </Chip>
-                  )}
-                </div>
+                ))}
               </div>
+            ) : (
+              <p className="text-sm text-default-500">
+                Nenhuma especialidade cadastrada.
+              </p>
+            )}
+          </div>
 
-              {/* Informações de Contato */}
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4 text-slate-500" />
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      {advogado.usuario.email}
-                    </span>
-                  </div>
-                  {advogado.usuario.phone && (
-                    <div className="flex items-center gap-3">
-                      <Phone className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm text-slate-600 dark:text-slate-400">
-                        {advogado.usuario.phone}
-                      </span>
-                    </div>
-                  )}
-                  {advogado.telefone && (
-                    <div className="flex items-center gap-3">
-                      <Phone className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm text-slate-600 dark:text-slate-400">
-                        {advogado.telefone}
-                      </span>
-                    </div>
-                  )}
-                  {advogado.whatsapp && (
-                    <div className="flex items-center gap-3">
-                      <Phone className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm text-slate-600 dark:text-slate-400">
-                        {advogado.whatsapp}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Scale className="h-4 w-4 text-slate-500" />
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      OAB {getOAB(advogado)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-slate-500" />
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      Cadastrado em{" "}
-                      {advogado.usuario.createdAt
-                        ? new Date(
-                            advogado.usuario.createdAt,
-                          ).toLocaleDateString("pt-BR")
-                        : "Data não disponível"}
-                    </span>
-                  </div>
-                </div>
+          {advogado.bio ? (
+            <>
+              <Divider className="my-4" />
+              <div>
+                <p className="text-sm font-semibold">Biografia</p>
+                <p className="mt-1 text-sm text-default-600">{advogado.bio}</p>
               </div>
+            </>
+          ) : null}
+        </CardBody>
+      </Card>
+
+      <Tabs
+        aria-label="Detalhes do advogado"
+        color="primary"
+        selectedKey={activeTab}
+        variant="underlined"
+        onSelectionChange={(key) => setActiveTab(key as string)}
+      >
+          <Tab
+            key="overview"
+            title={<div className="flex items-center gap-2">Visão geral</div>}
+          >
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <Card className="border border-default-200">
+                <CardBody className="space-y-1">
+                  <div className="flex items-center gap-2 text-default-500">
+                    <Scale className="h-4 w-4" />
+                    <p className="text-sm">Processos</p>
+                  </div>
+                  <p className="text-2xl font-bold">{processos.length}</p>
+                  <p className="text-xs text-default-500">Total de vínculos</p>
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardBody className="space-y-1">
+                  <div className="flex items-center gap-2 text-default-500">
+                    <Briefcase className="h-4 w-4" />
+                    <p className="text-sm">Contratos</p>
+                  </div>
+                  <p className="text-2xl font-bold">{contratos.length}</p>
+                  <p className="text-xs text-default-500">Responsável / vinculado</p>
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardBody className="space-y-1">
+                  <div className="flex items-center gap-2 text-default-500">
+                    <FileSignature className="h-4 w-4" />
+                    <p className="text-sm">Procurações</p>
+                  </div>
+                  <p className="text-2xl font-bold">{procuracoes.length}</p>
+                  <p className="text-xs text-default-500">Em carteira</p>
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardBody className="space-y-1">
+                  <div className="flex items-center gap-2 text-default-500">
+                    <Users className="h-4 w-4" />
+                    <p className="text-sm">Clientes</p>
+                  </div>
+                  <p className="text-2xl font-bold">{clientesVinculados.length}</p>
+                  <p className="text-xs text-default-500">Vínculos ativos</p>
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardBody className="space-y-1">
+                  <div className="flex items-center gap-2 text-default-500">
+                    <CalendarDays className="h-4 w-4" />
+                    <p className="text-sm">Eventos</p>
+                  </div>
+                  <p className="text-2xl font-bold">{eventos.length}</p>
+                  <p className="text-xs text-default-500">Relacionados no período</p>
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardBody className="space-y-1">
+                  <div className="flex items-center gap-2 text-default-500">
+                    <CheckCircle className="h-4 w-4" />
+                    <p className="text-sm">Tarefas</p>
+                  </div>
+                  <p className="text-2xl font-bold">{tarefas.length}</p>
+                  <p className="text-xs text-default-500">Pendentes + concluídas</p>
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardBody className="space-y-1">
+                  <div className="flex items-center gap-2 text-default-500">
+                    <ShieldCheck className="h-4 w-4" />
+                    <p className="text-sm">Assinaturas</p>
+                  </div>
+                  <p className="text-2xl font-bold">{assinaturas.length}</p>
+                  <p className="text-xs text-default-500">Fluxos de assinatura</p>
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardBody className="space-y-1">
+                  <div className="flex items-center gap-2 text-default-500">
+                    <Building2 className="h-4 w-4" />
+                    <p className="text-sm">Endereços</p>
+                  </div>
+                  <p className="text-2xl font-bold">{enderecos.length}</p>
+                  <p className="text-xs text-default-500">Cadastro de endereço</p>
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardBody className="space-y-1">
+                  <div className="flex items-center gap-2 text-default-500">
+                    <Wallet className="h-4 w-4" />
+                    <p className="text-sm">Contas bancárias</p>
+                  </div>
+                  <p className="text-2xl font-bold">{dadosBancarios.length}</p>
+                  <p className="text-xs text-default-500">Dados bancários</p>
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardBody className="space-y-1">
+                  <div className="flex items-center gap-2 text-default-500">
+                    <DollarSign className="h-4 w-4" />
+                    <p className="text-sm">Comissões (estim.)</p>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {isLoadingComissoes
+                      ? "..."
+                      : `R$ ${comissoes?.comissaoCalculada?.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                        }) || "0,00"}`}
+                  </p>
+                  <p className="text-xs text-default-500">Total calculado</p>
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardBody className="space-y-1">
+                  <div className="flex items-center gap-2 text-default-500">
+                    <TrendingUp className="h-4 w-4" />
+                    <p className="text-sm">Taxa sucesso</p>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {isLoadingPerformance
+                      ? "..."
+                      : `${performance?.taxaSucesso || 0}%`}
+                  </p>
+                  <p className="text-xs text-default-500">Processos em andamento</p>
+                </CardBody>
+              </Card>
             </div>
+          </Tab>
 
-            {/* Especialidades */}
-            {advogado.especialidades && advogado.especialidades.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                  Especialidades
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {advogado.especialidades.map((especialidade) => (
+          <Tab
+            key="cadastro"
+            title={
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                <span>Cadastro</span>
+              </div>
+            }
+          >
+            <div className="mt-4 grid gap-4 xl:grid-cols-2">
+              <Card className="border border-default-200">
+                <CardHeader>
+                  <p className="text-sm font-semibold">Dados pessoais</p>
+                </CardHeader>
+                <Divider />
+                    <CardBody className="space-y-2">
+                  <div className="flex items-start gap-2 text-sm">
+                    <Mail className="mt-0.5 h-4 w-4 text-default-400" />
+                    <div>
+                      <p className="text-xs uppercase text-default-500">Email de login</p>
+                      <p className="font-medium">{advogado.usuario.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm">
+                    <Calendar className="mt-0.5 h-4 w-4 text-default-400" />
+                    <div>
+                      <p className="text-xs uppercase text-default-500">Usuário criado</p>
+                      <p className="font-medium">{formatDate(advogado.usuario.createdAt)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm">
+                    <Phone className="mt-0.5 h-4 w-4 text-default-400" />
+                    <div>
+                      <p className="text-xs uppercase text-default-500">RG / CPF</p>
+                      <p className="font-medium">
+                        {advogado.usuario.rg || "-"} / {advogado.usuario.cpf || "-"}
+                      </p>
+                    </div>
+                  </div>
+                  {advogado.usuario.observacoes ? (
+                    <div className="rounded-md bg-default-50 p-2 text-sm text-default-700">
+                      <p className="text-xs uppercase text-default-500">Observações</p>
+                      <p className="mt-1">{advogado.usuario.observacoes}</p>
+                    </div>
+                  ) : null}
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardHeader>
+                  <p className="text-sm font-semibold">Configurações de acesso e operação</p>
+                </CardHeader>
+                <Divider />
+                <CardBody className="grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs uppercase text-default-500">Notificações</p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <Chip color={advogado.notificarEmail ? "success" : "default"} size="sm" variant="flat">
+                        Email
+                      </Chip>
+                      <Chip color={advogado.notificarWhatsapp ? "success" : "default"} size="sm" variant="flat">
+                        WhatsApp
+                      </Chip>
+                      <Chip color={advogado.notificarSistema ? "success" : "default"} size="sm" variant="flat">
+                        Sistema
+                      </Chip>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs uppercase text-default-500">Permissões</p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <Chip color={advogado.podeCriarProcessos ? "success" : "default"} size="sm" variant="flat">
+                        Criar processos
+                      </Chip>
+                      <Chip color={advogado.podeEditarProcessos ? "success" : "default"} size="sm" variant="flat">
+                        Editar processos
+                      </Chip>
+                      <Chip color={advogado.podeGerenciarClientes ? "success" : "default"} size="sm" variant="flat">
+                        Gerenciar clientes
+                      </Chip>
+                      <Chip color={advogado.podeAcessarFinanceiro ? "success" : "default"} size="sm" variant="flat">
+                        Financeiro
+                      </Chip>
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <p className="text-xs uppercase text-default-500">Comissões</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                      <div className="rounded-md border border-default-200 p-2">
+                        <p className="text-xs text-default-500">Padrão</p>
+                        <p className="text-sm font-semibold">{advogado.comissaoPadrao}%</p>
+                      </div>
+                      <div className="rounded-md border border-default-200 p-2">
+                        <p className="text-xs text-default-500">Ação ganha</p>
+                        <p className="text-sm font-semibold">{advogado.comissaoAcaoGanha}%</p>
+                      </div>
+                      <div className="rounded-md border border-default-200 p-2">
+                        <p className="text-xs text-default-500">Honorários</p>
+                        <p className="text-sm font-semibold">{advogado.comissaoHonorarios}%</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardHeader>
+                  <p className="text-sm font-semibold">Endereços</p>
+                </CardHeader>
+                <Divider />
+                <CardBody className="space-y-2">
+                  {enderecos.length === 0 ? (
+                    <p className="text-sm text-default-500">
+                      Nenhum endereço cadastrado.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {enderecos.map((endereco, index) => (
+                        <div
+                          key={`${endereco.apelido}-${endereco.cidade}-${endereco.estado}-${index}`}
+                          className="rounded-md border border-default-200 p-2"
+                        >
+                          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-semibold">
+                              {endereco.apelido || "Endereço principal"}
+                            </p>
+                            <Chip
+                              color={endereco.principal ? "success" : "default"}
+                              size="sm"
+                              variant="flat"
+                            >
+                              {endereco.principal ? "Principal" : "Secundário"}
+                            </Chip>
+                          </div>
+                          <p className="text-xs text-default-500">
+                            {getTipoEnderecoLabel(endereco.tipo)}
+                          </p>
+                          <p className="text-xs text-default-600">
+                            {endereco.logradouro}
+                            {endereco.numero ? `, ${endereco.numero}` : ""}
+                            {endereco.complemento ? ` - ${endereco.complemento}` : ""}
+                          </p>
+                          <p className="text-xs text-default-500">
+                            {endereco.bairro ? `${endereco.bairro}, ` : ""}
+                            {endereco.cidade}/{endereco.estado}
+                            {endereco.cep ? ` • CEP ${endereco.cep}` : ""}
+                          </p>
+                          {endereco.observacoes ? (
+                            <p className="text-xs text-default-400">
+                              {endereco.observacoes}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardHeader>
+                  <p className="text-sm font-semibold">Dados bancários</p>
+                </CardHeader>
+                <Divider />
+                <CardBody className="space-y-2">
+                  {dadosBancarios.length === 0 ? (
+                    <p className="text-sm text-default-500">
+                      Nenhum dado bancário cadastrado.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {dadosBancarios.map((conta, index) => (
+                        <div
+                          key={`${conta.bancoCodigo}-${conta.agencia}-${conta.conta}-${index}`}
+                          className="rounded-md border border-default-200 p-2"
+                        >
+                          <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                            <Chip color={conta.principal ? "success" : "default"} size="sm" variant="flat">
+                              {conta.principal ? "Conta principal" : "Conta adicional"}
+                            </Chip>
+                            <div className="flex flex-wrap gap-1">
+                              <Chip size="sm" variant="flat">
+                                Banco {conta.bancoCodigo}
+                              </Chip>
+                              <Chip size="sm" variant="flat">
+                                {getTipoContaLabel(conta.tipoConta)}
+                              </Chip>
+                            </div>
+                          </div>
+                          <p className="text-sm text-default-600">
+                            {getTipoContaBancariaLabel(conta.tipoContaBancaria)}
+                            {conta.agencia ? ` • Ag ${conta.agencia}` : ""}
+                          </p>
+                          <p className="text-sm text-default-700">
+                            Conta {conta.conta}
+                            {conta.digitoConta ? `-${conta.digitoConta}` : ""}
+                          </p>
+                          <p className="text-xs text-default-500">
+                            Titular: {conta.titularNome || "Não informado"} ({conta.titularDocumento || "N/A"})
+                          </p>
+                          {conta.chavePix ? (
+                            <p className="text-xs text-default-500">
+                              PIX: {conta.tipoChavePix || "CHAVE"} {conta.chavePix}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+            </div>
+          </Tab>
+
+          <Tab
+            key="clientes"
+            title={
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span>Clientes</span>
+                {clientesVinculados.length > 0 ? (
+                  <Chip color="primary" size="sm" variant="flat">
+                    {clientesVinculados.length}
+                  </Chip>
+                ) : null}
+              </div>
+            }
+          >
+            <div className="mt-4">
+              {clientesVinculados.length === 0 ? (
+                <Card className="border border-default-200">
+                  <CardBody className="py-8 text-center">
+                    <Users className="mx-auto h-10 w-10 text-default-400" />
+                    <p className="mt-3 text-sm text-default-500">Sem clientes vinculados</p>
+                  </CardBody>
+                </Card>
+              ) : (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {clientesPageItems.map((item) => (
+                      <Card
+                        key={item.id}
+                        as={Link}
+                        className="border border-default-200 transition-all hover:border-primary hover:shadow-md"
+                        href={`/clientes/${item.cliente.id}`}
+                      >
+                        <CardBody className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-semibold">{item.cliente.nome}</p>
+                              <p className="text-xs text-default-500">
+                                {item.cliente.documento || "Documento não informado"}
+                              </p>
+                            </div>
+                            <Chip color="primary" size="sm" variant="flat">
+                              {item.relacionamento || "Vínculo"}
+                            </Chip>
+                          </div>
+                          <div className="text-xs text-default-500">
+                            {item.cliente.tipoPessoa || "Sem tipo"}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-default-500">
+                            <Calendar className="h-3 w-3" />
+                            <span>Vinculado em {formatDate(item.createdAt)}</span>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </div>
+                  <TabPagination
+                    itemLabel="clientes"
+                    page={clientesPage}
+                    pageSize={TAB_PAGE_SIZES.clientes}
+                    totalItems={clientesVinculados.length}
+                    totalPages={clientesTotalPages}
+                    onChange={setClientesPage}
+                  />
+                </>
+              )}
+            </div>
+          </Tab>
+
+          <Tab
+            key="processos"
+            title={
+              <div className="flex items-center gap-2">
+                <Scale className="h-4 w-4" />
+                <span>Processos</span>
+                {processos.length > 0 ? (
+                  <Chip color="primary" size="sm" variant="flat">
+                    {processos.length}
+                  </Chip>
+                ) : null}
+              </div>
+            }
+          >
+            <div className="mt-4">
+              {processos.length === 0 ? (
+                <Card className="border border-default-200">
+                  <CardBody className="py-8 text-center">
+                    <Scale className="mx-auto h-10 w-10 text-default-400" />
+                    <p className="mt-3 text-sm text-default-500">Nenhum processo vinculado</p>
+                  </CardBody>
+                </Card>
+              ) : (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {processosPageItems.map((processo) => (
+                      <Card
+                        key={processo.id}
+                        className="border border-default-200 transition-all hover:border-primary hover:shadow-md"
+                      >
+                        <CardHeader className="flex-col gap-2 pb-1">
+                          <div className="flex w-full items-start justify-between gap-2">
+                            <div className="flex flex-wrap gap-2">
+                              <Chip
+                                color={getChipStatusColor(processo.status)}
+                                size="sm"
+                                variant="flat"
+                              >
+                                {processo.status}
+                              </Chip>
+                              {processo.fase ? (
+                                <Chip color="default" size="sm" variant="flat">
+                                  {processo.fase}
+                                </Chip>
+                              ) : null}
+                              {processo.grau ? (
+                                <Chip color="secondary" size="sm" variant="flat">
+                                  {processo.grau}
+                                </Chip>
+                              ) : null}
+                            </div>
+                            <Chip color="primary" size="sm" variant="flat">
+                              {processo.participacao}
+                            </Chip>
+                          </div>
+                          <div>
+                            <p className="font-semibold">{processo.numero}</p>
+                            {processo.numeroCnj ? (
+                              <p className="text-xs text-default-500">CNJ {processo.numeroCnj}</p>
+                            ) : null}
+                            {processo.titulo ? (
+                              <p className="mt-1 text-xs text-default-600">{processo.titulo}</p>
+                            ) : null}
+                          </div>
+                        </CardHeader>
+                        <Divider />
+                        <CardBody className="gap-2">
+                          <div className="flex items-center gap-2 text-xs">
+                            <Building2 className="h-3 w-3 text-default-400" />
+                            <span>{processo.area?.nome || "Sem área"}</span>
+                          </div>
+                          {processo.cliente ? (
+                            <div className="flex items-center gap-2 text-xs">
+                              <Users className="h-3 w-3 text-default-400" />
+                              <p className="text-default-600">
+                                {processo.cliente.nome}
+                              </p>
+                            </div>
+                          ) : null}
+                          {processo.advogadoResponsavel ? (
+                            <div className="flex items-center gap-2 text-xs">
+                              <User className="h-3 w-3 text-default-400" />
+                              <p className="text-default-600">
+                                {processo.advogadoResponsavel.usuario?.firstName}{" "}
+                                {processo.advogadoResponsavel.usuario?.lastName}
+                              </p>
+                            </div>
+                          ) : null}
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            <Chip size="sm" variant="flat">
+                              {processo._count.documentos} docs
+                            </Chip>
+                            <Chip size="sm" variant="flat">
+                              {processo._count.eventos} eventos
+                            </Chip>
+                            <Chip size="sm" variant="flat">
+                              {processo._count.movimentacoes} movs
+                            </Chip>
+                            <Chip size="sm" variant="flat">
+                              {processo._count.tarefas} tarefas
+                            </Chip>
+                          </div>
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <Button
+                              className="text-xs"
+                              color="primary"
+                              size="sm"
+                              startContent={<Eye className="h-3 w-3" />}
+                              variant="flat"
+                              onPress={() => router.push(`/processos/${processo.id}`)}
+                            >
+                              Abrir processo
+                            </Button>
+                            {processo.cliente ? (
+                              <Button
+                                className="text-xs"
+                                size="sm"
+                                variant="light"
+                                onPress={() => router.push(`/clientes/${processo.cliente.id}`)}
+                              >
+                                Abrir cliente
+                              </Button>
+                            ) : null}
+                          </div>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </div>
+                  <TabPagination
+                    itemLabel="processos"
+                    page={processosPage}
+                    pageSize={TAB_PAGE_SIZES.processos}
+                    totalItems={processos.length}
+                    totalPages={processosTotalPages}
+                    onChange={setProcessosPage}
+                  />
+                </>
+              )}
+            </div>
+          </Tab>
+
+          <Tab
+            key="contratos"
+            title={
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <span>Contratos</span>
+                {contratos.length > 0 ? (
+                  <Chip color="primary" size="sm" variant="flat">
+                    {contratos.length}
+                  </Chip>
+                ) : null}
+              </div>
+            }
+          >
+            <div className="mt-4">
+              {contratos.length === 0 ? (
+                <Card className="border border-default-200">
+                  <CardBody className="py-8 text-center">
+                    <FileText className="mx-auto h-10 w-10 text-default-400" />
+                    <p className="mt-3 text-sm text-default-500">Sem contratos vinculados</p>
+                  </CardBody>
+                </Card>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {contratosPageItems.map((contrato) => (
+                      <Card
+                        as={Link}
+                        href={`/contratos/${contrato.id}`}
+                        key={contrato.id}
+                        className="cursor-pointer border border-default-200 transition-all hover:border-primary hover:shadow-md"
+                      >
+                        <CardBody className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-semibold">{contrato.titulo}</p>
+                              <p className="text-xs text-default-500">
+                                {contrato.tipo?.nome || "Contrato sem tipo"}
+                              </p>
+                            </div>
+                            <Chip color={getChipStatusColor(contrato.status)} size="sm" variant="flat">
+                              {contrato.status}
+                            </Chip>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <Chip size="sm" variant="flat">
+                              {contrato._count?.documentos || 0} documentos
+                            </Chip>
+                            <Chip size="sm" variant="flat">
+                              {contrato._count?.faturas || 0} faturas
+                            </Chip>
+                            <Chip size="sm" variant="flat">
+                              {contrato._count?.parcelas || 0} parcelas
+                            </Chip>
+                            <Chip size="sm" variant="flat">
+                              {contrato._count?.honorarios || 0} honorários
+                            </Chip>
+                          </div>
+
+                          <div className="grid gap-1 text-xs text-default-600 sm:grid-cols-2">
+                            <p>Cliente: {contrato.cliente?.nome || "Sem cliente"}</p>
+                            <p>Valor: {contrato.valor ? `R$ ${Number(contrato.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00"}</p>
+                            <p>Início: {formatDate(contrato.dataInicio)}</p>
+                            <p>Assinatura: {formatDate(contrato.dataAssinatura)}</p>
+                            <p>Processo: {contrato.processo?.numero || "N/D"}</p>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </div>
+                  <TabPagination
+                    itemLabel="contratos"
+                    page={contratosPage}
+                    pageSize={TAB_PAGE_SIZES.contratos}
+                    totalItems={contratos.length}
+                    totalPages={contratosTotalPages}
+                    onChange={setContratosPage}
+                  />
+                </>
+              )}
+            </div>
+          </Tab>
+
+          <Tab
+            key="procuracoes"
+            title={
+              <div className="flex items-center gap-2">
+                <FileSignature className="h-4 w-4" />
+                <span>Procurações</span>
+                {procuracoes.length > 0 ? (
+                  <Chip color="success" size="sm" variant="flat">
+                    {procuracoes.length}
+                  </Chip>
+                ) : null}
+              </div>
+            }
+          >
+            <div className="mt-4">
+              {procuracoes.length === 0 ? (
+                <Card className="border border-default-200">
+                  <CardBody className="py-8 text-center">
+                    <FileSignature className="mx-auto h-10 w-10 text-default-400" />
+                    <p className="mt-3 text-sm text-default-500">Sem procurações vinculadas</p>
+                  </CardBody>
+                </Card>
+              ) : (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {procuracoesPageItems.map((procuracao) => (
+                      <Card
+                        as={Link}
+                        href={`/procuracoes/${procuracao.id}`}
+                        key={procuracao.id}
+                        className="border border-default-200 transition-all hover:border-success hover:shadow-md"
+                      >
+                        <CardHeader className="pb-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-semibold">Procuração {procuracao.numero || procuracao.id.slice(0, 8)}</p>
+                              <p className="text-xs text-default-500">{procuracao.cliente?.nome || "Cliente não informado"}</p>
+                            </div>
+                            <Chip
+                              color={procuracao.ativa ? "success" : "default"}
+                              size="sm"
+                              variant="flat"
+                            >
+                              {procuracao.ativa ? "Ativa" : "Inativa"}
+                            </Chip>
+                          </div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <Chip color={getChipStatusColor(procuracao.status)} size="sm" variant="flat">
+                              {procuracao.status}
+                            </Chip>
+                            {procuracao.emitidaEm ? (
+                              <Chip size="sm" variant="flat">
+                                Emitida {formatDate(procuracao.emitidaEm)}
+                              </Chip>
+                            ) : null}
+                          </div>
+                        </CardHeader>
+                        <Divider />
+                        <CardBody className="gap-2">
+                          <div className="flex flex-wrap gap-2">
+                            <Chip size="sm" variant="flat">{procuracao._count.poderes} poderes</Chip>
+                            <Chip size="sm" variant="flat">{procuracao.processos.length} processos</Chip>
+                            <Chip size="sm" variant="flat">{procuracao._count.assinaturas} assinaturas</Chip>
+                          </div>
+                          <div className="text-xs text-default-500">
+                            Outorgados: {procuracao.outorgados.length || 0}
+                          </div>
+                          {procuracao.cliente?.id ? (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              <Button
+                                as={Link}
+                                href={`/clientes/${procuracao.cliente.id}`}
+                                size="sm"
+                                variant="flat"
+                              >
+                                Cliente
+                              </Button>
+                              {procuracao.processos.length > 0 ? (
+                                <Button
+                                  as={Link}
+                                  href={`/processos/${procuracao.processos[0].processo.id}`}
+                                  size="sm"
+                                  variant="light"
+                                >
+                                  Processo principal
+                                </Button>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </div>
+                  <TabPagination
+                    itemLabel="procurações"
+                    page={procuracoesPage}
+                    pageSize={TAB_PAGE_SIZES.procuracoes}
+                    totalItems={procuracoes.length}
+                    totalPages={procuracoesTotalPages}
+                    onChange={setProcuracoesPage}
+                  />
+                </>
+              )}
+            </div>
+          </Tab>
+
+          <Tab
+            key="tarefas"
+            title={
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                <span>Tarefas</span>
+                {tarefas.length > 0 ? (
+                  <Chip color="primary" size="sm" variant="flat">
+                    {tarefas.length}
+                  </Chip>
+                ) : null}
+              </div>
+            }
+          >
+            <div className="mt-4">
+              {tarefas.length === 0 ? (
+                <Card className="border border-default-200">
+                  <CardBody className="py-8 text-center">
+                    <MessageSquareText className="mx-auto h-10 w-10 text-default-400" />
+                    <p className="mt-3 text-sm text-default-500">Sem tarefas vinculadas</p>
+                  </CardBody>
+                </Card>
+              ) : (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {tarefasPageItems.map((tarefa) => (
+                      <Card key={tarefa.id} className="border border-default-200">
+                        <CardBody className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-semibold">{tarefa.titulo}</p>
+                            <Chip
+                              color={getChipStatusColor(tarefa.status)}
+                              size="sm"
+                              variant="flat"
+                            >
+                              {tarefa.status}
+                            </Chip>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {tarefa.prioridade ? (
+                              <Chip size="sm" variant="flat">Prioridade: {tarefa.prioridade}</Chip>
+                            ) : null}
+                            {tarefa.dataLimite ? (
+                              <Chip size="sm" variant="flat">
+                                Limite: {formatDate(tarefa.dataLimite)}
+                              </Chip>
+                            ) : null}
+                          </div>
+                          <p className="text-xs text-default-500">
+                            Processo: {tarefa.processo?.numero || "Não informado"}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {tarefa.processo ? (
+                              <Button
+                                as={Link}
+                                href={`/processos/${tarefa.processo.id}`}
+                                size="sm"
+                                variant="light"
+                              >
+                                Processo
+                              </Button>
+                              ) : null}
+                            {tarefa.cliente ? (
+                              <Button
+                                as={Link}
+                                href={`/clientes/${tarefa.cliente.id}`}
+                                size="sm"
+                                variant="light"
+                              >
+                                Cliente
+                              </Button>
+                            ) : null}
+                            <Button
+                              as={Link}
+                              href="/tarefas"
+                              size="sm"
+                              variant="light"
+                              startContent={<Eye className="h-4 w-4" />}
+                            >
+                              Abrir tarefas
+                            </Button>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </div>
+                  <TabPagination
+                    itemLabel="tarefas"
+                    page={tarefasPage}
+                    pageSize={TAB_PAGE_SIZES.tarefas}
+                    totalItems={tarefas.length}
+                    totalPages={tarefasTotalPages}
+                    onChange={setTarefasPage}
+                  />
+                </>
+              )}
+            </div>
+          </Tab>
+
+          <Tab
+            key="operacao"
+            title={
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                <span>Operação</span>
+              </div>
+            }
+          >
+            <div className="mt-4 grid gap-4 xl:grid-cols-2">
+              <Card className="border border-default-200">
+                <CardHeader>
+                  <p className="text-sm font-semibold">Indicadores de performance</p>
+                </CardHeader>
+                <Divider />
+                <CardBody className="space-y-2">
+                  <div className="flex items-center justify-between rounded-md border border-default-200 p-2">
+                    <p className="text-sm">Processos em andamento</p>
+                    <p className="text-sm font-semibold">
+                      {performance?.processosAtivos || 0} de {performance?.totalProcessos || 0}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border border-default-200 p-2">
+                    <p className="text-sm">Processos finalizados</p>
+                    <p className="text-sm font-semibold">
+                      {performance?.processosFinalizados || 0}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border border-default-200 p-2">
+                    <p className="text-sm">Última atividade</p>
+                    <p className="text-sm font-semibold">
+                      {formatDate(performance?.ultimaAtividade)}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border border-default-200 p-2">
+                    <p className="text-sm">Tempo médio do ciclo (dias)</p>
+                    <p className="text-sm font-semibold">
+                      {performance?.tempoMedioProcesso || 0}
+                    </p>
+                  </div>
+                </CardBody>
+              </Card>
+
+              <Card className="border border-default-200">
+                <CardHeader>
+                  <p className="text-sm font-semibold">Comissões</p>
+                </CardHeader>
+                <Divider />
+                <CardBody className="space-y-2">
+                  <div className="flex items-center justify-between rounded-md border border-default-200 p-2">
+                    <p className="text-sm">Comissão calculada</p>
+                    <p className="text-sm font-semibold">
+                      {isLoadingComissoes
+                        ? "..."
+                        : `R$ ${Number(comissoes?.comissaoCalculada || 0).toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                          })}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border border-default-200 p-2">
+                    <p className="text-sm">Comissão paga</p>
+                    <p className="text-sm font-semibold">
+                      {`R$ ${Number(comissoes?.comissaoPaga || 0).toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                      })}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border border-default-200 p-2">
+                    <p className="text-sm">Comissão pendente</p>
+                    <p className="text-sm font-semibold">
+                      {`R$ ${Number(comissoes?.comissaoPendente || 0).toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                      })}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border border-default-200 p-2">
+                    <p className="text-sm">Status da comissão</p>
                     <Chip
-                      key={especialidade}
-                      color={getEspecialidadeColor(especialidade) as any}
+                      color={
+                        comissoes?.statusComissao === "ATRASADO"
+                          ? "danger"
+                          : comissoes?.statusComissao === "PENDENTE"
+                            ? "warning"
+                            : "success"
+                      }
                       size="sm"
                       variant="flat"
                     >
-                      {especialidade.replace(/_/g, " ")}
+                      {comissoes?.statusComissao || "EM DIA"}
                     </Chip>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Bio */}
-            {advogado.bio && (
-              <div className="mt-6">
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                  Biografia
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {advogado.bio}
-                </p>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-      </motion.div>
-
-      {/* Tabs de Conteúdo */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        initial={{ opacity: 0, y: 20 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-      >
-        <Card className="shadow-lg border border-slate-200 dark:border-slate-700">
-          <CardBody className="p-0">
-            <Tabs
-              aria-label="Seções do advogado"
-              className="w-full"
-              classNames={tabsClassNames}
-              color="primary"
-              selectedKey={activeTab}
-              variant="underlined"
-              onSelectionChange={(key) => setActiveTab(key as string)}
-            >
-              <Tab key="overview" title="Visão Geral">
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Estatísticas Básicas */}
-                    <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border-blue-300 dark:border-blue-600">
-                      <CardBody className="p-4 text-center">
-                        <div className="p-2 bg-blue-500 rounded-full w-fit mx-auto mb-2">
-                          <Scale className="h-5 w-5 text-white" />
-                        </div>
-                        <h4 className="text-2xl font-bold text-blue-800 dark:text-blue-200">
-                          {performance?.totalProcessos || 0}
-                        </h4>
-                        <p className="text-sm text-blue-600 dark:text-blue-400">
-                          Total de Processos
-                        </p>
-                      </CardBody>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 border-green-300 dark:border-green-600">
-                      <CardBody className="p-4 text-center">
-                        <div className="p-2 bg-green-500 rounded-full w-fit mx-auto mb-2">
-                          <TrendingUp className="h-5 w-5 text-white" />
-                        </div>
-                        <h4 className="text-2xl font-bold text-green-800 dark:text-green-200">
-                          {performance?.taxaSucesso || 0}%
-                        </h4>
-                        <p className="text-sm text-green-600 dark:text-green-400">
-                          Taxa de Sucesso
-                        </p>
-                      </CardBody>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 border-purple-300 dark:border-purple-600">
-                      <CardBody className="p-4 text-center">
-                        <div className="p-2 bg-purple-500 rounded-full w-fit mx-auto mb-2">
-                          <DollarSign className="h-5 w-5 text-white" />
-                        </div>
-                        <h4 className="text-2xl font-bold text-purple-800 dark:text-purple-200">
-                          R${" "}
-                          {comissoes?.comissaoCalculada?.toLocaleString(
-                            "pt-BR",
-                            { minimumFractionDigits: 2 },
-                          ) || "0,00"}
-                        </h4>
-                        <p className="text-sm text-purple-600 dark:text-purple-400">
-                          Comissões
-                        </p>
-                      </CardBody>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/20 border-orange-300 dark:border-orange-600">
-                      <CardBody className="p-4 text-center">
-                        <div className="p-2 bg-orange-500 rounded-full w-fit mx-auto mb-2">
-                          <Clock className="h-5 w-5 text-white" />
-                        </div>
-                        <h4 className="text-2xl font-bold text-orange-800 dark:text-orange-200">
-                          {performance?.tempoMedioProcesso || 0} dias
-                        </h4>
-                        <p className="text-sm text-orange-600 dark:text-orange-400">
-                          Tempo Médio
-                        </p>
-                      </CardBody>
-                    </Card>
                   </div>
-                </div>
-              </Tab>
+                </CardBody>
+              </Card>
+            </div>
+          </Tab>
 
-              <Tab key="performance" title="Performance">
-                <div className="p-6">
-                  {isLoadingPerformance ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Spinner size="lg" />
-                    </div>
-                  ) : performance ? (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Card className="border border-slate-200 dark:border-slate-700">
-                          <CardBody className="p-4 text-center">
-                            <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                              {performance.processosAtivos}
-                            </h4>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                              Processos Ativos
-                            </p>
-                          </CardBody>
-                        </Card>
-                        <Card className="border border-slate-200 dark:border-slate-700">
-                          <CardBody className="p-4 text-center">
-                            <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                              {performance.processosFinalizados}
-                            </h4>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                              Processos Finalizados
-                            </p>
-                          </CardBody>
-                        </Card>
-                        <Card className="border border-slate-200 dark:border-slate-700">
-                          <CardBody className="p-4 text-center">
-                            <h4 className="text-lg font-bold text-slate-800 dark:text-slate-200">
-                              {performance.processosVencidos}
-                            </h4>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                              Processos Vencidos
-                            </p>
-                          </CardBody>
-                        </Card>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                      <BarChart3 className="h-12 w-12 mx-auto mb-4" />
-                      <p>Nenhum dado de performance disponível</p>
-                    </div>
-                  )}
-                </div>
-              </Tab>
-
-              <Tab key="commissions" title="Comissões">
-                <div className="p-6">
-                  {isLoadingComissoes ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Spinner size="lg" />
-                    </div>
-                  ) : comissoes ? (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Card className="border border-slate-200 dark:border-slate-700">
-                          <CardBody className="p-4 text-center">
-                            <h4 className="text-lg font-bold text-green-600 dark:text-green-400">
-                              R${" "}
-                              {comissoes.comissaoCalculada.toLocaleString(
-                                "pt-BR",
-                                { minimumFractionDigits: 2 },
-                              )}
-                            </h4>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                              Total Calculado
-                            </p>
-                          </CardBody>
-                        </Card>
-                        <Card className="border border-slate-200 dark:border-slate-700">
-                          <CardBody className="p-4 text-center">
-                            <h4 className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                              R${" "}
-                              {comissoes.comissaoPaga.toLocaleString("pt-BR", {
-                                minimumFractionDigits: 2,
-                              })}
-                            </h4>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                              Total Pago
-                            </p>
-                          </CardBody>
-                        </Card>
-                        <Card className="border border-slate-200 dark:border-slate-700">
-                          <CardBody className="p-4 text-center">
-                            <h4 className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                              R${" "}
-                              {comissoes.comissaoPendente.toLocaleString(
-                                "pt-BR",
-                                { minimumFractionDigits: 2 },
-                              )}
-                            </h4>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                              Pendente
-                            </p>
-                          </CardBody>
-                        </Card>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                      <DollarSign className="h-12 w-12 mx-auto mb-4" />
-                      <p>Nenhum dado de comissão disponível</p>
-                    </div>
-                  )}
-                </div>
-              </Tab>
-
-              <Tab key="notifications" title="Notificações">
-                <div className="p-6">
-                  {isLoadingNotificacoes ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Spinner size="lg" />
-                    </div>
-                  ) : notificacoes && notificacoes.length > 0 ? (
-                    <div className="space-y-4">
-                      {notificacoes.slice(0, 5).map((notificacao) => (
-                        <Card
-                          key={notificacao.id}
-                          className="border border-slate-200 dark:border-slate-700"
-                        >
-                          <CardBody className="p-4">
-                            <div className="flex items-start gap-3">
-                              <div
-                                className={`p-2 rounded-full ${notificacao.lida ? "bg-slate-200 dark:bg-slate-700" : "bg-blue-100 dark:bg-blue-900"}`}
-                              >
-                                <Bell className="h-4 w-4" />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                                  {notificacao.titulo}
-                                </h4>
-                                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                  {notificacao.mensagem}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                                  {new Date(
-                                    notificacao.dataCriacao,
-                                  ).toLocaleDateString("pt-BR")}
-                                </p>
-                              </div>
-                              {!notificacao.lida && (
-                                <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                              )}
+          <Tab
+            key="eventos"
+            title={
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4" />
+                <span>Eventos</span>
+                {eventos.length > 0 ? (
+                  <Chip color="warning" size="sm" variant="flat">
+                    {eventos.length}
+                  </Chip>
+                ) : null}
+              </div>
+            }
+          >
+            <div className="mt-4">
+              {eventos.length === 0 ? (
+                <Card className="border border-default-200">
+                  <CardBody className="py-8 text-center">
+                    <CalendarDays className="mx-auto h-10 w-10 text-default-400" />
+                    <p className="mt-3 text-sm text-default-500">Sem eventos vinculados</p>
+                  </CardBody>
+                </Card>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {eventosPageItems.map((evento) => (
+                      <Card key={evento.id} className="border border-default-200">
+                        <CardBody className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-semibold">{evento.titulo}</p>
+                              <p className="text-xs text-default-500">
+                                {formatDateTime(evento.dataInicio)} - {formatDateTime(evento.dataFim)}
+                              </p>
                             </div>
-                          </CardBody>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                      <Bell className="h-12 w-12 mx-auto mb-4" />
-                      <p>Nenhuma notificação disponível</p>
-                    </div>
-                  )}
-                </div>
-              </Tab>
-            </Tabs>
-          </CardBody>
-        </Card>
-      </motion.div>
+                            <Chip color={getChipStatusColor(evento.status)} size="sm" variant="flat">
+                              {evento.status}
+                            </Chip>
+                          </div>
+                          <p className="text-xs text-default-600">Tipo: {evento.tipo}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {evento.cliente ? (
+                              <Button
+                                as={Link}
+                                href={`/clientes/${evento.cliente.id}`}
+                                size="sm"
+                                variant="flat"
+                              >
+                                Cliente
+                              </Button>
+                            ) : null}
+                            {evento.processo ? (
+                              <Button
+                                as={Link}
+                                href={`/processos/${evento.processo.id}`}
+                                size="sm"
+                                variant="flat"
+                              >
+                                Processo
+                              </Button>
+                            ) : null}
+                            <Button
+                              as={Link}
+                              href={`/agenda?evento=${evento.id}`}
+                              size="sm"
+                              variant="light"
+                              startContent={<Eye className="h-3 w-3" />}
+                            >
+                              Abrir na agenda
+                            </Button>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </div>
+                  <TabPagination
+                    itemLabel="eventos"
+                    page={eventosPage}
+                    pageSize={TAB_PAGE_SIZES.eventos}
+                    totalItems={eventos.length}
+                    totalPages={eventosTotalPages}
+                    onChange={setEventosPage}
+                  />
+                </>
+              )}
+            </div>
+          </Tab>
 
-      {/* Modais */}
-      {advogado && (
-        <>
-          <AdvogadoHistorico
-            advogadoId={advogado.id}
-            advogadoNome={getNomeCompleto(advogado)}
-            isOpen={isHistoricoModalOpen}
-            onClose={() => setIsHistoricoModalOpen(false)}
-          />
-          <AdvogadoNotificacoes
-            advogadoId={advogado.id}
-            advogadoNome={getNomeCompleto(advogado)}
-            isOpen={isNotificacoesModalOpen}
-            onClose={() => setIsNotificacoesModalOpen(false)}
-          />
-        </>
-      )}
+          <Tab
+            key="assinaturas"
+            title={
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4" />
+                <span>Assinaturas</span>
+                {assinaturas.length > 0 ? (
+                  <Chip color="success" size="sm" variant="flat">
+                    {assinaturas.length}
+                  </Chip>
+                ) : null}
+              </div>
+            }
+          >
+            <div className="mt-4">
+              {assinaturas.length === 0 ? (
+                <Card className="border border-default-200">
+                  <CardBody className="py-8 text-center">
+                    <Wallet className="mx-auto h-10 w-10 text-default-400" />
+                    <p className="mt-3 text-sm text-default-500">Sem assinaturas de documentos</p>
+                  </CardBody>
+                </Card>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {assinaturasPageItems.map((assinatura) => (
+                      <Card key={assinatura.id} className="border border-default-200">
+                        <CardBody className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-semibold">{assinatura.titulo}</p>
+                              <p className="text-xs text-default-500">Documento: {assinatura.documento?.nome || "N/D"}</p>
+                            </div>
+                            <Chip color={getChipStatusColor(assinatura.status)} size="sm" variant="flat">
+                              {assinatura.status}
+                            </Chip>
+                          </div>
+                          <div className="grid gap-1 text-xs text-default-500 sm:grid-cols-2">
+                            <p>Processo: {assinatura.processo?.numero || "Sem processo"}</p>
+                            <p>Cliente: {assinatura.cliente?.nome || "Sem cliente"}</p>
+                            <p>Enviado: {formatDateTime(assinatura.dataEnvio)}</p>
+                            <p>Assinado: {formatDateTime(assinatura.dataAssinatura)}</p>
+                            <p>Expira: {formatDateTime(assinatura.dataExpiracao)}</p>
+                          </div>
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {assinatura.urlDocumento ? (
+                              <Button
+                                as="a"
+                                href={assinatura.urlDocumento}
+                                rel="noopener noreferrer"
+                                size="sm"
+                                target="_blank"
+                                variant="flat"
+                                startContent={<Eye className="h-3 w-3" />}
+                              >
+                                Abrir documento
+                              </Button>
+                            ) : null}
+                            {assinatura.urlAssinado ? (
+                              <Button
+                                as="a"
+                                href={assinatura.urlAssinado}
+                                rel="noopener noreferrer"
+                                size="sm"
+                                target="_blank"
+                                variant="flat"
+                                startContent={<Eye className="h-3 w-3" />}
+                              >
+                                Abrir assinado
+                              </Button>
+                            ) : null}
+                            {assinatura.processo ? (
+                              <Button
+                                as={Link}
+                                href={`/processos/${assinatura.processo.id}`}
+                                size="sm"
+                                variant="light"
+                              >
+                                Processo
+                              </Button>
+                            ) : null}
+                          </div>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </div>
+                  <TabPagination
+                    itemLabel="assinaturas"
+                    page={assinaturasPage}
+                    pageSize={TAB_PAGE_SIZES.assinaturas}
+                    totalItems={assinaturas.length}
+                    totalPages={assinaturasTotalPages}
+                    onChange={setAssinaturasPage}
+                  />
+                </>
+              )}
+            </div>
+          </Tab>
+        </Tabs>
+
+      {isHistoricoModalOpen && advogado ? (
+        <AdvogadoHistorico
+          advogadoId={advogado.id}
+          advogadoNome={getNomeCompleto(advogado)}
+          isOpen={isHistoricoModalOpen}
+          onClose={() => setIsHistoricoModalOpen(false)}
+        />
+      ) : null}
+
+      {isNotificacoesModalOpen && advogado ? (
+        <AdvogadoNotificacoes
+          advogadoId={advogado.id}
+          advogadoNome={getNomeCompleto(advogado)}
+          isOpen={isNotificacoesModalOpen}
+          onClose={() => setIsNotificacoesModalOpen(false)}
+        />
+      ) : null}
+
     </div>
   );
 }

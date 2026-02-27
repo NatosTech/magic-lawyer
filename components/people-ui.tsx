@@ -1,6 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type {
+  ComponentProps,
+  KeyboardEventHandler,
+  MouseEventHandler,
+  ReactNode,
+} from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 
@@ -59,6 +64,146 @@ interface PeoplePageHeaderProps {
   description: string;
   actions?: ReactNode;
   tag?: string;
+}
+
+function joinClasses(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
+
+type PeopleEntityCardProps = Omit<
+  ComponentProps<typeof Card>,
+  | "children"
+  | "isPressable"
+  | "onPress"
+  | "onClick"
+  | "onKeyDown"
+  | "role"
+  | "tabIndex"
+> & {
+  children: ReactNode;
+  isSelected?: boolean;
+  isPressable?: boolean;
+  onPress?: () => void;
+  onClick?: MouseEventHandler<HTMLDivElement>;
+  onKeyDown?: KeyboardEventHandler<HTMLDivElement>;
+  role?: string;
+  tabIndex?: number;
+};
+
+export function PeopleEntityCard({
+  children,
+  className,
+  isSelected = false,
+  isPressable = false,
+  onPress,
+  onClick,
+  onKeyDown,
+  role,
+  tabIndex,
+  ...cardProps
+}: PeopleEntityCardProps) {
+  const isInteractiveElement = (
+    target: EventTarget | null,
+    currentTarget: EventTarget | null,
+  ) => {
+    if (!(target instanceof Element) || !(currentTarget instanceof Element)) {
+      return false;
+    }
+
+    if (target === currentTarget) {
+      return false;
+    }
+
+    return Boolean(
+      target.closest(
+        "button,a,input,select,textarea,[role='menuitem'],[role='checkbox'],[data-react-aria-pressable='true'],[data-stop-card-press='true']",
+      ),
+    );
+  };
+
+  const handleClick: MouseEventHandler<HTMLDivElement> = (event) => {
+    onClick?.(event);
+
+    if (
+      !event.defaultPrevented &&
+      isPressable &&
+      !isInteractiveElement(event.target, event.currentTarget)
+    ) {
+      onPress?.();
+    }
+  };
+
+  const handleKeyDown: KeyboardEventHandler<HTMLDivElement> = (event) => {
+    onKeyDown?.(event);
+
+    if (event.defaultPrevented || !isPressable) {
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onPress?.();
+    }
+  };
+
+  return (
+    <div
+      role={isPressable ? "button" : role}
+      tabIndex={isPressable ? 0 : tabIndex}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
+      <Card
+        className={joinClasses(
+          "group border border-white/10 bg-background/60 transition-all duration-300 hover:border-primary/40 hover:bg-background/80",
+          isSelected && "border-primary/50 bg-primary/10",
+          isPressable && "cursor-pointer",
+          className,
+        )}
+        {...cardProps}
+      >
+        {children}
+      </Card>
+    </div>
+  );
+}
+
+type PeopleEntityCardHeaderProps = Omit<
+  ComponentProps<typeof CardHeader>,
+  "children"
+> & {
+  children: ReactNode;
+};
+
+export function PeopleEntityCardHeader({
+  children,
+  className,
+  ...headerProps
+}: PeopleEntityCardHeaderProps) {
+  return (
+    <CardHeader
+      className={joinClasses("border-b border-white/10 p-4", className)}
+      {...headerProps}
+    >
+      {children}
+    </CardHeader>
+  );
+}
+
+type PeopleEntityCardBodyProps = Omit<ComponentProps<typeof CardBody>, "children"> & {
+  children: ReactNode;
+};
+
+export function PeopleEntityCardBody({
+  children,
+  className,
+  ...bodyProps
+}: PeopleEntityCardBodyProps) {
+  return (
+    <CardBody className={joinClasses("p-4", className)} {...bodyProps}>
+      {children}
+    </CardBody>
+  );
 }
 
 export function PeoplePageHeader({
