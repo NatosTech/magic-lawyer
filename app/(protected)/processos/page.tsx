@@ -28,7 +28,7 @@ export default async function ProcessosPage() {
 
   // Admin sempre tem acesso
   if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) {
-    return <ProcessosContent />;
+    return <ProcessosContent canCreateProcesso canSyncOab />;
   }
 
   // Para outros roles, verificar permissão processos.visualizar
@@ -39,7 +39,17 @@ export default async function ProcessosPage() {
       redirect("/dashboard");
     }
 
-    return <ProcessosContent />;
+    const [canCreateProcesso, canSyncOab] = await Promise.all([
+      checkPermission("processos", "criar"),
+      checkPermission("processos", "editar"),
+    ]);
+
+    return (
+      <ProcessosContent
+        canCreateProcesso={canCreateProcesso}
+        canSyncOab={canSyncOab}
+      />
+    );
   } catch (error) {
     console.error("Erro ao verificar permissões para /processos:", error);
     redirect("/dashboard");

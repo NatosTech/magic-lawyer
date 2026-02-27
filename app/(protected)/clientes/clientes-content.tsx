@@ -508,7 +508,7 @@ const ClientesListSection = memo(function ClientesListSection({
                                   startContent={<KeyRound className="h-4 w-4" />}
                                   onPress={() => onOpenResetModal(cliente)}
                                 >
-                                  Resetar Senha
+                                  Reenviar Primeiro Acesso
                                 </DropdownItem>
                               ) : null}
                               <DropdownItem
@@ -646,7 +646,9 @@ export function ClientesContent() {
   const [criarUsuario, setCriarUsuario] = useState(true); // Criar usuário por padrão
   const [credenciaisModal, setCredenciaisModal] = useState<{
     email: string;
-    senha: string;
+    maskedEmail: string;
+    primeiroAcessoEnviado: boolean;
+    erroEnvio?: string;
   } | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [clienteParaResetarSenha, setClienteParaResetarSenha] =
@@ -826,9 +828,14 @@ export function ClientesContent() {
         setCriarUsuario(true);
         mutate();
 
-        // Se criou usuário, mostrar credenciais
+        // Se criou usuário, mostrar status do primeiro acesso
         if (result.usuario) {
           setCredenciaisModal(result.usuario);
+          if (!result.usuario.primeiroAcessoEnviado) {
+            toast.warning(
+              "Cliente criado, mas o e-mail de primeiro acesso não foi enviado automaticamente.",
+            );
+          }
         }
       } else {
         toast.error(result.error || "Erro ao criar cliente");
@@ -1113,14 +1120,18 @@ export function ClientesContent() {
       const result = await resetarSenhaCliente(clienteParaResetarSenha.id);
 
       if (result.success && result.usuario) {
-        toast.success("Senha resetada com sucesso!");
+        if (result.warning) {
+          toast.warning(result.warning);
+        } else {
+          toast.success("Acesso redefinido com sucesso!");
+        }
         setClienteParaResetarSenha(null);
         setCredenciaisModal(result.usuario);
       } else {
-        toast.error(result.error || "Erro ao resetar senha");
+        toast.error(result.error || "Erro ao redefinir acesso");
       }
     } catch (error) {
-      toast.error("Erro ao resetar senha");
+      toast.error("Erro ao redefinir acesso");
     } finally {
       setIsResettingPassword(false);
     }
@@ -1917,7 +1928,7 @@ export function ClientesContent() {
                           </p>
                           <p className="text-xs text-default-500 mt-1">
                             {criarUsuario
-                              ? "Um usuário será criado automaticamente com email e senha aleatória"
+                              ? "Um usuário será criado e receberá link de primeiro acesso por email"
                               : "O cliente não terá acesso ao sistema"}
                           </p>
                         </div>
@@ -2384,7 +2395,7 @@ export function ClientesContent() {
         </ModalContent>
       </HeroUIModal>
 
-      {/* Modal de Credenciais */}
+      {/* Modal de Primeiro Acesso */}
       <Modal
         footer={
           <div className="flex justify-end">
@@ -2401,9 +2412,7 @@ export function ClientesContent() {
         size="lg"
         title={
           credenciaisModal
-            ? credenciaisModal.senha.length > 0
-              ? "🔑 Credenciais de Acesso"
-              : "✅ Cliente criado com sucesso!"
+            ? "🔐 Primeiro acesso do cliente"
             : ""
         }
         onOpenChange={() => setCredenciaisModal(null)}
@@ -2418,8 +2427,8 @@ export function ClientesContent() {
                     Usuário de acesso criado
                   </p>
                   <p className="text-xs text-default-600 mt-1">
-                    As credenciais abaixo foram geradas automaticamente. Anote
-                    ou envie para o cliente.
+                    O cliente deve definir a própria senha pelo link de primeiro
+                    acesso enviado por e-mail.
                   </p>
                 </div>
               </div>
@@ -2452,44 +2461,31 @@ export function ClientesContent() {
                 </div>
 
                 <div>
-                  <p className="text-xs text-default-400 mb-1">
-                    Senha (temporária)
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      readOnly
-                      classNames={{
-                        input: "font-mono",
-                      }}
-                      value={credenciaisModal.senha}
-                    />
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="flat"
-                      onPress={() => {
-                        navigator.clipboard.writeText(credenciaisModal.senha);
-                        toast.success("Senha copiada!");
-                      }}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <p className="text-xs text-default-400 mb-1">Email mascarado</p>
+                  <Input readOnly value={credenciaisModal.maskedEmail} />
                 </div>
               </CardBody>
             </Card>
 
-            <div className="rounded-lg bg-warning/10 border border-warning/20 p-3">
-              <p className="text-xs text-warning-600">
-                ⚠️ Esta senha será exibida apenas uma vez. Certifique-se de
-                anotar ou enviar para o cliente.
-              </p>
-            </div>
+            {credenciaisModal.primeiroAcessoEnviado ? (
+              <div className="rounded-lg bg-primary/10 border border-primary/20 p-3">
+                <p className="text-xs text-primary-700 dark:text-primary-300">
+                  ✅ Link de primeiro acesso enviado para {credenciaisModal.maskedEmail}.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg bg-warning/10 border border-warning/20 p-3">
+                <p className="text-xs text-warning-700 dark:text-warning-300">
+                  ⚠️ Cliente criado, mas o e-mail de primeiro acesso não foi enviado automaticamente.
+                  {credenciaisModal.erroEnvio ? ` Motivo: ${credenciaisModal.erroEnvio}` : ""}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </Modal>
 
-      {/* Modal de Confirmação de Reset de Senha */}
+      {/* Modal de Confirmação de Redefinição de Acesso */}
       <Modal
         footer={
           <div className="flex gap-2">
@@ -2509,13 +2505,13 @@ export function ClientesContent() {
               }
               onPress={handleConfirmResetarSenha}
             >
-              Resetar Senha
+              Reenviar Acesso
             </Button>
           </div>
         }
         isOpen={!!clienteParaResetarSenha}
         size="md"
-        title="⚠️ Resetar Senha do Cliente"
+        title="⚠️ Redefinir acesso do cliente"
         onOpenChange={() => setClienteParaResetarSenha(null)}
       >
         {clienteParaResetarSenha && (
@@ -2526,7 +2522,8 @@ export function ClientesContent() {
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-warning">Atenção</p>
                   <p className="text-xs text-default-600 mt-1">
-                    Esta ação irá gerar uma nova senha aleatória para o cliente.
+                    Esta ação vai invalidar a senha atual e reenviar o link de
+                    primeiro acesso ao cliente.
                   </p>
                 </div>
               </div>
@@ -2555,8 +2552,8 @@ export function ClientesContent() {
 
             <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
               <p className="text-xs text-primary-600">
-                💡 Uma nova senha será gerada e exibida na próxima tela.
-                Certifique-se de anotar e enviar para o cliente.
+                💡 O cliente definirá uma nova senha pelo link recebido por
+                e-mail.
               </p>
             </div>
           </div>

@@ -2,12 +2,10 @@
 
 import type { CheckoutData } from "./checkout";
 
-import { nanoid } from "nanoid";
-import bcrypt from "bcryptjs";
-
 import prisma, { toNumber } from "@/app/lib/prisma";
 import { emailService } from "@/app/lib/email-service";
 import { ensureDefaultCargosForTenant } from "@/app/lib/default-cargos";
+import { enviarEmailPrimeiroAcesso, maskEmail } from "@/app/lib/first-access-email";
 
 export type ProcessarPagamentoConfirmadoResult =
   | {
@@ -18,7 +16,8 @@ export type ProcessarPagamentoConfirmadoResult =
         subscriptionId: string;
         credentials: {
           email: string;
-          senhaTemporaria: string;
+          maskedEmail: string;
+          primeiroAcessoEnviado: boolean;
         };
         message: string;
       };
@@ -56,9 +55,6 @@ export async function processarPagamentoConfirmado(
       throw new Error("Plano não encontrado");
     }
 
-    const senhaTemporaria = nanoid(12);
-    const senhaHash = await bcrypt.hash(senhaTemporaria, 12);
-
     const tenant = await prisma.tenant.create({
       data: {
         name: checkoutData.nomeEmpresa,
@@ -75,11 +71,11 @@ export async function processarPagamentoConfirmado(
 
     await ensureDefaultCargosForTenant(prisma, tenant.id);
 
-    await prisma.usuario.create({
+    const adminUser = await prisma.usuario.create({
       data: {
         firstName: checkoutData.nomeResponsavel,
         email: checkoutData.email,
-        passwordHash: senhaHash,
+        passwordHash: null,
         role: "ADMIN",
         tenantId: tenant.id,
         cpf: checkoutData.cpf.replace(/\D/g, ""),
@@ -141,29 +137,27 @@ export async function processarPagamentoConfirmado(
       console.error("Erro ao enviar email de confirmação:", emailError);
     }
 
+    let primeiroAcessoEnviado = false;
+
     try {
-      const htmlCred = `
-        <h2>Bem-vindo ao Magic Lawyer!</h2>
-        <p>Olá <strong>${checkoutData.nomeResponsavel}</strong>, sua conta foi criada com sucesso.</p>
-        <p><strong>Email:</strong> ${checkoutData.email}</p>
-        <p><strong>Senha Temporária:</strong> ${senhaTemporaria}</p>
-        <p><strong>Plano:</strong> ${plano.nome}</p>
-        <p><strong>URL de acesso:</strong> https://${checkoutSession.tenantDomain}</p>
-      `;
-
-      const sent = await emailService.sendEmailPerTenant(tenant.id, {
-        to: checkoutData.email,
-        subject: `🎉 Bem-vindo ao Magic Lawyer! Suas credenciais de acesso`,
-        html: htmlCred,
-        credentialType: "ADMIN",
-        fromNameFallback: checkoutData.nomeEmpresa,
+      const baseUrl = checkoutSession.tenantDomain.includes("localhost")
+        ? `http://${checkoutSession.tenantDomain}`
+        : `https://${checkoutSession.tenantDomain}`;
+      const envioPrimeiroAcesso = await enviarEmailPrimeiroAcesso({
+        userId: adminUser.id,
+        tenantId: tenant.id,
+        email: checkoutData.email,
+        nome: checkoutData.nomeResponsavel,
+        tenantNome: checkoutData.nomeEmpresa,
+        baseUrl,
       });
+      primeiroAcessoEnviado = envioPrimeiroAcesso.success;
 
-      if (!sent.success) {
-        console.warn("Falha ao enviar credenciais:", sent.error);
+      if (!envioPrimeiroAcesso.success) {
+        console.warn("Falha ao enviar e-mail de primeiro acesso:", envioPrimeiroAcesso.error);
       }
     } catch (emailError) {
-      console.error("Erro ao enviar email de credenciais:", emailError);
+      console.error("Erro ao enviar email de primeiro acesso:", emailError);
     }
 
     await prisma.checkoutSession.update({
@@ -179,7 +173,8 @@ export async function processarPagamentoConfirmado(
         subscriptionId: subscription.id,
         credentials: {
           email: checkoutData.email,
-          senhaTemporaria,
+          maskedEmail: maskEmail(checkoutData.email),
+          primeiroAcessoEnviado,
         },
         message: "Conta criada com sucesso após confirmação do pagamento!",
       },

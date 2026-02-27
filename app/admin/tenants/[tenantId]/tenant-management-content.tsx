@@ -443,29 +443,28 @@ export function TenantManagementContent({
 
     try {
       const response = await updateTenantUser(tenantId, userId, {
-        generatePassword: true,
+        resetFirstAccess: true,
       });
 
       if (!response.success) {
         addToast({
-          title: "Erro ao resetar senha",
+          title: "Erro ao redefinir acesso",
           description: response.error ?? "Tente novamente",
           color: "danger",
         });
       } else {
-        const newPassword = response.data?.temporaryPassword;
-
         addToast({
-          title: "Senha redefinida",
-          description: newPassword
-            ? `Nova senha temporária: ${newPassword}`
-            : "Senha redefinida com sucesso.",
-          color: "success",
+          title: "Primeiro acesso redefinido",
+          description: response.data?.firstAccessEmailSent
+            ? `Link enviado para ${response.data?.maskedEmail ?? "o e-mail do usuário"}.`
+            : response.data?.firstAccessEmailError ||
+              "A senha foi invalidada. O usuário deve solicitar novo link no login.",
+          color: response.data?.firstAccessEmailSent ? "success" : "warning",
           timeout: 8000,
         });
       }
 
-      await revalidateWithErrorHandling("reset senha");
+      await revalidateWithErrorHandling("redefinir primeiro acesso");
     } finally {
       setPendingUserId(null);
       setIsUpdatingUser(false);
@@ -1100,7 +1099,7 @@ function UsersTab({
             Usuários do tenant
           </h2>
           <p className="text-sm text-default-400">
-            Gerencie papéis, acesso e senhas temporárias dos usuários.
+            Gerencie papéis, acesso e links de primeiro acesso dos usuários.
           </p>
         </div>
         <Button
@@ -1185,7 +1184,7 @@ function UsersTab({
                             <ToggleLeft className="h-4 w-4" />
                           </Button>
                         </Tooltip>
-                        <Tooltip content="Resetar senha">
+                        <Tooltip content="Reenviar primeiro acesso">
                           <Button
                             isIconOnly
                             color="secondary"

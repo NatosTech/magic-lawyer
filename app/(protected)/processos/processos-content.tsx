@@ -24,7 +24,6 @@ import { ProcessosImportModal } from "./processos-import-modal";
 import { ProcessosSyncOabModal } from "./processos-sync-oab-modal";
 import { Pagination, Select, SelectItem } from "@heroui/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useSession } from "next-auth/react";
 import { DateRangeInput } from "@/components/ui/date-range-input";
 
 interface ProcessoFiltros {
@@ -100,11 +99,15 @@ const FilterToggleButton = ({
   </Button>
 );
 
-export function ProcessosContent() {
-  const { data: session } = useSession();
-  const role = (session?.user as any)?.role as string | undefined;
-  const canSyncOab =
-    role === "ADMIN" || role === "SUPER_ADMIN" || role === "ADVOGADO";
+interface ProcessosContentProps {
+  canCreateProcesso: boolean;
+  canSyncOab: boolean;
+}
+
+export function ProcessosContent({
+  canCreateProcesso,
+  canSyncOab,
+}: ProcessosContentProps) {
 
   const {
     processos,
@@ -568,15 +571,17 @@ export function ProcessosContent() {
             >
               Filtros
             </Button>
-            <Button
-              color="secondary"
-              size="sm"
-              startContent={<UploadCloud className="h-4 w-4" />}
-              variant="flat"
-              onPress={() => setMostrarModalImportacao(true)}
-            >
-              Importar
-            </Button>
+            {canCreateProcesso ? (
+              <Button
+                color="secondary"
+                size="sm"
+                startContent={<UploadCloud className="h-4 w-4" />}
+                variant="flat"
+                onPress={() => setMostrarModalImportacao(true)}
+              >
+                Importar
+              </Button>
+            ) : null}
             {canSyncOab ? (
               <Button
                 color="warning"
@@ -588,15 +593,17 @@ export function ProcessosContent() {
                 Sincronizar OAB
               </Button>
             ) : null}
-            <Button
-              as={Link}
-              color="primary"
-              href="/processos/novo"
-              size="sm"
-              startContent={<Plus className="h-4 w-4" />}
-            >
-              Novo Processo
-            </Button>
+            {canCreateProcesso ? (
+              <Button
+                as={Link}
+                color="primary"
+                href="/processos/novo"
+                size="sm"
+                startContent={<Plus className="h-4 w-4" />}
+              >
+                Novo Processo
+              </Button>
+            ) : null}
           </>
         }
       />
@@ -1007,11 +1014,11 @@ export function ProcessosContent() {
                 <Button variant="light" onPress={limparFiltros}>
                   Limpar Filtros
                 </Button>
-              ) : (
+              ) : canCreateProcesso ? (
                 <Button as={Link} color="primary" href="/processos/novo">
                   Criar Primeiro Processo
                 </Button>
-              )}
+              ) : null}
             </CardBody>
           </Card>
         ) : (

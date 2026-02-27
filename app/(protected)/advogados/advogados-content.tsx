@@ -188,8 +188,10 @@ export default function AdvogadosContent() {
   const [isCredenciaisModalOpen, setIsCredenciaisModalOpen] = useState(false);
   const [credenciaisTemporarias, setCredenciaisTemporarias] = useState<{
     email: string;
-    senhaTemporaria: string;
-    linkLogin: string;
+    maskedEmail: string;
+    envioSolicitado: boolean;
+    primeiroAcessoEnviado: boolean;
+    erroEnvio?: string;
   } | null>(null);
   const [isAvatarEditorOpen, setIsAvatarEditorOpen] = useState(false);
   const [selectedAdvogadoForAvatar, setSelectedAdvogadoForAvatar] =
@@ -882,10 +884,18 @@ export default function AdvogadosContent() {
         setContasBancarias([createContaBancaria()]);
         mutate();
 
-        // Se há credenciais temporárias, mostrar modal
+        // Se há dados de primeiro acesso, mostrar modal
         if (result.credenciais) {
           setCredenciaisTemporarias(result.credenciais);
           setIsCredenciaisModalOpen(true);
+          if (
+            result.credenciais.envioSolicitado &&
+            !result.credenciais.primeiroAcessoEnviado
+          ) {
+            toast.warning(
+              "Advogado criado, mas o e-mail de primeiro acesso não foi enviado automaticamente.",
+            );
+          }
         }
       } else {
         toast.error(result.error || "Erro ao criar advogado");
@@ -4182,7 +4192,7 @@ export default function AdvogadosContent() {
         />
       )}
 
-      {/* Modal de Credenciais Temporárias */}
+      {/* Modal de Primeiro Acesso */}
       <Modal
         isOpen={isCredenciaisModalOpen}
         size="lg"
@@ -4191,7 +4201,7 @@ export default function AdvogadosContent() {
         <ModalContent>
           <ModalHeader className="flex items-center gap-2">
             <Key className="h-5 w-5 text-success" />
-            Credenciais de Acesso Criadas
+            Primeiro acesso configurado
           </ModalHeader>
           <ModalBody>
             {credenciaisTemporarias && (
@@ -4204,8 +4214,7 @@ export default function AdvogadosContent() {
                     </h4>
                   </div>
                   <p className="text-sm text-success-600 dark:text-success-400 mb-4">
-                    As credenciais de acesso foram geradas e enviadas por email.
-                    Guarde estas informações em local seguro:
+                    O advogado deverá definir a senha no primeiro acesso:
                   </p>
 
                   <div className="space-y-3">
@@ -4221,47 +4230,41 @@ export default function AdvogadosContent() {
 
                     <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border">
                       <div className="flex items-center gap-2">
-                        <Key className="h-4 w-4 text-default-500" />
-                        <span className="text-sm font-medium">
-                          Senha Temporária:
-                        </span>
+                        <Shield className="h-4 w-4 text-default-500" />
+                        <span className="text-sm font-medium">Email mascarado:</span>
                       </div>
                       <code className="text-sm bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono">
-                        {credenciaisTemporarias.senhaTemporaria}
-                      </code>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-default-500" />
-                        <span className="text-sm font-medium">
-                          Link de Acesso:
-                        </span>
-                      </div>
-                      <code className="text-sm bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">
-                        {credenciaisTemporarias.linkLogin}
+                        {credenciaisTemporarias.maskedEmail}
                       </code>
                     </div>
                   </div>
 
-                  <div className="mt-4 p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
-                    <div className="flex items-start gap-2">
-                      <Info className="h-4 w-4 text-warning-600 dark:text-warning-400 mt-0.5" />
-                      <div className="text-sm text-warning-700 dark:text-warning-300">
-                        <p className="font-medium mb-1">Importante:</p>
-                        <ul className="space-y-1 text-xs">
-                          <li>
-                            • A senha temporária deve ser alterada no primeiro
-                            acesso
-                          </li>
-                          <li>
-                            • As credenciais também foram enviadas por email
-                          </li>
-                          <li>• Guarde estas informações em local seguro</li>
-                        </ul>
+                  {credenciaisTemporarias.primeiroAcessoEnviado ? (
+                    <div className="mt-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
+                      <p className="text-sm text-primary-700 dark:text-primary-300">
+                        ✅ Link de primeiro acesso enviado para {credenciaisTemporarias.maskedEmail}.
+                      </p>
+                    </div>
+                  ) : !credenciaisTemporarias.envioSolicitado ? (
+                    <div className="mt-4 p-3 bg-default-100/70 dark:bg-default-50/10 rounded-lg border border-default-200 dark:border-default-700">
+                      <p className="text-sm text-default-600 dark:text-default-300">
+                        Envio automático desativado. O advogado pode solicitar
+                        o link de primeiro acesso na tela de login.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-4 p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-warning-600 dark:text-warning-400 mt-0.5" />
+                        <p className="text-sm text-warning-700 dark:text-warning-300">
+                          Advogado criado, mas o e-mail de primeiro acesso não foi enviado automaticamente.
+                          {credenciaisTemporarias.erroEnvio
+                            ? ` Motivo: ${credenciaisTemporarias.erroEnvio}`
+                            : ""}
+                        </p>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             )}

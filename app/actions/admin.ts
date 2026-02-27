@@ -1,7 +1,5 @@
 "use server";
 
-import crypto from "crypto";
-
 import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 
@@ -18,6 +16,7 @@ import {
 import { authOptions } from "@/auth";
 import logger from "@/lib/logger";
 import { ensureDefaultCargosForTenant } from "@/app/lib/default-cargos";
+import { enviarEmailPrimeiroAcesso, maskEmail } from "@/app/lib/first-access-email";
 
 // =============================================
 // TENANT MANAGEMENT
@@ -549,7 +548,8 @@ export interface UpdateTenantUserInput {
   avatarUrl?: string;
   role?: UserRole;
   active?: boolean;
-  generatePassword?: boolean;
+  resetFirstAccess?: boolean;
+  sendFirstAccessEmail?: boolean;
   // Campos pessoais adicionais (todos os roles)
   cpf?: string;
   rg?: string;
@@ -1198,14 +1198,6 @@ export async function updateTenantBranding(
   }
 }
 
-function generateTemporaryPassword(length = 12) {
-  return crypto
-    .randomBytes(length)
-    .toString("base64")
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .slice(0, length);
-}
-
 export async function createTenantUser(
   tenantId: string,
   payload: CreateTenantUserInput,
@@ -1236,12 +1228,14 @@ export async function createTenantUser(
       };
     }
 
-    const temporaryPassword = payload.generatePassword
-      ? generateTemporaryPassword()
-      : undefined;
-    const passwordHash = temporaryPassword
-      ? await bcrypt.hash(temporaryPassword, 12)
-      : null;
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { id: true, name: true },
+    });
+
+    if (!tenant) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
 
     // Criar usuário
     const newUser = await prisma.usuario.create({
@@ -1253,7 +1247,7 @@ export async function createTenantUser(
         phone: payload.phone,
         role: payload.role || "SECRETARIA",
         active: payload.active ?? true,
-        passwordHash: passwordHash,
+        passwordHash: null,
         // Campos pessoais adicionais
         cpf: payload.cpf,
         rg: payload.rg,
@@ -1263,6 +1257,30 @@ export async function createTenantUser(
         observacoes: payload.observacoes,
       },
     });
+
+    let firstAccessEmailSent = false;
+    let firstAccessEmailError: string | undefined;
+
+    if ((payload.sendFirstAccessEmail ?? true) && newUser.active) {
+      const nomeCompleto =
+        `${newUser.firstName || ""} ${newUser.lastName || ""}`.trim() || undefined;
+      const envioPrimeiroAcesso = await enviarEmailPrimeiroAcesso({
+        userId: newUser.id,
+        tenantId,
+        email: newUser.email,
+        nome: nomeCompleto,
+        tenantNome: tenant.name,
+      });
+
+      firstAccessEmailSent = envioPrimeiroAcesso.success;
+      firstAccessEmailError = envioPrimeiroAcesso.success
+        ? undefined
+        : envioPrimeiroAcesso.error ||
+          "Não foi possível enviar o e-mail de primeiro acesso.";
+    } else if (payload.sendFirstAccessEmail ?? true) {
+      firstAccessEmailError =
+        "Usuário criado sem envio de e-mail porque está desativado.";
+    }
 
     // Criar dados do advogado se for advogado
     if (payload.role === "ADVOGADO") {
@@ -1319,7 +1337,7 @@ export async function createTenantUser(
         dadosNovos: {
           email: newUser.email,
           role: newUser.role,
-          generatePassword: !!temporaryPassword,
+          firstAccessEmailSent,
           tenantId: tenantId,
         },
       },
@@ -1329,7 +1347,9 @@ export async function createTenantUser(
       success: true,
       data: {
         user: newUser,
-        temporaryPassword: temporaryPassword,
+        maskedEmail: maskEmail(newUser.email),
+        firstAccessEmailSent,
+        firstAccessEmailError,
       },
     };
   } catch (error) {
@@ -1368,7 +1388,6 @@ export async function updateTenantUser(
     }
 
     const updateData: Record<string, unknown> = {};
-    let temporaryPassword: string | undefined;
 
     // Validar email único se está sendo alterado
     if (payload.email && payload.email !== user.email) {
@@ -1440,11 +1459,8 @@ export async function updateTenantUser(
       updateData.active = payload.active;
     }
 
-    if (payload.generatePassword) {
-      temporaryPassword = generateTemporaryPassword();
-      const passwordHash = await bcrypt.hash(temporaryPassword, 12);
-
-      updateData.passwordHash = passwordHash;
+    if (payload.resetFirstAccess) {
+      updateData.passwordHash = null;
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -1574,6 +1590,39 @@ export async function updateTenantUser(
       data: updateData,
     });
 
+    let firstAccessEmailSent: boolean | undefined;
+    let firstAccessEmailError: string | undefined;
+
+    if (payload.resetFirstAccess) {
+      if (!updatedUser.active) {
+        firstAccessEmailSent = false;
+        firstAccessEmailError =
+          "A senha foi invalidada para primeiro acesso, mas o usuário está desativado e não recebeu e-mail.";
+      } else {
+        const tenant = await prisma.tenant.findUnique({
+          where: { id: tenantId },
+          select: { name: true },
+        });
+
+        const nomeCompleto =
+          `${updatedUser.firstName || ""} ${updatedUser.lastName || ""}`.trim() ||
+          undefined;
+        const envioPrimeiroAcesso = await enviarEmailPrimeiroAcesso({
+          userId: updatedUser.id,
+          tenantId,
+          email: updatedUser.email,
+          nome: nomeCompleto,
+          tenantNome: tenant?.name ?? "Magic Lawyer",
+        });
+
+        firstAccessEmailSent = envioPrimeiroAcesso.success;
+        firstAccessEmailError = envioPrimeiroAcesso.success
+          ? undefined
+          : envioPrimeiroAcesso.error ||
+            "Não foi possível enviar o e-mail de primeiro acesso.";
+      }
+    }
+
     // Invalidar sessão do usuário se o status (active) mudou
     if (payload.active !== undefined && payload.active !== user.active) {
       const { invalidateUser } = await import(
@@ -1667,7 +1716,7 @@ export async function updateTenantUser(
         dadosNovos: {
           role: updatedUser.role,
           active: updatedUser.active,
-          temporaryPasswordSet: Boolean(payload.generatePassword),
+          firstAccessReset: Boolean(payload.resetFirstAccess),
         },
       },
     });
@@ -1676,7 +1725,9 @@ export async function updateTenantUser(
       success: true,
       data: {
         user: updatedUser,
-        temporaryPassword,
+        maskedEmail: maskEmail(updatedUser.email),
+        firstAccessEmailSent,
+        firstAccessEmailError,
       },
     };
   } catch (error) {

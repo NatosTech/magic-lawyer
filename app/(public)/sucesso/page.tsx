@@ -25,7 +25,7 @@ export default function SucessoPage() {
                 <div className="w-5 h-5 text-success text-lg">📧</div>
                 <div className="text-left">
                   <p className="text-sm font-medium text-success">
-                    Credenciais enviadas por email
+                    Link de primeiro acesso enviado por email
                   </p>
                   <p className="text-xs text-default-400">
                     Verifique sua caixa de entrada e spam
@@ -40,7 +40,7 @@ export default function SucessoPage() {
                     Acesso ao seu ambiente
                   </p>
                   <p className="text-xs text-default-400">
-                    Use as credenciais para fazer login
+                    Defina sua senha no link recebido e faça login
                   </p>
                 </div>
               </div>
@@ -73,7 +73,7 @@ export default function SucessoPage() {
                 Próximos passos:
               </h3>
               <ul className="text-xs text-default-400 space-y-1">
-                <li>• Verifique seu email para as credenciais</li>
+                <li>• Verifique seu email para o link de primeiro acesso</li>
                 <li>• Faça login no seu ambiente</li>
                 <li>• Configure seu escritório</li>
                 <li>• Importe seus primeiros processos</li>

@@ -1,9 +1,11 @@
 "use server";
 
-import bcrypt from "bcryptjs";
-
 import { getSession } from "@/app/lib/auth";
 import prisma, { toNumber, convertAllDecimalFields } from "@/app/lib/prisma";
+import {
+  enviarEmailPrimeiroAcesso,
+  maskEmail,
+} from "@/app/lib/first-access-email";
 import { TipoEndereco, TipoPessoa, Prisma } from "@/generated/prisma";
 import logger from "@/lib/logger";
 import { DocumentNotifier } from "@/app/lib/notifications/document-notifier";
@@ -863,23 +865,6 @@ export interface ClienteCreateInput {
   criarUsuario?: boolean; // Se deve criar usuário de acesso
 }
 
-/**
- * Gera uma senha aleatória segura
- */
-function generatePassword(length: number = 12): string {
-  const charset =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%&*";
-  let password = "";
-
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * charset.length);
-
-    password += charset[randomIndex];
-  }
-
-  return password;
-}
-
 function trimOptional(value?: string | null): string | undefined {
   const parsed = value?.trim();
 
@@ -945,7 +930,9 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
   cliente?: Cliente;
   usuario?: {
     email: string;
-    senha: string;
+    maskedEmail: string;
+    primeiroAcessoEnviado: boolean;
+    erroEnvio?: string;
   };
   error?: string;
 }> {
@@ -1005,7 +992,7 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
 
     let usuarioData = null;
     let usuarioId = null;
-    let senhaGerada = null;
+    let tenantNomeParaPrimeiroAcesso: string | null = null;
 
     // Criar usuário se solicitado
     if (criarUsuario && clienteData.email) {
@@ -1039,10 +1026,6 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
         };
       }
 
-      // Gerar senha aleatória
-      senhaGerada = generatePassword(12);
-      const passwordHash = await bcrypt.hash(senhaGerada, 10);
-
       // Separar nome em firstName e lastName
       const nomePartes = clienteData.nome.trim().split(" ");
       const firstName = nomePartes[0];
@@ -1052,7 +1035,7 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
       const novoUsuario = await prisma.usuario.create({
         data: {
           email: clienteData.email,
-          passwordHash,
+          passwordHash: null,
           role: "CLIENTE",
           firstName,
           lastName,
@@ -1064,9 +1047,31 @@ export async function createCliente(data: ClienteCreateInput): Promise<{
       });
 
       usuarioId = novoUsuario.id;
+
+      if (!tenantNomeParaPrimeiroAcesso) {
+        const tenant = await prisma.tenant.findUnique({
+          where: { id: user.tenantId },
+          select: { name: true },
+        });
+        tenantNomeParaPrimeiroAcesso = tenant?.name ?? "Magic Lawyer";
+      }
+
+      const envioPrimeiroAcesso = await enviarEmailPrimeiroAcesso({
+        userId: novoUsuario.id,
+        tenantId: user.tenantId,
+        email: clienteData.email,
+        nome: clienteData.nome,
+        tenantNome: tenantNomeParaPrimeiroAcesso || "Magic Lawyer",
+      });
+
       usuarioData = {
         email: clienteData.email,
-        senha: senhaGerada,
+        maskedEmail: maskEmail(clienteData.email),
+        primeiroAcessoEnviado: envioPrimeiroAcesso.success,
+        erroEnvio: envioPrimeiroAcesso.success
+          ? undefined
+          : envioPrimeiroAcesso.error ||
+            "Não foi possível enviar o e-mail de primeiro acesso.",
       };
     }
 
@@ -2126,8 +2131,10 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
   success: boolean;
   usuario?: {
     email: string;
-    senha: string;
+    maskedEmail: string;
+    primeiroAcessoEnviado: boolean;
   };
+  warning?: string;
   error?: string;
 }> {
   try {
@@ -2187,14 +2194,24 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
       return { success: false, error: "Cliente não possui usuário de acesso" };
     }
 
-    // Gerar nova senha
-    const novaSenha = generatePassword(12);
-    const passwordHash = await bcrypt.hash(novaSenha, 10);
-
-    // Atualizar senha do usuário
+    // Marcar como primeiro acesso novamente
     await prisma.usuario.update({
       where: { id: cliente.usuarioId },
-      data: { passwordHash },
+      data: { passwordHash: null },
+    });
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: user.tenantId },
+      select: { name: true },
+    });
+
+    const nomeCliente = cliente.nome || cliente.usuario.email;
+    const envioPrimeiroAcesso = await enviarEmailPrimeiroAcesso({
+      userId: cliente.usuarioId,
+      tenantId: user.tenantId,
+      email: cliente.usuario.email,
+      nome: nomeCliente,
+      tenantNome: tenant?.name ?? "Magic Lawyer",
     });
 
     // Registrar no log de auditoria
@@ -2214,6 +2231,7 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
           clienteId: cliente.id,
           clienteNome: cliente.nome,
           usuarioEmail: cliente.usuario.email,
+          primeiroAcessoEnviado: envioPrimeiroAcesso.success,
           resetadoPor: nomeCompleto,
           resetadoPorId: user.id,
           resetadoPorRole: user.role,
@@ -2227,8 +2245,13 @@ export async function resetarSenhaCliente(clienteId: string): Promise<{
       success: true,
       usuario: {
         email: cliente.usuario.email,
-        senha: novaSenha,
+        maskedEmail: maskEmail(cliente.usuario.email),
+        primeiroAcessoEnviado: envioPrimeiroAcesso.success,
       },
+      warning: envioPrimeiroAcesso.success
+        ? undefined
+        : envioPrimeiroAcesso.error ||
+          "Senha redefinida para primeiro acesso, mas o e-mail não foi enviado automaticamente.",
     };
   } catch (error) {
     logger.error("Erro ao resetar senha do cliente:", error);

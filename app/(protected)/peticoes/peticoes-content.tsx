@@ -4,10 +4,28 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import {
-  Card, CardBody, CardHeader, Button, Input, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Autocomplete, AutocompleteItem, Skeleton, Divider, Select, SelectItem } from "@heroui/react";
+  Card,
+  CardBody,
+  Button,
+  Input,
+  Chip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Textarea,
+  Autocomplete,
+  AutocompleteItem,
+  Skeleton,
+  Divider,
+  Select,
+  SelectItem,
+} from "@heroui/react";
 import { toast } from "sonner";
 import {
   Search as MagnifyingGlassIcon,
+  Filter as FilterIcon,
   Plus as PlusIcon,
   FileText as DocumentTextIcon,
   X as XMarkIcon,
@@ -47,7 +65,7 @@ import {
   useAssinaturas,
   usePeticaoAssinada,
 } from "@/app/hooks/use-assinaturas";
-import { title, subtitle } from "@/components/primitives";
+import { PeopleMetricCard, PeoplePageHeader } from "@/components/people-ui";
 
 // ============================================
 // TIPOS
@@ -132,7 +150,6 @@ export default function PeticoesPage() {
   // Estado do modal de assinatura
   const [assinaturaModalOpen, setAssinaturaModalOpen] = useState(false);
   const [assinaturaPeticaoId, setAssinaturaPeticaoId] = useState<string>("");
-  const [assinandoPeticao, setAssinandoPeticao] = useState(false);
 
   // SWR - Fetch data
   const {
@@ -291,107 +308,88 @@ export default function PeticoesPage() {
     );
   };
 
+  const hasActiveFilters = Boolean(filters.status || filters.search);
+  const selectedStatusKey = filters.status || "all";
+
   return (
     <div className="mx-auto max-w-[1600px] space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>Petições</h1>
-          <p className={subtitle({ fullWidth: true })}>
-            Gerencie petições processuais e protocolos
-          </p>
-        </div>
-        <Button
-          color="primary"
-          startContent={<PlusIcon size={20} />}
-          onPress={openCreateModal}
-        >
-          Nova Petição
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Button color="primary" size="sm" variant="flat">
-          Petições
-        </Button>
-        <Button
-          as={Link}
-          href="/modelos-peticao"
-          size="sm"
-          variant="bordered"
-        >
-          Modelos de Petição
-        </Button>
-      </div>
+      <PeoplePageHeader
+        tag="Atividades jurídicas"
+        title="Petições"
+        description={`${peticoes.length} petição(ões) no resultado atual`}
+        actions={
+          <>
+            <div className="flex items-center rounded-xl border border-default-200 bg-content1 p-0.5">
+              <Button color="primary" size="sm" variant="solid">
+                Petições
+              </Button>
+              <Button
+                as={Link}
+                href="/modelos-peticao"
+                size="sm"
+                variant="light"
+              >
+                Modelos
+              </Button>
+            </div>
+            <Button
+              color="primary"
+              size="sm"
+              startContent={<PlusIcon size={16} />}
+              onPress={openCreateModal}
+            >
+              Nova Petição
+            </Button>
+          </>
+        }
+      />
 
       {/* Dashboard Cards */}
       {loadingDashboard ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-24 rounded-lg" />
+            <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>
       ) : dashboard ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardBody className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-default-500">Total</p>
-                  <p className="text-2xl font-bold">{dashboard.total}</p>
-                </div>
-                <DocumentTextIcon className="text-primary" size={32} />
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardBody className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-default-500">Rascunhos</p>
-                  <p className="text-2xl font-bold">{dashboard.rascunhos}</p>
-                </div>
-                <DocumentTextIcon className="text-default-400" size={32} />
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardBody className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-default-500">Em Análise</p>
-                  <p className="text-2xl font-bold">{dashboard.emAnalise}</p>
-                </div>
-                <ClockIcon className="text-warning" size={32} />
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardBody className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-default-500">Protocoladas (30d)</p>
-                  <p className="text-2xl font-bold">
-                    {dashboard.protocoladasRecentes}
-                  </p>
-                </div>
-                <CheckCircleIcon className="text-success" size={32} />
-              </div>
-            </CardBody>
-          </Card>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <PeopleMetricCard
+            helper="Volume total"
+            icon={<DocumentTextIcon className="h-4 w-4" />}
+            label="Total de petições"
+            tone="primary"
+            value={dashboard.total}
+          />
+          <PeopleMetricCard
+            helper="Pendentes de envio"
+            icon={<DocumentTextIcon className="h-4 w-4" />}
+            label="Rascunhos"
+            tone="default"
+            value={dashboard.rascunhos}
+          />
+          <PeopleMetricCard
+            helper="Acompanhamento interno"
+            icon={<ClockIcon className="h-4 w-4" />}
+            label="Em análise"
+            tone="warning"
+            value={dashboard.emAnalise}
+          />
+          <PeopleMetricCard
+            helper="Últimos 30 dias"
+            icon={<CheckCircleIcon className="h-4 w-4" />}
+            label="Protocoladas"
+            tone="success"
+            value={dashboard.protocoladasRecentes}
+          />
         </div>
       ) : null}
 
-      {/* Filtros e Busca */}
-      <Card>
-        <CardBody className="p-4 space-y-4">
-          <div className="flex gap-2 flex-wrap">
+      <Card className="border border-white/10 bg-background/70">
+        <CardBody className="space-y-4 p-5">
+          <div className="flex flex-wrap items-center gap-2">
             <Input
               isClearable
-              className="flex-1 min-w-[300px]"
+              className="min-w-[260px] flex-1"
               placeholder="Buscar por título, descrição ou protocolo..."
               startContent={
                 <MagnifyingGlassIcon className="text-default-400" size={16} />
@@ -401,85 +399,106 @@ export default function PeticoesPage() {
               onValueChange={handleSearch}
             />
 
-            <Select
-              className="w-[200px]"
-              placeholder="Status"
-              selectedKeys={filters.status ? [filters.status] : []}
-              onSelectionChange={(keys) => {
-                const value = Array.from(keys)[0] as string;
-
-                handleStatusFilter(value || "");
-              }}
+            <Button
+              size="sm"
+              startContent={<FilterIcon size={16} />}
+              variant="bordered"
+              onPress={() => setShowFilters((prev) => !prev)}
             >
-              <SelectItem key="" textValue="Todos">
-                Todos
-              </SelectItem>
-              <SelectItem key={PeticaoStatus.RASCUNHO} textValue="Rascunho">
-                Rascunho
-              </SelectItem>
-              <SelectItem key={PeticaoStatus.EM_ANALISE} textValue="Em Análise">
-                Em Análise
-              </SelectItem>
-              <SelectItem
-                key={PeticaoStatus.PROTOCOLADA}
-                textValue="Protocolada"
-              >
-                Protocolada
-              </SelectItem>
-              <SelectItem key={PeticaoStatus.INDEFERIDA} textValue="Indeferida">
-                Indeferida
-              </SelectItem>
-              <SelectItem key={PeticaoStatus.ARQUIVADA} textValue="Arquivada">
-                Arquivada
-              </SelectItem>
-            </Select>
+              Filtros
+            </Button>
 
-            {(filters.status || filters.search) && (
+            {hasActiveFilters ? (
               <Button
                 color="default"
+                size="sm"
                 startContent={<XMarkIcon size={16} />}
-                variant="flat"
+                variant="light"
                 onPress={clearFilters}
               >
                 Limpar
               </Button>
-            )}
+            ) : null}
           </div>
+
+          {showFilters ? (
+            <div className="grid gap-3 pt-1 sm:max-w-xs">
+              <Select
+                className="w-full"
+                label="Status da petição"
+                selectedKeys={[selectedStatusKey]}
+                onSelectionChange={(keys) => {
+                  const value = String(Array.from(keys)[0] || "all");
+                  handleStatusFilter(value === "all" ? "" : value);
+                }}
+              >
+                <SelectItem key="all" textValue="Todos">
+                  Todos
+                </SelectItem>
+                <SelectItem key={PeticaoStatus.RASCUNHO} textValue="Rascunho">
+                  Rascunho
+                </SelectItem>
+                <SelectItem
+                  key={PeticaoStatus.EM_ANALISE}
+                  textValue="Em Análise"
+                >
+                  Em Análise
+                </SelectItem>
+                <SelectItem
+                  key={PeticaoStatus.PROTOCOLADA}
+                  textValue="Protocolada"
+                >
+                  Protocolada
+                </SelectItem>
+                <SelectItem
+                  key={PeticaoStatus.INDEFERIDA}
+                  textValue="Indeferida"
+                >
+                  Indeferida
+                </SelectItem>
+                <SelectItem key={PeticaoStatus.ARQUIVADA} textValue="Arquivada">
+                  Arquivada
+                </SelectItem>
+              </Select>
+            </div>
+          ) : null}
         </CardBody>
       </Card>
 
-      {/* Lista de Petições */}
-      <Card>
-        <CardHeader className="px-6 py-4">
-          <h2 className="text-xl font-semibold">
-            Petições Cadastradas ({peticoes.length})
+      <Card className="border border-white/10 bg-background/70">
+        <div className="flex flex-col gap-1 border-b border-white/10 px-5 py-4">
+          <h2 className="text-lg font-semibold text-white">
+            Lista de petições ({peticoes.length})
           </h2>
-        </CardHeader>
+          <p className="text-sm text-default-400">
+            Clique em um item para visualizar detalhes e acompanhar o fluxo.
+          </p>
+        </div>
         <Divider />
         <CardBody className="p-0">
           {loadingPeticoes ? (
-            <div className="p-6 space-y-4">
+            <div className="space-y-4 p-5">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-20 rounded-lg" />
+                <Skeleton key={i} className="h-24 rounded-xl" />
               ))}
             </div>
           ) : peticoes.length === 0 ? (
             <div className="p-12 text-center text-default-500">
               <DocumentTextIcon className="mx-auto mb-4 opacity-50" size={48} />
               <p className="text-lg">Nenhuma petição encontrada</p>
-              <p className="text-sm mt-2">
-                {filters.status || filters.search
+              <p className="mt-2 text-sm">
+                {hasActiveFilters
                   ? "Tente ajustar os filtros"
                   : "Crie sua primeira petição"}
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-divider">
+            <div className="divide-y divide-white/10">
               {peticoes.map((peticao) => (
                 <div
                   key={peticao.id}
                   aria-label={`Ver detalhes da petição ${peticao.titulo}`}
-                  className="p-4 hover:bg-default-50 transition-colors cursor-pointer"
+                  className="cursor-pointer px-5 py-4 transition-colors hover:bg-white/[0.03]"
                   role="button"
                   tabIndex={0}
                   onClick={() => openViewModal(peticao)}
@@ -490,9 +509,9 @@ export default function PeticoesPage() {
                     }
                   }}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
                         <h3 className="font-semibold text-lg truncate">
                           {peticao.titulo}
                         </h3>
@@ -543,12 +562,13 @@ export default function PeticoesPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 self-start">
                       {peticao.status === PeticaoStatus.RASCUNHO && (
                         <Button
                           color="success"
                           size="sm"
                           variant="flat"
+                          onClick={(event) => event.stopPropagation()}
                           onPress={() => openProtocoloModal(peticao.id)}
                         >
                           Protocolar
@@ -561,6 +581,7 @@ export default function PeticoesPage() {
                           size="sm"
                           startContent={<PenToolIcon size={16} />}
                           variant="flat"
+                          onClick={(event) => event.stopPropagation()}
                           onPress={() => openAssinaturaModal(peticao.id)}
                         >
                           Assinar
@@ -571,6 +592,7 @@ export default function PeticoesPage() {
                         isIconOnly
                         size="sm"
                         variant="light"
+                        onClick={(event) => event.stopPropagation()}
                         onPress={() => openEditModal(peticao)}
                       >
                         <PencilIcon size={16} />
@@ -581,6 +603,7 @@ export default function PeticoesPage() {
                         color="danger"
                         size="sm"
                         variant="light"
+                        onClick={(event) => event.stopPropagation()}
                         onPress={() => handleDelete(peticao.id)}
                       >
                         <TrashIcon size={16} />
@@ -644,7 +667,6 @@ export default function PeticoesPage() {
         peticaoId={assinaturaPeticaoId}
         onClose={() => {
           setAssinaturaModalOpen(false);
-          setAssinandoPeticao(false);
         }}
       />
     </div>

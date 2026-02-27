@@ -34,7 +34,8 @@ interface ProcessarPagamentoCartaoSuccess {
     subscriptionId?: string;
     credentials?: {
       email: string;
-      senhaTemporaria: string;
+      maskedEmail: string;
+      primeiroAcessoEnviado: boolean;
     };
     message?: string;
   };

@@ -17,7 +17,6 @@ interface ActionResponse<T = any> {
  */
 export async function enviarEmailBoasVindas(
   advogadoId: string,
-  senhaTemporaria?: string,
 ): Promise<ActionResponse> {
   try {
     // Buscar dados do advogado
@@ -43,7 +42,6 @@ export async function enviarEmailBoasVindas(
       especialidades: advogado.especialidades.map((esp) =>
         esp.replace(/_/g, " "),
       ),
-      senhaTemporaria: senhaTemporaria,
       linkLogin: `${process.env.NEXTAUTH_URL || "http://localhost:9192"}/login`,
     };
 

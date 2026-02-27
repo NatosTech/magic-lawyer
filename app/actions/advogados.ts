@@ -3,10 +3,13 @@
 import { revalidatePath } from "next/cache";
 
 import { createAdvogadoHistorico } from "./advogado-historico";
-import { enviarEmailBoasVindas } from "./advogados-emails";
 
 import prisma from "@/app/lib/prisma";
 import { getSession } from "@/app/lib/auth";
+import {
+  enviarEmailPrimeiroAcesso,
+  maskEmail,
+} from "@/app/lib/first-access-email";
 import { EspecialidadeJuridica } from "@/generated/prisma";
 import { convertAllDecimalFields } from "@/app/lib/prisma";
 import { UploadService } from "@/lib/upload-service";
@@ -435,39 +438,11 @@ function buildProcessoCardData(
 interface CreateAdvogadoResponse extends ActionResponse<AdvogadoData> {
   credenciais?: {
     email: string;
-    senhaTemporaria: string;
-    linkLogin: string;
+    maskedEmail: string;
+    envioSolicitado: boolean;
+    primeiroAcessoEnviado: boolean;
+    erroEnvio?: string;
   };
-}
-
-// =============================================
-// UTILITIES
-// =============================================
-
-/**
- * Gera uma senha temporária segura
- */
-function generateTemporaryPassword(): string {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";
-  let password = "";
-
-  // Garantir pelo menos um caractere de cada tipo
-  password += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)]; // Maiúscula
-  password += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)]; // Minúscula
-  password += "0123456789"[Math.floor(Math.random() * 10)]; // Número
-  password += "!@#$%&*"[Math.floor(Math.random() * 7)]; // Símbolo
-
-  // Completar com caracteres aleatórios
-  for (let i = 4; i < 12; i++) {
-    password += chars[Math.floor(Math.random() * chars.length)];
-  }
-
-  // Embaralhar a senha
-  return password
-    .split("")
-    .sort(() => Math.random() - 0.5)
-    .join("");
 }
 
 // =============================================
@@ -730,20 +705,33 @@ export async function createAdvogado(
       createdById: session.user.id,
     };
 
-    // Gerar senha temporária se for criar acesso de usuário
-    let senhaTemporaria: string | undefined;
+    let tenantNome: string | null = null;
+    let credenciaisAcesso:
+      | {
+          email: string;
+          maskedEmail: string;
+          envioSolicitado: boolean;
+          primeiroAcessoEnviado: boolean;
+          erroEnvio?: string;
+        }
+      | undefined;
     let usuario: any;
 
     if (input.criarAcessoUsuario && !input.isExterno) {
-      senhaTemporaria = generateTemporaryPassword();
-
       usuario = await prisma.usuario.create({
         data: {
           ...usuarioPayload,
+          passwordHash: null,
           active: true,
           phone: input.phone || null,
         },
       });
+      credenciaisAcesso = {
+        email: input.email,
+        maskedEmail: maskEmail(input.email),
+        envioSolicitado: Boolean(input.enviarEmailCredenciais),
+        primeiroAcessoEnviado: false,
+      };
     } else {
       usuario = await prisma.usuario.create({
         data: {
@@ -941,14 +929,32 @@ export async function createAdvogado(
       detalhes: `Advogado criado: ${usuario.firstName} ${usuario.lastName} (${usuario.email})`,
     });
 
-    // Enviar email de boas-vindas com credenciais (se solicitado)
-    if (input.enviarEmailCredenciais && senhaTemporaria) {
-      try {
-        await enviarEmailBoasVindas(advogado.id, senhaTemporaria);
-      } catch (emailError) {
-        console.error("Erro ao enviar email de boas-vindas:", emailError);
-        // Não falhar a criação do advogado se o email falhar
+    if (credenciaisAcesso && input.enviarEmailCredenciais) {
+      if (!tenantNome) {
+        const tenant = await prisma.tenant.findUnique({
+          where: { id: session.user.tenantId },
+          select: { name: true },
+        });
+        tenantNome = tenant?.name ?? "Magic Lawyer";
       }
+
+      const nomeCompleto = `${input.firstName || ""} ${input.lastName || ""}`.trim();
+      const envioPrimeiroAcesso = await enviarEmailPrimeiroAcesso({
+        userId: usuario.id,
+        tenantId: session.user.tenantId,
+        email: input.email,
+        nome: nomeCompleto || undefined,
+        tenantNome: tenantNome || "Magic Lawyer",
+      });
+
+      credenciaisAcesso = {
+        ...credenciaisAcesso,
+        primeiroAcessoEnviado: envioPrimeiroAcesso.success,
+        erroEnvio: envioPrimeiroAcesso.success
+          ? undefined
+          : envioPrimeiroAcesso.error ||
+            "Não foi possível enviar o e-mail de primeiro acesso.",
+      };
     }
 
     revalidatePath("/advogados");
@@ -956,13 +962,7 @@ export async function createAdvogado(
     return {
       success: true,
       data: data,
-      credenciais: senhaTemporaria
-        ? {
-            email: input.email,
-            senhaTemporaria: senhaTemporaria,
-            linkLogin: `${process.env.NEXTAUTH_URL || "http://localhost:9192"}/login`,
-          }
-        : undefined,
+      credenciais: credenciaisAcesso,
     } as any;
   } catch (error) {
     console.error("Erro ao criar advogado:", error);

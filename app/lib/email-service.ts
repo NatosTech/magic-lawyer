@@ -25,7 +25,6 @@ export interface AdvogadoEmailData {
   email: string;
   oab: string;
   especialidades: string[];
-  senhaTemporaria?: string;
   linkLogin?: string;
 }
 
@@ -175,26 +174,6 @@ export const getBoasVindasTemplate = (
             </div>
           </div>
 
-          ${
-            data.senhaTemporaria
-              ? `
-            <div class="credentials">
-              <div class="credentials-title">🔐 Credenciais de Acesso</div>
-              <div class="credentials-item">
-                <strong>Email:</strong> ${data.email}
-              </div>
-              <div class="credentials-item">
-                <strong>Senha Temporária:</strong> ${data.senhaTemporaria}
-              </div>
-            </div>
-
-            <div class="warning">
-              <strong>⚠️ Importante:</strong> Por questões de segurança, recomendamos que você altere sua senha temporária no primeiro acesso.
-            </div>
-          `
-              : ""
-          }
-
           <p>Com o Magic Lawyer, você terá acesso a:</p>
           <ul>
             <li>📋 Gestão completa de processos</li>
@@ -237,18 +216,6 @@ export const getBoasVindasTemplate = (
       - Email: ${data.email}
       - OAB: ${data.oab}
       - Especialidades: ${especialidadesText}
-
-      ${
-        data.senhaTemporaria
-          ? `
-      Credenciais de Acesso:
-      - Email: ${data.email}
-      - Senha Temporária: ${data.senhaTemporaria}
-      
-      IMPORTANTE: Por questões de segurança, altere sua senha no primeiro acesso.
-      `
-          : ""
-      }
 
       Com o Magic Lawyer você terá acesso a:
       - Gestão completa de processos

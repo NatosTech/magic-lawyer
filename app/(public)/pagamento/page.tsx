@@ -452,7 +452,7 @@ export default function PagamentoPage() {
               <ul className="text-xs text-default-400 space-y-1">
                 <li>• Complete o pagamento usando o método escolhido</li>
                 <li>• Aguarde a confirmação automática (até 2 minutos)</li>
-                <li>• Você receberá um email com as credenciais de acesso</li>
+                <li>• Você receberá um email com o link de primeiro acesso</li>
                 <li>• Faça login e configure seu escritório</li>
               </ul>
             </div>

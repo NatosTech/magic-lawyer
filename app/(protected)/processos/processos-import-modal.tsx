@@ -240,7 +240,7 @@ export function ProcessosImportModal({
     <Modal
       isOpen={isOpen}
       scrollBehavior="inside"
-      size="2xl"
+      size="4xl"
       onClose={handleClose}
     >
       <ModalContent>
@@ -354,8 +354,9 @@ export function ProcessosImportModal({
                   Criar acesso para os clientes importados?
                 </p>
                 <p className="text-xs text-default-500">
-                  Ao ativar, enviaremos logins temporários para cada cliente com e-mail
-                  válido. Os demais serão importados sem usuário.
+                  Ao ativar, criaremos acesso para cada cliente com e-mail
+                  válido e enviaremos automaticamente o link de primeiro
+                  acesso.
                 </p>
               </div>
               <Switch
@@ -363,7 +364,7 @@ export function ProcessosImportModal({
                 size="sm"
                 onValueChange={setCriarAcessoClientes}
               >
-                Gerar logins
+                Criar acessos
               </Switch>
             </div>
             {criarAcessoClientes && (
@@ -412,6 +413,11 @@ export function ProcessosImportModal({
                     {resultado.createdProcessos} criados ·{" "}
                     {resultado.updatedProcessos} atualizados
                   </p>
+                  {resultado.failedProcessos > 0 ? (
+                    <p className="mt-1 text-xs text-warning-700 dark:text-warning-300">
+                      {resultado.failedProcessos} processo(s) com falha
+                    </p>
+                  ) : null}
                 </div>
                 <div className="rounded-xl border border-success/30 bg-white/90 p-3 text-sm text-success-700 dark:bg-success/10 dark:text-success-200">
                   <p className="text-xs uppercase tracking-widest text-success/80">
@@ -419,14 +425,14 @@ export function ProcessosImportModal({
                   </p>
                   <p className="text-lg font-semibold">
                     {resultado.createdClientes} clientes ·{" "}
-                    {resultado.createdUsuarios.length} logins
+                    {resultado.createdUsuarios.length} acessos
                   </p>
                 </div>
               </div>
               {resultado.createdUsuarios.length > 0 && (
                 <div className="space-y-1 rounded-xl border border-default-200/70 bg-white/90 p-3 text-xs dark:bg-default-50/10">
                   <p className="text-sm font-semibold text-default-700">
-                    Logins gerados
+                    Acessos criados
                   </p>
                   {resultado.createdUsuarios.map((credencial) => (
                     <div
@@ -441,8 +447,22 @@ export function ProcessosImportModal({
                           {credencial.email}
                         </p>
                       </div>
-                      <Chip color="primary" size="sm" variant="flat">
-                        {credencial.senhaGerada}
+                      <Chip
+                        color={
+                          credencial.statusEnvio === "LINK_ENVIADO"
+                            ? "success"
+                            : credencial.statusEnvio === "EMAIL_NAO_CONFIGURADO"
+                              ? "warning"
+                              : "danger"
+                        }
+                        size="sm"
+                        variant="flat"
+                      >
+                        {credencial.statusEnvio === "LINK_ENVIADO"
+                          ? "Link enviado"
+                          : credencial.statusEnvio === "EMAIL_NAO_CONFIGURADO"
+                            ? "E-mail pendente"
+                            : "Falha no envio"}
                       </Chip>
                     </div>
                   ))}
@@ -483,16 +503,17 @@ export function ProcessosImportModal({
             </div>
           )}
         </ModalBody>
-        <ModalFooter className="flex flex-col gap-2 border-t border-default-200/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-default-500">
+        <ModalFooter className="flex flex-col gap-3 border-t border-default-200/60 pt-4 lg:flex-row lg:items-center lg:justify-between">
+          <p className="w-full text-xs text-default-500 lg:w-auto lg:max-w-[65%]">
             Cada importação gera um log de auditoria com quantidade de clientes e
             processos sincronizados.
           </p>
-          <div className="flex w-full justify-end gap-2 sm:w-auto">
-            <Button variant="flat" onPress={handleClose}>
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:justify-end lg:w-auto lg:shrink-0">
+            <Button className="whitespace-nowrap" variant="flat" onPress={handleClose}>
               Cancelar
             </Button>
             <Button
+              className="min-w-[150px] whitespace-nowrap"
               color="primary"
               isDisabled={!selectedFile}
               isLoading={isProcessing}

@@ -6,11 +6,11 @@ import { getSession } from "@/app/lib/auth";
 import { getAdvogadoIdFromSession } from "@/app/lib/advogado-access";
 import prisma from "@/app/lib/prisma";
 import { capturarProcessoAction, resolverCaptchaEsajAction } from "@/app/actions/juridical-capture";
+import { checkPermission } from "@/app/actions/equipe";
 import { getTribunaisScrapingDisponiveis } from "@/lib/api/juridical/config";
 import logger from "@/lib/logger";
 
 const AUDIT_ACTION_SYNC_OAB = "SINCRONIZACAO_INICIAL_OAB_PROCESSOS";
-const SYNC_OAB_ALLOWED_ROLES = new Set(["ADMIN", "SUPER_ADMIN", "ADVOGADO"]);
 
 type SyncStatus = "SUCESSO" | "ERRO" | "PENDENTE_CAPTCHA";
 
@@ -82,10 +82,6 @@ function buildDisplayName(user: {
 
 function toSafeNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function canSyncOabForRole(role?: string | null) {
-  return typeof role === "string" && SYNC_OAB_ALLOWED_ROLES.has(role);
 }
 
 function extractProcessNumbers(result: SyncActionLikeResult) {
@@ -270,7 +266,9 @@ export async function listarTribunaisSincronizacaoOab(): Promise<{
     };
   }
 
-  if (!canSyncOabForRole((session.user as any).role)) {
+  const podeSincronizar = await checkPermission("processos", "editar");
+
+  if (!podeSincronizar) {
     return {
       success: false,
       tribunais: [],
@@ -307,7 +305,9 @@ export async function sincronizarProcessosIniciaisPorOab(params: {
       };
     }
 
-    if (!canSyncOabForRole((session.user as any).role)) {
+    const podeSincronizar = await checkPermission("processos", "editar");
+
+    if (!podeSincronizar) {
       return {
         success: false,
         error: "Você não tem permissão para sincronizar processos por OAB.",
@@ -407,7 +407,9 @@ export async function resolverCaptchaSincronizacaoOab(params: {
       };
     }
 
-    if (!canSyncOabForRole((session.user as any).role)) {
+    const podeSincronizar = await checkPermission("processos", "editar");
+
+    if (!podeSincronizar) {
       return {
         success: false,
         error: "Você não tem permissão para sincronizar processos por OAB.",
@@ -489,7 +491,9 @@ export async function listarHistoricoSincronizacaoOab(
       };
     }
 
-    if (!canSyncOabForRole((session.user as any).role)) {
+    const podeSincronizar = await checkPermission("processos", "editar");
+
+    if (!podeSincronizar) {
       return {
         success: false,
         itens: [],

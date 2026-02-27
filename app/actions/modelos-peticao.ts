@@ -51,11 +51,11 @@ export interface ModeloPeticaoCreateInput {
 
 export interface ModeloPeticaoUpdateInput {
   nome?: string;
-  descricao?: string;
+  descricao?: string | null;
   conteudo?: string;
-  categoria?: string;
-  tipo?: string;
-  variaveis?: any;
+  categoria?: string | null;
+  tipo?: string | null;
+  variaveis?: any | null;
   publico?: boolean;
   ativo?: boolean;
 }

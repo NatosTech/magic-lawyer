@@ -34,9 +34,10 @@ function normalizeHeader(value: unknown) {
   return value
     .normalize("NFD")
     .replace(ACCENT_REGEX, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, " ")
     .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase();
+    .trim();
 }
 
 function cleanCell(value: unknown) {
@@ -69,7 +70,13 @@ const headerCandidates = {
     "PROCESSO",
   ],
   autor: ["RECLAMANTE", "AUTOR", "CLIENTE", "REQUERENTE"],
-  reu: ["RECLAMADA", "REU", "RÉU", "PARTE CONTRARIA", "PARTE CONTRARIA"],
+  reu: [
+    "RECLAMADA",
+    "REU",
+    "RÉU",
+    "REU PARTE CONTRARIA",
+    "PARTE CONTRARIA",
+  ],
   vara: ["VARA", "ORGAO", "ÓRGÃO", "FORO", "FORO/VARA", "UNIDADE"],
   classe: ["CLASSE", "TIPO", "ACAO", "AÇÃO"],
   email: ["EMAIL", "E-MAIL", "EMAIL AUTOR", "EMAIL DO AUTOR"],
@@ -79,8 +86,18 @@ const headerCandidates = {
 };
 
 function findIndex(row: string[], candidates: string[]) {
-  for (const candidate of candidates) {
-    const idx = row.indexOf(candidate);
+  const normalizedCandidates = candidates
+    .map((candidate) => normalizeHeader(candidate))
+    .filter(Boolean);
+
+  const matchesCandidate = (cell: string, candidate: string) =>
+    cell === candidate || cell.includes(candidate) || candidate.includes(cell);
+
+  for (const candidate of normalizedCandidates) {
+    const idx = row.findIndex(
+      (cell) =>
+        Boolean(cell) && matchesCandidate(cell, candidate),
+    );
 
     if (idx >= 0) {
       return idx;
@@ -120,15 +137,25 @@ function detectMapping(
       columns: {},
     };
 
-    if (
-      numeroIndex >= 0 &&
-      autorIndex >= 0 &&
-      reuIndex >= 0 &&
-      varaIndex >= 0
-    ) {
+    if (numeroIndex >= 0 && autorIndex >= 0) {
       const sheetNormalized = normalizeHeader(sheetName);
       const fileNormalized = normalizeHeader(fileName ?? "");
-      let origem: PlanilhaProcessoOrigem = "JUSTICA_TRABALHO";
+      const hasTrabalhoMarkers =
+        normalizedRow.some((cell) => cell.includes("RECLAMANTE")) ||
+        normalizedRow.some((cell) => cell.includes("RECLAMADA")) ||
+        normalizedRow.some((cell) => cell.includes("TRABALHISTA"));
+      const hasTemplateMarkers =
+        sheetNormalized === "PROCESSOS" ||
+        fileNormalized.includes("MODELO IMPORTACAO PROCESSOS") ||
+        normalizedRow.some((cell) => cell.includes("AUTOR CLIENTE"));
+
+      let origem: PlanilhaProcessoOrigem = hasTemplateMarkers
+        ? "TEMPLATE"
+        : "FORUM_ESTADUAL";
+
+      if (hasTrabalhoMarkers) {
+        origem = "JUSTICA_TRABALHO";
+      }
 
       if (
         sheetNormalized.includes("PROJUDI") ||
@@ -137,34 +164,23 @@ function detectMapping(
         origem = "PROJUDI";
       }
 
+      const columns: Record<string, number> = {
+        numero: numeroIndex,
+        autor: autorIndex,
+      };
+
+      if (reuIndex >= 0) columns.reu = reuIndex;
+      if (varaIndex >= 0) columns.vara = varaIndex;
+      if (classeIndex >= 0) columns.classe = classeIndex;
+      if (emailIndex >= 0) columns.email = emailIndex;
+      if (areaIndex >= 0) columns.area = areaIndex;
+      if (comarcaIndex >= 0) columns.comarca = comarcaIndex;
+      if (fonteIndex >= 0) columns.fonte = fonteIndex;
+
       return {
         ...baseMapping,
         origem,
-        columns: {
-          numero: numeroIndex,
-          autor: autorIndex,
-          reu: reuIndex,
-          vara: varaIndex,
-          classe: classeIndex,
-        },
-      };
-    }
-
-    if (numeroIndex >= 0 && autorIndex >= 0) {
-      return {
-        ...baseMapping,
-        origem: "FORUM_ESTADUAL",
-        columns: {
-          numero: numeroIndex,
-          autor: autorIndex,
-          reu: reuIndex,
-          vara: varaIndex,
-          classe: classeIndex,
-          email: emailIndex,
-          area: areaIndex,
-          comarca: comarcaIndex,
-          fonte: fonteIndex,
-        },
+        columns,
       };
     }
   }
@@ -176,92 +192,130 @@ export function parsePlanilhaProcessos(
   buffer: Buffer,
   options?: { fileName?: string | null },
 ): PlanilhaProcessoParseResult {
-  const workbook = XLSX.read(buffer, { type: "buffer" });
-  const avisos: string[] = [];
-  const registros: PlanilhaProcessoRecord[] = [];
+  const parseWorkbook = (workbook: XLSX.WorkBook): PlanilhaProcessoParseResult => {
+    const avisos: string[] = [];
+    const registros: PlanilhaProcessoRecord[] = [];
 
-  workbook.SheetNames.forEach((sheetName) => {
-    const sheet = workbook.Sheets[sheetName];
-    if (!sheet) return;
+    workbook.SheetNames.forEach((sheetName) => {
+      const sheet = workbook.Sheets[sheetName];
+      if (!sheet) return;
 
-    const rows = XLSX.utils.sheet_to_json<string[]>(sheet, {
-      header: 1,
-      defval: "",
-    });
+      const rows = XLSX.utils.sheet_to_json<string[]>(sheet, {
+        header: 1,
+        defval: "",
+      });
 
-    if (!rows.length) return;
+      if (!rows.length) return;
 
-    const mapping = detectMapping(rows as string[][], sheetName, options?.fileName);
-
-    if (!mapping) {
-      avisos.push(
-        `A aba "${sheetName}" foi ignorada: não encontramos cabeçalho com colunas de processo.`,
+      const mapping = detectMapping(
+        rows as string[][],
+        sheetName,
+        options?.fileName,
       );
-      return;
-    }
 
-    const dataRows = rows.slice(mapping.headerIndex + 1);
-
-    dataRows.forEach((row, rowIndex) => {
-      const numero = cleanCell(row[mapping.columns.numero]);
-      const autor = cleanCell(row[mapping.columns.autor]);
-
-      if (!numero || !autor) {
-        if (numero || autor) {
-          avisos.push(
-            `Linha ${
-              mapping.headerIndex + rowIndex + 2
-            } da aba "${sheetName}" ignorada: falta número ou autor.`,
-          );
-        }
+      if (!mapping) {
+        avisos.push(
+          `A aba "${sheetName}" foi ignorada: não encontramos cabeçalho com colunas de processo.`,
+        );
         return;
       }
 
-      registros.push({
-        numero,
-        classe:
-          mapping.columns.classe !== undefined
-            ? cleanCell(row[mapping.columns.classe]) ?? undefined
-            : undefined,
-        autor,
-        reu:
-          mapping.columns.reu !== undefined
-            ? cleanCell(row[mapping.columns.reu]) ?? undefined
-            : undefined,
-        vara:
-          mapping.columns.vara !== undefined
-            ? cleanCell(row[mapping.columns.vara]) ?? undefined
-            : undefined,
-        comarca:
-          mapping.columns.comarca !== undefined
-            ? cleanCell(row[mapping.columns.comarca]) ?? undefined
-            : undefined,
-        area:
-          mapping.columns.area !== undefined
-            ? cleanCell(row[mapping.columns.area]) ?? undefined
-            : mapping.origem === "FORUM_ESTADUAL"
-              ? "CIVEL"
-              : "TRABALHISTA",
-        fonte:
-          mapping.columns.fonte !== undefined
-            ? cleanCell(row[mapping.columns.fonte]) ?? undefined
-            : undefined,
-        email:
-          mapping.columns.email !== undefined
-            ? cleanCell(row[mapping.columns.email]) ?? undefined
-            : undefined,
-        origem: mapping.origem,
-        sheet: sheetName,
-        linha: mapping.headerIndex + rowIndex + 2,
+      const dataRows = rows.slice(mapping.headerIndex + 1);
+
+      dataRows.forEach((row, rowIndex) => {
+        const numero = cleanCell(row[mapping.columns.numero]);
+        const autor = cleanCell(row[mapping.columns.autor]);
+
+        if (!numero || !autor) {
+          if (numero || autor) {
+            avisos.push(
+              `Linha ${
+                mapping.headerIndex + rowIndex + 2
+              } da aba "${sheetName}" ignorada: falta número ou autor.`,
+            );
+          }
+          return;
+        }
+
+        const defaultAreaByOrigem: Partial<
+          Record<PlanilhaProcessoOrigem, string | undefined>
+        > = {
+          FORUM_ESTADUAL: "CIVEL",
+          JUSTICA_TRABALHO: "TRABALHISTA",
+          PROJUDI: "CIVEL",
+        };
+
+        registros.push({
+          numero,
+          classe:
+            mapping.columns.classe !== undefined
+              ? cleanCell(row[mapping.columns.classe]) ?? undefined
+              : undefined,
+          autor,
+          reu:
+            mapping.columns.reu !== undefined
+              ? cleanCell(row[mapping.columns.reu]) ?? undefined
+              : undefined,
+          vara:
+            mapping.columns.vara !== undefined
+              ? cleanCell(row[mapping.columns.vara]) ?? undefined
+              : undefined,
+          comarca:
+            mapping.columns.comarca !== undefined
+              ? cleanCell(row[mapping.columns.comarca]) ?? undefined
+              : undefined,
+          area:
+            mapping.columns.area !== undefined
+              ? cleanCell(row[mapping.columns.area]) ?? undefined
+              : defaultAreaByOrigem[mapping.origem],
+          fonte:
+            mapping.columns.fonte !== undefined
+              ? cleanCell(row[mapping.columns.fonte]) ?? undefined
+              : undefined,
+          email:
+            mapping.columns.email !== undefined
+              ? cleanCell(row[mapping.columns.email]) ?? undefined
+              : undefined,
+          origem: mapping.origem,
+          sheet: sheetName,
+          linha: mapping.headerIndex + rowIndex + 2,
+        });
       });
     });
-  });
 
-  if (registros.length === 0) {
+    return { registros, avisos };
+  };
+
+  const fileName = options?.fileName?.toLowerCase() ?? "";
+  const attempts: XLSX.ParsingOptions[] = [{ type: "buffer" }];
+
+  if (fileName.endsWith(".csv")) {
+    attempts.push({
+      type: "buffer",
+      FS: ";",
+    } as XLSX.ParsingOptions);
+  }
+
+  let lastAttemptWarnings: string[] = [];
+
+  for (const parsingOptions of attempts) {
+    const workbook = XLSX.read(buffer, parsingOptions);
+    const parsed = parseWorkbook(workbook);
+
+    if (parsed.registros.length > 0) {
+      return parsed;
+    }
+
+    lastAttemptWarnings = parsed.avisos;
+  }
+
+  if (lastAttemptWarnings.length > 0) {
     throw new Error(
-      "Não encontramos processos válidos no arquivo. Revise o cabeçalho e o conteúdo.",
+      `${lastAttemptWarnings[0]} Não encontramos processos válidos no arquivo.`,
     );
   }
 
-  return { registros, avisos };
+  throw new Error(
+    "Não encontramos processos válidos no arquivo. Revise o cabeçalho e o conteúdo.",
+  );
 }

@@ -176,7 +176,6 @@ export function UserManagementModal({
 
   // Estados para permissões
   const [role, setRole] = useState<UserRole>(user?.role || "SECRETARIA");
-  const [generatePassword, setGeneratePassword] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -249,7 +248,6 @@ export function UserManagementModal({
 
       // Permissões
       setRole(user?.role || "SECRETARIA");
-      setGeneratePassword(false);
     }
   }, [isOpen, user]);
 
@@ -281,7 +279,6 @@ export function UserManagementModal({
           ? `${dataNascimentoUsuario.year}-${String(dataNascimentoUsuario.month).padStart(2, "0")}-${String(dataNascimentoUsuario.day).padStart(2, "0")}`
           : undefined,
         observacoes: observacoes || undefined,
-        ...(generatePassword && { generatePassword: true }),
         // Campos específicos do advogado
         ...(role === "ADVOGADO" && {
           oabNumero: oabNumero || undefined,
@@ -339,6 +336,17 @@ export function UserManagementModal({
           : "Usuário foi criado com sucesso",
         color: "success",
       });
+
+      if (!isEditing && response.data?.firstAccessEmailSent === false) {
+        addToast({
+          title: "Primeiro acesso pendente",
+          description:
+            response.data?.firstAccessEmailError ||
+            "Usuário criado, mas o e-mail de primeiro acesso não foi enviado automaticamente.",
+          color: "warning",
+          timeout: 8000,
+        });
+      }
 
       onSuccess?.();
       onClose();
@@ -551,20 +559,13 @@ export function UserManagementModal({
                     </div>
 
                     {!isEditing && (
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">
-                            Gerar Senha Temporária
-                          </p>
-                          <p className="text-xs text-default-500">
-                            Cria uma senha aleatória para o usuário
-                          </p>
-                        </div>
-                        <Switch
-                          color="primary"
-                          isSelected={generatePassword}
-                          onValueChange={setGeneratePassword}
-                        />
+                      <div className="rounded-lg border border-primary/30 bg-primary/10 p-3">
+                        <p className="text-sm font-medium text-primary-700 dark:text-primary-300">
+                          Primeiro acesso automático
+                        </p>
+                        <p className="text-xs text-default-500">
+                          O usuário será criado sem senha e receberá um link para definir o acesso.
+                        </p>
                       </div>
                     )}
                   </CardBody>

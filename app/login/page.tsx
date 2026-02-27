@@ -19,6 +19,10 @@ import { DevInfo } from "@/components/dev-info";
 import { LogIn } from "lucide-react";
 import { fetchTenantBrandingFromDomain } from "@/lib/fetchers/tenant-branding";
 import { getDevQuickLogins } from "@/app/actions/tenant-domains";
+import {
+  checkPrimeiroAcessoPorEmail,
+  enviarLinkPrimeiroAcesso,
+} from "@/app/actions/primeiro-acesso";
 
 function LoginPageInner() {
   const params = useSearchParams();
@@ -61,8 +65,16 @@ function LoginPageInner() {
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   const callbackUrl = params.get("callbackUrl");
   const reason = params.get("reason"); // Motivo do redirecionamento
+  const firstAccessReady = params.get("firstAccessReady");
+  const firstAccessEmail = params.get("firstAccessEmail");
   const isDevMode = process.env.NODE_ENV === "development";
   const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
+  const [isCheckingFirstAccess, setIsCheckingFirstAccess] = useState(false);
+  const [isFirstAccessEmail, setIsFirstAccessEmail] = useState(false);
+  const [maskedFirstAccessEmail, setMaskedFirstAccessEmail] = useState<
+    string | null
+  >(null);
+  const [checkedEmail, setCheckedEmail] = useState("");
 
   const resolveRedirectTarget = useCallback(
     (role?: string | null) => {
@@ -486,6 +498,44 @@ function LoginPageInner() {
     const sanitizedEmail = email.trim();
     const sanitizedTenant = tenant.trim();
 
+    if (isFirstAccessEmail) {
+      if (!emailRegex.test(sanitizedEmail)) {
+        addToast({
+          title: "E-mail inválido",
+          description: "Informe um e-mail válido para receber o link.",
+          color: "warning",
+        });
+        return;
+      }
+
+      setLoading(true);
+      const response = await enviarLinkPrimeiroAcesso({
+        email: sanitizedEmail,
+        tenantHint: sanitizedTenant || undefined,
+      });
+      setLoading(false);
+
+      if (!response.success) {
+        addToast({
+          title: "Não foi possível enviar o link",
+          description:
+            response.error ||
+            "Tente novamente em alguns instantes ou contate o administrador.",
+          color: "danger",
+          timeout: 6000,
+        });
+        return;
+      }
+
+      addToast({
+        title: "Link enviado",
+        description: `Enviamos o link de primeiro acesso para ${response.maskedEmail}.`,
+        color: "success",
+        timeout: 6000,
+      });
+      return;
+    }
+
     await attemptLogin({
       email: sanitizedEmail,
       password,
@@ -514,6 +564,73 @@ function LoginPageInner() {
     },
     [attemptLogin, loading]
   );
+
+  const handleEmailBlur = useCallback(async () => {
+    const sanitizedEmail = email.trim().toLowerCase();
+    const sanitizedTenant = tenant.trim();
+
+    if (!sanitizedEmail || !emailRegex.test(sanitizedEmail)) {
+      setIsFirstAccessEmail(false);
+      setMaskedFirstAccessEmail(null);
+      setCheckedEmail("");
+      return;
+    }
+
+    if (sanitizedEmail === checkedEmail) {
+      return;
+    }
+
+    setIsCheckingFirstAccess(true);
+
+    try {
+      const response = await checkPrimeiroAcessoPorEmail({
+        email: sanitizedEmail,
+        tenantHint: sanitizedTenant || undefined,
+      });
+
+      if (response.success && response.firstAccess) {
+        setIsFirstAccessEmail(true);
+        setMaskedFirstAccessEmail(response.maskedEmail || null);
+      } else {
+        setIsFirstAccessEmail(false);
+        setMaskedFirstAccessEmail(null);
+      }
+      setCheckedEmail(sanitizedEmail);
+    } catch {
+      setIsFirstAccessEmail(false);
+      setMaskedFirstAccessEmail(null);
+      setCheckedEmail("");
+    } finally {
+      setIsCheckingFirstAccess(false);
+    }
+  }, [checkedEmail, email, emailRegex, tenant]);
+
+  useEffect(() => {
+    const sanitizedEmail = email.trim().toLowerCase();
+
+    if (checkedEmail && sanitizedEmail !== checkedEmail) {
+      setIsFirstAccessEmail(false);
+      setMaskedFirstAccessEmail(null);
+      setCheckedEmail("");
+    }
+  }, [checkedEmail, email]);
+
+  useEffect(() => {
+    if (firstAccessEmail && !email) {
+      setEmail(firstAccessEmail);
+    }
+  }, [email, firstAccessEmail]);
+
+  useEffect(() => {
+    if (firstAccessReady === "1") {
+      addToast({
+        title: "Primeiro acesso concluído",
+        description: "Senha definida com sucesso. Agora faça login normalmente.",
+        color: "success",
+        timeout: 6000,
+      });
+    }
+  }, [firstAccessReady]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-4 py-12">
@@ -658,17 +775,31 @@ function LoginPageInner() {
                 startContent={<span className="text-default-400 text-sm">📧</span>}
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => {
+                  void handleEmailBlur();
+                }}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                }}
               />
-              <Input
-                isRequired
-                className="mb-4"
-                label="Senha"
-                startContent={<span className="text-default-400 text-sm">🔒</span>}
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              {isFirstAccessEmail ? (
+                <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs text-primary-300">
+                  Primeiro acesso detectado para{" "}
+                  <strong>{maskedFirstAccessEmail || "este e-mail"}</strong>.
+                  Clique em <strong>Enviar link de primeiro acesso</strong> para
+                  definir a senha.
+                </div>
+              ) : (
+                <Input
+                  isRequired
+                  className="mb-4"
+                  label="Senha"
+                  startContent={<span className="text-default-400 text-sm">🔒</span>}
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              )}
               <Input
                 className="mb-6"
                 description="Opcional. Se não souber, deixe vazio. Exemplo: meu-escritorio ou meuescritorio.com.br"
@@ -678,8 +809,19 @@ function LoginPageInner() {
                 value={tenant}
                 onChange={(e) => setTenant(e.target.value)}
               />
-              <Button fullWidth color="primary" isLoading={loading} size="lg" startContent={loading ? null : <span>🚀</span>} type="submit">
-                {loading ? "Conectando..." : "Entrar no sistema"}
+              <Button
+                fullWidth
+                color="primary"
+                isLoading={loading || isCheckingFirstAccess}
+                size="lg"
+                startContent={loading || isCheckingFirstAccess ? null : <span>🚀</span>}
+                type="submit"
+              >
+                {loading || isCheckingFirstAccess
+                  ? "Processando..."
+                  : isFirstAccessEmail
+                    ? "Enviar link de primeiro acesso"
+                    : "Entrar no sistema"}
               </Button>
             </form>
           </CardBody>

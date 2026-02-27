@@ -1514,7 +1514,7 @@ export function AdvogadoFormModal({
                                   }))
                                 }
                               >
-                                Enviar credenciais por email
+                                Enviar link de primeiro acesso por email
                               </Checkbox>
                               <Popover showArrow placement="top">
                                 <PopoverTrigger>
@@ -1529,13 +1529,14 @@ export function AdvogadoFormModal({
                                 </PopoverTrigger>
                                 <PopoverContent className="max-w-xs space-y-2 p-4">
                                   <p className="text-sm text-default-600">
-                                    Envie automaticamente um e-mail com login,
-                                    senha temporária e orientações de primeiro
+                                    Envie automaticamente um e-mail para o
+                                    advogado definir a própria senha no primeiro
                                     acesso.
                                   </p>
                                   <p className="text-xs text-default-500">
-                                    Caso deseje apresentar as credenciais
-                                    pessoalmente, desmarque esta opção.
+                                    Caso prefira, desmarque e solicite que ele
+                                    use a opção de primeiro acesso na tela de
+                                    login.
                                   </p>
                                 </PopoverContent>
                               </Popover>
