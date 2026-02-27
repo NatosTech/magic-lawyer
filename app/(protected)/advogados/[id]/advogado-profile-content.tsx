@@ -572,19 +572,59 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
       </div>
 
       <Card className="border border-default-200">
-        <CardBody className="p-6">
-          <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-            <div className="flex flex-col items-center gap-3 lg:items-start">
-              <Avatar
-                className="h-20 w-20 text-large"
-                name={getIniciais(getNomeCompleto(advogado))}
-                src={advogado.usuario.avatarUrl || undefined}
-              />
-              <div className="text-center lg:text-left">
-                <h2 className="text-lg font-bold">{getNomeCompleto(advogado)}</h2>
-                <p className="text-sm text-default-500">OAB {getOAB(advogado)}</p>
+        <CardBody>
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+            <Avatar
+              showFallback
+              className="h-20 w-20 bg-primary/10 text-primary text-2xl"
+              icon={<Scale className="h-10 w-10 text-primary" />}
+              name={getIniciais(getNomeCompleto(advogado))}
+              src={advogado.usuario.avatarUrl || undefined}
+            />
+            <div className="flex-1 space-y-4">
+              <div>
+                <h1 className="text-2xl font-bold">{getNomeCompleto(advogado)}</h1>
+                <p className="mt-1 text-sm text-default-500">OAB {getOAB(advogado)}</p>
               </div>
-              <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <FileText className="h-4 w-4 text-default-400" />
+                  <span className="text-default-600">
+                    {advogado.usuario.cpf || "Não informado"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-default-400" />
+                  <span className="text-default-600">{advogado.usuario.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-default-400" />
+                  <span className="text-default-600">
+                    {advogado.usuario.phone || advogado.telefone || "Não informado"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <MessageSquareText className="h-4 w-4 text-default-400" />
+                  <span className="text-default-600">
+                    {advogado.whatsapp || "Não informado"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <CalendarDays className="h-4 w-4 text-default-400" />
+                  <span className="text-default-600">
+                    Cadastro: {formatDate(advogado.usuario.createdAt)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Briefcase className="h-4 w-4 text-default-400" />
+                  <span className="text-default-600">
+                    Tipo: {advogado.isExterno ? "Externo" : "Interno"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
                 <Chip
                   color={getStatusColor(advogado.usuario.active)}
                   size="sm"
@@ -592,87 +632,48 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
                 >
                   {getStatusText(advogado.usuario.active)}
                 </Chip>
-                {advogado.isExterno && (
-                  <Chip color="warning" size="sm" variant="flat">
-                    Externo
-                  </Chip>
+                <Chip
+                  color={advogado.isExterno ? "warning" : "primary"}
+                  size="sm"
+                  variant="flat"
+                >
+                  {advogado.isExterno ? "Externo" : "Interno"}
+                </Chip>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">Especialidades</p>
+                {advogado.especialidades.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {advogado.especialidades.map((especialidade) => (
+                      <Chip
+                        key={especialidade}
+                        color={getEspecialidadeColor(especialidade)}
+                        size="sm"
+                        variant="flat"
+                      >
+                        {especialidade.replaceAll("_", " ")}
+                      </Chip>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-default-500">
+                    Nenhuma especialidade cadastrada.
+                  </p>
                 )}
               </div>
-            </div>
 
-            <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              <div className="rounded-lg border border-default-200 p-3">
-                <p className="text-xs uppercase tracking-[0.15em] text-default-500">CPF</p>
-                <p className="mt-1 text-sm font-semibold break-all">
-                  {advogado.usuario.cpf || "Não informado"}
-                </p>
-              </div>
-              <div className="rounded-lg border border-default-200 p-3">
-                <p className="text-xs uppercase tracking-[0.15em] text-default-500">Email</p>
-                <p className="mt-1 text-sm font-semibold break-all">
-                  {advogado.usuario.email}
-                </p>
-              </div>
-              <div className="rounded-lg border border-default-200 p-3">
-                <p className="text-xs uppercase tracking-[0.15em] text-default-500">Telefone</p>
-                <p className="mt-1 text-sm font-semibold">
-                  {advogado.usuario.phone || advogado.telefone || "Não informado"}
-                </p>
-              </div>
-              <div className="rounded-lg border border-default-200 p-3">
-                <p className="text-xs uppercase tracking-[0.15em] text-default-500">WhatsApp</p>
-                <p className="mt-1 text-sm font-semibold">
-                  {advogado.whatsapp || "Não informado"}
-                </p>
-              </div>
-              <div className="rounded-lg border border-default-200 p-3">
-                <p className="text-xs uppercase tracking-[0.15em] text-default-500">Cadastro</p>
-                <p className="mt-1 text-sm font-semibold">
-                  {formatDate(advogado.usuario.createdAt)}
-                </p>
-              </div>
-              <div className="rounded-lg border border-default-200 p-3">
-                <p className="text-xs uppercase tracking-[0.15em] text-default-500">Tipo</p>
-                <p className="mt-1 text-sm font-semibold">
-                  {advogado.isExterno ? "Externo" : "Interno"}
-                </p>
-              </div>
+              {advogado.bio ? (
+                <>
+                  <Divider className="my-4" />
+                  <div>
+                    <p className="text-sm font-semibold">Biografia</p>
+                    <p className="mt-1 text-sm text-default-600">{advogado.bio}</p>
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
-
-          <Divider className="my-4" />
-
-          <div className="space-y-3">
-            <p className="text-sm font-semibold">Especialidades</p>
-            {advogado.especialidades.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {advogado.especialidades.map((especialidade) => (
-                  <Chip
-                    key={especialidade}
-                    color={getEspecialidadeColor(especialidade)}
-                    size="sm"
-                    variant="flat"
-                  >
-                    {especialidade.replaceAll("_", " ")}
-                  </Chip>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-default-500">
-                Nenhuma especialidade cadastrada.
-              </p>
-            )}
-          </div>
-
-          {advogado.bio ? (
-            <>
-              <Divider className="my-4" />
-              <div>
-                <p className="text-sm font-semibold">Biografia</p>
-                <p className="mt-1 text-sm text-default-600">{advogado.bio}</p>
-              </div>
-            </>
-          ) : null}
         </CardBody>
       </Card>
 
@@ -1356,71 +1357,96 @@ export default function AdvogadoProfileContent({ advogadoId }: AdvogadoProfileCo
                 <>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {procuracoesPageItems.map((procuracao) => (
-                      <Card
+                      <div
                         key={procuracao.id}
-                        isPressable
-                        className="border border-default-200 transition-all hover:border-success hover:shadow-md"
-                        onPress={() => router.push(`/procuracoes/${procuracao.id}`)}
+                        className="rounded-medium cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          router.push(`/procuracoes/${procuracao.id}`);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            router.push(`/procuracoes/${procuracao.id}`);
+                          }
+                        }}
                       >
-                        <CardHeader className="pb-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="font-semibold">Procuração {procuracao.numero || procuracao.id.slice(0, 8)}</p>
-                              <p className="text-xs text-default-500">{procuracao.cliente?.nome || "Cliente não informado"}</p>
-                            </div>
-                            <Chip
-                              color={procuracao.ativa ? "success" : "default"}
-                              size="sm"
-                              variant="flat"
-                            >
-                              {procuracao.ativa ? "Ativa" : "Inativa"}
-                            </Chip>
-                          </div>
-                          <div className="mt-2 flex items-center gap-2">
-                            <Chip color={getChipStatusColor(procuracao.status)} size="sm" variant="flat">
-                              {procuracao.status}
-                            </Chip>
-                            {procuracao.emitidaEm ? (
-                              <Chip size="sm" variant="flat">
-                                Emitida {formatDate(procuracao.emitidaEm)}
-                              </Chip>
-                            ) : null}
-                          </div>
-                        </CardHeader>
-                        <Divider />
-                        <CardBody className="gap-2">
-                          <div className="flex flex-wrap gap-2">
-                            <Chip size="sm" variant="flat">{procuracao._count.poderes} poderes</Chip>
-                            <Chip size="sm" variant="flat">{procuracao.processos.length} processos</Chip>
-                            <Chip size="sm" variant="flat">{procuracao._count.assinaturas} assinaturas</Chip>
-                          </div>
-                          <div className="text-xs text-default-500">
-                            Outorgados: {procuracao.outorgados.length || 0}
-                          </div>
-                          {procuracao.cliente?.id ? (
-                            <div className="flex flex-wrap gap-2 pt-1">
-                              <Button
+                        <Card className="cursor-pointer border border-default-200 transition-all hover:border-success hover:shadow-md">
+                          <CardHeader className="pb-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="font-semibold">
+                                  Procuração {procuracao.numero || procuracao.id.slice(0, 8)}
+                                </p>
+                                <p className="text-xs text-default-500">
+                                  {procuracao.cliente?.nome || "Cliente não informado"}
+                                </p>
+                              </div>
+                              <Chip
+                                color={procuracao.ativa ? "success" : "default"}
                                 size="sm"
                                 variant="flat"
-                                onPress={() => router.push(`/clientes/${procuracao.cliente.id}`)}
                               >
-                                Cliente
-                              </Button>
-                              {procuracao.processos.length > 0 ? (
-                                <Button
-                                  size="sm"
-                                  variant="light"
-                                  onPress={() =>
-                                    router.push(`/processos/${procuracao.processos[0].processo.id}`)
-                                  }
-                                >
-                                  Processo principal
-                                </Button>
+                                {procuracao.ativa ? "Ativa" : "Inativa"}
+                              </Chip>
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <Chip color={getChipStatusColor(procuracao.status)} size="sm" variant="flat">
+                                {procuracao.status}
+                              </Chip>
+                              {procuracao.emitidaEm ? (
+                                <Chip size="sm" variant="flat">
+                                  Emitida {formatDate(procuracao.emitidaEm)}
+                                </Chip>
                               ) : null}
                             </div>
-                          ) : null}
-                        </CardBody>
-                      </Card>
+                          </CardHeader>
+                          <Divider />
+                          <CardBody className="gap-2">
+                            <div className="flex flex-wrap gap-2">
+                              <Chip size="sm" variant="flat">
+                                {procuracao._count.poderes} poderes
+                              </Chip>
+                              <Chip size="sm" variant="flat">
+                                {procuracao.processos.length} processos
+                              </Chip>
+                              <Chip size="sm" variant="flat">
+                                {procuracao._count.assinaturas} assinaturas
+                              </Chip>
+                            </div>
+                            <div className="text-xs text-default-500">
+                              Outorgados: {procuracao.outorgados.length || 0}
+                            </div>
+                            {procuracao.cliente?.id ? (
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                <Button
+                                  size="sm"
+                                  variant="flat"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    router.push(`/clientes/${procuracao.cliente.id}`);
+                                  }}
+                                >
+                                  Cliente
+                                </Button>
+                                {procuracao.processos.length > 0 ? (
+                                  <Button
+                                    size="sm"
+                                    variant="light"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      router.push(`/processos/${procuracao.processos[0].processo.id}`)
+                                    }}
+                                  >
+                                    Processo principal
+                                  </Button>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </CardBody>
+                        </Card>
+                      </div>
                     ))}
                   </div>
                   <TabPagination
