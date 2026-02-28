@@ -365,6 +365,17 @@ export async function getProcuracaoById(procuracaoId: string): Promise<{
             },
           },
         },
+        poderes: {
+          select: {
+            id: true,
+            titulo: true,
+            descricao: true,
+            ativo: true,
+            revogadoEm: true,
+            createdAt: true,
+          },
+          orderBy: [{ ativo: "desc" }, { createdAt: "desc" }],
+        },
         createdBy: {
           select: {
             firstName: true,
@@ -1096,6 +1107,140 @@ export async function desvincularProcesso(
     return {
       success: false,
       error: "Erro ao desvincular processo",
+    };
+  }
+}
+
+// ============================================
+// PODERES OUTORGADOS
+// ============================================
+
+export async function adicionarPoderNaProcuracao(
+  procuracaoId: string,
+  data: {
+    titulo?: string;
+    descricao: string;
+  },
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    const descricao = data.descricao?.trim();
+    const titulo = data.titulo?.trim();
+
+    if (!descricao) {
+      return { success: false, error: "Descrição do poder é obrigatória" };
+    }
+
+    const procuracao = await prisma.procuracao.findFirst({
+      where: {
+        id: procuracaoId,
+        tenantId: user.tenantId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!procuracao) {
+      return { success: false, error: "Procuração não encontrada" };
+    }
+
+    await prisma.procuracaoPoder.create({
+      data: {
+        tenantId: user.tenantId,
+        procuracaoId,
+        titulo: titulo || null,
+        descricao,
+        ativo: true,
+      },
+    });
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    logger.error("Erro ao adicionar poder na procuração:", error);
+
+    return {
+      success: false,
+      error: "Erro ao adicionar poder na procuração",
+    };
+  }
+}
+
+export async function revogarPoderDaProcuracao(
+  procuracaoId: string,
+  poderId: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    const poder = await prisma.procuracaoPoder.findFirst({
+      where: {
+        id: poderId,
+        procuracaoId,
+        tenantId: user.tenantId,
+      },
+      select: {
+        id: true,
+        ativo: true,
+      },
+    });
+
+    if (!poder) {
+      return { success: false, error: "Poder não encontrado" };
+    }
+
+    if (!poder.ativo) {
+      return { success: false, error: "Este poder já está revogado" };
+    }
+
+    await prisma.procuracaoPoder.update({
+      where: {
+        id: poder.id,
+      },
+      data: {
+        ativo: false,
+        revogadoEm: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    logger.error("Erro ao revogar poder da procuração:", error);
+
+    return {
+      success: false,
+      error: "Erro ao revogar poder da procuração",
     };
   }
 }

@@ -89,8 +89,12 @@ export async function uploadDocumentoProcuracao(
       return { success: false, error: "Arquivo não fornecido" };
     }
 
-    // Validar tipo de arquivo
-    if (file.type !== "application/pdf") {
+    // Validar tipo de arquivo (MIME e extensão para casos onde o browser não envia MIME)
+    const mimeType = file.type?.toLowerCase() || "";
+    const hasPdfMime = mimeType === "application/pdf";
+    const hasPdfExtension = file.name.toLowerCase().endsWith(".pdf");
+
+    if (!hasPdfMime && !hasPdfExtension) {
       return { success: false, error: "Apenas arquivos PDF são permitidos" };
     }
 

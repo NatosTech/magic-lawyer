@@ -72,6 +72,7 @@ export default function NovaProcuracaoPage() {
   const searchParams = useSearchParams();
 
   const clienteIdParam = searchParams.get("clienteId") ?? "";
+  const modeloIdParam = searchParams.get("modeloId") ?? "";
   const processoIdsParam = searchParams.get("processoIds") ?? "";
 
   const preselectedProcessoIds = useMemo(
@@ -92,7 +93,7 @@ export default function NovaProcuracaoPage() {
     emitidaPor: ProcuracaoEmitidaPor.ESCRITORIO,
     ativa: true,
     clienteId: clienteIdParam,
-    modeloId: undefined,
+    modeloId: modeloIdParam || undefined,
     processoIds: preselectedProcessoIds,
     advogadoIds: [],
     poderes: [emptyPoder],
@@ -127,6 +128,12 @@ export default function NovaProcuracaoPage() {
       setFormData((prev) => ({ ...prev, clienteId: clienteIdParam }));
     }
   }, [clienteIdParam]);
+
+  useEffect(() => {
+    if (modeloIdParam) {
+      setFormData((prev) => ({ ...prev, modeloId: modeloIdParam }));
+    }
+  }, [modeloIdParam]);
 
   useEffect(() => {
     if (preselectedProcessoIds.length === 0) return;

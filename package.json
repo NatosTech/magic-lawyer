@@ -34,6 +34,7 @@
     "stop": "pkill -f 'next' || true && pkill -f 'ngrok' || true && pkill -f 'node.*magic-lawyer' || true",
     "stop:all": "pkill -f 'next' || true && pkill -f 'ngrok' || true && pkill -f 'node.*magic-lawyer' || true && npm run redis:stop && npm run db:down",
     "kill:all": "pkill -f 'next' || true && pkill -f 'ngrok' || true && pkill -f 'node.*magic-lawyer' || true && pkill -f 'concurrently' || true && sleep 3",
+    "clean:artifacts": "rm -rf .playwright-cli output/playwright playwright-report test-results",
     "restart:dev": "npx ts-node --project scripts/tsconfig.json scripts/restart-dev.ts",
     "cleanup:asaas": "node scripts/cleanup-asaas.js",
     "notifications:test": "npx tsx scripts/test-notifications.ts",

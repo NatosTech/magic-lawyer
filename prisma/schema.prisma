@@ -986,6 +986,7 @@ model MovimentacaoProcesso {
   slaEm                 DateTime?
   resolvidoEm           DateTime?
   observacaoResolucao   String?
+  observacaoReabertura  String?
   prazo                 DateTime?
   criadoPorId           String?
   tarefaRelacionadaId   String?

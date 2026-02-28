@@ -35,6 +35,10 @@ import {
   Download,
   Link2,
   Paperclip,
+  Filter,
+  CheckCircle2,
+  Clock3,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -45,8 +49,8 @@ import { useProcessosCliente } from "@/app/hooks/use-processos";
 import { DateUtils } from "@/app/lib/date-utils";
 import { linkProcuracaoAoProcesso } from "@/app/actions/processos";
 import { ProcuracaoEmitidaPor, ProcuracaoStatus } from "@/generated/prisma";
-import { title, subtitle } from "@/components/primitives";
 import { Select, SelectItem } from "@heroui/react";
+import { PeoplePageHeader, PeopleMetricCard, PeopleEntityCard, PeopleEntityCardHeader, PeopleEntityCardBody } from "@/components/people-ui";
 
 type ProcuracaoFiltroValue<T extends string> = T | "";
 
@@ -57,6 +61,10 @@ interface ProcuracaoFiltros {
   advogadoId: string;
   emitidaPor: ProcuracaoFiltroValue<ProcuracaoEmitidaPor>;
 }
+
+const ALL_STATUS_FILTER_KEY = "__ALL_STATUS_FILTER__";
+const ALL_EMITIDA_FILTER_KEY = "__ALL_EMITIDA_FILTER__";
+const ALL_CLIENTE_FILTER_KEY = "__ALL_CLIENTE_FILTER__";
 
 export function ProcuracoesContent() {
   const router = useRouter();
@@ -88,6 +96,7 @@ export function ProcuracoesContent() {
     Set<string>
   >(new Set());
   const [isLinking, startTransition] = useTransition();
+  const procuracoesList = procuracoes ?? [];
 
   const { clientes, isLoading: isLoadingClientes } = useClientesParaSelect();
 
@@ -213,6 +222,71 @@ export function ProcuracoesContent() {
   };
 
   const temFiltrosAtivos = Object.values(filtros).some((valor) => valor !== "");
+  const filtrosAtivosCount = useMemo(
+    () => Object.values(filtros).filter((valor) => valor !== "").length,
+    [filtros],
+  );
+
+  const statusFilterItems = useMemo(
+    () => [
+      { key: ALL_STATUS_FILTER_KEY, label: "Todos os status" },
+      ...statusUnicos.map((status) => ({
+        key: status,
+        label: getStatusLabel(status),
+      })),
+    ],
+    [statusUnicos],
+  );
+
+  const emitidaFilterItems = useMemo(
+    () => [
+      { key: ALL_EMITIDA_FILTER_KEY, label: "Todas as origens" },
+      ...emitidaPorUnicos.map((emitidaPor) => ({
+        key: emitidaPor,
+        label: getEmitidaPorLabel(emitidaPor),
+      })),
+    ],
+    [emitidaPorUnicos],
+  );
+
+  const clienteFilterItems = useMemo(
+    () => [
+      { key: ALL_CLIENTE_FILTER_KEY, label: "Todos os clientes" },
+      ...clientes.map((cliente) => ({ key: cliente.id, label: cliente.nome })),
+    ],
+    [clientes],
+  );
+
+  const metrics = useMemo(() => {
+    const total = procuracoesList.length;
+    const vigentes = procuracoesList.filter(
+      (procuracao) => procuracao.status === ProcuracaoStatus.VIGENTE,
+    ).length;
+    const pendentesAssinatura = procuracoesList.filter(
+      (procuracao) =>
+        procuracao.status === ProcuracaoStatus.PENDENTE_ASSINATURA,
+    ).length;
+    const encerradas = procuracoesList.filter(
+      (procuracao) =>
+        procuracao.status === ProcuracaoStatus.REVOGADA ||
+        procuracao.status === ProcuracaoStatus.EXPIRADA,
+    ).length;
+    const comProcessos = procuracoesList.filter(
+      (procuracao) => procuracao.processos.length > 0,
+    ).length;
+    const emitidasPeloEscritorio = procuracoesList.filter(
+      (procuracao) => procuracao.emitidaPor === ProcuracaoEmitidaPor.ESCRITORIO,
+    ).length;
+
+    return {
+      total,
+      vigentes,
+      pendentesAssinatura,
+      encerradas,
+      comProcessos,
+      emitidasPeloEscritorio,
+    };
+  }, [procuracoesList]);
 
   const resetNovaProcuracaoState = () => {
     setClienteNovaProcuracaoId("");
@@ -260,7 +334,7 @@ export function ProcuracoesContent() {
     router.push(`/procuracoes/novo?${params.toString()}`);
   };
 
-  const getStatusColor = (status: ProcuracaoStatus) => {
+  function getStatusColor(status: ProcuracaoStatus) {
     switch (status) {
       case ProcuracaoStatus.VIGENTE:
         return "success";
@@ -275,9 +349,9 @@ export function ProcuracoesContent() {
       default:
         return "default";
     }
-  };
+  }
 
-  const getStatusLabel = (status: ProcuracaoStatus) => {
+  function getStatusLabel(status: ProcuracaoStatus) {
     switch (status) {
       case ProcuracaoStatus.VIGENTE:
         return "Vigente";
@@ -292,9 +366,9 @@ export function ProcuracoesContent() {
       default:
         return status;
     }
-  };
+  }
 
-  const getEmitidaPorLabel = (emitidaPor: ProcuracaoEmitidaPor) => {
+  function getEmitidaPorLabel(emitidaPor: ProcuracaoEmitidaPor) {
     switch (emitidaPor) {
       case ProcuracaoEmitidaPor.ESCRITORIO:
         return "Escritório";
@@ -303,7 +377,7 @@ export function ProcuracoesContent() {
       default:
         return emitidaPor;
     }
-  };
+  }
 
   if (isLoading) {
     return (
@@ -334,36 +408,33 @@ export function ProcuracoesContent() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>Procurações</h1>
-          <p className={subtitle({ fullWidth: true })}>
-            {procuracoesFiltradas.length} de {procuracoes.length} procurações
-            {temFiltrosAtivos && " (filtradas)"}
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            startContent={<Search className="h-4 w-4" />}
-            variant="bordered"
-            onPress={() => setMostrarFiltros(!mostrarFiltros)}
-          >
-            Filtros
-          </Button>
-
-          {!permissions.isCliente && (
+      <PeoplePageHeader
+        actions={
+          <>
             <Button
-              color="primary"
-              startContent={<Plus className="h-4 w-4" />}
-              onPress={openCreateModal}
+              size="sm"
+              startContent={<Filter className="h-4 w-4" />}
+              variant="bordered"
+              onPress={() => setMostrarFiltros(!mostrarFiltros)}
             >
-              Nova Procuração
+              {mostrarFiltros ? "Ocultar filtros" : "Filtros"}
             </Button>
-          )}
-        </div>
-      </div>
+            {!permissions.isCliente ? (
+              <Button
+                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white"
+                size="sm"
+                startContent={<Plus className="h-4 w-4" />}
+                onPress={openCreateModal}
+              >
+                Nova procuração
+              </Button>
+            ) : null}
+          </>
+        }
+        description={`${procuracoesFiltradas.length} de ${procuracoesList.length} procurações${temFiltrosAtivos ? " com filtros aplicados" : ""}.`}
+        tag="Atividades jurídicas"
+        title="Procurações"
+      />
 
       <div className="flex flex-wrap gap-2">
         <Button color="primary" size="sm" variant="flat">
@@ -379,12 +450,83 @@ export function ProcuracoesContent() {
         </Button>
       </div>
 
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <PeopleMetricCard
+          helper="Procurações cadastradas"
+          icon={<FileText className="h-4 w-4" />}
+          label="Total de procurações"
+          tone="primary"
+          value={metrics.total}
+        />
+        <PeopleMetricCard
+          helper="Em situação válida"
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          label="Vigentes"
+          tone="success"
+          value={metrics.vigentes}
+        />
+        <PeopleMetricCard
+          helper="Aguardando assinatura"
+          icon={<Clock3 className="h-4 w-4" />}
+          label="Pendentes"
+          tone="warning"
+          value={metrics.pendentesAssinatura}
+        />
+        <PeopleMetricCard
+          helper="Revogadas ou expiradas"
+          icon={<AlertCircle className="h-4 w-4" />}
+          label="Encerradas"
+          tone="danger"
+          value={metrics.encerradas}
+        />
+        <PeopleMetricCard
+          helper="Com processo vinculado"
+          icon={<Link2 className="h-4 w-4" />}
+          label="Com processos"
+          tone="secondary"
+          value={metrics.comProcessos}
+        />
+        <PeopleMetricCard
+          helper="Origem do escritório"
+          icon={<ShieldCheck className="h-4 w-4" />}
+          label="Emitidas pelo escritório"
+          tone="default"
+          value={metrics.emitidasPeloEscritorio}
+        />
+      </div>
+
       {/* Filtros */}
       {mostrarFiltros && (
-        <Card>
-          <CardBody className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border border-divider/70 bg-content1/75 shadow-sm backdrop-blur-md">
+          <CardHeader className="border-b border-divider/70 px-4 py-4 sm:px-6">
+            <div className="flex w-full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 items-start gap-3 sm:items-center">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
+                  <Filter className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-foreground sm:text-lg">
+                    Filtros operacionais
+                  </h3>
+                  <p className="text-xs text-default-500 sm:text-sm">
+                    Refine por número, cliente, status e origem da procuração.
+                  </p>
+                </div>
+              </div>
+              {temFiltrosAtivos ? (
+                <Chip className="font-semibold" color="primary" size="sm" variant="flat">
+                  {filtrosAtivosCount} filtro(s) ativo(s)
+                </Chip>
+              ) : null}
+            </div>
+          </CardHeader>
+          <CardBody className="space-y-4 p-4 sm:p-5">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
               <Input
+                classNames={{
+                  inputWrapper:
+                    "border border-divider/80 bg-background/80 hover:bg-background/90",
+                }}
                 placeholder="Buscar por número ou cliente..."
                 startContent={<Search className="h-4 w-4 text-default-400" />}
                 value={filtros.search}
@@ -394,61 +536,96 @@ export function ProcuracoesContent() {
               />
 
               <Select
+                items={statusFilterItems}
                 placeholder="Status"
-                selectedKeys={filtros.status ? [filtros.status] : []}
+                selectedKeys={[filtros.status || ALL_STATUS_FILTER_KEY]}
                 onSelectionChange={(keys) => {
                   const [key] = Array.from(keys);
 
                   setFiltros((prev) => ({
                     ...prev,
-                    status: (key as ProcuracaoStatus | undefined) ?? "",
+                    status:
+                      key === ALL_STATUS_FILTER_KEY
+                        ? ""
+                        : ((key as ProcuracaoStatus | undefined) ?? ""),
                   }));
                 }}
               >
-                {statusUnicos.map((status) => (
-                  <SelectItem key={status} textValue={getStatusLabel(status)}>{getStatusLabel(status)}</SelectItem>
-                ))}
+                {(item) => (
+                  <SelectItem key={item.key} textValue={item.label}>
+                    {item.label}
+                  </SelectItem>
+                )}
               </Select>
 
               <Select
+                items={emitidaFilterItems}
                 placeholder="Emitida por"
-                selectedKeys={filtros.emitidaPor ? [filtros.emitidaPor] : []}
+                selectedKeys={[filtros.emitidaPor || ALL_EMITIDA_FILTER_KEY]}
                 onSelectionChange={(keys) => {
                   const [key] = Array.from(keys);
 
                   setFiltros((prev) => ({
                     ...prev,
-                    emitidaPor: (key as ProcuracaoEmitidaPor | undefined) ?? "",
+                    emitidaPor:
+                      key === ALL_EMITIDA_FILTER_KEY
+                        ? ""
+                        : ((key as ProcuracaoEmitidaPor | undefined) ?? ""),
                   }));
                 }}
               >
-                {emitidaPorUnicos.map((emitidaPor) => (
-                  <SelectItem key={emitidaPor} textValue={getEmitidaPorLabel(emitidaPor)}>
-                    {getEmitidaPorLabel(emitidaPor)}
+                {(item) => (
+                  <SelectItem key={item.key} textValue={item.label}>
+                    {item.label}
                   </SelectItem>
-                ))}
+                )}
+              </Select>
+
+              <Select
+                items={clienteFilterItems}
+                placeholder="Cliente"
+                selectedKeys={[filtros.clienteId || ALL_CLIENTE_FILTER_KEY]}
+                onSelectionChange={(keys) => {
+                  const [key] = Array.from(keys);
+
+                  setFiltros((prev) => ({
+                    ...prev,
+                    clienteId:
+                      key === ALL_CLIENTE_FILTER_KEY
+                        ? ""
+                        : ((key as string | undefined) ?? ""),
+                  }));
+                }}
+              >
+                {(item) => (
+                  <SelectItem key={item.key} textValue={item.label}>
+                    {item.label}
+                  </SelectItem>
+                )}
               </Select>
             </div>
 
-            {temFiltrosAtivos && (
+            {temFiltrosAtivos ? (
               <div className="flex justify-end">
                 <Button size="sm" variant="light" onPress={limparFiltros}>
                   Limpar Filtros
                 </Button>
               </div>
-            )}
+            ) : null}
           </CardBody>
         </Card>
       )}
 
       {/* Lista de Procurações */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {procuracoesFiltradas.map((procuracao) => (
-          <Card
+          <PeopleEntityCard
             key={procuracao.id}
-            className="hover:shadow-md transition-shadow"
+            className="h-full"
+            isPressable
+            onPress={() => router.push(`/procuracoes/${procuracao.id}`)}
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <PeopleEntityCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div className="flex items-center space-x-2">
                 <FileText className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">
@@ -501,9 +678,9 @@ export function ProcuracoesContent() {
                   </DropdownItem>
                 </DropdownMenu>
               </Dropdown>
-            </CardHeader>
+            </PeopleEntityCardHeader>
 
-            <CardBody className="space-y-3">
+            <PeopleEntityCardBody className="space-y-3">
               <div className="flex items-center space-x-2">
                 {procuracao.cliente.tipoPessoa === "FISICA" ? (
                   <User className="h-4 w-4 text-default-400" />
@@ -558,22 +735,28 @@ export function ProcuracoesContent() {
                     .join(", ")}
                 </div>
               )}
-            </CardBody>
-          </Card>
+            </PeopleEntityCardBody>
+          </PeopleEntityCard>
         ))}
       </div>
 
-      {procuracoesFiltradas.length === 0 && temFiltrosAtivos && (
-        <div className="flex flex-col items-center justify-center h-32 space-y-2">
-          <Search className="h-8 w-8 text-default-400" />
-          <p className="text-default-500">
-            Nenhuma procuração encontrada com os filtros aplicados
-          </p>
-          <Button size="sm" variant="light" onPress={limparFiltros}>
-            Limpar Filtros
-          </Button>
-        </div>
-      )}
+      {procuracoesFiltradas.length === 0 ? (
+        <Card className="border border-white/10 bg-background/60">
+          <CardBody className="flex min-h-[180px] flex-col items-center justify-center gap-3 text-center">
+            <Search className="h-8 w-8 text-default-400" />
+            <p className="text-default-500">
+              {temFiltrosAtivos
+                ? "Nenhuma procuração encontrada com os filtros aplicados."
+                : "Nenhuma procuração cadastrada até o momento."}
+            </p>
+            {temFiltrosAtivos ? (
+              <Button size="sm" variant="light" onPress={limparFiltros}>
+                Limpar filtros
+              </Button>
+            ) : null}
+          </CardBody>
+        </Card>
+      ) : null}
 
       <Modal
         isOpen={isCreateModalOpen}

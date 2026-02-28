@@ -37,13 +37,22 @@ export default function DocumentoUploadModal({
 
   const { upload, isUploading } = useUploadDocumentoProcuracao();
 
+  const isPdfFile = (file: File) => {
+    const mimeType = file.type?.toLowerCase() || "";
+    const hasPdfMime = mimeType === "application/pdf";
+    const hasPdfExtension = file.name.toLowerCase().endsWith(".pdf");
+
+    return hasPdfMime || hasPdfExtension;
+  };
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     if (file) {
       // Validar tipo de arquivo
-      if (file.type !== "application/pdf") {
+      if (!isPdfFile(file)) {
         toast.error("Apenas arquivos PDF são permitidos");
+        event.target.value = "";
 
         return;
       }

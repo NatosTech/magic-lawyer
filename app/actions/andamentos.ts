@@ -43,6 +43,7 @@ export interface AndamentoCreateInput {
   titulo: string;
   descricao?: string;
   observacaoResolucao?: string;
+  observacaoReabertura?: string;
   tipo?: MovimentacaoTipo;
   statusOperacional?: MovimentacaoStatusOperacional;
   prioridade?: MovimentacaoPrioridade;
@@ -63,6 +64,7 @@ export interface AndamentoUpdateInput {
   titulo?: string;
   descricao?: string;
   observacaoResolucao?: string;
+  observacaoReabertura?: string;
   tipo?: MovimentacaoTipo;
   statusOperacional?: MovimentacaoStatusOperacional;
   prioridade?: MovimentacaoPrioridade;
@@ -151,6 +153,13 @@ function normalizeOptionalText(value?: string | null): string | undefined {
 
   return normalized ? normalized : undefined;
 }
+
+const REOPEN_STATUS_OPTIONS: MovimentacaoStatusOperacional[] = [
+  "NOVO",
+  "EM_TRIAGEM",
+  "EM_EXECUCAO",
+  "BLOQUEADO",
+];
 
 async function getProcessoScopeForSession(
   session: Awaited<ReturnType<typeof getSession>>,
@@ -422,6 +431,7 @@ export async function listAndamentos(
       slaEm: andamento.slaEm ?? andamento.prazo ?? null,
       resolvidoEm: andamento.resolvidoEm ?? null,
       observacaoResolucao: andamento.observacaoResolucao ?? null,
+      observacaoReabertura: andamento.observacaoReabertura ?? null,
       responsavel: andamento.responsavel ?? null,
       tarefaRelacionada:
         andamento.tarefaRelacionada &&
@@ -720,6 +730,7 @@ export async function createAndamento(
         slaEm: finalSla,
         resolvidoEm: finalResolvidoEm,
         observacaoResolucao: finalObservacaoResolucao,
+        observacaoReabertura: normalizeOptionalText(input.observacaoReabertura),
         prazo: input.prazo,
         criadoPorId: userId,
         // Campos para notificações
@@ -874,6 +885,7 @@ export async function createAndamento(
         slaEm: andamento.slaEm ?? null,
         resolvidoEm: andamento.resolvidoEm ?? null,
         observacaoResolucao: andamento.observacaoResolucao ?? null,
+        observacaoReabertura: andamento.observacaoReabertura ?? null,
         prazo: andamento.prazo ?? null,
         notificacoes: {
           cliente: andamento.notificarCliente,
@@ -898,6 +910,7 @@ export async function createAndamento(
         "slaEm",
         "resolvidoEm",
         "observacaoResolucao",
+        "observacaoReabertura",
         "prazo",
         "notificarCliente",
         "notificarEmail",
@@ -1001,6 +1014,7 @@ export async function updateAndamento(
         slaEm: true,
         resolvidoEm: true,
         observacaoResolucao: true,
+        observacaoReabertura: true,
         prazo: true,
         notificarCliente: true,
         notificarEmail: true,
@@ -1039,6 +1053,19 @@ export async function updateAndamento(
 
     const nextStatus =
       input.statusOperacional ?? andamentoExistente.statusOperacional;
+
+    if (
+      andamentoExistente.statusOperacional === "RESOLVIDO" &&
+      input.statusOperacional &&
+      input.statusOperacional !== "RESOLVIDO"
+    ) {
+      return {
+        success: false,
+        error:
+          "Use a ação de reabrir andamento para alterar status de itens resolvidos.",
+      };
+    }
+
     const nextResolvidoEm =
       nextStatus === "RESOLVIDO"
         ? input.resolvidoEm ||
@@ -1490,6 +1517,164 @@ export async function marcarAndamentoResolvido(
     return {
       success: false,
       error: error.message || "Erro ao resolver andamento",
+    };
+  }
+}
+
+export async function reabrirAndamento(
+  andamentoId: string,
+  novoStatus: MovimentacaoStatusOperacional,
+  observacaoReabertura: string,
+): Promise<ActionResponse<any>> {
+  try {
+    await ensurePermissionOrThrow("editar");
+
+    if (!REOPEN_STATUS_OPTIONS.includes(novoStatus)) {
+      return { success: false, error: "Status de reabertura inválido" };
+    }
+
+    const motivo = normalizeOptionalText(observacaoReabertura);
+
+    if (!motivo) {
+      return {
+        success: false,
+        error: "Informe o motivo da reabertura",
+      };
+    }
+
+    const tenantId = await getTenantId();
+    const session = await getSession();
+    const userId = session?.user?.id;
+    const processoScope = await getProcessoScopeForSession(session);
+
+    if (!userId) {
+      return { success: false, error: "Usuário não autenticado" };
+    }
+
+    const actor = session.user as any;
+    const actorName =
+      `${actor?.firstName ?? ""} ${actor?.lastName ?? ""}`.trim() ||
+      (actor?.email as string | undefined) ||
+      "Usuário";
+
+    const where: any = {
+      id: andamentoId,
+      tenantId,
+    };
+    mergeProcessoScope(where, processoScope);
+
+    const andamentoExistente = await prisma.movimentacaoProcesso.findFirst({
+      where,
+      select: {
+        id: true,
+        processoId: true,
+        titulo: true,
+        descricao: true,
+        tipo: true,
+        statusOperacional: true,
+        prioridade: true,
+        responsavelId: true,
+        dataMovimentacao: true,
+        slaEm: true,
+        resolvidoEm: true,
+        observacaoResolucao: true,
+        observacaoReabertura: true,
+        prazo: true,
+        notificarCliente: true,
+        notificarEmail: true,
+        notificarWhatsapp: true,
+        mensagemPersonalizada: true,
+        processo: {
+          select: {
+            id: true,
+            numero: true,
+          },
+        },
+      },
+    });
+
+    if (!andamentoExistente) {
+      return { success: false, error: "Andamento não encontrado" };
+    }
+
+    if (andamentoExistente.statusOperacional !== "RESOLVIDO") {
+      return {
+        success: false,
+        error: "Apenas andamentos resolvidos podem ser reabertos",
+      };
+    }
+
+    const atualizado = await prisma.movimentacaoProcesso.update({
+      where: { id: andamentoExistente.id },
+      data: {
+        statusOperacional: novoStatus,
+        resolvidoEm: null,
+        observacaoResolucao: null,
+        observacaoReabertura: motivo,
+      },
+      include: {
+        processo: {
+          select: {
+            id: true,
+            numero: true,
+            titulo: true,
+          },
+        },
+      },
+    });
+
+    try {
+      const diff = buildAndamentoDiff(andamentoExistente, atualizado);
+      const changedFields = extractChangedFieldsFromDiff(diff.items);
+      const auditDados = toAuditJson({
+        andamentoId: atualizado.id,
+        processoId: atualizado.processo.id,
+        processoNumero: atualizado.processo.numero,
+        statusAnterior: andamentoExistente.statusOperacional,
+        statusAtual: atualizado.statusOperacional,
+        motivoReabertura: motivo,
+        reabertoPor: actorName,
+        reabertoPorId: userId,
+        reabertoEm: new Date().toISOString(),
+        diff: diff.items,
+        changesSummary: diff.summary || "Andamento reaberto",
+      });
+
+      await logAudit({
+        tenantId,
+        usuarioId: userId,
+        acao: "ANDAMENTO_REABERTO",
+        entidade: "Andamento",
+        entidadeId: atualizado.id,
+        dados: auditDados,
+        previousValues: toAuditJson(andamentoExistente),
+        changedFields,
+      });
+    } catch (auditError) {
+      console.warn(
+        "Falha ao registrar auditoria de reabertura de andamento",
+        auditError,
+      );
+    }
+
+    revalidatePath("/andamentos");
+    revalidatePath(`/processos/${atualizado.processo.id}`);
+
+    return {
+      success: true,
+      data: {
+        id: atualizado.id,
+        statusOperacional: atualizado.statusOperacional,
+        resolvidoEm: atualizado.resolvidoEm,
+        observacaoResolucao: atualizado.observacaoResolucao,
+        observacaoReabertura: atualizado.observacaoReabertura,
+      },
+    };
+  } catch (error: any) {
+    console.error("Erro ao reabrir andamento:", error);
+    return {
+      success: false,
+      error: error.message || "Erro ao reabrir andamento",
     };
   }
 }

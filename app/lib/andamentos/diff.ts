@@ -12,6 +12,7 @@ type AndamentoComparable = Pick<
   | "slaEm"
   | "resolvidoEm"
   | "observacaoResolucao"
+  | "observacaoReabertura"
   | "prazo"
   | "notificarCliente"
   | "notificarEmail"
@@ -54,6 +55,7 @@ const descriptors: DiffDescriptor[] = [
   { field: "slaEm", label: "SLA", format: formatDate },
   { field: "resolvidoEm", label: "Resolvido em", format: formatDate },
   { field: "observacaoResolucao", label: "Observação da resolução" },
+  { field: "observacaoReabertura", label: "Motivo da reabertura" },
   { field: "prazo", label: "Prazo", format: formatDate },
   {
     field: "notificarCliente",

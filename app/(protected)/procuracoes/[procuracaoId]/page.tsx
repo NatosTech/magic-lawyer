@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -38,6 +38,7 @@ import { mutate } from "swr";
 
 import { useProcuracao } from "@/app/hooks/use-procuracoes";
 import { useAdvogadosDisponiveis } from "@/app/hooks/use-advogados";
+import { useProcessosCliente } from "@/app/hooks/use-processos";
 import { title } from "@/components/primitives";
 import { ProcuracaoStatus, ProcuracaoEmitidaPor } from "@/generated/prisma";
 import { DateUtils } from "@/app/lib/date-utils";
@@ -46,7 +47,10 @@ import {
   deleteProcuracao,
   adicionarAdvogadoNaProcuracao,
   removerAdvogadoDaProcuracao,
+  vincularProcesso,
   desvincularProcesso,
+  adicionarPoderNaProcuracao,
+  revogarPoderDaProcuracao,
 } from "@/app/actions/procuracoes";
 import { Modal } from "@/components/ui/modal";
 import DocumentoUploadModal from "@/components/documento-upload-modal";
@@ -123,7 +127,12 @@ export default function ProcuracaoDetalhesPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isAddAdvogadoModalOpen, setIsAddAdvogadoModalOpen] = useState(false);
+  const [isAddProcessoModalOpen, setIsAddProcessoModalOpen] = useState(false);
+  const [isAddPoderModalOpen, setIsAddPoderModalOpen] = useState(false);
   const [documentosCount, setDocumentosCount] = useState(0);
+  const [processoSelecionadoId, setProcessoSelecionadoId] = useState("");
+  const [novoPoderTitulo, setNovoPoderTitulo] = useState("");
+  const [novoPoderDescricao, setNovoPoderDescricao] = useState("");
 
   // Form state
   const [formData, setFormData] = useState<{
@@ -143,6 +152,32 @@ export default function ProcuracaoDetalhesPage() {
     emitidaPor: ProcuracaoEmitidaPor.ESCRITORIO,
     ativa: true,
   });
+
+  const { processos: processosDoCliente, isLoading: isLoadingProcessosDoCliente } =
+    useProcessosCliente(procuracao?.cliente?.id ?? null);
+
+  const processosVinculadosIds = useMemo(
+    () => new Set((procuracao?.processos || []).map((item: any) => item.processo.id)),
+    [procuracao?.processos],
+  );
+
+  const processosDisponiveisParaVinculo = useMemo(
+    () =>
+      (processosDoCliente || []).filter(
+        (processo: any) => !processosVinculadosIds.has(processo.id),
+      ),
+    [processosDoCliente, processosVinculadosIds],
+  );
+
+  const processosDisponiveisIds = useMemo(
+    () => new Set(processosDisponiveisParaVinculo.map((processo: any) => processo.id)),
+    [processosDisponiveisParaVinculo],
+  );
+
+  const selectedProcessoVinculoKeys =
+    processoSelecionadoId && processosDisponiveisIds.has(processoSelecionadoId)
+      ? [processoSelecionadoId]
+      : [];
 
   // Proteção: Redirecionar se não autorizado
   useEffect(() => {
@@ -253,6 +288,30 @@ export default function ProcuracaoDetalhesPage() {
     });
   };
 
+  const handleVincularProcesso = async () => {
+    if (!processoSelecionadoId) {
+      toast.error("Selecione um processo para vincular");
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        const result = await vincularProcesso(procuracaoId, processoSelecionadoId);
+
+        if (result.success) {
+          toast.success("Processo vinculado à procuração!");
+          mutateProcuracao();
+          setProcessoSelecionadoId("");
+          setIsAddProcessoModalOpen(false);
+        } else {
+          toast.error(result.error || "Erro ao vincular processo");
+        }
+      } catch (error) {
+        toast.error("Erro ao vincular processo");
+      }
+    });
+  };
+
   const handleAdicionarAdvogado = async (advogadoId: string) => {
     startTransition(async () => {
       try {
@@ -270,6 +329,54 @@ export default function ProcuracaoDetalhesPage() {
         }
       } catch (error) {
         toast.error("Erro ao adicionar advogado");
+      }
+    });
+  };
+
+  const handleAdicionarPoder = async () => {
+    const descricao = novoPoderDescricao.trim();
+    const titulo = novoPoderTitulo.trim();
+
+    if (!descricao) {
+      toast.error("Descrição do poder é obrigatória");
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        const result = await adicionarPoderNaProcuracao(procuracaoId, {
+          titulo: titulo || undefined,
+          descricao,
+        });
+
+        if (result.success) {
+          toast.success("Poder adicionado com sucesso!");
+          mutateProcuracao();
+          setNovoPoderTitulo("");
+          setNovoPoderDescricao("");
+          setIsAddPoderModalOpen(false);
+        } else {
+          toast.error(result.error || "Erro ao adicionar poder");
+        }
+      } catch (error) {
+        toast.error("Erro ao adicionar poder");
+      }
+    });
+  };
+
+  const handleRevogarPoder = async (poderId: string) => {
+    startTransition(async () => {
+      try {
+        const result = await revogarPoderDaProcuracao(procuracaoId, poderId);
+
+        if (result.success) {
+          toast.success("Poder revogado com sucesso!");
+          mutateProcuracao();
+        } else {
+          toast.error(result.error || "Erro ao revogar poder");
+        }
+      } catch (error) {
+        toast.error("Erro ao revogar poder");
       }
     });
   };
@@ -306,119 +413,123 @@ export default function ProcuracaoDetalhesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-[1600px] space-y-6 p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            isIconOnly
-            as={Link}
-            href="/procuracoes"
-            size="sm"
-            variant="flat"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className={title({ size: "sm" })}>
-              {procuracao.numero || "Procuração sem número"}
-            </h1>
-            <div className="mt-1 flex items-center gap-2">
-              <Chip
-                color={getStatusColor(procuracao.status)}
+      <Card className="border border-white/10 bg-content1/40">
+        <CardBody className="p-4 sm:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                isIconOnly
+                as={Link}
+                href="/procuracoes"
                 size="sm"
-                startContent={getStatusIcon(procuracao.status)}
                 variant="flat"
               >
-                {getStatusLabel(procuracao.status)}
-              </Chip>
-              {!procuracao.ativa && (
-                <Chip color="danger" size="sm" variant="flat">
-                  Inativa
-                </Chip>
-              )}
-              {procuracao.emitidaPor === ProcuracaoEmitidaPor.ADVOGADO && (
-                <Chip color="warning" size="sm" variant="flat">
-                  Emitida por Advogado
-                </Chip>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className={title({ size: "sm" })}>
+                  {procuracao.numero || "Procuração sem número"}
+                </h1>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <Chip
+                    color={getStatusColor(procuracao.status)}
+                    size="sm"
+                    startContent={getStatusIcon(procuracao.status)}
+                    variant="flat"
+                  >
+                    {getStatusLabel(procuracao.status)}
+                  </Chip>
+                  {!procuracao.ativa && (
+                    <Chip color="danger" size="sm" variant="flat">
+                      Inativa
+                    </Chip>
+                  )}
+                  {procuracao.emitidaPor === ProcuracaoEmitidaPor.ADVOGADO && (
+                    <Chip color="warning" size="sm" variant="flat">
+                      Emitida por Advogado
+                    </Chip>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              {!isEditing ? (
+                <>
+                  {procuracao.arquivoUrl && (
+                    <Button
+                      as="a"
+                      href={procuracao.arquivoUrl}
+                      size="sm"
+                      startContent={<Download className="h-4 w-4" />}
+                      target="_blank"
+                      variant="flat"
+                    >
+                      Baixar PDF
+                    </Button>
+                  )}
+                  <Button
+                    color="primary"
+                    size="sm"
+                    startContent={<Edit className="h-4 w-4" />}
+                    variant="flat"
+                    onPress={() => setIsEditing(true)}
+                  >
+                    Editar
+                  </Button>
+                  <Button
+                    color="danger"
+                    size="sm"
+                    startContent={<Trash2 className="h-4 w-4" />}
+                    variant="flat"
+                    onPress={() => setIsDeleteModalOpen(true)}
+                  >
+                    Excluir
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    isDisabled={isPending}
+                    size="sm"
+                    variant="flat"
+                    onPress={() => {
+                      setIsEditing(false);
+                      // Reset form
+                      setFormData({
+                        numero: procuracao.numero || "",
+                        observacoes: procuracao.observacoes || "",
+                        emitidaEm: procuracao.emitidaEm
+                          ? DateUtils.formatToInput(new Date(procuracao.emitidaEm))
+                          : "",
+                        validaAte: procuracao.validaAte
+                          ? DateUtils.formatToInput(new Date(procuracao.validaAte))
+                          : "",
+                        status: procuracao.status,
+                        emitidaPor: procuracao.emitidaPor,
+                        ativa: procuracao.ativa,
+                      });
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    color="primary"
+                    isLoading={isPending}
+                    size="sm"
+                    startContent={<CheckCircle className="h-4 w-4" />}
+                    onPress={handleSave}
+                  >
+                    Salvar
+                  </Button>
+                </>
               )}
             </div>
           </div>
-        </div>
-
-        <div className="flex gap-2">
-          {!isEditing ? (
-            <>
-              {procuracao.arquivoUrl && (
-                <Button
-                  as="a"
-                  href={procuracao.arquivoUrl}
-                  size="sm"
-                  startContent={<Download className="h-4 w-4" />}
-                  target="_blank"
-                  variant="flat"
-                >
-                  Baixar PDF
-                </Button>
-              )}
-              <Button
-                color="primary"
-                size="sm"
-                startContent={<Edit className="h-4 w-4" />}
-                variant="flat"
-                onPress={() => setIsEditing(true)}
-              >
-                Editar
-              </Button>
-              <Button
-                color="danger"
-                size="sm"
-                startContent={<Trash2 className="h-4 w-4" />}
-                variant="flat"
-                onPress={() => setIsDeleteModalOpen(true)}
-              >
-                Excluir
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                isDisabled={isPending}
-                size="sm"
-                variant="flat"
-                onPress={() => {
-                  setIsEditing(false);
-                  // Reset form
-                  setFormData({
-                    numero: procuracao.numero || "",
-                    observacoes: procuracao.observacoes || "",
-                    emitidaEm: procuracao.emitidaEm
-                      ? DateUtils.formatToInput(new Date(procuracao.emitidaEm))
-                      : "",
-                    validaAte: procuracao.validaAte
-                      ? DateUtils.formatToInput(new Date(procuracao.validaAte))
-                      : "",
-                    status: procuracao.status,
-                    emitidaPor: procuracao.emitidaPor,
-                    ativa: procuracao.ativa,
-                  });
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                color="primary"
-                isLoading={isPending}
-                size="sm"
-                startContent={<CheckCircle className="h-4 w-4" />}
-                onPress={handleSave}
-              >
-                Salvar
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+        </CardBody>
+      </Card>
 
       {/* Tabs */}
       <Tabs
@@ -445,7 +556,7 @@ export default function ProcuracaoDetalhesPage() {
             </div>
           }
         >
-          <Card className="mt-4">
+          <Card className="mt-4 border border-white/10 bg-content1/40">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Info className="h-5 w-5" />
@@ -673,7 +784,7 @@ export default function ProcuracaoDetalhesPage() {
             </div>
           }
         >
-          <Card className="mt-4">
+          <Card className="mt-4 border border-white/10 bg-content1/40">
             <CardHeader>
               <div className="flex w-full items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -756,7 +867,7 @@ export default function ProcuracaoDetalhesPage() {
             </div>
           }
         >
-          <Card className="mt-4">
+          <Card className="mt-4 border border-white/10 bg-content1/40">
             <CardHeader>
               <div className="flex w-full items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -765,6 +876,14 @@ export default function ProcuracaoDetalhesPage() {
                     Processos Vinculados
                   </h3>
                 </div>
+                <Button
+                  color="primary"
+                  size="sm"
+                  startContent={<Plus className="h-4 w-4" />}
+                  onPress={() => setIsAddProcessoModalOpen(true)}
+                >
+                  Vincular processo
+                </Button>
               </div>
             </CardHeader>
             <CardBody>
@@ -772,6 +891,15 @@ export default function ProcuracaoDetalhesPage() {
                 <div className="py-8 text-center text-default-500">
                   <Scale className="mx-auto mb-2 h-12 w-12 opacity-50" />
                   <p>Nenhum processo vinculado a esta procuração</p>
+                  <Button
+                    className="mt-4"
+                    color="primary"
+                    size="sm"
+                    startContent={<Plus className="h-4 w-4" />}
+                    onPress={() => setIsAddProcessoModalOpen(true)}
+                  >
+                    Vincular primeiro processo
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -846,34 +974,91 @@ export default function ProcuracaoDetalhesPage() {
             </div>
           }
         >
-          <Card className="mt-4">
+          <Card className="mt-4 border border-white/10 bg-content1/40">
             <CardHeader>
-              <div className="flex items-center gap-2">
-                <FileSignature className="h-5 w-5" />
-                <h3 className="text-lg font-semibold">Poderes Outorgados</h3>
+              <div className="flex w-full items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileSignature className="h-5 w-5" />
+                  <h3 className="text-lg font-semibold">Poderes Outorgados</h3>
+                </div>
+                <Button
+                  color="primary"
+                  size="sm"
+                  startContent={<Plus className="h-4 w-4" />}
+                  onPress={() => setIsAddPoderModalOpen(true)}
+                >
+                  Adicionar poder
+                </Button>
               </div>
             </CardHeader>
-            <CardBody>
+            <CardBody className="space-y-4">
+              <p className="text-sm text-default-500">
+                Poderes outorgados são as autorizações que o cliente concede
+                nesta procuração para atuação jurídica.
+              </p>
               {!procuracao.poderes || procuracao.poderes.length === 0 ? (
                 <div className="py-8 text-center text-default-500">
                   <FileSignature className="mx-auto mb-2 h-12 w-12 opacity-50" />
                   <p>Nenhum poder especificado nesta procuração</p>
+                  <Button
+                    className="mt-4"
+                    color="primary"
+                    size="sm"
+                    startContent={<Plus className="h-4 w-4" />}
+                    onPress={() => setIsAddPoderModalOpen(true)}
+                  >
+                    Adicionar primeiro poder
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {procuracao.poderes.map((poder: any, index: number) => (
-                    <Card key={index} className="bg-default-50">
+                  {procuracao.poderes.map((poder: any) => (
+                    <Card key={poder.id} className="bg-default-50">
                       <CardBody>
-                        <div className="flex items-start gap-2">
-                          <CheckCircle className="mt-1 h-4 w-4 text-success" />
-                          <div>
-                            <p className="font-medium">{poder.titulo}</p>
-                            {poder.descricao && (
-                              <p className="mt-1 text-sm text-default-500">
-                                {poder.descricao}
-                              </p>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-2">
+                            {poder.ativo ? (
+                              <CheckCircle className="mt-1 h-4 w-4 text-success" />
+                            ) : (
+                              <XCircle className="mt-1 h-4 w-4 text-danger" />
                             )}
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-medium">
+                                  {poder.titulo || "Poder sem título"}
+                                </p>
+                                <Chip
+                                  color={poder.ativo ? "success" : "danger"}
+                                  size="sm"
+                                  variant="flat"
+                                >
+                                  {poder.ativo ? "Ativo" : "Revogado"}
+                                </Chip>
+                              </div>
+                              {poder.descricao && (
+                                <p className="mt-1 text-sm text-default-500">
+                                  {poder.descricao}
+                                </p>
+                              )}
+                              {!poder.ativo && poder.revogadoEm ? (
+                                <p className="mt-1 text-xs text-danger">
+                                  Revogado em{" "}
+                                  {DateUtils.formatDate(new Date(poder.revogadoEm))}
+                                </p>
+                              ) : null}
+                            </div>
                           </div>
+                          {poder.ativo ? (
+                            <Button
+                              color="danger"
+                              isLoading={isPending}
+                              size="sm"
+                              variant="flat"
+                              onPress={() => handleRevogarPoder(poder.id)}
+                            >
+                              Revogar
+                            </Button>
+                          ) : null}
                         </div>
                       </CardBody>
                     </Card>
@@ -1061,6 +1246,133 @@ export default function ProcuracaoDetalhesPage() {
               onPress={() => setIsAddAdvogadoModalOpen(false)}
             >
               Cancelar
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal de Vincular Processo */}
+      <Modal
+        isOpen={isAddProcessoModalOpen}
+        title="Vincular Processo"
+        onClose={() => {
+          setIsAddProcessoModalOpen(false);
+          setProcessoSelecionadoId("");
+        }}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-default-600">
+            Selecione um processo do mesmo cliente para vincular a esta procuração.
+          </p>
+
+          {isLoadingProcessosDoCliente ? (
+            <div className="flex items-center justify-center py-8">
+              <Spinner size="lg" />
+            </div>
+          ) : processosDisponiveisParaVinculo.length === 0 ? (
+            <div className="rounded-xl border border-default-200 bg-default-50 p-4 text-sm text-default-600">
+              Todos os processos desse cliente já estão vinculados.
+            </div>
+          ) : (
+            <Select
+              label="Processo"
+              placeholder="Selecione o processo"
+              selectedKeys={selectedProcessoVinculoKeys}
+              onSelectionChange={(keys) => {
+                const value = Array.from(keys)[0] as string;
+
+                setProcessoSelecionadoId(value || "");
+              }}
+            >
+              {processosDisponiveisParaVinculo.map((processo: any) => {
+                const processLabel = processo.titulo
+                  ? `${processo.numero} - ${processo.titulo}`
+                  : processo.numero;
+
+                return (
+                  <SelectItem key={processo.id} textValue={processLabel}>
+                    <span className="block max-w-full truncate" title={processLabel}>
+                      {processLabel}
+                    </span>
+                  </SelectItem>
+                );
+              })}
+            </Select>
+          )}
+
+          <div className="flex justify-end gap-2 border-t border-default-200 pt-4">
+            <Button
+              variant="flat"
+              onPress={() => {
+                setIsAddProcessoModalOpen(false);
+                setProcessoSelecionadoId("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              color="primary"
+              isDisabled={
+                !processoSelecionadoId || processosDisponiveisParaVinculo.length === 0
+              }
+              isLoading={isPending}
+              onPress={handleVincularProcesso}
+            >
+              Vincular
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal de Adicionar Poder */}
+      <Modal
+        isOpen={isAddPoderModalOpen}
+        title="Adicionar Poder Outorgado"
+        onClose={() => {
+          setIsAddPoderModalOpen(false);
+          setNovoPoderTitulo("");
+          setNovoPoderDescricao("");
+        }}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-default-600">
+            Descreva a autorização que o cliente concede nesta procuração.
+          </p>
+
+          <Input
+            label="Título (opcional)"
+            placeholder="Ex: Representação em audiência"
+            value={novoPoderTitulo}
+            onValueChange={setNovoPoderTitulo}
+          />
+
+          <Textarea
+            isRequired
+            label="Descrição do poder"
+            minRows={4}
+            placeholder="Ex: Representar o outorgante perante órgãos judiciais e administrativos..."
+            value={novoPoderDescricao}
+            onValueChange={setNovoPoderDescricao}
+          />
+
+          <div className="flex justify-end gap-2 border-t border-default-200 pt-4">
+            <Button
+              variant="flat"
+              onPress={() => {
+                setIsAddPoderModalOpen(false);
+                setNovoPoderTitulo("");
+                setNovoPoderDescricao("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              color="primary"
+              isDisabled={!novoPoderDescricao.trim()}
+              isLoading={isPending}
+              onPress={handleAdicionarPoder}
+            >
+              Adicionar poder
             </Button>
           </div>
         </div>

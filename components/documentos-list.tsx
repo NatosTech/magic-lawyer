@@ -13,6 +13,7 @@ import {
 import { Spinner } from "@heroui/spinner";
 import {
   FileText,
+  Eye,
   Download,
   MoreVertical,
   Edit,
@@ -59,10 +60,25 @@ export default function DocumentosList({
 
   const handleDownload = (url: string, fileName: string) => {
     try {
-      // Abrir URL em nova aba para download
-      window.open(url, "_blank");
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = fileName;
+      link.rel = "noopener noreferrer";
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
       toast.error("Erro ao fazer download do arquivo");
+    }
+  };
+
+  const handleView = (url: string) => {
+    try {
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast.error("Erro ao visualizar documento");
     }
   };
 
@@ -205,6 +221,15 @@ export default function DocumentosList({
                     <Button
                       isIconOnly
                       size="sm"
+                      title="Visualizar documento"
+                      variant="light"
+                      onPress={() => handleView(documento.url)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      isIconOnly
+                      size="sm"
                       title="Baixar documento"
                       variant="light"
                       onPress={() =>
@@ -221,6 +246,13 @@ export default function DocumentosList({
                         </Button>
                       </DropdownTrigger>
                       <DropdownMenu>
+                        <DropdownItem
+                          key="view"
+                          startContent={<Eye className="h-4 w-4" />}
+                          onPress={() => handleView(documento.url)}
+                        >
+                          Visualizar
+                        </DropdownItem>
                         <DropdownItem
                           key="download"
                           startContent={<FileDown className="h-4 w-4" />}

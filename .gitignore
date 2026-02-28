@@ -56,3 +56,9 @@ bun.lockb
 /generated/prisma
 redis-url.txt
 tmp/
+
+# local automation artifacts
+.playwright-cli/
+output/
+playwright-report/
+test-results/

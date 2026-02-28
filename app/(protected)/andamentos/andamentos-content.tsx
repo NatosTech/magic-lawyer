@@ -48,12 +48,14 @@ import {
   updateAndamento,
   deleteAndamento,
   marcarAndamentoResolvido,
+  reabrirAndamento,
   getDashboardAndamentos,
   getTiposMovimentacao,
   type AndamentoFilters,
   type AndamentoCreateInput,
 } from "@/app/actions/andamentos";
 import { getAllProcessos } from "@/app/actions/processos";
+import { usePermissionsCheck } from "@/app/hooks/use-permission-check";
 import {
   MovimentacaoPrioridade,
   MovimentacaoStatusOperacional,
@@ -73,6 +75,7 @@ interface Andamento {
   titulo: string;
   descricao: string | null;
   observacaoResolucao?: string | null;
+  observacaoReabertura?: string | null;
   tipo: MovimentacaoTipo | null;
   statusOperacional: MovimentacaoStatusOperacional;
   prioridade: MovimentacaoPrioridade;
@@ -194,6 +197,31 @@ export default function AndamentosPage() {
     | string
     | undefined;
   const isClient = userRole === "CLIENTE";
+  const isAdminLike = userRole === "ADMIN" || userRole === "SUPER_ADMIN";
+
+  const permissionChecks = useMemo(
+    () =>
+      isClient || isAdminLike
+        ? []
+        : [
+            { modulo: "processos", acao: "criar" },
+            { modulo: "processos", acao: "editar" },
+            { modulo: "processos", acao: "excluir" },
+          ],
+    [isClient, isAdminLike],
+  );
+
+  const { hasPermissionFor } = usePermissionsCheck(permissionChecks, {
+    enabled: !isClient && !isAdminLike,
+    enableEarlyAccess: true,
+  });
+
+  const canCreateAndamento =
+    !isClient && (isAdminLike || hasPermissionFor("processos", "criar"));
+  const canEditAndamento =
+    !isClient && (isAdminLike || hasPermissionFor("processos", "editar"));
+  const canDeleteAndamento =
+    !isClient && (isAdminLike || hasPermissionFor("processos", "excluir"));
   // Estado dos filtros
   const [filters, setFilters] = useState<AndamentoFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
@@ -224,6 +252,7 @@ export default function AndamentosPage() {
   );
   const [reopenStatus, setReopenStatus] =
     useState<MovimentacaoStatusOperacional>("EM_EXECUCAO");
+  const [reopenMotivo, setReopenMotivo] = useState("");
   const [reopening, setReopening] = useState(false);
 
   // SWR - Fetch data
@@ -411,12 +440,22 @@ export default function AndamentosPage() {
 
   // Handlers do modal
   const openCreateModal = () => {
+    if (!canCreateAndamento) {
+      toast.error("Você não tem permissão para criar andamentos");
+      return;
+    }
+
     setModalMode("create");
     setSelectedAndamento(null);
     setModalOpen(true);
   };
 
   const openEditModal = (andamento: Andamento) => {
+    if (!canEditAndamento) {
+      toast.error("Você não tem permissão para editar andamentos");
+      return;
+    }
+
     setModalMode("edit");
     setSelectedAndamento(andamento);
     setModalOpen(true);
@@ -434,6 +473,11 @@ export default function AndamentosPage() {
   };
 
   const openResolveModal = (andamento: Andamento) => {
+    if (!canEditAndamento) {
+      toast.error("Você não tem permissão para resolver andamentos");
+      return;
+    }
+
     setResolvingAndamento(andamento);
     setResolucaoObservacao(andamento.observacaoResolucao || "");
     setResolveModalOpen(true);
@@ -447,8 +491,14 @@ export default function AndamentosPage() {
   };
 
   const openReopenModal = (andamento: Andamento) => {
+    if (!canEditAndamento) {
+      toast.error("Você não tem permissão para reabrir andamentos");
+      return;
+    }
+
     setReopeningAndamento(andamento);
     setReopenStatus("EM_EXECUCAO");
+    setReopenMotivo("");
     setReopenModalOpen(true);
   };
 
@@ -456,6 +506,7 @@ export default function AndamentosPage() {
     setReopenModalOpen(false);
     setReopeningAndamento(null);
     setReopenStatus("EM_EXECUCAO");
+    setReopenMotivo("");
     setReopening(false);
   };
 
@@ -467,6 +518,11 @@ export default function AndamentosPage() {
 
   // Handler de exclusão
   const handleDelete = async (andamentoId: string) => {
+    if (!canDeleteAndamento) {
+      toast.error("Você não tem permissão para excluir andamentos");
+      return;
+    }
+
     if (!confirm("Tem certeza que deseja excluir este andamento?")) return;
 
     const result = await deleteAndamento(andamentoId);
@@ -624,6 +680,11 @@ export default function AndamentosPage() {
     );
 
   const handleCreateTaskFromAndamento = async (andamentoId: string) => {
+    if (!canEditAndamento) {
+      toast.error("Você não tem permissão para criar tarefa a partir do andamento");
+      return;
+    }
+
     const result = await createTarefaFromAndamento(andamentoId);
 
     if (result.success && result.data?.tarefaId) {
@@ -635,6 +696,11 @@ export default function AndamentosPage() {
   };
 
   const handleResolveAndamento = async () => {
+    if (!canEditAndamento) {
+      toast.error("Você não tem permissão para resolver andamentos");
+      return;
+    }
+
     if (!resolvingAndamento?.id) {
       return;
     }
@@ -656,14 +722,28 @@ export default function AndamentosPage() {
   };
 
   const handleReopenAndamento = async () => {
+    if (!canEditAndamento) {
+      toast.error("Você não tem permissão para reabrir andamentos");
+      return;
+    }
+
     if (!reopeningAndamento?.id) {
       return;
     }
 
+    const motivo = reopenMotivo.trim();
+
+    if (!motivo) {
+      toast.error("Informe o motivo da reabertura");
+      return;
+    }
+
     setReopening(true);
-    const result = await updateAndamento(reopeningAndamento.id, {
-      statusOperacional: reopenStatus,
-    });
+    const result = await reabrirAndamento(
+      reopeningAndamento.id,
+      reopenStatus,
+      motivo,
+    );
     setReopening(false);
 
     if (result.success) {
@@ -760,7 +840,7 @@ export default function AndamentosPage() {
         title="Andamentos"
         description={`${pagination.total} andamento(s)${hasActiveFilters ? " no resultado filtrado" : " registrados na timeline"}`}
         actions={
-          !isClient ? (
+          canCreateAndamento ? (
             <Button
               color="primary"
               size="sm"
@@ -1346,6 +1426,16 @@ export default function AndamentosPage() {
                                 </p>
                               ) : null}
 
+                              {andamento.statusOperacional !== "RESOLVIDO" &&
+                              andamento.observacaoReabertura ? (
+                                <p className="rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200 md:text-sm">
+                                  <span className="font-semibold">
+                                    Motivo da reabertura:
+                                  </span>{" "}
+                                  {andamento.observacaoReabertura}
+                                </p>
+                              ) : null}
+
                               <div className="flex flex-wrap gap-3 text-xs text-default-400">
                                 <span className="flex items-center gap-1">
                                   <Calendar size={14} />
@@ -1422,7 +1512,7 @@ export default function AndamentosPage() {
                                 >
                                   Tarefa
                                 </Button>
-                              ) : !isClient ? (
+                              ) : canEditAndamento ? (
                                 <Button
                                   className="w-full justify-center sm:justify-start"
                                   size="sm"
@@ -1436,7 +1526,7 @@ export default function AndamentosPage() {
                                 </Button>
                               ) : null}
 
-                              {!isClient &&
+                              {canEditAndamento &&
                               andamento.statusOperacional !== "RESOLVIDO" ? (
                                 <Button
                                   color="success"
@@ -1450,7 +1540,7 @@ export default function AndamentosPage() {
                                 </Button>
                               ) : null}
 
-                              {!isClient &&
+                              {canEditAndamento &&
                               andamento.statusOperacional === "RESOLVIDO" ? (
                                 <Button
                                   color="warning"
@@ -1464,36 +1554,46 @@ export default function AndamentosPage() {
                                 </Button>
                               ) : null}
 
-                              {!isClient ? (
-                                <div className="grid grid-cols-2 gap-2">
-                                <Tooltip color="primary" content="Editar">
-                                  <Button
-                                    isIconOnly
-                                    className="w-full text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                                    size="sm"
-                                    variant="light"
-                                    onPress={() => {
-                                      openEditModal(andamento);
-                                    }}
-                                  >
-                                    <Edit3 size={16} />
-                                  </Button>
-                                </Tooltip>
+                              {canEditAndamento || canDeleteAndamento ? (
+                                <div
+                                  className={`grid gap-2 ${
+                                    canEditAndamento && canDeleteAndamento
+                                      ? "grid-cols-2"
+                                      : "grid-cols-1"
+                                  }`}
+                                >
+                                  {canEditAndamento ? (
+                                    <Tooltip color="primary" content="Editar">
+                                      <Button
+                                        isIconOnly
+                                        className="w-full text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                        size="sm"
+                                        variant="light"
+                                        onPress={() => {
+                                          openEditModal(andamento);
+                                        }}
+                                      >
+                                        <Edit3 size={16} />
+                                      </Button>
+                                    </Tooltip>
+                                  ) : null}
 
-                                <Tooltip color="danger" content="Excluir">
-                                  <Button
-                                    isIconOnly
-                                    className="w-full text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/20"
-                                    color="danger"
-                                    size="sm"
-                                    variant="light"
-                                    onPress={() => {
-                                      handleDelete(andamento.id);
-                                    }}
-                                  >
-                                    <Trash2 size={16} />
-                                  </Button>
-                                </Tooltip>
+                                  {canDeleteAndamento ? (
+                                    <Tooltip color="danger" content="Excluir">
+                                      <Button
+                                        isIconOnly
+                                        className="w-full text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/20"
+                                        color="danger"
+                                        size="sm"
+                                        variant="light"
+                                        onPress={() => {
+                                          handleDelete(andamento.id);
+                                        }}
+                                      >
+                                        <Trash2 size={16} />
+                                      </Button>
+                                    </Tooltip>
+                                  ) : null}
                                 </div>
                               ) : null}
                             </div>
@@ -1548,9 +1648,11 @@ export default function AndamentosPage() {
         andamento={reopeningAndamento}
         isOpen={reopenModalOpen}
         isSaving={reopening}
+        motivo={reopenMotivo}
         selectedStatus={reopenStatus}
         onClose={closeReopenModal}
         onConfirm={handleReopenAndamento}
+        onMotivoChange={setReopenMotivo}
         onStatusChange={setReopenStatus}
       />
     </div>
@@ -1627,9 +1729,11 @@ interface ReopenAndamentoModalProps {
   isOpen: boolean;
   isSaving: boolean;
   andamento: Andamento | null;
+  motivo: string;
   selectedStatus: MovimentacaoStatusOperacional;
   onClose: () => void;
   onConfirm: () => void;
+  onMotivoChange: (value: string) => void;
   onStatusChange: (status: MovimentacaoStatusOperacional) => void;
 }
 
@@ -1637,9 +1741,11 @@ function ReopenAndamentoModal({
   isOpen,
   isSaving,
   andamento,
+  motivo,
   selectedStatus,
   onClose,
   onConfirm,
+  onMotivoChange,
   onStatusChange,
 }: ReopenAndamentoModalProps) {
   const getStatusLabel = (status: MovimentacaoStatusOperacional) => {
@@ -1696,6 +1802,14 @@ function ReopenAndamentoModal({
               );
             })}
           </Select>
+          <Textarea
+            isRequired
+            description="Obrigatório: registre por que o andamento está sendo reaberto."
+            minRows={4}
+            placeholder="Ex: Cliente informou novo fato e será necessária nova audiência."
+            value={motivo}
+            onValueChange={onMotivoChange}
+          />
         </ModalBody>
         <ModalFooter>
           <Button isDisabled={isSaving} variant="light" onPress={onClose}>
@@ -1703,6 +1817,7 @@ function ReopenAndamentoModal({
           </Button>
           <Button
             color="warning"
+            isDisabled={!motivo.trim()}
             isLoading={isSaving}
             startContent={<RotateCcw size={14} />}
             variant="flat"
