@@ -9,7 +9,7 @@ import {
   Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure, } from "@heroui/modal";
 import { Skeleton, Select, SelectItem } from "@heroui/react";
 import { Plus, List, Kanban } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   DndContext,
   DragEndEvent,

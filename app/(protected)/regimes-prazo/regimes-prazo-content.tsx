@@ -12,7 +12,7 @@ import { Skeleton, Select, SelectItem } from "@heroui/react";
 
 import { Switch } from "@heroui/switch";
 import { Plus, RefreshCw, Edit3, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   listRegimesPrazo,

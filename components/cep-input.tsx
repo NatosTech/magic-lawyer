@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Input } from "@heroui/input";
 import { Spinner } from "@heroui/spinner";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { MapPin } from "lucide-react";
 
 import { formatarCep, validarCep } from "@/lib/api/cep";

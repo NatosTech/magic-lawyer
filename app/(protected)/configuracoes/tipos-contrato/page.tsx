@@ -16,7 +16,7 @@ import {
 } from "@heroui/modal";
 import { Skeleton } from "@heroui/react";
 import { Plus, RefreshCw, Pencil, Trash2, FileText, File } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   listTiposContrato,

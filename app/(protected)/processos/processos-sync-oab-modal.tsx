@@ -99,7 +99,6 @@ export function ProcessosSyncOabModal({
         setHistorico([]);
       }
     } catch (error) {
-      console.error(error);
       setHistorico([]);
     } finally {
       setIsLoadingHistory(false);
@@ -136,7 +135,6 @@ export function ProcessosSyncOabModal({
         setHistorico([]);
       }
     } catch (error) {
-      console.error(error);
       setTribunais([]);
       setHistorico([]);
     } finally {
@@ -201,7 +199,6 @@ export function ProcessosSyncOabModal({
       });
       await loadHistorico();
     } catch (error) {
-      console.error(error);
       addToast({
         title: "Erro interno",
         description: "Não foi possível iniciar a sincronização agora.",
@@ -266,7 +263,6 @@ export function ProcessosSyncOabModal({
       });
       await loadHistorico();
     } catch (error) {
-      console.error(error);
       addToast({
         title: "Erro interno",
         description: "Falha ao validar captcha.",

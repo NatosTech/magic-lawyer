@@ -21,7 +21,7 @@ import {
   FileDown,
   Paperclip,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   useDocumentosProcuracao,
@@ -62,7 +62,6 @@ export default function DocumentosList({
       // Abrir URL em nova aba para download
       window.open(url, "_blank");
     } catch (error) {
-      console.error("Erro ao fazer download:", error);
       toast.error("Erro ao fazer download do arquivo");
     }
   };
@@ -77,7 +76,6 @@ export default function DocumentosList({
       toast.success("Documento deletado com sucesso");
       refresh();
     } catch (error) {
-      console.error("Erro ao deletar documento:", error);
       toast.error(
         error instanceof Error ? error.message : "Erro ao deletar documento",
       );

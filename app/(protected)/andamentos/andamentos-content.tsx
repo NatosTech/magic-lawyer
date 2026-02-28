@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Card, CardBody, CardHeader, Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Chip, Tooltip, Skeleton, Select, SelectItem } from "@heroui/react";
+  Card, CardBody, CardHeader, Button, Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Textarea, Chip, Tooltip, Skeleton, Select, SelectItem, Pagination } from "@heroui/react";
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   Clock,
   FileText,
@@ -33,22 +34,33 @@ import {
   RotateCcw,
   XCircle,
   Sparkles,
-  User,
+  UserCheck,
+  AlertTriangle,
+  CheckCircle2,
+  ListChecks,
+  FolderOpen,
 } from "lucide-react";
 
 import {
   listAndamentos,
   createAndamento,
+  createTarefaFromAndamento,
   updateAndamento,
   deleteAndamento,
+  marcarAndamentoResolvido,
   getDashboardAndamentos,
   getTiposMovimentacao,
   type AndamentoFilters,
   type AndamentoCreateInput,
 } from "@/app/actions/andamentos";
 import { getAllProcessos } from "@/app/actions/processos";
-import { MovimentacaoTipo } from "@/generated/prisma";
-import { title, subtitle } from "@/components/primitives";
+import {
+  MovimentacaoPrioridade,
+  MovimentacaoStatusOperacional,
+  MovimentacaoTipo,
+  UserRole,
+} from "@/generated/prisma";
+import { PeopleMetricCard, PeoplePageHeader } from "@/components/people-ui";
 import { DateInput } from "@/components/ui/date-input";
 import { DateRangeInput } from "@/components/ui/date-range-input";
 
@@ -60,8 +72,13 @@ interface Andamento {
   id: string;
   titulo: string;
   descricao: string | null;
+  observacaoResolucao?: string | null;
   tipo: MovimentacaoTipo | null;
+  statusOperacional: MovimentacaoStatusOperacional;
+  prioridade: MovimentacaoPrioridade;
   dataMovimentacao: Date | string;
+  slaEm: Date | string | null;
+  resolvidoEm: Date | string | null;
   prazo: Date | string | null;
   processo: {
     id: string;
@@ -73,6 +90,18 @@ interface Andamento {
     firstName: string | null;
     lastName: string | null;
     email: string;
+  } | null;
+  responsavel: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+    role: UserRole;
+  } | null;
+  tarefaRelacionada: {
+    id: string;
+    titulo: string;
+    status: string;
   } | null;
   documentos: Array<{
     id: string;
@@ -96,12 +125,63 @@ interface Andamento {
 
 interface DashboardData {
   total: number;
+  atrasados: number;
+  semResponsavel: number;
   porTipo: Array<{
     tipo: string | null;
     _count: number;
   }>;
+  porStatus?: Array<{
+    statusOperacional: MovimentacaoStatusOperacional;
+    _count: number;
+  }>;
   ultimosAndamentos: Andamento[];
 }
+
+interface AndamentosPaginationMeta {
+  page: number;
+  perPage: number;
+  total: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+interface ProcessoFiltroDisponivel {
+  id: string;
+  numero: string;
+  titulo: string | null;
+}
+
+interface ResponsavelDisponivel {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  role: UserRole;
+}
+
+interface AndamentosListResponse {
+  success?: boolean;
+  data?: Andamento[];
+  pagination?: AndamentosPaginationMeta;
+  processosDisponiveis?: ProcessoFiltroDisponivel[];
+  responsaveisDisponiveis?: ResponsavelDisponivel[];
+}
+
+const ANDAMENTOS_PER_PAGE = 12;
+const ALL_PROCESSOS_KEY = "__ALL_PROCESSOS__";
+const ALL_STATUS_KEY = "__ALL_STATUS__";
+const ALL_PRIORIDADE_KEY = "__ALL_PRIORIDADE__";
+const ALL_TIPO_KEY = "__ALL_TIPO__";
+const ALL_RESPONSAVEL_KEY = "__ALL_RESPONSAVEL__";
+const UNASSIGNED_RESPONSAVEL_KEY = "__SEM_RESPONSAVEL__";
+const REOPEN_STATUS_OPTIONS: MovimentacaoStatusOperacional[] = [
+  "NOVO",
+  "EM_TRIAGEM",
+  "EM_EXECUCAO",
+  "BLOQUEADO",
+];
 
 // ============================================
 // COMPONENTE PRINCIPAL
@@ -119,7 +199,10 @@ export default function AndamentosPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [dateRange, setDateRange] = useState<any>(null);
-  const [clienteId, setClienteId] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [quickFilter, setQuickFilter] = useState<
+    "ALL" | "MINE" | "OVERDUE" | "UNASSIGNED"
+  >("ALL");
 
   // Estado do modal
   const [modalOpen, setModalOpen] = useState(false);
@@ -129,13 +212,32 @@ export default function AndamentosPage() {
   const [selectedAndamento, setSelectedAndamento] = useState<Andamento | null>(
     null,
   );
+  const [resolveModalOpen, setResolveModalOpen] = useState(false);
+  const [resolvingAndamento, setResolvingAndamento] = useState<Andamento | null>(
+    null,
+  );
+  const [resolucaoObservacao, setResolucaoObservacao] = useState("");
+  const [resolving, setResolving] = useState(false);
+  const [reopenModalOpen, setReopenModalOpen] = useState(false);
+  const [reopeningAndamento, setReopeningAndamento] = useState<Andamento | null>(
+    null,
+  );
+  const [reopenStatus, setReopenStatus] =
+    useState<MovimentacaoStatusOperacional>("EM_EXECUCAO");
+  const [reopening, setReopening] = useState(false);
 
   // SWR - Fetch data
   const {
     data: andamentosData,
     mutate: mutateAndamentos,
     isLoading: loadingAndamentos,
-  } = useSWR(["andamentos", filters], () => listAndamentos(filters));
+  } = useSWR(["andamentos", filters, currentPage], () =>
+    listAndamentos({
+      ...filters,
+      page: currentPage,
+      perPage: ANDAMENTOS_PER_PAGE,
+    }),
+  );
 
   const { data: dashboardData, isLoading: loadingDashboard } = useSWR(
     "dashboard-andamentos",
@@ -151,11 +253,13 @@ export default function AndamentosPage() {
     getTiposMovimentacao,
   );
 
-  // Por enquanto, vamos usar uma lista vazia de clientes
-  // TODO: Implementar API de clientes ou buscar de outra forma
-  const clientesData = { clientes: [] };
-
-  const allAndamentos = (andamentosData?.data || []) as Andamento[];
+  const andamentosResponse = andamentosData as AndamentosListResponse | undefined;
+  const allAndamentos = (andamentosResponse?.data || []) as Andamento[];
+  const serverPagination = andamentosResponse?.pagination;
+  const processosDisponiveisFiltro =
+    andamentosResponse?.processosDisponiveis || [];
+  const responsaveisDisponiveis =
+    andamentosResponse?.responsaveisDisponiveis || [];
   const dashboard = dashboardData?.data as DashboardData | undefined;
   const processos = useMemo(() => {
     const list = processosData?.processos || [];
@@ -171,21 +275,37 @@ export default function AndamentosPage() {
     return list;
   }, [processosData?.processos, isClient, clienteIdFromSession]);
   const tipos = tiposData?.data || [];
-  const clientes = clientesData?.clientes || [];
 
-  // Calcular métricas do dashboard a partir dos andamentos
-  const andamentos = useMemo(() => {
-    if (!isClient) return allAndamentos;
-    const allowed = new Set((processos || []).map((p: any) => p.id));
+  // Dados da página atual
+  const andamentos = allAndamentos;
 
-    return allAndamentos.filter((a) => allowed.has(a.processo.id));
-  }, [allAndamentos, processos, isClient]);
+  const pagination = useMemo(
+    () => ({
+      page: serverPagination?.page ?? currentPage,
+      perPage: serverPagination?.perPage ?? ANDAMENTOS_PER_PAGE,
+      total: serverPagination?.total ?? andamentos.length,
+      totalPages: serverPagination?.totalPages ?? 1,
+      hasPreviousPage: serverPagination?.hasPreviousPage ?? false,
+      hasNextPage: serverPagination?.hasNextPage ?? false,
+    }),
+    [serverPagination, currentPage, andamentos.length],
+  );
+
+  const firstVisibleItem =
+    pagination.total > 0 ? (pagination.page - 1) * pagination.perPage + 1 : 0;
+  const lastVisibleItem =
+    pagination.total > 0
+      ? Math.min(pagination.total, pagination.page * pagination.perPage)
+      : 0;
 
   const calculatedDashboard = useMemo(() => {
     if (!andamentos.length) {
       return {
         total: 0,
+        atrasados: 0,
+        semResponsavel: 0,
         porTipo: [],
+        porStatus: [],
         ultimosAndamentos: [],
       };
     }
@@ -214,14 +334,24 @@ export default function AndamentosPage() {
 
     return {
       total,
+      atrasados: andamentos.filter(
+        (item) =>
+          item.slaEm &&
+          new Date(item.slaEm).getTime() < Date.now() &&
+          item.statusOperacional !== "RESOLVIDO",
+      ).length,
+      semResponsavel: andamentos.filter((item) => !item.responsavel).length,
       porTipo: porTipoArray,
+      porStatus: [],
       ultimosAndamentos,
     };
   }, [andamentos]);
 
-  // Usar os dados calculados se o dashboard não estiver funcionando
+  // Quando a action de dashboard falha, usamos os dados da listagem atual.
   const finalDashboard =
-    dashboard?.total === 0 ? calculatedDashboard : dashboard;
+    dashboard && typeof dashboard.total === "number"
+      ? dashboard
+      : calculatedDashboard;
 
   // Função auxiliar para obter contagem por tipo
   const getCountByType = (tipo: string): number => {
@@ -234,25 +364,50 @@ export default function AndamentosPage() {
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     if (value.length >= 2 || value.length === 0) {
-      setFilters({ ...filters, searchTerm: value || undefined });
+      setCurrentPage(1);
+      setFilters((prev) => ({ ...prev, searchTerm: value || undefined }));
     }
   };
 
   const handleFilterChange = (key: keyof AndamentoFilters, value: any) => {
-    setFilters({ ...filters, [key]: value || undefined });
+    setCurrentPage(1);
+    setFilters((prev) => ({ ...prev, [key]: value || undefined }));
   };
 
   const clearFilters = () => {
     setFilters({});
     setSearchTerm("");
     setDateRange(null);
-    setClienteId("");
     setShowFilters(false);
+    setQuickFilter("ALL");
+    setCurrentPage(1);
+  };
+
+  const applyQuickFilter = (
+    mode: "ALL" | "MINE" | "OVERDUE" | "UNASSIGNED",
+  ) => {
+    setQuickFilter(mode);
+    setCurrentPage(1);
+    setFilters((prev) => ({
+      ...prev,
+      somenteMinhas: mode === "MINE" ? true : undefined,
+      somenteAtrasados: mode === "OVERDUE" ? true : undefined,
+      somenteSemResponsavel: mode === "UNASSIGNED" ? true : undefined,
+    }));
   };
 
   // Verificar se há filtros ativos
   const hasActiveFilters =
-    filters.processoId || filters.tipo || searchTerm || dateRange || clienteId;
+    filters.processoId ||
+    filters.tipo ||
+    filters.statusOperacional ||
+    filters.prioridade ||
+    filters.responsavelId ||
+    filters.somenteAtrasados ||
+    filters.somenteSemResponsavel ||
+    filters.somenteMinhas ||
+    searchTerm ||
+    dateRange;
 
   // Handlers do modal
   const openCreateModal = () => {
@@ -277,6 +432,38 @@ export default function AndamentosPage() {
     setModalOpen(false);
     setSelectedAndamento(null);
   };
+
+  const openResolveModal = (andamento: Andamento) => {
+    setResolvingAndamento(andamento);
+    setResolucaoObservacao(andamento.observacaoResolucao || "");
+    setResolveModalOpen(true);
+  };
+
+  const closeResolveModal = () => {
+    setResolveModalOpen(false);
+    setResolvingAndamento(null);
+    setResolucaoObservacao("");
+    setResolving(false);
+  };
+
+  const openReopenModal = (andamento: Andamento) => {
+    setReopeningAndamento(andamento);
+    setReopenStatus("EM_EXECUCAO");
+    setReopenModalOpen(true);
+  };
+
+  const closeReopenModal = () => {
+    setReopenModalOpen(false);
+    setReopeningAndamento(null);
+    setReopenStatus("EM_EXECUCAO");
+    setReopening(false);
+  };
+
+  useEffect(() => {
+    if (serverPagination?.page && serverPagination.page !== currentPage) {
+      setCurrentPage(serverPagination.page);
+    }
+  }, [serverPagination?.page, currentPage]);
 
   // Handler de exclusão
   const handleDelete = async (andamentoId: string) => {
@@ -354,172 +541,383 @@ export default function AndamentosPage() {
     return new Date(date).toLocaleString("pt-BR");
   };
 
-  return (
-    <div className="container mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>
-            Andamentos Processuais
-          </h1>
-          <p className={subtitle({ fullWidth: true })}>
-            Timeline completa de movimentações processuais
-          </p>
-        </div>
-        {!isClient && (
-          <Button
-            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-            startContent={<Plus size={20} />}
-            onPress={openCreateModal}
-          >
-            Novo Andamento
-          </Button>
-        )}
-      </div>
+  const getStatusColor = (status: MovimentacaoStatusOperacional) => {
+    switch (status) {
+      case "NOVO":
+        return "default";
+      case "EM_TRIAGEM":
+        return "secondary";
+      case "EM_EXECUCAO":
+        return "primary";
+      case "RESOLVIDO":
+        return "success";
+      case "BLOQUEADO":
+        return "danger";
+      default:
+        return "default";
+    }
+  };
 
-      {/* Dashboard Cards */}
+  const getStatusLabel = (status: MovimentacaoStatusOperacional) => {
+    switch (status) {
+      case "NOVO":
+        return "Novo";
+      case "EM_TRIAGEM":
+        return "Em triagem";
+      case "EM_EXECUCAO":
+        return "Em execução";
+      case "RESOLVIDO":
+        return "Resolvido";
+      case "BLOQUEADO":
+        return "Bloqueado";
+      default:
+        return status;
+    }
+  };
+
+  const getPrioridadeColor = (prioridade: MovimentacaoPrioridade) => {
+    switch (prioridade) {
+      case "BAIXA":
+        return "default";
+      case "MEDIA":
+        return "secondary";
+      case "ALTA":
+        return "warning";
+      case "CRITICA":
+        return "danger";
+      default:
+        return "default";
+    }
+  };
+
+  const getPrioridadeLabel = (prioridade: MovimentacaoPrioridade) => {
+    switch (prioridade) {
+      case "BAIXA":
+        return "Baixa";
+      case "MEDIA":
+        return "Média";
+      case "ALTA":
+        return "Alta";
+      case "CRITICA":
+        return "Crítica";
+      default:
+        return prioridade;
+    }
+  };
+
+  const formatPerson = (person?: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  } | null) => {
+    if (!person) return "Não definido";
+    const fullName = `${person.firstName ?? ""} ${person.lastName ?? ""}`.trim();
+
+    return fullName || person.email;
+  };
+
+  const isSlaAtrasado = (andamento: Andamento) =>
+    Boolean(
+      andamento.slaEm &&
+        new Date(andamento.slaEm).getTime() < Date.now() &&
+        andamento.statusOperacional !== "RESOLVIDO",
+    );
+
+  const handleCreateTaskFromAndamento = async (andamentoId: string) => {
+    const result = await createTarefaFromAndamento(andamentoId);
+
+    if (result.success && result.data?.tarefaId) {
+      toast.success("Tarefa vinculada ao andamento");
+      mutateAndamentos();
+    } else {
+      toast.error(result.error || "Não foi possível criar tarefa");
+    }
+  };
+
+  const handleResolveAndamento = async () => {
+    if (!resolvingAndamento?.id) {
+      return;
+    }
+
+    setResolving(true);
+    const result = await marcarAndamentoResolvido(
+      resolvingAndamento.id,
+      resolucaoObservacao || undefined,
+    );
+    setResolving(false);
+
+    if (result.success) {
+      toast.success("Andamento marcado como resolvido");
+      mutateAndamentos();
+      closeResolveModal();
+    } else {
+      toast.error(result.error || "Não foi possível resolver andamento");
+    }
+  };
+
+  const handleReopenAndamento = async () => {
+    if (!reopeningAndamento?.id) {
+      return;
+    }
+
+    setReopening(true);
+    const result = await updateAndamento(reopeningAndamento.id, {
+      statusOperacional: reopenStatus,
+    });
+    setReopening(false);
+
+    if (result.success) {
+      toast.success("Andamento reaberto com sucesso");
+      mutateAndamentos();
+      closeReopenModal();
+    } else {
+      toast.error(result.error || "Não foi possível reabrir andamento");
+    }
+  };
+
+  const getProcessLabel = (proc: any) => {
+    const numero = String(proc?.numero ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const titulo = String(proc?.titulo ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (numero && titulo) {
+      return `${numero} - ${titulo}`;
+    }
+
+    return numero || titulo || "Processo sem identificação";
+  };
+
+  const getProcessNumber = (proc: any) => {
+    const numero = String(proc?.numero ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return numero || "Processo sem número";
+  };
+
+  const processFilterIds = useMemo(
+    () => new Set(processosDisponiveisFiltro.map((proc: any) => proc.id)),
+    [processosDisponiveisFiltro],
+  );
+
+  const responsavelFilterIds = useMemo(
+    () => new Set(responsaveisDisponiveis.map((responsavel) => responsavel.id)),
+    [responsaveisDisponiveis],
+  );
+
+  const selectedProcessFilterKeys =
+    filters.processoId && processFilterIds.has(filters.processoId)
+      ? [filters.processoId]
+      : [ALL_PROCESSOS_KEY];
+
+  const selectedResponsavelFilterKeys =
+    filters.responsavelId && responsavelFilterIds.has(filters.responsavelId)
+      ? [filters.responsavelId]
+      : [ALL_RESPONSAVEL_KEY];
+
+  useEffect(() => {
+    if (filters.processoId && !processFilterIds.has(filters.processoId)) {
+      setFilters((prev) => {
+        const { processoId, ...rest } = prev;
+
+        return rest;
+      });
+      setCurrentPage(1);
+    }
+  }, [filters.processoId, processFilterIds]);
+
+  useEffect(() => {
+    if (filters.responsavelId && !responsavelFilterIds.has(filters.responsavelId)) {
+      setFilters((prev) => {
+        const { responsavelId, ...rest } = prev;
+
+        return rest;
+      });
+      setCurrentPage(1);
+    }
+  }, [filters.responsavelId, responsavelFilterIds]);
+
+  const activeFilterCount = [
+    filters.processoId,
+    filters.tipo,
+    filters.statusOperacional,
+    filters.prioridade,
+    filters.responsavelId,
+    filters.somenteAtrasados,
+    filters.somenteSemResponsavel,
+    filters.somenteMinhas,
+    searchTerm,
+    dateRange,
+  ].filter(Boolean).length;
+
+  return (
+    <div className="mx-auto max-w-[1600px] space-y-6 p-6">
+      <PeoplePageHeader
+        tag="Atividades jurídicas"
+        title="Andamentos"
+        description={`${pagination.total} andamento(s)${hasActiveFilters ? " no resultado filtrado" : " registrados na timeline"}`}
+        actions={
+          !isClient ? (
+            <Button
+              color="primary"
+              size="sm"
+              startContent={<Plus className="h-4 w-4" />}
+              onPress={openCreateModal}
+            >
+              Novo andamento
+            </Button>
+          ) : undefined
+        }
+      />
+
+      <Card className="border border-white/10 bg-background/70">
+        <CardBody className="p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant={quickFilter === "ALL" ? "solid" : "flat"}
+              color={quickFilter === "ALL" ? "primary" : "default"}
+              onPress={() => applyQuickFilter("ALL")}
+            >
+              Todos
+            </Button>
+            <Button
+              size="sm"
+              variant={quickFilter === "MINE" ? "solid" : "flat"}
+              color={quickFilter === "MINE" ? "primary" : "default"}
+              onPress={() => applyQuickFilter("MINE")}
+            >
+              Meus andamentos
+            </Button>
+            <Button
+              size="sm"
+              variant={quickFilter === "OVERDUE" ? "solid" : "flat"}
+              color={quickFilter === "OVERDUE" ? "danger" : "default"}
+              onPress={() => applyQuickFilter("OVERDUE")}
+            >
+              Atrasados
+            </Button>
+            <Button
+              size="sm"
+              variant={quickFilter === "UNASSIGNED" ? "solid" : "flat"}
+              color={quickFilter === "UNASSIGNED" ? "warning" : "default"}
+              onPress={() => applyQuickFilter("UNASSIGNED")}
+            >
+              Sem responsável
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
+
       {loadingDashboard ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-24 rounded-lg" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>
-      ) : dashboard ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
-          <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-800/20 border-blue-200 dark:border-blue-700 shadow-lg hover:shadow-xl transition-all duration-300">
-            <CardBody className="flex flex-row items-center justify-between">
-              <div>
-                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium flex items-center gap-2">
-                  <Sparkles className="text-blue-500" size={16} />
-                  Total de Andamentos
-                </p>
-                <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">
-                  {finalDashboard?.total || 0}
-                </p>
-              </div>
-              <div className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-lg">
-                <Activity className="text-white" size={28} />
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-900/20 dark:to-orange-800/20 border-amber-200 dark:border-amber-700 shadow-lg hover:shadow-xl transition-all duration-300">
-            <CardBody className="flex flex-row items-center justify-between">
-              <div>
-                <p className="text-sm text-amber-600 dark:text-amber-400 font-medium flex items-center gap-2">
-                  <Timer className="text-amber-500" size={16} />
-                  Com Prazo
-                </p>
-                <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">
-                  {getCountByType("PRAZO")}
-                </p>
-              </div>
-              <div className="p-4 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full shadow-lg">
-                <Clock className="text-white" size={28} />
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-red-50 to-pink-100 dark:from-red-900/20 dark:to-pink-800/20 border-red-200 dark:border-red-700 shadow-lg hover:shadow-xl transition-all duration-300">
-            <CardBody className="flex flex-row items-center justify-between">
-              <div>
-                <p className="text-sm text-red-600 dark:text-red-400 font-medium flex items-center gap-2">
-                  <Megaphone className="text-red-500" size={16} />
-                  Intimações
-                </p>
-                <p className="text-3xl font-bold text-red-700 dark:text-red-300">
-                  {getCountByType("INTIMACAO")}
-                </p>
-              </div>
-              <div className="p-4 bg-gradient-to-br from-red-500 to-pink-600 rounded-full shadow-lg">
-                <Bell className="text-white" size={28} />
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-800/20 border-green-200 dark:border-green-700 shadow-lg hover:shadow-xl transition-all duration-300">
-            <CardBody className="flex flex-row items-center justify-between">
-              <div>
-                <p className="text-sm text-green-600 dark:text-green-400 font-medium flex items-center gap-2">
-                  <CalendarDays className="text-green-500" size={16} />
-                  Audiências
-                </p>
-                <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-                  {getCountByType("AUDIENCIA")}
-                </p>
-              </div>
-              <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full shadow-lg">
-                <Calendar className="text-white" size={28} />
-              </div>
-            </CardBody>
-          </Card>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <PeopleMetricCard
+            helper="Movimentações registradas"
+            icon={<Activity className="h-4 w-4" />}
+            label="Total de andamentos"
+            tone="primary"
+            value={finalDashboard?.total || 0}
+          />
+          <PeopleMetricCard
+            helper="Com prazo relacionado"
+            icon={<Timer className="h-4 w-4" />}
+            label="Com prazo"
+            tone="warning"
+            value={getCountByType("PRAZO")}
+          />
+          <PeopleMetricCard
+            helper="SLA vencido e não resolvido"
+            icon={<AlertTriangle className="h-4 w-4" />}
+            label="Atrasados"
+            tone="danger"
+            value={finalDashboard?.atrasados || 0}
+          />
+          <PeopleMetricCard
+            helper="Itens sem dono definido"
+            icon={<UserCheck className="h-4 w-4" />}
+            label="Sem responsável"
+            tone="secondary"
+            value={finalDashboard?.semResponsavel || 0}
+          />
         </div>
-      ) : null}
+      )}
 
-      {/* Filtros Avançados */}
       <motion.div
         animate={{ opacity: 1, y: 0 }}
         initial={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.3 }}
       >
-        <Card>
-          <CardHeader className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold">Filtros</h3>
-              {hasActiveFilters && (
-                <Chip color="primary" size="sm" variant="flat">
-                  {
-                    [
-                      filters.processoId,
-                      filters.tipo,
-                      searchTerm,
-                      dateRange,
-                      clienteId,
-                    ].filter(Boolean).length
-                  }{" "}
-                  ativo(s)
-                </Chip>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                isDisabled={!hasActiveFilters}
-                size="sm"
-                startContent={<RotateCcw className="w-4 h-4" />}
-                variant="light"
-                onPress={clearFilters}
-              >
-                Limpar
-              </Button>
-              <Button
-                size="sm"
-                startContent={
-                  showFilters ? (
-                    <XCircle className="w-4 h-4" />
-                  ) : (
-                    <Filter className="w-4 h-4" />
-                  )
-                }
-                variant="light"
-                onPress={() => setShowFilters(!showFilters)}
-              >
-                {showFilters ? "Ocultar" : "Mostrar"}
-              </Button>
+        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
+          <CardHeader className="border-b border-white/10 px-5 py-4">
+            <div className="flex w-full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 items-start gap-3 sm:items-center">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
+                  <Filter className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-foreground sm:text-lg">
+                    Filtros operacionais
+                  </h3>
+                  <p className="text-xs text-default-500 sm:text-sm">
+                    Refine a timeline por processo, tipo e período.
+                  </p>
+                </div>
+                {hasActiveFilters ? (
+                  <Chip className="ml-1" color="primary" size="sm" variant="flat">
+                    {activeFilterCount} ativo(s)
+                  </Chip>
+                ) : null}
+              </div>
+              <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+                <Button
+                  color="warning"
+                  isDisabled={!hasActiveFilters}
+                  size="sm"
+                  startContent={<RotateCcw className="w-4 h-4" />}
+                  variant="light"
+                  onPress={clearFilters}
+                >
+                  Limpar
+                </Button>
+                <Button
+                  color="primary"
+                  size="sm"
+                  startContent={
+                    showFilters ? (
+                      <XCircle className="w-4 h-4" />
+                    ) : (
+                      <Filter className="w-4 h-4" />
+                    )
+                  }
+                  variant="light"
+                  onPress={() => setShowFilters(!showFilters)}
+                >
+                  {showFilters ? "Ocultar" : "Mostrar"}
+                </Button>
+              </div>
             </div>
           </CardHeader>
 
-          <AnimatePresence>
-            {showFilters && (
+          <AnimatePresence initial={false}>
+            {showFilters ? (
               <motion.div
                 animate={{ opacity: 1, height: "auto" }}
+                className="overflow-hidden"
                 exit={{ opacity: 0, height: 0 }}
                 initial={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
               >
-                <CardBody>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4">
-                    {/* Filtro por Título */}
+                <CardBody className="p-5">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
                     <div className="space-y-2">
                       <label
                         className="text-sm font-medium flex items-center gap-2"
@@ -541,7 +939,6 @@ export default function AndamentosPage() {
                       />
                     </div>
 
-                    {/* Filtro por Processo */}
                     <div className="space-y-2">
                       <label
                         className="text-sm font-medium flex items-center gap-2"
@@ -551,32 +948,141 @@ export default function AndamentosPage() {
                         Processo
                       </label>
                       <Select
+                        classNames={{
+                          value: "truncate",
+                          listboxWrapper: "max-h-80",
+                        }}
                         id="filtro-processo"
                         placeholder="Todos os processos"
+                        selectedKeys={selectedProcessFilterKeys}
+                        size="sm"
+                        variant="bordered"
+                        onSelectionChange={(keys) => {
+                          const value = Array.from(keys)[0] as string;
+
+                          handleFilterChange(
+                            "processoId",
+                            value === ALL_PROCESSOS_KEY ? undefined : value,
+                          );
+                        }}
+                      >
+                        {[
+                          {
+                            id: ALL_PROCESSOS_KEY,
+                            label: "Todos os processos",
+                            tooltip: "Todos os processos",
+                          },
+                          ...processosDisponiveisFiltro.map((proc: any) => ({
+                            id: proc.id,
+                            label: getProcessNumber(proc),
+                            tooltip: getProcessLabel(proc),
+                          })),
+                        ].map((item) => (
+                          <SelectItem key={item.id} textValue={item.label}>
+                            <span
+                              className="block max-w-full truncate"
+                              title={item.tooltip}
+                            >
+                              {item.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label
+                        className="text-sm font-medium flex items-center gap-2"
+                        htmlFor="filtro-status-operacional"
+                      >
+                        <ListChecks className="w-4 h-4" />
+                        Status operacional
+                      </label>
+                      <Select
+                        id="filtro-status-operacional"
+                        placeholder="Todos"
                         selectedKeys={
-                          filters.processoId ? [filters.processoId] : []
+                          filters.statusOperacional
+                            ? [filters.statusOperacional]
+                            : [ALL_STATUS_KEY]
                         }
                         size="sm"
                         variant="bordered"
                         onSelectionChange={(keys) => {
                           const value = Array.from(keys)[0] as string;
 
-                          handleFilterChange("processoId", value);
+                          handleFilterChange(
+                            "statusOperacional",
+                            value === ALL_STATUS_KEY ? undefined : value,
+                          );
                         }}
                       >
-                        {processos.map((proc: any) => (
-                          <SelectItem
-                            key={proc.id}
-                            textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}
-                          >
-                            {proc.numero}{" "}
-                            {proc.titulo ? `- ${proc.titulo}` : ""}
-                          </SelectItem>
-                        ))}
+                        <SelectItem key={ALL_STATUS_KEY} textValue="Todos os status">
+                          Todos os status
+                        </SelectItem>
+                        <SelectItem key="NOVO" textValue="Novo">
+                          Novo
+                        </SelectItem>
+                        <SelectItem key="EM_TRIAGEM" textValue="Em triagem">
+                          Em triagem
+                        </SelectItem>
+                        <SelectItem key="EM_EXECUCAO" textValue="Em execução">
+                          Em execução
+                        </SelectItem>
+                        <SelectItem key="RESOLVIDO" textValue="Resolvido">
+                          Resolvido
+                        </SelectItem>
+                        <SelectItem key="BLOQUEADO" textValue="Bloqueado">
+                          Bloqueado
+                        </SelectItem>
                       </Select>
                     </div>
 
-                    {/* Filtro por Tipo */}
+                    <div className="space-y-2">
+                      <label
+                        className="text-sm font-medium flex items-center gap-2"
+                        htmlFor="filtro-prioridade"
+                      >
+                        <AlertTriangle className="w-4 h-4" />
+                        Prioridade
+                      </label>
+                      <Select
+                        id="filtro-prioridade"
+                        placeholder="Todas"
+                        selectedKeys={
+                          filters.prioridade
+                            ? [filters.prioridade]
+                            : [ALL_PRIORIDADE_KEY]
+                        }
+                        size="sm"
+                        variant="bordered"
+                        onSelectionChange={(keys) => {
+                          const value = Array.from(keys)[0] as string;
+
+                          handleFilterChange(
+                            "prioridade",
+                            value === ALL_PRIORIDADE_KEY ? undefined : value,
+                          );
+                        }}
+                      >
+                        <SelectItem key={ALL_PRIORIDADE_KEY} textValue="Todas as prioridades">
+                          Todas as prioridades
+                        </SelectItem>
+                        <SelectItem key="BAIXA" textValue="Baixa">
+                          Baixa
+                        </SelectItem>
+                        <SelectItem key="MEDIA" textValue="Média">
+                          Média
+                        </SelectItem>
+                        <SelectItem key="ALTA" textValue="Alta">
+                          Alta
+                        </SelectItem>
+                        <SelectItem key="CRITICA" textValue="Crítica">
+                          Crítica
+                        </SelectItem>
+                      </Select>
+                    </div>
+
                     <div className="space-y-2">
                       <label
                         className="text-sm font-medium flex items-center gap-2"
@@ -588,24 +1094,31 @@ export default function AndamentosPage() {
                       <Select
                         id="filtro-tipo"
                         placeholder="Todos os tipos"
-                        selectedKeys={filters.tipo ? [filters.tipo] : []}
+                        selectedKeys={filters.tipo ? [filters.tipo] : [ALL_TIPO_KEY]}
                         size="sm"
                         variant="bordered"
                         onSelectionChange={(keys) => {
                           const value = Array.from(keys)[0] as string;
 
-                          handleFilterChange("tipo", value);
+                          handleFilterChange(
+                            "tipo",
+                            value === ALL_TIPO_KEY ? undefined : value,
+                          );
                         }}
                       >
-                        {tipos.map((tipo) => (
-                          <SelectItem key={tipo} textValue={tipo}>
-                            {tipo}
-                          </SelectItem>
-                        ))}
+                        {[ALL_TIPO_KEY, ...tipos].map((tipoValue) => {
+                          const label =
+                            tipoValue === ALL_TIPO_KEY ? "Todos os tipos" : tipoValue;
+
+                          return (
+                            <SelectItem key={tipoValue} textValue={label}>
+                              {label}
+                            </SelectItem>
+                          );
+                        })}
                       </Select>
                     </div>
 
-                    {/* Filtro por Data Range */}
                     <div className="space-y-2">
                       <label
                         className="text-sm font-medium flex items-center gap-2"
@@ -615,90 +1128,98 @@ export default function AndamentosPage() {
                         Período
                       </label>
                       <DateRangeInput
-                        className="max-w-xs"
+                        className="w-full"
                         id="filtro-data"
                         rangeValue={dateRange}
                         size="sm"
                         variant="bordered"
                         onRangeValueChange={(range) => {
                           setDateRange(range);
+                          setCurrentPage(1);
                           if (range?.start && range?.end) {
-                            setFilters({
-                              ...filters,
+                            setFilters((prev) => ({
+                              ...prev,
                               dataInicio: new Date(range.start as any),
                               dataFim: new Date(range.end as any),
-                            });
+                            }));
                           } else {
-                            const { dataInicio, dataFim, ...restFilters } =
-                              filters;
+                            setFilters((prev) => {
+                              const { dataInicio, dataFim, ...restFilters } =
+                                prev;
 
-                            setFilters(restFilters);
+                              return restFilters;
+                            });
                           }
                         }}
                       />
                     </div>
 
-                    {/* Filtro por Cliente */}
-                    <div className="space-y-2">
-                      <label
-                        className="text-sm font-medium flex items-center gap-2"
-                        htmlFor="filtro-cliente"
-                      >
-                        <User className="w-4 h-4" />
-                        Cliente
-                      </label>
-                      <Select
-                        id="filtro-cliente"
-                        placeholder="Todos os clientes"
-                        selectedKeys={clienteId ? [clienteId] : []}
-                        size="sm"
-                        variant="bordered"
+                    {responsaveisDisponiveis.length > 0 ? (
+                      <div className="space-y-2">
+                        <label
+                          className="text-sm font-medium flex items-center gap-2"
+                          htmlFor="filtro-responsavel"
+                        >
+                          <UserCheck className="w-4 h-4" />
+                          Responsável
+                        </label>
+                        <Select
+                          id="filtro-responsavel"
+                          placeholder="Todos os responsáveis"
+                          selectedKeys={selectedResponsavelFilterKeys}
+                          size="sm"
+                          variant="bordered"
                         onSelectionChange={(keys) => {
                           const value = Array.from(keys)[0] as string;
 
-                          setClienteId(value);
-                          // Filtrar processos por cliente
-                          if (value) {
-                            const processosDoCliente = processos.filter(
-                              (proc: any) =>
-                                proc.partes?.some(
-                                  (parte: any) => parte.clienteId === value,
-                                ),
+                            handleFilterChange(
+                              "responsavelId",
+                              value === ALL_RESPONSAVEL_KEY ? undefined : value,
                             );
-                            // Por enquanto, vamos apenas marcar que há um filtro ativo
-                            // A lógica de filtro por cliente precisará ser implementada no backend
-                          }
                         }}
                       >
-                        {clientes.map((cliente: any) => (
-                          <SelectItem
-                            key={cliente.id}
-                            textValue={`${cliente.firstName} ${cliente.lastName}`}
-                          >
-                            {cliente.firstName} {cliente.lastName}
-                          </SelectItem>
-                        ))}
-                      </Select>
-                    </div>
+                          {[
+                            {
+                              id: ALL_RESPONSAVEL_KEY,
+                              label: "Todos os responsáveis",
+                            },
+                            ...responsaveisDisponiveis.map((responsavel) => ({
+                              id: responsavel.id,
+                              label: formatPerson(responsavel),
+                            })),
+                          ].map((item) => (
+                            <SelectItem key={item.id} textValue={item.label}>
+                              {item.label}
+                            </SelectItem>
+                          ))}
+                        </Select>
+                      </div>
+                    ) : null}
                   </div>
                 </CardBody>
               </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
         </Card>
       </motion.div>
 
-      {/* Timeline de Andamentos */}
       <motion.div
         animate={{ opacity: 1, y: 0 }}
         initial={{ opacity: 0, y: 20 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <h2 className="text-xl font-semibold">Timeline</h2>
+        <Card className="overflow-hidden border border-white/10 bg-background/70 backdrop-blur-xl">
+          <CardHeader className="border-b border-white/10 px-5 py-4">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold text-white">
+                Timeline de andamentos
+              </h2>
+              <p className="text-sm text-default-400">
+                {pagination.total} itens listados em ordem cronológica.
+              </p>
+            </div>
           </CardHeader>
-          <CardBody>
+          <CardBody className="p-5">
             {loadingAndamentos ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
@@ -708,19 +1229,16 @@ export default function AndamentosPage() {
             ) : andamentos.length === 0 ? (
               <motion.div
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-12"
+                className="py-12 text-center"
                 initial={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.3 }}
               >
-                <Activity className="mx-auto text-gray-400 mb-4" size={48} />
-                <p className="text-gray-600 dark:text-gray-400">
-                  Nenhum andamento encontrado
-                </p>
+                <Activity className="mx-auto mb-4 text-default-400" size={48} />
+                <p className="text-default-500">Nenhum andamento encontrado</p>
               </motion.div>
             ) : (
               <div className="relative space-y-4 md:space-y-6">
-                {/* Linha vertical da timeline */}
-                <div className="absolute left-5 md:left-6 top-0 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-700" />
+                <div className="absolute bottom-0 left-5 top-0 w-0.5 bg-white/10 md:left-6" />
 
                 <AnimatePresence>
                   {andamentos.map((andamento, index) => (
@@ -730,55 +1248,52 @@ export default function AndamentosPage() {
                       className="relative flex gap-4 md:gap-6"
                       exit={{ opacity: 0, x: 50 }}
                       initial={{ opacity: 0, x: -50 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      whileHover={{ scale: 1.02 }}
+                      transition={{ duration: 0.3, delay: index * 0.08 }}
                     >
-                      {/* Ícone da timeline */}
                       <div
-                        className={`relative z-10 flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white dark:bg-gray-800 border-4 flex items-center justify-center shadow-lg ${
+                        className={`relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 bg-background shadow-sm md:h-12 md:w-12 ${
                           andamento.tipo === "ANDAMENTO"
-                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                            ? "border-blue-500/60"
                             : andamento.tipo === "PRAZO"
-                              ? "border-amber-500 bg-amber-50 dark:bg-amber-900/20"
+                              ? "border-amber-500/60"
                               : andamento.tipo === "INTIMACAO"
-                                ? "border-red-500 bg-red-50 dark:bg-red-900/20"
+                                ? "border-red-500/60"
                                 : andamento.tipo === "AUDIENCIA"
-                                  ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20"
+                                  ? "border-purple-500/60"
                                   : andamento.tipo === "ANEXO"
-                                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-                                    : "border-gray-500 bg-gray-50 dark:bg-gray-900/20"
+                                    ? "border-green-500/60"
+                                    : "border-default-400/60"
                         }`}
                       >
                         {getTipoIcon(andamento.tipo)}
                       </div>
 
-                      {/* Card do andamento */}
                       <Card
-                        className={`flex-1 hover:shadow-xl transition-all duration-300 border-l-4 ${
+                        className={`flex-1 border border-white/10 bg-content1/40 transition-colors duration-300 hover:bg-content1/70 ${
                           andamento.tipo === "ANDAMENTO"
-                            ? "border-l-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10"
+                            ? "border-l-4 border-l-blue-500"
                             : andamento.tipo === "PRAZO"
-                              ? "border-l-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/10"
+                              ? "border-l-4 border-l-amber-500"
                               : andamento.tipo === "INTIMACAO"
-                                ? "border-l-red-500 hover:bg-red-50 dark:hover:bg-red-900/10"
+                                ? "border-l-4 border-l-red-500"
                                 : andamento.tipo === "AUDIENCIA"
-                                  ? "border-l-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/10"
+                                  ? "border-l-4 border-l-purple-500"
                                   : andamento.tipo === "ANEXO"
-                                    ? "border-l-green-500 hover:bg-green-50 dark:hover:bg-green-900/10"
-                                    : "border-l-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900/10"
+                                    ? "border-l-4 border-l-green-500"
+                                    : "border-l-4 border-l-default-400"
                         }`}
                       >
                         <CardBody className="p-3 md:p-4">
-                          <div
-                            className="flex justify-between items-start mb-2 cursor-pointer"
-                            onClick={() => openViewModal(andamento)}
-                          >
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold text-base md:text-lg">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div
+                              className="flex-1 cursor-pointer space-y-2"
+                              onClick={() => openViewModal(andamento)}
+                            >
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-base font-semibold md:text-lg">
                                   {andamento.titulo}
                                 </h3>
-                                {andamento.tipo && (
+                                {andamento.tipo ? (
                                   <Chip
                                     color={getTipoColor(andamento.tipo)}
                                     size="sm"
@@ -786,87 +1301,201 @@ export default function AndamentosPage() {
                                   >
                                     {andamento.tipo}
                                   </Chip>
-                                )}
+                                ) : null}
+                                <Chip
+                                  color={getStatusColor(andamento.statusOperacional)}
+                                  size="sm"
+                                  variant="flat"
+                                >
+                                  {getStatusLabel(andamento.statusOperacional)}
+                                </Chip>
+                                <Chip
+                                  color={getPrioridadeColor(andamento.prioridade)}
+                                  size="sm"
+                                  variant="bordered"
+                                >
+                                  {getPrioridadeLabel(andamento.prioridade)}
+                                </Chip>
+                                {isSlaAtrasado(andamento) ? (
+                                  <Chip color="danger" size="sm" variant="solid">
+                                    SLA atrasado
+                                  </Chip>
+                                ) : null}
                               </div>
 
-                              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-2">
+                              <p className="text-xs text-default-400 md:text-sm">
                                 Processo: {andamento.processo.numero}
-                                {andamento.processo.titulo &&
-                                  ` - ${andamento.processo.titulo}`}
+                                {andamento.processo.titulo
+                                  ? ` - ${andamento.processo.titulo}`
+                                  : ""}
                               </p>
 
-                              {andamento.descricao && (
-                                <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 mb-3">
+                              {andamento.descricao ? (
+                                <p className="text-xs text-default-500 md:text-sm">
                                   {andamento.descricao}
                                 </p>
-                              )}
+                              ) : null}
 
-                              <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-400">
+                              {andamento.statusOperacional === "RESOLVIDO" &&
+                              andamento.observacaoResolucao ? (
+                                <p className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300 md:text-sm">
+                                  <span className="font-semibold">
+                                    Observação da resolução:
+                                  </span>{" "}
+                                  {andamento.observacaoResolucao}
+                                </p>
+                              ) : null}
+
+                              <div className="flex flex-wrap gap-3 text-xs text-default-400">
                                 <span className="flex items-center gap-1">
                                   <Calendar size={14} />
                                   {formatDateTime(andamento.dataMovimentacao)}
                                 </span>
 
-                                {andamento.prazo && (
+                                {andamento.prazo ? (
                                   <span className="flex items-center gap-1 text-warning">
                                     <Clock size={14} />
                                     Prazo: {formatDate(andamento.prazo)}
                                   </span>
-                                )}
+                                ) : null}
 
-                                {andamento.documentos.length > 0 && (
+                                {andamento.slaEm ? (
+                                  <span
+                                    className={`flex items-center gap-1 ${
+                                      isSlaAtrasado(andamento)
+                                        ? "text-danger"
+                                        : "text-default-400"
+                                    }`}
+                                  >
+                                    <Timer size={14} />
+                                    SLA: {formatDateTime(andamento.slaEm)}
+                                  </span>
+                                ) : null}
+
+                                {andamento.documentos.length > 0 ? (
                                   <span className="flex items-center gap-1">
                                     <Paperclip size={14} />
                                     {andamento.documentos.length} documento(s)
                                   </span>
-                                )}
+                                ) : null}
 
-                                {andamento.prazosRelacionados.length > 0 && (
+                                {andamento.prazosRelacionados.length > 0 ? (
                                   <span className="flex items-center gap-1">
                                     <AlertCircle size={14} />
-                                    {andamento.prazosRelacionados.length}{" "}
-                                    prazo(s)
+                                    {andamento.prazosRelacionados.length} prazo(s)
                                   </span>
-                                )}
+                                ) : null}
 
-                                {andamento.criadoPor && (
+                                {andamento.criadoPor ? (
                                   <span>
                                     Por: {andamento.criadoPor.firstName}{" "}
                                     {andamento.criadoPor.lastName}
                                   </span>
-                                )}
+                                ) : null}
+
+                                <span>
+                                  Responsável: {formatPerson(andamento.responsavel)}
+                                </span>
                               </div>
                             </div>
 
-                            <div className="flex gap-2">
-                              <Tooltip color="primary" content="Editar">
-                                <Button
-                                  isIconOnly
-                                  className="text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/20 hover:scale-110 transition-transform duration-200"
-                                  size="sm"
-                                  variant="light"
-                                  onPress={() => {
-                                    openEditModal(andamento);
-                                  }}
-                                >
-                                  <Edit3 size={16} />
-                                </Button>
-                              </Tooltip>
+                            <div className="flex w-full shrink-0 flex-col gap-2 sm:w-[176px] sm:items-stretch">
+                              <Button
+                                as={Link}
+                                className="w-full justify-center sm:justify-start"
+                                href={`/processos/${andamento.processo.id}`}
+                                size="sm"
+                                startContent={<FolderOpen size={14} />}
+                                variant="flat"
+                              >
+                                Processo
+                              </Button>
 
-                              <Tooltip color="danger" content="Excluir">
+                              {andamento.tarefaRelacionada?.id ? (
                                 <Button
-                                  isIconOnly
-                                  className="text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/20 hover:scale-110 transition-transform duration-200"
-                                  color="danger"
+                                  as={Link}
+                                  className="w-full justify-center sm:justify-start"
+                                  href="/tarefas"
                                   size="sm"
-                                  variant="light"
-                                  onPress={() => {
-                                    handleDelete(andamento.id);
-                                  }}
+                                  startContent={<ListChecks size={14} />}
+                                  variant="flat"
                                 >
-                                  <Trash2 size={16} />
+                                  Tarefa
                                 </Button>
-                              </Tooltip>
+                              ) : !isClient ? (
+                                <Button
+                                  className="w-full justify-center sm:justify-start"
+                                  size="sm"
+                                  startContent={<ListChecks size={14} />}
+                                  variant="flat"
+                                  onPress={() =>
+                                    handleCreateTaskFromAndamento(andamento.id)
+                                  }
+                                >
+                                  Criar tarefa
+                                </Button>
+                              ) : null}
+
+                              {!isClient &&
+                              andamento.statusOperacional !== "RESOLVIDO" ? (
+                                <Button
+                                  color="success"
+                                  className="w-full justify-center sm:justify-start"
+                                  size="sm"
+                                  startContent={<CheckCircle2 size={14} />}
+                                  variant="flat"
+                                  onPress={() => openResolveModal(andamento)}
+                                >
+                                  Resolver
+                                </Button>
+                              ) : null}
+
+                              {!isClient &&
+                              andamento.statusOperacional === "RESOLVIDO" ? (
+                                <Button
+                                  color="warning"
+                                  className="w-full justify-center sm:justify-start"
+                                  size="sm"
+                                  startContent={<RotateCcw size={14} />}
+                                  variant="flat"
+                                  onPress={() => openReopenModal(andamento)}
+                                >
+                                  Reabrir
+                                </Button>
+                              ) : null}
+
+                              {!isClient ? (
+                                <div className="grid grid-cols-2 gap-2">
+                                <Tooltip color="primary" content="Editar">
+                                  <Button
+                                    isIconOnly
+                                    className="w-full text-blue-600 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                    size="sm"
+                                    variant="light"
+                                    onPress={() => {
+                                      openEditModal(andamento);
+                                    }}
+                                  >
+                                    <Edit3 size={16} />
+                                  </Button>
+                                </Tooltip>
+
+                                <Tooltip color="danger" content="Excluir">
+                                  <Button
+                                    isIconOnly
+                                    className="w-full text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/20"
+                                    color="danger"
+                                    size="sm"
+                                    variant="light"
+                                    onPress={() => {
+                                      handleDelete(andamento.id);
+                                    }}
+                                  >
+                                    <Trash2 size={16} />
+                                  </Button>
+                                </Tooltip>
+                                </div>
+                              ) : null}
                             </div>
                           </div>
                         </CardBody>
@@ -877,22 +1506,213 @@ export default function AndamentosPage() {
               </div>
             )}
           </CardBody>
+          {pagination.totalPages > 1 ? (
+            <div className="flex flex-col gap-3 border-t border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-default-400">
+                Exibindo {firstVisibleItem}-{lastVisibleItem} de {pagination.total}
+              </p>
+              <Pagination
+                showControls
+                page={pagination.page}
+                total={pagination.totalPages}
+                onChange={setCurrentPage}
+              />
+            </div>
+          ) : null}
         </Card>
       </motion.div>
 
       {/* Modal de Criar/Editar/Visualizar */}
-      {!isClient && (
-        <AndamentoModal
-          andamento={selectedAndamento}
-          isOpen={modalOpen}
-          mode={modalMode}
-          processos={processos}
-          tipos={tipos}
-          onClose={closeModal}
-          onSuccess={mutateAndamentos}
-        />
-      )}
+      <AndamentoModal
+        andamento={selectedAndamento}
+        isOpen={modalOpen}
+        mode={modalMode}
+        processos={processos}
+        responsaveis={responsaveisDisponiveis}
+        tipos={tipos}
+        onClose={closeModal}
+        onSuccess={mutateAndamentos}
+      />
+
+      <ResolveAndamentoModal
+        andamento={resolvingAndamento}
+        isOpen={resolveModalOpen}
+        isSaving={resolving}
+        observacao={resolucaoObservacao}
+        onClose={closeResolveModal}
+        onConfirm={handleResolveAndamento}
+        onObservacaoChange={setResolucaoObservacao}
+      />
+
+      <ReopenAndamentoModal
+        andamento={reopeningAndamento}
+        isOpen={reopenModalOpen}
+        isSaving={reopening}
+        selectedStatus={reopenStatus}
+        onClose={closeReopenModal}
+        onConfirm={handleReopenAndamento}
+        onStatusChange={setReopenStatus}
+      />
     </div>
+  );
+}
+
+// ============================================
+// MODAL DE RESOLUCAO RAPIDA
+// ============================================
+
+interface ResolveAndamentoModalProps {
+  isOpen: boolean;
+  isSaving: boolean;
+  andamento: Andamento | null;
+  observacao: string;
+  onClose: () => void;
+  onConfirm: () => void;
+  onObservacaoChange: (value: string) => void;
+}
+
+function ResolveAndamentoModal({
+  isOpen,
+  isSaving,
+  andamento,
+  observacao,
+  onClose,
+  onConfirm,
+  onObservacaoChange,
+}: ResolveAndamentoModalProps) {
+  return (
+    <Modal isOpen={isOpen} size="lg" onClose={onClose}>
+      <ModalContent>
+        <ModalHeader className="flex items-center gap-2">
+          <CheckCircle2 className="text-success" size={18} />
+          Resolver andamento
+        </ModalHeader>
+        <ModalBody className="space-y-3">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-foreground">
+              {andamento?.titulo || "Andamento"}
+            </p>
+            <p className="text-xs text-default-500">
+              {andamento?.processo.numero}
+              {andamento?.processo.titulo ? ` - ${andamento.processo.titulo}` : ""}
+            </p>
+          </div>
+          <Textarea
+            description="Opcional: registre como a demanda foi solucionada."
+            minRows={4}
+            placeholder="Ex: Audiência realizada, acordo parcial homologado e visitas restabelecidas."
+            value={observacao}
+            onValueChange={onObservacaoChange}
+          />
+        </ModalBody>
+        <ModalFooter>
+          <Button isDisabled={isSaving} variant="light" onPress={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            color="success"
+            isLoading={isSaving}
+            startContent={<CheckCircle2 size={14} />}
+            onPress={onConfirm}
+          >
+            Marcar como resolvido
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+}
+
+interface ReopenAndamentoModalProps {
+  isOpen: boolean;
+  isSaving: boolean;
+  andamento: Andamento | null;
+  selectedStatus: MovimentacaoStatusOperacional;
+  onClose: () => void;
+  onConfirm: () => void;
+  onStatusChange: (status: MovimentacaoStatusOperacional) => void;
+}
+
+function ReopenAndamentoModal({
+  isOpen,
+  isSaving,
+  andamento,
+  selectedStatus,
+  onClose,
+  onConfirm,
+  onStatusChange,
+}: ReopenAndamentoModalProps) {
+  const getStatusLabel = (status: MovimentacaoStatusOperacional) => {
+    switch (status) {
+      case "NOVO":
+        return "Novo";
+      case "EM_TRIAGEM":
+        return "Em triagem";
+      case "EM_EXECUCAO":
+        return "Em execução";
+      case "BLOQUEADO":
+        return "Bloqueado";
+      default:
+        return status;
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} size="lg" onClose={onClose}>
+      <ModalContent>
+        <ModalHeader className="flex items-center gap-2">
+          <RotateCcw className="text-warning" size={18} />
+          Reabrir andamento
+        </ModalHeader>
+        <ModalBody className="space-y-3">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-foreground">
+              {andamento?.titulo || "Andamento"}
+            </p>
+            <p className="text-xs text-default-500">
+              {andamento?.processo.numero}
+              {andamento?.processo.titulo ? ` - ${andamento.processo.titulo}` : ""}
+            </p>
+          </div>
+          <Select
+            label="Novo status operacional"
+            placeholder="Selecione o status"
+            selectedKeys={[selectedStatus]}
+            onSelectionChange={(keys) => {
+              const next = Array.from(keys)[0] as MovimentacaoStatusOperacional;
+
+              if (next && REOPEN_STATUS_OPTIONS.includes(next)) {
+                onStatusChange(next);
+              }
+            }}
+          >
+            {REOPEN_STATUS_OPTIONS.map((status) => {
+              const label = getStatusLabel(status);
+
+              return (
+                <SelectItem key={status} textValue={label}>
+                  {label}
+                </SelectItem>
+              );
+            })}
+          </Select>
+        </ModalBody>
+        <ModalFooter>
+          <Button isDisabled={isSaving} variant="light" onPress={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            color="warning"
+            isLoading={isSaving}
+            startContent={<RotateCcw size={14} />}
+            variant="flat"
+            onPress={onConfirm}
+          >
+            Reabrir andamento
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }
 
@@ -906,6 +1726,7 @@ interface AndamentoModalProps {
   mode: "create" | "edit" | "view";
   andamento: Andamento | null;
   processos: any[];
+  responsaveis: ResponsavelDisponivel[];
   tipos: MovimentacaoTipo[];
   onSuccess: () => void;
 }
@@ -916,6 +1737,7 @@ function AndamentoModal({
   mode,
   andamento,
   processos,
+  responsaveis,
   tipos,
   onSuccess,
 }: AndamentoModalProps) {
@@ -928,9 +1750,15 @@ function AndamentoModal({
         processoId: "",
         titulo: "",
         descricao: "",
+        observacaoResolucao: "",
         tipo: "",
+        statusOperacional: "NOVO",
+        prioridade: "MEDIA",
+        responsavelId: "",
         dataMovimentacao: today(getLocalTimeZone()),
+        slaEm: null,
         prazo: null,
+        resolvidoEm: null,
         geraPrazo: false,
         // Campos para notificações
         notificarCliente: false,
@@ -943,12 +1771,22 @@ function AndamentoModal({
         processoId: andamento.processo.id,
         titulo: andamento.titulo,
         descricao: andamento.descricao || "",
+        observacaoResolucao: andamento.observacaoResolucao || "",
         tipo: andamento.tipo || "",
+        statusOperacional: andamento.statusOperacional || "NOVO",
+        prioridade: andamento.prioridade || "MEDIA",
+        responsavelId: andamento.responsavel?.id || "",
         dataMovimentacao: parseDate(
           new Date(andamento.dataMovimentacao).toISOString().split("T")[0],
         ),
+        slaEm: andamento.slaEm
+          ? parseDate(new Date(andamento.slaEm).toISOString().split("T")[0])
+          : null,
         prazo: andamento.prazo
           ? parseDate(new Date(andamento.prazo).toISOString().split("T")[0])
+          : null,
+        resolvidoEm: andamento.resolvidoEm
+          ? parseDate(new Date(andamento.resolvidoEm).toISOString().split("T")[0])
           : null,
         geraPrazo: false,
         // Campos para notificações
@@ -963,9 +1801,15 @@ function AndamentoModal({
       processoId: "",
       titulo: "",
       descricao: "",
+      observacaoResolucao: "",
       tipo: "",
+      statusOperacional: "NOVO",
+      prioridade: "MEDIA",
+      responsavelId: "",
       dataMovimentacao: today(getLocalTimeZone()),
+      slaEm: null,
       prazo: null,
+      resolvidoEm: null,
       geraPrazo: false,
       notificarCliente: false,
       notificarEmail: false,
@@ -976,6 +1820,46 @@ function AndamentoModal({
 
   const [formData, setFormData] = useState<any>(initialFormData);
   const [saving, setSaving] = useState(false);
+
+  const getProcessLabel = (proc: any) => {
+    const numero = String(proc?.numero ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const titulo = String(proc?.titulo ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (numero && titulo) {
+      return `${numero} - ${titulo}`;
+    }
+
+    return numero || titulo || "Processo sem identificação";
+  };
+
+  const formatResponsavelLabel = (responsavel: ResponsavelDisponivel) => {
+    const fullName =
+      `${responsavel.firstName ?? ""} ${responsavel.lastName ?? ""}`.trim();
+
+    return fullName || responsavel.email;
+  };
+
+  const processIds = useMemo(
+    () => new Set((processos || []).map((proc: any) => proc.id)),
+    [processos],
+  );
+  const responsavelIds = useMemo(
+    () => new Set((responsaveis || []).map((responsavel) => responsavel.id)),
+    [responsaveis],
+  );
+
+  const selectedProcessKeys =
+    formData.processoId && processIds.has(formData.processoId)
+      ? [formData.processoId]
+      : [];
+  const selectedResponsavelKeys =
+    formData.responsavelId && responsavelIds.has(formData.responsavelId)
+      ? [formData.responsavelId]
+      : [UNASSIGNED_RESPONSAVEL_KEY];
 
   // Atualizar formData quando initialFormData mudar
   useEffect(() => {
@@ -995,9 +1879,17 @@ function AndamentoModal({
       processoId: formData.processoId,
       titulo: formData.titulo,
       descricao: formData.descricao || undefined,
+      observacaoResolucao: formData.observacaoResolucao || undefined,
       tipo: formData.tipo || undefined,
+      statusOperacional: formData.statusOperacional || undefined,
+      prioridade: formData.prioridade || undefined,
+      responsavelId: formData.responsavelId || undefined,
       dataMovimentacao: formData.dataMovimentacao
         ? new Date(formData.dataMovimentacao.toString())
+        : undefined,
+      slaEm: formData.slaEm ? new Date(formData.slaEm.toString()) : undefined,
+      resolvidoEm: formData.resolvidoEm
+        ? new Date(formData.resolvidoEm.toString())
         : undefined,
       prazo: formData.prazo ? new Date(formData.prazo.toString()) : undefined,
       geraPrazo: formData.geraPrazo,
@@ -1084,27 +1976,30 @@ function AndamentoModal({
                   classNames={{
                     trigger:
                       "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                    value: "truncate",
+                    listboxWrapper: "max-h-80",
                   }}
                   id="modal-processo"
                   isDisabled={isReadOnly || mode === "edit"}
                   placeholder="Selecione o processo"
-                  selectedKeys={
-                    formData.processoId ? [formData.processoId] : []
-                  }
+                  selectedKeys={selectedProcessKeys}
                   onSelectionChange={(keys) => {
                     const value = Array.from(keys)[0] as string;
 
                     setFormData({ ...formData, processoId: value });
                   }}
                 >
-                  {processos.map((proc: any) => (
-                    <SelectItem
-                      key={proc.id}
-                      textValue={`${proc.numero}${proc.titulo ? ` - ${proc.titulo}` : ""}`}
-                    >
-                      {proc.numero} {proc.titulo ? `- ${proc.titulo}` : ""}
-                    </SelectItem>
-                  ))}
+                  {processos.map((proc: any) => {
+                    const processLabel = getProcessLabel(proc);
+
+                    return (
+                      <SelectItem key={proc.id} textValue={processLabel}>
+                        <span className="block max-w-full truncate" title={processLabel}>
+                          {processLabel}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </Select>
               </div>
 
@@ -1185,6 +2080,154 @@ function AndamentoModal({
                 </Select>
               </div>
 
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <label
+                    className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                    htmlFor="modal-status-operacional"
+                  >
+                    <ListChecks className="text-blue-500" size={16} />
+                    Status operacional
+                  </label>
+                  <Select
+                    id="modal-status-operacional"
+                    isDisabled={isReadOnly}
+                    placeholder="Selecione"
+                    selectedKeys={
+                      formData.statusOperacional ? [formData.statusOperacional] : []
+                    }
+                    onSelectionChange={(keys) => {
+                      const value = Array.from(keys)[0] as string;
+
+                      setFormData({ ...formData, statusOperacional: value });
+                    }}
+                  >
+                    <SelectItem key="NOVO" textValue="Novo">
+                      Novo
+                    </SelectItem>
+                    <SelectItem key="EM_TRIAGEM" textValue="Em triagem">
+                      Em triagem
+                    </SelectItem>
+                    <SelectItem key="EM_EXECUCAO" textValue="Em execução">
+                      Em execução
+                    </SelectItem>
+                    <SelectItem key="RESOLVIDO" textValue="Resolvido">
+                      Resolvido
+                    </SelectItem>
+                    <SelectItem key="BLOQUEADO" textValue="Bloqueado">
+                      Bloqueado
+                    </SelectItem>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                    htmlFor="modal-prioridade"
+                  >
+                    <AlertTriangle className="text-orange-500" size={16} />
+                    Prioridade
+                  </label>
+                  <Select
+                    id="modal-prioridade"
+                    isDisabled={isReadOnly}
+                    placeholder="Selecione"
+                    selectedKeys={formData.prioridade ? [formData.prioridade] : []}
+                    onSelectionChange={(keys) => {
+                      const value = Array.from(keys)[0] as string;
+
+                      setFormData({ ...formData, prioridade: value });
+                    }}
+                  >
+                    <SelectItem key="BAIXA" textValue="Baixa">
+                      Baixa
+                    </SelectItem>
+                    <SelectItem key="MEDIA" textValue="Média">
+                      Média
+                    </SelectItem>
+                    <SelectItem key="ALTA" textValue="Alta">
+                      Alta
+                    </SelectItem>
+                    <SelectItem key="CRITICA" textValue="Crítica">
+                      Crítica
+                    </SelectItem>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                    htmlFor="modal-responsavel"
+                  >
+                    <UserCheck className="text-emerald-500" size={16} />
+                    Responsável
+                  </label>
+                  <Select
+                    id="modal-responsavel"
+                    isDisabled={isReadOnly}
+                    placeholder="Defina responsável"
+                    selectedKeys={selectedResponsavelKeys}
+                    onSelectionChange={(keys) => {
+                      const value = Array.from(keys)[0] as string;
+
+                      setFormData({
+                        ...formData,
+                        responsavelId:
+                          value === UNASSIGNED_RESPONSAVEL_KEY ? "" : value,
+                      });
+                    }}
+                  >
+                    {[
+                      {
+                        id: UNASSIGNED_RESPONSAVEL_KEY,
+                        label: "Sem responsável",
+                      },
+                      ...responsaveis.map((responsavel) => ({
+                        id: responsavel.id,
+                        label: formatResponsavelLabel(responsavel),
+                      })),
+                    ].map((item) => (
+                      <SelectItem key={item.id} textValue={item.label}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+              </div>
+
+              {(formData.statusOperacional === "RESOLVIDO" ||
+                (isReadOnly && Boolean(andamento?.observacaoResolucao))) && (
+                <div className="space-y-2">
+                  <label
+                    className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                    htmlFor="modal-observacao-resolucao"
+                  >
+                    <CheckCircle2 className="text-emerald-500" size={16} />
+                    Observação da resolução
+                  </label>
+                  <Textarea
+                    classNames={{
+                      input: "text-slate-700 dark:text-slate-300",
+                      inputWrapper:
+                        "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600",
+                    }}
+                    description={
+                      isReadOnly
+                        ? undefined
+                        : "Opcional: registre o resultado prático da resolução."
+                    }
+                    id="modal-observacao-resolucao"
+                    isReadOnly={isReadOnly}
+                    minRows={3}
+                    placeholder="Ex: Audiência realizada com resultado favorável ao cliente."
+                    value={formData.observacaoResolucao}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, observacaoResolucao: value })
+                    }
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label
                   className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
@@ -1202,6 +2245,26 @@ function AndamentoModal({
                     if (date) {
                       setFormData({ ...formData, dataMovimentacao: date });
                     }
+                  }}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2"
+                  htmlFor="modal-sla"
+                >
+                  <Timer className="text-red-500" size={16} />
+                  SLA interno
+                </label>
+                <DateInput
+                  className="w-full"
+                  description="Use para controlar prazo operacional da equipe."
+                  id="modal-sla"
+                  isReadOnly={isReadOnly}
+                  dateValue={formData.slaEm}
+                  onDateChange={(date) => {
+                    setFormData({ ...formData, slaEm: date });
                   }}
                 />
               </div>

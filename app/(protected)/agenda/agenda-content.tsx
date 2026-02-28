@@ -16,7 +16,7 @@ import {
 } from "@internationalized/date";
 import { useLocale } from "@react-aria/i18n";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { useEventos } from "@/app/hooks/use-eventos";
 import { useAllClientes } from "@/app/hooks/use-clientes";
@@ -233,7 +233,6 @@ export default function AgendaPage() {
         toast.error("Erro ao carregar dados do evento");
       }
     } catch (error) {
-      console.error("Erro ao buscar evento:", error);
       toast.error("Erro ao carregar dados do evento");
     }
   };
@@ -277,7 +276,6 @@ export default function AgendaPage() {
         toast.error(result.error || "Erro ao excluir evento");
       }
     } catch (error) {
-      console.error("Erro ao excluir evento:", error);
       toast.error("Erro interno do servidor");
     }
   };
@@ -293,7 +291,6 @@ export default function AgendaPage() {
         toast.error(result.error || "Erro ao atualizar evento");
       }
     } catch (error) {
-      console.error("Erro ao marcar evento como realizado:", error);
       toast.error("Erro interno do servidor");
     }
   };
@@ -346,7 +343,6 @@ export default function AgendaPage() {
         toast.error(result.error || "Erro ao confirmar participação");
       }
     } catch (error) {
-      console.error("Erro ao confirmar participação:", error);
       toast.error("Erro interno do servidor");
     }
   };

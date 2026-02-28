@@ -2,7 +2,7 @@
 
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Search, Building2 } from "lucide-react";
 
 import { formatarCnpj, validarCnpj } from "@/lib/api/cnpj";

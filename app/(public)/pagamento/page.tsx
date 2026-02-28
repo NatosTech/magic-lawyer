@@ -19,7 +19,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import NextLink from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import QRCodeLib from "qrcode";
 import useSWR from "swr";
 
@@ -177,7 +177,6 @@ export default function PagamentoPage() {
 
       setQrCodeUrl(qrCodeDataUrl);
     } catch (error) {
-      console.error("Erro ao gerar QR Code:", error);
     }
   };
 

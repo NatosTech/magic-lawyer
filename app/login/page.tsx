@@ -487,7 +487,6 @@ function LoginPageInner() {
         }
       })
       .catch((error) => {
-        console.error("Erro ao buscar logins rápidos:", error);
         setDevQuickLogins([]);
       });
   }, [isDevMode]);

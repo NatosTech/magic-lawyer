@@ -66,7 +66,6 @@ export function usePermissionCheck(
 
         return await response.json();
       } catch (error) {
-        console.error("Erro ao verificar permissão:", error);
 
         return { hasPermission: false };
       }
@@ -182,7 +181,6 @@ export function usePermissionsCheck(
 
         return { permissions: result.permissions || {} };
       } catch (error) {
-        console.error("Erro ao verificar permissões:", error);
         // Retornar todas como false em caso de erro
         const permissions: Record<string, boolean> = {};
 

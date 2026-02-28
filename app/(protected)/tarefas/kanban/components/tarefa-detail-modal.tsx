@@ -10,7 +10,7 @@ import {
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
 import { Tabs, Tab } from "@heroui/tabs";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import dayjs from "dayjs";
 
 interface TarefaDetailModalProps {

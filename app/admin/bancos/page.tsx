@@ -19,7 +19,7 @@ import {
   FileTextIcon,
   KeyIcon,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   listBancos,

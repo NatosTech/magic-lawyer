@@ -33,7 +33,6 @@ export default function GoogleCalendarStatusCard() {
         setStatus(result.data);
       }
     } catch (error) {
-      console.error("Erro ao carregar status:", error);
     } finally {
       setIsLoading(false);
     }

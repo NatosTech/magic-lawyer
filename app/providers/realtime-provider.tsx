@@ -43,10 +43,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     const clientKey = process.env.NEXT_PUBLIC_ABLY_CLIENT_KEY;
 
     if (!clientKey) {
-      console.warn(
-        "[RealtimeProvider] NEXT_PUBLIC_ABLY_CLIENT_KEY não configurado",
-      );
-
       return;
     }
 
@@ -74,7 +70,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         stateChange.current === "disconnected" ||
         stateChange.current === "failed"
       ) {
-        console.warn("[RealtimeProvider] ⚠️ Desconectado do Ably");
       }
     });
 
@@ -87,13 +82,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           if (client.connection.state !== "closed") {
             client.close();
           }
-        } catch (error) {
-          if (process.env.NODE_ENV === "development") {
-            console.warn(
-              "[RealtimeProvider] Falha ao fechar conexão Ably:",
-              error,
-            );
-          }
+        } catch {
         }
       }
 
@@ -177,11 +166,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         handlers.forEach((handler) => {
           try {
             handler(message.data);
-          } catch (error) {
-            console.error(
-              "[RealtimeProvider] Erro ao executar handler:",
-              error,
-            );
+          } catch {
           }
         });
       });
@@ -233,11 +218,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     handlers.forEach((handler) => {
       try {
         handler(event);
-      } catch (error) {
-        console.error(
-          "[RealtimeProvider] Erro ao executar publishLocal:",
-          error,
-        );
+      } catch {
       }
     });
   }

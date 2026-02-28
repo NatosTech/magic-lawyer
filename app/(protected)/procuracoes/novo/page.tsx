@@ -27,7 +27,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   createProcuracao,
@@ -300,7 +300,6 @@ export default function NovaProcuracaoPage() {
         toast.error(result.error || "Erro ao criar procuração");
       }
     } catch (error) {
-      console.error("Erro ao criar procuração:", error);
       toast.error("Erro ao criar procuração");
     } finally {
       setIsSaving(false);

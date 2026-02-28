@@ -136,7 +136,6 @@ export function ProcessosImportModal({
         });
       }
     } catch (error) {
-      console.error(error);
       addToast({
         title: "Erro ao importar",
         description: "Não foi possível processar a planilha. Tente novamente.",
@@ -199,7 +198,6 @@ export function ProcessosImportModal({
         color: "success",
       });
     } catch (error) {
-      console.error(error);
       addToast({
         title: "Erro ao gerar modelo",
         description:

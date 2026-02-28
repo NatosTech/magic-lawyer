@@ -187,7 +187,6 @@ export function UserManagementModal({
 
         setUfs(estados.map((e) => e.sigla));
       } catch (error) {
-        console.error("Erro ao carregar UFs:", error);
       }
     };
 

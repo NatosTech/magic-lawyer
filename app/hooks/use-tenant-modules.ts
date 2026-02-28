@@ -152,11 +152,7 @@ export function useTenantModules() {
     (async () => {
       try {
         await updateSession(payload);
-      } catch (err) {
-        console.error(
-          "[useTenantModules] Erro ao atualizar sessão com novos módulos",
-          err,
-        );
+      } catch {
       }
     })();
   }, [data, session?.user, tenantId, updateSession]);

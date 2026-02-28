@@ -14,7 +14,7 @@ import {
   EditIcon,
   DollarSignIcon,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { useDadosPagamentoHonorario } from "@/app/hooks/use-honorarios-contratuais";
 import { useDadosBancariosAtivos } from "@/app/hooks/use-dados-bancarios";

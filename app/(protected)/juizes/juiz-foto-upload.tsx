@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Avatar, Button, Spinner } from "@heroui/react";
 import { Edit3, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { uploadJuizFoto, deleteJuizFoto } from "@/app/actions/juizes";
 import { ImageEditorModal } from "@/components/image-editor-modal";
@@ -72,7 +72,6 @@ export function JuizFotoUpload({
         toast.error(result.error || "Erro ao atualizar foto");
       }
     } catch (error) {
-      console.error("Erro ao salvar foto:", error);
       toast.error("Erro ao salvar foto");
     } finally {
       setIsLoading(false);
@@ -94,7 +93,6 @@ export function JuizFotoUpload({
         toast.error(result.error || "Erro ao remover foto");
       }
     } catch (error) {
-      console.error("Erro ao deletar foto:", error);
       toast.error("Erro ao remover foto");
     } finally {
       setIsLoading(false);

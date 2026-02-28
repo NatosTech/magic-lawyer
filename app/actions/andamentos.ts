@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
-import { MovimentacaoTipo } from "@/generated/prisma";
+import {
+  MovimentacaoPrioridade,
+  MovimentacaoStatusOperacional,
+  MovimentacaoTipo,
+  UserRole,
+} from "@/generated/prisma";
+import { checkPermission } from "@/app/actions/equipe";
 import {
   extractChangedFieldsFromDiff,
   logAudit,
@@ -19,17 +25,31 @@ import { buildAndamentoDiff } from "@/app/lib/andamentos/diff";
 export interface AndamentoFilters {
   processoId?: string;
   tipo?: MovimentacaoTipo;
+  statusOperacional?: MovimentacaoStatusOperacional;
+  prioridade?: MovimentacaoPrioridade;
+  responsavelId?: string;
+  somenteAtrasados?: boolean;
+  somenteSemResponsavel?: boolean;
+  somenteMinhas?: boolean;
   dataInicio?: Date;
   dataFim?: Date;
   searchTerm?: string;
+  page?: number;
+  perPage?: number;
 }
 
 export interface AndamentoCreateInput {
   processoId: string;
   titulo: string;
   descricao?: string;
+  observacaoResolucao?: string;
   tipo?: MovimentacaoTipo;
+  statusOperacional?: MovimentacaoStatusOperacional;
+  prioridade?: MovimentacaoPrioridade;
+  responsavelId?: string;
   dataMovimentacao?: Date;
+  slaEm?: Date;
+  resolvidoEm?: Date;
   prazo?: Date;
   geraPrazo?: boolean; // Flag para indicar se deve gerar prazo automático
   // Campos para notificações
@@ -42,8 +62,14 @@ export interface AndamentoCreateInput {
 export interface AndamentoUpdateInput {
   titulo?: string;
   descricao?: string;
+  observacaoResolucao?: string;
   tipo?: MovimentacaoTipo;
+  statusOperacional?: MovimentacaoStatusOperacional;
+  prioridade?: MovimentacaoPrioridade;
+  responsavelId?: string;
   dataMovimentacao?: Date;
+  slaEm?: Date;
+  resolvidoEm?: Date;
   prazo?: Date;
   // Campos para notificações
   notificarCliente?: boolean;
@@ -56,6 +82,29 @@ export interface ActionResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+interface AndamentoPagination {
+  page: number;
+  perPage: number;
+  total: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+interface ProcessoDisponivel {
+  id: string;
+  numero: string;
+  titulo: string | null;
+}
+
+interface ResponsavelDisponivel {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  role: UserRole;
 }
 
 // ============================================
@@ -82,111 +131,368 @@ async function getUserId(): Promise<string> {
   return session.user.id;
 }
 
+function isAdminRole(role?: string | null): boolean {
+  return role === "ADMIN" || role === "SUPER_ADMIN";
+}
+
+function mergeProcessoScope(where: any, processoScope?: Record<string, unknown>) {
+  if (!processoScope) {
+    return;
+  }
+
+  where.processo = {
+    ...(where.processo || {}),
+    ...processoScope,
+  };
+}
+
+function normalizeOptionalText(value?: string | null): string | undefined {
+  const normalized = value?.trim();
+
+  return normalized ? normalized : undefined;
+}
+
+async function getProcessoScopeForSession(
+  session: Awaited<ReturnType<typeof getSession>>,
+): Promise<Record<string, unknown> | undefined> {
+  const user = session?.user as any;
+
+  if (!session?.user || isAdminRole(user?.role)) {
+    return undefined;
+  }
+
+  if (user?.role === "CLIENTE") {
+    if (!user?.clienteId) {
+      return { id: "__CLIENTE_SEM_ACESSO__" };
+    }
+
+    return { clienteId: user.clienteId };
+  }
+
+  const { getAccessibleAdvogadoIds } = await import("@/app/lib/advogado-access");
+  const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+
+  // Em operações diárias (andamentos), colaborador sem vínculo explícito
+  // mantém visão geral do escritório para não bloquear trabalho.
+  if (
+    accessibleAdvogados.length === 0 ||
+    (accessibleAdvogados.length === 1 &&
+      String(accessibleAdvogados[0]).startsWith("__"))
+  ) {
+    return undefined;
+  }
+
+  return {
+    advogadoResponsavelId: {
+      in: accessibleAdvogados,
+    },
+  };
+}
+
+async function ensurePermissionOrThrow(acao: "visualizar" | "criar" | "editar" | "excluir") {
+  const session = await getSession();
+  const user = session?.user as any;
+
+  if (isAdminRole(user?.role)) {
+    return;
+  }
+
+  if (user?.role === "CLIENTE") {
+    if (acao === "visualizar") {
+      return;
+    }
+
+    throw new Error("Clientes não possuem permissão para alterar andamentos");
+  }
+
+  const allowed = await checkPermission("processos", acao);
+
+  if (!allowed) {
+    throw new Error("Você não tem permissão para executar esta ação");
+  }
+}
+
 // ============================================
 // LISTAGEM
 // ============================================
 
 export async function listAndamentos(
   filters: AndamentoFilters,
-): Promise<ActionResponse<any[]>> {
+): Promise<
+  ActionResponse<any[]> & {
+    pagination?: AndamentoPagination;
+    processosDisponiveis?: ProcessoDisponivel[];
+    responsaveisDisponiveis?: ResponsavelDisponivel[];
+  }
+> {
   try {
+    await ensurePermissionOrThrow("visualizar");
+
     const session = await getSession();
     const tenantId = await getTenantId();
-    const userId = await getUserId();
-    const user = session?.user as any;
-    const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+    const page = Math.max(1, Number(filters.page || 1));
+    const perPage = Math.min(100, Math.max(1, Number(filters.perPage || 12)));
+    const processoScope = await getProcessoScopeForSession(session);
+
+    const baseScopeWhere: any = {
+      tenantId,
+    };
+    mergeProcessoScope(baseScopeWhere, processoScope);
 
     const where: any = {
-      tenantId,
+      ...baseScopeWhere,
       ...(filters.processoId && { processoId: filters.processoId }),
       ...(filters.tipo && { tipo: filters.tipo }),
+      ...(filters.statusOperacional && {
+        statusOperacional: filters.statusOperacional,
+      }),
+      ...(filters.prioridade && { prioridade: filters.prioridade }),
+      ...(filters.responsavelId && { responsavelId: filters.responsavelId }),
     };
+    mergeProcessoScope(where, processoScope);
 
-    // Aplicar escopo de acesso para staff vinculados
-    if (
-      !isAdmin &&
-      user?.role !== "CLIENTE" &&
-      session &&
-      !filters.processoId
-    ) {
-      const { getAccessibleAdvogadoIds } = await import(
-        "@/app/lib/advogado-access"
-      );
-      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+    if (filters.somenteMinhas && session?.user?.id) {
+      where.responsavelId = session.user.id;
+    }
 
-      // Se não há vínculos, acesso total (sem filtros)
-      if (accessibleAdvogados.length > 0) {
-        // Filtrar andamentos de processos dos advogados acessíveis
-        where.processo = {
-          advogadoResponsavelId: {
-            in: accessibleAdvogados,
-          },
-        };
-      }
+    if (filters.somenteSemResponsavel) {
+      where.responsavelId = null;
     }
 
     // Filtro de data
     if (filters.dataInicio || filters.dataFim) {
+      baseScopeWhere.dataMovimentacao = {};
       where.dataMovimentacao = {};
       if (filters.dataInicio) {
+        baseScopeWhere.dataMovimentacao.gte = filters.dataInicio;
         where.dataMovimentacao.gte = filters.dataInicio;
       }
       if (filters.dataFim) {
+        baseScopeWhere.dataMovimentacao.lte = filters.dataFim;
         where.dataMovimentacao.lte = filters.dataFim;
       }
     }
 
-    // Busca textual
-    if (filters.searchTerm) {
-      where.OR = [
-        { titulo: { contains: filters.searchTerm, mode: "insensitive" } },
-        { descricao: { contains: filters.searchTerm, mode: "insensitive" } },
-      ];
+    if (filters.somenteAtrasados) {
+      where.slaEm = {
+        lt: new Date(),
+      };
+      where.statusOperacional = {
+        not: "RESOLVIDO",
+      };
     }
 
-    const andamentos = await prisma.movimentacaoProcesso.findMany({
-      where,
-      include: {
-        criadoPor: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+    // Busca textual
+    if (filters.searchTerm) {
+      const searchWhere = [
+        { titulo: { contains: filters.searchTerm, mode: "insensitive" } },
+        { descricao: { contains: filters.searchTerm, mode: "insensitive" } },
+        {
+          processo: {
+            numero: { contains: filters.searchTerm, mode: "insensitive" },
           },
         },
-        processo: {
-          select: {
-            id: true,
-            numero: true,
-            titulo: true,
+      ];
+      baseScopeWhere.OR = searchWhere;
+      where.OR = searchWhere;
+    }
+
+    const total = await prisma.movimentacaoProcesso.count({ where });
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    const safePage = Math.min(page, totalPages);
+
+    let andamentosRaw: any[] = [];
+
+    try {
+      andamentosRaw = await prisma.movimentacaoProcesso.findMany({
+        where,
+        include: {
+          criadoPor: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          processo: {
+            select: {
+              id: true,
+              numero: true,
+              titulo: true,
+            },
+          },
+          responsavel: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              role: true,
+            },
+          },
+          tarefaRelacionada: {
+            select: {
+              id: true,
+              titulo: true,
+              status: true,
+              deletedAt: true,
+            },
+          },
+          documentos: {
+            select: {
+              id: true,
+              nome: true,
+              tipo: true,
+              url: true,
+            },
+          },
+          prazosRelacionados: {
+            select: {
+              id: true,
+              titulo: true,
+              dataVencimento: true,
+              status: true,
+            },
           },
         },
-        documentos: {
-          select: {
-            id: true,
-            nome: true,
-            tipo: true,
-            url: true,
+        orderBy: {
+          dataMovimentacao: "desc",
+        },
+        skip: (safePage - 1) * perPage,
+        take: perPage,
+      });
+    } catch (queryError: any) {
+      const errorMessage = String(queryError?.message || "");
+      const isLegacyPrismaClient =
+        errorMessage.includes("Unknown field `responsavel`") ||
+        errorMessage.includes("Unknown field `tarefaRelacionada`");
+
+      if (!isLegacyPrismaClient) {
+        throw queryError;
+      }
+
+      andamentosRaw = await prisma.movimentacaoProcesso.findMany({
+        where,
+        include: {
+          criadoPor: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          processo: {
+            select: {
+              id: true,
+              numero: true,
+              titulo: true,
+            },
+          },
+          documentos: {
+            select: {
+              id: true,
+              nome: true,
+              tipo: true,
+              url: true,
+            },
+          },
+          prazosRelacionados: {
+            select: {
+              id: true,
+              titulo: true,
+              dataVencimento: true,
+              status: true,
+            },
           },
         },
-        prazosRelacionados: {
-          select: {
-            id: true,
-            titulo: true,
-            dataVencimento: true,
-            status: true,
-          },
+        orderBy: {
+          dataMovimentacao: "desc",
+        },
+        skip: (safePage - 1) * perPage,
+        take: perPage,
+      });
+    }
+
+    const andamentos = andamentosRaw.map((andamento: any) => ({
+      ...andamento,
+      statusOperacional: andamento.statusOperacional || "NOVO",
+      prioridade: andamento.prioridade || "MEDIA",
+      slaEm: andamento.slaEm ?? andamento.prazo ?? null,
+      resolvidoEm: andamento.resolvidoEm ?? null,
+      observacaoResolucao: andamento.observacaoResolucao ?? null,
+      responsavel: andamento.responsavel ?? null,
+      tarefaRelacionada:
+        andamento.tarefaRelacionada &&
+        !andamento.tarefaRelacionada.deletedAt
+          ? {
+              id: andamento.tarefaRelacionada.id,
+              titulo: andamento.tarefaRelacionada.titulo,
+              status: andamento.tarefaRelacionada.status,
+            }
+          : null,
+    }));
+
+    const processosComAndamentoIds = await prisma.movimentacaoProcesso.findMany({
+      where: baseScopeWhere,
+      select: {
+        processoId: true,
+      },
+      distinct: ["processoId"],
+    });
+
+    const processosDisponiveis =
+      processosComAndamentoIds.length > 0
+        ? await prisma.processo.findMany({
+            where: {
+              tenantId,
+              id: {
+                in: processosComAndamentoIds.map((item) => item.processoId),
+              },
+            },
+            select: {
+              id: true,
+              numero: true,
+              titulo: true,
+            },
+            orderBy: {
+              numero: "asc",
+            },
+          })
+        : [];
+
+    const responsaveisDisponiveis = await prisma.usuario.findMany({
+      where: {
+        tenantId,
+        active: true,
+        role: {
+          not: UserRole.CLIENTE,
         },
       },
-      orderBy: {
-        dataMovimentacao: "desc",
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
       },
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
     });
 
     return {
       success: true,
       data: andamentos,
+      pagination: {
+        page: safePage,
+        perPage,
+        total,
+        totalPages,
+        hasPreviousPage: safePage > 1,
+        hasNextPage: safePage < totalPages,
+      },
+      processosDisponiveis,
+      responsaveisDisponiveis,
     };
   } catch (error: any) {
     console.error("Erro ao listar andamentos:", error);
@@ -206,13 +512,20 @@ export async function getAndamento(
   andamentoId: string,
 ): Promise<ActionResponse<any>> {
   try {
+    await ensurePermissionOrThrow("visualizar");
+
+    const session = await getSession();
     const tenantId = await getTenantId();
+    const processoScope = await getProcessoScopeForSession(session);
+
+    const where: any = {
+      id: andamentoId,
+      tenantId,
+    };
+    mergeProcessoScope(where, processoScope);
 
     const andamento = await prisma.movimentacaoProcesso.findFirst({
-      where: {
-        id: andamentoId,
-        tenantId,
-      },
+      where,
       include: {
         criadoPor: {
           select: {
@@ -233,6 +546,23 @@ export async function getAndamento(
                 nome: true,
               },
             },
+          },
+        },
+        responsavel: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        tarefaRelacionada: {
+          select: {
+            id: true,
+            titulo: true,
+            status: true,
+            deletedAt: true,
           },
         },
         documentos: {
@@ -272,7 +602,17 @@ export async function getAndamento(
 
     return {
       success: true,
-      data: andamento,
+      data: {
+        ...andamento,
+        tarefaRelacionada:
+          andamento.tarefaRelacionada && !andamento.tarefaRelacionada.deletedAt
+            ? {
+                id: andamento.tarefaRelacionada.id,
+                titulo: andamento.tarefaRelacionada.titulo,
+                status: andamento.tarefaRelacionada.status,
+              }
+            : null,
+      },
     };
   } catch (error: any) {
     console.error("Erro ao buscar andamento:", error);
@@ -292,29 +632,79 @@ export async function createAndamento(
   input: AndamentoCreateInput,
 ): Promise<ActionResponse<any>> {
   try {
+    await ensurePermissionOrThrow("criar");
+
     const tenantId = await getTenantId();
     const userId = await getUserId();
     const session = await getSession();
     const actor = session?.user as any;
+    const processoScope = await getProcessoScopeForSession(session);
     const actorName =
       `${actor?.firstName ?? ""} ${actor?.lastName ?? ""}`.trim() ||
       (actor?.email as string | undefined) ||
       "Usuário";
 
+    if (input.tipo === "PRAZO" && !input.prazo) {
+      return {
+        success: false,
+        error: "Para movimentação do tipo PRAZO, informe a data de prazo",
+      };
+    }
+
+    if (!input.titulo?.trim()) {
+      return {
+        success: false,
+        error: "Título é obrigatório",
+      };
+    }
+
+    const processoWhere: any = {
+      id: input.processoId,
+      tenantId,
+    };
+    mergeProcessoScope(processoWhere, processoScope);
+
     // Verificar se processo existe e pertence ao tenant
     const processo = await prisma.processo.findFirst({
-      where: {
-        id: input.processoId,
-        tenantId,
-      },
+      where: processoWhere,
     });
 
     if (!processo) {
       return {
         success: false,
-        error: "Processo não encontrado",
+        error: "Processo não encontrado ou sem acesso",
       };
     }
+
+    if (input.responsavelId) {
+      const responsavel = await prisma.usuario.findFirst({
+        where: {
+          id: input.responsavelId,
+          tenantId,
+          active: true,
+          role: {
+            not: UserRole.CLIENTE,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (!responsavel) {
+        return {
+          success: false,
+          error: "Responsável inválido para este tenant",
+        };
+      }
+    }
+
+    const finalStatus = input.statusOperacional || "NOVO";
+    const finalSla = input.slaEm || input.prazo || undefined;
+    const finalResolvidoEm =
+      finalStatus === "RESOLVIDO" ? input.resolvidoEm || new Date() : null;
+    const finalObservacaoResolucao =
+      finalStatus === "RESOLVIDO"
+        ? normalizeOptionalText(input.observacaoResolucao)
+        : undefined;
 
     const andamento = await prisma.movimentacaoProcesso.create({
       data: {
@@ -323,7 +713,13 @@ export async function createAndamento(
         titulo: input.titulo,
         descricao: input.descricao,
         tipo: input.tipo,
+        statusOperacional: finalStatus,
+        prioridade: input.prioridade || "MEDIA",
+        responsavelId: input.responsavelId,
         dataMovimentacao: input.dataMovimentacao || new Date(),
+        slaEm: finalSla,
+        resolvidoEm: finalResolvidoEm,
+        observacaoResolucao: finalObservacaoResolucao,
         prazo: input.prazo,
         criadoPorId: userId,
         // Campos para notificações
@@ -346,6 +742,23 @@ export async function createAndamento(
             id: true,
             numero: true,
             titulo: true,
+          },
+        },
+        responsavel: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        tarefaRelacionada: {
+          select: {
+            id: true,
+            titulo: true,
+            status: true,
+            deletedAt: true,
           },
         },
       },
@@ -429,6 +842,10 @@ export async function createAndamento(
             titulo: input.titulo,
             descricao: input.descricao ?? andamento.descricao ?? null,
             tipo: input.tipo,
+            statusOperacional: andamento.statusOperacional,
+            prioridade: andamento.prioridade,
+            responsavelId: andamento.responsavelId,
+            slaEm: andamento.slaEm,
             dataMovimentacao: input.dataMovimentacao || new Date(),
           },
           urgency: "MEDIUM",
@@ -450,7 +867,13 @@ export async function createAndamento(
         titulo: andamento.titulo,
         descricao: andamento.descricao ?? null,
         tipo: andamento.tipo ?? null,
+        statusOperacional: andamento.statusOperacional,
+        prioridade: andamento.prioridade,
+        responsavelId: andamento.responsavelId,
         dataMovimentacao: andamento.dataMovimentacao,
+        slaEm: andamento.slaEm ?? null,
+        resolvidoEm: andamento.resolvidoEm ?? null,
+        observacaoResolucao: andamento.observacaoResolucao ?? null,
         prazo: andamento.prazo ?? null,
         notificacoes: {
           cliente: andamento.notificarCliente,
@@ -468,7 +891,13 @@ export async function createAndamento(
         "titulo",
         "descricao",
         "tipo",
+        "statusOperacional",
+        "prioridade",
+        "responsavelId",
         "dataMovimentacao",
+        "slaEm",
+        "resolvidoEm",
+        "observacaoResolucao",
         "prazo",
         "notificarCliente",
         "notificarEmail",
@@ -502,7 +931,17 @@ export async function createAndamento(
 
     return {
       success: true,
-      data: andamento,
+      data: {
+        ...andamento,
+        tarefaRelacionada:
+          andamento.tarefaRelacionada && !andamento.tarefaRelacionada.deletedAt
+            ? {
+                id: andamento.tarefaRelacionada.id,
+                titulo: andamento.tarefaRelacionada.titulo,
+                status: andamento.tarefaRelacionada.status,
+              }
+            : null,
+      },
     };
   } catch (error: any) {
     console.error("Erro ao criar andamento:", error);
@@ -523,9 +962,12 @@ export async function updateAndamento(
   input: AndamentoUpdateInput,
 ): Promise<ActionResponse<any>> {
   try {
+    await ensurePermissionOrThrow("editar");
+
     const tenantId = await getTenantId();
     const session = await getSession();
     const userId = session?.user?.id;
+    const processoScope = await getProcessoScopeForSession(session);
 
     if (!userId) {
       return { success: false, error: "Usuário não autenticado" };
@@ -538,18 +980,27 @@ export async function updateAndamento(
       "Usuário";
 
     // Verificar se andamento existe e pertence ao tenant
+    const andamentoWhere: any = {
+      id: andamentoId,
+      tenantId,
+    };
+    mergeProcessoScope(andamentoWhere, processoScope);
+
     const andamentoExistente = await prisma.movimentacaoProcesso.findFirst({
-      where: {
-        id: andamentoId,
-        tenantId,
-      },
+      where: andamentoWhere,
       select: {
         id: true,
         processoId: true,
         titulo: true,
         descricao: true,
         tipo: true,
+        statusOperacional: true,
+        prioridade: true,
+        responsavelId: true,
         dataMovimentacao: true,
+        slaEm: true,
+        resolvidoEm: true,
+        observacaoResolucao: true,
         prazo: true,
         notificarCliente: true,
         notificarEmail: true,
@@ -565,13 +1016,55 @@ export async function updateAndamento(
       };
     }
 
+    if (input.responsavelId) {
+      const responsavel = await prisma.usuario.findFirst({
+        where: {
+          id: input.responsavelId,
+          tenantId,
+          active: true,
+          role: {
+            not: UserRole.CLIENTE,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (!responsavel) {
+        return {
+          success: false,
+          error: "Responsável inválido para este tenant",
+        };
+      }
+    }
+
+    const nextStatus =
+      input.statusOperacional ?? andamentoExistente.statusOperacional;
+    const nextResolvidoEm =
+      nextStatus === "RESOLVIDO"
+        ? input.resolvidoEm ||
+          andamentoExistente.resolvidoEm ||
+          new Date()
+        : null;
+    const nextObservacaoResolucao =
+      nextStatus === "RESOLVIDO"
+        ? normalizeOptionalText(input.observacaoResolucao) ??
+          andamentoExistente.observacaoResolucao ??
+          null
+        : null;
+
     const andamento = await prisma.movimentacaoProcesso.update({
       where: { id: andamentoId },
       data: {
         titulo: input.titulo,
         descricao: input.descricao,
         tipo: input.tipo,
+        statusOperacional: input.statusOperacional,
+        prioridade: input.prioridade,
+        responsavelId: input.responsavelId,
         dataMovimentacao: input.dataMovimentacao,
+        slaEm: input.slaEm,
+        resolvidoEm: nextResolvidoEm,
+        observacaoResolucao: nextObservacaoResolucao,
         prazo: input.prazo,
         // Campos para notificações
         notificarCliente: input.notificarCliente,
@@ -593,6 +1086,23 @@ export async function updateAndamento(
             id: true,
             numero: true,
             titulo: true,
+          },
+        },
+        responsavel: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+          },
+        },
+        tarefaRelacionada: {
+          select: {
+            id: true,
+            titulo: true,
+            status: true,
+            deletedAt: true,
           },
         },
       },
@@ -643,6 +1153,10 @@ export async function updateAndamento(
                 titulo: andamento.titulo,
                 descricao: andamento.descricao ?? null,
                 tipo: andamento.tipo,
+                statusOperacional: andamento.statusOperacional,
+                prioridade: andamento.prioridade,
+                responsavelId: andamento.responsavelId,
+                slaEm: andamento.slaEm,
                 dataMovimentacao: andamento.dataMovimentacao,
                 referenciaTipo: "processo",
                 referenciaId: andamento.processo.id,
@@ -703,7 +1217,17 @@ export async function updateAndamento(
 
     return {
       success: true,
-      data: andamento,
+      data: {
+        ...andamento,
+        tarefaRelacionada:
+          andamento.tarefaRelacionada && !andamento.tarefaRelacionada.deletedAt
+            ? {
+                id: andamento.tarefaRelacionada.id,
+                titulo: andamento.tarefaRelacionada.titulo,
+                status: andamento.tarefaRelacionada.status,
+              }
+            : null,
+      },
     };
   } catch (error: any) {
     console.error("Erro ao atualizar andamento:", error);
@@ -723,9 +1247,12 @@ export async function deleteAndamento(
   andamentoId: string,
 ): Promise<ActionResponse<null>> {
   try {
+    await ensurePermissionOrThrow("excluir");
+
     const tenantId = await getTenantId();
     const session = await getSession();
     const userId = session?.user?.id;
+    const processoScope = await getProcessoScopeForSession(session);
 
     if (!userId) {
       return { success: false, error: "Usuário não autenticado" };
@@ -738,11 +1265,14 @@ export async function deleteAndamento(
       "Usuário";
 
     // Verificar se andamento existe e pertence ao tenant
+    const andamentoWhere: any = {
+      id: andamentoId,
+      tenantId,
+    };
+    mergeProcessoScope(andamentoWhere, processoScope);
+
     const andamento = await prisma.movimentacaoProcesso.findFirst({
-      where: {
-        id: andamentoId,
-        tenantId,
-      },
+      where: andamentoWhere,
     });
 
     if (!andamento) {
@@ -798,6 +1328,173 @@ export async function deleteAndamento(
 }
 
 // ============================================
+// AÇÕES RÁPIDAS
+// ============================================
+
+export async function createTarefaFromAndamento(
+  andamentoId: string,
+): Promise<ActionResponse<{ tarefaId: string }>> {
+  try {
+    await ensurePermissionOrThrow("editar");
+
+    const session = await getSession();
+    const tenantId = await getTenantId();
+    const userId = await getUserId();
+    const processoScope = await getProcessoScopeForSession(session);
+
+    const andamentoWhere: any = {
+      id: andamentoId,
+      tenantId,
+    };
+    mergeProcessoScope(andamentoWhere, processoScope);
+
+    const andamento = await prisma.movimentacaoProcesso.findFirst({
+      where: andamentoWhere,
+      include: {
+        processo: {
+          select: {
+            id: true,
+            clienteId: true,
+            numero: true,
+          },
+        },
+      },
+    });
+
+    if (!andamento) {
+      return { success: false, error: "Andamento não encontrado" };
+    }
+
+    if (andamento.tarefaRelacionadaId) {
+      const tarefaAtiva = await prisma.tarefa.findFirst({
+        where: {
+          id: andamento.tarefaRelacionadaId,
+          tenantId,
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (tarefaAtiva) {
+        return {
+          success: true,
+          data: { tarefaId: tarefaAtiva.id },
+        };
+      }
+
+      await prisma.movimentacaoProcesso.update({
+        where: { id: andamento.id },
+        data: { tarefaRelacionadaId: null },
+      });
+    }
+
+    const tarefa = await prisma.tarefa.create({
+      data: {
+        tenantId,
+        titulo: `Ação do andamento: ${andamento.titulo}`,
+        descricao:
+          andamento.descricao ||
+          `Gerada automaticamente a partir do andamento no processo ${andamento.processo.numero}.`,
+        status: "PENDENTE",
+        prioridade: "MEDIA",
+        processoId: andamento.processo.id,
+        clienteId: andamento.processo.clienteId,
+        responsavelId: andamento.responsavelId || userId,
+        criadoPorId: userId,
+        dataLimite: andamento.slaEm || andamento.prazo || null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    await prisma.movimentacaoProcesso.update({
+      where: { id: andamento.id },
+      data: {
+        tarefaRelacionadaId: tarefa.id,
+      },
+    });
+
+    revalidatePath("/andamentos");
+    revalidatePath("/tarefas");
+    revalidatePath(`/processos/${andamento.processo.id}`);
+
+    return {
+      success: true,
+      data: { tarefaId: tarefa.id },
+    };
+  } catch (error: any) {
+    console.error("Erro ao criar tarefa a partir do andamento:", error);
+    return {
+      success: false,
+      error: error.message || "Erro ao criar tarefa",
+    };
+  }
+}
+
+export async function marcarAndamentoResolvido(
+  andamentoId: string,
+  observacaoResolucao?: string,
+): Promise<ActionResponse<any>> {
+  try {
+    await ensurePermissionOrThrow("editar");
+
+    const session = await getSession();
+    const tenantId = await getTenantId();
+    const processoScope = await getProcessoScopeForSession(session);
+
+    const where: any = {
+      id: andamentoId,
+      tenantId,
+    };
+    mergeProcessoScope(where, processoScope);
+
+    const andamento = await prisma.movimentacaoProcesso.findFirst({
+      where,
+      select: {
+        id: true,
+        processoId: true,
+      },
+    });
+
+    if (!andamento) {
+      return { success: false, error: "Andamento não encontrado" };
+    }
+
+    const updated = await prisma.movimentacaoProcesso.update({
+      where: { id: andamento.id },
+      data: {
+        statusOperacional: "RESOLVIDO",
+        resolvidoEm: new Date(),
+        observacaoResolucao: normalizeOptionalText(observacaoResolucao),
+      },
+      select: {
+        id: true,
+        statusOperacional: true,
+        resolvidoEm: true,
+        observacaoResolucao: true,
+      },
+    });
+
+    revalidatePath("/andamentos");
+    revalidatePath(`/processos/${andamento.processoId}`);
+
+    return {
+      success: true,
+      data: updated,
+    };
+  } catch (error: any) {
+    console.error("Erro ao marcar andamento como resolvido:", error);
+    return {
+      success: false,
+      error: error.message || "Erro ao resolver andamento",
+    };
+  }
+}
+
+// ============================================
 // DASHBOARD/MÉTRICAS
 // ============================================
 
@@ -805,79 +1502,100 @@ export async function getDashboardAndamentos(
   processoId?: string,
 ): Promise<ActionResponse<any>> {
   try {
+    await ensurePermissionOrThrow("visualizar");
+
+    const session = await getSession();
     const tenantId = await getTenantId();
-    const userId = await getUserId();
+    const processoScope = await getProcessoScopeForSession(session);
 
     const where: any = { tenantId };
+    mergeProcessoScope(where, processoScope);
 
     if (processoId) {
       where.processoId = processoId;
     }
 
-    // Debug temporário
-    console.log("getDashboardAndamentos - tenantId:", tenantId);
-    console.log("getDashboardAndamentos - userId:", userId);
-    console.log("getDashboardAndamentos - where:", where);
-
-    // Usar a mesma lógica da função listAndamentos que está funcionando
-    const andamentos = await prisma.movimentacaoProcesso.findMany({
-      where,
-      include: {
-        criadoPor: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+    const [total, atrasados, semResponsavel, porTipo, porStatus, ultimosAndamentos] =
+      await Promise.all([
+        prisma.movimentacaoProcesso.count({ where }),
+        prisma.movimentacaoProcesso.count({
+          where: {
+            ...where,
+            slaEm: { lt: new Date() },
+            statusOperacional: {
+              not: "RESOLVIDO",
+            },
           },
-        },
-        processo: {
-          select: {
-            id: true,
-            numero: true,
-            titulo: true,
+        }),
+        prisma.movimentacaoProcesso.count({
+          where: {
+            ...where,
+            responsavelId: null,
           },
-        },
-      },
-    });
+        }),
+        prisma.movimentacaoProcesso.groupBy({
+          by: ["tipo"],
+          where,
+          _count: { _all: true },
+        }),
+        prisma.movimentacaoProcesso.groupBy({
+          by: ["statusOperacional"],
+          where,
+          _count: { _all: true },
+        }),
+        prisma.movimentacaoProcesso.findMany({
+          where,
+          include: {
+            criadoPor: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            processo: {
+              select: {
+                id: true,
+                numero: true,
+                titulo: true,
+              },
+            },
+            responsavel: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+          orderBy: {
+            dataMovimentacao: "desc",
+          },
+          take: 10,
+        }),
+      ]);
 
-    // Calcular métricas a partir dos dados
-    const total = andamentos.length;
-    const porTipo = andamentos.reduce((acc: any, andamento: any) => {
-      const tipo = andamento.tipo;
-
-      acc[tipo] = (acc[tipo] || 0) + 1;
-
-      return acc;
-    }, {});
-
-    // Converter para o formato esperado
-    const porTipoArray = Object.entries(porTipo).map(([tipo, count]) => ({
-      tipo,
-      _count: count,
+    const porTipoArray = porTipo.map((item) => ({
+      tipo: item.tipo,
+      _count: item._count._all,
     }));
 
-    const ultimosAndamentos = andamentos
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.dataMovimentacao).getTime() -
-          new Date(a.dataMovimentacao).getTime(),
-      )
-      .slice(0, 10);
-
-    // Debug temporário
-    console.log("getDashboardAndamentos - total:", total);
-    console.log("getDashboardAndamentos - porTipo:", porTipoArray);
-    console.log(
-      "getDashboardAndamentos - ultimosAndamentos:",
-      ultimosAndamentos.length,
-    );
+    const porStatusArray = porStatus.map((item) => ({
+      statusOperacional: item.statusOperacional,
+      _count: item._count._all,
+    }));
 
     return {
       success: true,
       data: {
         total,
+        atrasados,
+        semResponsavel,
         porTipo: porTipoArray,
+        porStatus: porStatusArray,
         ultimosAndamentos,
       },
     };

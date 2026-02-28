@@ -36,7 +36,7 @@ import {
   Link2,
   Paperclip,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
 import { useAllProcuracoes } from "@/app/hooks/use-procuracoes";

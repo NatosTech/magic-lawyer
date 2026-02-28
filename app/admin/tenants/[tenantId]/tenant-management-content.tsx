@@ -179,7 +179,6 @@ export function TenantManagementContent({
     try {
       await mutate(undefined, { revalidate: true });
     } catch (err) {
-      console.warn(`[tenant-management] Revalidação (${context}) falhou`, err);
       addToast({
         title: "⚠️ Dados podem estar desatualizados",
         description: `Falha ao atualizar dados automaticamente. Recarregue a página se necessário.`,

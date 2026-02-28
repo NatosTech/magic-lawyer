@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardBody, Chip, Button, Avatar } from "@heroui/react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface NotificacaoPagamento {
   id: string;

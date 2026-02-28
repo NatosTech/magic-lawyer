@@ -39,7 +39,7 @@ import {
   Check,
 } from "lucide-react";
 import { Spinner } from "@heroui/spinner";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { exportJuizToPDF } from "./export-juiz-pdf";
 

@@ -15,7 +15,7 @@ import {
 import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
 import { Checkbox } from "@heroui/checkbox";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   MapPin,
   Plus,

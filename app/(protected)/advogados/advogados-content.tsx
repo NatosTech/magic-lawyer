@@ -48,7 +48,7 @@ import {
   Mail,
   UploadCloud,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import useSWR from "swr";
 
 import { AdvogadoHistorico } from "./components/advogado-historico";

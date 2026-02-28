@@ -18,7 +18,7 @@ import {
   Info,
   Code,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import Link from "next/link";
 
 import { title } from "@/components/primitives";

@@ -25,7 +25,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 
 import useSWR from "swr";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { title, subtitle } from "@/components/primitives";
 import {

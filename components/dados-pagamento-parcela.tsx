@@ -66,7 +66,6 @@ export function DadosPagamentoParcela({
         setIsOpen(true);
       }
     } catch (error) {
-      console.error("Erro ao carregar dados de pagamento:", error);
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +77,6 @@ export function DadosPagamentoParcela({
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
     } catch (error) {
-      console.error("Erro ao copiar:", error);
     }
   };
 

@@ -28,7 +28,7 @@ import {
   CalendarDaysIcon,
   HashIcon,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { motion, AnimatePresence } from "motion/react";
 
 import {

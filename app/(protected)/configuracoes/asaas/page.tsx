@@ -8,7 +8,7 @@ import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Spinner } from "@heroui/spinner";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   configurarAsaasTenant,
@@ -45,7 +45,6 @@ export default function ConfiguracaoAsaasPage() {
         }));
       }
     } catch (error) {
-      console.error("Erro ao carregar configuração:", error);
     } finally {
       setIsLoading(false);
     }

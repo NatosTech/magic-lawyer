@@ -30,7 +30,6 @@ export function SuporteContent() {
 
   const handleSubmit = () => {
     // TODO: Implementar envio do ticket
-    console.log("Enviando ticket:", ticketForm);
   };
 
   return (

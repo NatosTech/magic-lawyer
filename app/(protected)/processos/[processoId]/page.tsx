@@ -43,7 +43,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   useProcessoDetalhado,
@@ -461,7 +461,6 @@ export default function ProcessoDetalhesPage() {
         toast.error(result.error || "Erro ao criar parte");
       }
     } catch (error) {
-      console.error(error);
       toast.error("Erro ao criar parte");
     } finally {
       setIsCreatingParte(false);
@@ -480,7 +479,6 @@ export default function ProcessoDetalhesPage() {
         toast.error(result.error || "Erro ao remover parte");
       }
     } catch (error) {
-      console.error(error);
       toast.error("Erro ao remover parte");
     } finally {
       setParteActionId(null);
@@ -517,7 +515,6 @@ export default function ProcessoDetalhesPage() {
         toast.error(result.error || "Erro ao criar prazo");
       }
     } catch (error) {
-      console.error(error);
       toast.error("Erro ao criar prazo");
     } finally {
       setIsCreatingPrazo(false);
@@ -543,7 +540,6 @@ export default function ProcessoDetalhesPage() {
         toast.error(result.error || "Erro ao atualizar prazo");
       }
     } catch (error) {
-      console.error(error);
       toast.error("Erro ao atualizar prazo");
     } finally {
       setPrazoActionId(null);
@@ -562,7 +558,6 @@ export default function ProcessoDetalhesPage() {
         toast.error(result.error || "Erro ao remover prazo");
       }
     } catch (error) {
-      console.error(error);
       toast.error("Erro ao remover prazo");
     } finally {
       setPrazoActionId(null);
@@ -591,7 +586,6 @@ export default function ProcessoDetalhesPage() {
         toast.error(result.error || "Erro ao vincular procuração");
       }
     } catch (error) {
-      console.error(error);
       toast.error("Erro ao vincular procuração");
     } finally {
       setIsLinkingProcuracao(false);
@@ -610,7 +604,6 @@ export default function ProcessoDetalhesPage() {
         toast.error(result.error || "Erro ao desvincular procuração");
       }
     } catch (error) {
-      console.error(error);
       toast.error("Erro ao desvincular procuração");
     } finally {
       setProcuracaoActionId(null);

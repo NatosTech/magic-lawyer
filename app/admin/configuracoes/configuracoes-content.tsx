@@ -37,7 +37,6 @@ export function ConfiguracoesContent() {
 
   const handleSave = () => {
     // TODO: Implementar salvamento das configurações
-    console.log("Salvando configurações:", settings);
   };
 
   return (

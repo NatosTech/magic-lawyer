@@ -36,7 +36,7 @@ import {
   Phone,
   TrendingUp,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useSession } from "next-auth/react";
 import { MapPin, History as HistoryIcon } from "lucide-react";
 import useSWR from "swr";
@@ -1391,7 +1391,6 @@ function UsuariosTab() {
       const errorMessage = error instanceof Error ? error.message : "Erro ao carregar permissões efetivas";
 
       toast.error(errorMessage);
-      console.error(error);
       // Fechar o modal em caso de erro
       setIsPermissionsModalOpen(false);
     } finally {

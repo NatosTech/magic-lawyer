@@ -213,7 +213,6 @@ export function PortalAdvogadoContent() {
       });
       await refreshSyncStatus();
     } catch (error) {
-      console.error(error);
       addToast({
         title: "Erro interno",
         description: "Falha ao iniciar sincronização.",
@@ -269,7 +268,6 @@ export function PortalAdvogadoContent() {
       });
       await refreshSyncStatus();
     } catch (error) {
-      console.error(error);
       addToast({
         title: "Erro interno",
         description: "Falha ao enviar captcha.",

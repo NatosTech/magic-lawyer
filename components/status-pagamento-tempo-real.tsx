@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Card, CardBody, Chip, Button, Spinner } from "@heroui/react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   consultarStatusPagamento,
@@ -85,7 +85,6 @@ export function StatusPagamentoTempoReal({
           }
         }
       } catch (error) {
-        console.error("Erro ao consultar status:", error);
       }
     };
 
@@ -122,7 +121,6 @@ export function StatusPagamentoTempoReal({
       }
     } catch (error) {
       toast.error("Erro interno do servidor");
-      console.error(error);
     } finally {
       setIsLoading(false);
     }

@@ -32,7 +32,7 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { title, subtitle } from "@/components/primitives";
 import {
@@ -62,7 +62,6 @@ function formatJson(data: unknown) {
   try {
     return JSON.stringify(data, null, 2);
   } catch (error) {
-    console.error("Erro ao formatar JSON de auditoria", error);
 
     return String(data);
   }
@@ -77,7 +76,6 @@ function formatValue(value: unknown) {
     try {
       return JSON.stringify(value, null, 2);
     } catch (error) {
-      console.error("Erro ao formatar valor de auditoria", error);
 
       return String(value);
     }
@@ -301,7 +299,6 @@ export function AuditoriaContent() {
                   URL.revokeObjectURL(url);
                   toast.success("Logs exportados com sucesso");
                 } catch (err) {
-                  console.error(err);
                   toast.error(
                     err instanceof Error
                       ? err.message

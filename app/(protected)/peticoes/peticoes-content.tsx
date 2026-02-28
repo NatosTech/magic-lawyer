@@ -23,7 +23,7 @@ import {
   SelectItem,
   Pagination,
 } from "@heroui/react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   Search as MagnifyingGlassIcon,
   Filter as FilterIcon,
@@ -911,7 +911,6 @@ function PeticaoModal({
         toast.error(resultado.error || "Erro ao processar modelo");
       }
     } catch (error) {
-      console.error("Erro ao aplicar modelo:", error);
       toast.error("Erro ao aplicar modelo");
     } finally {
       setProcessandoModelo(false);

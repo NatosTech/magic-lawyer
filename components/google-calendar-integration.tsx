@@ -21,7 +21,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@heroui/react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   getGoogleCalendarAuthUrl,

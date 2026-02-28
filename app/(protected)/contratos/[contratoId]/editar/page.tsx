@@ -28,7 +28,7 @@ import {
   LinkIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Spinner } from "@heroui/spinner";
 
 import { title } from "@/components/primitives";
@@ -185,7 +185,6 @@ export default function EditarContratoPage({
         toast.error(result.error || "Erro ao vincular procuração");
       }
     } catch (error) {
-      console.error("Erro ao vincular procuração:", error);
       toast.error("Erro ao processar vinculação");
     } finally {
       setIsLinking(false);
@@ -217,7 +216,6 @@ export default function EditarContratoPage({
         toast.error(result.error || "Erro ao atualizar contrato");
       }
     } catch (error) {
-      console.error("Erro ao atualizar contrato:", error);
       toast.error("Erro ao atualizar contrato");
     } finally {
       setIsSaving(false);

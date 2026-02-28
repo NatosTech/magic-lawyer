@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   useClienteComProcessos,
@@ -360,7 +360,6 @@ export default function ClienteDetalhesPage() {
         toast.error(result.error || "Erro ao anexar documento");
       }
     } catch (error) {
-      console.error("Erro ao anexar documento:", error);
       toast.error("Erro ao anexar documento");
     } finally {
       setIsUploading(false);

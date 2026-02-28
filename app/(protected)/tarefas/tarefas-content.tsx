@@ -23,7 +23,7 @@ import {
   AlertTriangle,
   Kanban,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import useSWR from "swr";
 import {
   Card, CardBody, CardHeader, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Tooltip, Textarea, Divider, Progress, Select, SelectItem } from "@heroui/react";
@@ -191,7 +191,6 @@ export default function ModuloCategoriasPage() {
         toast.error(result?.error || "Erro ao salvar categoria");
       }
     } catch (error) {
-      console.error("Erro ao salvar categoria:", error);
       toast.error("Erro interno do servidor");
     } finally {
       setLoading(false);
@@ -220,7 +219,6 @@ export default function ModuloCategoriasPage() {
         toast.error(result.error || "Erro ao excluir categoria");
       }
     } catch (error) {
-      console.error("Erro ao excluir categoria:", error);
       toast.error("Erro interno do servidor");
     } finally {
       setLoading(false);
@@ -245,7 +243,6 @@ export default function ModuloCategoriasPage() {
         toast.error(result.error || "Erro ao alterar status da categoria");
       }
     } catch (error) {
-      console.error("Erro ao alterar status:", error);
       toast.error("Erro interno do servidor");
     } finally {
       setLoading(false);

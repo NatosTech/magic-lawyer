@@ -12,7 +12,7 @@ import {
   Textarea,
 } from "@heroui/react";
 import { Check, X, HelpCircle, AlertCircle, Users } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { confirmarParticipacaoEvento } from "@/app/actions/eventos";
 import { Evento, EventoConfirmacaoStatus } from "@/generated/prisma";
@@ -72,7 +72,6 @@ export default function EventoConfirmacao({
         toast.error(result.error || "Erro ao confirmar participação");
       }
     } catch (error) {
-      console.error("Erro ao confirmar participação:", error);
       toast.error("Erro interno do servidor");
     } finally {
       setIsLoading(false);

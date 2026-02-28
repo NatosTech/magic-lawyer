@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Textarea, Chip, Spinner, Select, SelectItem } from "@heroui/react";
 import { Calendar, MapPin, Users, FileText, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { parseAbsoluteToLocal } from "@internationalized/date";
 
 import {

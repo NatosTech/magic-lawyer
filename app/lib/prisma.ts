@@ -5,82 +5,69 @@ const { Decimal } = Prisma;
 // Evita criar múltiplas instâncias no hot-reload do Next.js (dev)
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
-  consolePatched?: boolean;
+  prismaSchemaSignature?: string;
 };
 
-// Bloquear logs verbosos do Prisma - EXECUTAR APENAS UMA VEZ
-if (!globalForPrisma.consolePatched) {
-  const originalConsoleError = console.error;
-  const originalConsoleWarn = console.warn;
-  const originalConsoleLog = console.log;
+const prismaSchemaSignature = Prisma.dmmf.datamodel.models
+  .map((model) =>
+    `${model.name}:${model.fields.map((field) => field.name).join(",")}`,
+  )
+  .join("|");
 
-  console.error = (...args: any[]) => {
-    const str = args.join(" ");
+function assertRequiredPrismaFields() {
+  const movimentacaoProcesso = Prisma.dmmf.datamodel.models.find(
+    (model) => model.name === "MovimentacaoProcesso",
+  );
 
-    // Bloquear logs verbosos do Prisma
-    if (
-      str.includes("checkPlatformCaching") ||
-      str.includes("prisma:info") ||
-      str.includes("Prisma has detected") ||
-      str.includes("This leads to an outdated Prisma Client") ||
-      str.includes("make sure to run") ||
-      str.includes("prisma generate") ||
-      str.includes("build process") ||
-      str.includes("clientVersion") ||
-      str.includes("clientVersion: '6.17.1'") ||
-      str.length > 1000 // Mensagens muito longas
-    ) {
-      return;
-    }
+  if (!movimentacaoProcesso) {
+    throw new Error(
+      "Prisma Client desatualizado: modelo MovimentacaoProcesso nao encontrado. Rode `npx prisma generate` e reinicie o servidor.",
+    );
+  }
 
-    originalConsoleError.apply(console, args);
-  };
+  const requiredFields = ["statusOperacional", "resolvidoEm"];
+  const missingFields = requiredFields.filter(
+    (fieldName) =>
+      !movimentacaoProcesso.fields.some((field) => field.name === fieldName),
+  );
 
-  console.warn = (...args: any[]) => {
-    const str = args.join(" ");
-
-    if (
-      str.includes("checkPlatformCaching") ||
-      str.includes("Prisma has detected") ||
-      str.includes("prisma:info")
-    ) {
-      return;
-    }
-    originalConsoleWarn.apply(console, args);
-  };
-
-  console.log = (...args: any[]) => {
-    const str = args.join(" ");
-
-    // Bloquear logs de desenvolvimento do Prisma
-    if (
-      str.includes("prisma:info") ||
-      str.includes("clientVersion") ||
-      str.includes("Prisma has detected")
-    ) {
-      return;
-    }
-    originalConsoleLog.apply(console, args);
-  };
-
-  globalForPrisma.consolePatched = true;
+  if (missingFields.length > 0) {
+    throw new Error(
+      `Prisma Client desatualizado: campos ausentes em MovimentacaoProcesso (${missingFields.join(", ")}). Rode \`npx prisma generate\` e reinicie o servidor.`,
+    );
+  }
 }
 
-// Criar Prisma Client com logs desabilitados
-const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: [], // Desabilita todos os logs do Prisma
-    errorFormat: "minimal", // Formato mínimo de erro
+assertRequiredPrismaFields();
+
+function createPrismaClient() {
+  return new PrismaClient({
+    log: [], // Desabilita logs de query do Prisma
+    errorFormat: "minimal",
     datasources: {
       db: {
         url: process.env.DATABASE_URL,
       },
     },
   });
+}
+
+if (
+  process.env.NODE_ENV !== "production" &&
+  globalForPrisma.prisma &&
+  globalForPrisma.prismaSchemaSignature !== prismaSchemaSignature
+) {
+  void globalForPrisma.prisma.$disconnect().catch(() => undefined);
+  globalForPrisma.prisma = undefined;
+}
+
+const prisma =
+  globalForPrisma.prisma ??
+  createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
+  globalForPrisma.prismaSchemaSignature = prismaSchemaSignature;
 }
 
 /**

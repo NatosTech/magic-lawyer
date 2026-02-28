@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@heroui/table";
 import { Download, Search } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { type RelatorioPeriodo, type RelatoriosTenantData } from "@/app/actions/relatorios";
 import { useRelatorios } from "@/app/hooks/use-relatorios";
@@ -638,7 +638,6 @@ export function RelatoriosContent() {
 
       toast.success(`${report.nome} exportado em ${FORMAT_LABELS[finalFormat]}.`);
     } catch (exportError) {
-      console.error("Erro ao exportar relatório", exportError);
       toast.error("Não foi possível exportar o relatório.");
     } finally {
       setExportingReportId(null);

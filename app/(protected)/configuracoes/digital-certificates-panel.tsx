@@ -52,7 +52,7 @@ import {
   Calendar,
   Sparkles,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { AnimatePresence, motion } from "framer-motion";
 
 import {

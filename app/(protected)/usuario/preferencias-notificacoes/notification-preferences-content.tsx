@@ -26,7 +26,7 @@ import {
   Zap,
   TrendingUp,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Input } from "@heroui/input";
 
 import {
@@ -220,7 +220,6 @@ export function NotificationPreferencesContent() {
         toast.error(result.error || "Erro ao atualizar preferência");
       }
     } catch (error) {
-      console.error("[Preferences] Erro:", error);
       toast.error("Erro ao atualizar preferência");
     } finally {
       setLoadingEvents((prev) => {

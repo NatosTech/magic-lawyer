@@ -69,102 +69,102 @@ model CategoriaTarefa {
 }
 
 model Tenant {
-  id                    String                  @id @default(cuid())
-  name                  String
-  slug                  String                  @unique
-  domain                String?                 @unique
-  timezone              String                  @default("America/Sao_Paulo")
-  status                TenantStatus            @default(ACTIVE)
-  statusReason          String?
-  statusChangedAt       DateTime?
-  sessionVersion        Int                     @default(1)
-  planRevision          Int                     @default(1)
-  tenantSoftVersion     Int                     @default(1)
+  id                       String                   @id @default(cuid())
+  name                     String
+  slug                     String                   @unique
+  domain                   String?                  @unique
+  timezone                 String                   @default("America/Sao_Paulo")
+  status                   TenantStatus             @default(ACTIVE)
+  statusReason             String?
+  statusChangedAt          DateTime?
+  sessionVersion           Int                      @default(1)
+  planRevision             Int                      @default(1)
+  tenantSoftVersion        Int                      @default(1)
   digitalCertificatePolicy DigitalCertificatePolicy @default(OFFICE)
-  tipoPessoa            TipoPessoa              @default(JURIDICA)
-  documento             String?                 @unique
-  razaoSocial           String?
-  nomeFantasia          String?
-  inscricaoEstadual     String?
-  inscricaoMunicipal    String?
-  email                 String?
-  telefone              String?
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
-  superAdminId          String?
-  acessosJuiz           AcessoJuiz[]
-  advogados             Advogado[]
-  advogadoClientes      AdvogadoCliente[]
-  analisesJuiz          AnaliseJuiz[]
-  areasProcesso         AreaProcesso[]
-  assinaturasPacoteJuiz AssinaturaPacoteJuiz[]  @relation("TenantAssinaturaPacote")
-  auditLogs             AuditLog[]
-  categoriasTarefa      CategoriaTarefa[]
-  clientes              Cliente[]
-  contratos             Contrato[]
-  contratoDocumentos    ContratoDocumento[]
-  documentos            Documento[]
-  documentoAssinaturas  DocumentoAssinatura[]
-  eventos               Evento[]
-  eventoParticipantes   EventoParticipante[]
-  faturas               Fatura[]
-  favoritosJuiz         FavoritoJuiz[]
-  julgamentos           Julgamento[]
-  modelosContrato       ModeloContrato[]
-  modelosPeticao        ModeloPeticao[]
-  tiposPeticao          TipoPeticao[]
-  modelosProcuracao     ModeloProcuracao[]
-  movimentacoes         MovimentacaoProcesso[]
-  autosProcessuais      AutoProcessual[]
-  causas                Causa[]
-  diligencias           Diligencia[]
-  regimesPrazo          RegimePrazo[]
-  peticoes              Peticao[]
-  assinaturasPeticao    AssinaturaPeticao[]
-  notificacoes          Notificacao[]
-  notificacoesUsuarios  NotificacaoUsuario[]
-  pagamentos            Pagamento[]
-  pagamentoComissoes    PagamentoComissao[]
-  processos             Processo[]
-  processoDocumentos    ProcessoDocumento[]
-  processoPartes        ProcessoParte[]
-  processoPrazos        ProcessoPrazo[]
-  procuracoes           Procuracao[]
-  procuracaoAdvogados   ProcuracaoAdvogado[]
-  procuracaoAssinaturas ProcuracaoAssinatura[]
-  procuracaoPoderes     ProcuracaoPoder[]
-  procuracaoProcessos   ProcuracaoProcesso[]
-  documentosProcuracao  DocumentoProcuracao[]
-  tarefas               Tarefa[]
-  emailCredentials      TenantEmailCredential[]
-  superAdmin            SuperAdmin?             @relation("SuperAdminTenant", fields: [superAdminId], references: [id])
-  branding              TenantBranding?
-  enderecos             Endereco[]
-  enderecosLegacy       TenantEndereco[]        @relation("TenantEnderecoLegacy")
-  subscription          TenantSubscription?
-  tiposContrato         TipoContrato[]
-  tribunais             Tribunal[]
-  usuarios              Usuario[]
-  usuarioPermissoes     UsuarioPermissao[]
-  documentoVersoes      DocumentoVersao[]
-  contratoHonorarios    ContratoHonorario[]
-  contratoParcelas      ContratoParcela[]
-  tickets               Ticket[]                @relation("TenantTickets")
-  ProcessoCausa         ProcessoCausa[]
-  boards                Board[]
-  boardColumns          BoardColumn[]
-  tarefaChecklists      TarefaChecklist[]
-  tarefaComentarios     TarefaComentario[]
-  tarefaAnexos          TarefaAnexo[]
-  tarefaTags            TarefaTag[]
-  tarefaAtividades      TarefaAtividade[]
-  tarefaTagRelacoes     TarefaTagRelacao[]
-  TarefaWatcher         TarefaWatcher[]
-  feriados              Feriado[]
-  dadosBancarios        DadosBancarios[]
-  planos                Plano[]
-  asaasConfig           TenantAsaasConfig?
-  advogadoHistorico     AdvogadoHistorico[]
+  tipoPessoa               TipoPessoa               @default(JURIDICA)
+  documento                String?                  @unique
+  razaoSocial              String?
+  nomeFantasia             String?
+  inscricaoEstadual        String?
+  inscricaoMunicipal       String?
+  email                    String?
+  telefone                 String?
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+  superAdminId             String?
+  acessosJuiz              AcessoJuiz[]
+  advogados                Advogado[]
+  advogadoClientes         AdvogadoCliente[]
+  analisesJuiz             AnaliseJuiz[]
+  areasProcesso            AreaProcesso[]
+  assinaturasPacoteJuiz    AssinaturaPacoteJuiz[]   @relation("TenantAssinaturaPacote")
+  auditLogs                AuditLog[]
+  categoriasTarefa         CategoriaTarefa[]
+  clientes                 Cliente[]
+  contratos                Contrato[]
+  contratoDocumentos       ContratoDocumento[]
+  documentos               Documento[]
+  documentoAssinaturas     DocumentoAssinatura[]
+  eventos                  Evento[]
+  eventoParticipantes      EventoParticipante[]
+  faturas                  Fatura[]
+  favoritosJuiz            FavoritoJuiz[]
+  julgamentos              Julgamento[]
+  modelosContrato          ModeloContrato[]
+  modelosPeticao           ModeloPeticao[]
+  tiposPeticao             TipoPeticao[]
+  modelosProcuracao        ModeloProcuracao[]
+  movimentacoes            MovimentacaoProcesso[]
+  autosProcessuais         AutoProcessual[]
+  causas                   Causa[]
+  diligencias              Diligencia[]
+  regimesPrazo             RegimePrazo[]
+  peticoes                 Peticao[]
+  assinaturasPeticao       AssinaturaPeticao[]
+  notificacoes             Notificacao[]
+  notificacoesUsuarios     NotificacaoUsuario[]
+  pagamentos               Pagamento[]
+  pagamentoComissoes       PagamentoComissao[]
+  processos                Processo[]
+  processoDocumentos       ProcessoDocumento[]
+  processoPartes           ProcessoParte[]
+  processoPrazos           ProcessoPrazo[]
+  procuracoes              Procuracao[]
+  procuracaoAdvogados      ProcuracaoAdvogado[]
+  procuracaoAssinaturas    ProcuracaoAssinatura[]
+  procuracaoPoderes        ProcuracaoPoder[]
+  procuracaoProcessos      ProcuracaoProcesso[]
+  documentosProcuracao     DocumentoProcuracao[]
+  tarefas                  Tarefa[]
+  emailCredentials         TenantEmailCredential[]
+  superAdmin               SuperAdmin?              @relation("SuperAdminTenant", fields: [superAdminId], references: [id])
+  branding                 TenantBranding?
+  enderecos                Endereco[]
+  enderecosLegacy          TenantEndereco[]         @relation("TenantEnderecoLegacy")
+  subscription             TenantSubscription?
+  tiposContrato            TipoContrato[]
+  tribunais                Tribunal[]
+  usuarios                 Usuario[]
+  usuarioPermissoes        UsuarioPermissao[]
+  documentoVersoes         DocumentoVersao[]
+  contratoHonorarios       ContratoHonorario[]
+  contratoParcelas         ContratoParcela[]
+  tickets                  Ticket[]                 @relation("TenantTickets")
+  ProcessoCausa            ProcessoCausa[]
+  boards                   Board[]
+  boardColumns             BoardColumn[]
+  tarefaChecklists         TarefaChecklist[]
+  tarefaComentarios        TarefaComentario[]
+  tarefaAnexos             TarefaAnexo[]
+  tarefaTags               TarefaTag[]
+  tarefaAtividades         TarefaAtividade[]
+  tarefaTagRelacoes        TarefaTagRelacao[]
+  TarefaWatcher            TarefaWatcher[]
+  feriados                 Feriado[]
+  dadosBancarios           DadosBancarios[]
+  planos                   Plano[]
+  asaasConfig              TenantAsaasConfig?
+  advogadoHistorico        AdvogadoHistorico[]
 
   // Sistema de Gestão de Equipe
   cargos                       Cargo[]
@@ -362,6 +362,7 @@ model Usuario {
   favoritosJuiz                FavoritoJuiz[]
   julgamentosCriados           Julgamento[]           @relation("JulgamentoCriador")
   movimentacoesCriadas         MovimentacaoProcesso[] @relation("MovimentacaoCriador")
+  movimentacoesResponsavel     MovimentacaoProcesso[] @relation("MovimentacaoResponsavel")
   notificacoesCriadas          Notificacao[]          @relation("NotificacaoCriador")
   notificacoesRecebidas        NotificacaoUsuario[]
   processoDocumentosCriados    ProcessoDocumento[]    @relation("ProcessoDocumentoCriador")
@@ -972,31 +973,45 @@ model ProcuracaoPoder {
 }
 
 model MovimentacaoProcesso {
-  id                    String            @id @default(cuid())
+  id                    String                        @id @default(cuid())
   tenantId              String
   processoId            String
   titulo                String
   descricao             String?
   tipo                  MovimentacaoTipo?
-  dataMovimentacao      DateTime          @default(now())
+  statusOperacional     MovimentacaoStatusOperacional @default(NOVO)
+  prioridade            MovimentacaoPrioridade        @default(MEDIA)
+  responsavelId         String?
+  dataMovimentacao      DateTime                      @default(now())
+  slaEm                 DateTime?
+  resolvidoEm           DateTime?
+  observacaoResolucao   String?
   prazo                 DateTime?
   criadoPorId           String?
+  tarefaRelacionadaId   String?
   // Campos para notificações
-  notificarCliente      Boolean           @default(false)
-  notificarEmail        Boolean           @default(false)
-  notificarWhatsapp     Boolean           @default(false)
+  notificarCliente      Boolean                       @default(false)
+  notificarEmail        Boolean                       @default(false)
+  notificarWhatsapp     Boolean                       @default(false)
   mensagemPersonalizada String?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-  documentos            Documento[]       @relation("MovimentacaoDocumentos")
-  criadoPor             Usuario?          @relation("MovimentacaoCriador", fields: [criadoPorId], references: [id])
-  processo              Processo          @relation(fields: [processoId], references: [id], onDelete: Cascade)
-  tenant                Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  documentos            Documento[]                   @relation("MovimentacaoDocumentos")
+  criadoPor             Usuario?                      @relation("MovimentacaoCriador", fields: [criadoPorId], references: [id])
+  responsavel           Usuario?                      @relation("MovimentacaoResponsavel", fields: [responsavelId], references: [id])
+  processo              Processo                      @relation(fields: [processoId], references: [id], onDelete: Cascade)
+  tarefaRelacionada     Tarefa?                       @relation(fields: [tarefaRelacionadaId], references: [id], onDelete: SetNull)
+  tenant                Tenant                        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   prazosRelacionados    ProcessoPrazo[]
 
   @@index([processoId])
   @@index([dataMovimentacao])
   @@index([tenantId, notificarCliente])
+  @@index([tenantId, statusOperacional])
+  @@index([tenantId, prioridade])
+  @@index([tenantId, responsavelId])
+  @@index([tenantId, slaEm])
+  @@index([tarefaRelacionadaId])
   @@schema("magiclawyer")
 }
 
@@ -1497,49 +1512,50 @@ model ModeloContrato {
 }
 
 model Tarefa {
-  id               String             @id @default(cuid())
-  tenantId         String
-  boardId          String?
-  columnId         String?
-  titulo           String
-  descricao        String?
-  numeroSequencial Int?
-  status           TarefaStatus       @default(PENDENTE)
-  prioridade       TarefaPrioridade   @default(MEDIA)
-  processoId       String?
-  clienteId        String?
-  categoriaId      String?
-  responsavelId    String?
-  criadoPorId      String?
-  dataLimite       DateTime?
-  dataInicio       DateTime?
-  completedAt      DateTime?
-  lembreteEm       DateTime?
-  estimativaHoras  Decimal?           @db.Decimal(8, 2)
-  horasGastas      Decimal?           @db.Decimal(8, 2)
-  ordem            Int                @default(0)
-  cor              String?
-  arquivada        Boolean            @default(false)
-  tarefaPaiId      String?
-  deletedAt        DateTime?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  categoria        CategoriaTarefa?   @relation(fields: [categoriaId], references: [id])
-  cliente          Cliente?           @relation("TarefaCliente", fields: [clienteId], references: [id])
-  criadoPor        Usuario?           @relation("TarefasCriadas", fields: [criadoPorId], references: [id])
-  processo         Processo?          @relation(fields: [processoId], references: [id])
-  responsavel      Usuario?           @relation("TarefasResponsaveis", fields: [responsavelId], references: [id])
-  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  board            Board?             @relation(fields: [boardId], references: [id], onDelete: SetNull)
-  column           BoardColumn?       @relation(fields: [columnId], references: [id], onDelete: SetNull)
-  tarefaPai        Tarefa?            @relation("TarefaSubtarefas", fields: [tarefaPaiId], references: [id], onDelete: SetNull)
-  subtarefas       Tarefa[]           @relation("TarefaSubtarefas")
-  checklists       TarefaChecklist[]
-  comentarios      TarefaComentario[]
-  anexos           TarefaAnexo[]
-  atividades       TarefaAtividade[]
-  tags             TarefaTagRelacao[]
-  observadores     TarefaWatcher[]
+  id                        String                 @id @default(cuid())
+  tenantId                  String
+  boardId                   String?
+  columnId                  String?
+  titulo                    String
+  descricao                 String?
+  numeroSequencial          Int?
+  status                    TarefaStatus           @default(PENDENTE)
+  prioridade                TarefaPrioridade       @default(MEDIA)
+  processoId                String?
+  clienteId                 String?
+  categoriaId               String?
+  responsavelId             String?
+  criadoPorId               String?
+  dataLimite                DateTime?
+  dataInicio                DateTime?
+  completedAt               DateTime?
+  lembreteEm                DateTime?
+  estimativaHoras           Decimal?               @db.Decimal(8, 2)
+  horasGastas               Decimal?               @db.Decimal(8, 2)
+  ordem                     Int                    @default(0)
+  cor                       String?
+  arquivada                 Boolean                @default(false)
+  tarefaPaiId               String?
+  deletedAt                 DateTime?
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
+  categoria                 CategoriaTarefa?       @relation(fields: [categoriaId], references: [id])
+  cliente                   Cliente?               @relation("TarefaCliente", fields: [clienteId], references: [id])
+  criadoPor                 Usuario?               @relation("TarefasCriadas", fields: [criadoPorId], references: [id])
+  processo                  Processo?              @relation(fields: [processoId], references: [id])
+  responsavel               Usuario?               @relation("TarefasResponsaveis", fields: [responsavelId], references: [id])
+  tenant                    Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  board                     Board?                 @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  column                    BoardColumn?           @relation(fields: [columnId], references: [id], onDelete: SetNull)
+  tarefaPai                 Tarefa?                @relation("TarefaSubtarefas", fields: [tarefaPaiId], references: [id], onDelete: SetNull)
+  subtarefas                Tarefa[]               @relation("TarefaSubtarefas")
+  checklists                TarefaChecklist[]
+  comentarios               TarefaComentario[]
+  anexos                    TarefaAnexo[]
+  atividades                TarefaAtividade[]
+  tags                      TarefaTagRelacao[]
+  observadores              TarefaWatcher[]
+  movimentacoesRelacionadas MovimentacaoProcesso[]
 
   @@index([tenantId, status])
   @@index([tenantId, responsavelId])
@@ -2522,6 +2538,25 @@ enum MovimentacaoTipo {
   @@schema("magiclawyer")
 }
 
+enum MovimentacaoStatusOperacional {
+  NOVO
+  EM_TRIAGEM
+  EM_EXECUCAO
+  RESOLVIDO
+  BLOQUEADO
+
+  @@schema("magiclawyer")
+}
+
+enum MovimentacaoPrioridade {
+  BAIXA
+  MEDIA
+  ALTA
+  CRITICA
+
+  @@schema("magiclawyer")
+}
+
 enum AssinaturaTipo {
   MANUAL
   DIGITAL
@@ -3300,22 +3335,22 @@ model EquipeConvite {
 // ===== SISTEMA DE NOTIFICAÇÕES PUSH =====
 
 model DigitalCertificate {
-  id                   String                 @id @default(cuid())
+  id                   String                  @id @default(cuid())
   tenantId             String
   responsavelUsuarioId String?
   label                String?
-  tipo                 DigitalCertificateType @default(PJE)
+  tipo                 DigitalCertificateType  @default(PJE)
   scope                DigitalCertificateScope @default(OFFICE)
   encryptedData        Bytes
   encryptedPassword    Bytes
   iv                   Bytes
   passwordIv           Bytes
-  isActive             Boolean                @default(false)
+  isActive             Boolean                 @default(false)
   validUntil           DateTime?
   lastValidatedAt      DateTime?
   lastUsedAt           DateTime?
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
 
   tenant             Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   responsavelUsuario Usuario?                @relation("DigitalCertificateResponsavel", fields: [responsavelUsuarioId], references: [id], onDelete: SetNull)

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Card, CardBody, Chip, Spinner, Tabs, Tab, Select, SelectItem } from "@heroui/react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   gerarPixDinamico,

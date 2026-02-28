@@ -26,7 +26,7 @@ import {
   Clock,
 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import useSWR from "swr";
 
 import { title } from "@/components/primitives";
@@ -232,7 +232,6 @@ export default function EditarProcessoPage() {
         toast.error(result.error || "Erro ao atualizar processo");
       }
     } catch (error) {
-      console.error("Erro ao atualizar processo:", error);
       toast.error("Erro ao atualizar processo");
     } finally {
       setIsSaving(false);

@@ -25,7 +25,7 @@ import {
   LightbulbIcon,
   EyeIcon,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   listModulos,
@@ -102,7 +102,6 @@ export default function ModulosAdminPage() {
     autoDetectStatusData?.data?.needsSync ? "auto-sync" : null,
     async () => {
       if (autoDetectStatusData?.data?.needsSync && !loading) {
-        console.log("🔄 Executando sincronização automática...");
         await handleAutoDetect();
       }
 

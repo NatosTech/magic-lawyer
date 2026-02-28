@@ -26,7 +26,7 @@ import {
   Check as CheckLucide,
   DownloadIcon,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { type DadosBancariosContrato } from "@/app/hooks/use-dados-bancarios-contrato";
 

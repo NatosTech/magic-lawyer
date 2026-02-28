@@ -11,7 +11,7 @@ import {
   Chip,
   Link,
 } from "@heroui/react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Download, UploadCloud } from "lucide-react";
 
 interface SampleField {

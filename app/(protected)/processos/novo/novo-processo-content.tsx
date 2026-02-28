@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Spinner } from "@heroui/spinner";
 import useSWR from "swr";
 
@@ -214,7 +214,6 @@ export function NovoProcessoContent() {
         toast.error(result.error || "Erro ao criar processo");
       }
     } catch (error) {
-      console.error("Erro ao criar processo:", error);
       toast.error("Erro ao criar processo");
     } finally {
       setIsSaving(false);

@@ -8,7 +8,7 @@ import { Input } from "@heroui/input";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Spinner } from "@heroui/spinner";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   CreditCard,
   CheckCircle,

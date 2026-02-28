@@ -15,7 +15,7 @@ import {
 import { useDisclosure } from "@heroui/use-disclosure";
 import { Spinner } from "@heroui/spinner";
 import { Chip } from "@heroui/chip";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   Plus,
   Search,

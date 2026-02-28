@@ -33,7 +33,7 @@ import {
   Paperclip,
 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { mutate } from "swr";
 
 import { useProcuracao } from "@/app/hooks/use-procuracoes";
@@ -194,7 +194,6 @@ export default function ProcuracaoDetalhesPage() {
           toast.error(result.error || "Erro ao atualizar procuração");
         }
       } catch (error) {
-        console.error(error);
         toast.error("Erro ao atualizar procuração");
       }
     });
@@ -212,7 +211,6 @@ export default function ProcuracaoDetalhesPage() {
           toast.error(result.error || "Erro ao excluir procuração");
         }
       } catch (error) {
-        console.error(error);
         toast.error("Erro ao excluir procuração");
       }
     });
@@ -233,7 +231,6 @@ export default function ProcuracaoDetalhesPage() {
           toast.error(result.error || "Erro ao remover advogado");
         }
       } catch (error) {
-        console.error(error);
         toast.error("Erro ao remover advogado");
       }
     });
@@ -251,7 +248,6 @@ export default function ProcuracaoDetalhesPage() {
           toast.error(result.error || "Erro ao desvincular processo");
         }
       } catch (error) {
-        console.error(error);
         toast.error("Erro ao desvincular processo");
       }
     });
@@ -273,7 +269,6 @@ export default function ProcuracaoDetalhesPage() {
           toast.error(result.error || "Erro ao adicionar advogado");
         }
       } catch (error) {
-        console.error(error);
         toast.error("Erro ao adicionar advogado");
       }
     });

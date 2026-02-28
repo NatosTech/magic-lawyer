@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import logger from "@/lib/logger";
@@ -528,6 +530,23 @@ export async function deleteTarefa(id: string) {
       where: { id },
       data: { deletedAt: new Date() },
     });
+
+    // Ao remover tarefa (soft delete), desvincula andamentos relacionados
+    await prisma.movimentacaoProcesso.updateMany({
+      where: {
+        tenantId: user.tenantId,
+        tarefaRelacionadaId: id,
+      },
+      data: {
+        tarefaRelacionadaId: null,
+      },
+    });
+
+    revalidatePath("/tarefas");
+    revalidatePath("/andamentos");
+    if (tarefa.processoId) {
+      revalidatePath(`/processos/${tarefa.processoId}`);
+    }
 
     logger.info(`Tarefa deletada: ${id} por usuário ${user.email}`);
 

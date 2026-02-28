@@ -7,7 +7,7 @@ import { Input } from "@heroui/input";
 import { Divider } from "@heroui/divider";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreditCard, Lock, CheckCircle } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import CardBrandDetector, { detectCardBrand } from "./card-brand-detector";
 

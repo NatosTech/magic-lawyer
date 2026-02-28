@@ -14,7 +14,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { getDevInfo } from "@/app/actions/dev-info";
 

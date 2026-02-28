@@ -28,7 +28,7 @@ import {
   Star,
   Smartphone,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useSession } from "next-auth/react";
 
 import {
@@ -151,7 +151,6 @@ export default function DadosBancariosPage() {
           setClientes(result.clientes || []);
         }
       } catch (error) {
-        console.error("Erro ao carregar clientes:", error);
       } finally {
         setLoadingClientes(false);
       }
@@ -166,7 +165,6 @@ export default function DadosBancariosPage() {
           setAdvogados(result.data || []);
         }
       } catch (error) {
-        console.error("Erro ao carregar advogados:", error);
       } finally {
         setLoadingAdvogados(false);
       }

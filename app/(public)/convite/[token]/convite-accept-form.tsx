@@ -11,7 +11,7 @@ import {
   User,
   Shield,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 
 import {

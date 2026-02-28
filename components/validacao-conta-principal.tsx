@@ -24,7 +24,7 @@ import {
   CreditCardIcon,
   RefreshCwIcon,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { useDadosBancariosContrato } from "@/app/hooks/use-dados-bancarios-contrato";
 

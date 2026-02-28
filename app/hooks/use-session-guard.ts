@@ -178,7 +178,6 @@ export function useSessionGuard(
       );
     } catch (error) {
       // Em caso de erro de rede, não fazer nada (fail-open)
-      console.warn("[useSessionGuard] Falha na validação de sessão", error);
     } finally {
       validationInFlightRef.current = false;
     }

@@ -23,7 +23,7 @@ import {
   EyeOff,
   RefreshCw,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import useSWR from "swr";
 
 import { getAdvogadoHistorico } from "@/app/actions/advogado-historico";

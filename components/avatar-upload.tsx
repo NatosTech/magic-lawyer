@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Avatar, Button, Spinner } from "@heroui/react";
 import { Edit3, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useSession } from "next-auth/react";
 
 import { ImageEditorModal } from "./image-editor-modal";

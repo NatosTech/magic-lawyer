@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Spinner } from "@heroui/spinner";
 
 import { title } from "@/components/primitives";
@@ -131,7 +131,6 @@ export default function NovoContratoPage() {
         toast.error(result.error || "Erro ao criar contrato");
       }
     } catch (error) {
-      console.error("Erro ao criar contrato:", error);
       toast.error("Erro ao criar contrato");
     } finally {
       setIsSaving(false);

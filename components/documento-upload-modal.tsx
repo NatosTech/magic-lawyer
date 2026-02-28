@@ -7,7 +7,7 @@ import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
 
 import { Upload, FileText, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   useUploadDocumentoProcuracao,

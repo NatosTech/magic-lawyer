@@ -78,7 +78,6 @@ export function useEstadosBrasilInfinite() {
         currentOffset === 0 ? newItems : [...prevItems, ...newItems],
       );
     } catch (error) {
-      console.error("Erro ao carregar estados:", error);
     } finally {
       setIsLoading(false);
     }
@@ -168,7 +167,6 @@ export function useMunicipiosPorEstadoInfinite(siglaEstado: string | null) {
           currentOffset === 0 ? newItems : [...prevItems, ...newItems],
         );
       } catch (error) {
-        console.error("Erro ao carregar municípios:", error);
       } finally {
         setIsLoading(false);
       }

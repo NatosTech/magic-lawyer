@@ -48,7 +48,6 @@ export function UserPermissionsInfo({ className }: UserPermissionsInfoProps) {
         setUserRole(result.data.user.role);
       }
     } catch (error) {
-      console.error("Erro ao carregar permissões:", error);
     } finally {
       setLoading(false);
     }

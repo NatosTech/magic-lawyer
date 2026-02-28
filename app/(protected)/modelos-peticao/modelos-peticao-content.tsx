@@ -41,7 +41,7 @@ import {
   Trash2,
   Variable,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import {
   deleteModeloPeticao,
