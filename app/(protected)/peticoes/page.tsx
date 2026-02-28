@@ -22,7 +22,7 @@ export default async function PeticoesPage() {
 
   // Admin sempre tem acesso
   if (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) {
-    return <PeticoesContent />;
+    return <PeticoesContent canCreatePeticao canDeletePeticao canEditPeticao />;
   }
 
   // Para outros roles, verificar permissão processos.visualizar
@@ -34,7 +34,20 @@ export default async function PeticoesPage() {
       redirect("/dashboard");
     }
 
-    return <PeticoesContent />;
+    const [canCreatePeticao, canEditPeticao, canDeletePeticao] =
+      await Promise.all([
+        checkPermission("processos", "criar"),
+        checkPermission("processos", "editar"),
+        checkPermission("processos", "excluir"),
+      ]);
+
+    return (
+      <PeticoesContent
+        canCreatePeticao={canCreatePeticao}
+        canDeletePeticao={canDeletePeticao}
+        canEditPeticao={canEditPeticao}
+      />
+    );
   } catch (error) {
     console.error("Erro ao verificar permissões para /peticoes:", error);
     redirect("/dashboard");

@@ -7,6 +7,8 @@ import prisma from "@/app/lib/prisma";
 import { UploadService } from "@/lib/upload-service";
 import { HybridNotificationService } from "@/app/lib/notifications/hybrid-notification-service";
 import { DocumentNotifier } from "@/app/lib/notifications/document-notifier";
+import { checkPermission } from "@/app/actions/equipe";
+import { getAccessibleAdvogadoIds } from "@/app/lib/advogado-access";
 
 const uploadService = UploadService.getInstance();
 
@@ -30,6 +32,15 @@ export async function uploadDocumentoPeticao(
       return {
         success: false,
         error: "Usuário não autenticado",
+      };
+    }
+
+    const podeEditar = await checkPermission("processos", "editar");
+
+    if (!podeEditar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para anexar documentos em petições",
       };
     }
 
@@ -72,6 +83,30 @@ export async function uploadDocumentoPeticao(
         success: false,
         error: "Petição não encontrada",
       };
+    }
+
+
+    const role = (session.user as any)?.role;
+
+    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+      const processoComAcesso = await prisma.processo.findFirst({
+        where: {
+          id: peticao.processoId,
+          tenantId,
+          advogadoResponsavelId: {
+            in: accessibleAdvogados,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (!processoComAcesso) {
+        return {
+          success: false,
+          error: "Você não tem acesso ao processo desta petição",
+        };
+      }
     }
 
     // Converter base64 para Buffer
@@ -220,6 +255,15 @@ export async function removerDocumentoPeticao(peticaoId: string) {
       };
     }
 
+    const podeEditar = await checkPermission("processos", "editar");
+
+    if (!podeEditar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para remover documentos de petições",
+      };
+    }
+
     const { id: userId, tenantId } = session.user;
 
     // Buscar petição e documento
@@ -238,6 +282,29 @@ export async function removerDocumentoPeticao(peticaoId: string) {
         success: false,
         error: "Petição não encontrada",
       };
+    }
+
+    const role = (session.user as any)?.role;
+
+    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+      const processoComAcesso = await prisma.processo.findFirst({
+        where: {
+          id: peticao.processoId,
+          tenantId,
+          advogadoResponsavelId: {
+            in: accessibleAdvogados,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (!processoComAcesso) {
+        return {
+          success: false,
+          error: "Você não tem acesso ao processo desta petição",
+        };
+      }
     }
 
     if (!peticao.documento) {

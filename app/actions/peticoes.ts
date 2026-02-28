@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { Prisma, PeticaoStatus } from "@/generated/prisma";
+import { checkPermission } from "@/app/actions/equipe";
+import { getAccessibleAdvogadoIds } from "@/app/lib/advogado-access";
 
 // ============================================
 // TIPOS
@@ -18,6 +20,8 @@ export interface PeticaoFilters {
   search?: string;
   dataInicio?: Date;
   dataFim?: Date;
+  page?: number;
+  perPage?: number;
 }
 
 export interface PeticaoCreateInput {
@@ -70,6 +74,42 @@ async function getUserId(): Promise<string> {
   return session.user.id;
 }
 
+function isAdminRole(role?: string | null): boolean {
+  return role === "ADMIN" || role === "SUPER_ADMIN";
+}
+
+async function withStaffScope(
+  where: Prisma.PeticaoWhereInput,
+  session: Awaited<ReturnType<typeof getSession>>,
+): Promise<Prisma.PeticaoWhereInput> {
+  const user = session?.user as any;
+
+  if (!session?.user || isAdminRole(user?.role)) {
+    return where;
+  }
+
+  const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+  const andClauses = Array.isArray(where.AND)
+    ? where.AND
+    : where.AND
+      ? [where.AND]
+      : [];
+
+  return {
+    ...where,
+    AND: [
+      ...andClauses,
+      {
+        processo: {
+          advogadoResponsavelId: {
+            in: accessibleAdvogados,
+          },
+        },
+      },
+    ],
+  };
+}
+
 // ============================================
 // LISTAGEM
 // ============================================
@@ -78,10 +118,20 @@ export async function listPeticoes(filters?: PeticaoFilters) {
   try {
     const session = await getSession();
     const tenantId = await getTenantId();
-    const user = session?.user as any;
-    const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 
-    const where: Prisma.PeticaoWhereInput = {
+    const podeVisualizar = await checkPermission("processos", "visualizar");
+
+    if (!podeVisualizar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para visualizar petições",
+      };
+    }
+
+    const page = Math.max(1, Number(filters?.page || 1));
+    const perPage = Math.min(100, Math.max(1, Number(filters?.perPage || 12)));
+
+    let where: Prisma.PeticaoWhereInput = {
       tenantId,
       ...(filters?.status && { status: filters.status }),
       ...(filters?.processoId && { processoId: filters.processoId }),
@@ -105,28 +155,11 @@ export async function listPeticoes(filters?: PeticaoFilters) {
         }),
     };
 
-    // Aplicar escopo de acesso para staff vinculados
-    if (
-      !isAdmin &&
-      user?.role !== "CLIENTE" &&
-      session &&
-      !filters?.processoId
-    ) {
-      const { getAccessibleAdvogadoIds } = await import(
-        "@/app/lib/advogado-access"
-      );
-      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+    where = await withStaffScope(where, session);
 
-      // Se não há vínculos, acesso total (sem filtros)
-      if (accessibleAdvogados.length > 0) {
-        // Filtrar petições de processos dos advogados acessíveis
-        where.processo = {
-          advogadoResponsavelId: {
-            in: accessibleAdvogados,
-          },
-        };
-      }
-    }
+    const total = await prisma.peticao.count({ where });
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    const safePage = Math.min(page, totalPages);
 
     const peticoes = await prisma.peticao.findMany({
       where,
@@ -166,11 +199,21 @@ export async function listPeticoes(filters?: PeticaoFilters) {
       orderBy: {
         createdAt: "desc",
       },
+      skip: (safePage - 1) * perPage,
+      take: perPage,
     });
 
     return {
       success: true,
       data: peticoes,
+      pagination: {
+        page: safePage,
+        perPage,
+        total,
+        totalPages,
+        hasPreviousPage: safePage > 1,
+        hasNextPage: safePage < totalPages,
+      },
     };
   } catch (error) {
     console.error("Erro ao listar petições:", error);
@@ -189,12 +232,26 @@ export async function listPeticoes(filters?: PeticaoFilters) {
 export async function getPeticao(id: string) {
   try {
     const tenantId = await getTenantId();
+    const session = await getSession();
+
+    const podeVisualizar = await checkPermission("processos", "visualizar");
+
+    if (!podeVisualizar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para visualizar petições",
+      };
+    }
+
+    let where: Prisma.PeticaoWhereInput = {
+      id,
+      tenantId,
+    };
+
+    where = await withStaffScope(where, session);
 
     const peticao = await prisma.peticao.findFirst({
-      where: {
-        id,
-        tenantId,
-      },
+      where,
       include: {
         processo: {
           select: {
@@ -277,21 +334,56 @@ export async function getPeticao(id: string) {
 
 export async function createPeticao(input: PeticaoCreateInput) {
   try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return {
+        success: false,
+        error: "Não autorizado",
+      };
+    }
+
     const tenantId = await getTenantId();
     const userId = await getUserId();
+    const user = session?.user as any;
+
+    const podeCriar = await checkPermission("processos", "criar");
+
+    if (!podeCriar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para criar petições",
+      };
+    }
+
+    if (input.status === PeticaoStatus.PROTOCOLADA) {
+      return {
+        success: false,
+        error:
+          "Para marcar como protocolada, crie a petição e use a ação de protocolar",
+      };
+    }
+
+    const processoAccessWhere: Prisma.ProcessoWhereInput = {
+      id: input.processoId,
+      tenantId,
+    };
+
+    if (!isAdminRole(user?.role)) {
+      const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+
+      processoAccessWhere.advogadoResponsavelId = { in: accessibleAdvogados };
+    }
 
     // Validar se o processo existe e pertence ao tenant
     const processo = await prisma.processo.findFirst({
-      where: {
-        id: input.processoId,
-        tenantId,
-      },
+      where: processoAccessWhere,
     });
 
     if (!processo) {
       return {
         success: false,
-        error: "Processo não encontrado",
+        error: "Processo não encontrado ou sem acesso",
       };
     }
 
@@ -383,14 +475,36 @@ export async function createPeticao(input: PeticaoCreateInput) {
 
 export async function updatePeticao(id: string, input: PeticaoUpdateInput) {
   try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return {
+        success: false,
+        error: "Não autorizado",
+      };
+    }
+
     const tenantId = await getTenantId();
+
+    const podeEditar = await checkPermission("processos", "editar");
+
+    if (!podeEditar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para editar petições",
+      };
+    }
+
+    let peticaoWhere: Prisma.PeticaoWhereInput = {
+      id,
+      tenantId,
+    };
+
+    peticaoWhere = await withStaffScope(peticaoWhere, session);
 
     // Verificar se a petição existe
     const peticaoExistente = await prisma.peticao.findFirst({
-      where: {
-        id,
-        tenantId,
-      },
+      where: peticaoWhere,
     });
 
     if (!peticaoExistente) {
@@ -400,19 +514,41 @@ export async function updatePeticao(id: string, input: PeticaoUpdateInput) {
       };
     }
 
+    if (
+      input.status === PeticaoStatus.PROTOCOLADA &&
+      peticaoExistente.status !== PeticaoStatus.PROTOCOLADA
+    ) {
+      return {
+        success: false,
+        error:
+          "Para protocolar uma petição, use a ação 'Protocolar' e informe o número do protocolo",
+      };
+    }
+
     // Validar processo se alterado
     if (input.processoId && input.processoId !== peticaoExistente.processoId) {
+      const user = session?.user as any;
+      const processoAccessWhere: Prisma.ProcessoWhereInput = {
+        id: input.processoId,
+        tenantId,
+      };
+
+      if (!isAdminRole(user?.role)) {
+        const accessibleAdvogados = await getAccessibleAdvogadoIds(session);
+
+        processoAccessWhere.advogadoResponsavelId = {
+          in: accessibleAdvogados,
+        };
+      }
+
       const processo = await prisma.processo.findFirst({
-        where: {
-          id: input.processoId,
-          tenantId,
-        },
+        where: processoAccessWhere,
       });
 
       if (!processo) {
         return {
           success: false,
-          error: "Processo não encontrado",
+          error: "Processo não encontrado ou sem acesso",
         };
       }
     }
@@ -512,14 +648,28 @@ export async function updatePeticao(id: string, input: PeticaoUpdateInput) {
 
 export async function deletePeticao(id: string) {
   try {
+    const session = await getSession();
     const tenantId = await getTenantId();
+
+    const podeExcluir = await checkPermission("processos", "excluir");
+
+    if (!podeExcluir) {
+      return {
+        success: false,
+        error: "Você não tem permissão para excluir petições",
+      };
+    }
+
+    let peticaoWhere: Prisma.PeticaoWhereInput = {
+      id,
+      tenantId,
+    };
+
+    peticaoWhere = await withStaffScope(peticaoWhere, session);
 
     // Verificar se a petição existe
     const peticao = await prisma.peticao.findFirst({
-      where: {
-        id,
-        tenantId,
-      },
+      where: peticaoWhere,
       include: {
         diligencias: true,
       },
@@ -571,14 +721,36 @@ export async function protocolarPeticao(
   protocoladoEm?: Date,
 ) {
   try {
+    const session = await getSession();
     const tenantId = await getTenantId();
+    const numeroNormalizado = protocoloNumero?.trim();
+
+    const podeEditar = await checkPermission("processos", "editar");
+
+    if (!podeEditar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para protocolar petições",
+      };
+    }
+
+    if (!numeroNormalizado) {
+      return {
+        success: false,
+        error: "Número do protocolo é obrigatório",
+      };
+    }
+
+    let peticaoWhere: Prisma.PeticaoWhereInput = {
+      id,
+      tenantId,
+    };
+
+    peticaoWhere = await withStaffScope(peticaoWhere, session);
 
     // Verificar se a petição existe
     const peticao = await prisma.peticao.findFirst({
-      where: {
-        id,
-        tenantId,
-      },
+      where: peticaoWhere,
     });
 
     if (!peticao) {
@@ -596,11 +768,28 @@ export async function protocolarPeticao(
       };
     }
 
+    if (!peticao.documentoId) {
+      return {
+        success: false,
+        error: "Anexe um documento PDF antes de protocolar a petição",
+      };
+    }
+
+    if (
+      peticao.status !== PeticaoStatus.RASCUNHO &&
+      peticao.status !== PeticaoStatus.EM_ANALISE
+    ) {
+      return {
+        success: false,
+        error: "Somente petições em rascunho ou em análise podem ser protocoladas",
+      };
+    }
+
     const peticaoAtualizada = await prisma.peticao.update({
       where: { id },
       data: {
         status: PeticaoStatus.PROTOCOLADA,
-        protocoloNumero,
+        protocoloNumero: numeroNormalizado,
         protocoladoEm: protocoladoEm || new Date(),
       },
     });
@@ -629,10 +818,22 @@ export async function protocolarPeticao(
 
 export async function getDashboardPeticoes() {
   try {
+    const session = await getSession();
     const tenantId = await getTenantId();
-    const wherePeticoes: Prisma.PeticaoWhereInput = {
+    const podeVisualizar = await checkPermission("processos", "visualizar");
+
+    if (!podeVisualizar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para visualizar petições",
+      };
+    }
+
+    let wherePeticoes: Prisma.PeticaoWhereInput = {
       tenantId,
     };
+
+    wherePeticoes = await withStaffScope(wherePeticoes, session);
 
     // Total de petições
     const total = await prisma.peticao.count({
@@ -757,6 +958,15 @@ export async function getDashboardPeticoes() {
 export async function listTiposPeticao() {
   try {
     const tenantId = await getTenantId();
+    const podeVisualizar = await checkPermission("processos", "visualizar");
+
+    if (!podeVisualizar) {
+      return {
+        success: false,
+        error: "Você não tem permissão para visualizar tipos de petição",
+        data: [],
+      };
+    }
 
     // Tipos padrão de petição
     const tiposPadrao = [

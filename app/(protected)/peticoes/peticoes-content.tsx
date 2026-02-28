@@ -21,6 +21,7 @@ import {
   Divider,
   Select,
   SelectItem,
+  Pagination,
 } from "@heroui/react";
 import { toast } from "sonner";
 import {
@@ -125,15 +126,27 @@ interface DashboardData {
   }>;
 }
 
+interface PeticoesContentProps {
+  canCreatePeticao?: boolean;
+  canEditPeticao?: boolean;
+  canDeletePeticao?: boolean;
+}
+
 // ============================================
 // COMPONENTE PRINCIPAL
 // ============================================
 
-export default function PeticoesPage() {
+export default function PeticoesPage({
+  canCreatePeticao = true,
+  canEditPeticao = true,
+  canDeletePeticao = true,
+}: PeticoesContentProps) {
   // Estado dos filtros
   const [filters, setFilters] = useState<PeticaoFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   // Estado do modal
   const [modalOpen, setModalOpen] = useState(false);
@@ -156,7 +169,13 @@ export default function PeticoesPage() {
     data: peticoesData,
     mutate: mutatePeticoes,
     isLoading: loadingPeticoes,
-  } = useSWR(["peticoes", filters], () => listPeticoes(filters));
+  } = useSWR(["peticoes", filters, currentPage, itemsPerPage], () =>
+    listPeticoes({
+      ...filters,
+      page: currentPage,
+      perPage: itemsPerPage,
+    }),
+  );
 
   const { data: dashboardData, isLoading: loadingDashboard } = useSWR(
     "dashboard-peticoes",
@@ -171,16 +190,38 @@ export default function PeticoesPage() {
   const dashboard = dashboardData?.data as DashboardData | undefined;
   const processos = processosData?.processos || [];
   const tipos = tiposData?.data || [];
+  const pagination = peticoesData?.pagination || {
+    page: currentPage,
+    perPage: itemsPerPage,
+    total: peticoes.length,
+    totalPages: 1,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  };
+  const firstVisibleItem =
+    pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.perPage + 1;
+  const lastVisibleItem =
+    pagination.total === 0
+      ? 0
+      : Math.min(pagination.page * pagination.perPage, pagination.total);
+
+  useEffect(() => {
+    if (pagination.totalPages > 0 && currentPage > pagination.totalPages) {
+      setCurrentPage(pagination.totalPages);
+    }
+  }, [currentPage, pagination.totalPages]);
 
   // Handlers de filtro
   const handleSearch = (value: string) => {
     setSearchTerm(value);
+    setCurrentPage(1);
     if (value.length >= 2 || value.length === 0) {
       setFilters((prev) => ({ ...prev, search: value || undefined }));
     }
   };
 
   const handleStatusFilter = (status: string) => {
+    setCurrentPage(1);
     setFilters((prev) => ({
       ...prev,
       status: status ? (status as PeticaoStatus) : undefined,
@@ -190,16 +231,25 @@ export default function PeticoesPage() {
   const clearFilters = () => {
     setFilters({});
     setSearchTerm("");
+    setCurrentPage(1);
   };
 
   // Handlers do modal
   const openCreateModal = () => {
+    if (!canCreatePeticao) {
+      toast.error("Você não tem permissão para criar petições");
+      return;
+    }
     setSelectedPeticao(null);
     setModalMode("create");
     setModalOpen(true);
   };
 
   const openEditModal = (peticao: Peticao) => {
+    if (!canEditPeticao) {
+      toast.error("Você não tem permissão para editar petições");
+      return;
+    }
     setSelectedPeticao(peticao);
     setModalMode("edit");
     setModalOpen(true);
@@ -218,6 +268,10 @@ export default function PeticoesPage() {
 
   // Handler de protocolo
   const openProtocoloModal = (peticaoId: string) => {
+    if (!canEditPeticao) {
+      toast.error("Você não tem permissão para protocolar petições");
+      return;
+    }
     setProtocoloPeticaoId(peticaoId);
     setProtocoloNumero("");
     setProtocoloModalOpen(true);
@@ -243,6 +297,10 @@ export default function PeticoesPage() {
 
   // Handler de exclusão
   const handleDelete = async (id: string) => {
+    if (!canDeletePeticao) {
+      toast.error("Você não tem permissão para excluir petições");
+      return;
+    }
     if (!confirm("Tem certeza que deseja excluir esta petição?")) {
       return;
     }
@@ -259,6 +317,10 @@ export default function PeticoesPage() {
 
   // Handler de assinatura
   const openAssinaturaModal = (peticaoId: string) => {
+    if (!canEditPeticao) {
+      toast.error("Você não tem permissão para gerenciar assinaturas");
+      return;
+    }
     setAssinaturaPeticaoId(peticaoId);
     setAssinaturaModalOpen(true);
   };
@@ -316,7 +378,7 @@ export default function PeticoesPage() {
       <PeoplePageHeader
         tag="Atividades jurídicas"
         title="Petições"
-        description={`${peticoes.length} petição(ões) no resultado atual`}
+        description={`${pagination.total} petição(ões) no resultado${hasActiveFilters ? " filtrado" : " total"}`}
         actions={
           <>
             <div className="flex items-center rounded-xl border border-default-200 bg-content1 p-0.5">
@@ -332,14 +394,16 @@ export default function PeticoesPage() {
                 Modelos
               </Button>
             </div>
-            <Button
-              color="primary"
-              size="sm"
-              startContent={<PlusIcon size={16} />}
-              onPress={openCreateModal}
-            >
-              Nova Petição
-            </Button>
+            {canCreatePeticao ? (
+              <Button
+                color="primary"
+                size="sm"
+                startContent={<PlusIcon size={16} />}
+                onPress={openCreateModal}
+              >
+                Nova Petição
+              </Button>
+            ) : null}
           </>
         }
       />
@@ -468,7 +532,7 @@ export default function PeticoesPage() {
       <Card className="border border-white/10 bg-background/70">
         <div className="flex flex-col gap-1 border-b border-white/10 px-5 py-4">
           <h2 className="text-lg font-semibold text-white">
-            Lista de petições ({peticoes.length})
+            Lista de petições ({pagination.total})
           </h2>
           <p className="text-sm text-default-400">
             Clique em um item para visualizar detalhes e acompanhar o fluxo.
@@ -563,7 +627,10 @@ export default function PeticoesPage() {
                     </div>
 
                     <div className="flex items-center gap-2 self-start">
-                      {peticao.status === PeticaoStatus.RASCUNHO && (
+                      {canEditPeticao &&
+                      peticao.documento &&
+                      (peticao.status === PeticaoStatus.RASCUNHO ||
+                        peticao.status === PeticaoStatus.EM_ANALISE) ? (
                         <Button
                           color="success"
                           size="sm"
@@ -573,9 +640,9 @@ export default function PeticoesPage() {
                         >
                           Protocolar
                         </Button>
-                      )}
+                      ) : null}
 
-                      {peticao.documento && (
+                      {canEditPeticao && peticao.documento ? (
                         <Button
                           color="secondary"
                           size="sm"
@@ -586,28 +653,32 @@ export default function PeticoesPage() {
                         >
                           Assinar
                         </Button>
-                      )}
+                      ) : null}
 
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        onClick={(event) => event.stopPropagation()}
-                        onPress={() => openEditModal(peticao)}
-                      >
-                        <PencilIcon size={16} />
-                      </Button>
+                      {canEditPeticao ? (
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onClick={(event) => event.stopPropagation()}
+                          onPress={() => openEditModal(peticao)}
+                        >
+                          <PencilIcon size={16} />
+                        </Button>
+                      ) : null}
 
-                      <Button
-                        isIconOnly
-                        color="danger"
-                        size="sm"
-                        variant="light"
-                        onClick={(event) => event.stopPropagation()}
-                        onPress={() => handleDelete(peticao.id)}
-                      >
-                        <TrashIcon size={16} />
-                      </Button>
+                      {canDeletePeticao ? (
+                        <Button
+                          isIconOnly
+                          color="danger"
+                          size="sm"
+                          variant="light"
+                          onClick={(event) => event.stopPropagation()}
+                          onPress={() => handleDelete(peticao.id)}
+                        >
+                          <TrashIcon size={16} />
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -615,6 +686,19 @@ export default function PeticoesPage() {
             </div>
           )}
         </CardBody>
+        {pagination.totalPages > 1 ? (
+          <div className="flex flex-col gap-3 border-t border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-default-400">
+              Exibindo {firstVisibleItem}-{lastVisibleItem} de {pagination.total}
+            </p>
+            <Pagination
+              showControls
+              page={pagination.page}
+              total={pagination.totalPages}
+              onChange={setCurrentPage}
+            />
+          </div>
+        ) : null}
       </Card>
 
       {/* Modal de Criar/Editar/Visualizar */}
@@ -624,6 +708,8 @@ export default function PeticoesPage() {
         peticao={selectedPeticao}
         processos={processos}
         tipos={tipos}
+        canCreatePeticao={canCreatePeticao}
+        canEditPeticao={canEditPeticao}
         onClose={closeModal}
         onSuccess={() => {
           mutatePeticoes();
@@ -684,6 +770,8 @@ interface PeticaoModalProps {
   peticao: Peticao | null;
   processos: any[];
   tipos: string[];
+  canCreatePeticao: boolean;
+  canEditPeticao: boolean;
   onSuccess: () => void;
 }
 
@@ -694,6 +782,8 @@ function PeticaoModal({
   peticao,
   processos,
   tipos,
+  canCreatePeticao,
+  canEditPeticao,
   onSuccess,
 }: PeticaoModalProps) {
   const [formData, setFormData] = useState<PeticaoCreateInput>({
@@ -907,6 +997,12 @@ function PeticaoModal({
   };
 
   const isReadOnly = mode === "view";
+  const canPersist =
+    mode === "create"
+      ? canCreatePeticao
+      : mode === "edit"
+        ? canEditPeticao
+        : false;
 
   return (
     <Modal isOpen={isOpen} scrollBehavior="inside" size="3xl" onClose={onClose}>
@@ -1003,15 +1099,21 @@ function PeticaoModal({
           <Autocomplete
             allowsCustomValue
             isDisabled={isReadOnly}
+            inputValue={formData.tipo || ""}
             label="Tipo de Petição"
             placeholder="Selecione ou digite um tipo"
-            selectedKey={formData.tipo || ""}
+            selectedKey={formData.tipo && tipos.includes(formData.tipo) ? formData.tipo : null}
+            onInputChange={(value) =>
+              setFormData({ ...formData, tipo: value })
+            }
             onSelectionChange={(key) =>
-              setFormData({ ...formData, tipo: key as string })
+              setFormData({ ...formData, tipo: key ? String(key) : "" })
             }
           >
             {tipos.map((tipo) => (
-              <AutocompleteItem key={tipo}>{tipo}</AutocompleteItem>
+              <AutocompleteItem key={tipo} textValue={tipo}>
+                {tipo}
+              </AutocompleteItem>
             ))}
           </Autocomplete>
 
@@ -1031,7 +1133,11 @@ function PeticaoModal({
             <SelectItem key={PeticaoStatus.EM_ANALISE} textValue="Em Análise">
               Em Análise
             </SelectItem>
-            <SelectItem key={PeticaoStatus.PROTOCOLADA} textValue="Protocolada">
+            <SelectItem
+              key={PeticaoStatus.PROTOCOLADA}
+              isDisabled={!isReadOnly && formData.status !== PeticaoStatus.PROTOCOLADA}
+              textValue="Protocolada"
+            >
               Protocolada
             </SelectItem>
             <SelectItem key={PeticaoStatus.INDEFERIDA} textValue="Indeferida">
@@ -1188,6 +1294,7 @@ function PeticaoModal({
           {!isReadOnly && (
             <Button
               color="primary"
+              isDisabled={!canPersist}
               isLoading={loading || uploading}
               onPress={handleSubmit}
             >
