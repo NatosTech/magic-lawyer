@@ -4,7 +4,7 @@ import type { Selection } from "@react-types/shared";
 import type { ProcuracaoListItem } from "@/app/actions/procuracoes";
 import type { Processo as ProcessoDTO } from "@/app/actions/processos";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
@@ -15,13 +15,6 @@ import {
 import { Input } from "@heroui/input";
 
 import { Spinner } from "@heroui/spinner";
-import {
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-} from "@heroui/modal";
 import {
   AlertCircle,
   Plus,
@@ -43,13 +36,23 @@ import {
 import { toast } from "@/lib/toast";
 
 import { useUserPermissions } from "@/app/hooks/use-user-permissions";
-import { useAllProcuracoes } from "@/app/hooks/use-procuracoes";
+import { useProcuracoesPaginated } from "@/app/hooks/use-procuracoes";
 import { useClientesParaSelect } from "@/app/hooks/use-clientes";
 import { useProcessosCliente } from "@/app/hooks/use-processos";
 import { DateUtils } from "@/app/lib/date-utils";
 import { linkProcuracaoAoProcesso } from "@/app/actions/processos";
+import { generateProcuracaoPdf } from "@/app/actions/procuracoes";
 import { ProcuracaoEmitidaPor, ProcuracaoStatus } from "@/generated/prisma";
-import { Select, SelectItem } from "@heroui/react";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  Select,
+  SelectItem,
+} from "@heroui/react";
+import { Pagination } from "@heroui/pagination";
 import { PeoplePageHeader, PeopleMetricCard, PeopleEntityCard, PeopleEntityCardHeader, PeopleEntityCardBody } from "@/components/people-ui";
 
 type ProcuracaoFiltroValue<T extends string> = T | "";
@@ -65,17 +68,12 @@ interface ProcuracaoFiltros {
 const ALL_STATUS_FILTER_KEY = "__ALL_STATUS_FILTER__";
 const ALL_EMITIDA_FILTER_KEY = "__ALL_EMITIDA_FILTER__";
 const ALL_CLIENTE_FILTER_KEY = "__ALL_CLIENTE_FILTER__";
+const PAGE_SIZE = 12;
 
 export function ProcuracoesContent() {
   const router = useRouter();
-  const {
-    procuracoes,
-    isLoading,
-    isError,
-    error,
-    mutate: mutateProcuracoes,
-  } = useAllProcuracoes();
-  const permissions = useUserPermissions();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null);
 
   const [filtros, setFiltros] = useState<ProcuracaoFiltros>({
     search: "",
@@ -84,6 +82,21 @@ export function ProcuracoesContent() {
     advogadoId: "",
     emitidaPor: "",
   });
+
+  const {
+    procuracoes,
+    metrics: paginatedMetrics,
+    pagination,
+    isLoading,
+    isError,
+    error,
+    mutate: mutateProcuracoes,
+  } = useProcuracoesPaginated({
+    page: currentPage,
+    pageSize: PAGE_SIZE,
+    filtros,
+  });
+  const permissions = useUserPermissions();
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
   const [selectedProcuracao, setSelectedProcuracao] =
     useState<ProcuracaoListItem | null>(null);
@@ -111,6 +124,36 @@ export function ProcuracoesContent() {
     isLoading: isLoadingProcessosNovaProcuracao,
   } = useProcessosCliente(clienteNovaProcuracaoId || null);
 
+  const clienteNovaProcuracaoKeySet = useMemo(
+    () => new Set(clientes.map((cliente) => cliente.id)),
+    [clientes],
+  );
+  const selectedClienteNovaProcuracaoKeys = useMemo(() => {
+    if (
+      !clienteNovaProcuracaoId ||
+      !clienteNovaProcuracaoKeySet.has(clienteNovaProcuracaoId)
+    ) {
+      return new Set<string>();
+    }
+
+    return new Set([clienteNovaProcuracaoId]);
+  }, [clienteNovaProcuracaoId, clienteNovaProcuracaoKeySet]);
+
+  const processosNovaProcuracaoKeySet = useMemo(
+    () =>
+      new Set((processosParaNovaProcuracao ?? []).map((processo) => processo.id)),
+    [processosParaNovaProcuracao],
+  );
+  const selectedProcessosNovaProcuracaoKeys = useMemo(
+    () =>
+      new Set(
+        Array.from(processosNovaProcuracaoIds).filter((processoId) =>
+          processosNovaProcuracaoKeySet.has(processoId),
+        ),
+      ),
+    [processosNovaProcuracaoIds, processosNovaProcuracaoKeySet],
+  );
+
   const processosDisponiveis = useMemo<ProcessoDTO[]>(() => {
     const vinculados = new Set(
       (selectedProcuracao?.processos || []).map(
@@ -122,65 +165,22 @@ export function ProcuracoesContent() {
       (processo) => !vinculados.has(processo.id),
     );
   }, [processosClienteSelecionado, selectedProcuracao]);
+  const processosDisponiveisKeySet = useMemo(
+    () => new Set(processosDisponiveis.map((processo) => processo.id)),
+    [processosDisponiveis],
+  );
+  const selectedProcessoDisponivelKeys = useMemo(() => {
+    if (!selectedProcessoId || !processosDisponiveisKeySet.has(selectedProcessoId)) {
+      return new Set<string>();
+    }
 
-  // Filtros únicos para selects
-  const statusUnicos = useMemo<ProcuracaoStatus[]>(() => {
-    if (!procuracoes) return [];
+    return new Set([selectedProcessoId]);
+  }, [selectedProcessoId, processosDisponiveisKeySet]);
 
-    return Array.from(
-      new Set(
-        procuracoes
-          .map((procuracao) => procuracao.status)
-          .filter(Boolean) as ProcuracaoStatus[],
-      ),
-    );
-  }, [procuracoes]);
-
-  const emitidaPorUnicos = useMemo<ProcuracaoEmitidaPor[]>(() => {
-    if (!procuracoes) return [];
-
-    return Array.from(
-      new Set(
-        procuracoes
-          .map((procuracao) => procuracao.emitidaPor)
-          .filter(Boolean) as ProcuracaoEmitidaPor[],
-      ),
-    );
-  }, [procuracoes]);
-
-  // Aplicar filtros
-  const procuracoesFiltradas = useMemo<ProcuracaoListItem[]>(() => {
-    if (!procuracoes) return [];
-
-    return procuracoes.filter((procuracao) => {
-      const termoBusca = filtros.search.trim().toLowerCase();
-
-      if (termoBusca) {
-        const numero = procuracao.numero?.toLowerCase() ?? "";
-        const nomeCliente = procuracao.cliente.nome.toLowerCase();
-
-        if (!numero.includes(termoBusca) && !nomeCliente.includes(termoBusca)) {
-          return false;
-        }
-      }
-
-      if (filtros.status && procuracao.status !== filtros.status) {
-        return false;
-      }
-
-      if (filtros.clienteId && procuracao.clienteId !== filtros.clienteId) {
-        return false;
-      }
-
-      if (filtros.emitidaPor && procuracao.emitidaPor !== filtros.emitidaPor) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [filtros, procuracoes]);
+  const procuracoesFiltradas = procuracoesList;
 
   const limparFiltros = () => {
+    setCurrentPage(1);
     setFiltros({
       search: "",
       status: "",
@@ -230,23 +230,23 @@ export function ProcuracoesContent() {
   const statusFilterItems = useMemo(
     () => [
       { key: ALL_STATUS_FILTER_KEY, label: "Todos os status" },
-      ...statusUnicos.map((status) => ({
+      ...Object.values(ProcuracaoStatus).map((status) => ({
         key: status,
         label: getStatusLabel(status),
       })),
     ],
-    [statusUnicos],
+    [],
   );
 
   const emitidaFilterItems = useMemo(
     () => [
       { key: ALL_EMITIDA_FILTER_KEY, label: "Todas as origens" },
-      ...emitidaPorUnicos.map((emitidaPor) => ({
+      ...Object.values(ProcuracaoEmitidaPor).map((emitidaPor) => ({
         key: emitidaPor,
         label: getEmitidaPorLabel(emitidaPor),
       })),
     ],
-    [emitidaPorUnicos],
+    [],
   );
 
   const clienteFilterItems = useMemo(
@@ -256,37 +256,32 @@ export function ProcuracoesContent() {
     ],
     [clientes],
   );
+  const clienteFilterKeySet = useMemo(
+    () => new Set(clienteFilterItems.map((item) => item.key)),
+    [clienteFilterItems],
+  );
+  const selectedClienteFilterKey = clienteFilterKeySet.has(filtros.clienteId)
+    ? filtros.clienteId
+    : ALL_CLIENTE_FILTER_KEY;
 
   const metrics = useMemo(() => {
-    const total = procuracoesList.length;
-    const vigentes = procuracoesList.filter(
-      (procuracao) => procuracao.status === ProcuracaoStatus.VIGENTE,
-    ).length;
-    const pendentesAssinatura = procuracoesList.filter(
-      (procuracao) =>
-        procuracao.status === ProcuracaoStatus.PENDENTE_ASSINATURA,
-    ).length;
-    const encerradas = procuracoesList.filter(
-      (procuracao) =>
-        procuracao.status === ProcuracaoStatus.REVOGADA ||
-        procuracao.status === ProcuracaoStatus.EXPIRADA,
-    ).length;
-    const comProcessos = procuracoesList.filter(
-      (procuracao) => procuracao.processos.length > 0,
-    ).length;
-    const emitidasPeloEscritorio = procuracoesList.filter(
-      (procuracao) => procuracao.emitidaPor === ProcuracaoEmitidaPor.ESCRITORIO,
-    ).length;
+    return (
+      paginatedMetrics ?? {
+        total: 0,
+        vigentes: 0,
+        pendentesAssinatura: 0,
+        encerradas: 0,
+        comProcessos: 0,
+        emitidasPeloEscritorio: 0,
+      }
+    );
+  }, [paginatedMetrics]);
 
-    return {
-      total,
-      vigentes,
-      pendentesAssinatura,
-      encerradas,
-      comProcessos,
-      emitidasPeloEscritorio,
-    };
-  }, [procuracoesList]);
+  useEffect(() => {
+    if (pagination && pagination.page !== currentPage) {
+      setCurrentPage(pagination.page);
+    }
+  }, [pagination, currentPage]);
 
   const resetNovaProcuracaoState = () => {
     setClienteNovaProcuracaoId("");
@@ -332,6 +327,44 @@ export function ProcuracoesContent() {
 
     closeCreateModal();
     router.push(`/procuracoes/novo?${params.toString()}`);
+  };
+
+  const handleDownloadProcuracaoPdf = async (procuracao: ProcuracaoListItem) => {
+    if (procuracao.arquivoUrl) {
+      window.open(procuracao.arquivoUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    setDownloadingPdfId(procuracao.id);
+
+    try {
+      const result = await generateProcuracaoPdf(procuracao.id);
+
+      if (!result.success || !result.data) {
+        toast.error(result.error || "Erro ao gerar PDF");
+        return;
+      }
+
+      const binary = atob(result.data);
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download =
+        result.fileName || `procuracao-${procuracao.numero || procuracao.id}.pdf`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+
+      URL.revokeObjectURL(url);
+      toast.success("PDF gerado com sucesso");
+    } catch (error) {
+      toast.error("Erro ao gerar PDF");
+    } finally {
+      setDownloadingPdfId(null);
+    }
   };
 
   function getStatusColor(status: ProcuracaoStatus) {
@@ -397,15 +430,6 @@ export function ProcuracoesContent() {
     );
   }
 
-  if (!procuracoes) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 space-y-4">
-        <FileText className="h-12 w-12 text-default-400" />
-        <p className="text-default-500">Nenhuma procuração encontrada</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <PeoplePageHeader
@@ -431,7 +455,7 @@ export function ProcuracoesContent() {
             ) : null}
           </>
         }
-        description={`${procuracoesFiltradas.length} de ${procuracoesList.length} procurações${temFiltrosAtivos ? " com filtros aplicados" : ""}.`}
+        description={`${procuracoesFiltradas.length} de ${pagination?.total ?? 0} procurações${temFiltrosAtivos ? " com filtros aplicados" : ""}.`}
         tag="Atividades jurídicas"
         title="Procurações"
       />
@@ -530,9 +554,10 @@ export function ProcuracoesContent() {
                 placeholder="Buscar por número ou cliente..."
                 startContent={<Search className="h-4 w-4 text-default-400" />}
                 value={filtros.search}
-                onValueChange={(value) =>
-                  setFiltros((prev) => ({ ...prev, search: value }))
-                }
+                onValueChange={(value) => {
+                  setCurrentPage(1);
+                  setFiltros((prev) => ({ ...prev, search: value }));
+                }}
               />
 
               <Select
@@ -549,6 +574,7 @@ export function ProcuracoesContent() {
                         ? ""
                         : ((key as ProcuracaoStatus | undefined) ?? ""),
                   }));
+                  setCurrentPage(1);
                 }}
               >
                 {(item) => (
@@ -572,6 +598,7 @@ export function ProcuracoesContent() {
                         ? ""
                         : ((key as ProcuracaoEmitidaPor | undefined) ?? ""),
                   }));
+                  setCurrentPage(1);
                 }}
               >
                 {(item) => (
@@ -584,7 +611,7 @@ export function ProcuracoesContent() {
               <Select
                 items={clienteFilterItems}
                 placeholder="Cliente"
-                selectedKeys={[filtros.clienteId || ALL_CLIENTE_FILTER_KEY]}
+                selectedKeys={[selectedClienteFilterKey]}
                 onSelectionChange={(keys) => {
                   const [key] = Array.from(keys);
 
@@ -595,6 +622,7 @@ export function ProcuracoesContent() {
                         ? ""
                         : ((key as string | undefined) ?? ""),
                   }));
+                  setCurrentPage(1);
                 }}
               >
                 {(item) => (
@@ -669,12 +697,13 @@ export function ProcuracoesContent() {
                   ) : null}
                   <DropdownItem
                     key="download"
+                    isDisabled={downloadingPdfId === procuracao.id}
                     startContent={<Download className="h-4 w-4" />}
-                    onPress={() => {
-                      // Implementar download do PDF
-                    }}
+                    onPress={() => handleDownloadProcuracaoPdf(procuracao)}
                   >
-                    Baixar PDF
+                    {downloadingPdfId === procuracao.id
+                      ? "Gerando PDF..."
+                      : "Baixar PDF"}
                   </DropdownItem>
                 </DropdownMenu>
               </Dropdown>
@@ -740,6 +769,19 @@ export function ProcuracoesContent() {
         ))}
       </div>
 
+      {pagination && pagination.totalPages > 1 ? (
+        <div className="flex justify-center">
+          <Pagination
+            isCompact
+            page={pagination.page}
+            showControls
+            size="sm"
+            total={pagination.totalPages}
+            onChange={setCurrentPage}
+          />
+        </div>
+      ) : null}
+
       {procuracoesFiltradas.length === 0 ? (
         <Card className="border border-white/10 bg-background/60">
           <CardBody className="flex min-h-[180px] flex-col items-center justify-center gap-3 text-center">
@@ -764,6 +806,8 @@ export function ProcuracoesContent() {
         onOpenChange={(open) => {
           if (!open) {
             closeCreateModal();
+          } else {
+            setIsCreateModalOpen(true);
           }
         }}
       >
@@ -791,9 +835,13 @@ export function ProcuracoesContent() {
                     <Select
                       label="Cliente"
                       placeholder="Selecione o cliente"
-                      selectedKeys={
-                        clienteNovaProcuracaoId ? [clienteNovaProcuracaoId] : []
-                      }
+                      popoverProps={{
+                        classNames: {
+                          base: "z-[10000]",
+                          content: "z-[10000]",
+                        },
+                      }}
+                      selectedKeys={selectedClienteNovaProcuracaoKeys}
                       onSelectionChange={(keys) => {
                         const [key] = Array.from(keys);
                         const novoClienteId = (key as string | undefined) ?? "";
@@ -803,7 +851,7 @@ export function ProcuracoesContent() {
                       }}
                     >
                       {clientes.map((cliente) => (
-                        <SelectItem key={cliente.id} textValue={cliente.id}>
+                        <SelectItem key={cliente.id} textValue={cliente.nome}>
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold text-default-700">
                               {cliente.nome}
@@ -840,12 +888,23 @@ export function ProcuracoesContent() {
                       ) : (
                         <Select
                           placeholder="Selecione os processos (opcional)"
-                          selectedKeys={processosNovaProcuracaoIds}
+                          popoverProps={{
+                            classNames: {
+                              base: "z-[10000]",
+                              content: "z-[10000]",
+                            },
+                          }}
+                          selectedKeys={selectedProcessosNovaProcuracaoKeys}
                           selectionMode="multiple"
                           onSelectionChange={handleProcessoSelectionChange}
                         >
-                          {processosParaNovaProcuracao.map((processo) => (
-                            <SelectItem key={processo.id} textValue={processo.id}>
+                          {processosParaNovaProcuracao.map((processo) => {
+                            const processoTextValue = processo.titulo
+                              ? `${processo.numero} - ${processo.titulo}`
+                              : processo.numero;
+
+                            return (
+                              <SelectItem key={processo.id} textValue={processoTextValue}>
                               <div className="flex flex-col">
                                 <span className="text-sm font-semibold text-default-700">
                                   {processo.numero}
@@ -856,8 +915,9 @@ export function ProcuracoesContent() {
                                   </span>
                                 )}
                               </div>
-                            </SelectItem>
-                          ))}
+                              </SelectItem>
+                            );
+                          })}
                         </Select>
                       )}
                     </div>
@@ -926,9 +986,13 @@ export function ProcuracoesContent() {
                   <Select
                     label="Processo"
                     placeholder="Selecione o processo"
-                    selectedKeys={
-                      selectedProcessoId ? [selectedProcessoId] : []
-                    }
+                    popoverProps={{
+                      classNames: {
+                        base: "z-[10000]",
+                        content: "z-[10000]",
+                      },
+                    }}
+                    selectedKeys={selectedProcessoDisponivelKeys}
                     onSelectionChange={(keys) => {
                       const key = Array.from(keys)[0] as string | undefined;
 
@@ -936,7 +1000,14 @@ export function ProcuracoesContent() {
                     }}
                   >
                     {processosDisponiveis.map((processo) => (
-                      <SelectItem key={processo.id} textValue={processo.id}>
+                      <SelectItem
+                        key={processo.id}
+                        textValue={
+                          processo.titulo
+                            ? `${processo.numero} - ${processo.titulo}`
+                            : processo.numero
+                        }
+                      >
                         <div className="flex flex-col">
                           <span className="text-sm font-semibold">
                             {processo.numero}

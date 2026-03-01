@@ -2,8 +2,11 @@ import useSWR from "swr";
 
 import {
   getAllProcuracoes,
+  getProcuracoesPaginated,
   getProcuracaoById,
   getProcuracoesCliente,
+  type ProcuracaoListFilters,
+  type ProcuracaoListPaginatedResult,
   type ProcuracaoListItem,
 } from "@/app/actions/procuracoes";
 
@@ -34,6 +37,65 @@ export function useAllProcuracoes() {
 
   return {
     procuracoes: data,
+    isLoading,
+    isError: !!error,
+    error,
+    mutate,
+    refresh: mutate,
+  };
+}
+
+/**
+ * Hook para buscar procurações com paginação server-side
+ */
+export function useProcuracoesPaginated(params: {
+  page: number;
+  pageSize: number;
+  filtros?: ProcuracaoListFilters;
+}) {
+  const { page, pageSize, filtros } = params;
+
+  const key = [
+    "procuracoes-paginated",
+    page,
+    pageSize,
+    filtros?.search ?? "",
+    filtros?.status ?? "",
+    filtros?.clienteId ?? "",
+    filtros?.advogadoId ?? "",
+    filtros?.emitidaPor ?? "",
+  ];
+
+  const { data, error, isLoading, mutate } =
+    useSWR<ProcuracaoListPaginatedResult>(key, async () => {
+      const result = await getProcuracoesPaginated({
+        page,
+        pageSize,
+        filtros,
+      });
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error || "Erro ao carregar procurações");
+      }
+
+      return result.data;
+    }, {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    });
+
+  return {
+    data,
+    procuracoes: data?.items ?? [],
+    metrics: data?.metrics,
+    pagination: data
+      ? {
+          page: data.page,
+          pageSize: data.pageSize,
+          total: data.total,
+          totalPages: data.totalPages,
+        }
+      : undefined,
     isLoading,
     isError: !!error,
     error,

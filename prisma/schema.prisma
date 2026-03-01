@@ -114,6 +114,7 @@ model Tenant {
   modelosPeticao           ModeloPeticao[]
   tiposPeticao             TipoPeticao[]
   modelosProcuracao        ModeloProcuracao[]
+  modelosProcuracaoVersoes ModeloProcuracaoVersao[]
   movimentacoes            MovimentacaoProcesso[]
   autosProcessuais         AutoProcessual[]
   causas                   Causa[]
@@ -389,6 +390,7 @@ model Usuario {
   tarefasObservadas            TarefaWatcher[]
   dadosBancarios               DadosBancarios[]
   advogadoHistorico            AdvogadoHistorico[]
+  modelosProcuracaoVersoes     ModeloProcuracaoVersao[]
   planoVersoesCriadas          PlanoVersao[]          @relation("PlanoVersaoCriador")
   planoVersoesPublicadas       PlanoVersao[]          @relation("PlanoVersaoPublicador")
 
@@ -867,6 +869,11 @@ model Procuracao {
   tenantId              String
   clienteId             String
   modeloId              String? // Referência ao modelo usado
+  modeloNomeSnapshot    String?
+  modeloCategoriaSnapshot String?
+  modeloConteudoSnapshot String?
+  modeloVersaoSnapshot  Int?
+  modeloAtualizadoEmSnapshot DateTime?
   numero                String?
   arquivoUrl            String?
   observacoes           String?
@@ -2899,7 +2906,7 @@ model ModeloProcuracao {
   tenantId  String
   nome      String
   descricao String?
-  conteudo  String // Template HTML com placeholders
+  conteudo  String // Texto base do modelo aplicado na criação da procuração
   categoria String? // Ex: "PREFERITURA", "PESSOA_FISICA", "CRIMINAL"
   ativo     Boolean   @default(true)
   createdAt DateTime  @default(now())
@@ -2909,9 +2916,33 @@ model ModeloProcuracao {
   // Relacionamentos
   tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   procuracoes Procuracao[]
+  versoes     ModeloProcuracaoVersao[]
 
   @@index([tenantId, ativo])
   @@index([tenantId, categoria])
+  @@schema("magiclawyer")
+}
+
+model ModeloProcuracaoVersao {
+  id         String   @id @default(cuid())
+  tenantId   String
+  modeloId   String
+  versao     Int
+  nome       String
+  descricao  String?
+  conteudo   String
+  categoria  String?
+  ativo      Boolean
+  criadoPorId String?
+  createdAt  DateTime @default(now())
+
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  modelo    ModeloProcuracao @relation(fields: [modeloId], references: [id], onDelete: Cascade)
+  criadoPor Usuario?         @relation(fields: [criadoPorId], references: [id], onDelete: SetNull)
+
+  @@unique([modeloId, versao])
+  @@index([tenantId, modeloId, createdAt])
+  @@index([criadoPorId])
   @@schema("magiclawyer")
 }
 

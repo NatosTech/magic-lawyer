@@ -60,6 +60,7 @@ type ModeloProcuracaoItem = {
   updatedAt: Date | string;
   _count?: {
     procuracoes?: number;
+    versoes?: number;
   };
 };
 
@@ -516,8 +517,6 @@ export default function ModelosProcuracaoContent() {
           ) : (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
               {modelosFiltrados.map((modelo) => {
-                const tamanhoConteudo = (modelo.conteudo || "").trim().length;
-
                 return (
                   <Card
                     key={modelo.id}
@@ -623,8 +622,8 @@ export default function ModelosProcuracaoContent() {
                           </p>
                         </div>
                         <div className="rounded-xl border border-white/10 bg-background/40 px-3 py-2">
-                          <p className="font-medium text-default-300">Conteúdo</p>
-                          <p className="mt-1">{tamanhoConteudo} caracteres</p>
+                          <p className="font-medium text-default-300">Versões</p>
+                          <p className="mt-1">{modelo._count?.versoes || 0}</p>
                         </div>
                       </div>
 

@@ -4,6 +4,7 @@ import { getSession } from "@/app/lib/auth";
 import prisma from "@/app/lib/prisma";
 import { Prisma } from "@/generated/prisma";
 import logger from "@/lib/logger";
+import { generateProcuracaoPdf } from "@/app/actions/procuracoes";
 
 // ============================================
 // TYPES
@@ -15,28 +16,6 @@ export interface ModeloProcuracaoFormData {
   conteudo: string;
   categoria?: string;
   ativo?: boolean;
-}
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-async function getAdvogadoIdFromSession(session: {
-  user: any;
-}): Promise<string | null> {
-  if (!session?.user?.id || !session?.user?.tenantId) return null;
-
-  const advogado = await prisma.advogado.findFirst({
-    where: {
-      usuarioId: session.user.id,
-      tenantId: session.user.tenantId,
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  return advogado?.id || null;
 }
 
 // ============================================
@@ -73,6 +52,7 @@ export async function getAllModelosProcuracao(): Promise<{
         _count: {
           select: {
             procuracoes: true,
+            versoes: true,
           },
         },
       },
@@ -126,6 +106,7 @@ export async function getModeloProcuracaoById(modeloId: string): Promise<{
         _count: {
           select: {
             procuracoes: true,
+            versoes: true,
           },
         },
       },
@@ -181,22 +162,45 @@ export async function createModeloProcuracao(
       return { success: false, error: "Acesso negado" };
     }
 
-    const modelo = await prisma.modeloProcuracao.create({
-      data: {
-        tenantId: user.tenantId,
-        nome: data.nome,
-        descricao: data.descricao,
-        conteudo: data.conteudo,
-        categoria: data.categoria,
-        ativo: data.ativo ?? true,
-      },
-      include: {
-        _count: {
-          select: {
-            procuracoes: true,
+    const modelo = await prisma.$transaction(async (tx) => {
+      const novoModelo = await tx.modeloProcuracao.create({
+        data: {
+          tenantId: user.tenantId,
+          nome: data.nome,
+          descricao: data.descricao,
+          conteudo: data.conteudo,
+          categoria: data.categoria,
+          ativo: data.ativo ?? true,
+        },
+      });
+
+      await tx.modeloProcuracaoVersao.create({
+        data: {
+          tenantId: user.tenantId,
+          modeloId: novoModelo.id,
+          versao: 1,
+          nome: novoModelo.nome,
+          descricao: novoModelo.descricao,
+          conteudo: novoModelo.conteudo,
+          categoria: novoModelo.categoria,
+          ativo: novoModelo.ativo,
+          criadoPorId: user.id,
+        },
+      });
+
+      return tx.modeloProcuracao.findUniqueOrThrow({
+        where: {
+          id: novoModelo.id,
+        },
+        include: {
+          _count: {
+            select: {
+              procuracoes: true,
+              versoes: true,
+            },
           },
         },
-      },
+      });
     });
 
     return {
@@ -261,18 +265,53 @@ export async function updateModeloProcuracao(
 
     const updateData: Prisma.ModeloProcuracaoUpdateInput = { ...data };
 
-    const modelo = await prisma.modeloProcuracao.update({
-      where: {
-        id: modeloId,
-      },
-      data: updateData,
-      include: {
-        _count: {
-          select: {
-            procuracoes: true,
+    const modelo = await prisma.$transaction(async (tx) => {
+      const atualizado = await tx.modeloProcuracao.update({
+        where: {
+          id: modeloId,
+        },
+        data: updateData,
+      });
+
+      const ultimaVersao = await tx.modeloProcuracaoVersao.findFirst({
+        where: {
+          modeloId,
+        },
+        select: {
+          versao: true,
+        },
+        orderBy: {
+          versao: "desc",
+        },
+      });
+
+      await tx.modeloProcuracaoVersao.create({
+        data: {
+          tenantId: user.tenantId,
+          modeloId,
+          versao: (ultimaVersao?.versao ?? 0) + 1,
+          nome: atualizado.nome,
+          descricao: atualizado.descricao,
+          conteudo: atualizado.conteudo,
+          categoria: atualizado.categoria,
+          ativo: atualizado.ativo,
+          criadoPorId: user.id,
+        },
+      });
+
+      return tx.modeloProcuracao.findUniqueOrThrow({
+        where: {
+          id: modeloId,
+        },
+        include: {
+          _count: {
+            select: {
+              procuracoes: true,
+              versoes: true,
+            },
           },
         },
-      },
+      });
     });
 
     return {
@@ -424,77 +463,30 @@ export async function getModelosProcuracaoParaSelect(): Promise<{
  */
 export async function gerarPdfProcuracao(
   procuracaoId: string,
-  dadosPreenchidos: Record<string, any>,
+  _dadosPreenchidos: Record<string, any>,
 ): Promise<{
   success: boolean;
   pdfUrl?: string;
+  pdfData?: string;
+  fileName?: string;
   error?: string;
 }> {
   try {
-    const session = await getSession();
+    // Mantida por compatibilidade: delega para a action oficial do módulo de procurações.
+    const result = await generateProcuracaoPdf(procuracaoId);
 
-    if (!session?.user) {
-      return { success: false, error: "Não autorizado" };
-    }
-
-    const user = session.user as any;
-
-    if (!user.tenantId) {
-      return { success: false, error: "Tenant não encontrado" };
-    }
-
-    // Buscar a procuração com o modelo
-    const procuracao = await prisma.procuracao.findFirst({
-      where: {
-        id: procuracaoId,
-        tenantId: user.tenantId,
-      },
-      include: {
-        modelo: true,
-        cliente: {
-          select: {
-            nome: true,
-            documento: true,
-            email: true,
-            telefone: true,
-            tipoPessoa: true,
-          },
-        },
-        outorgados: {
-          include: {
-            advogado: {
-              include: {
-                usuario: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!procuracao) {
-      return { success: false, error: "Procuração não encontrada" };
-    }
-
-    if (!procuracao.modelo) {
+    if (!result.success || !result.data) {
       return {
         success: false,
-        error: "Modelo não encontrado para esta procuração",
+        error: result.error || "Erro ao gerar PDF da procuração",
       };
     }
 
-    // Aqui você implementaria a geração do PDF
-    // Por enquanto, retornamos uma URL mock
-    const pdfUrl = `/api/procuracao/${procuracaoId}/pdf?t=${Date.now()}`;
-
     return {
       success: true,
-      pdfUrl: pdfUrl,
+      pdfUrl: `data:application/pdf;base64,${result.data}`,
+      pdfData: result.data,
+      fileName: result.fileName,
     };
   } catch (error) {
     logger.error("Erro ao gerar PDF da procuração:", error);

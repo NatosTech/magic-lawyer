@@ -45,6 +45,7 @@ import { DateUtils } from "@/app/lib/date-utils";
 import {
   updateProcuracao,
   deleteProcuracao,
+  generateProcuracaoPdf,
   adicionarAdvogadoNaProcuracao,
   removerAdvogadoDaProcuracao,
   vincularProcesso,
@@ -129,6 +130,7 @@ export default function ProcuracaoDetalhesPage() {
   const [isAddAdvogadoModalOpen, setIsAddAdvogadoModalOpen] = useState(false);
   const [isAddProcessoModalOpen, setIsAddProcessoModalOpen] = useState(false);
   const [isAddPoderModalOpen, setIsAddPoderModalOpen] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [documentosCount, setDocumentosCount] = useState(0);
   const [processoSelecionadoId, setProcessoSelecionadoId] = useState("");
   const [novoPoderTitulo, setNovoPoderTitulo] = useState("");
@@ -178,6 +180,44 @@ export default function ProcuracaoDetalhesPage() {
     processoSelecionadoId && processosDisponiveisIds.has(processoSelecionadoId)
       ? [processoSelecionadoId]
       : [];
+
+  const handleDownloadPdf = async () => {
+    if (!procuracao) return;
+
+    if (procuracao.arquivoUrl) {
+      window.open(procuracao.arquivoUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    setIsDownloadingPdf(true);
+
+    try {
+      const result = await generateProcuracaoPdf(procuracao.id);
+
+      if (!result.success || !result.data) {
+        toast.error(result.error || "Erro ao gerar PDF");
+        return;
+      }
+
+      const binary = atob(result.data);
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download =
+        result.fileName || `procuracao-${procuracao.numero || procuracao.id}.pdf`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("PDF gerado com sucesso");
+    } catch (error) {
+      toast.error("Erro ao gerar PDF");
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
   // Proteção: Redirecionar se não autorizado
   useEffect(() => {
@@ -458,18 +498,15 @@ export default function ProcuracaoDetalhesPage() {
             <div className="flex flex-wrap gap-2 lg:justify-end">
               {!isEditing ? (
                 <>
-                  {procuracao.arquivoUrl && (
-                    <Button
-                      as="a"
-                      href={procuracao.arquivoUrl}
-                      size="sm"
-                      startContent={<Download className="h-4 w-4" />}
-                      target="_blank"
-                      variant="flat"
-                    >
-                      Baixar PDF
-                    </Button>
-                  )}
+                  <Button
+                    isLoading={isDownloadingPdf}
+                    size="sm"
+                    startContent={<Download className="h-4 w-4" />}
+                    variant="flat"
+                    onPress={handleDownloadPdf}
+                  >
+                    Baixar PDF
+                  </Button>
                   <Button
                     color="primary"
                     size="sm"
@@ -709,20 +746,39 @@ export default function ProcuracaoDetalhesPage() {
                 }
               />
 
-              {procuracao.modelo && (
+              {(procuracao.modelo || procuracao.modeloNomeSnapshot) && (
                 <div>
-                  <h4 className="mb-2 text-sm font-semibold">Modelo Usado</h4>
+                  <h4 className="mb-2 text-sm font-semibold">
+                    Modelo aplicado na criação
+                  </h4>
                   <Card className="bg-default-100">
                     <CardBody>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-3">
                         <FileText className="h-5 w-5 text-primary" />
                         <div>
                           <p className="font-semibold">
-                            {procuracao.modelo.nome}
+                            {procuracao.modeloNomeSnapshot ||
+                              procuracao.modelo?.nome ||
+                              "Modelo sem nome"}
                           </p>
-                          {procuracao.modelo.categoria && (
+                          {(procuracao.modeloCategoriaSnapshot ||
+                            procuracao.modelo?.categoria) && (
                             <p className="text-sm text-default-500">
-                              {procuracao.modelo.categoria}
+                              {procuracao.modeloCategoriaSnapshot ||
+                                procuracao.modelo?.categoria}
+                            </p>
+                          )}
+                          {typeof procuracao.modeloVersaoSnapshot === "number" && (
+                            <p className="text-xs text-default-500">
+                              Versão aplicada: v{procuracao.modeloVersaoSnapshot}
+                            </p>
+                          )}
+                          {procuracao.modeloAtualizadoEmSnapshot && (
+                            <p className="text-xs text-default-500">
+                              Modelo atualizado em{" "}
+                              {DateUtils.formatDateTime(
+                                new Date(procuracao.modeloAtualizadoEmSnapshot),
+                              )}
                             </p>
                           )}
                         </div>
@@ -815,7 +871,20 @@ export default function ProcuracaoDetalhesPage() {
                     <Card key={outorgado.id} className="bg-default-50">
                       <CardBody>
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
+                          <div
+                            className="flex cursor-pointer items-center gap-3 rounded-lg p-1 transition-colors hover:bg-default-100"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() =>
+                              router.push(`/advogados/${outorgado.advogado.id}`)
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                router.push(`/advogados/${outorgado.advogado.id}`);
+                              }
+                            }}
+                          >
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                               <User className="h-5 w-5 text-primary" />
                             </div>
