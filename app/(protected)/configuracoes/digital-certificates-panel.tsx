@@ -726,7 +726,7 @@ export function DigitalCertificatesPanel({
         }}
         size="lg"
       >
-        <ModalContent className="border border-primary/20 bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 shadow-[0_32px_80px_-40px_rgba(59,130,246,0.55)]">
+        <ModalContent className="border border-primary/20 bg-linear-to-br from-slate-950 via-slate-950 to-slate-900 shadow-[0_32px_80px_-40px_rgba(59,130,246,0.55)]">
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-3 border-b border-white/10 pb-4">

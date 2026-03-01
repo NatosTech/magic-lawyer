@@ -289,7 +289,7 @@ export default function ModulosAdminPage() {
         initial={{ opacity: 0, y: 20 }}
         transition={{ delay: 0.05 }}
       >
-        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-700">
+        <Card className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-700">
           <CardBody className="p-6">
             <div className="flex items-start gap-4">
               <div className="p-3 bg-blue-100 dark:bg-blue-800 rounded-xl flex-shrink-0">
@@ -356,7 +356,7 @@ export default function ModulosAdminPage() {
         initial={{ opacity: 0, y: 20 }}
         transition={{ delay: 0.1 }}
       >
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
+        <Card className="bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
           <CardBody className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -374,7 +374,7 @@ export default function ModulosAdminPage() {
           </CardBody>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
+        <Card className="bg-linear-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
           <CardBody className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -392,7 +392,7 @@ export default function ModulosAdminPage() {
           </CardBody>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700">
+        <Card className="bg-linear-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700">
           <CardBody className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -410,7 +410,7 @@ export default function ModulosAdminPage() {
           </CardBody>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-700">
+        <Card className="bg-linear-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-700">
           <CardBody className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -473,7 +473,7 @@ export default function ModulosAdminPage() {
             placement="top"
           >
             <Card
-              className={`border-2 transition-all duration-300 ${autoDetectStatus.needsSync ? "border-orange-200 bg-gradient-to-r from-orange-50 to-orange-100 dark:border-orange-700 dark:from-orange-900/20 dark:to-orange-800/20" : "border-green-200 bg-gradient-to-r from-green-50 to-green-100 dark:border-green-700 dark:from-green-900/20 dark:to-green-800/20"}`}
+              className={`border-2 transition-all duration-300 ${autoDetectStatus.needsSync ? "border-orange-200 bg-linear-to-r from-orange-50 to-orange-100 dark:border-orange-700 dark:from-orange-900/20 dark:to-orange-800/20" : "border-green-200 bg-linear-to-r from-green-50 to-green-100 dark:border-green-700 dark:from-green-900/20 dark:to-green-800/20"}`}
             >
               <CardBody className="p-4">
                 <div className="flex items-center justify-between">
@@ -585,7 +585,7 @@ export default function ModulosAdminPage() {
             placement="top"
           >
             <Card
-              className={`border-2 transition-all duration-300 ${syncStatus.needsSync ? "border-warning-200 bg-gradient-to-r from-warning-50 to-warning-100 dark:border-warning-700 dark:from-warning-900/20 dark:to-warning-800/20" : "border-success-200 bg-gradient-to-r from-success-50 to-success-100 dark:border-success-700 dark:from-success-900/20 dark:to-success-800/20"}`}
+              className={`border-2 transition-all duration-300 ${syncStatus.needsSync ? "border-warning-200 bg-linear-to-r from-warning-50 to-warning-100 dark:border-warning-700 dark:from-warning-900/20 dark:to-warning-800/20" : "border-success-200 bg-linear-to-r from-success-50 to-success-100 dark:border-success-700 dark:from-success-900/20 dark:to-success-800/20"}`}
             >
               <CardBody className="p-4">
                 <div className="flex items-center justify-between">
@@ -736,7 +736,7 @@ export default function ModulosAdminPage() {
                           transition={{ type: "spring", stiffness: 300 }}
                           whileHover={{ scale: 1.05 }}
                         >
-                          <code className="text-sm bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 px-2 py-1 rounded font-mono">
+                          <code className="text-sm bg-linear-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 px-2 py-1 rounded font-mono">
                             {modulo.slug}
                           </code>
                         </motion.div>
@@ -824,7 +824,7 @@ export default function ModulosAdminPage() {
                           whileHover={{ scale: 1.05 }}
                         >
                           <Chip
-                            className={`${modulo.ativo ? "bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30" : "bg-gradient-to-r from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30"}`}
+                            className={`${modulo.ativo ? "bg-linear-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30" : "bg-linear-to-r from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30"}`}
                             color={modulo.ativo ? "success" : "danger"}
                             size="sm"
                             variant="flat"
@@ -878,7 +878,7 @@ export default function ModulosAdminPage() {
                     transition={{ delay: index * 0.1 }}
                     whileHover={{ scale: 1.02 }}
                   >
-                    <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700">
+                    <Card className="bg-linear-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700">
                       <CardBody className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -978,7 +978,7 @@ export default function ModulosAdminPage() {
           </ModalHeader>
           <ModalBody className="space-y-6">
             {/* Seção de Introdução */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-xl border border-blue-200 dark:border-blue-700">
+            <div className="bg-linear-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-xl border border-blue-200 dark:border-blue-700">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-3 bg-blue-100 dark:bg-blue-800 rounded-xl">
                   <TargetIcon className="w-6 h-6 text-blue-600" />
@@ -1055,7 +1055,7 @@ export default function ModulosAdminPage() {
                 Como Usar - Passo a Passo
               </h3>
               <div className="space-y-4">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+                <div className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
                   <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
                     <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
                       1
@@ -1070,7 +1070,7 @@ export default function ModulosAdminPage() {
                   </ol>
                 </div>
 
-                <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-700">
+                <div className="bg-linear-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-700">
                   <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-2 flex items-center gap-2">
                     <span className="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
                       2
@@ -1085,7 +1085,7 @@ export default function ModulosAdminPage() {
                   </ol>
                 </div>
 
-                <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-700">
+                <div className="bg-linear-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-700">
                   <h4 className="font-semibold text-orange-900 dark:text-orange-100 mb-2 flex items-center gap-2">
                     <span className="bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
                       3

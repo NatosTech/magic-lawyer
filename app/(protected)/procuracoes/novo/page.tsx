@@ -6,7 +6,6 @@ import type { Cliente as ClienteDTO } from "@/app/actions/clientes";
 import type { Processo as ProcessoDTO } from "@/app/actions/processos";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -74,6 +73,34 @@ export default function NovaProcuracaoPage() {
   const clienteIdParam = searchParams.get("clienteId") ?? "";
   const modeloIdParam = searchParams.get("modeloId") ?? "";
   const processoIdsParam = searchParams.get("processoIds") ?? "";
+  const retorno = searchParams.get("returnTo") ?? "";
+  const getRetornoUrl = () => {
+    if (!retorno) {
+      return null;
+    }
+
+    try {
+      return decodeURIComponent(retorno);
+    } catch (_error) {
+      return null;
+    }
+  };
+
+  const navegarRetorno = () => {
+    const retornoUrl = getRetornoUrl();
+
+    if (retornoUrl) {
+      router.push(retornoUrl);
+
+      return;
+    }
+
+    if (clienteIdParam) {
+      router.push(`/clientes/${clienteIdParam}`);
+    } else {
+      router.push("/procuracoes");
+    }
+  };
 
   const preselectedProcessoIds = useMemo(
     () =>
@@ -298,6 +325,31 @@ export default function NovaProcuracaoPage() {
       if (result.success) {
         toast.success("Procuração criada com sucesso!");
 
+        const procuracaoId = result.procuracao?.id;
+
+        if (!procuracaoId) {
+          toast.error("Falha ao recuperar a procuração criada.");
+
+          return;
+        }
+
+        if (retorno) {
+          try {
+            const retornoNormalizado = decodeURIComponent(retorno);
+            const retornoComProcuracao =
+              `${retornoNormalizado}${retornoNormalizado.includes("?") ? "&" : "?"}` +
+              `returnProcuracaoId=${encodeURIComponent(procuracaoId)}&autoVincularProcuracao=1`;
+
+            router.push(retornoComProcuracao);
+          } catch (_error) {
+            toast.error("Erro ao retornar para o contrato, tente novamente.");
+
+            return;
+          }
+
+          return;
+        }
+
         if (clienteIdParam) {
           router.push(`/clientes/${clienteIdParam}`);
         } else {
@@ -323,10 +375,9 @@ export default function NovaProcuracaoPage() {
           </p>
         </div>
         <Button
-          as={Link}
-          href={clienteIdParam ? `/clientes/${clienteIdParam}` : "/procuracoes"}
           startContent={<ArrowLeft className="h-4 w-4" />}
           variant="light"
+          onPress={navegarRetorno}
         >
           Voltar
         </Button>
@@ -731,13 +782,7 @@ export default function NovaProcuracaoPage() {
           <div className="flex justify-end gap-3">
             <Button
               variant="light"
-              onPress={() =>
-                router.push(
-                  clienteIdParam
-                    ? `/clientes/${clienteIdParam}`
-                    : "/procuracoes",
-                )
-              }
+              onPress={navegarRetorno}
             >
               Cancelar
             </Button>

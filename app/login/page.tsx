@@ -632,7 +632,7 @@ function LoginPageInner() {
   }, [firstAccessReady]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-background via-background to-primary/5 px-4 py-12">
       {/* Botão de voltar */}
       <Button
         as={NextLink}

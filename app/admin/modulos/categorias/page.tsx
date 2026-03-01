@@ -303,7 +303,7 @@ export default function ModuloCategoriasPage() {
             initial={{ opacity: 0, y: 20 }}
             transition={{ delay: 0.1 }}
           >
-            <Card className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
+            <Card className="bg-linear-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700">
               <CardBody className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -327,7 +327,7 @@ export default function ModuloCategoriasPage() {
             initial={{ opacity: 0, y: 20 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
+            <Card className="bg-linear-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
               <CardBody className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -351,7 +351,7 @@ export default function ModuloCategoriasPage() {
             initial={{ opacity: 0, y: 20 }}
             transition={{ delay: 0.3 }}
           >
-            <Card className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700">
+            <Card className="bg-linear-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700">
               <CardBody className="p-6">
                 <div className="flex items-center justify-between">
                   <div>

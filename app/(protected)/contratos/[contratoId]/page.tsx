@@ -11,6 +11,8 @@ import {
   ArrowLeft,
   Edit,
   FileText,
+  Eye,
+  Download,
   User,
   Building2,
   Calendar,
@@ -237,6 +239,62 @@ export default function ContratoPage({
                 </h3>
                 <p className="text-sm text-default-700 whitespace-pre-wrap">
                   {contrato.resumo}
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* Documento do Contrato */}
+          {contrato.arquivoUrl ? (
+            <>
+              <Divider />
+              <div>
+                <h3 className="text-sm font-semibold text-default-600 mb-3">
+                  📎 Documento do Contrato
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      as="a"
+                      href={contrato.arquivoUrl}
+                      rel="noopener noreferrer"
+                      startContent={<Eye className="h-4 w-4" />}
+                      target="_blank"
+                      variant="flat"
+                    >
+                      Abrir PDF
+                    </Button>
+                    <Button
+                      as="a"
+                      href={contrato.arquivoUrl}
+                      rel="noopener noreferrer"
+                      startContent={<Download className="h-4 w-4" />}
+                      target="_blank"
+                      variant="solid"
+                    >
+                      Baixar PDF
+                    </Button>
+                  </div>
+                  <div className="rounded-lg border border-default-200 overflow-hidden">
+                    <iframe
+                      className="h-80 w-full"
+                      src={contrato.arquivoUrl}
+                      title="Visualização do contrato em PDF"
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <Divider />
+              <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning-700">
+                <p className="font-medium">
+                  Este contrato ainda não possui PDF anexado.
+                </p>
+                <p className="text-xs mt-1">
+                  Você pode anexar um PDF na criação deste contrato ou na tela de
+                  edição.
                 </p>
               </div>
             </>

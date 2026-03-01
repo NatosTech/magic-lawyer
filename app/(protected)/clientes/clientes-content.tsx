@@ -359,7 +359,7 @@ const ClientesListSection = memo(function ClientesListSection({
               initial={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="p-6 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+              <div className="p-6 bg-linear-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
                 <Users className="text-slate-400" size={48} />
               </div>
               <h3 className="text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -372,7 +372,7 @@ const ClientesListSection = memo(function ClientesListSection({
               </p>
               {!hasActiveFilters && canCreateClient && (
                 <Button
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600"
+                  className="bg-linear-to-r from-blue-600 to-indigo-600"
                   color="primary"
                   startContent={<Plus size={20} />}
                   onPress={onOpenCreateModal}

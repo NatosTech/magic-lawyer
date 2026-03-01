@@ -305,7 +305,7 @@ export function EnderecoManager({ className, userId }: EnderecoManagerProps) {
       <Card className={className}>
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30">
+            <div className="p-2 rounded-lg bg-linear-to-br from-primary/20 to-secondary/20 border border-primary/30">
               <MapPin className="w-5 h-5 text-primary" />
             </div>
             <div>

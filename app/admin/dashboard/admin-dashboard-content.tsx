@@ -183,7 +183,7 @@ function StatsGrid({ stats }: { stats: AdminDashboardStat[] }) {
       {stats.map((stat) => (
         <Card
           key={stat.id}
-          className={`border ${toneBorder[stat.tone] ?? "border-white/10"} bg-gradient-to-br ${toneColors[stat.tone] ?? toneColors.default} backdrop-blur`}
+          className={`border ${toneBorder[stat.tone] ?? "border-white/10"} bg-linear-to-br ${toneColors[stat.tone] ?? toneColors.default} backdrop-blur`}
         >
           <CardBody className="space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -227,7 +227,7 @@ function AlertsList({ alerts }: { alerts: AdminDashboardAlert[] }) {
       {alerts.map((alert) => (
         <Card
           key={alert.id}
-          className={`border ${toneBorder[alert.tone] ?? "border-white/10"} bg-gradient-to-br ${toneColors[alert.tone] ?? toneColors.default} backdrop-blur`}
+          className={`border ${toneBorder[alert.tone] ?? "border-white/10"} bg-linear-to-br ${toneColors[alert.tone] ?? toneColors.default} backdrop-blur`}
         >
           <CardBody className="space-y-2">
             <div className="flex items-center gap-2">

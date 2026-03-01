@@ -2048,7 +2048,7 @@ function AndamentoModal({
             <div className="flex items-center gap-3">
               {mode === "create" && (
                 <>
-                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg">
+                  <div className="p-2 bg-linear-to-br from-green-500 to-emerald-600 rounded-lg">
                     <Plus className="text-white" size={20} />
                   </div>
                   <span className="text-xl font-semibold">Novo Andamento</span>
@@ -2056,7 +2056,7 @@ function AndamentoModal({
               )}
               {mode === "edit" && (
                 <>
-                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                  <div className="p-2 bg-linear-to-br from-blue-500 to-indigo-600 rounded-lg">
                     <Edit3 className="text-white" size={20} />
                   </div>
                   <span className="text-xl font-semibold">
@@ -2066,7 +2066,7 @@ function AndamentoModal({
               )}
               {mode === "view" && (
                 <>
-                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg">
+                  <div className="p-2 bg-linear-to-br from-purple-500 to-pink-600 rounded-lg">
                     <Eye className="text-white" size={20} />
                   </div>
                   <span className="text-xl font-semibold">

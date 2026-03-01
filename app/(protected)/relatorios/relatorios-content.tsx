@@ -2,9 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Button } from "@heroui/button";
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
-import { Divider } from "@heroui/divider";
 import { type DateValue, getLocalTimeZone } from "@internationalized/date";
 import { Input } from "@heroui/input";
 import type { RangeValue } from "@react-types/shared";
@@ -23,7 +21,7 @@ import { toast } from "@/lib/toast";
 
 import { type RelatorioPeriodo, type RelatoriosTenantData } from "@/app/actions/relatorios";
 import { useRelatorios } from "@/app/hooks/use-relatorios";
-import { subtitle, title } from "@/components/primitives";
+import { PeopleMetricCard, PeoplePageHeader, PeoplePanel } from "@/components/people-ui";
 import { Select, SelectItem } from "@heroui/react";
 import { DateRangeInput } from "@/components/ui/date-range-input";
 
@@ -394,33 +392,6 @@ function buildReportCatalog(data: RelatoriosTenantData): PrebuiltReportItem[] {
   ];
 }
 
-function renderKpiCard(
-  titleText: string,
-  value: string,
-  helper: string,
-  tone: "primary" | "success" | "warning" | "danger" | "default",
-) {
-  const toneClassMap = {
-    primary: "border-primary/20 bg-primary/5 text-primary",
-    success: "border-success/20 bg-success/5 text-success",
-    warning: "border-warning/20 bg-warning/5 text-warning",
-    danger: "border-danger/20 bg-danger/5 text-danger",
-    default: "border-white/10 bg-background/40 text-white",
-  } as const;
-
-  const toneClass = toneClassMap[tone];
-
-  return (
-    <div className={`rounded-2xl border p-4 ${toneClass}`}>
-      <p className="text-xs uppercase tracking-[0.18em] text-default-500">
-        {titleText}
-      </p>
-      <p className="mt-1 text-2xl font-semibold">{value}</p>
-      <p className="text-xs text-default-400">{helper}</p>
-    </div>
-  );
-}
-
 export function RelatoriosContent() {
   const [periodo, setPeriodo] = useState<RelatorioPeriodo>("90d");
   const [periodoRange, setPeriodoRange] = useState<PeriodoRange | null>(null);
@@ -645,209 +616,179 @@ export function RelatoriosContent() {
   };
 
   return (
-    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-3 py-10 sm:px-6">
-      <header className="space-y-4">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
-          Inteligência jurídica
-        </p>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <h1 className={title({ size: "lg", color: "blue" })}>
-              Catálogo de relatórios pré-prontos
-            </h1>
-            <p className={subtitle({ fullWidth: true })}>
-              Lista ERP para busca, filtro e exportação por formato conforme a
-              necessidade do cliente.
-            </p>
-          </div>
-        </div>
-      </header>
+    <div className="container mx-auto p-6 space-y-6">
+      <PeoplePageHeader
+        description="Lista ERP para busca, filtro e exportação por formato conforme a necessidade do cliente."
+        tag="Inteligência jurídica"
+        title="Catálogo de relatórios pré-prontos"
+      />
 
       {isError ? (
-        <Card className="border border-danger/30 bg-danger/10 text-danger">
-          <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="font-semibold">
-                Não foi possível carregar os relatórios
-              </p>
-              <p className="text-sm text-danger/80">
-                {(error as Error | undefined)?.message ||
-                  "Tente novamente em instantes."}
-              </p>
-            </div>
-            <Button color="danger" variant="flat" onPress={handleRefresh}>
-              Tentar novamente
-            </Button>
-          </CardBody>
-        </Card>
+        <PeoplePanel
+          description={(error as Error | undefined)?.message || "Tente novamente em instantes."}
+          title="Não foi possível carregar os relatórios"
+        >
+          <Button color="danger" onPress={handleRefresh} size="sm" variant="flat">
+            Tentar novamente
+          </Button>
+        </PeoplePanel>
       ) : null}
 
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">Resumo executivo</h2>
-          <p className="text-sm text-default-400">
-            Indicadores centrais para priorizar exportações e ações do período.
-          </p>
-        </CardHeader>
-        <Divider className="border-white/10" />
-        <CardBody>
-          {isLoading || !data ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <div
-                  key={`kpi-skeleton-${index}`}
-                  className="h-24 animate-pulse rounded-2xl border border-white/10 bg-background/40"
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-              {renderKpiCard(
-                "Processos ativos",
-                formatInteger(data.resumo.processosAtivos),
-                `+${formatInteger(data.resumo.processosNovos)} novos no período`,
-                "primary",
-              )}
-              {renderKpiCard(
-                "Clientes ativos",
-                formatInteger(data.resumo.clientesAtivos),
-                `+${formatInteger(data.resumo.novosClientes)} novos clientes`,
-                "success",
-              )}
-              {renderKpiCard(
-                "Receita",
-                formatCurrency(data.resumo.receitaPeriodo),
-                `${data.resumo.variacaoReceita >= 0 ? "+" : ""}${data.resumo.variacaoReceita.toFixed(1)}% vs período anterior`,
-                data.resumo.variacaoReceita >= 0 ? "success" : "danger",
-              )}
-              {renderKpiCard(
-                "Backlog operacional",
-                formatInteger(data.resumo.tarefasAbertas),
-                `${formatInteger(data.resumo.contratosAtivos)} contratos ativos`,
-                "warning",
-              )}
-              {renderKpiCard(
-                "Risco imediato",
-                formatInteger(
-                  data.resumo.prazosUrgentes + data.resumo.faturasVencidas,
-                ),
-                `${formatInteger(data.resumo.prazosUrgentes)} prazos + ${formatInteger(data.resumo.faturasVencidas)} faturas`,
+      <PeoplePanel
+        description="Indicadores centrais para priorizar exportações e ações do período."
+        title="Resumo executivo"
+      >
+        {isLoading || !data ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div
+                key={`kpi-skeleton-${index}`}
+                className="h-24 animate-pulse rounded-2xl border border-white/10 bg-background/40"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <PeopleMetricCard
+              helper={`+${formatInteger(data.resumo.processosNovos)} novos no período`}
+              label="Processos ativos"
+              tone="primary"
+              value={formatInteger(data.resumo.processosAtivos)}
+            />
+            <PeopleMetricCard
+              helper={`+${formatInteger(data.resumo.novosClientes)} novos clientes`}
+              label="Clientes ativos"
+              tone="success"
+              value={formatInteger(data.resumo.clientesAtivos)}
+            />
+            <PeopleMetricCard
+              helper={`${data.resumo.variacaoReceita >= 0 ? "+" : ""}${data.resumo.variacaoReceita.toFixed(1)}% vs período anterior`}
+              label="Receita"
+              tone={data.resumo.variacaoReceita >= 0 ? "success" : "danger"}
+              value={formatCurrency(data.resumo.receitaPeriodo)}
+            />
+            <PeopleMetricCard
+              helper={`${formatInteger(data.resumo.contratosAtivos)} contratos ativos`}
+              label="Backlog operacional"
+              tone="warning"
+              value={formatInteger(data.resumo.tarefasAbertas)}
+            />
+            <PeopleMetricCard
+              helper={`${formatInteger(data.resumo.prazosUrgentes)} prazos + ${formatInteger(data.resumo.faturasVencidas)} faturas`}
+              label="Risco imediato"
+              tone={
                 data.resumo.prazosUrgentes + data.resumo.faturasVencidas > 0
                   ? "danger"
-                  : "default",
+                  : "default"
+              }
+              value={formatInteger(
+                data.resumo.prazosUrgentes + data.resumo.faturasVencidas,
               )}
-            </div>
-          )}
-        </CardBody>
-      </Card>
+            />
+          </div>
+        )}
+      </PeoplePanel>
 
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-4 pb-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-semibold text-white">
-                Lista de relatórios prontos
-              </h2>
-              <p className="text-sm text-default-400">
-                Pesquisa, filtro e exportação por relatório.
-              </p>
-            </div>
-            <Chip
-              color={totalAlertas > 0 ? "warning" : "success"}
-              size="sm"
-              variant="flat"
-            >
-              {totalAlertas > 0
-                ? `${totalAlertas} com atenção`
-                : "Sem alertas críticos"}
-            </Chip>
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
-            <Input
-              aria-label="Pesquisar relatório"
-              placeholder="Buscar por nome, categoria ou periodicidade..."
-              size="sm"
-              startContent={<Search className="h-4 w-4 text-default-400" />}
-              value={busca}
-              onValueChange={setBusca}
-            />
-            <Select
-              aria-label="Filtro de categoria"
-              selectedKeys={selectedCategoryKeys}
-              size="sm"
-              onSelectionChange={handleCategoriaChange}
-            >
-              {REPORT_CATEGORY_OPTIONS.map((option) => (
-                <SelectItem key={option.key} textValue={option.label}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </Select>
-            <Select
-              aria-label="Filtro de status"
-              selectedKeys={selectedStatusKeys}
-              size="sm"
-              onSelectionChange={handleStatusChange}
-            >
-              {REPORT_STATUS_OPTIONS.map((option) => (
-                <SelectItem key={option.key} textValue={option.label}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </Select>
-            <Select
-              aria-label="Filtro por formato"
-              selectedKeys={selectedFormatFilterKeys}
-              size="sm"
-              onSelectionChange={handleFormatoFiltroChange}
-            >
-              {REPORT_FORMAT_FILTER_OPTIONS.map((option) => (
-                <SelectItem key={option.key} textValue={option.label}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </Select>
-            <Select
-              aria-label="Período base"
-              selectedKeys={selectedPeriodKeys}
-              size="sm"
-              onSelectionChange={handlePeriodoChange}
-            >
-              {PERIOD_OPTIONS.map((option) => (
-                <SelectItem key={option.key} textValue={option.label}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </Select>
-            <DateRangeInput
-              aria-label="Filtro por data de atualização"
-              className="w-full"
-              rangeValue={periodoRange}
-              size="sm"
-              onRangeValueChange={(value) => setPeriodoRange(value ?? null)}
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs uppercase tracking-[0.2em] text-default-500">
-              Formato padrão de exportação
-            </span>
-            <Select
-              aria-label="Formato de exportação"
-              className="w-[180px]"
-              selectedKeys={selectedExportFormatKeys}
-              size="sm"
-              onSelectionChange={handleFormatoExportacaoChange}
-            >
-              {EXPORT_FORMAT_OPTIONS.map((option) => (
-                <SelectItem key={option.key} textValue={option.label}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </Select>
-          </div>
-        </CardHeader>
-        <Divider className="border-white/10" />
-        <CardBody className="overflow-x-auto">
+      <PeoplePanel
+        actions={
+          <Chip
+            color={totalAlertas > 0 ? "warning" : "success"}
+            size="sm"
+            variant="flat"
+          >
+            {totalAlertas > 0
+              ? `${totalAlertas} com atenção`
+              : "Sem alertas críticos"}
+          </Chip>
+        }
+        description="Pesquisa, filtro e exportação por relatório."
+        title="Lista de relatórios prontos"
+      >
+        <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+          <Input
+            aria-label="Pesquisar relatório"
+            placeholder="Buscar por nome, categoria ou periodicidade..."
+            size="sm"
+            startContent={<Search className="h-4 w-4 text-default-400" />}
+            value={busca}
+            onValueChange={setBusca}
+          />
+          <Select
+            aria-label="Filtro de categoria"
+            selectedKeys={selectedCategoryKeys}
+            size="sm"
+            onSelectionChange={handleCategoriaChange}
+          >
+            {REPORT_CATEGORY_OPTIONS.map((option) => (
+              <SelectItem key={option.key} textValue={option.label}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </Select>
+          <Select
+            aria-label="Filtro de status"
+            selectedKeys={selectedStatusKeys}
+            size="sm"
+            onSelectionChange={handleStatusChange}
+          >
+            {REPORT_STATUS_OPTIONS.map((option) => (
+              <SelectItem key={option.key} textValue={option.label}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </Select>
+          <Select
+            aria-label="Filtro por formato"
+            selectedKeys={selectedFormatFilterKeys}
+            size="sm"
+            onSelectionChange={handleFormatoFiltroChange}
+          >
+            {REPORT_FORMAT_FILTER_OPTIONS.map((option) => (
+              <SelectItem key={option.key} textValue={option.label}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </Select>
+          <Select
+            aria-label="Período base"
+            selectedKeys={selectedPeriodKeys}
+            size="sm"
+            onSelectionChange={handlePeriodoChange}
+          >
+            {PERIOD_OPTIONS.map((option) => (
+              <SelectItem key={option.key} textValue={option.label}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </Select>
+          <DateRangeInput
+            aria-label="Filtro por data de atualização"
+            className="w-full"
+            rangeValue={periodoRange}
+            size="sm"
+            onRangeValueChange={(value) => setPeriodoRange(value ?? null)}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs uppercase tracking-[0.2em] text-default-500">
+            Formato padrão de exportação
+          </span>
+          <Select
+            aria-label="Formato de exportação"
+            className="w-[180px]"
+            selectedKeys={selectedExportFormatKeys}
+            size="sm"
+            onSelectionChange={handleFormatoExportacaoChange}
+          >
+            {EXPORT_FORMAT_OPTIONS.map((option) => (
+              <SelectItem key={option.key} textValue={option.label}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </Select>
+        </div>
+
+        <div className="overflow-x-auto">
           {isLoading && !data ? (
             <div className="flex h-48 items-center justify-center">
               <Spinner size="lg" />
@@ -957,8 +898,8 @@ export function RelatoriosContent() {
               </TableBody>
             </Table>
           )}
-        </CardBody>
-      </Card>
-    </section>
+        </div>
+      </PeoplePanel>
+    </div>
   );
 }

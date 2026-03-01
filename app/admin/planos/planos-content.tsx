@@ -1026,8 +1026,8 @@ export function PlanosContent() {
                       className={clsx(
                         "block h-1 w-full rounded-full",
                         selecionado
-                          ? "bg-gradient-to-r from-primary/80 via-primary/60 to-primary/80"
-                          : "bg-gradient-to-r from-default-600/40 via-default-500/20 to-default-600/40",
+                          ? "bg-linear-to-r from-primary/80 via-primary/60 to-primary/80"
+                          : "bg-linear-to-r from-default-600/40 via-default-500/20 to-default-600/40",
                       )}
                     />
                     <div className="flex items-start justify-between gap-3">

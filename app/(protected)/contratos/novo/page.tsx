@@ -15,15 +15,19 @@ import {
   DollarSign,
   Calendar,
   Building2,
+  Upload,
+  Link as LinkIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { Spinner } from "@heroui/spinner";
+import { Switch } from "@heroui/switch";
 
 import { title } from "@/components/primitives";
 import {
-  createContrato,
+  createContratoComArquivo,
+  vincularContratoProcuracao,
   type ContratoCreateInput,
 } from "@/app/actions/contratos";
 import { ContratoStatus } from "@/generated/prisma";
@@ -58,8 +62,16 @@ export default function NovoContratoPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const clienteIdParam = searchParams.get("clienteId");
+  const returnProcuracaoId = searchParams.get("returnProcuracaoId");
+  const autoVincularProcuracao =
+    searchParams.get("autoVincularProcuracao") === "1";
 
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedContratoArquivo, setSelectedContratoArquivo] =
+    useState<File | null>(null);
+  const contratoArquivoInputRef = useRef<HTMLInputElement>(null);
+  const [vincularProcuracao, setVincularProcuracao] = useState(false);
+  const [procuracaoSelecionada, setProcuracaoSelecionada] = useState("");
   const [formData, setFormData] = useState<ContratoCreateInput>({
     titulo: "",
     resumo: "",
@@ -91,6 +103,57 @@ export default function NovoContratoPage() {
     dadosBancariosKeys.has(formData.dadosBancariosId)
       ? [formData.dadosBancariosId]
       : [];
+  const selectedProcuracaoKeys =
+    procuracaoSelecionada &&
+    procuracoes.some((procuracao: any) => procuracao.id === procuracaoSelecionada)
+      ? [procuracaoSelecionada]
+      : [];
+
+  const createProcuracaoLink = useMemo(() => {
+    if (!formData.clienteId) {
+      return "/procuracoes/novo";
+    }
+
+    const returnTo = encodeURIComponent(
+      "/contratos/novo?clienteId=" + formData.clienteId,
+    );
+
+    return `/procuracoes/novo?clienteId=${formData.clienteId}&returnTo=${returnTo}`;
+  }, [formData.clienteId]);
+
+  useEffect(() => {
+    if (!formData.clienteId) {
+      setProcuracaoSelecionada("");
+      setVincularProcuracao(false);
+
+      return;
+    }
+
+    if (isLoadingProcuracoes) {
+      return;
+    }
+
+    if (
+      procuracaoSelecionada &&
+      !procuracoes.some((p: any) => p.id === procuracaoSelecionada)
+    ) {
+      setProcuracaoSelecionada("");
+    }
+  }, [formData.clienteId, procuracoes, procuracaoSelecionada, isLoadingProcuracoes]);
+
+  useEffect(() => {
+    if (!formData.clienteId) {
+      return;
+    }
+
+    if (returnProcuracaoId) {
+      setProcuracaoSelecionada(returnProcuracaoId);
+    }
+
+    if (autoVincularProcuracao) {
+      setVincularProcuracao(true);
+    }
+  }, [formData.clienteId, returnProcuracaoId, autoVincularProcuracao]);
 
   if (isLoadingClientes && !clienteIdParam) {
     return (
@@ -113,13 +176,99 @@ export default function NovoContratoPage() {
       return;
     }
 
+    if (vincularProcuracao && !procuracaoSelecionada) {
+      toast.error("Selecione uma procuração para vincular ou desative a opção.");
+
+      return;
+    }
+
     setIsSaving(true);
 
     try {
-      const result = await createContrato(formData);
+      const createPayload = new FormData();
+      createPayload.set("titulo", formData.titulo.trim());
+      createPayload.set("resumo", formData.resumo?.trim() || "");
+      createPayload.set("clienteId", formData.clienteId);
+      createPayload.set(
+        "status",
+        (formData.status || ContratoStatus.RASCUNHO) as string,
+      );
+
+      if (formData.valor !== undefined) {
+        createPayload.set("valor", formData.valor.toString());
+      }
+
+      if (formData.dataInicio) {
+        createPayload.set(
+          "dataInicio",
+          typeof formData.dataInicio === "string"
+            ? formData.dataInicio
+            : new Date(formData.dataInicio).toISOString(),
+        );
+      }
+
+      if (formData.dataFim) {
+        createPayload.set(
+          "dataFim",
+          typeof formData.dataFim === "string"
+            ? formData.dataFim
+            : new Date(formData.dataFim).toISOString(),
+        );
+      }
+
+      if (formData.tipoContratoId) {
+        createPayload.set("tipoContratoId", formData.tipoContratoId);
+      }
+
+      if (formData.modeloContratoId) {
+        createPayload.set("modeloContratoId", formData.modeloContratoId);
+      }
+
+      if (formData.advogadoId) {
+        createPayload.set("advogadoId", formData.advogadoId);
+      }
+
+      if (formData.processoId) {
+        createPayload.set("processoId", formData.processoId);
+      }
+
+      if (formData.dadosBancariosId) {
+        createPayload.set("dadosBancariosId", formData.dadosBancariosId);
+      }
+
+      if (formData.observacoes?.trim()) {
+        createPayload.set("observacoes", formData.observacoes.trim());
+      }
+
+      if (selectedContratoArquivo) {
+        createPayload.set("arquivoContrato", selectedContratoArquivo);
+      }
+
+      const result = await createContratoComArquivo(createPayload);
 
       if (result.success) {
-        toast.success("Contrato criado com sucesso!");
+        if (
+          vincularProcuracao &&
+          procuracaoSelecionada &&
+          result.contrato?.id
+        ) {
+          const vinculacao = await vincularContratoProcuracao(
+            result.contrato.id,
+            procuracaoSelecionada,
+          );
+
+          if (!vinculacao.success) {
+            toast.success("Contrato criado com sucesso.");
+            toast.warning(
+              vinculacao.error ||
+                "Não foi possível vincular a procuração agora, faça isso depois.",
+            );
+          } else {
+            toast.success("Contrato criado e procuração vinculada com sucesso!");
+          }
+        } else {
+          toast.success("Contrato criado com sucesso!");
+        }
 
         // Redirecionar baseado em onde veio
         if (clienteIdParam) {
@@ -134,6 +283,50 @@ export default function NovoContratoPage() {
       toast.error("Erro ao criar contrato");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleArquivoContratoChange = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0] ?? null;
+
+    if (!file) {
+      setSelectedContratoArquivo(null);
+
+      return;
+    }
+
+    if (
+      file.type !== "application/pdf" &&
+      !file.name.toLowerCase().endsWith(".pdf")
+    ) {
+      toast.error("Apenas arquivos PDF são permitidos.");
+      if (contratoArquivoInputRef.current) {
+        contratoArquivoInputRef.current.value = "";
+      }
+      setSelectedContratoArquivo(null);
+
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo muito grande. Máximo 10MB.");
+      if (contratoArquivoInputRef.current) {
+        contratoArquivoInputRef.current.value = "";
+      }
+      setSelectedContratoArquivo(null);
+
+      return;
+    }
+
+    setSelectedContratoArquivo(file);
+  };
+
+  const clearArquivoContrato = () => {
+    setSelectedContratoArquivo(null);
+    if (contratoArquivoInputRef.current) {
+      contratoArquivoInputRef.current.value = "";
     }
   };
 
@@ -239,8 +432,83 @@ export default function NovoContratoPage() {
             {formData.clienteId && (
               <div className="p-4 rounded-lg border border-default-200 bg-default-50">
                 <p className="text-sm text-default-600">
-                  💡 <strong>Dica:</strong> Após criar o contrato, você poderá
-                  vincular uma procuração através da lista de contratos.
+                  💡 <strong>Dica:</strong> Você pode vincular uma procuração
+                  existente na criação do contrato.
+                </p>
+
+                <div className="mt-3 flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-default-700">
+                      Vincular procuração existente
+                    </p>
+                    <p className="text-xs text-default-500 mt-1">
+                      A procuração será associada automaticamente durante a criação.
+                    </p>
+                  </div>
+                  <Switch
+                    isSelected={vincularProcuracao}
+                    onValueChange={setVincularProcuracao}
+                  >
+                    Quero vincular agora
+                  </Switch>
+                </div>
+
+                <p className="mt-2 text-xs text-default-500">
+                  Não encontrou a procuração? Crie agora e retorne aqui para
+                  vincular a nova procuração imediatamente.
+                </p>
+
+                <Button
+                  as={Link}
+                  href={createProcuracaoLink}
+                  className="mt-2"
+                  size="sm"
+                  startContent={<LinkIcon className="h-3.5 w-3.5" />}
+                  variant="flat"
+                >
+                  Criar nova procuração
+                </Button>
+
+                {vincularProcuracao && (
+                  <div className="mt-3">
+                    <Select
+                      isDisabled={isLoadingProcuracoes || procuracoes.length === 0}
+                      isLoading={isLoadingProcuracoes}
+                      label="Procuração"
+                      placeholder={
+                        procuracoes.length === 0
+                          ? "Nenhuma procuração disponível"
+                          : "Selecione uma procuração"
+                      }
+                      selectedKeys={selectedProcuracaoKeys}
+                      onSelectionChange={(keys) =>
+                        setProcuracaoSelecionada(Array.from(keys)[0] as string)
+                      }
+                    >
+                      {procuracoes.map((procuracao: any) => (
+                        <SelectItem
+                          key={procuracao.id}
+                          textValue={procuracao.numero || procuracao.id}
+                        >
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold">
+                              {procuracao.numero || `Procuração ${procuracao.id}`}
+                            </span>
+                            {procuracao.titulo && (
+                              <span className="text-xs text-default-400">
+                                {procuracao.titulo}
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  </div>
+                )}
+
+                <p className="text-xs text-default-500 mt-3">
+                  Ao salvar a procuração criada aqui, o formulário já voltará com
+                  ela pré-selecionada para vínculo.
                 </p>
               </div>
             )}
@@ -381,6 +649,63 @@ export default function NovoContratoPage() {
 
           <Divider />
 
+          {/* Arquivo principal do contrato */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-default-600">
+              📎 Contrato em PDF
+            </h3>
+            <p className="text-xs text-default-500">
+              Anexe o contrato assinado ou minuta em PDF para que já fique
+              disponível na visualização do contrato.
+            </p>
+            <input
+              accept=".pdf"
+              className="hidden"
+              id="arquivo-contrato"
+              ref={contratoArquivoInputRef}
+              type="file"
+              onChange={handleArquivoContratoChange}
+            />
+            <div className="rounded-lg border-2 border-dashed border-default-300 p-6 text-center">
+              {selectedContratoArquivo ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-success">
+                    {selectedContratoArquivo.name}
+                  </p>
+                  <p className="text-xs text-default-500">
+                    {(selectedContratoArquivo.size / 1024).toFixed(2)} KB
+                  </p>
+                  <Button
+                    color="danger"
+                    size="sm"
+                    variant="flat"
+                    onPress={clearArquivoContrato}
+                  >
+                    Remover arquivo
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Upload className="mx-auto h-8 w-8 text-default-400" />
+                  <p className="text-sm text-default-600">
+                    Clique para selecionar o contrato em PDF
+                  </p>
+                  <p className="text-xs text-default-400">
+                    Máximo 10MB, apenas .pdf
+                  </p>
+                  <Button
+                    size="sm"
+                    onPress={() => contratoArquivoInputRef.current?.click()}
+                  >
+                    Escolher arquivo
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <Divider />
+
           {/* Observações */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-default-600">
@@ -401,8 +726,8 @@ export default function NovoContratoPage() {
           {/* Informação */}
           <div className="rounded-lg bg-secondary/5 border border-secondary/20 p-4">
             <p className="text-xs text-secondary-600">
-              💡 Após criar o contrato, você poderá anexar documentos e enviar
-              para assinatura digital.
+              💡 O contrato pode ser criado sem anexo inicial. Você também pode
+              anexar mais documentos na tela de edição do contrato.
             </p>
           </div>
 

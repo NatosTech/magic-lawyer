@@ -5,7 +5,6 @@ import type {
   DashboardAlert,
   DashboardInsightDto,
   DashboardListItem,
-  DashboardStatDto,
   DashboardTrend,
   StatFormat,
   Tone,
@@ -13,8 +12,6 @@ import type {
 
 import NextLink from "next/link";
 import { Button } from "@heroui/button";
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Divider } from "@heroui/divider";
 import {
   Area,
   AreaChart,
@@ -25,7 +22,11 @@ import {
   YAxis,
 } from "recharts";
 
-import { title, subtitle } from "@/components/primitives";
+import {
+  PeopleMetricCard,
+  PeoplePageHeader,
+  PeoplePanel,
+} from "@/components/people-ui";
 import { useDashboardData } from "@/app/hooks/use-dashboard";
 import {
   useUserPermissions,
@@ -401,34 +402,6 @@ function buildQuickActions(
   return actions;
 }
 
-function renderStatCard(stat: DashboardStatDto) {
-  const styles = toneStyles[stat.tone] ?? toneStyles.default;
-
-  return (
-    <div
-      key={stat.id}
-      className={`rounded-2xl border p-4 min-w-0 ${styles.container}`}
-    >
-      <div className="flex items-center gap-3">
-        <span aria-hidden className="text-2xl">
-          {stat.icon}
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.2em] text-default-400">
-            {stat.label}
-          </p>
-          <p className={`truncate text-xl font-semibold ${styles.title}`}>
-            {formatStatValue(stat.value, stat.format)}
-          </p>
-          {stat.helper ? (
-            <p className={`text-xs ${styles.helper}`}>{stat.helper}</p>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function renderInsightCard(insight: DashboardInsightDto) {
   const styles = toneStyles[insight.tone] ?? toneStyles.default;
 
@@ -790,354 +763,275 @@ export function DashboardContent() {
   ] as const;
 
   return (
-    <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-3 py-10 sm:px-6">
-      <header className="space-y-4">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
-          Visão geral
-        </p>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <h1 className={title({ size: "lg", color: "blue" })}>
-              {getDashboardTitle()}
-            </h1>
-            <p className={subtitle({ fullWidth: true })}>
-              {getDashboardDescription()}
-            </p>
-          </div>
-        </div>
+    <div className="container mx-auto space-y-6 p-6">
+      <PeoplePageHeader
+        description={getDashboardDescription()}
+        tag="Visão geral"
+        title={getDashboardTitle()}
+      />
 
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardBody>
-            <p className="text-default-600">{getWelcomeMessage()}</p>
-          </CardBody>
-        </Card>
-      </header>
+      <PeoplePanel
+        title="Boas-vindas"
+      >
+        <p className="text-sm text-default-400">{getWelcomeMessage()}</p>
+      </PeoplePanel>
 
       {isError ? (
-        <Card className="border border-danger/30 bg-danger/10 text-danger">
-          <CardBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="font-semibold">
-                Não foi possível carregar o dashboard
-              </p>
-              <p className="text-sm text-danger/80">
-                {(error as Error | undefined)?.message ||
-                  "Tente atualizar a página ou recarregar os dados."}
-              </p>
-            </div>
-            <Button color="danger" variant="flat" onPress={() => refresh()}>
+        <PeoplePanel
+          actions={
+            <Button color="danger" size="sm" variant="flat" onPress={() => refresh()}>
               Tentar novamente
             </Button>
-          </CardBody>
-        </Card>
+          }
+          description={
+            (error as Error | undefined)?.message ||
+            "Tente atualizar a página ou recarregar os dados."
+          }
+          title="Não foi possível carregar o dashboard"
+        >
+          <p className="text-sm text-danger/80">
+            {(error as Error | undefined)?.message ||
+              "Tente atualizar a página ou recarregar os dados."}
+          </p>
+        </PeoplePanel>
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1.6fr]">
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">Central de comando</h2>
-            <p className="text-sm text-default-400">
-              O que precisa de atenção agora.
-            </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {commandCenterItems.map((item) => {
-                const styles = toneStyles[item.tone] ?? toneStyles.default;
+        <PeoplePanel description="O que precisa de atenção agora." title="Central de comando">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {commandCenterItems.map((item) => (
+              <PeopleMetricCard
+                helper={item.helper}
+                icon={<span aria-hidden>{item.label.slice(0, 1).toUpperCase()}</span>}
+                key={item.id}
+                label={item.label}
+                tone={item.tone}
+                value={formatStatValue(item.value, "integer")}
+              />
+            ))}
+          </div>
+        </PeoplePanel>
+
+        <PeoplePanel description="Rotas de maior uso para o seu perfil." title="Atalhos estratégicos">
+          {primaryQuickActions.length > 0 ? (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {primaryQuickActions.map((action) => {
+                const styles = toneStyles[action.tone] ?? toneStyles.default;
 
                 return (
-                  <div
-                    key={item.id}
-                    className={`rounded-2xl border p-4 ${styles.container}`}
+                  <Button
+                    key={action.label}
+                    as={NextLink}
+                    className={`h-auto w-full justify-start gap-3 rounded-2xl border bg-background/40 p-4 text-left ${styles.container} hover:bg-white/10`}
+                    href={action.href}
+                    variant="bordered"
                   >
-                    <p className="text-xs uppercase tracking-[0.18em] text-default-500">
-                      {item.label}
-                    </p>
-                    <p className={`mt-1 text-2xl font-semibold ${styles.title}`}>
-                      {formatStatValue(item.value, "integer")}
-                    </p>
-                    <p className="text-xs text-default-400">{item.helper}</p>
-                  </div>
+                    <span aria-hidden className="text-2xl">
+                      {action.icon}
+                    </span>
+                    <div className="min-w-0 text-left">
+                      <p className={`truncate font-semibold ${styles.title}`}>
+                        {action.label}
+                      </p>
+                      <p className="text-xs text-default-400">
+                        {action.description}
+                      </p>
+                    </div>
+                  </Button>
                 );
               })}
             </div>
-          </CardBody>
-        </Card>
-
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">Atalhos estratégicos</h2>
-            <p className="text-sm text-default-400">
-              Rotas de maior uso para o seu perfil.
+          ) : (
+            <p className="text-sm text-default-500">
+              Nenhuma ação disponível para o seu perfil no momento.
             </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody>
-            {primaryQuickActions.length > 0 ? (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {primaryQuickActions.map((action) => {
-                  const styles = toneStyles[action.tone] ?? toneStyles.default;
-
-                  return (
-                    <Button
-                      key={action.label}
-                      as={NextLink}
-                      className={`h-auto w-full justify-start gap-3 rounded-2xl border bg-background/40 p-4 text-left ${styles.container} hover:bg-white/10`}
-                      href={action.href}
-                      variant="bordered"
-                    >
-                      <span aria-hidden className="text-2xl">
-                        {action.icon}
-                      </span>
-                      <div className="min-w-0 text-left">
-                        <p className={`truncate font-semibold ${styles.title}`}>
-                          {action.label}
-                        </p>
-                        <p className="text-xs text-default-400">
-                          {action.description}
-                        </p>
-                      </div>
-                    </Button>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-default-500">
-                Nenhuma ação disponível para o seu perfil no momento.
-              </p>
-            )}
-          </CardBody>
-        </Card>
+          )}
+        </PeoplePanel>
       </div>
 
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">
-            Métricas principais
-          </h2>
-          <p className="text-sm text-default-400">
-            Indicadores consolidados com base na sua atuação.
+      <PeoplePanel
+        description="Indicadores consolidados com base na sua atuação."
+        title="Métricas principais"
+      >
+        {showStatsSkeleton ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={`stat-skeleton-${index}`}
+                className="h-24 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
+              />
+            ))}
+          </div>
+        ) : stats.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+            {stats.map((stat) => (
+              <PeopleMetricCard
+                helper={stat.helper}
+                icon={<span aria-hidden>{stat.icon}</span>}
+                key={stat.id}
+                label={stat.label}
+                tone={stat.tone}
+                value={formatStatValue(stat.value, stat.format)}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-default-500">
+            Nenhuma métrica disponível para o seu perfil ainda.
           </p>
-        </CardHeader>
-        <Divider className="border-white/10" />
-        <CardBody>
-          {showStatsSkeleton ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, index) => (
+        )}
+      </PeoplePanel>
+
+      <PeoplePanel
+        description="Gráficos dos principais indicadores para decisão rápida."
+        title="Evolução mensal"
+      >
+        {showTrendsSkeleton ? (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <div
+                key={`trend-chart-skeleton-${index}`}
+                className="h-64 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
+              />
+            ))}
+          </div>
+        ) : trendSeries.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {trendSeries.map((series, index) =>
+              renderTrendChartCard(series, index),
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-default-500">
+            Ainda sem séries históricas suficientes para exibir tendências.
+          </p>
+        )}
+      </PeoplePanel>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
+        <PeoplePanel
+          description="Contexto rápido para orientar as próximas ações."
+          title="Prioridades e insights"
+        >
+          {showInsightsSkeleton ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, index) => (
                 <div
-                  key={`stat-skeleton-${index}`}
+                  key={`insight-skeleton-${index}`}
                   className="rounded-2xl border border-white/10 bg-background/40 p-4 animate-pulse"
                 >
-                  <div className="h-9 w-9 rounded-full bg-white/10" />
-                  <div className="mt-4 h-4 w-1/2 rounded bg-white/10" />
-                  <div className="mt-2 h-3 w-3/4 rounded bg-white/5" />
+                  <div className="h-4 w-1/3 rounded bg-white/10" />
+                  <div className="mt-3 h-3 w-3/4 rounded bg-white/5" />
+                  <div className="mt-2 h-3 w-2/3 rounded bg-white/5" />
                 </div>
               ))}
             </div>
-          ) : stats.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-              {stats.map(renderStatCard)}
+          ) : insights.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {insights.map(renderInsightCard)}
             </div>
           ) : (
             <p className="text-sm text-default-500">
-              Nenhuma métrica disponível para o seu perfil ainda.
+              Ainda não temos insights para exibir. Continue usando a plataforma
+              para gerar tendências.
             </p>
           )}
-        </CardBody>
-      </Card>
+        </PeoplePanel>
 
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">Evolução mensal</h2>
-          <p className="text-sm text-default-400">
-            Gráficos dos principais indicadores para decisão rápida.
-          </p>
-        </CardHeader>
-        <Divider className="border-white/10" />
-        <CardBody>
-          {showTrendsSkeleton ? (
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <PeoplePanel
+          description="Itens críticos que impactam seu dia a dia."
+          title="Alertas"
+        >
+          {showAlertsSkeleton ? (
+            <div className="grid grid-cols-1 gap-4">
               {Array.from({ length: 2 }).map((_, index) => (
                 <div
-                  key={`trend-chart-skeleton-${index}`}
-                  className="h-64 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
+                  key={`alert-skeleton-${index}`}
+                  className="h-20 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
                 />
               ))}
             </div>
-          ) : trendSeries.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-              {trendSeries.map((series, index) =>
-                renderTrendChartCard(series, index),
-              )}
+          ) : alerts.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4">
+              {alerts.map(renderAlertCard)}
             </div>
           ) : (
             <p className="text-sm text-default-500">
-              Ainda sem séries históricas suficientes para exibir tendências.
+              Nenhum alerta crítico neste momento.
             </p>
           )}
-        </CardBody>
-      </Card>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">
-              Prioridades e insights
-            </h2>
-            <p className="text-sm text-default-400">
-              Contexto rápido para orientar as próximas ações.
-            </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody>
-            {showInsightsSkeleton ? (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <div
-                    key={`insight-skeleton-${index}`}
-                    className="rounded-2xl border border-white/10 bg-background/40 p-4 animate-pulse"
-                  >
-                    <div className="h-4 w-1/3 rounded bg-white/10" />
-                    <div className="mt-3 h-3 w-3/4 rounded bg-white/5" />
-                    <div className="mt-2 h-3 w-2/3 rounded bg-white/5" />
-                  </div>
-                ))}
-              </div>
-            ) : insights.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                {insights.map(renderInsightCard)}
-              </div>
-            ) : (
-              <p className="text-sm text-default-500">
-                Ainda não temos insights para exibir. Continue usando a plataforma
-                para gerar tendências.
-              </p>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">Alertas</h2>
-            <p className="text-sm text-default-400">
-              Itens críticos que impactam seu dia a dia.
-            </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody>
-            {showAlertsSkeleton ? (
-              <div className="grid grid-cols-1 gap-4">
-                {Array.from({ length: 2 }).map((_, index) => (
-                  <div
-                    key={`alert-skeleton-${index}`}
-                    className="h-20 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
-                  />
-                ))}
-              </div>
-            ) : alerts.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4">
-                {alerts.map(renderAlertCard)}
-              </div>
-            ) : (
-              <p className="text-sm text-default-500">
-                Nenhum alerta crítico neste momento.
-              </p>
-            )}
-          </CardBody>
-        </Card>
+        </PeoplePanel>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">Em destaque</h2>
-            <p className="text-sm text-default-400">
-              Próximos compromissos e registros relevantes para você.
-            </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody>
-            {showHighlightsSkeleton ? (
-              <ul className="space-y-3">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <li
-                    key={`highlight-skeleton-${index}`}
-                    className="h-16 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
-                  />
-                ))}
-              </ul>
-            ) : highlights.length > 0 ? (
-              <ul className="space-y-3">{highlights.map(renderListItem)}</ul>
-            ) : (
-              <p className="text-sm text-default-500">
-                Nada agendado por aqui. Assim que novos eventos surgirem,
-                listaremos nesta seção.
-              </p>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-          <CardHeader className="flex flex-col gap-2 pb-2">
-            <h2 className="text-lg font-semibold text-white">Pendências</h2>
-            <p className="text-sm text-default-400">
-              Itens que exigem acompanhamento para evitar atrasos.
-            </p>
-          </CardHeader>
-          <Divider className="border-white/10" />
-          <CardBody>
-            {showPendingSkeleton ? (
-              <ul className="space-y-3">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <li
-                    key={`pending-skeleton-${index}`}
-                    className="h-16 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
-                  />
-                ))}
-              </ul>
-            ) : pending.length > 0 ? (
-              <ul className="space-y-3">{pending.map(renderListItem)}</ul>
-            ) : (
-              <p className="text-sm text-default-500">
-                Nenhuma pendência urgente. Aproveite para revisar os próximos
-                passos com calma.
-              </p>
-            )}
-          </CardBody>
-        </Card>
-      </div>
-
-      <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
-        <CardHeader className="flex flex-col gap-2 pb-2">
-          <h2 className="text-lg font-semibold text-white">
-            Atividades recentes
-          </h2>
-          <p className="text-sm text-default-400">
-            Últimas ações registradas em sua conta.
-          </p>
-        </CardHeader>
-        <Divider className="border-white/10" />
-        <CardBody>
-          {showActivitySkeleton ? (
+        <PeoplePanel
+          description="Próximos compromissos e registros relevantes para você."
+          title="Em destaque"
+        >
+          {showHighlightsSkeleton ? (
             <ul className="space-y-3">
-              {Array.from({ length: 5 }).map((_, index) => (
+              {Array.from({ length: 3 }).map((_, index) => (
                 <li
-                  key={`activity-skeleton-${index}`}
+                  key={`highlight-skeleton-${index}`}
                   className="h-16 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
                 />
               ))}
             </ul>
-          ) : activity.length > 0 ? (
-            <ul className="space-y-3">{activity.map(renderActivityItem)}</ul>
+          ) : highlights.length > 0 ? (
+            <ul className="space-y-3">{highlights.map(renderListItem)}</ul>
           ) : (
             <p className="text-sm text-default-500">
-              Nenhuma atividade recente registrada.
+              Nada agendado por aqui. Assim que novos eventos surgirem,
+              listaremos nesta seção.
             </p>
           )}
-        </CardBody>
-      </Card>
+        </PeoplePanel>
 
-    </section>
+        <PeoplePanel
+          description="Itens que exigem acompanhamento para evitar atrasos."
+          title="Pendências"
+        >
+          {showPendingSkeleton ? (
+            <ul className="space-y-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <li
+                  key={`pending-skeleton-${index}`}
+                  className="h-16 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
+                />
+              ))}
+            </ul>
+          ) : pending.length > 0 ? (
+            <ul className="space-y-3">{pending.map(renderListItem)}</ul>
+          ) : (
+            <p className="text-sm text-default-500">
+              Nenhuma pendência urgente. Aproveite para revisar os próximos
+              passos com calma.
+            </p>
+          )}
+        </PeoplePanel>
+      </div>
+
+      <PeoplePanel
+        description="Últimas ações registradas em sua conta."
+        title="Atividades recentes"
+      >
+        {showActivitySkeleton ? (
+          <ul className="space-y-3">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <li
+                key={`activity-skeleton-${index}`}
+                className="h-16 rounded-2xl border border-white/10 bg-background/40 animate-pulse"
+              />
+            ))}
+          </ul>
+        ) : activity.length > 0 ? (
+          <ul className="space-y-3">{activity.map(renderActivityItem)}</ul>
+        ) : (
+          <p className="text-sm text-default-500">
+            Nenhuma atividade recente registrada.
+          </p>
+        )}
+      </PeoplePanel>
+    </div>
   );
 }

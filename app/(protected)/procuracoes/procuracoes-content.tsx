@@ -445,7 +445,7 @@ export function ProcuracoesContent() {
             </Button>
             {!permissions.isCliente ? (
               <Button
-                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white"
+                className="bg-linear-to-r from-blue-600 to-blue-700 text-white"
                 size="sm"
                 startContent={<Plus className="h-4 w-4" />}
                 onPress={openCreateModal}

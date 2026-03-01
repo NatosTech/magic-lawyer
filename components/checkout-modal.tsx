@@ -554,7 +554,7 @@ export function CheckoutModal({
               </p>
             </div>
 
-            <Card className="p-6 bg-gradient-to-br from-blue-50/10 to-purple-50/10 border border-primary/20">
+            <Card className="p-6 bg-linear-to-br from-blue-50/10 to-purple-50/10 border border-primary/20">
               <CardBody className="space-y-6">
                 {/* URL do Ambiente */}
                 <div className="bg-blue-50/20 p-4 rounded-lg border border-blue-200/30">

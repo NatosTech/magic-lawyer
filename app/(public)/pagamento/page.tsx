@@ -206,7 +206,7 @@ export default function PagamentoPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary" />
       </div>
     );
@@ -214,7 +214,7 @@ export default function PagamentoPage() {
 
   if (!paymentData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
         <Card className="border border-white/10 bg-background/70 backdrop-blur-xl max-w-md w-full">
           <CardBody className="text-center p-8">
             <h1 className="text-xl font-bold text-white mb-4">
@@ -240,7 +240,7 @@ export default function PagamentoPage() {
   const { paymentData: payment, customerData } = paymentData;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
       <motion.div
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-lg"

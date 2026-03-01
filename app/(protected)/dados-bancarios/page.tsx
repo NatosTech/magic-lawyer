@@ -1313,7 +1313,7 @@ export default function DadosBancariosPage() {
                 }
               >
                 <div className="px-6 pb-6 space-y-6">
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-300">
                       <BuildingIcon size={20} />
                       Informações do Banco
@@ -1455,7 +1455,7 @@ export default function DadosBancariosPage() {
                 }
               >
                 <div className="px-6 pb-6 space-y-6">
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="bg-linear-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-green-700 dark:text-green-300">
                       <CreditCardIcon size={20} />
                       Chave PIX (Opcional)
@@ -1532,7 +1532,7 @@ export default function DadosBancariosPage() {
                 }
               >
                 <div className="px-6 pb-6 space-y-6">
-                  <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <div className="bg-linear-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-purple-700 dark:text-purple-300">
                       <UserIcon size={20} />
                       Dados do Titular
@@ -1621,7 +1621,7 @@ export default function DadosBancariosPage() {
                 }
               >
                 <div className="px-6 pb-6 space-y-6">
-                  <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <div className="bg-linear-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
                     <div className="mb-4">
                       <h3 className="text-lg font-semibold flex items-center gap-2 text-orange-700 dark:text-orange-300">
                         <MapPinIcon size={20} />
@@ -1712,7 +1712,7 @@ export default function DadosBancariosPage() {
                 }
               >
                 <div className="px-6 pb-6 space-y-6">
-                  <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-900/20 dark:to-slate-900/20 p-4 rounded-lg border border-gray-200 dark:border-gray-800">
+                  <div className="bg-linear-to-r from-gray-50 to-slate-50 dark:from-gray-900/20 dark:to-slate-900/20 p-4 rounded-lg border border-gray-200 dark:border-gray-800">
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-700 dark:text-gray-300">
                       <SettingsIcon size={20} />
                       Configurações

@@ -147,11 +147,11 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
 
   const renderClienteInfo = () => {
     return (
-      <Card className="border border-white/10 bg-gradient-to-br from-background/80 to-background/60 backdrop-blur-xl overflow-hidden">
+      <Card className="border border-white/10 bg-linear-to-br from-background/80 to-background/60 backdrop-blur-xl overflow-hidden">
         <CardHeader className="relative pb-4">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-secondary/5 to-primary/10 opacity-50" />
+          <div className="absolute inset-0 bg-linear-to-r from-primary/10 via-secondary/5 to-primary/10 opacity-50" />
           <div className="relative flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30">
+            <div className="p-2 rounded-lg bg-linear-to-br from-primary/20 to-secondary/20 border border-primary/30">
               <Users className="w-6 h-6 text-primary" />
             </div>
             <div>
@@ -168,7 +168,7 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
         <CardBody className="space-y-6">
           {/* Informações Principais */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+            <div className="p-4 rounded-xl bg-linear-to-br from-primary/10 to-primary/5 border border-primary/20">
               <div className="flex items-center gap-3 mb-2">
                 <Building2 className="w-5 h-5 text-primary" />
                 <p className="text-sm font-medium text-primary-300">
@@ -180,7 +180,7 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-gradient-to-br from-success/10 to-success/5 border border-success/20">
+            <div className="p-4 rounded-xl bg-linear-to-br from-success/10 to-success/5 border border-success/20">
               <div className="flex items-center gap-3 mb-2">
                 <Shield className="w-5 h-5 text-success" />
                 <p className="text-sm font-medium text-success-300">
@@ -208,7 +208,7 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="group p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 hover:border-blue-400/40 transition-all duration-300">
+              <div className="group p-4 rounded-xl bg-linear-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 hover:border-blue-400/40 transition-all duration-300">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 rounded-lg bg-blue-500/20 group-hover:bg-blue-400/30 transition-colors">
                     <FileText className="w-5 h-5 text-blue-400" />
@@ -220,7 +220,7 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
                 </p>
               </div>
 
-              <div className="group p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300">
+              <div className="group p-4 rounded-xl bg-linear-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 rounded-lg bg-purple-500/20 group-hover:bg-purple-400/30 transition-colors">
                     <Users className="w-5 h-5 text-purple-400" />
@@ -232,7 +232,7 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
                 </p>
               </div>
 
-              <div className="group p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 hover:border-green-400/40 transition-all duration-300">
+              <div className="group p-4 rounded-xl bg-linear-to-br from-green-500/10 to-green-600/5 border border-green-500/20 hover:border-green-400/40 transition-all duration-300">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 rounded-lg bg-green-500/20 group-hover:bg-green-400/30 transition-colors">
                     <DollarSign className="w-5 h-5 text-green-400" />
@@ -247,7 +247,7 @@ export function RoleSpecificInfo({ profile }: RoleSpecificInfoProps) {
           </div>
 
           {/* Informações Adicionais */}
-          <div className="p-4 rounded-xl bg-gradient-to-r from-default/10 to-default/5 border border-default/20">
+          <div className="p-4 rounded-xl bg-linear-to-r from-default/10 to-default/5 border border-default/20">
             <div className="flex items-center gap-3 mb-3">
               <Phone className="w-5 h-5 text-default-400" />
               <h5 className="font-semibold text-white">Contato</h5>

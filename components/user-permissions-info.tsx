@@ -124,7 +124,7 @@ export function UserPermissionsInfo({ className }: UserPermissionsInfoProps) {
     <Card className={className}>
       <CardHeader className="flex flex-col gap-2 pb-0">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/30">
+          <div className="p-2 rounded-lg bg-linear-to-br from-primary/20 to-secondary/20 border border-primary/30">
             <Shield className="w-5 h-5 text-primary" />
           </div>
           <div>
@@ -140,7 +140,7 @@ export function UserPermissionsInfo({ className }: UserPermissionsInfoProps) {
 
       <CardBody className="space-y-6">
         {/* Role do usuário */}
-        <div className="p-4 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
+        <div className="p-4 rounded-xl bg-linear-to-r from-primary/10 to-primary/5 border border-primary/20">
           <div className="flex items-center gap-3 mb-2">
             <RoleIcon className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium text-primary-300">
@@ -280,7 +280,7 @@ export function UserPermissionsInfo({ className }: UserPermissionsInfoProps) {
         )}
 
         {/* Informação adicional */}
-        <div className="p-4 rounded-xl bg-gradient-to-r from-default/10 to-default/5 border border-default/20">
+        <div className="p-4 rounded-xl bg-linear-to-r from-default/10 to-default/5 border border-default/20">
           <div className="flex items-center gap-3 mb-2">
             <Info className="w-5 h-5 text-default-400" />
             <h5 className="font-semibold text-white">Informação</h5>

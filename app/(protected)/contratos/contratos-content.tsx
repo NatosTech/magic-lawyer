@@ -28,6 +28,7 @@ import {
   Link as LinkIcon,
   Building2,
   User,
+  CheckCircle,
   X,
   SlidersHorizontal,
   ArrowUpDown,
@@ -45,10 +46,14 @@ import {
   useProcuracoesDisponiveis,
 } from "@/app/hooks/use-clientes";
 import { useAllContratos } from "@/app/hooks/use-contratos";
-import { vincularContratoProcuracao } from "@/app/actions/contratos";
+import { deleteContrato, vincularContratoProcuracao } from "@/app/actions/contratos";
 import { DateUtils } from "@/app/lib/date-utils";
-import { title, subtitle } from "@/components/primitives";
 import { Select, SelectItem } from "@heroui/react";
+import {
+  PeopleMetricCard,
+  PeoplePageHeader,
+  PeoplePanel,
+} from "@/components/people-ui";
 
 const STATUS_OPTIONS = [
   { key: "ATIVO", label: "Ativo", color: "success" as const },
@@ -70,7 +75,10 @@ export default function ContratosContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContrato, setSelectedContrato] = useState<any>(null);
   const [selectedProcuracao, setSelectedProcuracao] = useState<string>("");
+  const [selectedContratoParaExcluir, setSelectedContratoParaExcluir] =
+    useState<any>(null);
   const [isLinking, setIsLinking] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
 
   // Filtros
@@ -80,7 +88,18 @@ export default function ContratosContent() {
   const [filtroValorMax, setFiltroValorMax] = useState<string>("");
   const [ordenacao, setOrdenacao] = useState<string>("recente");
 
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const {
+    isOpen: isVincularOpen,
+    onOpen: openVincularDisclosure,
+    onClose: closeVincularDisclosure,
+    onOpenChange: onVincularOpenChange,
+  } = useDisclosure();
+  const {
+    isOpen: isDeleteOpen,
+    onOpen: openDeleteDisclosure,
+    onClose: closeDeleteDisclosure,
+    onOpenChange: onDeleteOpenChange,
+  } = useDisclosure();
   const { clientes } = useClientesParaSelect();
   const { contratos, isLoading, isError, mutate } = useAllContratos();
   const { procuracoes, isLoading: isLoadingProcuracoes } =
@@ -105,7 +124,7 @@ export default function ContratosContent() {
           result.message || "Contrato vinculado à procuração com sucesso!",
         );
         mutate(); // Atualizar lista de contratos
-        onOpenChange();
+        closeVincularDisclosure();
         setSelectedContrato(null);
         setSelectedProcuracao("");
       } else {
@@ -121,7 +140,38 @@ export default function ContratosContent() {
   const openVincularModal = (contrato: any) => {
     setSelectedContrato(contrato);
     setSelectedProcuracao("");
-    onOpen();
+    openVincularDisclosure();
+  };
+
+  const openDeleteModal = (contrato: any) => {
+    setSelectedContratoParaExcluir(contrato);
+    openDeleteDisclosure();
+  };
+
+  const handleExcluirContrato = async () => {
+    if (!selectedContratoParaExcluir?.id) {
+      toast.error("Selecione um contrato para excluir.");
+
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteContrato(selectedContratoParaExcluir.id);
+
+      if (result.success) {
+        toast.success(result.message || "Contrato excluído com sucesso.");
+        mutate();
+        closeDeleteDisclosure();
+        setSelectedContratoParaExcluir(null);
+      } else {
+        toast.error(result.error || "Erro ao excluir contrato.");
+      }
+    } catch (error) {
+      toast.error("Erro ao excluir contrato.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const limparFiltros = () => {
@@ -232,6 +282,28 @@ export default function ContratosContent() {
     ordenacao,
   ]);
 
+  const contratosMetricas = useMemo(() => {
+    if (!contratos) {
+      return {
+        total: 0,
+        ativos: 0,
+        rascunhos: 0,
+        comProcesso: 0,
+        comArquivo: 0,
+      };
+    }
+
+    return {
+      total: contratos.length,
+      ativos: contratos.filter((contrato) => contrato.status === "ATIVO").length,
+      rascunhos: contratos.filter(
+        (contrato) => contrato.status === "RASCUNHO",
+      ).length,
+      comProcesso: contratos.filter((contrato) => contrato.processo).length,
+      comArquivo: contratos.filter((contrato) => contrato.arquivoUrl).length,
+    };
+  }, [contratos]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -255,42 +327,89 @@ export default function ContratosContent() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className={title({ size: "lg", color: "blue" })}>Contratos</h1>
-          <p className={subtitle({ fullWidth: true })}>
-            Gerencie todos os contratos do escritório
-          </p>
-        </div>
-        <Button
-          as={Link}
-          color="primary"
-          href="/contratos/novo"
-          startContent={<Plus className="h-4 w-4" />}
-        >
-          Novo Contrato
-        </Button>
-      </div>
+    <div className="container mx-auto p-6 space-y-6">
+      <PeoplePageHeader
+        description="Gerencie todos os contratos do escritório com filtros claros e navegação direta."
+        title="Contratos"
+        actions={
+          <>
+            <Button
+              as={Link}
+              color="primary"
+              href="/contratos/novo"
+              size="sm"
+              startContent={<Plus className="h-4 w-4" />}
+            >
+              Novo Contrato
+            </Button>
+            <Button
+              as={Link}
+              href="/contratos/modelos"
+              size="sm"
+              startContent={<FileText className="h-4 w-4" />}
+              variant="flat"
+            >
+              Modelos de Contrato
+            </Button>
+          </>
+        }
+      />
 
-      <div className="flex flex-wrap gap-2">
-        <Button color="primary" size="sm" variant="flat">
-          Contratos
-        </Button>
-        <Button
-          as={Link}
-          href="/contratos/modelos"
-          size="sm"
-          variant="bordered"
-        >
-          Modelos de Contrato
-        </Button>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <PeopleMetricCard
+          helper="Carteira total"
+          icon={<FileText className="h-4 w-4" />}
+          label="Total de contratos"
+          tone="primary"
+          value={contratosMetricas.total}
+        />
+        <PeopleMetricCard
+          helper="Contratos em produção"
+          icon={<CheckCircle className="h-4 w-4" />}
+          label="Ativos"
+          tone="success"
+          value={contratosMetricas.ativos}
+        />
+        <PeopleMetricCard
+          helper="Aguardando revisão"
+          icon={<Edit className="h-4 w-4" />}
+          label="Rascunhos"
+          tone="warning"
+          value={contratosMetricas.rascunhos}
+        />
+        <PeopleMetricCard
+          helper="Com processo vinculado"
+          icon={<LinkIcon className="h-4 w-4" />}
+          label="Vinculados"
+          tone="secondary"
+          value={contratosMetricas.comProcesso}
+        />
+        <PeopleMetricCard
+          helper="Com documento anexado"
+          icon={<FileText className="h-4 w-4" />}
+          label="Com contrato anexado"
+          tone="default"
+          value={contratosMetricas.comArquivo}
+        />
       </div>
 
       {/* Filtros */}
-      <Card>
-        <CardBody className="gap-4">
+      <PeoplePanel
+        actions={
+          <Button
+            color="warning"
+            size="sm"
+            startContent={<X className="h-3 w-3" />}
+            variant="flat"
+            onPress={limparFiltros}
+          >
+            Limpar filtros
+          </Button>
+        }
+        description="Refine rápido por texto, status, cliente e faixa de valor."
+        title="Filtros de Contratos"
+      >
+        <div className="space-y-4">
           {/* Barra de busca e controles principais */}
           <div className="flex flex-col sm:flex-row gap-3">
             <Input
@@ -318,7 +437,9 @@ export default function ContratosContent() {
                 onChange={(e) => setOrdenacao(e.target.value)}
               >
                 {ORDENACAO_OPTIONS.map((option) => (
-                  <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
+                  <SelectItem key={option.key} textValue={option.label}>
+                    {option.label}
+                  </SelectItem>
                 ))}
               </Select>
             </div>
@@ -335,7 +456,9 @@ export default function ContratosContent() {
               >
                 {[{ key: "todos", label: "Todos" }, ...STATUS_OPTIONS].map(
                   (option) => (
-                    <SelectItem key={option.key} textValue={option.label}>{option.label}</SelectItem>
+                    <SelectItem key={option.key} textValue={option.label}>
+                      {option.label}
+                    </SelectItem>
                   ),
                 )}
               </Select>
@@ -348,7 +471,9 @@ export default function ContratosContent() {
               >
                 {[{ id: "todos", nome: "Todos" }, ...(clientes || [])].map(
                   (cliente) => (
-                    <SelectItem key={cliente.id} textValue={cliente.nome}>{cliente.nome}</SelectItem>
+                    <SelectItem key={cliente.id} textValue={cliente.nome}>
+                      {cliente.nome}
+                    </SelectItem>
                   ),
                 )}
               </Select>
@@ -435,19 +560,9 @@ export default function ContratosContent() {
                   })}
                 </Chip>
               )}
-              <Button
-                color="danger"
-                size="sm"
-                startContent={<X className="h-3 w-3" />}
-                variant="light"
-                onPress={limparFiltros}
-              >
-                Limpar todos
-              </Button>
             </div>
           )}
 
-          {/* Contador de resultados */}
           <div className="text-xs text-default-500">
             {contratosFiltrados.length}{" "}
             {contratosFiltrados.length === 1
@@ -457,8 +572,8 @@ export default function ContratosContent() {
               contratos.length !== contratosFiltrados.length &&
               ` de ${contratos.length} total`}
           </div>
-        </CardBody>
-      </Card>
+        </div>
+      </PeoplePanel>
 
       {/* Lista de Contratos */}
       {contratosFiltrados.length === 0 ? (
@@ -478,9 +593,16 @@ export default function ContratosContent() {
           </CardBody>
         </Card>
       ) : (
+        <PeoplePanel
+          description="Clique em uma ação para detalhar o contrato, alterar vínculos ou gerenciar documentos."
+          title={`Lista de contratos (${contratosFiltrados.length})`}
+        >
         <div className="grid gap-4">
           {contratosFiltrados.map((contrato) => (
-            <Card key={contrato.id} className="border border-default-200">
+            <Card
+              key={contrato.id}
+              className="border border-white/10 bg-background/70 backdrop-blur-sm"
+            >
               <CardBody>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -605,6 +727,7 @@ export default function ContratosContent() {
                         className="text-danger"
                         color="danger"
                         startContent={<Trash2 className="h-4 w-4" />}
+                        onPress={() => openDeleteModal(contrato)}
                       >
                         Excluir
                       </DropdownItem>
@@ -615,10 +738,11 @@ export default function ContratosContent() {
             </Card>
           ))}
         </div>
+        </PeoplePanel>
       )}
 
       {/* Modal Vincular Procuração */}
-      <Modal isOpen={isOpen} size="md" onOpenChange={onOpenChange}>
+      <Modal isOpen={isVincularOpen} size="md" onOpenChange={onVincularOpenChange}>
         <ModalContent>
           {(onClose) => (
             <>
@@ -696,6 +820,43 @@ export default function ContratosContent() {
                   onPress={handleVincularProcuracao}
                 >
                   Vincular
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      <Modal isOpen={isDeleteOpen} onOpenChange={onDeleteOpenChange} size="sm">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <h3 className="text-lg font-semibold">Excluir contrato</h3>
+                <p className="text-sm text-default-500">
+                  Esta ação não pode ser desfeita facilmente. O contrato será
+                  removido e ficará indisponível para operação.
+                </p>
+              </ModalHeader>
+              <ModalBody>
+                <p className="text-small text-default-600">
+                  Confirma a exclusão de{" "}
+                  <strong>{selectedContratoParaExcluir?.titulo}</strong>?
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="light" onPress={() => {
+                  setSelectedContratoParaExcluir(null);
+                  onClose();
+                }}>
+                  Cancelar
+                </Button>
+                <Button
+                  color="danger"
+                  isLoading={isDeleting}
+                  onPress={handleExcluirContrato}
+                >
+                  Excluir
                 </Button>
               </ModalFooter>
             </>

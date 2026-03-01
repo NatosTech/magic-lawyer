@@ -100,7 +100,7 @@ export default function CardBrandDetector({
     >
       {/* Card Preview */}
       <motion.div
-        className="relative bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-6 h-48 overflow-hidden"
+        className="relative bg-linear-to-r from-slate-800 to-slate-900 rounded-xl p-6 h-48 overflow-hidden"
         style={{
           background: brand
             ? `linear-gradient(135deg, ${brand.color}20, ${brand.color}40)`
@@ -116,7 +116,7 @@ export default function CardBrandDetector({
           initial={{ scale: 0 }}
           transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
         >
-          <div className="w-full h-full bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-sm flex items-center justify-center">
+          <div className="w-full h-full bg-linear-to-br from-yellow-300 to-yellow-500 rounded-sm flex items-center justify-center">
             <div className="w-3 h-2 bg-yellow-600 rounded-sm" />
           </div>
         </motion.div>

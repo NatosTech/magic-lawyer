@@ -31,10 +31,9 @@ export default async function ContratosPage() {
     return <ContratosContent />;
   }
 
-  // Para outros roles, verificar permissão processos.visualizar
-  // (contratos usa processos como proxy)
-  try {
-    const hasPermission = await checkPermission("processos", "visualizar");
+    // Para outros roles, verificar permissão financeiro.visualizar
+    try {
+    const hasPermission = await checkPermission("financeiro", "visualizar");
 
     if (!hasPermission) {
       redirect("/dashboard");

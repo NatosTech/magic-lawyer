@@ -364,7 +364,7 @@ export function JuizesContent() {
     <PermissionGuard permission="canViewJudgesDatabase">
       <section className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 py-8 px-3 sm:px-6">
         {/* Header com gradiente */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-secondary/10 to-background p-8 backdrop-blur-xl border border-primary/20">
+        <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-primary/20 via-secondary/10 to-background p-8 backdrop-blur-xl border border-primary/20">
           <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" />
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
@@ -403,7 +403,7 @@ export function JuizesContent() {
         </div>
 
         {/* Filtros Ultra Modernos */}
-        <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-background/95 via-primary/5 to-background/95 backdrop-blur-2xl shadow-2xl">
+        <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-linear-to-br from-background/95 via-primary/5 to-background/95 backdrop-blur-2xl shadow-2xl">
           {/* Background decorativo */}
           <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" />
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
@@ -412,7 +412,7 @@ export function JuizesContent() {
           <div className="relative z-10">
             {/* Header dos filtros */}
             <div className="flex items-center gap-3 p-6 pb-4">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary shadow-lg">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-linear-to-br from-primary to-secondary shadow-lg">
                 <Filter className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -596,7 +596,7 @@ export function JuizesContent() {
 
         {/* Error State */}
         {error && (
-          <Card className="border border-danger/50 bg-gradient-to-br from-danger/10 to-danger/5 backdrop-blur-xl">
+          <Card className="border border-danger/50 bg-linear-to-br from-danger/10 to-danger/5 backdrop-blur-xl">
             <CardBody className="text-center py-12">
               <div className="flex items-center justify-center mb-4">
                 <div className="bg-danger/20 p-4 rounded-full">
@@ -625,14 +625,14 @@ export function JuizesContent() {
             {juizes.map((juiz) => (
               <Card
                 key={juiz.id}
-                className="border border-white/10 bg-gradient-to-br from-background/80 to-background/60 backdrop-blur-xl hover:border-primary/30 transition-all duration-300 hover:shadow-xl"
+                className="border border-white/10 bg-linear-to-br from-background/80 to-background/60 backdrop-blur-xl hover:border-primary/30 transition-all duration-300 hover:shadow-xl"
               >
                 <CardHeader className="flex flex-col gap-3 pb-3">
                   <div className="flex items-start justify-between w-full">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
                       <Avatar
                         classNames={{
-                          base: "bg-gradient-to-br from-primary to-secondary",
+                          base: "bg-linear-to-br from-primary to-secondary",
                           icon: "text-white",
                         }}
                         icon={
@@ -806,12 +806,12 @@ export function JuizesContent() {
 
         {/* Empty State */}
         {!isLoading && !error && juizes && juizes.length === 0 && (
-          <Card className="border border-white/10 bg-gradient-to-br from-background/70 to-background/50 backdrop-blur-xl">
+          <Card className="border border-white/10 bg-linear-to-br from-background/70 to-background/50 backdrop-blur-xl">
             <CardBody className="text-center py-16">
               <div className="flex items-center justify-center mb-6">
                 <div className="relative">
                   <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
-                  <div className="relative bg-gradient-to-br from-primary/10 to-secondary/10 p-6 rounded-full border border-primary/20">
+                  <div className="relative bg-linear-to-br from-primary/10 to-secondary/10 p-6 rounded-full border border-primary/20">
                     <Scale className="w-12 h-12 text-primary" />
                   </div>
                 </div>
@@ -902,10 +902,10 @@ export function JuizesContent() {
           {selectedJuiz && (
             <div className="space-y-6">
               {/* Header com Avatar */}
-              <div className="flex items-start gap-4 p-6 rounded-xl bg-gradient-to-br from-primary/10 to-secondary/5 border border-primary/20">
+              <div className="flex items-start gap-4 p-6 rounded-xl bg-linear-to-br from-primary/10 to-secondary/5 border border-primary/20">
                 <Avatar
                   classNames={{
-                    base: "bg-gradient-to-br from-primary to-secondary w-24 h-24 text-large",
+                    base: "bg-linear-to-br from-primary to-secondary w-24 h-24 text-large",
                     icon: "text-white",
                   }}
                   icon={

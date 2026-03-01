@@ -877,7 +877,7 @@ export function DocumentosContent({
     <div className="container mx-auto p-6 space-y-8">
       {/* Header Hero */}
       <motion.div animate="visible" initial="hidden" variants={fadeInUp}>
-        <Card className="relative overflow-hidden border-none bg-gradient-to-br from-blue-900 via-blue-900/90 to-indigo-800 text-white shadow-2xl">
+        <Card className="relative overflow-hidden border-none bg-linear-to-br from-blue-900 via-blue-900/90 to-indigo-800 text-white shadow-2xl">
           <CardBody className="space-y-8">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div className="space-y-3 max-w-2xl">
@@ -912,7 +912,7 @@ export function DocumentosContent({
           initial={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+          <Card className="bg-linear-to-br from-blue-50 via-blue-100 to-indigo-200 dark:from-blue-900/30 dark:via-blue-800/20 dark:to-indigo-900/30 border-blue-300 dark:border-blue-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-blue-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -946,7 +946,7 @@ export function DocumentosContent({
           initial={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <Card className="bg-gradient-to-br from-emerald-50 via-green-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+          <Card className="bg-linear-to-br from-emerald-50 via-green-100 to-teal-200 dark:from-green-900/30 dark:via-emerald-800/20 dark:to-teal-900/30 border-green-300 dark:border-green-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-green-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -980,7 +980,7 @@ export function DocumentosContent({
           initial={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <Card className="bg-gradient-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+          <Card className="bg-linear-to-br from-purple-50 via-violet-100 to-purple-200 dark:from-purple-900/30 dark:via-violet-800/20 dark:to-purple-900/30 border-purple-300 dark:border-purple-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-purple-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -1014,7 +1014,7 @@ export function DocumentosContent({
           initial={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <Card className="bg-gradient-to-br from-amber-50 via-orange-100 to-amber-200 dark:from-amber-900/30 dark:via-orange-800/20 dark:to-amber-900/30 border-amber-300 dark:border-amber-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
+          <Card className="bg-linear-to-br from-amber-50 via-orange-100 to-amber-200 dark:from-amber-900/30 dark:via-orange-800/20 dark:to-amber-900/30 border-amber-300 dark:border-amber-600 shadow-xl hover:shadow-2xl transition-all duration-500 group">
             <CardBody className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-amber-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -1050,10 +1050,10 @@ export function DocumentosContent({
         transition={{ duration: 0.3 }}
       >
         <Card className="shadow-lg border-2 border-slate-200 dark:border-slate-700">
-          <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
+          <CardHeader className="bg-linear-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                <div className="p-2 bg-linear-to-br from-blue-500 to-indigo-600 rounded-lg">
                   <Filter className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -1311,9 +1311,9 @@ export function DocumentosContent({
           transition={{ duration: 0.4, delay: 0.1 }}
         >
           <Card className="shadow-xl border-2 border-slate-200 dark:border-slate-700">
-            <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
+            <CardHeader className="bg-linear-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-3 w-full">
-                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
+                <div className="p-2 bg-linear-to-br from-indigo-500 to-purple-600 rounded-lg">
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -1366,7 +1366,7 @@ export function DocumentosContent({
                         <span className="text-xs text-slate-600 dark:text-slate-400">
                           {cliente.processos} processos
                         </span>
-                        <span className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 via-slate-100/0 to-transparent opacity-0 transition group-hover:opacity-100" />
+                        <span className="absolute inset-0 -z-10 bg-linear-to-br from-primary/5 via-slate-100/0 to-transparent opacity-0 transition group-hover:opacity-100" />
                       </motion.button>
                     );
                   })}
@@ -1383,10 +1383,10 @@ export function DocumentosContent({
             transition={{ duration: 0.4, delay: 0.2 }}
           >
             <Card className="shadow-xl border-2 border-slate-200 dark:border-slate-700">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
+              <CardHeader className="bg-linear-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg">
+                    <div className="p-2 bg-linear-to-br from-emerald-500 to-teal-600 rounded-lg">
                       <Briefcase className="w-6 h-6 text-white" />
                     </div>
                     <div>
@@ -1481,10 +1481,10 @@ export function DocumentosContent({
             transition={{ duration: 0.4, delay: 0.3 }}
           >
             <Card className="shadow-xl border-2 border-slate-200 dark:border-slate-700">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
+              <CardHeader className="bg-linear-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex flex-wrap items-center justify-between gap-3 w-full">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-purple-500 to-violet-600 rounded-lg">
+                    <div className="p-2 bg-linear-to-br from-purple-500 to-violet-600 rounded-lg">
                       <Folder className="w-6 h-6 text-white" />
                     </div>
                     <div>
@@ -1554,7 +1554,7 @@ export function DocumentosContent({
 
                     {/* Skeleton da área de arquivos */}
                     <div className="rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3 bg-linear-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
                         <Skeleton className="h-6 w-32 rounded-lg" isLoaded={false} />
                         <Skeleton className="h-9 w-28 rounded-lg" isLoaded={false} />
                       </div>
@@ -1584,7 +1584,7 @@ export function DocumentosContent({
                     </div>
 
                     <div className="rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 py-3 bg-linear-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
                         <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
                           <Folder className="h-4 w-4 text-primary" />
                           {selectedFolderSegments.length

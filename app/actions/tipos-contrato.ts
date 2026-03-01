@@ -34,7 +34,7 @@ export async function listTiposContrato(params?: { ativo?: boolean }) {
     }
 
     const where: any = {
-      tenantId: user.tenantId,
+      OR: [{ tenantId: user.tenantId }, { tenantId: "GLOBAL" }],
     };
 
     if (params?.ativo !== undefined) {

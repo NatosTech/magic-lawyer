@@ -1,9 +1,11 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
+import { revalidatePath } from "next/cache";
 
 import { authOptions } from "@/auth";
 import prisma, { convertAllDecimalFields } from "@/app/lib/prisma";
+import { UploadService } from "@/lib/upload-service";
 import { ContratoStatus } from "@/generated/prisma";
 import logger from "@/lib/logger";
 import { checkPermission } from "@/app/actions/equipe";
@@ -11,6 +13,7 @@ import {
   getAccessibleAdvogadoIds,
   getAdvogadoIdFromSession,
 } from "@/app/lib/advogado-access";
+import { UserRole } from "@/generated/prisma";
 
 // ============================================
 // TYPES
@@ -21,6 +24,7 @@ export interface ContratoCreateInput {
   resumo?: string;
   tipoContratoId?: string;
   modeloContratoId?: string;
+  arquivoUrl?: string;
   status?: ContratoStatus;
   valor?: number;
   dataInicio?: Date | string;
@@ -32,12 +36,183 @@ export interface ContratoCreateInput {
   observacoes?: string;
 }
 
+async function ensureContratoRelacoesValidas(
+  session: any,
+  data: {
+    tenantId: string;
+    clienteId?: string | null;
+    advogadoId?: string | null;
+    processoId?: string | null;
+    dadosBancariosId?: string | null;
+    tipoContratoId?: string | null;
+    modeloContratoId?: string | null;
+  },
+  allowAdminToBypassAdvogado = false,
+) {
+  const { tenantId } = data;
+
+  if (data.tipoContratoId) {
+    const tipo = await prisma.tipoContrato.findFirst({
+      where: {
+        id: data.tipoContratoId,
+        OR: [{ tenantId }, { tenantId: "GLOBAL" }],
+      },
+      select: { id: true },
+    });
+
+    if (!tipo) {
+      return { error: "Tipo de contrato não encontrado." };
+    }
+  }
+
+  if (data.modeloContratoId) {
+    const modelo = await prisma.modeloContrato.findFirst({
+      where: {
+        id: data.modeloContratoId,
+        tenantId,
+      },
+      select: { id: true },
+    });
+
+    if (!modelo) {
+      return {
+        error: "Modelo de contrato não encontrado ou indisponível para este escritório.",
+      };
+    }
+  }
+
+  if (data.advogadoId) {
+    const advogado = await prisma.advogado.findFirst({
+      where: {
+        id: data.advogadoId,
+        tenantId,
+      },
+      select: {
+        id: true,
+        usuario: {
+          select: {
+            active: true,
+          },
+        },
+      },
+    });
+
+    if (!advogado || !advogado.usuario.active) {
+      return { error: "Advogado responsável inválido." };
+    }
+
+    if (
+      session.user?.role === UserRole.ADVOGADO &&
+      !allowAdminToBypassAdvogado &&
+      data.advogadoId !== undefined
+    ) {
+      const advogadoSessao = await getAdvogadoIdFromSession(session);
+
+      if (advogadoSessao && data.advogadoId !== advogadoSessao) {
+        return {
+          error:
+            "Advogados só podem editar contratos vinculados a eles mesmos.",
+        };
+      }
+    }
+  }
+
+  if (data.processoId) {
+    const processo = await prisma.processo.findFirst({
+      where: {
+        id: data.processoId,
+        tenantId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!processo) {
+      return { error: "Processo não encontrado." };
+    }
+  }
+
+  if (data.dadosBancariosId) {
+    const dadosBancarios = await prisma.dadosBancarios.findFirst({
+      where: {
+        id: data.dadosBancariosId,
+        tenantId,
+        ativo: true,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!dadosBancarios) {
+      return { error: "Dados bancários não encontrados ou inativos." };
+    }
+  }
+
+  if (data.clienteId) {
+    const cliente = await prisma.cliente.findFirst({
+      where: {
+        id: data.clienteId,
+        tenantId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!cliente) {
+      return { error: "Cliente não encontrado." };
+    }
+  }
+
+  return { error: null };
+}
+
 // ============================================
 // HELPERS
 // ============================================
 
 async function getSession() {
   return await getServerSession(authOptions);
+}
+
+function getFormStringValue(value: FormDataEntryValue | null): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function parseNumberFromText(value: string | null): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const normalized = value.replace(",", ".");
+  const parsed = Number.parseFloat(normalized);
+
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function toPdfFile(value: FormDataEntryValue | null): File | null {
+  return value instanceof File && value.size > 0 ? value : null;
+}
+
+function normalizeDateFromForm(value: string | null): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+}
+
+function normalizeContratoStatus(value: string): ContratoStatus | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const status = value as ContratoStatus;
+
+  return Object.values(ContratoStatus).includes(status)
+    ? status
+    : undefined;
 }
 
 // ============================================
@@ -297,23 +472,21 @@ export async function createContrato(data: ContratoCreateInput) {
       }
     }
 
-    // Validar dados bancários se fornecidos
-    if (data.dadosBancariosId) {
-      const dadosBancarios = await prisma.dadosBancarios.findFirst({
-        where: {
-          id: data.dadosBancariosId,
-          tenantId: user.tenantId,
-          ativo: true,
-          deletedAt: null,
-        },
-      });
+    const validacaoRelacoes = await ensureContratoRelacoesValidas(session, {
+      tenantId: user.tenantId,
+      clienteId: data.clienteId,
+      advogadoId: data.advogadoId || null,
+      processoId: data.processoId || null,
+      dadosBancariosId: data.dadosBancariosId || null,
+      tipoContratoId: data.tipoContratoId || null,
+      modeloContratoId: data.modeloContratoId || null,
+    });
 
-      if (!dadosBancarios) {
-        return {
-          success: false,
-          error: "Dados bancários não encontrados ou inativos",
-        };
-      }
+    if (validacaoRelacoes.error) {
+      return {
+        success: false,
+        error: validacaoRelacoes.error,
+      };
     }
 
     // Criar contrato
@@ -322,6 +495,7 @@ export async function createContrato(data: ContratoCreateInput) {
         tenantId: user.tenantId,
         titulo: data.titulo,
         resumo: data.resumo,
+        arquivoUrl: data.arquivoUrl,
         tipoId: data.tipoContratoId,
         modeloId: data.modeloContratoId,
         status: data.status || ContratoStatus.RASCUNHO,
@@ -454,6 +628,174 @@ export async function createContrato(data: ContratoCreateInput) {
   }
 }
 
+export async function createContratoComArquivo(formData: FormData) {
+  const file = toPdfFile(formData.get("arquivoContrato"));
+  let uploadedArquivoUrl: string | undefined;
+  let uploadedArquivoPublicId: string | undefined;
+  let uploaderUserId: string = "system";
+
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+    uploaderUserId = user.id;
+    const titulo = getFormStringValue(formData.get("titulo"));
+    const resumo = getFormStringValue(formData.get("resumo"));
+    const observacoes = getFormStringValue(formData.get("observacoes"));
+    const tipoContratoId = getFormStringValue(formData.get("tipoContratoId"));
+    const modeloContratoId = getFormStringValue(formData.get("modeloContratoId"));
+    const status = normalizeContratoStatus(
+      getFormStringValue(formData.get("status")),
+    );
+    const clienteId = getFormStringValue(formData.get("clienteId"));
+    const advogadoId = getFormStringValue(formData.get("advogadoId"));
+    const processoId = getFormStringValue(formData.get("processoId"));
+    const dadosBancariosId = getFormStringValue(formData.get("dadosBancariosId"));
+    const valor = parseNumberFromText(getFormStringValue(formData.get("valor")));
+    const dataInicio = normalizeDateFromForm(
+      getFormStringValue(formData.get("dataInicio")),
+    );
+    const dataFim = normalizeDateFromForm(
+      getFormStringValue(formData.get("dataFim")),
+    );
+
+    if (!titulo || !clienteId) {
+      return { success: false, error: "Título e cliente são obrigatórios" };
+    }
+
+    if (file) {
+      const mimeType = file.type?.toLowerCase() || "";
+      const fileName = file.name || "contrato.pdf";
+      const hasPdfMime = mimeType === "application/pdf";
+      const hasPdfExtension = fileName.toLowerCase().endsWith(".pdf");
+
+      if (!hasPdfMime && !hasPdfExtension) {
+        return { success: false, error: "Apenas arquivos PDF são permitidos." };
+      }
+
+      const maxSize = 10 * 1024 * 1024;
+
+      if (file.size > maxSize) {
+        return {
+          success: false,
+          error: "Arquivo muito grande. Máximo permitido: 10MB",
+        };
+      }
+
+      const tenantSlug =
+        user.tenantSlug ||
+        (await prisma.tenant
+          .findUnique({ where: { id: user.tenantId }, select: { slug: true } })
+          .then((tenant) => tenant?.slug)) ||
+        "default";
+
+      const uploadService = UploadService.getInstance();
+      const buffer = Buffer.from(await file.arrayBuffer());
+
+      const uploadResult = await uploadService.uploadDocumento(
+        buffer,
+        user.id,
+        fileName,
+        tenantSlug,
+        {
+          tipo: "contrato",
+          identificador: clienteId,
+          fileName: fileName,
+        },
+      );
+
+      if (!uploadResult.success) {
+        return {
+          success: false,
+          error: uploadResult.error || "Erro ao anexar PDF",
+        };
+      }
+
+      uploadedArquivoUrl = uploadResult.url;
+      uploadedArquivoPublicId = uploadResult.publicId;
+    }
+
+    const createData: ContratoCreateInput = {
+      titulo,
+      resumo,
+      observacoes,
+      tipoContratoId: tipoContratoId || undefined,
+      modeloContratoId: modeloContratoId || undefined,
+      status,
+      valor,
+      dataInicio: dataInicio || undefined,
+      dataFim: dataFim || undefined,
+      clienteId,
+      advogadoId: advogadoId || undefined,
+      processoId: processoId || undefined,
+      dadosBancariosId: dadosBancariosId || undefined,
+      arquivoUrl: uploadedArquivoUrl,
+    };
+
+    const result = await createContrato(createData);
+
+    if (!result.success) {
+      if (uploadedArquivoUrl) {
+        const uploadService = UploadService.getInstance();
+
+        const deleteResult = await uploadService.deleteDocumento(
+          uploadedArquivoUrl,
+          uploaderUserId,
+        );
+
+        if (!deleteResult.success) {
+          logger.warn("Falha ao remover arquivo de contrato sem uso", {
+            contratoArquivoUrl: uploadedArquivoUrl,
+            publicId: uploadedArquivoPublicId,
+          });
+        }
+      }
+
+      return result;
+    }
+
+    if (result.contrato?.id) {
+      revalidatePath("/contratos");
+      revalidatePath(`/contratos/${result.contrato.id}`);
+    }
+
+    return result;
+  } catch (error) {
+    if (uploadedArquivoUrl) {
+      try {
+        const uploadService = UploadService.getInstance();
+        const deleteResult = await uploadService.deleteDocumento(
+          uploadedArquivoUrl,
+          uploaderUserId,
+        );
+
+        if (!deleteResult.success) {
+          logger.warn("Falha ao remover arquivo de contrato após erro crítico", {
+            contratoArquivoUrl: uploadedArquivoUrl,
+            publicId: uploadedArquivoPublicId,
+          });
+        }
+      } catch (cleanupError) {
+        logger.warn(
+          "Falha extra ao limpar arquivo de contrato após erro crítico",
+          cleanupError,
+        );
+      }
+    }
+
+    logger.error("Erro ao criar contrato com arquivo:", error);
+
+    return {
+      success: false,
+      error: "Erro ao criar contrato",
+    };
+  }
+}
+
 // ============================================
 // ACTIONS - LISTAR CONTRATOS
 // ============================================
@@ -572,6 +914,71 @@ export async function getAllContratos(): Promise<{
     return {
       success: false,
       error: "Erro ao buscar contratos",
+    };
+  }
+}
+
+// ============================================
+// ACTIONS - EXCLUIR CONTRATO
+// ============================================
+
+export async function deleteContrato(contratoId: string): Promise<{
+  success: boolean;
+  error?: string;
+  message?: string;
+}> {
+  try {
+    const session = await getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Não autorizado" };
+    }
+
+    const user = session.user as any;
+
+    if (!user.tenantId) {
+      return { success: false, error: "Tenant não encontrado" };
+    }
+
+    const podeExcluir = await checkPermission("financeiro", "excluir");
+
+    if (!podeExcluir) {
+      return {
+        success: false,
+        error: "Você não tem permissão para excluir contratos",
+      };
+    }
+
+    const contrato = await prisma.contrato.findFirst({
+      where: {
+        id: contratoId,
+        tenantId: user.tenantId,
+        deletedAt: null,
+      },
+      select: { id: true, titulo: true },
+    });
+
+    if (!contrato) {
+      return { success: false, error: "Contrato não encontrado" };
+    }
+
+    await prisma.contrato.update({
+      where: { id: contratoId },
+      data: { deletedAt: new Date() },
+    });
+
+    revalidatePath("/contratos");
+
+    return {
+      success: true,
+      message: `Contrato ${contrato.titulo} removido com sucesso.`,
+    };
+  } catch (error) {
+    logger.error("Erro ao excluir contrato:", error);
+
+    return {
+      success: false,
+      error: "Erro ao excluir contrato",
     };
   }
 }
@@ -762,23 +1169,56 @@ export async function updateContrato(
       return { success: false, error: "Contrato não encontrado" };
     }
 
-    // Validar dados bancários se fornecidos
-    if (data.dadosBancariosId !== undefined && data.dadosBancariosId) {
-      const dadosBancarios = await prisma.dadosBancarios.findFirst({
+    if (
+      user.role === "ADVOGADO" &&
+      data.clienteId &&
+      data.clienteId !== contratoExistente.clienteId
+    ) {
+      const advogadoIdSessao = await getAdvogadoIdFromSession(session);
+      const possuiAcesso = await prisma.advogadoCliente.findFirst({
         where: {
-          id: data.dadosBancariosId,
+          advogadoId: advogadoIdSessao || "",
+          clienteId: data.clienteId,
           tenantId: user.tenantId,
-          ativo: true,
-          deletedAt: null,
         },
       });
 
-      if (!dadosBancarios) {
+      if (!possuiAcesso) {
         return {
           success: false,
-          error: "Dados bancários não encontrados ou inativos",
+          error: "Você não tem acesso ao cliente informado",
         };
       }
+    }
+
+    const validacaoRelacoes = await ensureContratoRelacoesValidas(
+      session,
+      {
+        tenantId: user.tenantId,
+        clienteId: data.clienteId || contratoExistente.clienteId,
+        advogadoId:
+          data.advogadoId === undefined
+            ? contratoExistente.advogadoResponsavelId
+            : data.advogadoId,
+        processoId:
+          data.processoId === undefined
+            ? contratoExistente.processoId
+            : data.processoId,
+        dadosBancariosId:
+          data.dadosBancariosId === undefined
+            ? contratoExistente.dadosBancariosId
+            : data.dadosBancariosId,
+        tipoContratoId: data.tipoContratoId || null,
+        modeloContratoId: data.modeloContratoId || null,
+      },
+      true,
+    );
+
+    if (validacaoRelacoes.error) {
+      return {
+        success: false,
+        error: validacaoRelacoes.error,
+      };
     }
 
     // Preparar dados para atualização
@@ -806,6 +1246,8 @@ export async function updateContrato(
     if (data.processoId !== undefined) updateData.processoId = data.processoId;
     if (data.tipoContratoId !== undefined)
       updateData.tipoId = data.tipoContratoId;
+    if (data.modeloContratoId !== undefined)
+      updateData.modeloId = data.modeloContratoId;
     if (data.dadosBancariosId !== undefined)
       updateData.dadosBancariosId = data.dadosBancariosId;
 

@@ -292,7 +292,7 @@ export function NotificationPreferencesContent() {
         animate={{ opacity: 1, y: 0 }}
         initial={{ opacity: 0, y: -20 }}
       >
-        <Card className="bg-gradient-to-br from-primary/10 via-secondary/10 to-warning/10 border border-primary/20">
+        <Card className="bg-linear-to-br from-primary/10 via-secondary/10 to-warning/10 border border-primary/20">
           <CardBody>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>

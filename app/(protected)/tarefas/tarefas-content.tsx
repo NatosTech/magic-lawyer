@@ -448,7 +448,7 @@ export default function TarefasContent() {
       {/* Dashboard Cards */}
       {dashboard && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
+          <Card className="bg-linear-to-br from-primary/10 to-primary/5">
             <CardBody className="text-center py-6">
               <div className="flex justify-center mb-2">
                 <div className="p-3 bg-primary/20 rounded-full">
@@ -463,7 +463,7 @@ export default function TarefasContent() {
               </p>
             </CardBody>
           </Card>
-          <Card className="bg-gradient-to-br from-danger/10 to-danger/5">
+          <Card className="bg-linear-to-br from-danger/10 to-danger/5">
             <CardBody className="text-center py-6">
               <div className="flex justify-center mb-2">
                 <div className="p-3 bg-danger/20 rounded-full">
@@ -478,7 +478,7 @@ export default function TarefasContent() {
               </p>
             </CardBody>
           </Card>
-          <Card className="bg-gradient-to-br from-warning/10 to-warning/5">
+          <Card className="bg-linear-to-br from-warning/10 to-warning/5">
             <CardBody className="text-center py-6">
               <div className="flex justify-center mb-2">
                 <div className="p-3 bg-warning/20 rounded-full">
@@ -491,7 +491,7 @@ export default function TarefasContent() {
               </p>
             </CardBody>
           </Card>
-          <Card className="bg-gradient-to-br from-success/10 to-success/5">
+          <Card className="bg-linear-to-br from-success/10 to-success/5">
             <CardBody className="text-center py-6">
               <div className="flex justify-center mb-2">
                 <div className="p-3 bg-success/20 rounded-full">

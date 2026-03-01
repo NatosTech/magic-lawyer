@@ -162,7 +162,7 @@ export function PrimeiroAcessoContent({ token }: PrimeiroAcessoContentProps) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-linear-to-br from-background via-background to-primary/5">
       <Card className="w-full max-w-md border border-default-200/70">
         <CardHeader className="flex flex-col items-start gap-1">
           <h1 className="text-xl font-semibold">Definir senha de acesso</h1>

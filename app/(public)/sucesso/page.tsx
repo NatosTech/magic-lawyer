@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function SucessoPage() {
   return (
-    <div className="h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+    <div className="h-screen bg-linear-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-fade-in -mt-48">
         <Card className="border border-white/10 bg-background/70 backdrop-blur-xl">
           <CardBody className="text-center p-8">
